@@ -2,7 +2,7 @@
 
 Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the intersection of the provided top-websites list and active public bug-bounty program scopes.
 
-**Total findings across all sites: 1860**
+**Total findings across all sites: 2064**
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -22,11 +22,14 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | amazon.com.au | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.com.br | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.com | 12 | 0 | 0 | 8 | 4 | Amazon |
+| amazon.de | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.es | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.fr | 12 | 0 | 0 | 8 | 4 | Amazon |
+| amazon.in | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.it | 12 | 0 | 0 | 8 | 4 | Amazon |
 | api.whatsapp.com | 11 | 0 | 1 | 5 | 5 | Facebook |
 | apis.google.com | 12 | 0 | 1 | 6 | 5 | Google |
+| apple.com | 10 | 0 | 0 | 8 | 2 | Apple |
 | apps.apple.com | 12 | 0 | 0 | 8 | 4 | Apple |
 | apps.facebook.com | 10 | 0 | 0 | 7 | 3 | Facebook |
 | artsandculture.google.com | 10 | 0 | 0 | 5 | 5 | Google |
@@ -40,15 +43,19 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | books.google.com | 10 | 0 | 0 | 5 | 5 | Google |
 | buffer.com | 15 | 0 | 0 | 9 | 6 | Buffer |
 | business.facebook.com | 11 | 0 | 0 | 7 | 4 | Facebook |
+| business.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | calendar.google.com | 11 | 0 | 1 | 6 | 4 | Google |
+| canva.com | 12 | 0 | 0 | 8 | 4 | Canva |
 | cdn.shopify.com | 11 | 0 | 1 | 5 | 5 | Shopify |
 | cdnjs.cloudflare.com | 10 | 0 | 1 | 5 | 4 | Cloudflare |
 | chrome.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | cisco.com | 10 | 0 | 0 | 8 | 2 | Cisco Meraki |
+| cloud.google.com | 10 | 0 | 0 | 4 | 6 | Google |
 | cloudflare.com | 12 | 0 | 0 | 8 | 4 | Cloudflare |
 | code.google.com | 10 | 0 | 1 | 4 | 5 | Google |
 | coinbase.com | 11 | 0 | 0 | 7 | 4 | Coinbase |
 | cse.google.com | 10 | 0 | 0 | 5 | 5 | Google |
+| dailymotion.com | 10 | 0 | 0 | 7 | 3 | Dailymotion |
 | dashlane.com | 10 | 0 | 0 | 6 | 4 | Dashlane |
 | de-de.facebook.com | 8 | 0 | 0 | 4 | 4 | Facebook |
 | deezer.com | 12 | 0 | 0 | 8 | 4 | Deezer |
@@ -71,31 +78,37 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | families.google.com | 9 | 0 | 0 | 4 | 5 | Google |
 | fb.com | 10 | 0 | 0 | 7 | 3 | Facebook |
 | fb.me | 10 | 0 | 0 | 7 | 3 | Facebook |
+| filezilla-project.org | 9 | 0 | 0 | 4 | 5 | FileZilla |
 | finance.yahoo.com | 2 | 0 | 0 | 1 | 1 | Yahoo! |
 | flickr.com | 9 | 0 | 1 | 6 | 2 | Flickr |
 | flow.microsoft.com | 10 | 0 | 0 | 8 | 2 | Microsoft Online Services |
 | fonts.google.com | 10 | 0 | 0 | 5 | 5 | Google |
 | forms.office.com | 10 | 0 | 0 | 7 | 3 | Microsoft Online Services |
 | get.google.com | 11 | 0 | 0 | 6 | 5 | Google |
+| gist.github.com | 8 | 0 | 0 | 5 | 3 | GitHub |
 | github.com | 7 | 0 | 0 | 5 | 2 | GitHub |
 | gitlab.com | 7 | 0 | 0 | 3 | 4 | GitLab |
 | gitter.im | 10 | 0 | 0 | 7 | 3 | GitLab |
 | google.com | 11 | 0 | 0 | 7 | 4 | Google |
+| groups.google.com | 10 | 0 | 0 | 5 | 5 | Google |
 | gsuite.google.com | 10 | 0 | 0 | 6 | 4 | Google |
 | hangouts.google.com | 10 | 0 | 0 | 6 | 4 | Google |
 | help.apple.com | 9 | 0 | 1 | 5 | 3 | Apple |
 | i.imgur.com | 11 | 0 | 0 | 7 | 4 | Imgur |
 | i.redd.it | 14 | 0 | 0 | 9 | 5 | Reddit |
 | img.youtube.com | 12 | 0 | 0 | 7 | 5 | Google |
+| imgur.com | 11 | 0 | 0 | 5 | 6 | Imgur |
 | instagram.com | 10 | 0 | 0 | 7 | 3 | Facebook |
 | itunes.apple.com | 11 | 0 | 0 | 7 | 4 | Apple |
 | ja-jp.facebook.com | 8 | 0 | 0 | 4 | 4 | Facebook |
 | join.slack.com | 12 | 0 | 0 | 8 | 4 | Slack |
 | keep.google.com | 7 | 0 | 0 | 2 | 5 | Google |
+| kraken.com | 9 | 0 | 0 | 5 | 4 | Kraken |
 | l.facebook.com | 11 | 0 | 0 | 8 | 3 | Facebook |
 | line.me | 11 | 0 | 0 | 7 | 4 | LINE |
 | livestream.com | 13 | 0 | 0 | 9 | 4 | Livestream |
 | logitech.com | 12 | 0 | 0 | 8 | 4 | Logitech |
+| m.facebook.com | 9 | 0 | 0 | 5 | 4 | Facebook |
 | m.youtube.com | 6 | 0 | 0 | 2 | 4 | Google |
 | mail.google.com | 6 | 0 | 0 | 2 | 4 | Google |
 | maps.google.com | 16 | 0 | 0 | 10 | 6 | Google |
@@ -113,6 +126,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | newegg.com | 11 | 0 | 0 | 7 | 4 | Newegg |
 | news.google.com | 9 | 0 | 0 | 5 | 4 | Google |
 | news.yahoo.com | 7 | 0 | 0 | 5 | 2 | Yahoo! |
+| open.spotify.com | 12 | 0 | 0 | 7 | 5 | Spotify |
 | opera.com | 11 | 0 | 0 | 7 | 4 | Opera Public Bug Bounty |
 | ow.ly | 6 | 0 | 0 | 5 | 1 | Hootsuite |
 | patents.google.com | 7 | 0 | 0 | 4 | 3 | Google |
@@ -128,9 +142,11 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | pixabay.com | 9 | 0 | 0 | 6 | 3 | Pixabay |
 | pixiv.net | 11 | 0 | 0 | 7 | 4 | Pixiv |
 | platform.twitter.com | 12 | 0 | 2 | 8 | 2 | Twitter |
+| play.google.com | 12 | 0 | 0 | 6 | 6 | Google |
 | player.vimeo.com | 11 | 0 | 0 | 6 | 5 | Vimeo |
 | plus.google.com | 10 | 0 | 0 | 6 | 4 | Google |
 | podcasts.apple.com | 12 | 0 | 0 | 8 | 4 | Apple |
+| podcasts.google.com | 10 | 0 | 0 | 6 | 4 | Google |
 | policies.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | postmates.com | 14 | 0 | 0 | 9 | 5 | Postmates |
 | privacy.microsoft.com | 9 | 0 | 0 | 7 | 2 | Microsoft Online Services |
@@ -146,6 +162,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | sites.google.com | 8 | 0 | 0 | 4 | 4 | Google |
 | sketchfab.com | 10 | 0 | 0 | 6 | 4 | Epic Games |
 | skype.com | 10 | 0 | 0 | 6 | 4 | Microsoft Online Services |
+| slack.com | 12 | 0 | 0 | 9 | 3 | Slack |
 | smile.amazon.com | 12 | 0 | 0 | 8 | 4 | Amazon |
 | snapchat.com | 10 | 0 | 0 | 8 | 2 | Snapchat |
 | sophos.com | 12 | 0 | 0 | 10 | 2 | Sophos |
@@ -153,7 +170,9 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | spotify.com | 10 | 0 | 0 | 6 | 4 | Spotify |
 | squareup.com | 15 | 0 | 0 | 10 | 5 | Square |
 | steamcommunity.com | 11 | 0 | 0 | 7 | 4 | Valve Software |
+| store.google.com | 9 | 0 | 0 | 4 | 5 | Google |
 | store.steampowered.com | 11 | 0 | 0 | 7 | 4 | Valve Software |
+| stripe.com | 6 | 0 | 0 | 3 | 3 | Stripe |
 | support.apple.com | 8 | 0 | 0 | 4 | 4 | Apple |
 | support.cloudflare.com | 13 | 0 | 0 | 9 | 4 | Cloudflare |
 | support.google.com | 9 | 0 | 0 | 5 | 4 | Google |
@@ -171,6 +190,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | twitter.com | 11 | 1 | 1 | 7 | 2 | Twitter |
 | uber.com | 8 | 0 | 0 | 5 | 3 | Uber |
 | udemy.com | 8 | 0 | 0 | 5 | 3 | Udemy |
+| united.com | 10 | 0 | 0 | 6 | 4 | United Airlines |
 | upwork.com | 10 | 0 | 0 | 6 | 4 | Upwork |
 | video.google.com | 12 | 0 | 0 | 6 | 6 | Google |
 | vimeo.com | 11 | 0 | 0 | 6 | 5 | Vimeo |
