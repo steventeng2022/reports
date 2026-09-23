@@ -1,0 +1,119 @@
+# Security Audit Report — cloud.google.com
+
+## Scope and authorization
+
+| Item | Value |
+|---|---|
+| Target | https://cloud.google.com/ |
+| Bug bounty program | [Google](https://www.google.com/about/appsecurity/reward-program/) |
+| Listed scope domain | google.com |
+| Test date | 2026-09-23 21:19 UTC |
+| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+
+## Summary
+
+Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
+
+| # | Severity | ID | Finding | CWE |
+|---|---|---|---|---|
+| 1 | low | C1 | Cookie without Secure flag | CWE-614 |
+| 2 | low | C1 | Cookie without Secure flag | CWE-614 |
+| 3 | low | H1 | Missing HSTS header | CWE-319 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H6 | Server technology disclosure | CWE-200 |
+| 8 | info | H6 | Server technology disclosure | CWE-200 |
+| 9 | info | P1 | SPA fallback 200 on /.git/config (no git data exposed) | CWE-1038 |
+| 10 | info | P2 | SPA fallback 200 on /.env (no env data exposed) | CWE-1038 |
+
+## Detailed findings
+
+### 1. [LOW] Cookie without Secure flag (`C1`)
+
+- **CWE:** CWE-614
+- **Detail:** Cookie NID lacks Secure attribute; transmitted over HTTP.
+- **Context:** http response
+- **Recommendation:** Add the Secure attribute to the cookie.
+
+### 2. [LOW] Cookie without Secure flag (`C1`)
+
+- **CWE:** CWE-614
+- **Detail:** Cookie NID lacks Secure attribute; transmitted over HTTP.
+- **Recommendation:** Add the Secure attribute to the cookie.
+
+### 3. [LOW] Missing HSTS header (`H1`)
+
+- **CWE:** CWE-319
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** http response
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+
+### 4. [LOW] Missing CSP header (`H2`)
+
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** http response
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 5. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** http response
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+
+### 6. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+
+### 7. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Server header reveals: ESF
+- **Context:** http response
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 8. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Server header reveals: ESF
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 9. [INFO] SPA fallback 200 on /.git/config (no git data exposed) (`P1`)
+
+- **CWE:** CWE-1038
+- **Detail:** Verified: GET https://cloud.google.com/.git/config returns 200 with text/html (server ESF); the body is the standard Google Cloud HTML page with base href https://cloud.google.com/ and ppConfig script, not git metadata. Inconsistent status codes for a missing path; no repository data exposed.
+- **Recommendation:** Review and remediate per CWE guidance.
+
+### 10. [INFO] SPA fallback 200 on /.env (no env data exposed) (`P2`)
+
+- **CWE:** CWE-1038
+- **Detail:** Verified: GET https://cloud.google.com/.env returns 200 with text/html (server ESF); body is the same application HTML fallback as /.git/config, not an env file. No environment data exposed.
+- **Recommendation:** Review and remediate per CWE guidance.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "http_status": 301,
+  "http_redirect_to": "https://cloud.google.com/",
+  "https_status": 200,
+  "content_type": "text/html; charset=utf-8",
+  "title": "AI and Cloud Computing Services | Google Cloud",
+  "path_gitconfig": 200,
+  "path_envfile": 200,
+  "path_securitytxt": 200,
+  "security_txt_found": true,
+  "path_robots": 200,
+  "robots_found": true
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
+- No credentials were used; no state was modified on the target.
+- Findings are reported against the public program scope; submission through the program tracker is pending.
