@@ -2,7 +2,7 @@
 
 Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the intersection of the provided top-websites list and active public bug-bounty program scopes.
 
-**Total findings across all sites: 1643**
+**Total findings across all sites: 1860**
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -23,6 +23,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | amazon.com.br | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.com | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.es | 12 | 0 | 0 | 8 | 4 | Amazon |
+| amazon.fr | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.it | 12 | 0 | 0 | 8 | 4 | Amazon |
 | api.whatsapp.com | 11 | 0 | 1 | 5 | 5 | Facebook |
 | apis.google.com | 12 | 0 | 1 | 6 | 5 | Google |
@@ -30,6 +31,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | apps.facebook.com | 10 | 0 | 0 | 7 | 3 | Facebook |
 | artsandculture.google.com | 10 | 0 | 0 | 5 | 5 | Google |
 | aws.amazon.com | 12 | 0 | 0 | 8 | 4 | Amazon |
+| azure.microsoft.com | 10 | 0 | 0 | 7 | 3 | Microsoft Online Services |
 | baidu.com | 10 | 0 | 0 | 8 | 2 | Baidu |
 | bandcamp.com | 13 | 0 | 0 | 8 | 5 | Epic Games |
 | blockchain.info | 9 | 0 | 0 | 5 | 4 | Blockchain |
@@ -40,19 +42,23 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | business.facebook.com | 11 | 0 | 0 | 7 | 4 | Facebook |
 | calendar.google.com | 11 | 0 | 1 | 6 | 4 | Google |
 | cdn.shopify.com | 11 | 0 | 1 | 5 | 5 | Shopify |
+| cdnjs.cloudflare.com | 10 | 0 | 1 | 5 | 4 | Cloudflare |
 | chrome.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | cisco.com | 10 | 0 | 0 | 8 | 2 | Cisco Meraki |
 | cloudflare.com | 12 | 0 | 0 | 8 | 4 | Cloudflare |
 | code.google.com | 10 | 0 | 1 | 4 | 5 | Google |
+| coinbase.com | 11 | 0 | 0 | 7 | 4 | Coinbase |
 | cse.google.com | 10 | 0 | 0 | 5 | 5 | Google |
 | dashlane.com | 10 | 0 | 0 | 6 | 4 | Dashlane |
 | de-de.facebook.com | 8 | 0 | 0 | 4 | 4 | Facebook |
+| deezer.com | 12 | 0 | 0 | 8 | 4 | Deezer |
 | desktop.github.com | 13 | 0 | 0 | 8 | 5 | GitHub |
 | developer.apple.com | 8 | 0 | 0 | 4 | 4 | Apple |
 | developers.facebook.com | 8 | 0 | 0 | 4 | 4 | Facebook |
 | developers.google.com | 9 | 0 | 0 | 4 | 5 | Google |
 | dl.dropbox.com | 12 | 0 | 0 | 7 | 5 | DropBox |
 | docs.google.com | 9 | 0 | 0 | 4 | 5 | Google |
+| docs.microsoft.com | 10 | 0 | 0 | 6 | 4 | Microsoft Online Services |
 | download.microsoft.com | 13 | 0 | 0 | 8 | 5 | Microsoft Online Services |
 | drive.google.com | 9 | 0 | 0 | 4 | 5 | Google |
 | dropbox.com | 11 | 0 | 0 | 7 | 4 | DropBox |
@@ -61,8 +67,12 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | engadget.com | 12 | 0 | 0 | 8 | 4 | Yahoo! |
 | etsy.com | 12 | 0 | 0 | 8 | 4 | Etsy |
 | events.google.com | 11 | 0 | 0 | 6 | 5 | Google |
+| facebook.com | 10 | 0 | 0 | 7 | 3 | Facebook |
 | families.google.com | 9 | 0 | 0 | 4 | 5 | Google |
+| fb.com | 10 | 0 | 0 | 7 | 3 | Facebook |
+| fb.me | 10 | 0 | 0 | 7 | 3 | Facebook |
 | finance.yahoo.com | 2 | 0 | 0 | 1 | 1 | Yahoo! |
+| flickr.com | 9 | 0 | 1 | 6 | 2 | Flickr |
 | flow.microsoft.com | 10 | 0 | 0 | 8 | 2 | Microsoft Online Services |
 | fonts.google.com | 10 | 0 | 0 | 5 | 5 | Google |
 | forms.office.com | 10 | 0 | 0 | 7 | 3 | Microsoft Online Services |
@@ -73,6 +83,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | google.com | 11 | 0 | 0 | 7 | 4 | Google |
 | gsuite.google.com | 10 | 0 | 0 | 6 | 4 | Google |
 | hangouts.google.com | 10 | 0 | 0 | 6 | 4 | Google |
+| help.apple.com | 9 | 0 | 1 | 5 | 3 | Apple |
 | i.imgur.com | 11 | 0 | 0 | 7 | 4 | Imgur |
 | i.redd.it | 14 | 0 | 0 | 9 | 5 | Reddit |
 | img.youtube.com | 12 | 0 | 0 | 7 | 5 | Google |
@@ -84,6 +95,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | l.facebook.com | 11 | 0 | 0 | 8 | 3 | Facebook |
 | line.me | 11 | 0 | 0 | 7 | 4 | LINE |
 | livestream.com | 13 | 0 | 0 | 9 | 4 | Livestream |
+| logitech.com | 12 | 0 | 0 | 8 | 4 | Logitech |
 | m.youtube.com | 6 | 0 | 0 | 2 | 4 | Google |
 | mail.google.com | 6 | 0 | 0 | 2 | 4 | Google |
 | maps.google.com | 16 | 0 | 0 | 10 | 6 | Google |
@@ -92,6 +104,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | messenger.com | 10 | 0 | 0 | 7 | 3 | Facebook |
 | microsoft.com | 9 | 0 | 0 | 7 | 2 | Microsoft Online Services |
 | mobile.twitter.com | 16 | 0 | 1 | 11 | 4 | Twitter |
+| money.yandex.ru | 1 | 0 | 0 | 1 | 0 | Yandex |
 | mp.weixin.qq.com | 10 | 0 | 0 | 7 | 3 | Tencent |
 | msdn.microsoft.com | 8 | 0 | 0 | 6 | 2 | Microsoft Online Services |
 | music.apple.com | 12 | 0 | 0 | 8 | 4 | Apple |
@@ -100,6 +113,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | newegg.com | 11 | 0 | 0 | 7 | 4 | Newegg |
 | news.google.com | 9 | 0 | 0 | 5 | 4 | Google |
 | news.yahoo.com | 7 | 0 | 0 | 5 | 2 | Yahoo! |
+| opera.com | 11 | 0 | 0 | 7 | 4 | Opera Public Bug Bounty |
 | ow.ly | 6 | 0 | 0 | 5 | 1 | Hootsuite |
 | patents.google.com | 7 | 0 | 0 | 4 | 3 | Google |
 | paypal.com | 10 | 0 | 0 | 6 | 4 | PayPal |
@@ -109,6 +123,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | pexels.com | 13 | 0 | 0 | 9 | 4 | Pexels |
 | photos.google.com | 9 | 0 | 0 | 4 | 5 | Google |
 | picasaweb.google.com | 11 | 0 | 0 | 6 | 5 | Google |
+| pinterest.com | 9 | 0 | 0 | 7 | 2 | Pinterest |
 | pipes.yahoo.com | 1 | 0 | 0 | 1 | 0 | Yahoo! |
 | pixabay.com | 9 | 0 | 0 | 6 | 3 | Pixabay |
 | pixiv.net | 11 | 0 | 0 | 7 | 4 | Pixiv |
@@ -119,12 +134,14 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | policies.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | postmates.com | 14 | 0 | 0 | 9 | 5 | Postmates |
 | privacy.microsoft.com | 9 | 0 | 0 | 7 | 2 | Microsoft Online Services |
+| productforums.google.com | 10 | 0 | 0 | 9 | 1 | Google |
 | profiles.google.com | 13 | 0 | 1 | 6 | 6 | Google |
 | quora.com | 10 | 0 | 0 | 6 | 4 | Quora |
 | reddit.com | 7 | 0 | 0 | 3 | 4 | Reddit |
 | researchgate.net | 11 | 0 | 0 | 7 | 4 | Research Gate |
 | samsung.com | 12 | 0 | 0 | 8 | 4 | Samsung TV |
 | search.google.com | 10 | 0 | 0 | 6 | 4 | Google |
+| services.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | shopify.com | 10 | 0 | 0 | 6 | 4 | Shopify |
 | sites.google.com | 8 | 0 | 0 | 4 | 4 | Google |
 | sketchfab.com | 10 | 0 | 0 | 6 | 4 | Epic Games |
@@ -134,12 +151,14 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | sophos.com | 12 | 0 | 0 | 10 | 2 | Sophos |
 | soundcloud.com | 11 | 0 | 0 | 8 | 3 | SoundCloud |
 | spotify.com | 10 | 0 | 0 | 6 | 4 | Spotify |
+| squareup.com | 15 | 0 | 0 | 10 | 5 | Square |
 | steamcommunity.com | 11 | 0 | 0 | 7 | 4 | Valve Software |
 | store.steampowered.com | 11 | 0 | 0 | 7 | 4 | Valve Software |
 | support.apple.com | 8 | 0 | 0 | 4 | 4 | Apple |
 | support.cloudflare.com | 13 | 0 | 0 | 9 | 4 | Cloudflare |
 | support.google.com | 9 | 0 | 0 | 5 | 4 | Google |
 | support.microsoft.com | 9 | 0 | 0 | 6 | 3 | Microsoft Online Services |
+| support.office.com | 12 | 0 | 0 | 9 | 3 | Microsoft Online Services |
 | t.qq.com | 1 | 0 | 0 | 1 | 0 | Tencent |
 | techcrunch.com | 9 | 0 | 0 | 4 | 5 | Yahoo! |
 | technet.microsoft.com | 8 | 0 | 0 | 6 | 2 | Microsoft Online Services |
@@ -162,6 +181,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | windows.microsoft.com | 12 | 0 | 0 | 8 | 4 | Microsoft Online Services |
 | yahoo.com | 7 | 0 | 0 | 4 | 3 | Yahoo! |
 | yandex.com | 25 | 0 | 0 | 23 | 2 | Yandex |
+| yandex.ru | 23 | 0 | 0 | 21 | 2 | Yandex |
 | yelp.com | 11 | 0 | 0 | 7 | 4 | Yelp |
 | youtube.com | 6 | 0 | 0 | 2 | 4 | Google |
 | zen.yandex.ru | 13 | 0 | 0 | 11 | 2 | Yandex |
