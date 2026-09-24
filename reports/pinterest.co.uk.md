@@ -1,4 +1,4 @@
-# Security Audit Report - pinterest.co.uk
+# Security Audit Report — pinterest.co.uk
 
 ## Scope and authorization
 
@@ -7,188 +7,87 @@
 | Target | https://pinterest.co.uk/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | pinterest.co.uk |
-| Test date | 2026-09-24 09:36 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 7, Info: 2)
+Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
+| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 4 | info | C4 | Cookies scoped to parent/wildcard domain | CWE-200 |
+| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 7 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 10 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 11 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://pinterest.co.uk/ without HttpOnly: csrftoken. Readable by client-side script.
+
+### 2. [LOW] Cookies set without Secure flag (`C2`)
+
+- **CWE:** CWE-614
+- **Detail:** Set on https://pinterest.co.uk/ without Secure: _routing_id. Will be transmitted over HTTP if the site is reachable cleartext.
+
+### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://pinterest.co.uk/ without SameSite=Lax/Strict: _auth, _pinterest_sess, _routing_id. Cross-site request cookies.
+
+### 4. [INFO] Cookies scoped to parent/wildcard domain (`C4`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookies set with domain beyond pinterest.co.uk: .pinterest.com.
+
+### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for pinterest.co.uk lists 95 name(s) besides the scope host: *.pinimg.com, *.pinterest.at, *.pinterest.be, *.pinterest.ca, *.pinterest.ch, *.pinterest.cl, *.pinterest.co, *.pinterest.co.at...
+
+### 6. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://pinterest.co.uk/; browser features (camera, mic, geolocation) unrestricted.
+
+### 7. [INFO] sitemap.xml discloses URL inventory (`M1`)
+
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://pinterest.co.uk/ lists 0 URLs.
+
+### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** http://pinterest.co.uk/ -> https://pinterest.co.uk/ (positive check).
 
-### 2. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 3. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 6. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 7. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** robots.txt on https://pinterest.co.uk/ exposes 218 unique Disallow path(s) (/, /*/*/*/_tools/*, /*/*/*/more_ideas/, /*/*/_tools/*, /*/*/activity/*) and 36 sitemap reference(s)
 
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 10. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** security.txt present on https://pinterest.co.uk (308861 bytes)
 
-## Aggressive probe campaign
+### 11. [INFO] HTTPS root redirects to different host (`X3`)
 
-**Stage 1 - injection/reflection probes (28 requests):**
+- **CWE:** CWE-200
+- **Detail:** https://pinterest.co.uk/ redirects to https://uk.pinterest.com/.
 
-- no stage-1 probe hits (all probes negative)
+## Reproduction notes
 
-**Stage 2 - aggressive probe suite v2 (99 requests):**
-
-- no stage-2 probe hits (all probes negative)
-
-Stage-2 probe log (observed responses):
-- timing base=110ms id=113 search=110
-- boolean b=308/255 t1=308/271 t2=308/271
-- graphql /graphql -> 308
-- graphql /api/graphql -> 308
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 308
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 308
-- trav2 /%2e%2e%00.html -> 308
-- trav2 /static//../../../../../../etc/passwd -> 308
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 308
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 308
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 308
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 308
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 308
-- apicors /api -> 308
-- apicors /api/v1 -> 308
-- apicors /graphql -> 308
-- apicors /rest -> 308
-- apicors /v1 -> 308
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_status": 308,
-  "http_redirect_to": "https://pinterest.co.uk/",
-  "https_status": 308,
-  "content_type": "text/html",
-  "title": "Permanent Redirect",
-  "path_gitconfig": 308,
-  "path_envfile": 308,
-  "path_securitytxt": 308,
-  "path_robots": 308,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 308",
-    "sqli /?id=1%27+OR+1=1-- -> 308",
-    "sqli /?q=%27 -> 308",
-    "sqli /products?filter=%27 -> 308",
-    "sqli /?p=1;-- -> 308",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 308",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 308",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 308",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 308",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 308",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 308",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 308",
-    "trav /static/../../../../../../../../etc/passwd -> 308",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 308",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 308",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 308",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 308",
-    "host no reflection -> 421",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 308"
-  ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=110ms id=113 search=110",
-    "boolean b=308/255 t1=308/271 t2=308/271",
-    "graphql /graphql -> 308",
-    "graphql /api/graphql -> 308",
-    "sweep no hits over 26 paths",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 308",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 308",
-    "trav2 /%2e%2e%00.html -> 308",
-    "trav2 /static//../../../../../../etc/passwd -> 308",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 308",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 308",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 308",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 308",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 308",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 308",
-    "apicors /api/v1 -> 308",
-    "apicors /graphql -> 308",
-    "apicors /rest -> 308",
-    "apicors /v1 -> 308"
-  ]
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent; each site was probed with a two-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection, XSS, traversal, CORS and redirect probes, up to ~100 requests per site).
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://pinterest.co.uk/ final status: 200 (final URL https://uk.pinterest.com/).
+- http://pinterest.co.uk/ initial status: 308.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2027-02-26T23:59:59+00:00.

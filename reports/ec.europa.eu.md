@@ -6,121 +6,76 @@
 |---|---|
 | Target | https://ec.europa.eu/ |
 | Bug bounty program | [European Central Bank](https://www.ecb.europa.eu/services/responsible-disclosure/html/index.nl.html) |
-| Listed scope domain | europa.eu |
-| Test date | 2026-09-24 00:04 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | ec.europa.eu |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 8, Info: 3)
+Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | low | H4 | No clickjacking protection | CWE-1023 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 3 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 4 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 5 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 6 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 7 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 8 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 9 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [LOW] Missing Content-Security-Policy (`H3`)
+
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://ec.europa.eu/; no defense-in-depth against XSS/content injection.
+
+### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for ec.europa.eu lists 1 name(s) besides the scope host: *.ec.europa.eu
+
+### 3. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header on https://ec.europa.eu/; full URL (incl. query strings) is sent as referrer by default.
+
+### 4. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://ec.europa.eu/; browser features (camera, mic, geolocation) unrestricted.
+
+### 5. [INFO] sitemap.xml discloses URL inventory (`M1`)
+
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://ec.europa.eu/ lists 4 URLs.
+
+### 6. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** http://ec.europa.eu/ -> https://ec.europa.eu/ (positive check).
 
-### 2. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 3. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 4. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 6. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 7. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 8. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** robots.txt on https://ec.europa.eu/ exposes 142 unique Disallow path(s) (/archives/, /cai/*, /cgi-bin/, /clima/ets/, /clima/sites/registry/)
 
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 8. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** security.txt present on https://ec.europa.eu (1 bytes)
 
-### 11. [INFO] Server technology disclosure (`H6`)
+### 9. [INFO] HTTPS root redirects to different host (`X3`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: Europa
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** https://ec.europa.eu/ redirects to https://commission.europa.eu/select-language?destination=/node/1.
 
-## Evidence (raw response observations)
+## Reproduction notes
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://ec.europa.eu/",
-  "https_status": 301,
-  "content_type": "",
-  "title": "Sorry - 79592411",
-  "path_gitconfig": 404,
-  "path_envfile": 404,
-  "path_securitytxt": 200,
-  "security_txt_found": true,
-  "path_robots": 200,
-  "robots_found": true
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://ec.europa.eu/ final status: 200 (final URL https://commission.europa.eu/select-language?destination=/node/1).
+- http://ec.europa.eu/ initial status: 301.
+- Certificate: GlobalSign nv-sa GlobalSign Atlas R46 OV TLS CA 2026 Q3, valid until 2027-02-15T08:31:04+00:00.

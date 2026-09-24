@@ -7,126 +7,105 @@
 | Target | https://khanacademy.org/ |
 | Bug bounty program | [Khan Academy](https://hackerone.com/khanacademy) |
 | Listed scope domain | khanacademy.org |
-| Test date | 2026-09-24 00:53 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 8, Info: 4)
+Total findings: **14** (High: 0, Medium: 0, Low: 6, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | low | H4 | No clickjacking protection | CWE-1023 |
+| 1 | low | C2 | Cookies set without Secure flag | CWE-614 |
+| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 3 | low | H1 | Missing HSTS header | CWE-319 |
+| 4 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 5 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 6 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 7 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 8 | info | D2 | Possible dangling subdomain | CWE-1382 |
 | 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H6 | Server technology disclosure | CWE-200 |
-| 12 | info | H6 | Server technology disclosure | CWE-200 |
+| 10 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 11 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 12 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 13 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 14 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [LOW] Cookies set without Secure flag (`C2`)
+
+- **CWE:** CWE-614
+- **Detail:** Set on https://khanacademy.org/ without Secure: _fs_ch_st_FSBmUei20MqUiJb9. Will be transmitted over HTTP if the site is reachable cleartext.
+
+### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://khanacademy.org/ without SameSite=Lax/Strict: _fs_ch_st_FSBmUei20MqUiJb9. Cross-site request cookies.
+
+### 3. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** No Strict-Transport-Security header on https://khanacademy.org/. Clients may connect over plain HTTP on first visit.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 4. [LOW] Missing Content-Security-Policy (`H3`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://khanacademy.org/; no defense-in-depth against XSS/content injection.
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 5. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://khanacademy.org/; browsers may MIME-sniff responses.
 
-### 4. [LOW] Missing CSP header (`H2`)
+### 6. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://khanacademy.org/; page may be rendered in a foreign frame.
 
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
+### 7. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for khanacademy.org lists 34 name(s) besides the scope host: camp.khankids.org, conacademy.com, conacademy.org, es.pixarinabox.com, es.pixarinabox.org, kahnacademy.com, kahnacademy.org, kasandbox.org... (1 no longer resolve)
 
-### 6. [LOW] Missing X-Content-Type-Options (`H3`)
+### 8. [INFO] Possible dangling subdomain (`D2`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 7. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 8. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `conacademy.org` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
 ### 9. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://khanacademy.org/; full URL (incl. query strings) is sent as referrer by default.
 
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 10. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://khanacademy.org/; browser features (camera, mic, geolocation) unrestricted.
 
-### 11. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: CloudFront
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 12. [INFO] Server technology disclosure (`H6`)
+### 11. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: CloudFront
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** sitemap.xml on https://khanacademy.org/ lists 0 URLs.
 
-## Evidence (raw response observations)
+### 12. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-```json
-{
-  "http_status": 308,
-  "http_redirect_to": "https://www.khanacademy.org/",
-  "https_status": 308,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 308,
-  "path_envfile": 308,
-  "path_securitytxt": 308,
-  "path_robots": 308
-}
-```
+- **CWE:** CWE-319
+- **Detail:** http://khanacademy.org/ -> https://www.khanacademy.org/ (positive check).
 
-## Notes
+### 13. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://khanacademy.org/ exposes 0 unique Disallow path(s)
+
+### 14. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+
+- **CWE:** CWE-200
+- **Detail:** security.txt present on https://khanacademy.org (220375 bytes)
+
+## Reproduction notes
+
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://khanacademy.org/ final status: 200 (final URL https://www.khanacademy.org/).
+- http://khanacademy.org/ initial status: 308.
+- Certificate: Amazon Amazon RSA 2048 M01, valid until 2026-12-10T23:59:59+00:00.

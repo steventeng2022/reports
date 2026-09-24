@@ -7,135 +7,81 @@
 | Target | https://airtable.com/ |
 | Bug bounty program | [Airtable](https://hackerone.com/airtable) |
 | Listed scope domain | airtable.com |
-| Test date | 2026-09-23 19:25 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 10, Info: 3)
+Total findings: **10** (High: 0, Medium: 0, Low: 5, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 2 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 3 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 4 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 5 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 6 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 7 | low | H1 | Missing HSTS header | CWE-319 |
-| 8 | low | H2 | Missing CSP header | CWE-1021 |
-| 9 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 10 | low | H4 | No clickjacking protection | CWE-1023 |
-| 11 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 12 | info | H6 | Server technology disclosure | CWE-200 |
-| 13 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 3 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 4 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 5 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 6 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 7 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 10 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie AWSALBTG lacks Secure attribute; transmitted over HTTP.
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 2. [LOW] Cookie without HttpOnly flag (`C2`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie AWSALBTG lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://airtable.com/ without HttpOnly: marketing-homepage-e4-segment. Readable by client-side script.
 
-### 3. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie AWSALBTGCORS lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 4. [LOW] Cookie without HttpOnly flag (`C2`)
+### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie brw lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://airtable.com/ without SameSite=Lax/Strict: googleOneTapNonce. Cross-site request cookies.
 
-### 5. [LOW] Cookie without HttpOnly flag (`C2`)
+### 3. [LOW] Missing Content-Security-Policy (`H3`)
 
-- **CWE:** CWE-1004
-- **Detail:** Cookie brwConsent lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://airtable.com/; no defense-in-depth against XSS/content injection.
 
-### 6. [LOW] Cookie without HttpOnly flag (`C2`)
+### 4. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
 
-- **CWE:** CWE-1004
-- **Detail:** Cookie login-status-p lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://airtable.com/; browsers may MIME-sniff responses.
 
-### 7. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 8. [LOW] Missing CSP header (`H2`)
+### 5. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://airtable.com/; page may be rendered in a foreign frame.
 
-### 9. [LOW] Missing X-Content-Type-Options (`H3`)
+### 6. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for airtable.com lists 1 name(s) besides the scope host: app.airtable.com
 
-### 10. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 11. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** sitemap.xml on https://airtable.com/ lists 1386 URLs.
 
-### 12. [INFO] Server technology disclosure (`H6`)
+### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: CloudFront
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **CWE:** CWE-319
+- **Detail:** http://airtable.com/ -> https://airtable.com/ (positive check).
 
-### 13. [INFO] Server technology disclosure (`H6`)
+### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: Tengine
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** robots.txt on https://airtable.com/ exposes 17 unique Disallow path(s) (/*?referralCode=*, /404, /500, /?try=*, /?utm_source=*) and 1 sitemap reference(s)
 
-## Evidence (raw response observations)
+### 10. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://airtable.com/",
-  "https_status": 301,
-  "content_type": "text/plain; charset=utf-8",
-  "title": "",
-  "path_gitconfig": 404,
-  "path_envfile": 404,
-  "path_securitytxt": 200,
-  "security_txt_found": true,
-  "path_robots": 200,
-  "robots_found": true
-}
-```
+- **CWE:** CWE-200
+- **Detail:** security.txt present on https://airtable.com (311 bytes); contact: security@airtable.com
 
-## Notes
+## Reproduction notes
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://airtable.com/ final status: 200 (final URL https://www.airtable.com/).
+- http://airtable.com/ initial status: 301.
+- Certificate: Amazon Amazon RSA 2048 M04, valid until 2027-01-26T23:59:59+00:00.

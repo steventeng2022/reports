@@ -7,126 +7,75 @@
 | Target | https://evernote.com/ |
 | Bug bounty program | [Evernote](https://hackerone.com/evernote) |
 | Listed scope domain | evernote.com |
-| Test date | 2026-09-24 00:05 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 9, Info: 3)
+Total findings: **9** (High: 0, Medium: 0, Low: 4, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 2 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 3 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 4 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 5 | low | H1 | Missing HSTS header | CWE-319 |
-| 6 | low | H1 | Missing HSTS header | CWE-319 |
-| 7 | low | H2 | Missing CSP header | CWE-1021 |
-| 8 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 9 | low | H4 | No clickjacking protection | CWE-1023 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H7 | X-Powered-By disclosure | CWE-200 |
-| 12 | info | P3 | Missing security.txt | CWE-1038 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
+| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 4 | low | H1 | Missing HSTS header | CWE-319 |
+| 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 6 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 7 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 8 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 9 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie NEXT_LOCALE lacks Secure attribute; transmitted over HTTP.
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 2. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie clientGeoLocation lacks Secure attribute; transmitted over HTTP.
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 3. [LOW] Cookie without HttpOnly flag (`C2`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie NEXT_LOCALE lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://evernote.com/ without HttpOnly: clientGeoLocation. Readable by client-side script.
 
-### 4. [LOW] Cookie without HttpOnly flag (`C2`)
+### 2. [LOW] Cookies set without Secure flag (`C2`)
+
+- **CWE:** CWE-614
+- **Detail:** Set on https://evernote.com/ without Secure: clientGeoLocation. Will be transmitted over HTTP if the site is reachable cleartext.
+
+### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie clientGeoLocation lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://evernote.com/ without SameSite=Lax/Strict: clientGeoLocation. Cross-site request cookies.
 
-### 5. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 6. [LOW] Missing HSTS header (`H1`)
+### 4. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** No Strict-Transport-Security header on https://evernote.com/. Clients may connect over plain HTTP on first visit.
 
-### 7. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 8. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 9. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 5. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://evernote.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 11. [INFO] X-Powered-By disclosure (`H7`)
+### 6. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
 - **CWE:** CWE-200
-- **Detail:** X-Powered-By: Next.js
-- **Recommendation:** Remove the X-Powered-By header.
+- **Detail:** sitemap.xml on https://evernote.com/ lists 216 URLs.
 
-### 12. [INFO] Missing security.txt (`P3`)
+### 7. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-1038
-- **Detail:** No .well-known/security.txt found (RFC 9116).
-- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+- **CWE:** CWE-319
+- **Detail:** http://evernote.com/ -> https://evernote.com:443/ (positive check).
 
-## Evidence (raw response observations)
+### 8. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://evernote.com:443/",
-  "https_status": 200,
-  "content_type": "text/html; charset=utf-8",
-  "title": "Best Note Taking App - Organize Your Notes with Evernote",
-  "path_gitconfig": 404,
-  "path_envfile": 404,
-  "path_securitytxt": 404,
-  "path_robots": 200,
-  "robots_found": true
-}
-```
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://evernote.com/ exposes 1 unique Disallow path(s) (/download-evernote/) and 1 sitemap reference(s)
 
-## Notes
+### 9. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on evernote.com.
+
+## Reproduction notes
+
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://evernote.com/ final status: 200 (final URL https://evernote.com/).
+- http://evernote.com/ initial status: 301.
+- Certificate: Google Trust Services WR3, valid until 2026-11-09T22:58:54+00:00.

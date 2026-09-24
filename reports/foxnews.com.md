@@ -7,150 +7,111 @@
 | Target | https://foxnews.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | foxnews.com |
-| Test date | 2026-09-24 05:27 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 7, Info: 4)
+Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
-| 11 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 2 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 3 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 5 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 7 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 8 | info | H2 | Short HSTS max-age | CWE-319 |
+| 9 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 10 | info | H2c | HSTS not preloaded | CWE-319 |
+| 11 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 12 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 13 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 14 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 15 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [LOW] Missing Content-Security-Policy (`H3`)
+
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://foxnews.com/; no defense-in-depth against XSS/content injection.
+
+### 2. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
+
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://foxnews.com/; browsers may MIME-sniff responses.
+
+### 3. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+
+- **CWE:** CWE-1021
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://foxnews.com/; page may be rendered in a foreign frame.
+
+### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for foxnews.com lists 42 name(s) besides the scope host: *.fbnstatic.com, *.fncstatic.com, *.foxbusiness.com, *.foxnews.com, *.foxnewsinternational.com, *.foxnewsradio.com, affiliates.radio.foxnews.com, ak.cuts.foxnewsradio.com... (9 no longer resolve)
+
+### 5. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `beta.video.latino.foxnews.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 6. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `beta.video.magazine.foxnews.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 7. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `hp.cms.foxnews.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 8. [INFO] Short HSTS max-age (`H2`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** HSTS max-age=300 (< 1 year): `max-age=300`.
 
-### 2. [LOW] Missing CSP header (`H2`)
+### 9. [INFO] HSTS without includeSubDomains (`H2b`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-319
+- **Detail:** `max-age=300` does not cover subdomains.
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 10. [INFO] HSTS not preloaded (`H2c`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-319
+- **Detail:** `max-age=300` lacks the preload directive.
 
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 6. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 7. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 11. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://foxnews.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 12. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** sitemap.xml on https://foxnews.com/ lists 316 URLs.
 
-### 10. [INFO] Server technology disclosure (`H6`)
+### 13. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: AkamaiGHost
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **CWE:** CWE-319
+- **Detail:** http://foxnews.com/ -> https://foxnews.com/ (positive check).
 
-### 11. [INFO] Server technology disclosure (`H6`)
+### 14. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: AkamaiGHost
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** robots.txt on https://foxnews.com/ exposes 7 unique Disallow path(s) (/api/article-search, /printer_friendly_story/, /printer_friendly_wires/, /search-results/, /video-search/) and 2 sitemap reference(s)
 
-## Evidence (raw response observations)
+### 15. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://foxnews.com/",
-  "https_status": 301,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 301,
-  "path_envfile": 301,
-  "path_securitytxt": 301,
-  "path_robots": 301,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 301",
-    "sqli /?id=1%27+OR+1=1-- -> 301",
-    "sqli /?q=%27 -> 301",
-    "sqli /products?filter=%27 -> 301",
-    "sqli /?p=1;-- -> 301",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 301",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 301",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 301",
-    "trav /static/../../../../../../../../etc/passwd -> 301",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 301",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 301",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 301",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 301",
-    "host no reflection -> 400",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301"
-  ]
-}
-```
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on foxnews.com.
 
-## Notes
+## Reproduction notes
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://foxnews.com/ final status: 200 (final URL https://www.foxnews.com/).
+- http://foxnews.com/ initial status: 301.
+- Certificate: DigiCert Inc DigiCert Global G3 TLS ECC SHA384 2020 CA1, valid until 2027-02-24T23:59:59+00:00.

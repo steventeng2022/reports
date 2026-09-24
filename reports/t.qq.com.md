@@ -6,37 +6,31 @@
 |---|---|
 | Target | https://t.qq.com/ |
 | Bug bounty program | [Tencent](https://en.security.tencent.com) |
-| Listed scope domain | qq.com |
-| Test date | 2026-09-23 20:00 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | t.qq.com |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **1** (High: 0, Medium: 0, Low: 1, Info: 0)
+Total findings: **2** (High: 0, Medium: 0, Low: 0, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | R3 | DNS does not resolve (endpoint unreachable) | CWE-1032 |
+| 1 | info | D0 | Scope host does not resolve in DNS | CWE-200 |
+| 2 | info | X1 | HTTPS homepage unreachable | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] DNS does not resolve (endpoint unreachable) (`R3`)
+### 1. [INFO] Scope host does not resolve in DNS (`D0`)
 
-- **CWE:** CWE-1032
-- **Detail:** Verified: both http://t.qq.com and https://t.qq.com fail DNS resolution (curl: Could not resolve host; getaddrinfo ENOENT). The Tencent Weibo hostname no longer resolves (service wound down); endpoint fully unreachable.
-- **Recommendation:** Serve the site on port 80 with a redirect to HTTPS.
+- **CWE:** CWE-200
+- **Detail:** t.qq.com returned no A/AAAA record.
 
-## Evidence (raw response observations)
+### 2. [INFO] HTTPS homepage unreachable (`X1`)
 
-```json
-{
-  "http_error": "getaddrinfo ENOENT t.qq.com",
-  "https_error": "getaddrinfo ENOENT t.qq.com"
-}
-```
+- **CWE:** CWE-200
+- **Detail:** https://t.qq.com/: ConnectionError: HTTPSConnectionPool(host='t.qq.com', port=443): Max retries exceeded with url: / (Caused by NameResolutionError("HTTPSConnection(host='t.qq.com', port=443): Fai
 
-## Notes
+## Reproduction notes
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.

@@ -7,59 +7,51 @@
 | Target | https://periscope.tv/ |
 | Bug bounty program | [Twitter](https://hackerone.com/twitter) |
 | Listed scope domain | periscope.tv |
-| Test date | 2026-09-23 19:02 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **3** (High: 0, Medium: 0, Low: 3, Info: 0)
+Total findings: **5** (High: 0, Medium: 0, Low: 1, Info: 4)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H2 | Missing CSP header | CWE-1021 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 3 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 4 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 5 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing CSP header (`H2`)
+### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-1004
+- **Detail:** Set on https://periscope.tv/ without SameSite=Lax/Strict: pscp-csrf. Cross-site request cookies.
 
-### 2. [LOW] Missing CSP header (`H2`)
+### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-1382
+- **Detail:** Certificate for periscope.tv lists 1 name(s) besides the scope host: *.periscope.tv
 
-### 3. [LOW] Missing X-Content-Type-Options (`H3`)
+### 3. [INFO] Missing Permissions-Policy (`H7`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://periscope.tv/; browser features (camera, mic, geolocation) unrestricted.
 
-## Evidence (raw response observations)
+### 4. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://periscope.tv/",
-  "https_status": 302,
-  "content_type": "text/plain; charset=utf-8",
-  "title": "",
-  "path_gitconfig": 302,
-  "path_envfile": 302,
-  "path_securitytxt": 302,
-  "path_robots": 302
-}
-```
+- **CWE:** CWE-319
+- **Detail:** http://periscope.tv/ -> https://periscope.tv/ (positive check).
 
-## Notes
+### 5. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://periscope.tv/ exposes 4 unique Disallow path(s) (/android-attribution, /eula.html, /ios-attribution, /privacy.html)
+
+## Reproduction notes
+
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://periscope.tv/ final status: 200 (final URL https://www.periscope.tv/).
+- http://periscope.tv/ initial status: 301.
+- Certificate: Amazon Amazon RSA 2048 M01, valid until 2027-02-10T23:59:59+00:00.

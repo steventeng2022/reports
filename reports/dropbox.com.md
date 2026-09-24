@@ -7,119 +7,81 @@
 | Target | https://dropbox.com/ |
 | Bug bounty program | [DropBox](https://bugcrowd.com/dropbox) |
 | Listed scope domain | dropbox.com |
-| Test date | 2026-09-23 19:25 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 7, Info: 4)
+Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
-| 11 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
+| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 4 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
+| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 6 | info | H2c | HSTS not preloaded | CWE-319 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 10 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://dropbox.com/ without HttpOnly: __Host-js_csrf, locale. Readable by client-side script.
+
+### 2. [LOW] Cookies set without Secure flag (`C2`)
+
+- **CWE:** CWE-614
+- **Detail:** Set on https://dropbox.com/ without Secure: locale. Will be transmitted over HTTP if the site is reachable cleartext.
+
+### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://dropbox.com/ without SameSite=Lax/Strict: __Host-js_csrf, gvc, locale, t. Cross-site request cookies.
+
+### 4. [LOW] TLS certificate expiring within 30 days (`T3`)
+
+- **CWE:** CWE-298
+- **Detail:** Certificate expires 2026-10-14T23:59:59+00:00 (20 days left) for dropbox.com.
+
+### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for dropbox.com lists 2 name(s) besides the scope host: *.app.dropbox.com, *.dropbox.com
+
+### 6. [INFO] HSTS not preloaded (`H2c`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** `max-age=31536000; includeSubDomains` lacks the preload directive.
 
-### 2. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 3. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 6. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 7. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://dropbox.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **CWE:** CWE-319
+- **Detail:** http://dropbox.com/ -> https://dropbox.com/ (positive check).
 
-### 10. [INFO] Server technology disclosure (`H6`)
+### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: envoy
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** robots.txt on https://dropbox.com/ exposes 24 unique Disallow path(s) (/account*, /developers-v1, /developers/downloads/sdks/, /developers/whats_new, /downgrade*) and 1 sitemap reference(s)
 
-### 11. [INFO] Server technology disclosure (`H6`)
+### 10. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: envoy
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** security.txt present on https://dropbox.com (524 bytes); contact: bugbounty@dropbox.com
 
-## Evidence (raw response observations)
+## Reproduction notes
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://dropbox.com/",
-  "https_status": 301,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 301,
-  "path_envfile": 301,
-  "path_securitytxt": 301,
-  "path_robots": 301
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://dropbox.com/ final status: 200 (final URL https://www.dropbox.com/).
+- http://dropbox.com/ initial status: 301.
+- Certificate: DigiCert Inc DigiCert Global G3 TLS ECC SHA384 2020 CA1, valid until 2026-10-14T23:59:59+00:00.

@@ -7,84 +7,75 @@
 | Target | https://flipboard.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | flipboard.com |
-| Test date | 2026-09-24 13:47 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 1, Low: 10, Info: 0)
+Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 7 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 8 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 9 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 10 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 11 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
+| 3 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 6 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 7 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 8 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 9 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
-- **CWE:** CWE-538
-- **Detail:** robots.txt disallows /analytics/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
+- **CWE:** CWE-1004
+- **Detail:** Set on https://flipboard.com/ without SameSite=Lax/Strict: _csrf, webu_session. Cross-site request cookies.
 
 ### 2. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security on https://flipboard.com/
+- **Detail:** No Strict-Transport-Security header on https://flipboard.com/. Clients may connect over plain HTTP on first visit.
 
-### 3. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on https://flipboard.com/
-
-### 4. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 3. [LOW] Missing Content-Security-Policy (`H3`)
 
 - **CWE:** CWE-79
-- **Detail:** Parameter format on https://flipboard.com/ reflects input verbatim in body context; encoding boundary not confirmed.
+- **Detail:** No CSP header on https://flipboard.com/; no defense-in-depth against XSS/content injection.
 
-### 5. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://flipboard.com/search reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for flipboard.com lists 2 name(s) besides the scope host: *.flipboard.com, www.flipboard.com
 
-### 6. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 5. [INFO] Missing Permissions-Policy (`H7`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter query on https://flipboard.com/search reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://flipboard.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 7. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 6. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://flipboard.com/ reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://flipboard.com/ lists 2023 URLs.
 
-### 8. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 7. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://flipboard.com/search reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-319
+- **Detail:** http://flipboard.com/ -> https://flipboard.com/ (positive check).
 
-### 9. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 8. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter query on https://flipboard.com/search reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://flipboard.com/ exposes 19 unique Disallow path(s) (/, /.well-known/, /analytics/, /api/, /bookmarklet/) and 1 sitemap reference(s)
 
-### 10. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 9. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://flipboard.com/ reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 11. [LOW] Host header alters response (vhost behavior) (`I12`)
-
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: flipboard.com + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on flipboard.com.
 
 ## Reproduction notes
 
-- Scanned 2026-09-24 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://flipboard.com/ final status: 200 (final URL https://flipboard.com/).
+- http://flipboard.com/ initial status: 301.
+- Certificate: Amazon Amazon RSA 2048 M01, valid until 2027-03-11T23:59:59+00:00.

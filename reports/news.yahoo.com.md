@@ -6,90 +6,88 @@
 |---|---|
 | Target | https://news.yahoo.com/ |
 | Bug bounty program | [Yahoo!](https://app.intigriti.com/programs/yahoo/yahoobugbounty/detail) |
-| Listed scope domain | yahoo.com |
-| Test date | 2026-09-23 20:42 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | news.yahoo.com |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 0, Low: 5, Info: 2)
+Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H4 | No clickjacking protection | CWE-1023 |
-| 5 | low | H4 | No clickjacking protection | CWE-1023 |
-| 6 | info | H6 | Server technology disclosure | CWE-200 |
-| 7 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
+| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 3 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 4 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 5 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 6 | info | H2c | HSTS not preloaded | CWE-319 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 11 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [LOW] TLS certificate expiring within 30 days (`T3`)
+
+- **CWE:** CWE-298
+- **Detail:** Certificate expires 2026-10-07T23:59:59+00:00 (13 days left) for news.yahoo.com.
+
+### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for news.yahoo.com lists 84 name(s) besides the scope host: *.activity.yahoo.com, *.antispam.yahoo.com, *.api.fantasysports.yahoo.com, *.autos.yahoo.com, *.calendar.yahoo.com, *.celebrity.yahoo.com, *.commerce.yahoo.com, *.commsdata.api.yahoo.com... (2 no longer resolve)
+
+### 3. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `admetrics.uadapp.yahoo.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 4. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `api.digitalhomeservices.yahoo.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 5. [INFO] HSTS without includeSubDomains (`H2b`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** `max-age=31536000` does not cover subdomains.
 
-### 2. [LOW] Missing CSP header (`H2`)
+### 6. [INFO] HSTS not preloaded (`H2c`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000` lacks the preload directive.
 
-### 3. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 4. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 5. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 6. [INFO] Server technology disclosure (`H6`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: ATS
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** No Permissions-Policy header on https://news.yahoo.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 7. [INFO] Server technology disclosure (`H6`)
+### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://news.yahoo.com/ -> https://news.yahoo.com/ (positive check).
+
+### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: ATS
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** robots.txt on https://news.yahoo.com/ exposes 23 unique Disallow path(s) (*/articles/, /, /_multiremote, /_remote, /_td_api) and 3 sitemap reference(s)
 
-## Evidence (raw response observations)
+### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://news.yahoo.com/",
-  "https_status": 301,
-  "content_type": "text/html",
-  "title": "Document Has Moved",
-  "path_gitconfig": 301,
-  "path_envfile": 429,
-  "path_securitytxt": 301,
-  "path_robots": 301
-}
-```
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on news.yahoo.com.
 
-## Notes
+### 11. [INFO] HTTPS root redirects to different host (`X3`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** https://news.yahoo.com/ redirects to https://www.yahoo.com/news/.
+
+## Reproduction notes
+
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://news.yahoo.com/ final status: 200 (final URL https://www.yahoo.com/news/).
+- http://news.yahoo.com/ initial status: 301.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-07T23:59:59+00:00.

@@ -7,111 +7,81 @@
 | Target | https://paypal.com/ |
 | Bug bounty program | [PayPal](https://hackerone.com/paypal) |
 | Listed scope domain | paypal.com |
-| Test date | 2026-09-23 18:26 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 6, Info: 4)
+Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H2 | Missing CSP header | CWE-1021 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | low | H4 | No clickjacking protection | CWE-1023 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 3 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 4 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 5 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
 | 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H6 | Server technology disclosure | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 10 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing CSP header (`H2`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-1004
+- **Detail:** Set on https://paypal.com/ without HttpOnly: ts_c. Readable by client-side script.
 
-### 2. [LOW] Missing CSP header (`H2`)
+### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-1004
+- **Detail:** Set on https://paypal.com/ without SameSite=Lax/Strict: LANG, ts, ts_c. Cross-site request cookies.
 
-### 3. [LOW] Missing X-Content-Type-Options (`H3`)
+### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for paypal.com lists 101 name(s) besides the scope host: PAYPAL-DEUTSCHLAND.DE, PAYPAL-MARKETING.PL, PAYPAL.CO, PAYPAL.COM.MY, braintreepayments.com, buyindiaonline.com, cash2india.com, curv.cc... (5 no longer resolve)
 
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
+### 4. [INFO] Possible dangling subdomain (`D2`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `paypal-corp.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
-### 5. [LOW] No clickjacking protection (`H4`)
+### 5. [INFO] Possible dangling subdomain (`D2`)
 
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `paypal-experience.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
-### 6. [LOW] No clickjacking protection (`H4`)
+### 6. [INFO] Possible dangling subdomain (`D2`)
 
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `paypal-knowledge-test.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
 ### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://paypal.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **CWE:** CWE-319
+- **Detail:** http://paypal.com/ -> https://paypal.com/ (positive check).
 
-### 9. [INFO] Server technology disclosure (`H6`)
+### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: Varnish
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** robots.txt on https://paypal.com/ exposes 89 unique Disallow path(s) (/*?*cgi-bin=*, /*?*guestLogin=*, /*?*onboardData=*, /*?*payRequest=*, /*?*requestmoney=*) and 1 sitemap reference(s)
 
-### 10. [INFO] Server technology disclosure (`H6`)
+### 10. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: Varnish
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** security.txt present on https://paypal.com (351 bytes); contact: https://hackerone.com/paypal
 
-## Evidence (raw response observations)
+## Reproduction notes
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://paypal.com/",
-  "https_status": 301,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 301,
-  "path_envfile": 301,
-  "path_securitytxt": 301,
-  "path_robots": 301
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://paypal.com/ final status: 200 (final URL https://www.paypal.com/tw/home).
+- http://paypal.com/ initial status: 301.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-11-25T23:59:59+00:00.

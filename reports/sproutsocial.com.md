@@ -7,82 +7,75 @@
 | Target | https://sproutsocial.com/ |
 | Bug bounty program | [Sprout Social](https://bugcrowd.com/sproutsocial) |
 | Listed scope domain | sproutsocial.com |
-| Test date | 2026-09-24 00:53 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
+Total findings: **9** (High: 0, Medium: 0, Low: 0, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 3 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 4 | info | H6 | Server technology disclosure | CWE-200 |
-| 5 | info | H6 | Server technology disclosure | CWE-200 |
-| 6 | info | P3 | Missing security.txt | CWE-1038 |
+| 1 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 2 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 3 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 6 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 7 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 8 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 9 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for sproutsocial.com lists 2 name(s) besides the scope host: cdn.sproutsocial.com, www.sproutsocial.com (1 no longer resolve)
+
+### 2. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `cdn.sproutsocial.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 3. [INFO] HSTS without includeSubDomains (`H2b`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** `max-age=63072000; preload` does not cover subdomains.
 
-### 2. [INFO] Missing Referrer-Policy (`H5`)
+### 4. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://sproutsocial.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 3. [INFO] Missing Referrer-Policy (`H5`)
+### 5. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://sproutsocial.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 4. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: CloudFront
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 5. [INFO] Server technology disclosure (`H6`)
+### 6. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: AmazonS3
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** sitemap.xml on https://sproutsocial.com/ lists 1 URLs.
 
-### 6. [INFO] Missing security.txt (`P3`)
+### 7. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-1038
-- **Detail:** No .well-known/security.txt found (RFC 9116).
-- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+- **CWE:** CWE-319
+- **Detail:** http://sproutsocial.com/ -> https://sproutsocial.com/ (positive check).
 
-## Evidence (raw response observations)
+### 8. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://sproutsocial.com/",
-  "https_status": 200,
-  "content_type": "text/html",
-  "title": "Sprout Social: Social Media Management Tool",
-  "path_gitconfig": 404,
-  "path_envfile": 404,
-  "path_securitytxt": 404,
-  "path_robots": 200,
-  "robots_found": true
-}
-```
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://sproutsocial.com/ exposes 0 unique Disallow path(s) and 3 sitemap reference(s)
 
-## Notes
+### 9. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on sproutsocial.com.
+
+## Reproduction notes
+
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://sproutsocial.com/ final status: 200 (final URL https://sproutsocial.com/).
+- http://sproutsocial.com/ initial status: 301.
+- Certificate: Amazon Amazon RSA 2048 M04, valid until 2027-03-03T23:59:59+00:00.

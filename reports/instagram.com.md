@@ -7,112 +7,93 @@
 | Target | https://instagram.com/ |
 | Bug bounty program | [Facebook](https://www.facebook.com/whitehat) |
 | Listed scope domain | instagram.com |
-| Test date | 2026-09-23 20:01 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 7, Info: 3)
+Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 3 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
+| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 5 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 10 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 11 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 12 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://instagram.com/ without HttpOnly: csrftoken. Readable by client-side script.
+
+### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://instagram.com/ without SameSite=Lax/Strict: csrftoken, mid. Cross-site request cookies.
+
+### 3. [LOW] TLS certificate expiring within 30 days (`T3`)
+
+- **CWE:** CWE-298
+- **Detail:** Certificate expires 2026-10-02T23:59:59+00:00 (8 days left) for instagram.com.
+
+### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for instagram.com lists 5 name(s) besides the scope host: *.cdninstagram.com, *.igsonar.com, *.instagram.com, cdninstagram.com, igsonar.com (2 no longer resolve)
+
+### 5. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `cdninstagram.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 6. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `igsonar.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 7. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header on https://instagram.com/; full URL (incl. query strings) is sent as referrer by default.
+
+### 8. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://instagram.com/; browser features (camera, mic, geolocation) unrestricted.
+
+### 9. [INFO] sitemap.xml discloses URL inventory (`M1`)
+
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://instagram.com/ lists 0 URLs.
+
+### 10. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** http://instagram.com/ -> https://instagram.com/ (positive check).
 
-### 2. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 3. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 6. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 7. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 11. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** robots.txt on https://instagram.com/ exposes 0 unique Disallow path(s)
 
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 12. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** security.txt present on https://instagram.com (303517 bytes)
 
-### 10. [INFO] Server technology disclosure (`H6`)
+## Reproduction notes
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: proxygen-bolt
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://instagram.com/",
-  "https_status": 301,
-  "content_type": "text/html; charset=\"utf-8\"",
-  "title": "",
-  "path_gitconfig": 301,
-  "path_envfile": 301,
-  "path_securitytxt": 301,
-  "path_robots": 301
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://instagram.com/ final status: 200 (final URL https://www.instagram.com/).
+- http://instagram.com/ initial status: 301.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-02T23:59:59+00:00.

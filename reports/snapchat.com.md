@@ -7,112 +7,105 @@
 | Target | https://snapchat.com/ |
 | Bug bounty program | [Snapchat](https://hackerone.com/snapchat) |
 | Listed scope domain | snapchat.com |
-| Test date | 2026-09-23 20:42 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 8, Info: 2)
+Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | low | H4 | No clickjacking protection | CWE-1023 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 1 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 2 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
+| 3 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 4 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 5 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 7 | info | H2c | HSTS not preloaded | CWE-319 |
+| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 10 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 11 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 12 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 13 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 14 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
+
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://snapchat.com/; browsers may MIME-sniff responses.
+
+### 2. [LOW] TLS certificate expiring within 30 days (`T3`)
+
+- **CWE:** CWE-298
+- **Detail:** Certificate expires 2026-10-16T23:59:59+00:00 (22 days left) for snapchat.com.
+
+### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for snapchat.com lists 36 name(s) besides the scope host: *.api.snapchat.com, *.api.specs.com, *.arcadiacreativestudio.com, *.ats.snapchat.com, *.bitmoji.com, *.lensstudio.com, *.pixy.com, *.saturn.live... (4 no longer resolve)
+
+### 4. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `ats.snapchat.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 5. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `sc-gw-dev.snapchat.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 6. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `snap-dev.net` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 7. [INFO] HSTS not preloaded (`H2c`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** `max-age=31536000, max-age=31536000; includeSubDomains` lacks the preload directive.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 8. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header on https://snapchat.com/; full URL (incl. query strings) is sent as referrer by default.
+
+### 9. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://snapchat.com/; browser features (camera, mic, geolocation) unrestricted.
+
+### 10. [INFO] sitemap.xml discloses URL inventory (`M1`)
+
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://snapchat.com/ lists 12 URLs.
+
+### 11. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** http://snapchat.com/ -> https://snapchat.com:443/ (positive check).
 
-### 3. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 4. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 6. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 7. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 8. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 12. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** robots.txt on https://snapchat.com/ exposes 7 unique Disallow path(s) (/, /explore/, /getreplies, /invite/, /static/gla/) and 12 sitemap reference(s)
 
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 13. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** security.txt present on https://snapchat.com (253 bytes); contact: https://hackerone.com/snapchat
 
-## Evidence (raw response observations)
+### 14. [INFO] HTTPS root redirects to different host (`X3`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://snapchat.com:443/",
-  "https_status": 301,
-  "content_type": "text/html; charset=UTF-8",
-  "title": "",
-  "path_gitconfig": 301,
-  "path_envfile": 301,
-  "path_securitytxt": 200,
-  "security_txt_found": true,
-  "path_robots": 301
-}
-```
+- **CWE:** CWE-200
+- **Detail:** https://snapchat.com/ redirects to https://www.snapchat.com:443/.
 
-## Notes
+## Reproduction notes
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://snapchat.com/ final status: 200 (final URL https://www.snapchat.com:443/).
+- http://snapchat.com/ initial status: 301.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-16T23:59:59+00:00.

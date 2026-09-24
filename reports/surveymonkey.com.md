@@ -7,162 +7,87 @@
 | Target | https://surveymonkey.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | surveymonkey.com |
-| Test date | 2026-09-24 03:59 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 8, Info: 5)
+Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | low | H4 | No clickjacking protection | CWE-1023 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H6 | Server technology disclosure | CWE-200 |
-| 12 | info | H6 | Server technology disclosure | CWE-200 |
-| 13 | info | I5 | Open redirect candidate refuted (404 on www hop) | CWE-601 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 3 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 4 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 5 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 6 | info | H2c | HSTS not preloaded | CWE-319 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 9 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 10 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 11 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://surveymonkey.com/ without HttpOnly: AMP_beb2473154, attr_multitouch, cdp_seg, ep201, ep202. Readable by client-side script.
+
+### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://surveymonkey.com/ without SameSite=Lax/Strict: AMP_beb2473154, attr_multitouch, cdp_seg, ep201, ep202, ep203. Cross-site request cookies.
+
+### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for surveymonkey.com lists 30 name(s) besides the scope host: *.ca.research.net, *.eu.research.net, *.eu.surveymonkey.com, *.eu.surveymonkey.net, *.feedbackeconomy.com, *.research.net, *.smassets.net, *.surveymonkey.ca... (2 no longer resolve)
+
+### 4. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `feedbackeconomy.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 5. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `smassets.net` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 6. [INFO] HSTS not preloaded (`H2c`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** `max-age=31536000; includeSubDomains` lacks the preload directive.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://surveymonkey.com/; browser features (camera, mic, geolocation) unrestricted.
+
+### 8. [INFO] sitemap.xml discloses URL inventory (`M1`)
+
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://surveymonkey.com/ lists 18 URLs.
+
+### 9. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** http://surveymonkey.com/ -> https://surveymonkey.com/ (positive check).
 
-### 3. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 4. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 6. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 7. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 8. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 10. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** robots.txt on https://surveymonkey.com/ exposes 21 unique Disallow path(s) (/*?query=, /*?usecase=, /apis/v3/internal/intents, /billing/confirmed, /billing/invoice*) and 1 sitemap reference(s)
 
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 11. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** GET /.well-known/security.txt returned 404 on surveymonkey.com.
 
-### 11. [INFO] Server technology disclosure (`H6`)
+## Reproduction notes
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: CloudFront
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 12. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: CloudFront
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 13. [INFO] Open redirect candidate refuted (404 on www hop) (`I5`)
-
-- **CWE:** CWE-601
-- **Detail:** https://surveymonkey.com/redirect?url=301s to the www host, which returns 404 for the path; the parameter is not followed.
-- **Recommendation:** Review and remediate per CWE guidance.
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://surveymonkey.com/",
-  "https_status": 301,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 301,
-  "path_envfile": 403,
-  "path_securitytxt": 301,
-  "path_robots": 301,
-  "probe_count": 23,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 403",
-    "sqli /?id=1%27+OR+1=1-- -> 403",
-    "sqli /?q=%27 -> 301",
-    "sqli /products?filter=%27 -> 301",
-    "sqli /?p=1;-- -> 301",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 403",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 301",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 400",
-    "trav /static/../../../../../../../../etc/passwd -> 301",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 301",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 403",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 301",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 301",
-    "host no reflection -> err",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301"
-  ],
-  "open_redirect": {
-    "path": "/redirect?url=https%3A%2F%2Fevil-cors.example%2Fx",
-    "location": "https://www.surveymonkey.com/redirect?url=https%3A%2F%2Fevil-cors.example%2Fx"
-  }
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://surveymonkey.com/ final status: 200 (final URL https://www.surveymonkey.com/).
+- http://surveymonkey.com/ initial status: 301.
+- Certificate: Amazon Amazon RSA 2048 M01, valid until 2026-11-26T23:59:59+00:00.

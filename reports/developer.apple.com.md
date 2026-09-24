@@ -6,97 +6,58 @@
 |---|---|
 | Target | https://developer.apple.com/ |
 | Bug bounty program | [Apple](https://security.apple.com) |
-| Listed scope domain | apple.com |
-| Test date | 2026-09-23 17:11 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | developer.apple.com |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 0, Low: 4, Info: 4)
+Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 4 | low | H4 | No clickjacking protection | CWE-1023 |
-| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 7 | info | H6 | Server technology disclosure | CWE-200 |
-| 8 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 2 | info | H2c | HSTS not preloaded | CWE-319 |
+| 3 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 4 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 5 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 6 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for developer.apple.com lists 3 name(s) besides the scope host: developers.apple.com, docs-assets.developer.apple.com, docs.developer.apple.com
+
+### 2. [INFO] HSTS not preloaded (`H2c`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** `max-age=31536000; includeSubDomains, max-age=31536000` lacks the preload directive.
 
-### 2. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 3. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 4. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 5. [INFO] Missing Referrer-Policy (`H5`)
+### 3. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://developer.apple.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 4. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://developer.apple.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 7. [INFO] Server technology disclosure (`H6`)
+### 5. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-200
-- **Detail:** Server header: Apple
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **CWE:** CWE-319
+- **Detail:** http://developer.apple.com/ -> https://developer.apple.com/ (positive check).
 
-### 8. [INFO] Server technology disclosure (`H6`)
+### 6. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header: Apple
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** robots.txt on https://developer.apple.com/ exposes 13 unique Disallow path(s) (/cgi-bin/, /click/, /documentation/dataformats/, /forums/*?view, /forums/create/question)
 
-## Evidence (raw response observations)
+## Reproduction notes
 
-```json
-{
-  "http_status": 301,
-  "https_status": 200,
-  "content_type": "text/html",
-  "path_gitconfig": 403,
-  "path_envfile": 403,
-  "path_securitytxt": 300,
-  "path_robots": 200
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://developer.apple.com/ final status: 200 (final URL https://developer.apple.com/).
+- http://developer.apple.com/ initial status: 301.
+- Certificate: Apple Inc. Apple Public EV Server ECC CA 1 - G1, valid until 2026-12-17T18:07:35+00:00.

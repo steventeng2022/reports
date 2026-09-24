@@ -7,148 +7,93 @@
 | Target | https://adage.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | adage.com |
-| Test date | 2026-09-24 06:35 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 6, Info: 5)
+Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | low | H4 | No clickjacking protection | CWE-1023 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 2 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 3 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 5 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
 | 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H6 | Server technology disclosure | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
-| 11 | info | R2 | No HTTP->HTTPS redirect (refuted: re-verified 301 to HTTPS) | CWE-319 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
+| 10 | info | R1 | robots.txt protected | CWE-200 |
+| 11 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 12 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
 
 ## Detailed findings
 
 ### 1. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** No Strict-Transport-Security header on https://adage.com/. Clients may connect over plain HTTP on first visit.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 2. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://adage.com/; browsers may MIME-sniff responses.
 
-### 3. [LOW] Missing X-Content-Type-Options (`H3`)
+### 3. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-1021
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://adage.com/; page may be rendered in a foreign frame.
 
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
+### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for adage.com lists 91 name(s) besides the scope host: arcxp-dev.adage.com, arcxp-dev.automobilwoche.de, arcxp-dev.autonews.com, arcxp-dev.chicagobusiness.com, arcxp-dev.craincurrency.com, arcxp-dev.crainscleveland.com, arcxp-dev.crainsdetroit.com, arcxp-dev.crainsgrandrapids.com... (2 no longer resolve)
 
-### 5. [LOW] No clickjacking protection (`H4`)
+### 5. [INFO] Possible dangling subdomain (`D2`)
 
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `arcxp-prod.craincurrency.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
-### 6. [LOW] No clickjacking protection (`H4`)
+### 6. [INFO] Possible dangling subdomain (`D2`)
 
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `arcxp-prod.genomeweb.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
 ### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://adage.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://adage.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 9. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: AkamaiGHost
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 10. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: AkamaiGHost
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 11. [INFO] No HTTP->HTTPS redirect (refuted: re-verified 301 to HTTPS) (`R2`)
+### 9. [INFO] Plain HTTP returns non-redirect status (`N3`)
 
 - **CWE:** CWE-319
-- **Detail:** Initial audit pass saw a non-redirect on http://adage.com/, but re-verification with both the audit UA and a browser UA returns 301 to https://adage.com/ (AkamaiGHost). Transient behavior; canonical redirect is in place.
-- **Recommendation:** Add an HTTP->HTTPS redirect (currently returns an error code on port 80).
+- **Detail:** http://adage.com/ returns 403 (no redirect to HTTPS).
 
-## Evidence (raw response observations)
+### 10. [INFO] robots.txt protected (`R1`)
 
-```json
-{
-  "http_status": 403,
-  "https_status": 403,
-  "content_type": "text/html",
-  "title": "Access Denied",
-  "path_gitconfig": 403,
-  "path_envfile": 403,
-  "path_securitytxt": 403,
-  "path_robots": 403,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 403",
-    "sqli /?id=1%27+OR+1=1-- -> 403",
-    "sqli /?q=%27 -> 403",
-    "sqli /products?filter=%27 -> 403",
-    "sqli /?p=1;-- -> 403",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 403",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 403",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 403",
-    "trav /static/../../../../../../../../etc/passwd -> 403",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 403",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 403",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 403",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 403",
-    "host no reflection -> 400",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403"
-  ]
-}
-```
+- **CWE:** CWE-200
+- **Detail:** GET /robots.txt returned 403.
 
-## Notes
+### 11. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 403 on adage.com.
+
+### 12. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+
+- **CWE:** CWE-200
+- **Detail:** https://adage.com/ responded 403 (passive check only; no further probing).
+
+## Reproduction notes
+
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://adage.com/ final status: 403 (final URL https://adage.com/).
+- http://adage.com/ initial status: 403.
+- Certificate: Let's Encrypt YR2, valid until 2026-11-19T13:48:18+00:00.

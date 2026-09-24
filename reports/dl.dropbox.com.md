@@ -6,127 +6,94 @@
 |---|---|
 | Target | https://dl.dropbox.com/ |
 | Bug bounty program | [DropBox](https://bugcrowd.com/dropbox) |
-| Listed scope domain | dropbox.com |
-| Test date | 2026-09-23 18:26 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | dl.dropbox.com |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 7, Info: 5)
+Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
+| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 2 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 3 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 5 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 7 | info | D2 | Possible dangling subdomain | CWE-1382 |
 | 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
-| 11 | info | H6 | Server technology disclosure | CWE-200 |
-| 12 | info | P3 | Missing security.txt | CWE-1038 |
+| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 10 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 11 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 12 | info | X2 | HTTPS homepage returned HTTP 404 | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [LOW] Missing Content-Security-Policy (`H3`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://dl.dropbox.com/; no defense-in-depth against XSS/content injection.
 
-### 2. [LOW] Missing CSP header (`H2`)
+### 2. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://dl.dropbox.com/; browsers may MIME-sniff responses.
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 3. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://dl.dropbox.com/; page may be rendered in a foreign frame.
 
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
+### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for dl.dropbox.com lists 30 name(s) besides the scope host: *.app.dl-au.dropboxusercontent.com, *.app.dl-eu.dropboxusercontent.com, *.app.dl-jp.dropboxusercontent.com, *.app.dl-uk.dropboxusercontent.com, *.app.dl.dropboxusercontent.com, *.dl-au.dropboxusercontent.com, *.dl-eu.dropboxusercontent.com, *.dl-jp.dropboxusercontent.com... (5 no longer resolve)
 
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
+### 5. [INFO] Possible dangling subdomain (`D2`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `app.dl.dropbox.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
-### 6. [LOW] No clickjacking protection (`H4`)
+### 6. [INFO] Possible dangling subdomain (`D2`)
 
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `dl-au.dropboxusercontent.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
-### 7. [LOW] No clickjacking protection (`H4`)
+### 7. [INFO] Possible dangling subdomain (`D2`)
 
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `dl-eu.dropboxusercontent.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
 ### 8. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://dl.dropbox.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 9. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://dl.dropbox.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 10. [INFO] Server technology disclosure (`H6`)
+### 10. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: envoy
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **CWE:** CWE-319
+- **Detail:** http://dl.dropbox.com/ -> https://dl.dropbox.com/ (positive check).
 
-### 11. [INFO] Server technology disclosure (`H6`)
+### 11. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: envoy
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** GET /.well-known/security.txt returned 404 on dl.dropbox.com.
 
-### 12. [INFO] Missing security.txt (`P3`)
+### 12. [INFO] HTTPS homepage returned HTTP 404 (`X2`)
 
-- **CWE:** CWE-1038
-- **Detail:** No .well-known/security.txt found (RFC 9116).
-- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+- **CWE:** CWE-200
+- **Detail:** https://dl.dropbox.com/ responded 404 (passive check only; no further probing).
 
-## Evidence (raw response observations)
+## Reproduction notes
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://dl.dropbox.com/",
-  "https_status": 404,
-  "content_type": "text/html",
-  "title": "Dropbox - 404",
-  "path_gitconfig": 404,
-  "path_envfile": 404,
-  "path_securitytxt": 404,
-  "path_robots": 404
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://dl.dropbox.com/ final status: 404 (final URL https://dl.dropbox.com/).
+- http://dl.dropbox.com/ initial status: 301.
+- Certificate: DigiCert Inc DigiCert Global G3 TLS ECC SHA384 2020 CA1, valid until 2027-03-10T23:59:59+00:00.

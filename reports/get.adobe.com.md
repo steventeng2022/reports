@@ -6,126 +6,33 @@
 |---|---|
 | Target | https://get.adobe.com/ |
 | Bug bounty program | [Adobe](https://hackerone.com/adobe) |
-| Listed scope domain | adobe.com |
-| Test date | 2026-09-24 02:04 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | get.adobe.com |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 10, Info: 2)
+Total findings: **2** (High: 0, Medium: 0, Low: 0, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | low | H4 | No clickjacking protection | CWE-1023 |
-| 9 | low | R2 | No HTTP->HTTPS redirect (403 on plain HTTP; endpoint redirects to www.adobe.com) | CWE-319 |
-| 10 | low | X1 | CORS wildcard on redirect/error responses (no credentials) | CWE-942 |
-| 11 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 12 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 1 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 2 | info | X1 | HTTPS homepage unreachable | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for get.adobe.com lists 15 name(s) besides the scope host: acrobat.adobe.com, acrobatservices.adobe.com, analyzer.adobe.com, cascade.adobe.com, dc.acrobat.com, dc.adobe.com, documentcloud.adobe.com, documentservices.adobe.com...
 
-### 2. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 3. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 4. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 6. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 7. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 8. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 9. [LOW] No HTTP->HTTPS redirect (403 on plain HTTP; endpoint redirects to www.adobe.com) (`R2`)
-
-- **CWE:** CWE-319
-- **Detail:** Verified: http://get.adobe.com/ returns 403 on plain HTTP with no Location header and no HSTS; https://get.adobe.com/ returns 301 -> https://www.adobe.com/ (the get.adobe.com property is being folded into the main Adobe site). The plain-HTTP error response lacks HSTS; impact is limited since the HTTPS endpoint already upgrades to the apex domain.
-- **Recommendation:** Add an HTTP->HTTPS redirect (currently returns an error code on port 80).
-
-### 10. [LOW] CORS wildcard on redirect/error responses (no credentials) (`X1`)
-
-- **CWE:** CWE-942
-- **Detail:** Verified: both http://get.adobe.com/ (403) and https://get.adobe.com/ (301 -> https://www.adobe.com/) return Access-Control-Allow-Origin: * with access-control-allow-credentials: false. The wildcard appears on the redirect/error responses of a retiring endpoint; without credentials and without a contentful 200 body, impact is limited.
-- **Recommendation:** Restrict Access-Control-Allow-Origin to known origins or add Vary: Origin.
-
-### 11. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] HTTPS homepage unreachable (`X1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** https://get.adobe.com/: ReadTimeout: HTTPSConnectionPool(host='www.adobe.com', port=443): Read timed out. (read timeout=15)
 
-### 12. [INFO] Missing Referrer-Policy (`H5`)
+## Reproduction notes
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_status": 403,
-  "https_status": 301,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 403,
-  "path_envfile": 403,
-  "path_securitytxt": 403,
-  "path_robots": 200,
-  "robots_found": true
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- http://get.adobe.com/ initial status: 403.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2027-01-30T23:59:59+00:00.

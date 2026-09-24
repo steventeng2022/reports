@@ -7,119 +7,69 @@
 | Target | https://coursera.org/ |
 | Bug bounty program | [Coursera](https://hackerone.com/coursera) |
 | Listed scope domain | coursera.org |
-| Test date | 2026-09-24 00:04 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 8, Info: 3)
+Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 2 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 3 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 4 | low | H1 | Missing HSTS header | CWE-319 |
-| 5 | low | H2 | Missing CSP header | CWE-1021 |
-| 6 | low | H2 | Missing CSP header | CWE-1021 |
-| 7 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 8 | low | H4 | No clickjacking protection | CWE-1023 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 3 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 4 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 5 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 6 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 7 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 8 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookie without Secure flag (`C1`)
+### 1. [LOW] Missing Content-Security-Policy (`H3`)
 
-- **CWE:** CWE-614
-- **Detail:** Cookie __204u lacks Secure attribute; transmitted over HTTP.
-- **Recommendation:** Add the Secure attribute to the cookie.
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://coursera.org/; no defense-in-depth against XSS/content injection.
 
-### 2. [LOW] Cookie without HttpOnly flag (`C2`)
+### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1004
-- **Detail:** Cookie CSRF3-Token lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for coursera.org lists 1 name(s) besides the scope host: *.coursera.org
 
-### 3. [LOW] Cookie without HttpOnly flag (`C2`)
+### 3. [INFO] Missing Referrer-Policy (`H5`)
 
-- **CWE:** CWE-1004
-- **Detail:** Cookie __204u lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header on https://coursera.org/; full URL (incl. query strings) is sent as referrer by default.
 
-### 4. [LOW] Missing HSTS header (`H1`)
+### 4. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://coursera.org/; browser features (camera, mic, geolocation) unrestricted.
+
+### 5. [INFO] sitemap.xml discloses URL inventory (`M1`)
+
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://coursera.org/ lists 18 URLs.
+
+### 6. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** http://coursera.org/ -> https://coursera.org/ (positive check).
 
-### 5. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 6. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 7. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 8. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** robots.txt on https://coursera.org/ exposes 27 unique Disallow path(s) (/, /5JKLVK/, /acclaimbadge/, /account/, /api/) and 1 sitemap reference(s)
 
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 8. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** GET /.well-known/security.txt returned 404 on coursera.org.
 
-### 11. [INFO] Server technology disclosure (`H6`)
+## Reproduction notes
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: CloudFront
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://coursera.org/",
-  "https_status": 301,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 301,
-  "path_envfile": 301,
-  "path_securitytxt": 301,
-  "path_robots": 301
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://coursera.org/ final status: 200 (final URL https://www.coursera.org/).
+- http://coursera.org/ initial status: 301.
+- Certificate: Amazon Amazon RSA 2048 M04, valid until 2027-03-08T23:59:59+00:00.

@@ -7,79 +7,51 @@
 | Target | https://accenture.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | accenture.com |
-| Test date | 2026-09-24 03:59 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **2** (High: 0, Medium: 0, Low: 0, Info: 2)
+Total findings: **5** (High: 0, Medium: 0, Low: 0, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 2 | info | I5 | Open redirect candidate refuted (locale hop 404s) | CWE-601 |
+| 1 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 2 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 3 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 4 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 5 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [INFO] Missing Referrer-Policy (`H5`)
+### 1. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for accenture.com lists 3 name(s) besides the scope host: acnpic-careers.accenture.com, acnpic.accenture.com, careers.accenture.com
+
+### 2. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://accenture.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 2. [INFO] Open redirect candidate refuted (locale hop 404s) (`I5`)
+### 3. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-601
-- **Detail:** https://accenture.com/redirect?url=301s to a geo-locale URL (www.accenture.com/jp-ja/redirect?url=...) which returns 404; the parameter is not followed.
-- **Recommendation:** Review and remediate per CWE guidance.
+- **CWE:** CWE-319
+- **Detail:** http://accenture.com/ -> https://accenture.com/ (positive check).
 
-## Evidence (raw response observations)
+### 4. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-```json
-{
-  "http_status": 302,
-  "http_redirect_to": "https://accenture.com/",
-  "https_status": 301,
-  "content_type": "text/html; charset=UTF-8",
-  "title": "Document Moved",
-  "path_gitconfig": 301,
-  "path_envfile": 301,
-  "path_securitytxt": 301,
-  "path_robots": 301,
-  "probe_count": 23,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 301",
-    "sqli /?id=1%27+OR+1=1-- -> 301",
-    "sqli /?q=%27 -> 301",
-    "sqli /products?filter=%27 -> 301",
-    "sqli /?p=1;-- -> 301",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 301",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 301",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 403",
-    "trav /static/../../../../../../../../etc/passwd -> 301",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 301",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 403",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 301",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 301",
-    "host no reflection -> 301",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301"
-  ],
-  "open_redirect": {
-    "path": "/redirect?url=https%3A%2F%2Fevil-cors.example%2Fx",
-    "location": "https://www.accenture.com/redirect?url=https%3A%2F%2Fevil-cors.example%2Fx"
-  }
-}
-```
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://accenture.com/ exposes 29 unique Disallow path(s) (*/?sc_lang, */BucketContent, */Careers/Form, */Careers/Profiles, */Careers/Registration) and 1 sitemap reference(s)
 
-## Notes
+### 5. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on accenture.com.
+
+## Reproduction notes
+
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://accenture.com/ final status: 200 (final URL https://www.accenture.com/jp-ja).
+- http://accenture.com/ initial status: 302.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2027-01-29T23:59:59+00:00.

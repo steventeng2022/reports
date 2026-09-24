@@ -6,131 +6,70 @@
 |---|---|
 | Target | https://apps.apple.com/ |
 | Bug bounty program | [Apple](https://security.apple.com) |
-| Listed scope domain | apple.com |
-| Test date | 2026-09-23 20:42 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | apps.apple.com |
+| Test date | 2026-09-24 22:14 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 8, Info: 4)
+Total findings: **8** (High: 0, Medium: 0, Low: 0, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 2 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 3 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 4 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 5 | low | H1 | Missing HSTS header | CWE-319 |
-| 6 | low | H2 | Missing CSP header | CWE-1021 |
-| 7 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 8 | low | H4 | No clickjacking protection | CWE-1023 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H6 | Server technology disclosure | CWE-200 |
-| 12 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 2 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 3 | info | H2c | HSTS not preloaded | CWE-319 |
+| 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 6 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 7 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 8 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookie without Secure flag (`C1`)
+### 1. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-614
-- **Detail:** Cookie geo lacks Secure attribute; transmitted over HTTP.
-- **Context:** http response
-- **Recommendation:** Add the Secure attribute to the cookie.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for apps.apple.com lists 70 name(s) besides the scope host: a1.mzstatic.com, a2.mzstatic.com, a3.mzstatic.com, a4.mzstatic.com, a5.mzstatic.com, accertify.mzstatic.com, amp-api-edge.apps.apple.com, amp-api-edge.music.apple.com... (1 no longer resolve)
 
-### 2. [LOW] Cookie without Secure flag (`C1`)
+### 2. [INFO] Possible dangling subdomain (`D2`)
 
-- **CWE:** CWE-614
-- **Detail:** Cookie geo lacks Secure attribute; transmitted over HTTP.
-- **Recommendation:** Add the Secure attribute to the cookie.
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `edge.itunes.apple.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
-### 3. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie geo lacks HttpOnly; readable by client-side JS.
-- **Context:** http response
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 4. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie geo lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 5. [LOW] Missing HSTS header (`H1`)
+### 3. [INFO] HSTS not preloaded (`H2c`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** `max-age=31536000; includeSubDomains` lacks the preload directive.
 
-### 6. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 7. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 8. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 4. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://apps.apple.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 5. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://apps.apple.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 11. [INFO] Server technology disclosure (`H6`)
+### 6. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: Varnish
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **CWE:** CWE-319
+- **Detail:** http://apps.apple.com/ -> https://apps.apple.com/ (positive check).
 
-### 12. [INFO] Server technology disclosure (`H6`)
+### 7. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: daiquiri/5
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** robots.txt on https://apps.apple.com/ exposes 5 unique Disallow path(s) (*/search?*, /WebObjects/*, /api/*, /includes/*, /v1/*) and 6 sitemap reference(s)
 
-## Evidence (raw response observations)
+### 8. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://apps.apple.com/",
-  "https_status": 301,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 404,
-  "path_envfile": 404,
-  "path_securitytxt": 200,
-  "security_txt_found": true,
-  "path_robots": 200,
-  "robots_found": true
-}
-```
+- **CWE:** CWE-200
+- **Detail:** security.txt present on https://apps.apple.com (2383 bytes)
 
-## Notes
+## Reproduction notes
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://apps.apple.com/ final status: 200 (final URL https://apps.apple.com/us/iphone/today).
+- http://apps.apple.com/ initial status: 301.
+- Certificate: Apple Inc. Apple Public EV Server RSA CA 1 - G1, valid until 2027-01-07T19:46:05+00:00.
