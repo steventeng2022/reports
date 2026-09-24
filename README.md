@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| eepurl.com | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
 | ajax.googleapis.com | 2 | 0 | 1 | 0 | 1 | Google |
 | golang.org | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | flipboard.com | 11 | 0 | 1 | 10 | 0 | top-websites gist (no active program match) |
