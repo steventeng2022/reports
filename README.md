@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| forbes.com | 3 | 0 | 0 | 2 | 1 | Forbes |
 | nytimes.com | 4 | 0 | 0 | 2 | 2 | The New York Times |
 | 1.usa.gov | 4 | 0 | 0 | 2 | 2 | TTS Bug Bounty |
 | 4.bp.blogspot.com | 12 | 0 | 1 | 7 | 4 | top-websites gist (no active program match) |
