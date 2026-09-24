@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| otto.de | 5 | 0 | 1 | 2 | 2 | top-websites gist (no active program match) |
 | gleam.io | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
 | firstdata.com | 2 | 0 | 0 | 1 | 1 | top-websites gist (no active program match) |
 | link.springer.com | 17 | 0 | 0 | 15 | 2 | top-websites gist (no active program match) |
