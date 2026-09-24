@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| freelancer.com | 16 | 0 | 0 | 13 | 3 | top-websites gist (no active program match) |
 | en.wikipedia.org | 13 | 0 | 0 | 12 | 1 | top-websites gist (no active program match) |
 | ok.ru | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
 | bhphotovideo.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
