@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| journals.sagepub.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
 | maps.google.co.jp | 13 | 0 | 0 | 11 | 2 | top-websites gist (no active program match) |
 | bloomberg.com | 23 | 0 | 0 | 22 | 1 | Bloomberg |
 | ca.linkedin.com | 8 | 1 | 0 | 5 | 2 | top-websites gist (no active program match) |
