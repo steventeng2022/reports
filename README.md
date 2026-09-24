@@ -2,7 +2,7 @@
 
 Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the intersection of the provided top-websites list and active public bug-bounty program scopes.
 
-**Total findings across all sites: 3877**
+**Total findings across all sites: 3988**
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -390,3 +390,4 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | zeit.de | 8 | 0 | 0 | 6 | 2 | top-websites gist (no active program match) |
 | zen.yandex.ru | 13 | 0 | 0 | 11 | 2 | Yandex |
 | zoom.us | 12 | 0 | 0 | 8 | 4 | Zoom |
+
