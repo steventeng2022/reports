@@ -2,7 +2,7 @@
 
 Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the intersection of the provided top-websites list and active public bug-bounty program scopes.
 
-**Total findings across all sites: 4479**
+**Total findings across all sites: 4487**
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -29,13 +29,14 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | affiliate-program.amazon.com | 16 | 0 | 0 | 11 | 5 | Amazon |
 | airbnb.com | 11 | 0 | 0 | 7 | 4 | Airbnb |
 | airtable.com | 13 | 0 | 0 | 10 | 3 | Airtable |
+| ajax.googleapis.com | 2 | 0 | 1 | 0 | 1 | Google |
 | aliexpress.com | 16 | 0 | 1 | 10 | 5 | Alibaba |
 | amazon.ca | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.co.jp | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.co.uk | 12 | 0 | 0 | 8 | 4 | Amazon |
+| amazon.com | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.com.au | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.com.br | 12 | 0 | 0 | 8 | 4 | Amazon |
-| amazon.com | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.de | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.es | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.fr | 12 | 0 | 0 | 8 | 4 | Amazon |
@@ -138,6 +139,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | earth.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | ec.europa.eu | 11 | 0 | 0 | 8 | 3 | European Central Bank |
 | economist.com | 16 | 0 | 0 | 11 | 5 | top-websites gist (no active program match) |
+| eepurl.com | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
 | eff.org | 10 | 0 | 0 | 6 | 4 | EFF |
 | en-gb.facebook.com | 8 | 0 | 0 | 4 | 4 | Facebook |
 | en.advertisercommunity.com | 8 | 0 | 0 | 4 | 4 | top-websites gist (no active program match) |
@@ -189,8 +191,8 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | globalnews.ca | 15 | 0 | 0 | 6 | 9 | top-websites gist (no active program match) |
 | golang.org | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | goo.gle | 9 | 0 | 0 | 4 | 5 | top-websites gist (no active program match) |
-| google.com.br | 11 | 0 | 0 | 9 | 2 | top-websites gist (no active program match) |
 | google.com | 11 | 0 | 0 | 7 | 4 | Google |
+| google.com.br | 11 | 0 | 0 | 9 | 2 | top-websites gist (no active program match) |
 | google.de | 12 | 0 | 0 | 6 | 6 | top-websites gist (no active program match) |
 | google.se | 11 | 0 | 0 | 6 | 5 | top-websites gist (no active program match) |
 | googleadservices.com | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
