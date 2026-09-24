@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| google.com.br | 11 | 0 | 0 | 9 | 2 | top-websites gist (no active program match) |
 | note.mu | 28 | 0 | 0 | 27 | 1 | top-websites gist (no active program match) |
 | cell.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | googleadservices.com | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
