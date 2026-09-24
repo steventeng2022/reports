@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| link.springer.com | 17 | 0 | 0 | 15 | 2 | top-websites gist (no active program match) |
 | addons.mozilla.org | 2 | 0 | 0 | 1 | 1 | top-websites gist (no active program match) |
 | puu.sh | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
 | aub.edu.lb | 15 | 0 | 0 | 14 | 1 | top-websites gist (no active program match) |
