@@ -2,7 +2,7 @@
 
 Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the intersection of the provided top-websites list and active public bug-bounty program scopes.
 
-**Total findings across all sites: 2527**
+**Total findings across all sites: 2612**
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -42,6 +42,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | bandcamp.com | 13 | 0 | 0 | 8 | 5 | Epic Games |
 | bbc.com | 11 | 0 | 0 | 7 | 4 | BBC |
 | blockchain.info | 9 | 0 | 0 | 5 | 4 | Blockchain |
+| blog.hubspot.com | 7 | 0 | 0 | 4 | 3 | HubSpot |
 | blog.us.playstation.com | 12 | 0 | 0 | 8 | 4 | Playstation |
 | blogger.com | 11 | 0 | 0 | 6 | 5 | Google |
 | blogs.adobe.com | 13 | 0 | 1 | 9 | 3 | Adobe |
@@ -93,6 +94,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | eur-lex.europa.eu | 18 | 0 | 0 | 14 | 4 | European Central Bank |
 | europa.eu | 11 | 0 | 0 | 8 | 3 | European Central Bank |
 | europarl.europa.eu | 10 | 0 | 0 | 6 | 4 | European Central Bank |
+| eventbrite.com | 11 | 0 | 0 | 7 | 4 | Eventbrite |
 | events.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | evernote.com | 12 | 0 | 0 | 9 | 3 | Evernote |
 | expedia.com | 10 | 0 | 0 | 6 | 4 | Expedia Group |
@@ -106,12 +108,14 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | flow.microsoft.com | 10 | 0 | 0 | 8 | 2 | Microsoft Online Services |
 | fonts.google.com | 10 | 0 | 0 | 5 | 5 | Google |
 | forms.office.com | 10 | 0 | 0 | 7 | 3 | Microsoft Online Services |
+| get.adobe.com | 12 | 0 | 0 | 10 | 2 | Adobe |
 | get.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | gist.github.com | 8 | 0 | 0 | 5 | 3 | GitHub |
 | github.com | 7 | 0 | 0 | 5 | 2 | GitHub |
 | gitlab.com | 7 | 0 | 0 | 3 | 4 | GitLab |
 | gitter.im | 10 | 0 | 0 | 7 | 3 | GitLab |
 | google.com | 11 | 0 | 0 | 7 | 4 | Google |
+| gov.uk | 11 | 0 | 0 | 7 | 4 | NCSC UK |
 | groups.google.com | 10 | 0 | 0 | 5 | 5 | Google |
 | gsuite.google.com | 10 | 0 | 0 | 6 | 4 | Google |
 | hangouts.google.com | 10 | 0 | 0 | 6 | 4 | Google |
@@ -145,6 +149,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | mailchimp.com | 17 | 0 | 0 | 13 | 4 | Intuit |
 | maps.google.com | 16 | 0 | 0 | 10 | 6 | Google |
 | marketingplatform.google.com | 11 | 0 | 0 | 6 | 5 | Google |
+| marriott.com | 24 | 0 | 0 | 20 | 4 | Marriott |
 | meet.google.com | 9 | 0 | 0 | 4 | 5 | Google |
 | messenger.com | 10 | 0 | 0 | 7 | 3 | Facebook |
 | microsoft.com | 9 | 0 | 0 | 7 | 2 | Microsoft Online Services |
@@ -160,6 +165,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | netflix.com | 8 | 0 | 0 | 5 | 3 | Netflix |
 | newegg.com | 11 | 0 | 0 | 7 | 4 | Newegg |
 | news.google.com | 9 | 0 | 0 | 5 | 4 | Google |
+| news.harvard.edu | 10 | 0 | 0 | 6 | 4 | Harvard |
 | news.yahoo.com | 7 | 0 | 0 | 5 | 2 | Yahoo! |
 | open.spotify.com | 12 | 0 | 0 | 7 | 5 | Spotify |
 | opera.com | 11 | 0 | 0 | 7 | 4 | Opera Public Bug Bounty |
@@ -239,6 +245,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | web.facebook.com | 10 | 0 | 0 | 7 | 3 | Facebook |
 | whatsapp.com | 11 | 0 | 0 | 7 | 4 | Facebook |
 | windows.microsoft.com | 12 | 0 | 0 | 8 | 4 | Microsoft Online Services |
+| wordpress.org | 10 | 0 | 0 | 6 | 4 | WordPress |
 | www-01.ibm.com | 12 | 0 | 0 | 8 | 4 | IBM |
 | yahoo.com | 7 | 0 | 0 | 4 | 3 | Yahoo! |
 | yandex.com | 25 | 0 | 0 | 23 | 2 | Yandex |
