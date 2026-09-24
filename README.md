@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| activecampaign.com | 40 | 26 | 8 | 4 | 2 | top-websites gist (no active program match) |
 | networkadvertising.org | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | homedepot.com | 7 | 0 | 0 | 3 | 4 | top-websites gist (no active program match) |
 | sendspace.com | 2 | 0 | 0 | 1 | 1 | top-websites gist (no active program match) |
