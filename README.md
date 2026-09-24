@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| ca.linkedin.com | 8 | 1 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | maps.google.co.nz | 13 | 0 | 0 | 11 | 2 | top-websites gist (no active program match) |
 | pewresearch.org | 8 | 0 | 1 | 4 | 3 | top-websites gist (no active program match) |
 | otto.de | 5 | 0 | 1 | 2 | 2 | top-websites gist (no active program match) |
