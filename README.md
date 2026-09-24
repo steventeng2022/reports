@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| puu.sh | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
 | aub.edu.lb | 15 | 0 | 0 | 14 | 1 | top-websites gist (no active program match) |
 | intel.com | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
 | vogue.com | 5 | 1 | 0 | 3 | 1 | top-websites gist (no active program match) |
