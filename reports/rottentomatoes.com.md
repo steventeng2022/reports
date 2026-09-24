@@ -12,25 +12,27 @@
 
 ## Summary
 
-Total findings: **15** (High: 1, Medium: 0, Low: 11, Info: 3)
+Total findings: **17** (High: 1, Medium: 0, Low: 13, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | high | B9 | Subdomain takeover candidate (dangling CNAME within own zone) | CWE-1596 |
 | 2 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 3 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
+| 3 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 4 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
 | 5 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
 | 6 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 7 | low | H1 | Missing HSTS header | CWE-319 |
-| 8 | low | H2 | Missing CSP header | CWE-1021 |
-| 9 | low | H2 | Missing CSP header | CWE-1021 |
-| 10 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 11 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 12 | low | R2 | No HTTP->HTTPS redirect | CWE-319 |
-| 13 | info | A4i | Sensitive paths exist (protected or app shells) | CWE-538 |
-| 14 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 15 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
+| 8 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
+| 9 | low | H1 | Missing HSTS header | CWE-319 |
+| 10 | low | H2 | Missing CSP header | CWE-1021 |
+| 11 | low | H2 | Missing CSP header | CWE-1021 |
+| 12 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 13 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 14 | low | R2 | No HTTP->HTTPS redirect | CWE-319 |
+| 15 | info | A4i | Sensitive paths exist (protected or app shells) | CWE-538 |
+| 16 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 17 | info | H5 | Missing Referrer-Policy | CWE-200 |
 
 ## Detailed findings
 
@@ -47,85 +49,97 @@ Total findings: **15** (High: 1, Medium: 0, Low: 11, Info: 3)
 - **Context:** http response
 - **Recommendation:** Add the Secure attribute to the cookie.
 
-### 3. [LOW] Cookie without HttpOnly flag (`C2`)
+### 3. [LOW] Cookies without Secure flag (`C1`)
 
-- **CWE:** CWE-1004
-- **Detail:** Cookie akamai_generated_location lacks HttpOnly; readable by client-side JS.
-- **Context:** http response
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **CWE:** CWE-614
+- **Detail:** Cookies without Secure flag
+- **Recommendation:** Add the Secure attribute to the cookie.
 
 ### 4. [LOW] Cookie without HttpOnly flag (`C2`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie akacd_RTReplatform lacks HttpOnly; readable by client-side JS.
+- **Detail:** Cookie akamai_generated_location lacks HttpOnly; readable by client-side JS.
 - **Context:** http response
 - **Recommendation:** Add the HttpOnly attribute to the cookie.
 
 ### 5. [LOW] Cookie without HttpOnly flag (`C2`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie akamai_generated_location lacks HttpOnly; readable by client-side JS.
+- **Detail:** Cookie akacd_RTReplatform lacks HttpOnly; readable by client-side JS.
+- **Context:** http response
 - **Recommendation:** Add the HttpOnly attribute to the cookie.
 
 ### 6. [LOW] Cookie without HttpOnly flag (`C2`)
 
 - **CWE:** CWE-1004
+- **Detail:** Cookie akamai_generated_location lacks HttpOnly; readable by client-side JS.
+- **Recommendation:** Add the HttpOnly attribute to the cookie.
+
+### 7. [LOW] Cookie without HttpOnly flag (`C2`)
+
+- **CWE:** CWE-1004
 - **Detail:** Cookie akacd_RTReplatform lacks HttpOnly; readable by client-side JS.
 - **Recommendation:** Add the HttpOnly attribute to the cookie.
 
-### 7. [LOW] Missing HSTS header (`H1`)
+### 8. [LOW] Cookies without HttpOnly flag (`C2`)
+
+- **CWE:** CWE-1004
+- **Detail:** Cookies without HttpOnly flag
+- **Recommendation:** Add the HttpOnly attribute to the cookie.
+
+### 9. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
 - **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
 - **Context:** http response
 - **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 8. [LOW] Missing CSP header (`H2`)
+### 10. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
 - **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
 - **Context:** http response
 - **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 9. [LOW] Missing CSP header (`H2`)
+### 11. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
 - **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
 - **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 10. [LOW] Missing X-Content-Type-Options (`H3`)
+### 12. [LOW] Missing X-Content-Type-Options (`H3`)
 
 - **CWE:** CWE-1194
 - **Detail:** No nosniff directive; browsers may MIME-sniff responses.
 - **Context:** http response
 - **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 11. [LOW] Missing X-Content-Type-Options (`H3`)
+### 13. [LOW] Missing X-Content-Type-Options (`H3`)
 
 - **CWE:** CWE-1194
 - **Detail:** No nosniff directive; browsers may MIME-sniff responses.
 - **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 12. [LOW] No HTTP->HTTPS redirect (`R2`)
+### 14. [LOW] No HTTP->HTTPS redirect (`R2`)
 
 - **CWE:** CWE-319
 - **Detail:** http://rottentomatoes.com returns 403 without redirecting to HTTPS; however HSTS is present on the HTTPS response (max-age=31536000; includeSubdomains), which limits bootstrap risk.
 - **Recommendation:** Add an HTTP->HTTPS redirect (currently returns an error code on port 80).
 
-### 13. [INFO] Sensitive paths exist (protected or app shells) (`A4i`)
+### 15. [INFO] Sensitive paths exist (protected or app shells) (`A4i`)
 
 - **CWE:** CWE-538
 - **Detail:** Paths answering 401/403 or HTML shells: /admin (403 protected), /console (403 protected), /dashboard (403 protected), /api (403 protected), /api/v1 (403 protected), /debug (403 protected), /trace (403 protected), /server-status (403 protected), /.svn/entries (403 protected), /swagger-ui.html (403 protected), /swagger.json (403 protected), /openapi.json (403 protected) (26 total).
 - **Recommendation:** No immediate action if the paths are genuinely protected; otherwise return a real 404 to unauthenticated probes for paths that should not exist.
 
-### 14. [INFO] Missing Referrer-Policy (`H5`)
+### 16. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
 - **Context:** http response
 - **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 15. [INFO] Missing Referrer-Policy (`H5`)
+### 17. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
@@ -271,7 +285,8 @@ Stage-3 probe log (observed responses):
   ],
   "subdomains": [
     "staging.rottentomatoes.com -> staging.dev.rottentomatoes.com (NXDOMAIN target 3)"
-  ]
+  ],
+  "source": " + merged aggressive-injection-hunt pass (agent-aggressive, 2026-09-24 22:21 UTC)"
 }
 ```
 
