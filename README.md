@@ -2,11 +2,12 @@
 
 Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the intersection of the provided top-websites list and active public bug-bounty program scopes.
 
-**Total findings across all sites: 2075**
+**Total findings across all sites: 2301**
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
 | 1.usa.gov | 4 | 0 | 0 | 2 | 2 | TTS Bug Bounty |
+| abc.com | 13 | 0 | 0 | 8 | 5 | The Walt Disney Company |
 | about.fb.com | 12 | 0 | 0 | 7 | 5 | Facebook |
 | accounts.google.com | 6 | 0 | 0 | 1 | 5 | Google |
 | ads.google.com | 9 | 0 | 0 | 4 | 5 | Google |
@@ -41,20 +42,25 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | blockchain.info | 9 | 0 | 0 | 5 | 4 | Blockchain |
 | blog.us.playstation.com | 12 | 0 | 0 | 8 | 4 | Playstation |
 | blogger.com | 11 | 0 | 0 | 6 | 5 | Google |
+| bluehost.com | 11 | 0 | 1 | 7 | 3 | Bluehost |
 | books.google.com | 10 | 0 | 0 | 5 | 5 | Google |
 | buffer.com | 15 | 0 | 0 | 9 | 6 | Buffer |
 | business.facebook.com | 11 | 0 | 0 | 7 | 4 | Facebook |
 | business.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | calendar.google.com | 11 | 0 | 1 | 6 | 4 | Google |
 | canva.com | 12 | 0 | 0 | 8 | 4 | Canva |
+| cdc.gov | 16 | 0 | 0 | 11 | 5 | U.S. Dept of Health & Human Services (HHS) |
 | cdn.shopify.com | 11 | 0 | 1 | 5 | 5 | Shopify |
 | cdnjs.cloudflare.com | 10 | 0 | 1 | 5 | 4 | Cloudflare |
+| checkpoint.com | 8 | 0 | 0 | 5 | 3 | Check Point |
 | chrome.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | cisco.com | 10 | 0 | 0 | 8 | 2 | Cisco Meraki |
 | cloud.google.com | 10 | 0 | 0 | 4 | 6 | Google |
 | cloudflare.com | 12 | 0 | 0 | 8 | 4 | Cloudflare |
 | code.google.com | 10 | 0 | 1 | 4 | 5 | Google |
 | coinbase.com | 11 | 0 | 0 | 7 | 4 | Coinbase |
+| constantcontact.com | 11 | 0 | 0 | 7 | 4 | Constant Contact |
+| coursera.org | 11 | 0 | 0 | 8 | 3 | Coursera |
 | cse.google.com | 10 | 0 | 0 | 5 | 5 | Google |
 | dailymotion.com | 10 | 0 | 0 | 7 | 3 | Dailymotion |
 | dashlane.com | 10 | 0 | 0 | 6 | 4 | Dashlane |
@@ -71,10 +77,15 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | drive.google.com | 9 | 0 | 0 | 4 | 5 | Google |
 | dropbox.com | 11 | 0 | 0 | 7 | 4 | DropBox |
 | earth.google.com | 11 | 0 | 0 | 6 | 5 | Google |
+| ec.europa.eu | 11 | 0 | 0 | 8 | 3 | European Central Bank |
+| eff.org | 10 | 0 | 0 | 6 | 4 | EFF |
 | en-gb.facebook.com | 8 | 0 | 0 | 4 | 4 | Facebook |
 | engadget.com | 12 | 0 | 0 | 8 | 4 | Yahoo! |
+| espn.com | 12 | 0 | 0 | 8 | 4 | The Walt Disney Company |
 | etsy.com | 12 | 0 | 0 | 8 | 4 | Etsy |
+| europa.eu | 11 | 0 | 0 | 8 | 3 | European Central Bank |
 | events.google.com | 11 | 0 | 0 | 6 | 5 | Google |
+| evernote.com | 12 | 0 | 0 | 9 | 3 | Evernote |
 | facebook.com | 10 | 0 | 0 | 7 | 3 | Facebook |
 | families.google.com | 9 | 0 | 0 | 4 | 5 | Google |
 | fb.com | 10 | 0 | 0 | 7 | 3 | Facebook |
@@ -94,12 +105,17 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | groups.google.com | 10 | 0 | 0 | 5 | 5 | Google |
 | gsuite.google.com | 10 | 0 | 0 | 6 | 4 | Google |
 | hangouts.google.com | 10 | 0 | 0 | 6 | 4 | Google |
+| health.harvard.edu | 10 | 0 | 0 | 6 | 4 | Harvard |
 | help.apple.com | 9 | 0 | 1 | 5 | 3 | Apple |
+| humblebundle.com | 13 | 0 | 0 | 9 | 4 | Humble Bundle |
 | i.imgur.com | 11 | 0 | 0 | 7 | 4 | Imgur |
 | i.redd.it | 14 | 0 | 0 | 9 | 5 | Reddit |
+| ibm.com | 11 | 0 | 0 | 7 | 4 | IBM |
+| ikea.com | 12 | 0 | 0 | 8 | 4 | IKEA |
 | img.youtube.com | 12 | 0 | 0 | 7 | 5 | Google |
 | imgur.com | 11 | 0 | 0 | 5 | 6 | Imgur |
 | instagram.com | 10 | 0 | 0 | 7 | 3 | Facebook |
+| issuu.com | 6 | 0 | 0 | 3 | 3 | Issuu |
 | itunes.apple.com | 11 | 0 | 0 | 7 | 4 | Apple |
 | ja-jp.facebook.com | 8 | 0 | 0 | 4 | 4 | Facebook |
 | join.slack.com | 12 | 0 | 0 | 8 | 4 | Slack |
@@ -123,6 +139,8 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | msdn.microsoft.com | 8 | 0 | 0 | 6 | 2 | Microsoft Online Services |
 | music.apple.com | 12 | 0 | 0 | 8 | 4 | Apple |
 | myaccount.google.com | 10 | 0 | 0 | 5 | 5 | Google |
+| myfitnesspal.com | 14 | 0 | 1 | 9 | 4 | UNDER ARMOUR |
+| nasa.gov | 11 | 0 | 0 | 7 | 4 | Nasa VDP |
 | netflix.com | 8 | 0 | 0 | 5 | 3 | Netflix |
 | newegg.com | 11 | 0 | 0 | 7 | 4 | Newegg |
 | news.google.com | 9 | 0 | 0 | 5 | 4 | Google |
@@ -197,9 +215,11 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | vimeo.com | 11 | 0 | 0 | 6 | 5 | Vimeo |
 | vine.co | 8 | 0 | 0 | 4 | 4 | Twitter |
 | vr.google.com | 10 | 0 | 0 | 6 | 4 | Google |
+| walmart.com | 11 | 0 | 0 | 7 | 4 | Walmart Corporation |
 | web.facebook.com | 10 | 0 | 0 | 7 | 3 | Facebook |
 | whatsapp.com | 11 | 0 | 0 | 7 | 4 | Facebook |
 | windows.microsoft.com | 12 | 0 | 0 | 8 | 4 | Microsoft Online Services |
+| www-01.ibm.com | 12 | 0 | 0 | 8 | 4 | IBM |
 | yahoo.com | 7 | 0 | 0 | 4 | 3 | Yahoo! |
 | yandex.com | 25 | 0 | 0 | 23 | 2 | Yandex |
 | yandex.ru | 23 | 0 | 0 | 21 | 2 | Yandex |
