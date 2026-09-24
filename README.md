@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| forms.gle | 6 | 0 | 0 | 4 | 2 | Google |
 | lifehack.org | 8 | 0 | 0 | 5 | 3 | top-websites gist (no active program match) |
 | canada.ca | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
 | activecampaign.com | 40 | 26 | 8 | 4 | 2 | top-websites gist (no active program match) |
