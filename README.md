@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| golang.org | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | flipboard.com | 11 | 0 | 1 | 10 | 0 | top-websites gist (no active program match) |
 | use.typekit.net | 10 | 4 | 0 | 5 | 1 | top-websites gist (no active program match) |
 | journals.sagepub.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
