@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| vogue.com | 5 | 1 | 0 | 3 | 1 | top-websites gist (no active program match) |
 | ameblo.jp | 17 | 0 | 0 | 16 | 1 | top-websites gist (no active program match) |
 | photos.app.goo.gl | 4 | 0 | 0 | 3 | 1 | top-websites gist (no active program match) |
 | google.com.br | 11 | 0 | 0 | 9 | 2 | top-websites gist (no active program match) |
