@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| sendspace.com | 2 | 0 | 0 | 1 | 1 | top-websites gist (no active program match) |
 | 1drv.ms | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
 | blog.google | 34 | 0 | 9 | 23 | 2 | Google |
 | rottentomatoes.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
