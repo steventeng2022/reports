@@ -2,7 +2,7 @@
 
 Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the intersection of the provided top-websites list and active public bug-bounty program scopes.
 
-**Total findings across all sites: 2836**
+**Total findings across all sites: 3007**
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -14,6 +14,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | aboutads.info | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | accenture.com | 2 | 0 | 0 | 0 | 2 | top-websites gist (no active program match) |
 | accounts.google.com | 6 | 0 | 0 | 1 | 5 | Google |
+| acm.org | 9 | 0 | 0 | 6 | 3 | top-websites gist (no active program match) |
 | adobe.com | 11 | 0 | 0 | 7 | 4 | Adobe |
 | ads.google.com | 9 | 0 | 0 | 4 | 5 | Google |
 | adssettings.google.com | 10 | 0 | 0 | 5 | 5 | Google |
@@ -52,6 +53,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | blogger.com | 11 | 0 | 0 | 6 | 5 | Google |
 | blogs.adobe.com | 13 | 0 | 1 | 9 | 3 | Adobe |
 | blogs.windows.com | 7 | 0 | 0 | 2 | 5 | top-websites gist (no active program match) |
+| blogtalkradio.com | 1 | 0 | 0 | 1 | 0 | top-websites gist (no active program match) |
 | bluehost.com | 11 | 0 | 1 | 7 | 3 | Bluehost |
 | books.google.com | 10 | 0 | 0 | 5 | 5 | Google |
 | buffer.com | 15 | 0 | 0 | 9 | 6 | Buffer |
@@ -71,6 +73,8 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | code.google.com | 10 | 0 | 1 | 4 | 5 | Google |
 | codex.wordpress.org | 13 | 0 | 0 | 9 | 4 | WordPress |
 | coinbase.com | 11 | 0 | 0 | 7 | 4 | Coinbase |
+| coinmarketcap.com | 8 | 0 | 0 | 4 | 4 | top-websites gist (no active program match) |
+| collegehumor.com | 1 | 0 | 0 | 0 | 1 | top-websites gist (no active program match) |
 | constantcontact.com | 11 | 0 | 0 | 7 | 4 | Constant Contact |
 | coursera.org | 11 | 0 | 0 | 8 | 3 | Coursera |
 | cse.google.com | 10 | 0 | 0 | 5 | 5 | Google |
@@ -79,6 +83,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | dashlane.com | 10 | 0 | 0 | 6 | 4 | Dashlane |
 | de-de.facebook.com | 8 | 0 | 0 | 4 | 4 | Facebook |
 | deezer.com | 12 | 0 | 0 | 8 | 4 | Deezer |
+| denverpost.com | 10 | 0 | 0 | 6 | 4 | top-websites gist (no active program match) |
 | desktop.github.com | 13 | 0 | 0 | 8 | 5 | GitHub |
 | developer.apple.com | 8 | 0 | 0 | 4 | 4 | Apple |
 | developers.facebook.com | 8 | 0 | 0 | 4 | 4 | Facebook |
@@ -90,6 +95,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | download.microsoft.com | 13 | 0 | 0 | 8 | 5 | Microsoft Online Services |
 | drive.google.com | 9 | 0 | 0 | 4 | 5 | Google |
 | dropbox.com | 11 | 0 | 0 | 7 | 4 | DropBox |
+| dx.doi.org | 13 | 0 | 0 | 8 | 5 | top-websites gist (no active program match) |
 | earth.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | ec.europa.eu | 11 | 0 | 0 | 8 | 3 | European Central Bank |
 | economist.com | 16 | 0 | 0 | 11 | 5 | top-websites gist (no active program match) |
@@ -102,6 +108,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | eur-lex.europa.eu | 18 | 0 | 0 | 14 | 4 | European Central Bank |
 | europa.eu | 11 | 0 | 0 | 8 | 3 | European Central Bank |
 | europarl.europa.eu | 10 | 0 | 0 | 6 | 4 | European Central Bank |
+| event.on24.com | 7 | 0 | 0 | 3 | 4 | top-websites gist (no active program match) |
 | eventbrite.com | 11 | 0 | 0 | 7 | 4 | Eventbrite |
 | eventim.de | 1 | 0 | 0 | 1 | 0 | top-websites gist (no active program match) |
 | events.google.com | 11 | 0 | 0 | 6 | 5 | Google |
@@ -118,6 +125,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | fonts.google.com | 10 | 0 | 0 | 5 | 5 | Google |
 | fonts.googleapis.com | 12 | 0 | 1 | 6 | 5 | top-websites gist (no active program match) |
 | forms.office.com | 10 | 0 | 0 | 7 | 3 | Microsoft Online Services |
+| foxnews.com | 11 | 0 | 0 | 7 | 4 | top-websites gist (no active program match) |
 | get.adobe.com | 12 | 0 | 0 | 10 | 2 | Adobe |
 | get.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | gist.github.com | 8 | 0 | 0 | 5 | 3 | GitHub |
@@ -127,10 +135,12 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | google.com | 11 | 0 | 0 | 7 | 4 | Google |
 | google.de | 12 | 0 | 0 | 6 | 6 | top-websites gist (no active program match) |
 | gov.uk | 11 | 0 | 0 | 7 | 4 | NCSC UK |
+| greenpeace.org | 9 | 0 | 0 | 7 | 2 | top-websites gist (no active program match) |
 | groups.google.com | 10 | 0 | 0 | 5 | 5 | Google |
 | gsuite.google.com | 10 | 0 | 0 | 6 | 4 | Google |
 | hangouts.google.com | 10 | 0 | 0 | 6 | 4 | Google |
 | health.harvard.edu | 10 | 0 | 0 | 6 | 4 | Harvard |
+| heise.de | 12 | 0 | 0 | 7 | 5 | top-websites gist (no active program match) |
 | help.apple.com | 9 | 0 | 1 | 5 | 3 | Apple |
 | helpx.adobe.com | 16 | 0 | 0 | 11 | 5 | Adobe |
 | hostgator.com | 11 | 0 | 1 | 7 | 3 | Host Gator |
@@ -138,6 +148,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | i.imgur.com | 11 | 0 | 0 | 7 | 4 | Imgur |
 | i.redd.it | 14 | 0 | 0 | 9 | 5 | Reddit |
 | ibm.com | 11 | 0 | 0 | 7 | 4 | IBM |
+| ifttt.com | 4 | 0 | 0 | 1 | 3 | top-websites gist (no active program match) |
 | ikea.com | 12 | 0 | 0 | 8 | 4 | IKEA |
 | imdb.com | 11 | 0 | 0 | 7 | 4 | IMDB |
 | img.youtube.com | 12 | 0 | 0 | 7 | 5 | Google |
@@ -151,6 +162,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | khanacademy.org | 12 | 0 | 0 | 8 | 4 | Khan Academy |
 | kraken.com | 9 | 0 | 0 | 5 | 4 | Kraken |
 | l.facebook.com | 11 | 0 | 0 | 8 | 3 | Facebook |
+| launchpad.net | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | line.me | 11 | 0 | 0 | 7 | 4 | LINE |
 | livestream.com | 13 | 0 | 0 | 9 | 4 | Livestream |
 | login.microsoftonline.com | 9 | 0 | 0 | 6 | 3 | top-websites gist (no active program match) |
@@ -160,6 +172,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | m.youtube.com | 6 | 0 | 0 | 2 | 4 | Google |
 | mail.google.com | 6 | 0 | 0 | 2 | 4 | Google |
 | mailchimp.com | 17 | 0 | 0 | 13 | 4 | Intuit |
+| makeuseof.com | 2 | 0 | 0 | 0 | 2 | top-websites gist (no active program match) |
 | maps.google.com | 16 | 0 | 0 | 10 | 6 | Google |
 | marketingplatform.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | marriott.com | 24 | 0 | 0 | 20 | 4 | Marriott |
@@ -172,6 +185,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | moz.com | 9 | 0 | 0 | 6 | 3 | top-websites gist (no active program match) |
 | mp.weixin.qq.com | 10 | 0 | 0 | 7 | 3 | Tencent |
 | msdn.microsoft.com | 8 | 0 | 0 | 6 | 2 | Microsoft Online Services |
+| msn.com | 9 | 0 | 0 | 7 | 2 | top-websites gist (no active program match) |
 | music.apple.com | 12 | 0 | 0 | 8 | 4 | Apple |
 | myaccount.google.com | 10 | 0 | 0 | 5 | 5 | Google |
 | myfitnesspal.com | 14 | 0 | 1 | 9 | 4 | UNDER ARMOUR |
@@ -218,7 +232,9 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | salesforce.com | 11 | 0 | 0 | 7 | 4 | Salesforce |
 | samsung.com | 12 | 0 | 0 | 8 | 4 | Samsung TV |
 | search.google.com | 10 | 0 | 0 | 6 | 4 | Google |
+| seroundtable.com | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | services.google.com | 11 | 0 | 0 | 6 | 5 | Google |
+| shareasale.com | 18 | 0 | 0 | 14 | 4 | top-websites gist (no active program match) |
 | shopify.com | 10 | 0 | 0 | 6 | 4 | Shopify |
 | sites.google.com | 8 | 0 | 0 | 4 | 4 | Google |
 | sketchfab.com | 10 | 0 | 0 | 6 | 4 | Epic Games |
@@ -228,6 +244,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | snapchat.com | 10 | 0 | 0 | 8 | 2 | Snapchat |
 | sophos.com | 12 | 0 | 0 | 10 | 2 | Sophos |
 | soundcloud.com | 11 | 0 | 0 | 8 | 3 | SoundCloud |
+| sourceforge.net | 10 | 0 | 0 | 5 | 5 | top-websites gist (no active program match) |
 | spotify.com | 10 | 0 | 0 | 6 | 4 | Spotify |
 | sproutsocial.com | 6 | 0 | 0 | 1 | 5 | Sprout Social |
 | squareup.com | 15 | 0 | 0 | 10 | 5 | Square |
@@ -257,6 +274,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | udemy.com | 8 | 0 | 0 | 5 | 3 | Udemy |
 | united.com | 10 | 0 | 0 | 6 | 4 | United Airlines |
 | upwork.com | 10 | 0 | 0 | 6 | 4 | Upwork |
+| validator.w3.org | 10 | 0 | 0 | 5 | 5 | top-websites gist (no active program match) |
 | video.google.com | 12 | 0 | 0 | 6 | 6 | Google |
 | vimeo.com | 11 | 0 | 0 | 6 | 5 | Vimeo |
 | vine.co | 8 | 0 | 0 | 4 | 4 | Twitter |
@@ -272,5 +290,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | yandex.ru | 23 | 0 | 0 | 21 | 2 | Yandex |
 | yelp.com | 11 | 0 | 0 | 7 | 4 | Yelp |
 | youtube.com | 6 | 0 | 0 | 2 | 4 | Google |
+| zdnet.com | 11 | 0 | 0 | 7 | 4 | top-websites gist (no active program match) |
+| zeit.de | 8 | 0 | 0 | 6 | 2 | top-websites gist (no active program match) |
 | zen.yandex.ru | 13 | 0 | 0 | 11 | 2 | Yandex |
 | zoom.us | 12 | 0 | 0 | 8 | 4 | Zoom |
