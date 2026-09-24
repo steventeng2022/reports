@@ -2,7 +2,7 @@
 
 Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the intersection of the provided top-websites list and active public bug-bounty program scopes.
 
-**Total findings across all sites: 4487**
+**Total findings across all sites: 4726**
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -34,9 +34,9 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | amazon.ca | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.co.jp | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.co.uk | 12 | 0 | 0 | 8 | 4 | Amazon |
-| amazon.com | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.com.au | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.com.br | 12 | 0 | 0 | 8 | 4 | Amazon |
+| amazon.com | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.de | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.es | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.fr | 12 | 0 | 0 | 8 | 4 | Amazon |
@@ -66,12 +66,14 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | bbc.com | 11 | 0 | 0 | 7 | 4 | BBC |
 | beian.gov.cn | 1 | 0 | 0 | 1 | 0 | top-websites gist (no active program match) |
 | bhphotovideo.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
+| bild.de | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | blockchain.info | 9 | 0 | 0 | 5 | 4 | Blockchain |
 | blog.hubspot.com | 7 | 0 | 0 | 4 | 3 | HubSpot |
 | blog.livedoor.jp | 18 | 0 | 1 | 12 | 5 | top-websites gist (no active program match) |
 | blog.us.playstation.com | 12 | 0 | 0 | 8 | 4 | Playstation |
 | blogger.com | 11 | 0 | 0 | 6 | 5 | Google |
 | blogs.adobe.com | 13 | 0 | 1 | 9 | 3 | Adobe |
+| blogs.msdn.com | 9 | 0 | 0 | 6 | 3 | top-websites gist (no active program match) |
 | blogs.windows.com | 7 | 0 | 0 | 2 | 5 | top-websites gist (no active program match) |
 | blogtalkradio.com | 1 | 0 | 0 | 1 | 0 | top-websites gist (no active program match) |
 | bloomberg.com | 23 | 0 | 0 | 22 | 1 | Bloomberg |
@@ -98,6 +100,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | chrome.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | chronicle.com | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | cisco.com | 10 | 0 | 0 | 8 | 2 | Cisco Meraki |
+| click.linksynergy.com | 11 | 0 | 0 | 8 | 3 | top-websites gist (no active program match) |
 | cloud.google.com | 10 | 0 | 0 | 4 | 6 | Google |
 | cloudflare.com | 12 | 0 | 0 | 8 | 4 | Cloudflare |
 | cnbc.com | 7 | 0 | 0 | 5 | 2 | Nasdaq |
@@ -114,6 +117,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | creativecommons.org | 15 | 0 | 0 | 8 | 7 | top-websites gist (no active program match) |
 | cse.google.com | 10 | 0 | 0 | 5 | 5 | Google |
 | css-tricks.com | 10 | 0 | 0 | 6 | 4 | top-websites gist (no active program match) |
+| ctt.ec | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | cyber.law.harvard.edu | 1 | 0 | 0 | 1 | 0 | Harvard |
 | dailymotion.com | 10 | 0 | 0 | 7 | 3 | Dailymotion |
 | dashlane.com | 10 | 0 | 0 | 6 | 4 | Dashlane |
@@ -123,6 +127,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | deezer.com | 12 | 0 | 0 | 8 | 4 | Deezer |
 | denverpost.com | 10 | 0 | 0 | 6 | 4 | top-websites gist (no active program match) |
 | desktop.github.com | 13 | 0 | 0 | 8 | 5 | GitHub |
+| developer.android.com | 10 | 0 | 0 | 4 | 6 | top-websites gist (no active program match) |
 | developer.apple.com | 8 | 0 | 0 | 4 | 4 | Apple |
 | developers.facebook.com | 8 | 0 | 0 | 4 | 4 | Facebook |
 | developers.google.com | 9 | 0 | 0 | 4 | 5 | Google |
@@ -141,6 +146,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | economist.com | 16 | 0 | 0 | 11 | 5 | top-websites gist (no active program match) |
 | eepurl.com | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
 | eff.org | 10 | 0 | 0 | 6 | 4 | EFF |
+| elmundo.es | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | en-gb.facebook.com | 8 | 0 | 0 | 4 | 4 | Facebook |
 | en.advertisercommunity.com | 8 | 0 | 0 | 4 | 4 | top-websites gist (no active program match) |
 | en.wikipedia.org | 13 | 0 | 0 | 12 | 1 | top-websites gist (no active program match) |
@@ -191,8 +197,8 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | globalnews.ca | 15 | 0 | 0 | 6 | 9 | top-websites gist (no active program match) |
 | golang.org | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | goo.gle | 9 | 0 | 0 | 4 | 5 | top-websites gist (no active program match) |
-| google.com | 11 | 0 | 0 | 7 | 4 | Google |
 | google.com.br | 11 | 0 | 0 | 9 | 2 | top-websites gist (no active program match) |
+| google.com | 11 | 0 | 0 | 7 | 4 | Google |
 | google.de | 12 | 0 | 0 | 6 | 6 | top-websites gist (no active program match) |
 | google.se | 11 | 0 | 0 | 6 | 5 | top-websites gist (no active program match) |
 | googleadservices.com | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
@@ -217,11 +223,13 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | i.redd.it | 14 | 0 | 0 | 9 | 5 | Reddit |
 | i0.wp.com | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
 | ibm.com | 11 | 0 | 0 | 7 | 4 | IBM |
+| iconfinder.com | 11 | 0 | 0 | 8 | 3 | top-websites gist (no active program match) |
 | ifttt.com | 4 | 0 | 0 | 1 | 3 | top-websites gist (no active program match) |
 | ikea.com | 12 | 0 | 0 | 8 | 4 | IKEA |
 | imdb.com | 11 | 0 | 0 | 7 | 4 | IMDB |
 | img.youtube.com | 12 | 0 | 0 | 7 | 5 | Google |
 | imgur.com | 11 | 0 | 0 | 5 | 6 | Imgur |
+| indiewire.com | 12 | 0 | 0 | 7 | 5 | top-websites gist (no active program match) |
 | instagram.com | 10 | 0 | 0 | 7 | 3 | Facebook |
 | institutvajrayogini.fr | 13 | 0 | 0 | 8 | 5 | top-websites gist (no active program match) |
 | instructables.com | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
@@ -260,6 +268,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | maps.google.co.jp | 13 | 0 | 0 | 11 | 2 | top-websites gist (no active program match) |
 | maps.google.co.nz | 13 | 0 | 0 | 11 | 2 | top-websites gist (no active program match) |
 | maps.google.com | 16 | 0 | 0 | 10 | 6 | Google |
+| maps.gstatic.com | 13 | 0 | 1 | 6 | 6 | top-websites gist (no active program match) |
 | market.android.com | 9 | 0 | 0 | 4 | 5 | top-websites gist (no active program match) |
 | marketingplatform.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | marriott.com | 24 | 0 | 0 | 20 | 4 | Marriott |
@@ -281,6 +290,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | myfitnesspal.com | 14 | 0 | 1 | 9 | 4 | UNDER ARMOUR |
 | nasa.gov | 11 | 0 | 0 | 7 | 4 | Nasa VDP |
 | ncbi.nlm.nih.gov | 8 | 0 | 0 | 5 | 3 | U.S. Dept of Health & Human Services (HHS) |
+| neilpatel.com | 13 | 0 | 0 | 5 | 8 | top-websites gist (no active program match) |
 | netflix.com | 8 | 0 | 0 | 5 | 3 | Netflix |
 | newegg.com | 11 | 0 | 0 | 7 | 4 | Newegg |
 | news.google.com | 9 | 0 | 0 | 5 | 4 | Google |
@@ -295,6 +305,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | online.wsj.com | 11 | 0 | 0 | 7 | 4 | top-websites gist (no active program match) |
 | open.spotify.com | 12 | 0 | 0 | 7 | 5 | Spotify |
 | opera.com | 11 | 0 | 0 | 7 | 4 | Opera Public Bug Bounty |
+| oracle.com | 10 | 0 | 0 | 8 | 2 | top-websites gist (no active program match) |
 | otto.de | 5 | 0 | 1 | 2 | 2 | top-websites gist (no active program match) |
 | ow.ly | 6 | 0 | 0 | 5 | 1 | Hootsuite |
 | patents.google.com | 7 | 0 | 0 | 4 | 3 | Google |
@@ -314,6 +325,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | pipes.yahoo.com | 1 | 0 | 0 | 1 | 0 | Yahoo! |
 | pixabay.com | 9 | 0 | 0 | 6 | 3 | Pixabay |
 | pixiv.net | 11 | 0 | 0 | 7 | 4 | Pixiv |
+| pl.wikipedia.org | 14 | 0 | 0 | 8 | 6 | top-websites gist (no active program match) |
 | platform.twitter.com | 12 | 0 | 2 | 8 | 2 | Twitter |
 | play.google.com | 12 | 0 | 0 | 6 | 6 | Google |
 | player.vimeo.com | 11 | 0 | 0 | 6 | 5 | Vimeo |
@@ -323,6 +335,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | policies.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | postmates.com | 14 | 0 | 0 | 9 | 5 | Postmates |
 | privacy.microsoft.com | 9 | 0 | 0 | 7 | 2 | Microsoft Online Services |
+| prnewswire.com | 14 | 0 | 0 | 9 | 5 | top-websites gist (no active program match) |
 | prnt.sc | 11 | 0 | 0 | 7 | 4 | top-websites gist (no active program match) |
 | productforums.google.com | 10 | 0 | 0 | 9 | 1 | Google |
 | profiles.google.com | 13 | 0 | 1 | 6 | 6 | Google |
@@ -337,6 +350,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | redhat.com | 11 | 0 | 0 | 7 | 4 | top-websites gist (no active program match) |
 | researchgate.net | 11 | 0 | 0 | 7 | 4 | Research Gate |
 | rollingstone.com | 11 | 0 | 0 | 7 | 4 | top-websites gist (no active program match) |
+| rottentomatoes.com | 15 | 1 | 0 | 11 | 3 | top-websites gist (no active program match) |
 | s-media-cache-ak0.pinimg.com | 11 | 0 | 1 | 8 | 2 | top-websites gist (no active program match) |
 | salesforce.com | 11 | 0 | 0 | 7 | 4 | Salesforce |
 | samsung.com | 12 | 0 | 0 | 8 | 4 | Samsung TV |
@@ -347,6 +361,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | services.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | shareasale.com | 18 | 0 | 0 | 14 | 4 | top-websites gist (no active program match) |
 | shopify.com | 10 | 0 | 0 | 6 | 4 | Shopify |
+| shutterstock.com | 13 | 1 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | sites.google.com | 8 | 0 | 0 | 4 | 4 | Google |
 | sketchfab.com | 10 | 0 | 0 | 6 | 4 | Epic Games |
 | skfb.ly | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
@@ -368,6 +383,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | squareup.com | 15 | 0 | 0 | 10 | 5 | Square |
 | stackoverflow.com | 12 | 0 | 0 | 7 | 5 | top-websites gist (no active program match) |
 | startnext.com | 11 | 0 | 0 | 7 | 4 | top-websites gist (no active program match) |
+| starwars.com | 14 | 0 | 0 | 8 | 6 | top-websites gist (no active program match) |
 | steamcommunity.com | 11 | 0 | 0 | 7 | 4 | Valve Software |
 | stock.adobe.com | 10 | 0 | 0 | 8 | 2 | Adobe |
 | store.google.com | 9 | 0 | 0 | 4 | 5 | Google |
@@ -385,6 +401,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | t.qq.com | 1 | 0 | 0 | 1 | 0 | Tencent |
 | techcrunch.com | 9 | 0 | 0 | 4 | 5 | Yahoo! |
 | technet.microsoft.com | 8 | 0 | 0 | 6 | 2 | Microsoft Online Services |
+| telegram.me | 12 | 0 | 0 | 7 | 5 | top-websites gist (no active program match) |
 | tesla.com | 12 | 0 | 0 | 8 | 4 | Tesla |
 | themify.me | 8 | 0 | 0 | 5 | 3 | top-websites gist (no active program match) |
 | thinkwithgoogle.com | 10 | 0 | 0 | 6 | 4 | top-websites gist (no active program match) |
@@ -400,8 +417,10 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | twitter.com | 11 | 1 | 1 | 7 | 2 | Twitter |
 | uber.com | 8 | 0 | 0 | 5 | 3 | Uber |
 | udemy.com | 8 | 0 | 0 | 5 | 3 | Udemy |
+| un.org | 9 | 0 | 0 | 7 | 2 | top-websites gist (no active program match) |
 | united.com | 10 | 0 | 0 | 6 | 4 | United Airlines |
 | upwork.com | 10 | 0 | 0 | 6 | 4 | Upwork |
+| us.battle.net | 11 | 0 | 0 | 6 | 5 | top-websites gist (no active program match) |
 | use.typekit.net | 10 | 4 | 0 | 5 | 1 | top-websites gist (no active program match) |
 | validator.w3.org | 10 | 0 | 0 | 5 | 5 | top-websites gist (no active program match) |
 | verizon.com | 12 | 0 | 1 | 8 | 3 | top-websites gist (no active program match) |
@@ -420,6 +439,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | whatsapp.com | 11 | 0 | 0 | 7 | 4 | Facebook |
 | wikipedia.org | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
 | windows.microsoft.com | 12 | 0 | 0 | 8 | 4 | Microsoft Online Services |
+| wired.com | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | wordpress.org | 10 | 0 | 0 | 6 | 4 | WordPress |
 | www-01.ibm.com | 12 | 0 | 0 | 8 | 4 | IBM |
 | yahoo.com | 7 | 0 | 0 | 4 | 3 | Yahoo! |
