@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| ok.ru | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
 | bhphotovideo.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | forbes.com | 3 | 0 | 0 | 2 | 1 | Forbes |
 | nytimes.com | 4 | 0 | 0 | 2 | 2 | The New York Times |
