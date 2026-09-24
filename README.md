@@ -32,9 +32,9 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | amazon.ca | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.co.jp | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.co.uk | 12 | 0 | 0 | 8 | 4 | Amazon |
+| amazon.com | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.com.au | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.com.br | 12 | 0 | 0 | 8 | 4 | Amazon |
-| amazon.com | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.de | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.es | 12 | 0 | 0 | 8 | 4 | Amazon |
 | amazon.fr | 12 | 0 | 0 | 8 | 4 | Amazon |
@@ -180,8 +180,8 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | globalnews.ca | 15 | 0 | 0 | 6 | 9 | top-websites gist (no active program match) |
 | golang.org | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | goo.gle | 9 | 0 | 0 | 4 | 5 | top-websites gist (no active program match) |
-| google.com.br | 11 | 0 | 0 | 9 | 2 | top-websites gist (no active program match) |
 | google.com | 11 | 0 | 0 | 7 | 4 | Google |
+| google.com.br | 11 | 0 | 0 | 9 | 2 | top-websites gist (no active program match) |
 | google.de | 12 | 0 | 0 | 6 | 6 | top-websites gist (no active program match) |
 | google.se | 11 | 0 | 0 | 6 | 5 | top-websites gist (no active program match) |
 | googleadservices.com | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
