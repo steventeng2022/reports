@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| chris.pirillo.com | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
 | jstor.org | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | healthline.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | 3.bp.blogspot.com | 4 | 0 | 0 | 3 | 1 | top-websites gist (no active program match) |
