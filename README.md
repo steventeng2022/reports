@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| cell.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | googleadservices.com | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
 | arstechnica.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | chris.pirillo.com | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
