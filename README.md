@@ -541,3 +541,4 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | france24.com | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
 | gartner.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | 2.bp.blogspot.com | 13 | 0 | 0 | 3 | 10 | top-websites gist (no active program match) |
+| digitaltrends.com | 7 | 0 | 1 | 4 | 2 | top-websites gist (no active program match) |
