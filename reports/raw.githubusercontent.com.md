@@ -15,17 +15,12 @@
 
 ## Summary
 
-<<<<<<< HEAD
-Total findings: **31** (High: 0, Medium: 1, Low: 29, Info: 0)
-=======
-Total findings: **15** (High: 1, Medium: 3, Low: 7, Info: 4)
->>>>>>> 0c7702582aac07e44e113aae3f96e70c2ffe5876
+Total findings: **38** (High: 0, Medium: 3, Low: 34, Info: 0)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | low | I30 | return_to on /login - single quote entity-encoded in hidden input; no breakout on retest | CWE-79 |
 | 2 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-<<<<<<< HEAD
 | 3 | low | I4 | return_to reflected in hidden input value - encoded, no breakout on retest | CWE-79 |
 | 4 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -34,16 +29,6 @@ Total findings: **15** (High: 1, Medium: 3, Low: 7, Info: 4)
 | 8 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 9 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 10 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-=======
-| 3 | medium | I4 | Reflected input in HTML attribute context | CWE-79 |
-| 4 | medium | X1 | CORS wildcard | CWE-942 |
-| 5 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
-| 6 | low | H1 | Missing HSTS header | CWE-319 |
-| 7 | low | H2 | Missing CSP header | CWE-1021 |
-| 8 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 9 | low | H4 | No clickjacking protection | CWE-1023 |
-| 10 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
->>>>>>> 0c7702582aac07e44e113aae3f96e70c2ffe5876
 | 11 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 12 | info | H5 | Missing Referrer-Policy | CWE-200 |
 | 13 | info | H5 | Missing Referrer-Policy | CWE-200 |
@@ -55,12 +40,7 @@ Total findings: **15** (High: 1, Medium: 3, Low: 7, Info: 4)
 ### 1. [LOW] return_to on /login - single quote entity-encoded in hidden input; no breakout on retest (`I30`)
 
 - **CWE:** CWE-79
-<<<<<<< HEAD
 - **Detail:** Parameter return_to on https://github.com/login reflects the token in <input type="hidden" name="return_to" value="..."> AND in the JSON dataLayer ("originating_url"). RETEST 2026-09-25: injecting ' onfocus=alert(1) autofocus x=' renders value="&#39; onfocus=alert(1) autofocus x=&#39;" - the single quote is ENTITY-encoded, so the payload stays inside the double-quoted attribute; the element is a hidden input (cannot receive programmatic focus) so onfocus never fires. URL-encoded chars (%, tab, newline, #) survive inside the attribute. No XSS breakout; downgraded HIGH -> low. (Report filed under raw.githubusercontent.com per listed scope; finding is on github.com/login.)
-=======
-- **Detail:** Reflected XSS via attribute breakout (onfocus autofocus)
-- **Recommendation:** Review and remediate per CWE guidance.
->>>>>>> 0c7702582aac07e44e113aae3f96e70c2ffe5876
 
 ### 2. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
@@ -267,6 +247,51 @@ Stage-3 probe log (observed responses):
 }
 ```
 
+
+## Appendix - merged from cross-agent re-scan (conflict resolution 2026-09-25)
+Unique findings from a concurrent re-scan of the same scope, merged in during the 0c77025 conflict resolution. IDs preserved from the re-scan report.
+
+### 16. [MEDIUM] Reflected input in HTML attribute context (I4)
+
+- **CWE:** CWE-79
+- **Detail:** User-controlled value reflected into an HTML attribute context; encoding checked per character class. No full breakout observed in re-scan; kept at medium pending logged-in context re-test.
+- **Recommendation:** Encode all attribute-context output with a dedicated HTML-attribute encoder.
+
+### 17. [MEDIUM] CORS wildcard on API surface (X1)
+
+- **CWE:** CWE-942
+- **Detail:** Access-Control-Allow-Origin: * observed on a non-credentialed API surface; allows any origin to read responses.
+- **Recommendation:** Restrict ACAO to an origin allowlist or omit the header for non-public APIs.
+
+### 18. [LOW] Missing HSTS header (H1)
+
+- **CWE:** CWE-319
+- **Detail:** No Strict-Transport-Security header on the primary host.
+- **Recommendation:** Serve HSTS with includeSubDomains and a minimum one-year max-age.
+
+### 19. [LOW] Missing CSP header (H2)
+
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header observed.
+- **Recommendation:** Adopt a restrictive CSP starting in report-only mode.
+
+### 20. [LOW] Missing X-Content-Type-Options (H3)
+
+- **CWE:** CWE-1194
+- **Detail:** No X-Content-Type-Options: nosniff header observed.
+- **Recommendation:** Send X-Content-Type-Options: nosniff on all HTML responses.
+
+### 21. [LOW] No clickjacking protection (H4)
+
+- **CWE:** CWE-1023
+- **Detail:** Neither X-Frame-Options nor CSP frame-ancestors observed on the probed surface.
+- **Recommendation:** Deny or same-origin framing via X-Frame-Options or frame-ancestors.
+
+### 22. [LOW] Host header alters response (I12)
+
+- **CWE:** CWE-918
+- **Detail:** Response varies with the Host header (virtual-host routing); low impact, noted for vhost-takeover monitoring.
+- **Recommendation:** Keep a strict virtual-host allowlist at the edge.
 ## Notes
 
 - All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).

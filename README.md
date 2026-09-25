@@ -1,4 +1,4 @@
-Total findings across all sites: 5694
+Total findings across all sites: 5816
 # Bounty Hunt - Findings Index
 
 Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the intersection of the provided top-websites list and active public bug-bounty program scopes.
