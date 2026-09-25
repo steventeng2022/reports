@@ -7,7 +7,7 @@
 | Target | https://japantimes.co.jp/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | japantimes.co.jp |
-| Test date | 2026-09-25 00:44 UTC |
+| Test date | 2026-09-25 02:55 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -57,7 +57,7 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 00:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 02:55 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://japantimes.co.jp/ final status: 403 (final URL https://japantimes.co.jp/).
 - http://japantimes.co.jp/ initial status: 301.
 - Certificate: Google Trust Services WE1, valid until 2026-10-30T01:27:37+00:00.

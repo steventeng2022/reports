@@ -7,7 +7,7 @@
 | Target | https://europa.eu/ |
 | Bug bounty program | [European Central Bank](https://www.ecb.europa.eu/services/responsible-disclosure/html/index.nl.html) |
 | Listed scope domain | europa.eu |
-| Test date | 2026-09-25 00:44 UTC |
+| Test date | 2026-09-25 02:55 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -63,7 +63,7 @@ Total findings: **7** (High: 0, Medium: 0, Low: 1, Info: 6)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 00:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 02:55 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://europa.eu/ final status: 200 (final URL https://european-union.europa.eu/select-language?destination=/node/1).
 - http://europa.eu/ initial status: 307.
 - Certificate: GlobalSign nv-sa GlobalSign Atlas R46 OV TLS CA 2026 Q3, valid until 2027-02-26T08:28:09+00:00.

@@ -7,12 +7,12 @@
 | Target | https://faa.gov/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | faa.gov |
-| Test date | 2026-09-25 00:44 UTC |
+| Test date | 2026-09-25 02:55 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 7, Info: 7)
+Total findings: **13** (High: 0, Medium: 0, Low: 7, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,8 +28,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 7, Info: 7)
 | 10 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
 | 11 | info | R1 | robots.txt protected | CWE-200 |
 | 12 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
-| 13 | info | T0 | TLS verification probe failed (transport) | CWE-200 |
-| 14 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
+| 13 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
 
 ## Detailed findings
 
@@ -93,18 +92,14 @@ Total findings: **14** (High: 0, Medium: 0, Low: 7, Info: 7)
 - **CWE:** CWE-200
 - **Detail:** GET /.well-known/security.txt returned 403 on faa.gov.
 
-### 13. [INFO] TLS verification probe failed (transport) (`T0`)
-
-- **CWE:** CWE-200
-- **Detail:** Strict TLS verification to faa.gov failed with ConnectionResetError: [WinError 10054] 遠端主機已強制關閉一個現存的連線。; no cert data captured - recheck manually.
-
-### 14. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+### 13. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
 
 - **CWE:** CWE-200
 - **Detail:** https://faa.gov/ responded 403 (passive check only; no further probing).
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 00:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 02:55 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://faa.gov/ final status: 403 (final URL http://www.faa.gov/).
 - http://faa.gov/ initial status: 302.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-11-25T23:59:59+00:00.

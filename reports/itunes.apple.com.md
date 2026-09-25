@@ -7,7 +7,7 @@
 | Target | https://itunes.apple.com/ |
 | Bug bounty program | [Apple](https://security.apple.com) |
 | Listed scope domain | itunes.apple.com |
-| Test date | 2026-09-25 00:44 UTC |
+| Test date | 2026-09-25 02:55 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -81,7 +81,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 00:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 02:55 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://itunes.apple.com/ final status: 200 (final URL https://www.apple.com/itunes/).
 - http://itunes.apple.com/ initial status: 302.
 - Certificate: Apple Inc. Apple Public EV Server RSA CA 1 - G1, valid until 2027-01-07T19:46:05+00:00.

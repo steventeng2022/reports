@@ -7,7 +7,7 @@
 | Target | https://hangouts.google.com/ |
 | Bug bounty program | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | Listed scope domain | hangouts.google.com |
-| Test date | 2026-09-25 00:44 UTC |
+| Test date | 2026-09-25 02:55 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -54,16 +54,16 @@ Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
 ### 6. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://hangouts.google.com (305108 bytes)
+- **Detail:** security.txt present on https://hangouts.google.com (305103 bytes)
 
 ### 7. [INFO] HTTPS root redirects to different host (`X3`)
 
 - **CWE:** CWE-200
-- **Detail:** https://hangouts.google.com/ redirects to https://accounts.google.com/v3/signin/identifier?continue=https://mail.google.com/chat/u/0/&emr=1&followup=https://mail.google.com/chat/u/0/&osid=1&passive=1209600&service=mail&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S-703914188:1790297162918466.
+- **Detail:** https://hangouts.google.com/ redirects to https://accounts.google.com/v3/signin/identifier?continue=https://mail.google.com/chat/u/0/&emr=1&followup=https://mail.google.com/chat/u/0/&osid=1&passive=1209600&service=mail&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S-616905498:1790304997359413.
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 00:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://hangouts.google.com/ final status: 200 (final URL https://accounts.google.com/v3/signin/identifier?continue=https://mail.google.com/chat/u/0/&emr=1&followup=https://mail.google.com/chat/u/0/&osid=1&passive=1209600&service=mail&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S-703914188:1790297162918466).
+- Scanned 2026-09-25 02:55 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://hangouts.google.com/ final status: 200 (final URL https://accounts.google.com/v3/signin/identifier?continue=https://mail.google.com/chat/u/0/&emr=1&followup=https://mail.google.com/chat/u/0/&osid=1&passive=1209600&service=mail&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S-616905498:1790304997359413).
 - http://hangouts.google.com/ initial status: 302.
 - Certificate: Google Trust Services WE2, valid until 2026-12-03T19:22:00+00:00.
