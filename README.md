@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| creativemarket.com | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
 | 1.bp.blogspot.com | 13 | 0 | 0 | 3 | 10 | top-websites gist (no active program match) |
 | buzzsprout.com | 11 | 0 | 0 | 2 | 9 | top-websites gist (no active program match) |
 | w3schools.com | 8 | 0 | 2 | 5 | 1 | top-websites gist (no active program match) |
