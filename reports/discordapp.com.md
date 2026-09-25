@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **32** (High: 0, Medium: 1, Low: 27, Info: 4)
+Total findings: **33** (High: 0, Medium: 1, Low: 27, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -210,6 +210,13 @@ Total findings: **32** (High: 0, Medium: 1, Low: 27, Info: 4)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://discord.com/.well-known/openid-configuration returned 200 (499 bytes) with a matching signature.
+
+| 33 | info | I27 | Full request URL reflected URL-encoded in og:url meta on 404 pages (no breakout) | CWE-200 |
+
+### 33. [INFO] og:url meta reflection on 404 pages (I27)
+
+- **CWE:** CWE-200
+- **Detail:** 2026-09-25 deep-dive: https://discord.com/newage?redirect=X (404) reflects the full request URL in <meta property="og:url" content="https://discord.com/newage?redirect=X" />. Raw-char matrix: " -> a%22b, ' -> a%27b, > -> a%3Eb, <script> -> %3Cscript%3E - all remain percent-encoded inside the content attribute. No meta/attribute breakout; documented for completeness. (discord.com/login?return_to= is NOT reflected; /download?redirect= not reflected.)
 
 ## Reproduction notes
 

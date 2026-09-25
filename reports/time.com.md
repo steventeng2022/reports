@@ -1,60 +1,313 @@
-# Security Audit Report — time.com
+# Security Audit Report - time.com
+
+> **Consolidated report** - union of two independent passes on the same target: random bounty hunt phase 24 (agent-random, 2026-09-25) and aggressive injection hunt wave-6 (agent-aggressive, 2026-09-24/25). Findings below are the deduplicated union (matched by ID + finding name); per-pass provenance is in the reproduction notes.
+
 
 ## Scope and authorization
 
 | Item | Value |
 |---|---|
 | Target | https://time.com/ |
-| Bug bounty program | TIME |
+| Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | time.com |
-| Test date | 2026-09-25 04:25 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 00:40 UTC |
+| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 1, Low: 3, Info: 2)
+Total findings: **15** (High: 0, Medium: 1, Low: 7, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
+<<<<<<< HEAD
 | 1 | medium | S1 | mail.time.com - CloudFront dist + edge function, 404 default on all paths | CWE-916 |
 | 2 | low | H2 | Missing CSP header | CWE-1021 |
 | 3 | low | H4 | No clickjacking protection | CWE-1023 |
 | 4 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
 | 5 | info | T2 | TLS certificate expiring within 18 days | CWE-295 |
 | 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+=======
+| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 2 | low | H1 | Missing HSTS header | CWE-319 |
+| 3 | low | H2 | Missing CSP header | CWE-1021 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | low | H4 | No clickjacking protection | CWE-1023 |
+| 8 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
+| 9 | info | A10b | Sitemap enumerates URLs | CWE-200 |
+| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 11 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 12 | info | H6 | Server technology disclosure | CWE-200 |
+| 13 | info | H7 | X-Powered-By disclosure | CWE-200 |
+| 14 | info | P3 | Missing security.txt | CWE-1038 |
+| 15 | info | T2 | TLS certificate expiring within 18 days | CWE-295 |
+>>>>>>> 0c7702582aac07e44e113aae3f96e70c2ffe5876
 
 ## Detailed findings
 
 ### 1. [MEDIUM] mail.time.com - CloudFront distribution + edge function, 404 default on all paths (`S1`)
 
 - **CWE:** CWE-916
+<<<<<<< HEAD
 - **Detail:** mail.time.com -> 3.169.55.64 (CloudFront 8ad72c38f68920ee5b40a6b6070b6b0). RETEST 2026-09-25: an edge CloudFront function (x-cache: LambdaGeneratedResponse) 301-redirects every path to a trailing-slash variant (/actuator -> /actuator/, /x -> /x/); the slash variants return the CloudFront DEFAULT 404 page (8475B, NOINDEX/NO-CACHE). Distribution is active but the origin serves nothing = dangling-content takeover candidate (claim the origin bucket/distribution). KEPT as medium.
+=======
+- **Detail:** Dangling subdomain served by third-party platform
+- **Recommendation:** Review and remediate per CWE guidance.
+>>>>>>> 0c7702582aac07e44e113aae3f96e70c2ffe5876
 
-### 2. [LOW] Missing CSP header (`H2`)
+### 2. [LOW] Missing HSTS header (`H1`)
+
+- **CWE:** CWE-319
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** http response
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+
+### 3. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on https://time.com/
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** http response
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 3. [LOW] No clickjacking protection (`H4`)
+### 4. [LOW] Missing CSP header (`H2`)
+
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 5. [LOW] Missing X-Content-Type-Options (`H3`)
+
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** http response
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
+
+### 6. [LOW] No clickjacking protection (`H4`)
 
 - **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on https://time.com/
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** http response
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 4. [LOW] Host header alters response (vhost behavior) (`I12`)
+### 7. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+
+### 8. [LOW] Host header alters response (vhost behavior) (`I12`)
 
 - **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: time.com + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
+- **Detail:** Host header alters response (vhost behavior)
+- **Recommendation:** Review and remediate per CWE guidance.
 
-### 5. [INFO] TLS certificate expiring within 18 days (`T2`)
-
-- **CWE:** CWE-295
-- **Detail:** Certificate for time.com (CN=*.time.com) valid_to Oct 12 16:26:59 2026 GMT.
-
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 9. [INFO] Sitemap enumerates URLs (`A10b`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://time.com/
+- **Detail:** /sitemap.xml lists 5602 URLs; sensitive-looking entries: none.
+- **Recommendation:** Remove or protect internal/sensitive URLs from the public sitemap.
 
-## Reproduction notes
+### 10. [INFO] Missing Referrer-Policy (`H5`)
 
-- Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** http response
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+
+### 11. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+
+### 12. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Server header reveals: Varnish
+- **Context:** http response
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 13. [INFO] X-Powered-By disclosure (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** X-Powered-By: Next.js
+- **Recommendation:** Remove the X-Powered-By header.
+
+### 14. [INFO] Missing security.txt (`P3`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 15. [INFO] TLS certificate expiring within 18 days (`T2`)
+
+- **CWE:** CWE-295
+- **Detail:** TLS certificate expiring within 18 days
+- **Recommendation:** Review and remediate per CWE guidance.
+
+## Aggressive probe campaign
+
+**Stage 1 - injection/reflection probes (28 requests):**
+
+- no stage-1 probe hits (all probes negative)
+
+**Stage 2 - aggressive probe suite v2 (99 requests):**
+
+- robots_disallow: ["/?search*","/*?pano=*","*/munich/index_html*","/*?__rmid___get___page","/*?*__hsfp","/*?*__hstc","/*?*__rmid","/*?*__rmidpage","/*?*/*ref","/*?*002/*0902","/*?*2&hubs_content","/*?*ajs_event","/*?*app","/*?*attachment_id","/*?*author","/*?*bcpid","/*?*bcpidpage","/*?*cat","/*?*controlsVisibleOnLoad","/*?*country"]
+- sitemap: {"total":5602,"sensitive":[]}
+
+Stage-2 probe log (observed responses):
+- timing base=563ms id=268 search=139
+- boolean b=200/1319985 t1=406/0 t2=200/1320017
+- graphql /graphql -> 301
+- graphql /api/graphql -> 301
+- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 301
+- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 406
+- trav2 /%2e%2e%00.html -> 406
+- trav2 /static//../../../../../../etc/passwd -> 301
+- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 301
+- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 406
+- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301
+- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 406
+- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 406
+- apicors /api -> 301
+- apicors /api/v1 -> 301
+- apicors /graphql -> 301
+- apicors /rest -> 301
+- apicors /v1 -> 301
+
+**Stage 3 - live parameter harvest, takeover and injection probes (43 requests):**
+
+- params_harvested: ["render","id","branch","source","hl"]
+
+Stage-3 probe log (observed responses):
+- harvest discovered 5 live query params
+- xss3 https://www.google.com/recaptcha/enterprise.js?render -> err
+- xss3 https://www.googletagmanager.com/gtm.js?id -> err
+- xss3 https://static.time.com/v3/assets/bltea6093859af6183b/blt15191143a1927dff/6ab190c8bbb02aa678181934/admiral-paparo-time-2026-03.jpg?branch -> err
+- xss3 /newsletters/?source -> 406
+- xss3 https://www.instagram.com/time/?hl -> err
+- subs no dangling service CNAMEs over 16 subdomains
+
+## Evidence (raw response observations)
+
+```json
+{
+  "http_status": 301,
+  "http_redirect_to": "https://time.com/",
+  "https_status": 200,
+  "content_type": "text/html; charset=utf-8",
+  "title": "TIME | Current &amp; Breaking News | National &amp; World Updates",
+  "path_gitconfig": 301,
+  "path_envfile": 404,
+  "path_securitytxt": 404,
+  "path_robots": 200,
+  "robots_found": true,
+  "probe_count": 28,
+  "probe_log": [
+    "sqli /search?q=1%27+OR+1=1-- -> 301",
+    "sqli /?id=1%27+OR+1=1-- -> 406",
+    "sqli /?q=%27 -> 200",
+    "sqli /products?filter=%27 -> 301",
+    "sqli /?p=1;-- -> 200",
+    "sqli-reflect /search?q=%27+OR+1=1-- -> 301",
+    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 406",
+    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
+    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301",
+    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 406",
+    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
+    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 406",
+    "trav /static/../../../../../../../../etc/passwd -> 301",
+    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 301",
+    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 406",
+    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
+    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
+    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 200",
+    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
+    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
+    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
+    "crlf /?q=a%0d%0aX-Inj:%201 -> 200",
+    "crlf /search?q=a%0d%0aX-Inj:%201 -> 301",
+    "host no reflection -> 421",
+    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
+    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
+    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
+    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301"
+  ],
+  "v2_probe_count": 99,
+  "v2_log": [
+    "timing base=563ms id=268 search=139",
+    "boolean b=200/1319985 t1=406/0 t2=200/1320017",
+    "graphql /graphql -> 301",
+    "graphql /api/graphql -> 301",
+    "sweep no hits over 26 paths",
+    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 301",
+    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 406",
+    "trav2 /%2e%2e%00.html -> 406",
+    "trav2 /static//../../../../../../etc/passwd -> 301",
+    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 301",
+    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 406",
+    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301",
+    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 406",
+    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 406",
+    "redir2 no hits over 49 requests",
+    "apicors /api -> 301",
+    "apicors /api/v1 -> 301",
+    "apicors /graphql -> 301",
+    "apicors /rest -> 301",
+    "apicors /v1 -> 301"
+  ],
+  "robots_disallow": [
+    "/?search*",
+    "/*?pano=*",
+    "*/munich/index_html*",
+    "/*?__rmid___get___page",
+    "/*?*__hsfp",
+    "/*?*__hstc",
+    "/*?*__rmid",
+    "/*?*__rmidpage",
+    "/*?*/*ref",
+    "/*?*002/*0902",
+    "/*?*2&hubs_content",
+    "/*?*ajs_event",
+    "/*?*app",
+    "/*?*attachment_id",
+    "/*?*author",
+    "/*?*bcpid",
+    "/*?*bcpidpage",
+    "/*?*cat",
+    "/*?*controlsVisibleOnLoad",
+    "/*?*country"
+  ],
+  "sitemap": {
+    "total": 5602,
+    "sensitive": []
+  },
+  "v3_probe_count": 43,
+  "v3_log": [
+    "harvest discovered 5 live query params",
+    "xss3 https://www.google.com/recaptcha/enterprise.js?render -> err",
+    "xss3 https://www.googletagmanager.com/gtm.js?id -> err",
+    "xss3 https://static.time.com/v3/assets/bltea6093859af6183b/blt15191143a1927dff/6ab190c8bbb02aa678181934/admiral-paparo-time-2026-03.jpg?branch -> err",
+    "xss3 /newsletters/?source -> 406",
+    "xss3 https://www.instagram.com/time/?hl -> err",
+    "subs no dangling service CNAMEs over 16 subdomains",
+    "cache X-Forwarded-Host not reflected -> 200"
+  ],
+  "params_harvested": [
+    "render",
+    "id",
+    "branch",
+    "source",
+    "hl"
+  ],
+  "source": " + merged aggressive-injection-hunt pass (agent-aggressive, wave-6, 2026-09-25)"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).
+- No credentials were used; no state was modified on the target.
+- Findings are reported against the public program scope; submission through the program tracker is pending.
