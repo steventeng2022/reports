@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| strava.com | 11 | 0 | 4 | 4 | 3 | top-websites gist (no active program match) |
 | docker.com | 9 | 0 | 5 | 2 | 2 | Docker |
 | raw.githubusercontent.com | 31 | 1 | 2 | 28 | 0 | top-websites gist (no active program match) |
 | infusionsoft.com | 38 | 0 | 0 | 35 | 3 | top-websites gist (no active program match) |
