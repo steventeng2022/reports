@@ -533,3 +533,4 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | allmusic.com | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
 | pond5.com | 7 | 0 | 1 | 4 | 2 | top-websites gist (no active program match) |
 | linktr.ee | 5 | 0 | 2 | 3 | 0 | top-websites gist (no active program match) |
+| disqus.com | 9 | 0 | 1 | 4 | 4 | top-websites gist (no active program match) |
