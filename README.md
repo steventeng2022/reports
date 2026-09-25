@@ -2,7 +2,7 @@
 
 Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the intersection of the provided top-websites list and active public bug-bounty program scopes.
 
-**Total findings across all sites: 5082**
+**Total findings across all sites: 5055**
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -21,7 +21,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | accessify.com | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | accounts.google.com | 6 | 0 | 0 | 1 | 5 | Google |
 | acm.org | 9 | 0 | 0 | 6 | 3 | top-websites gist (no active program match) |
-| activecampaign.com | 40 | 26 | 8 | 4 | 2 | top-websites gist (no active program match) |
+| activecampaign.com | 16 | 0 | 10 | 4 | 2 | top-websites gist (no active program match) |
 | ad.doubleclick.net | 11 | 0 | 0 | 6 | 5 | top-websites gist (no active program match) |
 | adage.com | 11 | 0 | 0 | 6 | 5 | top-websites gist (no active program match) |
 | addons.mozilla.org | 2 | 0 | 0 | 1 | 1 | top-websites gist (no active program match) |
@@ -450,7 +450,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | untappd.com | 11 | 0 | 0 | 6 | 5 | top-websites gist (no active program match) |
 | upwork.com | 10 | 0 | 0 | 6 | 4 | Upwork |
 | us.battle.net | 11 | 0 | 0 | 6 | 5 | top-websites gist (no active program match) |
-| use.typekit.net | 10 | 4 | 0 | 5 | 1 | top-websites gist (no active program match) |
+| use.typekit.net | 7 | 0 | 1 | 5 | 1 | top-websites gist (no active program match) |
 | validator.w3.org | 10 | 0 | 0 | 5 | 5 | top-websites gist (no active program match) |
 | verizon.com | 12 | 0 | 1 | 8 | 3 | top-websites gist (no active program match) |
 | vice.com | 13 | 0 | 0 | 8 | 5 | top-websites gist (no active program match) |

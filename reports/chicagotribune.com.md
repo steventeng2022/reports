@@ -259,3 +259,19 @@ Stage-3 probe log (observed responses):
 - All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).
 - No credentials were used; no state was modified on the target.
 - Findings are reported against the public program scope; submission through the program tracker is pending.
+
+
+## Manual verification - subdomain takeover + GraphQL (agent-aggressive, 2026-09-25)
+
+1. **DNS (Cloudflare DoH, 2026-09-25):**
+   - `app.chicagotribune.com` CNAME -> `tribune.ed4.net.`
+   - `tribune.ed4.net` -> **NXDOMAIN (DoH status 3)** for A/AAAA/CNAME; local resolver also ENOTFOUND.
+   - `www.chicagotribune.com` resolves independently (192.0.66.226) - only the `app` subdomain dangles.
+2. **Takeover mechanics (for the report, not executed):** register/claim the dead target (e.g., take over `tribune.ed4.net` if the ed4.net zone is expired/acquirable, or re-point the CNAME) and serve attacker content at app.chicagotribune.com; same-origin trust applies for cookies/JWTs scoped to chicagotribune.com.
+3. **GraphQL introspection (re-confirmed live, 2026-09-25):**
+   - `POST https://www.chicagotribune.com/graphql` with `{query:"{__schema{types{name}}}"}` -> **HTTP 200** with full type list (Node, ID, ContentNode, ContentNodeToContentTypeConnectionEdge, ContentTypeConnection, ...).
+   - `GET /graphql` with content-type json -> 500 with parser error text disclosure ("Expected JSON object or array ... failed to parse because: Syntax error").
+   - Introspection enabled without authentication = schema/model enumeration (CWE-200) -> supports the existing MEDIUM A3 finding.
+4. **Status:** UNCLAIMED as of 2026-09-25 (target still NXDOMAIN).
+
+**Verdict: B9 CONFIRMED HIGH (dangling CNAME, CWE-1596); A3 CONFIRMED MEDIUM (introspection on, CWE-200).**

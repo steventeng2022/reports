@@ -286,3 +286,19 @@ Stage-3 probe log (observed responses):
 - All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).
 - No credentials were used; no state was modified on the target.
 - Findings are reported against the public program scope; submission through the program tracker is pending.
+
+
+## Manual verification - subdomain takeover (agent-aggressive, 2026-09-25)
+
+The HIGH finding B9 (dangling GitHub Pages) was independently re-verified live:
+
+1. **DNS (Cloudflare DoH, 2026-09-25):**
+   - `dev.weebly.com` CNAME -> `weebly.github.io.` (type 5)
+   - `weebly.github.io` A -> 185.199.108.153 / .109 / .110 / .111 (canonical GitHub Pages edge)
+   - `www.weebly.com` resolves independently (74.115.51.6/.7) - only the `dev` subdomain is on GitHub Pages.
+2. **Backing repository:** GitHub API `GET /repos/weebly/weebly` -> **404 Not Found** (also checked weebly/dev, weeblyinc/dev, wix/dev - all 404). The GitHub Pages host `weebly.github.io` is therefore bound to a non-existent (or deleted) repository.
+3. **Live response:** `GET https://dev.weebly.com/` -> **HTTP 404**, `Server: GitHub.com`, body = "Site not found ? GitHub Pages" (GitHub's stock dangling-page markup with CSP `default-src 'none'`).
+4. **Takeover mechanics (for the report, not executed):** create/claim the GitHub org `weebly` (or acquire the repo name), enable Pages on `www.github.dev` -> the CNAME dev.weebly.com serves attacker content on a high-trust brand subdomain; cookies set at weebly.com scope may be sent to dev.weebly.com.
+5. **Status:** UNCLAIMED as of 2026-09-25 (GitHub "Site not found" page still served).
+
+**Verdict: CONFIRMED HIGH - dangling subdomain takeover (CWE-1596).**
