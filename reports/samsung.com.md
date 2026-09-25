@@ -7,12 +7,12 @@
 | Target | https://samsung.com/ |
 | Bug bounty program | [Samsung TV](https://samsungtvbounty.com) |
 | Listed scope domain | samsung.com |
-| Test date | 2026-09-25 09:51 UTC |
+| Test date | 2026-09-25 13:34 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 8, Info: 7)
+Total findings: **14** (High: 0, Medium: 0, Low: 7, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -23,14 +23,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 8, Info: 7)
 | 5 | low | H3 | Missing Content-Security-Policy | CWE-79 |
 | 6 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
 | 7 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 8 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
-| 9 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 12 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 13 | info | R1 | robots.txt protected | CWE-200 |
-| 14 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
-| 15 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
+| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 10 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 11 | info | R1 | robots.txt protected | CWE-200 |
+| 12 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 13 | info | T0 | TLS handshake could not be completed | CWE-200 |
+| 14 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
 
 ## Detailed findings
 
@@ -69,49 +68,43 @@ Total findings: **15** (High: 0, Medium: 0, Low: 8, Info: 7)
 - **CWE:** CWE-1021
 - **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://samsung.com/; page may be rendered in a foreign frame.
 
-### 8. [LOW] TLS certificate expiring within 30 days (`T3`)
-
-- **CWE:** CWE-298
-- **Detail:** Certificate expires 2026-10-23T23:59:59+00:00 (28 days left) for samsung.com.
-
-### 9. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for samsung.com lists 1 name(s) besides the scope host: *.samsung.com
-
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 8. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header on https://samsung.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 11. [INFO] Missing Permissions-Policy (`H7`)
+### 9. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
 - **Detail:** No Permissions-Policy header on https://samsung.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 12. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+### 10. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
 - **CWE:** CWE-319
 - **Detail:** http://samsung.com/ -> https://www.samsung.com/ (positive check).
 
-### 13. [INFO] robots.txt protected (`R1`)
+### 11. [INFO] robots.txt protected (`R1`)
 
 - **CWE:** CWE-200
 - **Detail:** GET /robots.txt returned 403.
 
-### 14. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 12. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
 - **CWE:** CWE-200
 - **Detail:** GET /.well-known/security.txt returned 403 on samsung.com.
 
-### 15. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+### 13. [INFO] TLS handshake could not be completed (`T0`)
+
+- **CWE:** CWE-200
+- **Detail:** No TLS version completed a handshake on samsung.com:443 (versions: {'TLSv1.0': False, 'TLSv1.1': False, 'TLSv1.2': False, 'TLSv1.3': False}; errors: ['TLSv1.0: [SSL: NO_PROTOCOLS_AVAILABLE] no protocols available (_ssl.c:1010)', 'TLSv1.1: [SSL: NO_PROTOCOLS_AVAILABLE] no protocols available (_ssl.c:1010)']).
+
+### 14. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
 
 - **CWE:** CWE-200
 - **Detail:** https://samsung.com/ responded 403 (passive check only; no further probing).
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 13:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://samsung.com/ final status: 403 (final URL https://www.samsung.com/).
 - http://samsung.com/ initial status: 301.
-- Certificate: Sectigo Limited Sectigo Public Server Authentication CA OV R36, valid until 2026-10-23T23:59:59+00:00.

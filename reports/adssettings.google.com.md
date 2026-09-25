@@ -7,7 +7,7 @@
 | Target | https://adssettings.google.com/ |
 | Bug bounty program | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | Listed scope domain | adssettings.google.com |
-| Test date | 2026-09-25 09:51 UTC |
+| Test date | 2026-09-25 13:34 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -63,7 +63,7 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://adssettings.google.com/ final status: 200 (final URL https://adssettings.google.com/anonymous?sig=ACi0TCjJszemC706gQkpOiEdX_dzyJbsOVQ1AC0NIoZjzsSsjH9XXMf_1xB05BzvZo3Va-9tqgrdFyGf-Ma1Tj1yt9mEnHpHuQ&hl=en).
+- Scanned 2026-09-25 13:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://adssettings.google.com/ final status: 200 (final URL https://adssettings.google.com/anonymous?sig=ACi0TCg99V_WtFPzygN8qVo4u7p9v7cxFrvqpzMdBrr8UbdkptP2TVmgDkBUqKcgkoZje_s9BQdtL3IDcNWKo36I78oNA45p5A&hl=en).
 - http://adssettings.google.com/ initial status: 301.
 - Certificate: Google Trust Services WE2, valid until 2026-12-03T19:22:00+00:00.

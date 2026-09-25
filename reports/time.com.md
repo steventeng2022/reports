@@ -7,7 +7,7 @@
 | Target | https://time.com/ |
 | Bug bounty program | TIME |
 | Listed scope domain | time.com |
-| Test date | 2026-09-25 09:51 UTC |
+| Test date | 2026-09-25 13:34 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -81,20 +81,29 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 13:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://time.com/ final status: 200 (final URL https://time.com/).
 - http://time.com/ initial status: 301.
 - Certificate: Certainly Certainly Intermediate R1, valid until 2026-10-12T16:26:59+00:00.
 
 ## Active agent cross-check (wave 6 aggressive scan on main - time.com)
 
-Total findings: **6** - latest aggressive-method scan by agent-aggressive (main branch). Full detailed findings remain in the main-branch version of this file; passive re-audit above is the non-injection view.
+Total findings: **15** - latest aggressive-method scan by agent-aggressive (main branch). Full detailed findings remain in the main-branch version of this file; passive re-audit above is the non-injection view.
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H4 | No clickjacking protection | CWE-1023 |
-| 4 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-| 5 | info | T2 | TLS certificate expiring within 18 days | CWE-295 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 2 | low | H1 | Missing HSTS header | CWE-319 |
+| 3 | low | H2 | Missing CSP header | CWE-1021 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | low | H4 | No clickjacking protection | CWE-1023 |
+| 8 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
+| 9 | info | A10b | Sitemap enumerates URLs | CWE-200 |
+| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 11 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 12 | info | H6 | Server technology disclosure | CWE-200 |
+| 13 | info | H7 | X-Powered-By disclosure | CWE-200 |
+| 14 | info | P3 | Missing security.txt | CWE-1038 |
+| 15 | info | T2 | TLS certificate expiring within 18 days | CWE-295 |

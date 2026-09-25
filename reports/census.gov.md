@@ -1,4 +1,4 @@
-# Security Audit Report - census.gov
+# Security Audit Report — census.gov
 
 ## Scope and authorization
 
@@ -7,73 +7,24 @@
 | Target | https://census.gov/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | census.gov |
-| Test date | 2026-09-25 01:02 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 13:34 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **1** (High: 0, Medium: 0, Low: 1, Info: 0)
+Total findings: **1** (High: 0, Medium: 0, Low: 0, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | R3 | HTTP endpoint unreachable | CWE-1032 |
+| 1 | info | X1 | HTTPS homepage unreachable | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] HTTP endpoint unreachable (`R3`)
+### 1. [INFO] HTTPS homepage unreachable (`X1`)
 
-- **CWE:** CWE-1032
-- **Detail:** http://census.gov failed: timeout
-- **Recommendation:** Serve the site on port 80 with a redirect to HTTPS.
+- **CWE:** CWE-200
+- **Detail:** https://census.gov/: ConnectTimeout: HTTPSConnectionPool(host='census.gov', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<HTTPSConnection(host='census.gov', port=443) 
 
-## Aggressive probe campaign
+## Reproduction notes
 
-**Stage 1 - injection/reflection probes (28 requests):**
-
-- no stage-1 probe hits (all probes negative)
-
-**Stage 2 - aggressive probe suite v2 (99 requests):**
-
-- no stage-2 probe hits (all probes negative)
-
-Stage-2 probe log (observed responses):
-- timing base=errms id=err search=err
-
-**Stage 3 - live parameter harvest, takeover and injection probes (7 requests):**
-
-- no stage-3 probe hits (all probes negative)
-
-Stage-3 probe log (observed responses):
-- harvest no query params discovered on sampled pages
-- subs no dangling service CNAMEs over 16 subdomains
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_error": "timeout",
-  "https_error": "timeout",
-  "probe_count": 28,
-  "probe_log": [
-    "sqli-reflect /search?q=%27+OR+1=1-- -> err",
-    "host no reflection -> err"
-  ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=errms id=err search=err",
-    "sweep no hits over 26 paths",
-    "redir2 no hits over 49 requests"
-  ],
-  "v3_probe_count": 7,
-  "v3_log": [
-    "harvest no query params discovered on sampled pages",
-    "subs no dangling service CNAMEs over 16 subdomains"
-  ]
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 13:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.

@@ -7,7 +7,7 @@
 | Target | https://apps.apple.com/ |
 | Bug bounty program | [Apple](https://security.apple.com) |
 | Listed scope domain | apps.apple.com |
-| Test date | 2026-09-25 09:51 UTC |
+| Test date | 2026-09-25 13:34 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -40,7 +40,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 0, Info: 8)
 ### 3. [INFO] HSTS not preloaded (`H2c`)
 
 - **CWE:** CWE-319
-- **Detail:** `max-age=31536000; includeSubDomains, max-age=31536000; includeSubDomains` lacks the preload directive.
+- **Detail:** `max-age=31536000; includeSubDomains` lacks the preload directive.
 
 ### 4. [INFO] Missing Referrer-Policy (`H5`)
 
@@ -69,7 +69,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 0, Info: 8)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 13:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://apps.apple.com/ final status: 200 (final URL https://apps.apple.com/us/iphone/today).
 - http://apps.apple.com/ initial status: 301.
 - Certificate: Apple Inc. Apple Public EV Server RSA CA 1 - G1, valid until 2027-01-07T19:46:05+00:00.

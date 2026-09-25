@@ -7,7 +7,7 @@
 | Target | https://fb.me/ |
 | Bug bounty program | [Facebook](https://www.facebook.com/whitehat) |
 | Listed scope domain | fb.me |
-| Test date | 2026-09-25 09:51 UTC |
+| Test date | 2026-09-25 13:34 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -57,7 +57,7 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 13:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://fb.me/ final status: 400 (final URL https://fb.me/).
 - http://fb.me/ initial status: 301.
 - Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-02T23:59:59+00:00.

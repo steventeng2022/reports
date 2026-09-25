@@ -7,12 +7,12 @@
 | Target | https://space.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | space.com |
-| Test date | 2026-09-25 09:51 UTC |
+| Test date | 2026-09-25 13:34 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,7 +28,6 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 | 10 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
 | 11 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
 | 12 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 13 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
@@ -92,14 +91,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - **CWE:** CWE-200
 - **Detail:** robots.txt on https://space.com/ exposes 24 unique Disallow path(s) (#, *%7B*%7D*, *.freyr.*, */.events-handler*, */comments/*) and 2 sitemap reference(s)
 
-### 13. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on space.com.
-
 ## Reproduction notes
 
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 13:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://space.com/ final status: 200 (final URL https://www.space.com/).
 - http://space.com/ initial status: 301.
 - Certificate: Let's Encrypt YR1, valid until 2026-11-17T15:38:00+00:00.

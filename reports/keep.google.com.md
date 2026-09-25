@@ -7,7 +7,7 @@
 | Target | https://keep.google.com/ |
 | Bug bounty program | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | Listed scope domain | keep.google.com |
-| Test date | 2026-09-25 09:51 UTC |
+| Test date | 2026-09-25 13:34 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -59,11 +59,11 @@ Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
 ### 7. [INFO] HTTPS root redirects to different host (`X3`)
 
 - **CWE:** CWE-200
-- **Detail:** https://keep.google.com/ redirects to https://accounts.google.com/v3/signin/identifier?continue=https://keep.google.com/&followup=https://keep.google.com/&ltmpl=keep&passive=1209600&service=memento&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S-989603328:1790329973159733.
+- **Detail:** https://keep.google.com/ redirects to https://accounts.google.com/v3/signin/identifier?continue=https://keep.google.com/&followup=https://keep.google.com/&ltmpl=keep&passive=1209600&service=memento&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S-66946485:1790343374570345.
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://keep.google.com/ final status: 200 (final URL https://accounts.google.com/v3/signin/identifier?continue=https://keep.google.com/&followup=https://keep.google.com/&ltmpl=keep&passive=1209600&service=memento&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S-989603328:1790329973159733).
+- Scanned 2026-09-25 13:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://keep.google.com/ final status: 200 (final URL https://accounts.google.com/v3/signin/identifier?continue=https://keep.google.com/&followup=https://keep.google.com/&ltmpl=keep&passive=1209600&service=memento&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S-66946485:1790343374570345).
 - http://keep.google.com/ initial status: 301.
 - Certificate: Google Trust Services WE2, valid until 2026-12-03T19:21:59+00:00.
