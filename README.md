@@ -546,3 +546,4 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | mega.nz | 12 | 0 | 0 | 4 | 8 | top-websites gist (no active program match) |
 | ea.com | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
 | connect.facebook.net | 5 | 0 | 0 | 2 | 3 | top-websites gist (no active program match) |
+| xbox.com | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
