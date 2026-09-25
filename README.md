@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| bing.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | franchising.com | 5 | 0 | 0 | 4 | 1 | top-websites gist (no active program match) |
 | penguinrandomhouse.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | strava.com | 11 | 0 | 4 | 4 | 3 | top-websites gist (no active program match) |
