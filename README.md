@@ -537,3 +537,4 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | gofundme.com | 15 | 0 | 5 | 7 | 3 | top-websites gist (no active program match) |
 | pixlr.com | 38 | 0 | 0 | 29 | 9 | top-websites gist (no active program match) |
 | design.google | 4 | 0 | 0 | 1 | 3 | top-websites gist (no active program match) |
+| mlb.com | 3 | 0 | 0 | 3 | 0 | top-websites gist (no active program match) |
