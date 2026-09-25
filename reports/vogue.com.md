@@ -12,6 +12,7 @@
 
 ## Summary
 
+<<<<<<< HEAD
 Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
@@ -32,6 +33,33 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 ## Detailed findings
 
 ### 1. [LOW] Cookies set without HttpOnly (`C1`)
+=======
+Total findings: **5** (High: 0, Medium: 0, Low: 3, Info: 2)
+
+| # | Severity | ID | Finding | CWE |
+|---|---|---|---|---|
+| 1 | info | I7 | Server-side template injection (SSTI) - REFUTED (verified 2026-09-26) | CWE-94 |
+| 2 | low | H1 | Missing HSTS header | CWE-319 |
+| 3 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
+| 4 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
+| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
+
+## Detailed findings
+
+### 1. [INFO] Server-side template injection (SSTI) - REFUTED (`I7`)
+
+- **CWE:** CWE-94
+- **Detail:** Parameter q on https://www.vogue.com/search: payload #{17*19} is evaluated server-side (response contains 323; control #{17*18} contains 306 instead; token not reflected).
+
+- **Verification (2026-09-26, rule 4):** REFUTED. Stronger arithmetic pairs re-tested: #{199*37}=7363 and #{1009*101}=101909 do NOT appear in the response (nor their controls); original 323/1600 hits were coincidental matches inside CSS unicode-range / max-width declarations. The token string itself is never reflected.
+
+### 2. [LOW] Missing HSTS header (`H1`)
+
+- **CWE:** CWE-319
+- **Detail:** No Strict-Transport-Security on https://www.vogue.com/
+
+### 3. [LOW] Cookies without HttpOnly flag (`C2`)
+>>>>>>> 856185b (verify pass: webmd 19x I1, typekit 4x I1, ca.linkedin I2+4xI5, vogue SSTI all REFUTED (token matrices); reports+README updated; wave 10 shipped (122); chat)
 
 - **CWE:** CWE-1004
 - **Detail:** Set on https://vogue.com/ without HttpOnly: CN_geo_country_code, CN_segments, CN_xid, xid1. Readable by client-side script.
