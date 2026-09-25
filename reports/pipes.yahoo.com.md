@@ -29,7 +29,7 @@ Total findings: **2** (High: 0, Medium: 0, Low: 0, Info: 2)
 ### 2. [INFO] HTTPS homepage unreachable (`X1`)
 
 - **CWE:** CWE-200
-- **Detail:** https://pipes.yahoo.com/: ConnectionError: HTTPSConnectionPool(host='pipes.yahoo.com', port=443): Max retries exceeded with url: / (Caused by NameResolutionError("HTTPSConnection(host='pipes.yahoo.com', 
+- **Detail:** https://pipes.yahoo.com/: ConnectionError: HTTPSConnectionPool(host='pipes.yahoo.com', port=443): Max retries exceeded with url: / (Caused by NameResolutionError("HTTPSConnection(host='pipes.yahoo.com',
 
 ## Reproduction notes
 

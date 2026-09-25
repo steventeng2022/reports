@@ -29,7 +29,7 @@ Total findings: **2** (High: 0, Medium: 0, Low: 0, Info: 2)
 ### 2. [INFO] HTTPS homepage unreachable (`X1`)
 
 - **CWE:** CWE-200
-- **Detail:** https://money.yandex.ru/: ConnectionError: HTTPSConnectionPool(host='money.yandex.ru', port=443): Max retries exceeded with url: / (Caused by NameResolutionError("HTTPSConnection(host='money.yandex.ru', 
+- **Detail:** https://money.yandex.ru/: ConnectionError: HTTPSConnectionPool(host='money.yandex.ru', port=443): Max retries exceeded with url: / (Caused by NameResolutionError("HTTPSConnection(host='money.yandex.ru',
 
 ## Reproduction notes
 
