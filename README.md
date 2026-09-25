@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| wix.com | 12 | 0 | 3 | 7 | 2 | top-websites gist (no active program match) |
 | time.com | 6 | 0 | 1 | 3 | 2 | TIME |
 | ranker.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
 | lh5.ggpht.com | 13 | 0 | 0 | 3 | 10 | top-websites gist (no active program match) |
