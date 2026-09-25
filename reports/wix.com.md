@@ -7,12 +7,12 @@
 | Target | https://wix.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | wix.com |
-| Test date | 2026-09-25 06:31 UTC |
+| Test date | 2026-09-25 09:51 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
+Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 | 11 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
 | 12 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
 | 13 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 14 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
@@ -85,7 +86,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 ### 11. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
 - **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://wix.com/ lists 1410 URLs.
+- **Detail:** sitemap.xml on https://wix.com/ lists 1468 URLs.
 
 ### 12. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
@@ -97,9 +98,14 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 - **CWE:** CWE-200
 - **Detail:** robots.txt on https://wix.com/ exposes 87 unique Disallow path(s) (*/fullscreen-page, */laboratory/conductAllInScope, /*?sort=, /*cacheKiller=, /*hubs_content) and 1 sitemap reference(s)
 
+### 14. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on wix.com.
+
 ## Reproduction notes
 
-- Scanned 2026-09-25 06:31 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://wix.com/ final status: 200 (final URL https://www.wix.com/).
 - http://wix.com/ initial status: 301.
 - Certificate: Let's Encrypt YR2, valid until 2026-11-06T11:34:35+00:00.

@@ -7,7 +7,7 @@
 | Target | https://news.google.com/ |
 | Bug bounty program | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | Listed scope domain | news.google.com |
-| Test date | 2026-09-25 06:31 UTC |
+| Test date | 2026-09-25 09:51 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -75,7 +75,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 06:31 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://news.google.com/ final status: 200 (final URL https://news.google.com/home?hl=en-US&gl=US&ceid=US:en).
 - http://news.google.com/ initial status: 301.
-- Certificate: Google Trust Services WE2, valid until 2026-12-03T19:23:56+00:00.
+- Certificate: Google Trust Services WR2, valid until 2026-12-03T19:23:50+00:00.

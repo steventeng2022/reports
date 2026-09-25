@@ -7,7 +7,7 @@
 | Target | https://adobe.com/ |
 | Bug bounty program | [Adobe](https://hackerone.com/adobe) |
 | Listed scope domain | adobe.com |
-| Test date | 2026-09-25 06:31 UTC |
+| Test date | 2026-09-25 09:51 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -33,6 +33,6 @@ Total findings: **2** (High: 0, Medium: 0, Low: 0, Info: 2)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 06:31 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - http://adobe.com/ initial status: 301.
 - Certificate: DigiCert Inc DigiCert Global G3 TLS ECC SHA384 2020 CA1, valid until 2027-01-04T23:59:59+00:00.

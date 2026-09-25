@@ -7,7 +7,7 @@
 | Target | https://samsung.com/ |
 | Bug bounty program | [Samsung TV](https://samsungtvbounty.com) |
 | Listed scope domain | samsung.com |
-| Test date | 2026-09-25 06:31 UTC |
+| Test date | 2026-09-25 09:51 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -111,7 +111,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 8, Info: 7)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 06:31 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://samsung.com/ final status: 403 (final URL https://www.samsung.com/).
 - http://samsung.com/ initial status: 301.
 - Certificate: Sectigo Limited Sectigo Public Server Authentication CA OV R36, valid until 2026-10-23T23:59:59+00:00.

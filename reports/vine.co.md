@@ -7,7 +7,7 @@
 | Target | https://vine.co/ |
 | Bug bounty program | [Twitter](https://hackerone.com/twitter) |
 | Listed scope domain | vine.co |
-| Test date | 2026-09-25 06:31 UTC |
+| Test date | 2026-09-25 09:51 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -69,7 +69,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 0, Info: 8)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 06:31 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://vine.co/ final status: 200 (final URL https://vine.co/).
 - http://vine.co/ initial status: 301.
 - Certificate: Amazon Amazon RSA 2048 M04, valid until 2027-02-03T23:59:59+00:00.

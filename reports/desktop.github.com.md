@@ -7,7 +7,7 @@
 | Target | https://desktop.github.com/ |
 | Bug bounty program | [GitHub](https://hackerone.com/github) |
 | Listed scope domain | desktop.github.com |
-| Test date | 2026-09-25 06:31 UTC |
+| Test date | 2026-09-25 09:51 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -57,7 +57,7 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 06:31 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://desktop.github.com/ final status: 200 (final URL https://github.com/apps/desktop).
 - http://desktop.github.com/ initial status: 301.
 - Certificate: Let's Encrypt YR1, valid until 2026-10-31T23:38:01+00:00.

@@ -7,7 +7,7 @@
 | Target | https://yandex.ru/ |
 | Bug bounty program | [Yandex](https://yandex.com/bugbounty/index) |
 | Listed scope domain | yandex.ru |
-| Test date | 2026-09-25 06:31 UTC |
+| Test date | 2026-09-25 09:51 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -75,7 +75,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 06:31 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://yandex.ru/ final status: 200 (final URL https://sso.passport.yandex.ru/push?uuid=28b14dcf-a7b2-460a-a26d-ccf6c89cf0fa&retpath=https%3A%2F%2Fdzen.ru%2F%3Fyredirect%3Dtrue%26is_autologin_ya%3Dtrue).
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://yandex.ru/ final status: 200 (final URL https://sso.passport.yandex.ru/push?uuid=d0af2321-2307-4086-963e-7f462202c0dd&retpath=https%3A%2F%2Fdzen.ru%2F%3Fyredirect%3Dtrue%26is_autologin_ya%3Dtrue).
 - http://yandex.ru/ initial status: 301.
 - Certificate: GlobalSign nv-sa GlobalSign ECC OV SSL CA 2018, valid until 2026-12-29T20:59:59+00:00.

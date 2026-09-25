@@ -7,7 +7,7 @@
 | Target | https://mp.weixin.qq.com/ |
 | Bug bounty program | [Tencent](https://en.security.tencent.com) |
 | Listed scope domain | mp.weixin.qq.com |
-| Test date | 2026-09-25 06:31 UTC |
+| Test date | 2026-09-25 09:51 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -99,7 +99,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 06:31 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://mp.weixin.qq.com/ final status: 200 (final URL https://mp.weixin.qq.com/).
 - http://mp.weixin.qq.com/ initial status: 302.
 - Certificate: DigiCert, Inc. DigiCert Secure Site OV G2 TLS CN RSA4096 SHA256 2022 CA1, valid until 2026-11-23T23:59:59+00:00.

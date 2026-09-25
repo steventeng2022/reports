@@ -7,7 +7,7 @@
 | Target | https://bing.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | bing.com |
-| Test date | 2026-09-25 06:31 UTC |
+| Test date | 2026-09-25 09:51 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -65,11 +65,11 @@ Total findings: **8** (High: 0, Medium: 0, Low: 4, Info: 4)
 ### 8. [INFO] HTTPS root redirects to different host (`X3`)
 
 - **CWE:** CWE-200
-- **Detail:** https://bing.com/ redirects to https://www.bing.com:443/?toWww=1&redig=826D5469A13D48968C6B46B4EC6809F0.
+- **Detail:** https://bing.com/ redirects to https://www.bing.com:443/?toWww=1&redig=3B5A76C4BA0C4039A2B728980996056B.
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 06:31 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://bing.com/ final status: 203 (final URL https://www.bing.com:443/?toWww=1&redig=826D5469A13D48968C6B46B4EC6809F0).
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://bing.com/ final status: 203 (final URL https://www.bing.com:443/?toWww=1&redig=3B5A76C4BA0C4039A2B728980996056B).
 - http://bing.com/ initial status: 301.
 - Certificate: Microsoft Corporation Microsoft TLS G2 RSA CA OCSP 04, valid until 2027-02-28T17:05:46+00:00.

@@ -7,7 +7,7 @@
 | Target | https://shareasale.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | shareasale.com |
-| Test date | 2026-09-25 06:31 UTC |
+| Test date | 2026-09-25 09:51 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -90,7 +90,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 ### 12. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://shareasale.com (147702 bytes)
+- **Detail:** security.txt present on https://shareasale.com (147703 bytes)
 
 ### 13. [INFO] HTTPS root redirects to different host (`X3`)
 
@@ -99,7 +99,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 06:31 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://shareasale.com/ final status: 200 (final URL https://www.awin.com/us/getting-started-sas?utm_medium=redirect&utm_source=shareasale.com).
 - http://shareasale.com/ initial status: 301.
 - Certificate: Amazon Amazon RSA 2048 M01, valid until 2026-11-28T23:59:59+00:00.
