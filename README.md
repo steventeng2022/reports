@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| g1.globo.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | gmpg.org | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
 | myspace.com | 8 | 0 | 1 | 5 | 2 | top-websites gist (no active program match) |
 | telegram.org | 7 | 0 | 3 | 1 | 3 | Telegram |
