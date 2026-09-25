@@ -524,3 +524,4 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | googletagmanager.com | 7 | 0 | 0 | 5 | 2 | Google |
 | dailycaller.com | 9 | 0 | 0 | 7 | 2 | top-websites gist (no active program match) |
+| lenovo.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
