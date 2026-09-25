@@ -7,12 +7,39 @@
 | Target | https://myspace.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | myspace.com |
-| Test date | 2026-09-25 08:57 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 1, Low: 5, Info: 2)
+Total findings: **2** (High: 0, Medium: 0, Low: 0, Info: 2)
+
+| # | Severity | ID | Finding | CWE |
+|---|---|---|---|---|
+| 1 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 2 | info | X1 | HTTPS homepage unreachable | CWE-200 |
+
+## Detailed findings
+
+### 1. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for myspace.com lists 1 name(s) besides the scope host: *.myspace.com
+
+### 2. [INFO] HTTPS homepage unreachable (`X1`)
+
+- **CWE:** CWE-200
+- **Detail:** https://myspace.com/: ReadTimeout: HTTPSConnectionPool(host='myspace.com', port=443): Read timed out. (read timeout=15)
+
+## Reproduction notes
+
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- http://myspace.com/ initial status: 301.
+- Certificate: Google Trust Services WR3, valid until 2026-11-15T21:44:01+00:00.
+
+## Active agent cross-check (wave 7-9 aggressive scan on main - myspace.com)
+
+Total findings: **8** - latest aggressive-method scan (main branch). Full detailed findings remain in the main-branch version of this file; passive re-audit above is the non-injection view.
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -24,49 +51,3 @@ Total findings: **8** (High: 0, Medium: 1, Low: 5, Info: 2)
 | 6 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
 | 7 | info | H3 | Missing X-Content-Type-Options | CWE-1194 |
 | 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-
-## Detailed findings
-
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
-
-- **CWE:** CWE-538
-- **Detail:** robots.txt disallows /redirector which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
-
-### 2. [LOW] Cookies without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** persistent_id, visit_id, beacons_enabled, player set without Secure on https://myspace.com/
-
-### 3. [LOW] Cookies without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** beacons_enabled, player set without HttpOnly on https://myspace.com/
-
-### 4. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://myspace.com/search reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 5. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://myspace.com/search reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 6. [LOW] Host header alters response (vhost behavior) (`I12`)
-
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: myspace.com + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
-
-### 7. [INFO] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No X-Content-Type-Options on https://myspace.com/
-
-### 8. [INFO] Missing Referrer-Policy (`H5`)
-
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://myspace.com/
-
-## Reproduction notes
-
-- Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).

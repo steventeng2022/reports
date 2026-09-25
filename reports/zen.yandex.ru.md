@@ -7,7 +7,7 @@
 | Target | https://zen.yandex.ru/ |
 | Bug bounty program | [Yandex](https://yandex.com/bugbounty/index) |
 | Listed scope domain | zen.yandex.ru |
-| Test date | 2026-09-25 09:51 UTC |
+| Test date | 2026-09-25 15:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -89,11 +89,11 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 ### 12. [INFO] HTTPS root redirects to different host (`X3`)
 
 - **CWE:** CWE-200
-- **Detail:** https://zen.yandex.ru/ redirects to https://sso.passport.yandex.ru/push?uuid=ed71a13c-ad0e-43e6-83a7-6c09323d7ac2&retpath=https%3A%2F%2Fdzen.ru%2F%3Fis_autologin_ya%3Dtrue.
+- **Detail:** https://zen.yandex.ru/ redirects to https://sso.passport.yandex.ru/push?uuid=6d5ef9f6-2b68-4842-b6cd-bcb65a22d6a9&retpath=https%3A%2F%2Fdzen.ru%2F%3Fis_autologin_ya%3Dtrue.
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://zen.yandex.ru/ final status: 200 (final URL https://sso.passport.yandex.ru/push?uuid=ed71a13c-ad0e-43e6-83a7-6c09323d7ac2&retpath=https%3A%2F%2Fdzen.ru%2F%3Fis_autologin_ya%3Dtrue).
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://zen.yandex.ru/ final status: 200 (final URL https://sso.passport.yandex.ru/push?uuid=6d5ef9f6-2b68-4842-b6cd-bcb65a22d6a9&retpath=https%3A%2F%2Fdzen.ru%2F%3Fis_autologin_ya%3Dtrue).
 - http://zen.yandex.ru/ initial status: 302.
 - Certificate: GlobalSign nv-sa GlobalSign GCC R46 OV TLS CA 2025, valid until 2027-01-25T20:59:59+00:00.

@@ -7,7 +7,7 @@
 | Target | https://discordapp.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | discordapp.com |
-| Test date | 2026-09-25 09:51 UTC |
+| Test date | 2026-09-25 15:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -57,17 +57,17 @@ Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://discordapp.com/ final status: 200 (final URL https://discord.com/).
 - http://discordapp.com/ initial status: 301.
 - Certificate: Google Trust Services WE1, valid until 2026-11-26T23:09:41+00:00.
 
 ## Active agent cross-check (latest pre-merge `main` snapshot)
 
-The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before PR #1 was merged is preserved below for comparison and to avoid losing later verification work.
+The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before the latest passive re-audit was merged is preserved below for comparison and to avoid losing later verification work.
 
 <details>
-<summary>Expand active-scan snapshot — 33 findings: 0 high, 1 medium, 27 low, 5 info</summary>
+<summary>Expand active-scan snapshot — 6 findings: 0 high, 0 medium, 0 low, 6 info</summary>
 
 ### Security Audit Report — discordapp.com
 
@@ -78,10 +78,81 @@ The passive findings above remain the primary README/index counts. The active-sc
 | Target | https://discordapp.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | discordapp.com |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+
+#### Summary
+
+Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
+
+| # | Severity | ID | Finding | CWE |
+|---|---|---|---|---|
+| 1 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 2 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 3 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 4 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 5 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 6 | info | X3 | HTTPS root redirects to different host | CWE-200 |
+
+#### Detailed findings
+
+##### 1. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for discordapp.com lists 1 name(s) besides the scope host: *.discordapp.com
+
+##### 2. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header on https://discordapp.com/; full URL (incl. query strings) is sent as referrer by default.
+
+##### 3. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://discordapp.com/ -> https://discordapp.com/ (positive check).
+
+##### 4. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://discordapp.com/ exposes 25 unique Disallow path(s) (/, /api, /api/, /authorize-ip, /authorize-ip/) and 7 sitemap reference(s)
+
+##### 5. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+
+- **CWE:** CWE-200
+- **Detail:** security.txt present on https://discordapp.com (247 bytes); contact: https://discord.com/security
+
+##### 6. [INFO] HTTPS root redirects to different host (`X3`)
+
+- **CWE:** CWE-200
+- **Detail:** https://discordapp.com/ redirects to https://discord.com/.
+
+#### Reproduction notes
+
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://discordapp.com/ final status: 200 (final URL https://discord.com/).
+- http://discordapp.com/ initial status: 301.
+- Certificate: Google Trust Services WE1, valid until 2026-11-26T23:09:41+00:00.
+
+#### Active agent cross-check (latest pre-merge `main` snapshot)
+
+The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before PR #1 was merged is preserved below for comparison and to avoid losing later verification work.
+
+<details>
+<summary>Expand active-scan snapshot — 33 findings: 0 high, 1 medium, 27 low, 5 info</summary>
+
+##### Security Audit Report — discordapp.com
+
+###### Scope and authorization
+
+| Item | Value |
+|---|---|
+| Target | https://discordapp.com/ |
+| Bug bounty program | top-websites gist (no active program match) |
+| Listed scope domain | discordapp.com |
 | Test date | 2026-09-25 04:25 UTC |
 | Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
 
-#### Summary
+###### Summary
 
 Total findings: **33** (High: 0, Medium: 1, Low: 27, Info: 5)
 
@@ -120,7 +191,7 @@ Total findings: **33** (High: 0, Medium: 1, Low: 27, Info: 5)
 | 31 | info | I26 | security.txt exposed (public vulnerability disclosure policy) | CWE-200 |
 | 32 | info | I26 | OpenID configuration exposed (identity endpoints enumerable) | CWE-200 |
 
-#### Detailed findings
+###### Detailed findings
 
 ##### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
@@ -289,8 +360,10 @@ Total findings: **33** (High: 0, Medium: 1, Low: 27, Info: 5)
 - **CWE:** CWE-200
 - **Detail:** 2026-09-25 deep-dive: https://discord.com/newage?redirect=X (404) reflects the full request URL in <meta property="og:url" content="https://discord.com/newage?redirect=X" />. Raw-char matrix: " -> a%22b, ' -> a%27b, > -> a%3Eb, <script> -> %3Cscript%3E - all remain percent-encoded inside the content attribute. No meta/attribute breakout; documented for completeness. (discord.com/login?return_to= is NOT reflected; /download?redirect= not reflected.)
 
-#### Reproduction notes
+###### Reproduction notes
 
 - Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+</details>
 
 </details>

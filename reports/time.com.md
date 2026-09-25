@@ -7,7 +7,7 @@
 | Target | https://time.com/ |
 | Bug bounty program | TIME |
 | Listed scope domain | time.com |
-| Test date | 2026-09-25 09:51 UTC |
+| Test date | 2026-09-25 15:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -81,24 +81,119 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://time.com/ final status: 200 (final URL https://time.com/).
 - http://time.com/ initial status: 301.
 - Certificate: Certainly Certainly Intermediate R1, valid until 2026-10-12T16:26:59+00:00.
 
 ## Active agent cross-check (latest pre-merge `main` snapshot)
 
+The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before the latest passive re-audit was merged is preserved below for comparison and to avoid losing later verification work.
+
+<details>
+<summary>Expand active-scan snapshot — 10 findings: 0 high, 0 medium, 3 low, 7 info</summary>
+
+### Security Audit Report — time.com
+
+#### Scope and authorization
+
+| Item | Value |
+|---|---|
+| Target | https://time.com/ |
+| Bug bounty program | TIME |
+| Listed scope domain | time.com |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+
+#### Summary
+
+Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
+
+| # | Severity | ID | Finding | CWE |
+|---|---|---|---|---|
+| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 2 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 3 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
+| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 5 | info | H2c | HSTS not preloaded | CWE-319 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 9 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 10 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+
+#### Detailed findings
+
+##### 1. [LOW] Missing Content-Security-Policy (`H3`)
+
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://time.com/; no defense-in-depth against XSS/content injection.
+
+##### 2. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+
+- **CWE:** CWE-1021
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://time.com/; page may be rendered in a foreign frame.
+
+##### 3. [LOW] TLS certificate expiring within 30 days (`T3`)
+
+- **CWE:** CWE-298
+- **Detail:** Certificate expires 2026-10-12T16:26:59+00:00 (17 days left) for time.com.
+
+##### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for time.com lists 1 name(s) besides the scope host: *.time.com
+
+##### 5. [INFO] HSTS not preloaded (`H2c`)
+
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000; includeSubDomains` lacks the preload directive.
+
+##### 6. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header on https://time.com/; full URL (incl. query strings) is sent as referrer by default.
+
+##### 7. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://time.com/; browser features (camera, mic, geolocation) unrestricted.
+
+##### 8. [INFO] sitemap.xml discloses URL inventory (`M1`)
+
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://time.com/ lists 3175 URLs.
+
+##### 9. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://time.com/ -> https://time.com/ (positive check).
+
+##### 10. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://time.com/ exposes 79 unique Disallow path(s) (*/munich/index_html*, /*?*/*ref, /*?*002/*0902, /*?*2&hubs_content, /*?*PageSpeed) and 9 sitemap reference(s)
+
+#### Reproduction notes
+
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://time.com/ final status: 200 (final URL https://time.com/).
+- http://time.com/ initial status: 301.
+- Certificate: Certainly Certainly Intermediate R1, valid until 2026-10-12T16:26:59+00:00.
+
+#### Active agent cross-check (latest pre-merge `main` snapshot)
+
 The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before PR #1 was merged is preserved below for comparison and to avoid losing later verification work.
 
 <details>
 <summary>Expand active-scan snapshot — 15 findings: 0 high, 1 medium, 7 low, 7 info</summary>
 
-### Security Audit Report - time.com
+##### Security Audit Report - time.com
 
 > **Consolidated report** - union of two independent passes on the same target: random bounty hunt phase 24 (agent-random, 2026-09-25) and aggressive injection hunt wave-6 (agent-aggressive, 2026-09-24/25). Findings below are the deduplicated union (matched by ID + finding name); per-pass provenance is in the reproduction notes.
 
 
-#### Scope and authorization
+###### Scope and authorization
 
 | Item | Value |
 |---|---|
@@ -108,7 +203,7 @@ The passive findings above remain the primary README/index counts. The active-sc
 | Test date | 2026-09-25 00:40 UTC |
 | Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
 
-#### Summary
+###### Summary
 
 Total findings: **15** (High: 0, Medium: 1, Low: 7, Info: 7)
 
@@ -130,7 +225,7 @@ Total findings: **15** (High: 0, Medium: 1, Low: 7, Info: 7)
 | 14 | info | P3 | Missing security.txt | CWE-1038 |
 | 15 | info | T2 | TLS certificate expiring within 18 days | CWE-295 |
 
-#### Detailed findings
+###### Detailed findings
 
 ##### 1. [MEDIUM] mail.time.com - CloudFront distribution + edge function, 404 default on all paths (`S1`)
 
@@ -227,7 +322,7 @@ Total findings: **15** (High: 0, Medium: 1, Low: 7, Info: 7)
 - **Detail:** TLS certificate expiring within 18 days
 - **Recommendation:** Review and remediate per CWE guidance.
 
-#### Aggressive probe campaign
+###### Aggressive probe campaign
 
 **Stage 1 - injection/reflection probes (28 requests):**
 
@@ -271,7 +366,7 @@ Stage-3 probe log (observed responses):
 - xss3 https://www.instagram.com/time/?hl -> err
 - subs no dangling service CNAMEs over 16 subdomains
 
-#### Evidence (raw response observations)
+###### Evidence (raw response observations)
 
 ```json
 {
@@ -387,10 +482,12 @@ Stage-3 probe log (observed responses):
 }
 ```
 
-#### Notes
+###### Notes
 
 - All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).
 - No credentials were used; no state was modified on the target.
 - Findings are reported against the public program scope; submission through the program tracker is pending.
+
+</details>
 
 </details>

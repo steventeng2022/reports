@@ -7,12 +7,12 @@
 | Target | https://baidu.com/ |
 | Bug bounty program | [Baidu](https://bsrc.baidu.com/v2/#/en) |
 | Listed scope domain | baidu.com |
-| Test date | 2026-09-25 09:51 UTC |
+| Test date | 2026-09-25 15:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 7, Info: 5)
+Total findings: **14** (High: 0, Medium: 0, Low: 7, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -23,11 +23,13 @@ Total findings: **12** (High: 0, Medium: 0, Low: 7, Info: 5)
 | 5 | low | H3 | Missing Content-Security-Policy | CWE-79 |
 | 6 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
 | 7 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 10 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 11 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
-| 12 | info | T0 | TLS verification probe failed (transport) | CWE-200 |
+| 8 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 9 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 11 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 12 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 13 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 14 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
@@ -66,33 +68,44 @@ Total findings: **12** (High: 0, Medium: 0, Low: 7, Info: 5)
 - **CWE:** CWE-1021
 - **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://baidu.com/; page may be rendered in a foreign frame.
 
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 8. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for baidu.com lists 52 name(s) besides the scope host: *.91.com, *.aipage.cn, *.aipage.com, *.apollo.auto, *.baidu.com, *.baidubce.com, *.baiducontent.com, *.baidupcs.com... (1 no longer resolve)
+
+### 9. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `baifubao.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 10. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header on https://baidu.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 9. [INFO] Missing Permissions-Policy (`H7`)
+### 11. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
 - **Detail:** No Permissions-Policy header on https://baidu.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 10. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+### 12. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
 - **CWE:** CWE-319
 - **Detail:** http://baidu.com/ -> https://www.baidu.com/ (positive check).
 
-### 11. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 13. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://baidu.com/ exposes 10 unique Disallow path(s) (/, /baidu, /bh, /cpro, /home/news/data/)
+
+### 14. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
 - **CWE:** CWE-200
 - **Detail:** GET /.well-known/security.txt returned 404 on baidu.com.
 
-### 12. [INFO] TLS verification probe failed (transport) (`T0`)
-
-- **CWE:** CWE-200
-- **Detail:** Strict TLS verification to baidu.com failed with TimeoutError: _ssl.c:993: The handshake operation timed out; no cert data captured - recheck manually.
-
 ## Reproduction notes
 
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://baidu.com/ final status: 200 (final URL https://www.baidu.com/).
 - http://baidu.com/ initial status: 301.
+- Certificate: GlobalSign nv-sa GlobalSign RSA OV SSL CA 2018, valid until 2027-01-24T02:32:55+00:00.

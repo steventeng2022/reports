@@ -7,7 +7,7 @@
 | Target | https://breitbart.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | breitbart.com |
-| Test date | 2026-09-25 09:51 UTC |
+| Test date | 2026-09-25 15:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -87,7 +87,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://breitbart.com/ final status: 200 (final URL https://www.breitbart.com/).
 - http://breitbart.com/ initial status: 301.
 - Certificate: Sectigo Limited Sectigo Public Server Authentication CA DV R36, valid until 2026-11-12T23:59:59+00:00.
