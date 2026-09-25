@@ -2,7 +2,7 @@
 
 Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the intersection of the provided top-websites list and active public bug-bounty program scopes.
 
-**Total findings across all sites: 4861**
+**Total findings across all sites: 5082**
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -15,6 +15,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | abcnews.go.com | 21 | 0 | 0 | 16 | 5 | top-websites gist (no active program match) |
 | abebooks.com | 13 | 0 | 0 | 8 | 5 | top-websites gist (no active program match) |
 | about.fb.com | 12 | 0 | 0 | 7 | 5 | Facebook |
+| about.me | 14 | 0 | 0 | 9 | 5 | top-websites gist (no active program match) |
 | aboutads.info | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | accenture.com | 2 | 0 | 0 | 0 | 2 | top-websites gist (no active program match) |
 | accessify.com | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
@@ -25,6 +26,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | adage.com | 11 | 0 | 0 | 6 | 5 | top-websites gist (no active program match) |
 | addons.mozilla.org | 2 | 0 | 0 | 1 | 1 | top-websites gist (no active program match) |
 | adobe.com | 11 | 0 | 0 | 7 | 4 | Adobe |
+| adobe.ly | 9 | 0 | 0 | 4 | 5 | top-websites gist (no active program match) |
 | ads.google.com | 9 | 0 | 0 | 4 | 5 | Google |
 | adssettings.google.com | 10 | 0 | 0 | 5 | 5 | Google |
 | adwords.google.com | 9 | 0 | 0 | 5 | 4 | Google |
@@ -46,6 +48,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | amazon.it | 12 | 0 | 0 | 8 | 4 | Amazon |
 | ameblo.jp | 17 | 0 | 0 | 16 | 1 | top-websites gist (no active program match) |
 | amzn.com | 11 | 0 | 0 | 7 | 4 | top-websites gist (no active program match) |
+| amzn.to | 10 | 0 | 0 | 4 | 6 | top-websites gist (no active program match) |
 | analytics.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | ancestry.com | 10 | 0 | 1 | 6 | 3 | top-websites gist (no active program match) |
 | animoto.com | 11 | 0 | 0 | 5 | 6 | top-websites gist (no active program match) |
@@ -68,6 +71,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | bbc.com | 11 | 0 | 0 | 7 | 4 | BBC |
 | beian.gov.cn | 1 | 0 | 0 | 1 | 0 | top-websites gist (no active program match) |
 | bhphotovideo.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
+| bigthink.com | 15 | 0 | 0 | 8 | 7 | top-websites gist (no active program match) |
 | bild.de | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | blockchain.info | 9 | 0 | 0 | 5 | 4 | Blockchain |
 | blog.google | 34 | 0 | 9 | 23 | 2 | Google |
@@ -142,6 +146,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | docs.microsoft.com | 10 | 0 | 0 | 6 | 4 | Microsoft Online Services |
 | download.microsoft.com | 13 | 0 | 0 | 8 | 5 | Microsoft Online Services |
 | dribbble.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
+| drift.com | 10 | 0 | 0 | 6 | 4 | top-websites gist (no active program match) |
 | drive.google.com | 9 | 0 | 0 | 4 | 5 | Google |
 | dropbox.com | 11 | 0 | 0 | 7 | 4 | DropBox |
 | dx.doi.org | 13 | 0 | 0 | 8 | 5 | top-websites gist (no active program match) |
@@ -157,6 +162,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | engadget.com | 12 | 0 | 0 | 8 | 4 | Yahoo! |
 | envato.com | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
 | eonline.com | 9 | 0 | 0 | 6 | 3 | top-websites gist (no active program match) |
+| epa.gov | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | espn.com | 12 | 0 | 0 | 8 | 4 | The Walt Disney Company |
 | etsy.com | 12 | 0 | 0 | 8 | 4 | Etsy |
 | eur-lex.europa.eu | 18 | 0 | 0 | 14 | 4 | European Central Bank |
@@ -191,9 +197,13 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | fr.wikipedia.org | 14 | 0 | 0 | 8 | 6 | top-websites gist (no active program match) |
 | freelancer.com | 16 | 0 | 0 | 13 | 3 | top-websites gist (no active program match) |
 | freewebs.com | 11 | 0 | 0 | 7 | 4 | top-websites gist (no active program match) |
+| ftc.gov | 13 | 0 | 0 | 8 | 5 | top-websites gist (no active program match) |
+| g.co | 9 | 0 | 0 | 5 | 4 | top-websites gist (no active program match) |
 | g.page | 7 | 0 | 0 | 2 | 5 | top-websites gist (no active program match) |
 | get.adobe.com | 12 | 0 | 0 | 10 | 2 | Adobe |
 | get.google.com | 11 | 0 | 0 | 6 | 5 | Google |
+| getpocket.com | 13 | 0 | 0 | 8 | 5 | top-websites gist (no active program match) |
+| getresponse.com | 11 | 0 | 0 | 8 | 3 | top-websites gist (no active program match) |
 | gist.github.com | 8 | 0 | 0 | 5 | 3 | GitHub |
 | github.com | 7 | 0 | 0 | 5 | 2 | GitHub |
 | gitlab.com | 7 | 0 | 0 | 3 | 4 | GitLab |
@@ -231,6 +241,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | i0.wp.com | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
 | ibm.com | 11 | 0 | 0 | 7 | 4 | IBM |
 | iconfinder.com | 11 | 0 | 0 | 8 | 3 | top-websites gist (no active program match) |
+| idealo.de | 13 | 0 | 0 | 8 | 5 | top-websites gist (no active program match) |
 | ifttt.com | 4 | 0 | 0 | 1 | 3 | top-websites gist (no active program match) |
 | ikea.com | 12 | 0 | 0 | 8 | 4 | IKEA |
 | imdb.com | 11 | 0 | 0 | 7 | 4 | IMDB |
@@ -249,6 +260,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | itunes.apple.com | 11 | 0 | 0 | 7 | 4 | Apple |
 | ja-jp.facebook.com | 8 | 0 | 0 | 4 | 4 | Facebook |
 | japantimes.co.jp | 9 | 0 | 0 | 5 | 4 | top-websites gist (no active program match) |
+| jetbrains.com | 11 | 0 | 0 | 7 | 4 | top-websites gist (no active program match) |
 | join.slack.com | 12 | 0 | 0 | 8 | 4 | Slack |
 | journals.sagepub.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
 | jstor.org | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
@@ -279,6 +291,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | maps.gstatic.com | 13 | 0 | 1 | 6 | 6 | top-websites gist (no active program match) |
 | market.android.com | 9 | 0 | 0 | 4 | 5 | top-websites gist (no active program match) |
 | marketingplatform.google.com | 11 | 0 | 0 | 6 | 5 | Google |
+| marketwatch.com | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | marriott.com | 24 | 0 | 0 | 20 | 4 | Marriott |
 | medium.com | 7 | 0 | 0 | 3 | 4 | top-websites gist (no active program match) |
 | meet.google.com | 9 | 0 | 0 | 4 | 5 | Google |
@@ -342,6 +355,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | podcasts.apple.com | 12 | 0 | 0 | 8 | 4 | Apple |
 | podcasts.google.com | 10 | 0 | 0 | 6 | 4 | Google |
 | policies.google.com | 11 | 0 | 0 | 6 | 5 | Google |
+| popularmechanics.com | 12 | 0 | 0 | 10 | 2 | top-websites gist (no active program match) |
 | postmates.com | 14 | 0 | 0 | 9 | 5 | Postmates |
 | privacy.microsoft.com | 9 | 0 | 0 | 7 | 2 | Microsoft Online Services |
 | prnewswire.com | 14 | 0 | 0 | 9 | 5 | top-websites gist (no active program match) |
@@ -378,6 +392,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | skfb.ly | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | skype.com | 10 | 0 | 0 | 6 | 4 | Microsoft Online Services |
 | slack.com | 12 | 0 | 0 | 9 | 3 | Slack |
+| slate.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | slideshare.net | 15 | 0 | 0 | 11 | 4 | top-websites gist (no active program match) |
 | smashingmagazine.com | 11 | 0 | 0 | 7 | 4 | top-websites gist (no active program match) |
 | smile.amazon.com | 12 | 0 | 0 | 8 | 4 | Amazon |
@@ -395,6 +410,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | stackoverflow.com | 12 | 0 | 0 | 7 | 5 | top-websites gist (no active program match) |
 | startnext.com | 11 | 0 | 0 | 7 | 4 | top-websites gist (no active program match) |
 | starwars.com | 14 | 0 | 0 | 8 | 6 | top-websites gist (no active program match) |
+| stats.wp.com | 14 | 0 | 0 | 8 | 6 | top-websites gist (no active program match) |
 | steamcommunity.com | 11 | 0 | 0 | 7 | 4 | Valve Software |
 | stock.adobe.com | 10 | 0 | 0 | 8 | 2 | Adobe |
 | store.google.com | 9 | 0 | 0 | 4 | 5 | Google |
@@ -414,6 +430,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | technet.microsoft.com | 8 | 0 | 0 | 6 | 2 | Microsoft Online Services |
 | telegram.me | 12 | 0 | 0 | 7 | 5 | top-websites gist (no active program match) |
 | tesla.com | 12 | 0 | 0 | 8 | 4 | Tesla |
+| theguardian.com | 11 | 0 | 0 | 7 | 4 | top-websites gist (no active program match) |
 | themify.me | 8 | 0 | 0 | 5 | 3 | top-websites gist (no active program match) |
 | thinkwithgoogle.com | 10 | 0 | 0 | 6 | 4 | top-websites gist (no active program match) |
 | ticketportal.cz | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
@@ -430,6 +447,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | udemy.com | 8 | 0 | 0 | 5 | 3 | Udemy |
 | un.org | 9 | 0 | 0 | 7 | 2 | top-websites gist (no active program match) |
 | united.com | 10 | 0 | 0 | 6 | 4 | United Airlines |
+| untappd.com | 11 | 0 | 0 | 6 | 5 | top-websites gist (no active program match) |
 | upwork.com | 10 | 0 | 0 | 6 | 4 | Upwork |
 | us.battle.net | 11 | 0 | 0 | 6 | 5 | top-websites gist (no active program match) |
 | use.typekit.net | 10 | 4 | 0 | 5 | 1 | top-websites gist (no active program match) |
@@ -443,10 +461,12 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | vogue.com | 5 | 1 | 0 | 3 | 1 | top-websites gist (no active program match) |
 | vr.google.com | 10 | 0 | 0 | 6 | 4 | Google |
 | walmart.com | 11 | 0 | 0 | 7 | 4 | Walmart Corporation |
+| washingtonpost.com | 12 | 0 | 1 | 6 | 5 | top-websites gist (no active program match) |
 | web.facebook.com | 10 | 0 | 0 | 7 | 3 | Facebook |
 | webroot.com | 20 | 0 | 0 | 16 | 4 | top-websites gist (no active program match) |
 | weebly.com | 19 | 1 | 0 | 13 | 5 | top-websites gist (no active program match) |
 | weforum.org | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
+| wetransfer.com | 9 | 0 | 0 | 4 | 5 | top-websites gist (no active program match) |
 | whatsapp.com | 11 | 0 | 0 | 7 | 4 | Facebook |
 | wikipedia.org | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
 | windows.microsoft.com | 12 | 0 | 0 | 8 | 4 | Microsoft Online Services |
