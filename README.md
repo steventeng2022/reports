@@ -550,3 +550,4 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | gumroad.com | 10 | 0 | 0 | 9 | 1 | top-websites gist (no active program match) |
 | oecd.org | 31 | 0 | 0 | 29 | 2 | top-websites gist (no active program match) |
 | google.co.uk | 13 | 0 | 1 | 8 | 4 | Google |
+| i2.wp.com | 7 | 0 | 0 | 3 | 4 | top-websites gist (no active program match) |
