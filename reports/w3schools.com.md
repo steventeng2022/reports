@@ -7,66 +7,63 @@
 | Target | https://w3schools.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | w3schools.com |
-| Test date | 2026-09-25 03:24 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 2, Low: 5, Info: 1)
+Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 3 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 7 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-| 8 | info | T2 | TLS certificate expiring within 30 days | CWE-295 |
+| 1 | info | H2 | Short HSTS max-age | CWE-319 |
+| 2 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 3 | info | H2c | HSTS not preloaded | CWE-319 |
+| 4 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 5 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 6 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 7 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [INFO] Short HSTS max-age (`H2`)
 
-- **CWE:** CWE-538
-- **Detail:** robots.txt disallows /asp/demo_db_edit.asp which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
+- **CWE:** CWE-319
+- **Detail:** HSTS max-age=86400 (< 1 year): `max-age=86400`.
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [INFO] HSTS without includeSubDomains (`H2b`)
 
-- **CWE:** CWE-916
-- **Detail:** Subdomain app.w3schools.com resolves to 54.192.248.117 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
+- **CWE:** CWE-319
+- **Detail:** `max-age=86400` does not cover subdomains.
 
-### 3. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 3. [INFO] HSTS not preloaded (`H2c`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://www.w3schools.com/go reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-319
+- **Detail:** `max-age=86400` lacks the preload directive.
 
-### 4. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 4. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter redirect on https://www.w3schools.com/go reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-319
+- **Detail:** http://w3schools.com/ -> https://www.w3schools.com:443/ (positive check).
 
-### 5. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 5. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://www.w3schools.com/r reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://w3schools.com/ exposes 5 unique Disallow path(s) (*.aspx$, /, /asp/demo_db_edit.asp, /code/, /images)
 
-### 6. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 6. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter to on https://www.w3schools.com/r reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on w3schools.com.
 
-### 7. [LOW] Host header alters response (vhost behavior) (`I12`)
+### 7. [INFO] HTTPS root redirects to different host (`X3`)
 
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: w3schools.com + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
-
-### 8. [INFO] TLS certificate expiring within 30 days (`T2`)
-
-- **CWE:** CWE-295
-- **Detail:** Certificate for www.w3schools.com (CN=certification.w3schools.com) valid_to Oct 25 01:47:07 2026 GMT.
+- **CWE:** CWE-200
+- **Detail:** https://w3schools.com/ redirects to https://www.w3schools.com:443/.
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://w3schools.com/ final status: 200 (final URL https://www.w3schools.com:443/).
+- http://w3schools.com/ initial status: 301.
+- Certificate: Amazon Amazon RSA 2048 M01, valid until 2027-02-28T23:59:59+00:00.

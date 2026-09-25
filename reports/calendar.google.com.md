@@ -6,120 +6,64 @@
 |---|---|
 | Target | https://calendar.google.com/ |
 | Bug bounty program | [Google](https://www.google.com/about/appsecurity/reward-program/) |
-| Listed scope domain | google.com |
-| Test date | 2026-09-23 19:02 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | calendar.google.com |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 1, Low: 6, Info: 4)
+Total findings: **7** (High: 0, Medium: 0, Low: 1, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | R1 | HTTP redirect to HTTP | CWE-319 |
-| 2 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 3 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 4 | low | H1 | Missing HSTS header | CWE-319 |
-| 5 | low | H1 | Missing HSTS header | CWE-319 |
-| 6 | low | H2 | Missing CSP header | CWE-1021 |
-| 7 | low | H2 | Missing CSP header | CWE-1021 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
-| 11 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 3 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 4 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 5 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 6 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 7 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [MEDIUM] HTTP redirect to HTTP (`R1`)
-
-- **CWE:** CWE-319
-- **Detail:** http://calendar.google.com redirects to http://calendar.google.com/calendar/u/0/r (not HTTPS).
-- **Recommendation:** Redirect http:// to https://.
-
-### 2. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie NID lacks Secure attribute; transmitted over HTTP.
-- **Context:** http response
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 3. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie NID lacks Secure attribute; transmitted over HTTP.
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 4. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 5. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 6. [LOW] Missing CSP header (`H2`)
+### 1. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://calendar.google.com/; page may be rendered in a foreign frame.
 
-### 7. [LOW] Missing CSP header (`H2`)
+### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-1382
+- **Detail:** Certificate for calendar.google.com lists 65 name(s) besides the scope host: *.aistudio.google.com, *.android.com, *.appengine.google.com, *.bdn.dev, *.cloud.google.com, *.crowdsource.google.com, *.datacompute.google.com, *.flash.android.com...
 
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 3. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://calendar.google.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 4. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://calendar.google.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 10. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: ESF
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 11. [INFO] Server technology disclosure (`H6`)
+### 5. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: ESF
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** robots.txt on https://calendar.google.com/ exposes 1 unique Disallow path(s) (/)
 
-## Evidence (raw response observations)
+### 6. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-```json
-{
-  "http_status": 302,
-  "http_redirect_to": "http://calendar.google.com/calendar/u/0/r",
-  "https_status": 302,
-  "content_type": "application/binary",
-  "title": "",
-  "path_gitconfig": 302,
-  "path_envfile": 302,
-  "path_securitytxt": 302,
-  "path_robots": 200,
-  "robots_found": true
-}
-```
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on calendar.google.com.
 
-## Notes
+### 7. [INFO] HTTPS root redirects to different host (`X3`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** https://calendar.google.com/ redirects to https://workspace.google.com/intl/en-US/products/calendar/.
+
+## Reproduction notes
+
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://calendar.google.com/ final status: 200 (final URL https://workspace.google.com/intl/en-US/products/calendar/).
+- http://calendar.google.com/ initial status: 302.
+- Certificate: Google Trust Services WE2, valid until 2026-12-03T19:22:00+00:00.

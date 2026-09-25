@@ -7,48 +7,81 @@
 | Target | https://connect.facebook.net/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | connect.facebook.net |
-| Test date | 2026-09-25 13:56 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **5** (High: 0, Medium: 0, Low: 2, Info: 3)
+Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H2 | Missing CSP header | CWE-1021 |
-| 2 | low | H4 | No clickjacking protection | CWE-1023 |
-| 3 | info | T2 | TLS certificate expiring within 8 days | CWE-295 |
-| 4 | info | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 1 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
+| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 3 | info | H2 | Short HSTS max-age | CWE-319 |
+| 4 | info | H2b | HSTS without includeSubDomains | CWE-319 |
 | 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 7 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 8 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 9 | info | X2 | HTTPS homepage returned HTTP 400 | CWE-200 |
+| 10 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing CSP header (`H2`)
+### 1. [LOW] TLS certificate expiring within 30 days (`T3`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on https://connect.facebook.net/
+- **CWE:** CWE-298
+- **Detail:** Certificate expires 2026-10-02T23:59:59+00:00 (7 days left) for connect.facebook.net.
 
-### 2. [LOW] No clickjacking protection (`H4`)
+### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on https://connect.facebook.net/
+- **CWE:** CWE-1382
+- **Detail:** Certificate for connect.facebook.net lists 11 name(s) besides the scope host: *.facebook.com, *.facebook.net, *.fbcdn.net, *.fbsbx.com, *.m.facebook.com, *.messenger.com, *.xx.fbcdn.net, *.xy.fbcdn.net...
 
-### 3. [INFO] TLS certificate expiring within 8 days (`T2`)
+### 3. [INFO] Short HSTS max-age (`H2`)
 
-- **CWE:** CWE-295
-- **Detail:** Certificate for connect.facebook.net (CN=*.facebook.com) valid_to Oct  2 23:59:59 2026 GMT.
+- **CWE:** CWE-319
+- **Detail:** HSTS max-age=15552000 (< 1 year): `max-age=15552000; preload`.
 
-### 4. [INFO] Missing X-Content-Type-Options (`H3`)
+### 4. [INFO] HSTS without includeSubDomains (`H2b`)
 
-- **CWE:** CWE-1194
-- **Detail:** No X-Content-Type-Options on https://connect.facebook.net/
+- **CWE:** CWE-319
+- **Detail:** `max-age=15552000; preload` does not cover subdomains.
 
 ### 5. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://connect.facebook.net/
+- **Detail:** No Referrer-Policy header on https://connect.facebook.net/; full URL (incl. query strings) is sent as referrer by default.
+
+### 6. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://connect.facebook.net/; browser features (camera, mic, geolocation) unrestricted.
+
+### 7. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://connect.facebook.net/ -> https://connect.facebook.net/ (positive check).
+
+### 8. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on connect.facebook.net.
+
+### 9. [INFO] HTTPS homepage returned HTTP 400 (`X2`)
+
+- **CWE:** CWE-200
+- **Detail:** https://connect.facebook.net/ responded 400 (passive check only; no further probing).
+
+### 10. [INFO] HTTPS root redirects to different host (`X3`)
+
+- **CWE:** CWE-200
+- **Detail:** https://connect.facebook.net/ redirects to https://www.facebook.com/.
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://connect.facebook.net/ final status: 400 (final URL https://www.facebook.com/).
+- http://connect.facebook.net/ initial status: 301.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-02T23:59:59+00:00.

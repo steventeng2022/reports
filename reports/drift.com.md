@@ -1,4 +1,4 @@
-# Security Audit Report - drift.com
+# Security Audit Report — drift.com
 
 ## Scope and authorization
 
@@ -7,209 +7,57 @@
 | Target | https://drift.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | drift.com |
-| Test date | 2026-09-24 23:48 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 6, Info: 4)
+Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H2 | Missing CSP header | CWE-1021 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | low | H4 | No clickjacking protection | CWE-1023 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H6 | Server technology disclosure | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 2 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 3 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 4 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 5 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 6 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing CSP header (`H2`)
+### 1. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://drift.com/; browsers may MIME-sniff responses.
 
-### 2. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 3. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 5. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 6. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 7. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://drift.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 3. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://drift.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 9. [INFO] Server technology disclosure (`H6`)
+### 4. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: Varnish
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **CWE:** CWE-319
+- **Detail:** http://drift.com/ -> https://www.salesloft.com/platform/drift/ (positive check).
 
-### 10. [INFO] Server technology disclosure (`H6`)
+### 5. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: Varnish
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** GET /.well-known/security.txt returned 404 on drift.com.
 
-## Aggressive probe campaign
+### 6. [INFO] HTTPS root redirects to different host (`X3`)
 
-**Stage 1 - injection/reflection probes (28 requests):**
+- **CWE:** CWE-200
+- **Detail:** https://drift.com/ redirects to https://www.salesloft.com/platform/chat-agents.
 
-- no stage-1 probe hits (all probes negative)
+## Reproduction notes
 
-**Stage 2 - aggressive probe suite v2 (99 requests):**
-
-- no stage-2 probe hits (all probes negative)
-
-Stage-2 probe log (observed responses):
-- timing base=294ms id=566 search=692
-- boolean b=301/0 t1=301/0 t2=301/0
-- graphql /graphql -> 301
-- graphql /api/graphql -> 301
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 301
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 301
-- trav2 /%2e%2e%00.html -> 301
-- trav2 /static//../../../../../../etc/passwd -> 301
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 301
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 301
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301
-- apicors /api -> 301
-- apicors /api/v1 -> 301
-- apicors /graphql -> 301
-- apicors /rest -> 301
-- apicors /v1 -> 301
-
-**Stage 3 - live parameter harvest, takeover and injection probes (10 requests):**
-
-- no stage-3 probe hits (all probes negative)
-
-Stage-3 probe log (observed responses):
-- harvest no query params discovered on sampled pages
-- subs no dangling service CNAMEs over 16 subdomains
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://www.salesloft.com/platform/drift/",
-  "https_status": 301,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 301,
-  "path_envfile": 301,
-  "path_securitytxt": 301,
-  "path_robots": 301,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 301",
-    "sqli /?id=1%27+OR+1=1-- -> 301",
-    "sqli /?q=%27 -> 301",
-    "sqli /products?filter=%27 -> 301",
-    "sqli /?p=1;-- -> 301",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 301",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 301",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 301",
-    "trav /static/../../../../../../../../etc/passwd -> 301",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 301",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 301",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 301",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 301",
-    "host no reflection -> 421",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301"
-  ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=294ms id=566 search=692",
-    "boolean b=301/0 t1=301/0 t2=301/0",
-    "graphql /graphql -> 301",
-    "graphql /api/graphql -> 301",
-    "sweep no hits over 26 paths",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 301",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 301",
-    "trav2 /%2e%2e%00.html -> 301",
-    "trav2 /static//../../../../../../etc/passwd -> 301",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 301",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 301",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 301",
-    "apicors /api/v1 -> 301",
-    "apicors /graphql -> 301",
-    "apicors /rest -> 301",
-    "apicors /v1 -> 301"
-  ],
-  "v3_probe_count": 10,
-  "v3_log": [
-    "harvest no query params discovered on sampled pages",
-    "subs no dangling service CNAMEs over 16 subdomains",
-    "cache X-Forwarded-Host not reflected -> 301"
-  ]
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://drift.com/ final status: 200 (final URL https://www.salesloft.com/platform/chat-agents).
+- http://drift.com/ initial status: 301.
+- Certificate: Let's Encrypt YR2, valid until 2026-12-03T07:57:35+00:00.

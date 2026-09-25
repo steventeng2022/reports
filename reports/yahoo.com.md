@@ -7,91 +7,99 @@
 | Target | https://yahoo.com/ |
 | Bug bounty program | [Yahoo!](https://app.intigriti.com/programs/yahoo/yahoobugbounty/detail) |
 | Listed scope domain | yahoo.com |
-| Test date | 2026-09-23 18:26 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 0, Low: 4, Info: 3)
+Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 6 | info | H6 | Server technology disclosure | CWE-200 |
-| 7 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 3 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
+| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 5 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 7 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 8 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 9 | info | H2c | HSTS not preloaded | CWE-319 |
+| 10 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 11 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 12 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 13 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://yahoo.com/ without HttpOnly: A1S. Readable by client-side script.
+
+### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://yahoo.com/ without SameSite=Lax/Strict: A3. Cross-site request cookies.
+
+### 3. [LOW] TLS certificate expiring within 30 days (`T3`)
+
+- **CWE:** CWE-298
+- **Detail:** Certificate expires 2026-10-21T23:59:59+00:00 (26 days left) for yahoo.com.
+
+### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for yahoo.com lists 15 name(s) besides the scope host: *.amp.yimg.com, *.att.yahoo.com, *.media.yahoo.com, *.www.yahoo.com, *.yahoo.com, add.my.yahoo.com, brb.yahoo.net, ca.my.yahoo.com... (3 no longer resolve)
+
+### 5. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `brb.yahoo.net` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 6. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `hk.rd.yahoo.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 7. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `tw.rd.yahoo.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 8. [INFO] HSTS without includeSubDomains (`H2b`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** `max-age=31536000` does not cover subdomains.
 
-### 2. [LOW] Missing CSP header (`H2`)
+### 9. [INFO] HSTS not preloaded (`H2c`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000` lacks the preload directive.
 
-### 3. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 5. [INFO] Missing Referrer-Policy (`H5`)
+### 10. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://yahoo.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 6. [INFO] Server technology disclosure (`H6`)
+### 11. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: ATS
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **CWE:** CWE-319
+- **Detail:** http://yahoo.com/ -> https://yahoo.com/ (positive check).
 
-### 7. [INFO] Server technology disclosure (`H6`)
+### 12. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: ATS
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** robots.txt on https://yahoo.com/ exposes 23 unique Disallow path(s) (*/articles/, /, /_multiremote, /_remote, /_td_api) and 3 sitemap reference(s)
 
-## Evidence (raw response observations)
+### 13. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://yahoo.com/",
-  "https_status": 301,
-  "content_type": "text/html",
-  "title": "",
-  "path_gitconfig": 301,
-  "path_envfile": 301,
-  "path_securitytxt": 200,
-  "security_txt_found": true,
-  "path_robots": 301
-}
-```
+- **CWE:** CWE-200
+- **Detail:** security.txt present on https://yahoo.com (554 bytes); contact: mailto:security@yahooinc.com
 
-## Notes
+## Reproduction notes
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://yahoo.com/ final status: 200 (final URL https://tw.yahoo.com/?p=us).
+- http://yahoo.com/ initial status: 301.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-21T23:59:59+00:00.

@@ -6,128 +6,88 @@
 |---|---|
 | Target | https://about.fb.com/ |
 | Bug bounty program | [Facebook](https://www.facebook.com/whitehat) |
-| Listed scope domain | fb.com |
-| Test date | 2026-09-23 20:42 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | about.fb.com |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 7, Info: 5)
+Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
-| 11 | info | H6 | Server technology disclosure | CWE-200 |
-| 12 | info | P3 | Missing security.txt | CWE-1038 |
+| 1 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 2 | info | H2 | Short HSTS max-age | CWE-319 |
+| 3 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 6 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 7 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 8 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 9 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 10 | info | X2 | HTTPS homepage returned HTTP 400 | CWE-200 |
+| 11 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for about.fb.com lists 1 name(s) besides the scope host: www.about.fb.com
+
+### 2. [INFO] Short HSTS max-age (`H2`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** HSTS max-age=15552000 (< 1 year): `max-age=15552000; preload`.
 
-### 2. [LOW] Missing CSP header (`H2`)
+### 3. [INFO] HSTS without includeSubDomains (`H2b`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-319
+- **Detail:** `max-age=15552000; preload` does not cover subdomains.
 
-### 3. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 6. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 7. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 4. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://about.fb.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 5. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://about.fb.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 10. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: nginx
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 11. [INFO] Server technology disclosure (`H6`)
+### 6. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: nginx
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** sitemap.xml on https://about.fb.com/ lists 888 URLs.
 
-### 12. [INFO] Missing security.txt (`P3`)
+### 7. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-1038
-- **Detail:** No .well-known/security.txt found (RFC 9116).
-- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+- **CWE:** CWE-319
+- **Detail:** http://about.fb.com/ -> https://about.fb.com/ (positive check).
 
-## Evidence (raw response observations)
+### 8. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://about.fb.com/",
-  "https_status": 301,
-  "content_type": "text/html; charset=utf-8",
-  "title": "",
-  "path_gitconfig": 403,
-  "path_envfile": 403,
-  "path_securitytxt": 404,
-  "path_robots": 200,
-  "robots_found": true
-}
-```
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://about.fb.com/ exposes 2 unique Disallow path(s) (/*/search/, Sitemap:) and 12 sitemap reference(s)
 
-## Notes
+### 9. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on about.fb.com.
+
+### 10. [INFO] HTTPS homepage returned HTTP 400 (`X2`)
+
+- **CWE:** CWE-200
+- **Detail:** https://about.fb.com/ responded 400 (passive check only; no further probing).
+
+### 11. [INFO] HTTPS root redirects to different host (`X3`)
+
+- **CWE:** CWE-200
+- **Detail:** https://about.fb.com/ redirects to https://about.facebook.com/.
+
+## Reproduction notes
+
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://about.fb.com/ final status: 400 (final URL https://about.facebook.com/).
+- http://about.fb.com/ initial status: 301.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-12-16T23:59:59+00:00.

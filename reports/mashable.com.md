@@ -1,4 +1,4 @@
-# Security Audit Report - mashable.com
+# Security Audit Report — mashable.com
 
 ## Scope and authorization
 
@@ -7,12 +7,88 @@
 | Target | https://mashable.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | mashable.com |
-| Test date | 2026-09-25 00:42 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 1, Low: 8, Info: 4)
+Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
+
+| # | Severity | ID | Finding | CWE |
+|---|---|---|---|---|
+| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 6 | info | H2c | HSTS not preloaded | CWE-319 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+
+## Detailed findings
+
+### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://mashable.com/ without SameSite=Lax/Strict: __cf_bm. Cross-site request cookies.
+
+### 2. [LOW] Missing Content-Security-Policy (`H3`)
+
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://mashable.com/; no defense-in-depth against XSS/content injection.
+
+### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
+
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://mashable.com/; browsers may MIME-sniff responses.
+
+### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+
+- **CWE:** CWE-1021
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://mashable.com/; page may be rendered in a foreign frame.
+
+### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for mashable.com lists 1 name(s) besides the scope host: *.mashable.com
+
+### 6. [INFO] HSTS not preloaded (`H2c`)
+
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000; includeSubDomains` lacks the preload directive.
+
+### 7. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://mashable.com/; browser features (camera, mic, geolocation) unrestricted.
+
+### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://mashable.com/ -> https://mashable.com/ (positive check).
+
+### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://mashable.com/ exposes 4 unique Disallow path(s) (/, /archive/, /cdn-cgi/, /search) and 3 sitemap reference(s)
+
+### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on mashable.com.
+
+## Reproduction notes
+
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://mashable.com/ final status: 200 (final URL https://mashable.com/).
+- http://mashable.com/ initial status: 301.
+- Certificate: Google Trust Services WE1, valid until 2026-12-05T14:21:48+00:00.
+
+## Active agent cross-check (phase 24 aggressive scan on main - mashable.com)
+
+Total findings: **13** - latest aggressive-method scan by agent-random (main branch). Full detailed findings remain in the main-branch version of this file; passive re-audit above is the non-injection view.
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,231 +105,3 @@ Total findings: **13** (High: 0, Medium: 1, Low: 8, Info: 4)
 | 11 | info | H6 | Server technology disclosure | CWE-200 |
 | 12 | info | H6 | Server technology disclosure | CWE-200 |
 | 13 | info | P3 | Missing security.txt | CWE-1038 |
-
-## Detailed findings
-
-### 1. [MEDIUM] CORS origin reflection on API endpoint (`A9`)
-
-- **CWE:** CWE-942
-- **Detail:** CORS middleware on the /api/v1 prefix reflects any Origin - including https://evil-cors.example and literal "null" - into Access-Control-Allow-Origin together with Access-Control-Allow-Credentials: true. Re-verified 2026-09-25: /api/v1, /api/v1/, /api/v1/brands, /api/v1/users, /api/v1/articles, /api/v1/health, /api/v1/status all 404 (157 KB SPA HTML) with ACAO: <origin> + ACAC: true; www.mashable.com/api/v1 returns 301 with the same reflection. OPTIONS preflight does not reflect. The middleware is global on the /api/v1 prefix, so any future sub-route returning JSON would be readable cross-origin with credentials; current impact is limited to the SPA HTML body, hence medium.
-- **Recommendation:** Validate Origin per endpoint against an allow-list; never reflect an arbitrary origin together with credentials.
-
-### 2. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie __cf_bm lacks Secure attribute; transmitted over HTTP.
-- **Context:** http response
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 3. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 4. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 5. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 6. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 7. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 8. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 9. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 10. [INFO] Sensitive paths exist (protected or app shells) (`A4i`)
-
-- **CWE:** CWE-538
-- **Detail:** Paths answering 401/403 or HTML shells: /.svn/entries (403 protected).
-- **Recommendation:** No immediate action if the paths are genuinely protected; otherwise return a real 404 to unauthenticated probes for paths that should not exist.
-
-### 11. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 12. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 13. [INFO] Missing security.txt (`P3`)
-
-- **CWE:** CWE-1038
-- **Detail:** No .well-known/security.txt found (RFC 9116).
-- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
-
-## Aggressive probe campaign
-
-**Stage 1 - injection/reflection probes (28 requests):**
-
-- no stage-1 probe hits (all probes negative)
-
-**Stage 2 - aggressive probe suite v2 (96 requests):**
-
-- sweep: {"high":[],"protected":["/.svn/entries (403 protected)"]}
-- api_cors: "/api/v1"
-- robots_disallow: ["/","/search","/archive/","/cdn-cgi/","/"]
-
-Stage-2 probe log (observed responses):
-- timing base=7483ms id=11 search=20
-- boolean b=200/329905 t1=403/4910 t2=403/4910
-- graphql /graphql -> 404
-- graphql /api/graphql -> 404
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 404
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 302
-- trav2 /%2e%2e%00.html -> 400
-- trav2 /static//../../../../../../etc/passwd -> 404
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 302
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 403
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403
-- apicors /api -> 301
-
-**Stage 3 - live parameter harvest, takeover and injection probes (31 requests):**
-
-- params_harvested: ["id","url","brand","edit_requested"]
-
-Stage-3 probe log (observed responses):
-- harvest discovered 4 live query params
-- xss3 /css/app.css?id -> 403
-- xss3 https://g.mashable.com/mashable.js?url -> err
-- xss3 https://www.j2global.com/careers/jobs/?brand -> err
-- xss3 https://docs.google.com/forms/d/1Zu8Hi-tPutcA0iXE8C5-UaqbV9Qx9FhyHJ6ZLzn4Mzk/viewform?edit_requested -> err
-- subs no dangling service CNAMEs over 16 subdomains
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://mashable.com/",
-  "https_status": 200,
-  "content_type": "text/html; charset=UTF-8",
-  "title": "Mashable",
-  "path_gitconfig": 403,
-  "path_envfile": 403,
-  "path_securitytxt": 404,
-  "path_robots": 200,
-  "robots_found": true,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 403",
-    "sqli /?id=1%27+OR+1=1-- -> 403",
-    "sqli /?q=%27 -> 200",
-    "sqli /products?filter=%27 -> 404",
-    "sqli /?p=1;-- -> 200",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 403",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 403",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 400",
-    "trav /static/../../../../../../../../etc/passwd -> 404",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 404",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 302",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 200",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 200",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 301",
-    "host no reflection -> err",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404"
-  ],
-  "v2_probe_count": 96,
-  "v2_log": [
-    "timing base=7483ms id=11 search=20",
-    "boolean b=200/329905 t1=403/4910 t2=403/4910",
-    "graphql /graphql -> 404",
-    "graphql /api/graphql -> 404",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 404",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 302",
-    "trav2 /%2e%2e%00.html -> 400",
-    "trav2 /static//../../../../../../etc/passwd -> 404",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 302",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 403",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 301"
-  ],
-  "sweep": {
-    "high": [],
-    "protected": [
-      "/.svn/entries (403 protected)"
-    ]
-  },
-  "api_cors": "/api/v1",
-  "robots_disallow": [
-    "/",
-    "/search",
-    "/archive/",
-    "/cdn-cgi/",
-    "/"
-  ],
-  "v3_probe_count": 31,
-  "v3_log": [
-    "harvest discovered 4 live query params",
-    "xss3 /css/app.css?id -> 403",
-    "xss3 https://g.mashable.com/mashable.js?url -> err",
-    "xss3 https://www.j2global.com/careers/jobs/?brand -> err",
-    "xss3 https://docs.google.com/forms/d/1Zu8Hi-tPutcA0iXE8C5-UaqbV9Qx9FhyHJ6ZLzn4Mzk/viewform?edit_requested -> err",
-    "subs no dangling service CNAMEs over 16 subdomains",
-    "cache X-Forwarded-Host not reflected -> 200"
-  ],
-  "params_harvested": [
-    "id",
-    "url",
-    "brand",
-    "edit_requested"
-  ]
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.

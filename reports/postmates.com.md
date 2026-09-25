@@ -7,142 +7,87 @@
 | Target | https://postmates.com/ |
 | Bug bounty program | [Postmates](https://hackerone.com/postmates) |
 | Listed scope domain | postmates.com |
-| Test date | 2026-09-23 18:45 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 9, Info: 5)
+Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 2 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 3 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 4 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 5 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 6 | low | H1 | Missing HSTS header | CWE-319 |
-| 7 | low | H2 | Missing CSP header | CWE-1021 |
-| 8 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 9 | low | H4 | No clickjacking protection | CWE-1023 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 12 | info | H6 | Server technology disclosure | CWE-200 |
-| 13 | info | H6 | Server technology disclosure | CWE-200 |
-| 14 | info | P3 | Missing security.txt | CWE-1038 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 3 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 4 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 5 | info | H2c | HSTS not preloaded | CWE-319 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 11 | info | X2 | HTTPS homepage returned HTTP 404 | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie __cf_bm lacks Secure attribute; transmitted over HTTP.
-- **Context:** http response
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 2. [LOW] Cookie without HttpOnly flag (`C2`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie dId lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://postmates.com/ without HttpOnly: marketing_vistor_id. Readable by client-side script.
 
-### 3. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie uev2.id.session lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 4. [LOW] Cookie without HttpOnly flag (`C2`)
+### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie _ua lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://postmates.com/ without SameSite=Lax/Strict: _ua, jwt-session, marketing_vistor_id. Cross-site request cookies.
 
-### 5. [LOW] Cookie without HttpOnly flag (`C2`)
+### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1004
-- **Detail:** Cookie marketing_vistor_id lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for postmates.com lists 1 name(s) besides the scope host: *.postmates.com
 
-### 6. [LOW] Missing HSTS header (`H1`)
+### 4. [INFO] HSTS without includeSubDomains (`H2b`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** `max-age=31536000` does not cover subdomains.
 
-### 7. [LOW] Missing CSP header (`H2`)
+### 5. [INFO] HSTS not preloaded (`H2c`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000` lacks the preload directive.
 
-### 8. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 9. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://postmates.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 11. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://postmates.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 12. [INFO] Server technology disclosure (`H6`)
+### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **CWE:** CWE-319
+- **Detail:** http://postmates.com/ -> https://postmates.com/ (positive check).
 
-### 13. [INFO] Server technology disclosure (`H6`)
+### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** robots.txt on https://postmates.com/ exposes 2245 unique Disallow path(s) (*/checkout, */closest, */delivery-details, */feed, */group-orders/)
 
-### 14. [INFO] Missing security.txt (`P3`)
+### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-- **CWE:** CWE-1038
-- **Detail:** No .well-known/security.txt found (RFC 9116).
-- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on postmates.com.
 
-## Evidence (raw response observations)
+### 11. [INFO] HTTPS homepage returned HTTP 404 (`X2`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://postmates.com/",
-  "https_status": 200,
-  "content_type": "text/html; charset=utf-8",
-  "title": "Postmates: Food Delivery, Groceries, Alcohol - Anything from Anywhere",
-  "path_gitconfig": 404,
-  "path_envfile": 404,
-  "path_securitytxt": 404,
-  "path_robots": 200,
-  "robots_found": true
-}
-```
+- **CWE:** CWE-200
+- **Detail:** https://postmates.com/ responded 404 (passive check only; no further probing).
 
-## Notes
+## Reproduction notes
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://postmates.com/ final status: 404 (final URL https://postmates.com/tw-en).
+- http://postmates.com/ initial status: 301.
+- Certificate: Let's Encrypt YE2, valid until 2026-12-23T02:16:05+00:00.

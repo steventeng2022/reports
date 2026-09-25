@@ -6,135 +6,76 @@
 |---|---|
 | Target | https://support.cloudflare.com/ |
 | Bug bounty program | [Cloudflare](https://hackerone.com/cloudflare) |
-| Listed scope domain | cloudflare.com |
-| Test date | 2026-09-23 19:02 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | support.cloudflare.com |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 9, Info: 4)
+Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H1 | Missing HSTS header | CWE-319 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H2 | Missing CSP header | CWE-1021 |
-| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 7 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 8 | low | H4 | No clickjacking protection | CWE-1023 |
-| 9 | low | H4 | No clickjacking protection | CWE-1023 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 12 | info | H6 | Server technology disclosure | CWE-200 |
-| 13 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 2 | info | C4 | Cookies scoped to parent/wildcard domain | CWE-200 |
+| 3 | info | H2 | Short HSTS max-age | CWE-319 |
+| 4 | info | H2c | HSTS not preloaded | CWE-319 |
+| 5 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 6 | info | R1 | robots.txt protected | CWE-200 |
+| 7 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 8 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
+| 9 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookie without Secure flag (`C1`)
+### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
-- **CWE:** CWE-614
-- **Detail:** Cookie __cf_bm lacks Secure attribute; transmitted over HTTP.
-- **Context:** http response
-- **Recommendation:** Add the Secure attribute to the cookie.
+- **CWE:** CWE-1004
+- **Detail:** Set on https://support.cloudflare.com/ without SameSite=Lax/Strict: __cf_bm. Cross-site request cookies.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 2. [INFO] Cookies scoped to parent/wildcard domain (`C4`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookies set with domain beyond support.cloudflare.com: dash.cloudflare.com.
+
+### 3. [INFO] Short HSTS max-age (`H2`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** HSTS max-age=86400 (< 1 year): `max-age=86400; includeSubDomains`.
 
-### 3. [LOW] Missing HSTS header (`H1`)
+### 4. [INFO] HSTS not preloaded (`H2c`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** `max-age=86400; includeSubDomains` lacks the preload directive.
 
-### 4. [LOW] Missing CSP header (`H2`)
+### 5. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-319
+- **Detail:** http://support.cloudflare.com/ -> https://dash.cloudflare.com/?to=/:account/support (positive check).
 
-### 5. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 6. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 7. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 8. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 9. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] robots.txt protected (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** GET /robots.txt returned 403.
 
-### 11. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** GET /.well-known/security.txt returned 403 on support.cloudflare.com.
 
-### 12. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 13. [INFO] Server technology disclosure (`H6`)
+### 8. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** https://support.cloudflare.com/ responded 403 (passive check only; no further probing).
 
-## Evidence (raw response observations)
+### 9. [INFO] HTTPS root redirects to different host (`X3`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://dash.cloudflare.com/?to=/:account/support",
-  "https_status": 301,
-  "content_type": "text/html; charset=UTF-8",
-  "title": "301 Moved Permanently",
-  "path_gitconfig": 403,
-  "path_envfile": 403,
-  "path_securitytxt": 403,
-  "path_robots": 403
-}
-```
+- **CWE:** CWE-200
+- **Detail:** https://support.cloudflare.com/ redirects to https://dash.cloudflare.com/?to=/:account/support.
 
-## Notes
+## Reproduction notes
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://support.cloudflare.com/ final status: 403 (final URL https://dash.cloudflare.com/?to=/:account/support).
+- http://support.cloudflare.com/ initial status: 301.
+- Certificate: Google Trust Services WE1, valid until 2026-11-03T09:25:45+00:00.

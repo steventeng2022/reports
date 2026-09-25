@@ -7,66 +7,81 @@
 | Target | https://ca.linkedin.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ca.linkedin.com |
-| Test date | 2026-09-24 13:46 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **8** (High: 1, Medium: 0, Low: 5, Info: 2)
+Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I2 | Reflected XSS via attribute injection | CWE-79 |
-| 2 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
-| 3 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | I26 | security.txt exposed (public vulnerability disclosure policy) | CWE-200 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 3 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 4 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 5 | info | H2c | HSTS not preloaded | CWE-319 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 10 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS via attribute injection (`I2`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://ca.linkedin.com/redirect: injecting "\"' onerror=\"alert(1)//" yields an unquoted onerror handler. Event fires on render.
-
-### 2. [LOW] Cookies without HttpOnly flag (`C2`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
 - **CWE:** CWE-1004
-- **Detail:** JSESSIONID, lang, bcookie, lidc set without HttpOnly on https://ca.linkedin.com/
+- **Detail:** Set on https://ca.linkedin.com/ without HttpOnly: JSESSIONID, bcookie, lang, lidc. Readable by client-side script.
 
-### 3. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter trk on https://ca.linkedin.com/jobs/engineering-jobs-taipei reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-1004
+- **Detail:** Set on https://ca.linkedin.com/ without SameSite=Lax/Strict: JSESSIONID, __cf_bm, bcookie, bscookie, lang, lidc. Cross-site request cookies.
 
-### 4. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter trk on https://ca.linkedin.com/jobs/business-development-jobs-taipei reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for ca.linkedin.com lists 76 name(s) besides the scope host: ac.linkedin.com, ad.linkedin.com, ae.linkedin.com, af.linkedin.com, ag.linkedin.com, ai.linkedin.com, al.linkedin.com, am.linkedin.com...
 
-### 5. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 4. [INFO] HSTS without includeSubDomains (`H2b`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter trk on https://ca.linkedin.com/jobs/finance-jobs-taipei reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000` does not cover subdomains.
 
-### 6. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 5. [INFO] HSTS not preloaded (`H2c`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter trk on https://ca.linkedin.com/jobs/administrative-assistant-jobs-taipei reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000` lacks the preload directive.
 
-### 7. [INFO] Missing Referrer-Policy (`H5`)
-
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://ca.linkedin.com/
-
-### 8. [INFO] security.txt exposed (public vulnerability disclosure policy) (`I26`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** GET https://ca.linkedin.com/.well-known/security.txt returned 200 (267 bytes) with a matching signature.
+- **Detail:** No Referrer-Policy header on https://ca.linkedin.com/; full URL (incl. query strings) is sent as referrer by default.
+
+### 7. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://ca.linkedin.com/; browser features (camera, mic, geolocation) unrestricted.
+
+### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://ca.linkedin.com/ -> https://ca.linkedin.com/hp (positive check).
+
+### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://ca.linkedin.com/ exposes 115 unique Disallow path(s) (/, /addContacts*, /addressBookExport*, /ambry, /analytics/)
+
+### 10. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+
+- **CWE:** CWE-200
+- **Detail:** security.txt present on https://ca.linkedin.com (267 bytes); contact: https://hackerone.com/linkedin
 
 ## Reproduction notes
 
-- Scanned 2026-09-24 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://ca.linkedin.com/ final status: 200 (final URL https://ca.linkedin.com/).
+- http://ca.linkedin.com/ initial status: 301.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2027-03-03T23:59:59+00:00.

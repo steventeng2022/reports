@@ -7,104 +7,63 @@
 | Target | https://blockchain.info/ |
 | Bug bounty program | [Blockchain](https://hackerone.com/blockchain) |
 | Listed scope domain | blockchain.info |
-| Test date | 2026-09-23 17:36 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 5, Info: 4)
+Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H4 | No clickjacking protection | CWE-1023 |
-| 5 | low | H4 | No clickjacking protection | CWE-1023 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H6 | Server technology disclosure | CWE-200 |
-| 9 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 2 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 3 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 4 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 5 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 6 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
+| 7 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for blockchain.info lists 6 name(s) besides the scope host: api.blockchain.com, api.blockchain.info, bps.blockchain.com, login.blockchain.com, ws.blockchain.info, www.blockchain.com
+
+### 2. [INFO] sitemap.xml discloses URL inventory (`M1`)
+
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://blockchain.info/ lists 120 URLs.
+
+### 3. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** http://blockchain.info/ -> https://blockchain.info/ (positive check).
 
-### 2. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 3. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 4. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 5. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 4. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** robots.txt on https://blockchain.info/ exposes 6 unique Disallow path(s) (/*/block-index/*, /*/search, /*/tx-index/*, /r?*, /search) and 1 sitemap reference(s)
 
-### 7. [INFO] Missing Referrer-Policy (`H5`)
+### 5. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** security.txt present on https://blockchain.info (216 bytes); contact: https://hackerone.com/blockchain
 
-### 8. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 9. [INFO] Server technology disclosure (`H6`)
+### 6. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** https://blockchain.info/ responded 403 (passive check only; no further probing).
 
-## Evidence (raw response observations)
+### 7. [INFO] HTTPS root redirects to different host (`X3`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://blockchain.info/",
-  "https_status": 302,
-  "content_type": "text/html; charset=UTF-8",
-  "title": "302 Found",
-  "path_gitconfig": 403,
-  "path_envfile": 403,
-  "path_securitytxt": 301,
-  "path_robots": 301
-}
-```
+- **CWE:** CWE-200
+- **Detail:** https://blockchain.info/ redirects to https://www.blockchain.com/explorer.
 
-## Notes
+## Reproduction notes
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://blockchain.info/ final status: 403 (final URL https://www.blockchain.com/explorer).
+- http://blockchain.info/ initial status: 301.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-26T23:59:59+00:00.

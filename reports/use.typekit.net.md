@@ -7,12 +7,88 @@
 | Target | https://use.typekit.net/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | use.typekit.net |
-| Test date | 2026-09-24 13:47 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 1, Low: 5, Info: 1)
+Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
+
+| # | Severity | ID | Finding | CWE |
+|---|---|---|---|---|
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | info | C4 | Cookies scoped to parent/wildcard domain | CWE-200 |
+| 3 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 4 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 5 | info | H2c | HSTS not preloaded | CWE-319 |
+| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 7 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 8 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 9 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 10 | info | X3 | HTTPS root redirects to different host | CWE-200 |
+
+## Detailed findings
+
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://use.typekit.net/ without HttpOnly: pid, rails_session_hash, require_login_experiment_num_clicks, require_login_experiment_state, server_side_user_prefs. Readable by client-side script.
+
+### 2. [INFO] Cookies scoped to parent/wildcard domain (`C4`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookies set with domain beyond use.typekit.net: fonts.adobe.com.
+
+### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for use.typekit.net lists 22 name(s) besides the scope host: apicdn-dev.typekit.net, apicdn-staging.typekit.net, apicdn.typekit.net, cctypekit-dev.typekit.net, emoji-staging.typekit.net, emoji.typekit.net, faster-development.typekit.net, faster-staging.typekit.net... (1 no longer resolve)
+
+### 4. [INFO] Possible dangling subdomain (`D2`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `webfonts.creativecloud.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+
+### 5. [INFO] HSTS not preloaded (`H2c`)
+
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000; includeSubDomains` lacks the preload directive.
+
+### 6. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://use.typekit.net/; browser features (camera, mic, geolocation) unrestricted.
+
+### 7. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://use.typekit.net/ -> https://fonts.adobe.com/ (positive check).
+
+### 8. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://use.typekit.net/ exposes 0 unique Disallow path(s)
+
+### 9. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on use.typekit.net.
+
+### 10. [INFO] HTTPS root redirects to different host (`X3`)
+
+- **CWE:** CWE-200
+- **Detail:** https://use.typekit.net/ redirects to https://fonts.adobe.com/.
+
+## Reproduction notes
+
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://use.typekit.net/ final status: 200 (final URL https://fonts.adobe.com/).
+- http://use.typekit.net/ initial status: 302.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-12-13T23:59:59+00:00.
+
+## Active agent cross-check (latest aggressive scan on main, wave 5 - use.typekit.net)
+
+Total findings: **7** - latest aggressive-method scan by agent-aggressive (main branch). Full detailed findings remain in the main-branch version of this file; passive re-audit above is the non-injection view.
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -23,57 +99,3 @@ Total findings: **7** (High: 0, Medium: 1, Low: 5, Info: 1)
 | 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 6 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
 | 7 | info | H6 | Server technology disclosure | CWE-200 |
-
-## Detailed findings
-
-### 1. [MEDIUM] Search-term reflection in searchbar JSON script block + attributes - fully escaped, encoding matrix verified (2026-09-25) (`I1v`)
-
-- **CWE:** CWE-79
-- **Detail:** 4 near-duplicate engine hits consolidated (parameters q and query on https://fonts.adobe.com/search). The search term is reflected in:
-  1. `<script type="application/json" id="/searchbar_value">"TOKEN"</script>` (JSON script block)
-  2. `href="/search?query=TOKEN"` and sibling filter links (attribute context, double-URL-encoded as %25xx)
-  3. `sign-in-url="https://fonts.adobe.com/login/adobe?url=...%3Fq%3DTOKEN"` (attribute)
-  4. `<p class="font-discovery__results-message">Results for 'TOKEN'</p>` (body, entity-encoded &#39;)
-  Encoding matrix (input -> reflected in JSON block): quote -> backslash + &quot;; backslash -> doubled backslash; less-than -> u003c; greater-than -> u003e; space preserved. After the framework HTML-entity decode, all tested payloads (quote, backslash, quote+backslash, raw closing-script tag) produced correctly JSON-escaped strings.
-- **Severity rationale (rule 4):** High -> Medium: reflection is real and unauthenticated, but every tested payload was neutralized by the encoding chain; exploitation would require an untested fourth encoding inconsistency (e.g., a character the encoder skips) or framework-side entity-decode order-of-operations bug.
-- **Re-test vectors to try with a JS runtime (headless):** (a) character set {tab, newline, NUL, %, #}, (b) double-encoding `%2522`, (c) Unicode quote variants, (d) inspect how `af-search-bar` consumes /searchbar_value (JSON.parse vs. regex) in the page bundle.
-- **Recommendation:** Keep the JSON block as the single source of truth; if the decoded value is ever inserted into markup, re-encode per-context rather than relying on the entity layer alone.
-
-### 2. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on https://fonts.adobe.com/
-
-
-### 3. [LOW] Cookies without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** require_login_experiment_num_clicks, require_login_experiment_state, rails_session_hash, pid, server_side_user_prefs set without HttpOnly on https://fonts.adobe.com/
-
-
-### 4. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://fonts.adobe.com/ reflects input verbatim in body context; encoding boundary not confirmed.
-
-
-### 5. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://fonts.adobe.com/ reflects input verbatim in body context; encoding boundary not confirmed.
-
-
-### 6. [LOW] Host header alters response (vhost behavior) (`I12`)
-
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: use.typekit.net + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
-
-
-### 7. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header: nginx
-
-## Reproduction notes
-
-- Scanned 2026-09-24 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).

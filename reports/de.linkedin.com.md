@@ -1,4 +1,4 @@
-# Security Audit Report - de.linkedin.com
+# Security Audit Report — de.linkedin.com
 
 ## Scope and authorization
 
@@ -7,293 +7,81 @@
 | Target | https://de.linkedin.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | de.linkedin.com |
-| Test date | 2026-09-24 14:13 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 9, Info: 6)
+Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 2 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 3 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 4 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 5 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 6 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 7 | low | H1 | Missing HSTS header | CWE-319 |
-| 8 | low | H2 | Missing CSP header | CWE-1021 |
-| 9 | low | H4 | No clickjacking protection | CWE-1023 |
-| 10 | info | A10 | robots.txt discloses sensitive paths | CWE-200 |
-| 11 | info | A4 | Sensitive path returns 200 unauthenticated (health check) | CWE-538 |
-| 12 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 13 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 14 | info | H6 | Server technology disclosure | CWE-200 |
-| 15 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 3 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 4 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 5 | info | H2c | HSTS not preloaded | CWE-319 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 10 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie __cf_bm lacks Secure attribute; transmitted over HTTP.
-- **Context:** http response
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 2. [LOW] Cookie without HttpOnly flag (`C2`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie bcookie lacks HttpOnly; readable by client-side JS.
-- **Context:** http response
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://de.linkedin.com/ without HttpOnly: JSESSIONID, bcookie, lang, lidc. Readable by client-side script.
 
-### 3. [LOW] Cookie without HttpOnly flag (`C2`)
+### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie JSESSIONID lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://de.linkedin.com/ without SameSite=Lax/Strict: JSESSIONID, __cf_bm, bcookie, bscookie, lang, lidc. Cross-site request cookies.
 
-### 4. [LOW] Cookie without HttpOnly flag (`C2`)
+### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1004
-- **Detail:** Cookie lang lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for de.linkedin.com lists 76 name(s) besides the scope host: ac.linkedin.com, ad.linkedin.com, ae.linkedin.com, af.linkedin.com, ag.linkedin.com, ai.linkedin.com, al.linkedin.com, am.linkedin.com...
 
-### 5. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie bcookie lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 6. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie lidc lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 7. [LOW] Missing HSTS header (`H1`)
+### 4. [INFO] HSTS without includeSubDomains (`H2b`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** `max-age=31536000` does not cover subdomains.
 
-### 8. [LOW] Missing CSP header (`H2`)
+### 5. [INFO] HSTS not preloaded (`H2c`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000` lacks the preload directive.
 
-### 9. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 10. [INFO] robots.txt discloses sensitive paths (`A10`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** Disallowed paths in robots.txt: /fizzy/admin, /api/jobPostings/jobs*, /learning/login*?redirect=, /learning/login*&redirect=, /salary-explorer/api, /uas/login, /voyager/api, /help/testing, /help/testing/*, /fizzy/admin.
-- **Recommendation:** Treat robots.txt as discovery, not a control: ensure listed sensitive paths are authenticated or rate-limited.
+- **Detail:** No Referrer-Policy header on https://de.linkedin.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 11. [INFO] Sensitive path returns 200 unauthenticated (health check) (`A4`)
-
-- **CWE:** CWE-538
-- **Detail:** Unauthenticated GET 200 on /admin, but the body is the 5-byte string "GOOD\n" = a health-check endpoint, not application content; re-verified 2026-09-24.
-- **Recommendation:** Review each exposed path; require authentication for admin/actuator-style endpoints and remove world-readable credential or config files.
-
-### 12. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://de.linkedin.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 13. [INFO] Missing Referrer-Policy (`H5`)
+### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **CWE:** CWE-319
+- **Detail:** http://de.linkedin.com/ -> https://de.linkedin.com/hp (positive check).
 
-### 14. [INFO] Server technology disclosure (`H6`)
+### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** robots.txt on https://de.linkedin.com/ exposes 115 unique Disallow path(s) (/, /addContacts*, /addressBookExport*, /ambry, /analytics/)
 
-### 15. [INFO] Server technology disclosure (`H6`)
+### 10. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** security.txt present on https://de.linkedin.com (267 bytes); contact: https://hackerone.com/linkedin
 
-## Aggressive probe campaign
+## Reproduction notes
 
-**Stage 1 - injection/reflection probes (28 requests):**
-
-- no stage-1 probe hits (all probes negative)
-
-**Stage 2 - aggressive probe suite v2 (99 requests):**
-
-- sweep: {"high":["/admin (200 no-type)"],"protected":[]}
-- robots_disallow: ["/addContacts*","/addressBookExport*","/ambry","/analytics/","/answers*","/authwall","/badges/profile/create","/cap/","/chat/","/checkpoint/","/companyDir*","/connections*","/csp/","/e/","/edurec*","/embed/feed/update/","/endorsements","/feed/update/","/find/","/fizzy/admin"]
-
-Stage-2 probe log (observed responses):
-- timing base=260ms id=343 search=264
-- boolean b=200/136173 t1=200/137640 t2=200/137640
-- graphql /graphql -> 404
-- graphql /api/graphql -> 404
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 404
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 404
-- trav2 /%2e%2e%00.html -> 400
-- trav2 /static//../../../../../../etc/passwd -> 404
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 404
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 200
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 200
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 200
-- apicors /api -> 404
-- apicors /api/v1 -> 404
-- apicors /graphql -> 404
-- apicors /rest -> 404
-- apicors /v1 -> 404
-
-**Stage 3 - live parameter harvest, takeover and injection probes (35 requests):**
-
-- params_harvested: ["trk","ProductId","fromSignIn","lang","src"]
-
-Stage-3 probe log (observed responses):
-- harvest discovered 5 live query params
-- xss3 /legal/user-agreement?trk -> 200
-- xss3 ms-windows-store://pdp/?ProductId -> err
-- xss3 https://www.linkedin.com/login/de?fromSignIn -> err
-- xss3 https://www.linkedin.com/help/linkedin?lang -> err
-- xss3 https://business.linkedin.com/talent-solutions?src -> err
-- subs no dangling service CNAMEs over 16 subdomains
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://de.linkedin.com/hp",
-  "https_status": 200,
-  "content_type": "text/html; charset=utf-8",
-  "title": "LinkedIn: Einloggen oder anmelden",
-  "path_gitconfig": 404,
-  "path_envfile": 404,
-  "path_securitytxt": 200,
-  "security_txt_found": true,
-  "path_robots": 200,
-  "robots_found": true,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 302",
-    "sqli /?id=1%27+OR+1=1-- -> 200",
-    "sqli /?q=%27 -> 200",
-    "sqli /products?filter=%27 -> 200",
-    "sqli /?p=1;-- -> 200",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 302",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 200",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 200",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 400",
-    "trav /static/../../../../../../../../etc/passwd -> 404",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 404",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 404",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 200",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 400",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 200",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 200",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 302",
-    "host no reflection -> err",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404"
-  ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=260ms id=343 search=264",
-    "boolean b=200/136173 t1=200/137640 t2=200/137640",
-    "graphql /graphql -> 404",
-    "graphql /api/graphql -> 404",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 404",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 404",
-    "trav2 /%2e%2e%00.html -> 400",
-    "trav2 /static//../../../../../../etc/passwd -> 404",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 404",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 200",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 200",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 200",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 404",
-    "apicors /api/v1 -> 404",
-    "apicors /graphql -> 404",
-    "apicors /rest -> 404",
-    "apicors /v1 -> 404"
-  ],
-  "sweep": {
-    "high": [
-      "/admin (200 no-type)"
-    ],
-    "protected": []
-  },
-  "robots_disallow": [
-    "/addContacts*",
-    "/addressBookExport*",
-    "/ambry",
-    "/analytics/",
-    "/answers*",
-    "/authwall",
-    "/badges/profile/create",
-    "/cap/",
-    "/chat/",
-    "/checkpoint/",
-    "/companyDir*",
-    "/connections*",
-    "/csp/",
-    "/e/",
-    "/edurec*",
-    "/embed/feed/update/",
-    "/endorsements",
-    "/feed/update/",
-    "/find/",
-    "/fizzy/admin"
-  ],
-  "v3_probe_count": 35,
-  "v3_log": [
-    "harvest discovered 5 live query params",
-    "xss3 /legal/user-agreement?trk -> 200",
-    "xss3 ms-windows-store://pdp/?ProductId -> err",
-    "xss3 https://www.linkedin.com/login/de?fromSignIn -> err",
-    "xss3 https://www.linkedin.com/help/linkedin?lang -> err",
-    "xss3 https://business.linkedin.com/talent-solutions?src -> err",
-    "subs no dangling service CNAMEs over 16 subdomains",
-    "cache X-Forwarded-Host not reflected -> 200"
-  ],
-  "params_harvested": [
-    "trk",
-    "ProductId",
-    "fromSignIn",
-    "lang",
-    "src"
-  ]
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://de.linkedin.com/ final status: 200 (final URL https://de.linkedin.com/).
+- http://de.linkedin.com/ initial status: 301.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2027-03-03T23:59:59+00:00.

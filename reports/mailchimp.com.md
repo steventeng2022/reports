@@ -7,167 +7,81 @@
 | Target | https://mailchimp.com/ |
 | Bug bounty program | [Intuit](https://hackerone.com/intuit_rdp) |
 | Listed scope domain | mailchimp.com |
-| Test date | 2026-09-24 00:54 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 13, Info: 4)
+Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 2 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 3 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 4 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 5 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 6 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 7 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 8 | low | H1 | Missing HSTS header | CWE-319 |
-| 9 | low | H2 | Missing CSP header | CWE-1021 |
-| 10 | low | H2 | Missing CSP header | CWE-1021 |
-| 11 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 12 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 13 | low | H4 | No clickjacking protection | CWE-1023 |
-| 14 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 15 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 16 | info | H6 | Server technology disclosure | CWE-200 |
-| 17 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | H1 | Missing HSTS header | CWE-319 |
+| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 7 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
+| 8 | info | R1 | robots.txt protected | CWE-200 |
+| 9 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 10 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie _abck lacks Secure attribute; transmitted over HTTP.
-- **Context:** http response
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 2. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie bm_sz lacks Secure attribute; transmitted over HTTP.
-- **Context:** http response
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 3. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie bm_sz lacks Secure attribute; transmitted over HTTP.
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 4. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie _abck lacks HttpOnly; readable by client-side JS.
-- **Context:** http response
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 5. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie bm_sz lacks HttpOnly; readable by client-side JS.
-- **Context:** http response
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 6. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie _abck lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 7. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie bm_sz lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 8. [LOW] Missing HSTS header (`H1`)
+### 1. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** No Strict-Transport-Security header on https://mailchimp.com/. Clients may connect over plain HTTP on first visit.
 
-### 9. [LOW] Missing CSP header (`H2`)
+### 2. [LOW] Missing Content-Security-Policy (`H3`)
+
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://mailchimp.com/; no defense-in-depth against XSS/content injection.
+
+### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
+
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://mailchimp.com/; browsers may MIME-sniff responses.
+
+### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://mailchimp.com/; page may be rendered in a foreign frame.
 
-### 10. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 11. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 12. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 13. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 14. [INFO] Missing Referrer-Policy (`H5`)
+### 5. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://mailchimp.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 15. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://mailchimp.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 16. [INFO] Server technology disclosure (`H6`)
+### 7. [INFO] Plain HTTP returns non-redirect status (`N3`)
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: AkamaiGHost
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **CWE:** CWE-319
+- **Detail:** http://mailchimp.com/ returns 403 (no redirect to HTTPS).
 
-### 17. [INFO] Server technology disclosure (`H6`)
+### 8. [INFO] robots.txt protected (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: istio-envoy
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** GET /robots.txt returned 403.
 
-## Evidence (raw response observations)
+### 9. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://mailchimp.com/",
-  "https_status": 200,
-  "content_type": "text/html; charset=UTF-8",
-  "title": "Email &amp; SMS Marketing Platform | Mailchimp",
-  "path_gitconfig": 301,
-  "path_envfile": 301,
-  "path_securitytxt": 200,
-  "security_txt_found": true,
-  "path_robots": 200,
-  "robots_found": true
-}
-```
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 403 on mailchimp.com.
 
-## Notes
+### 10. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** https://mailchimp.com/ responded 403 (passive check only; no further probing).
+
+## Reproduction notes
+
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://mailchimp.com/ final status: 403 (final URL https://mailchimp.com/).
+- http://mailchimp.com/ initial status: 403.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2027-01-16T23:59:59+00:00.

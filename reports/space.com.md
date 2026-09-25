@@ -7,172 +7,99 @@
 | Target | https://space.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | space.com |
-| Test date | 2026-09-24 07:24 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 10, Info: 4)
+Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 2 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 3 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 4 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 5 | low | H2 | Missing CSP header | CWE-1021 |
-| 6 | low | H2 | Missing CSP header | CWE-1021 |
-| 7 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 8 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 9 | low | H4 | No clickjacking protection | CWE-1023 |
-| 10 | low | H4 | No clickjacking protection | CWE-1023 |
-| 11 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 12 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 13 | info | H6 | Server technology disclosure | CWE-200 |
-| 14 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
+| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 4 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 5 | info | C4 | Cookies scoped to parent/wildcard domain | CWE-200 |
+| 6 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 7 | info | H2c | HSTS not preloaded | CWE-319 |
+| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 10 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 11 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 12 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 13 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie FTR_Cache_Status lacks Secure attribute; transmitted over HTTP.
-- **Context:** http response
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 2. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie FTR_Cache_Status lacks Secure attribute; transmitted over HTTP.
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 3. [LOW] Cookie without HttpOnly flag (`C2`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie FTR_Cache_Status lacks HttpOnly; readable by client-side JS.
-- **Context:** http response
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://space.com/ without HttpOnly: FTR_Cache_Status, FTR_Country_Code. Readable by client-side script.
 
-### 4. [LOW] Cookie without HttpOnly flag (`C2`)
+### 2. [LOW] Cookies set without Secure flag (`C2`)
+
+- **CWE:** CWE-614
+- **Detail:** Set on https://space.com/ without Secure: FTR_Cache_Status, FTR_Country_Code. Will be transmitted over HTTP if the site is reachable cleartext.
+
+### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie FTR_Cache_Status lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://space.com/ without SameSite=Lax/Strict: FTR_Cache_Status, FTR_Country_Code. Cross-site request cookies.
 
-### 5. [LOW] Missing CSP header (`H2`)
+### 4. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://space.com/; browsers may MIME-sniff responses.
 
-### 6. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 7. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 8. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 9. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 10. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 11. [INFO] Missing Referrer-Policy (`H5`)
+### 5. [INFO] Cookies scoped to parent/wildcard domain (`C4`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** Cookies set with domain beyond space.com: www.space.com.
 
-### 12. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **CWE:** CWE-1382
+- **Detail:** Certificate for space.com lists 1 name(s) besides the scope host: www.space.com
 
-### 13. [INFO] Server technology disclosure (`H6`)
+### 7. [INFO] HSTS not preloaded (`H2c`)
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: Varnish
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000; includeSubDomains` lacks the preload directive.
 
-### 14. [INFO] Server technology disclosure (`H6`)
+### 8. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: Varnish
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** No Referrer-Policy header on https://space.com/; full URL (incl. query strings) is sent as referrer by default.
 
-## Evidence (raw response observations)
+### 9. [INFO] Missing Permissions-Policy (`H7`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://www.space.com/",
-  "https_status": 301,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 301,
-  "path_envfile": 301,
-  "path_securitytxt": 301,
-  "path_robots": 301,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 301",
-    "sqli /?id=1%27+OR+1=1-- -> 301",
-    "sqli /?q=%27 -> 301",
-    "sqli /products?filter=%27 -> 301",
-    "sqli /?p=1;-- -> 301",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 301",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 301",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 301",
-    "trav /static/../../../../../../../../etc/passwd -> 301",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 301",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 301",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 301",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 301",
-    "host no reflection -> 421",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301"
-  ]
-}
-```
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://space.com/; browser features (camera, mic, geolocation) unrestricted.
 
-## Notes
+### 10. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://space.com/ lists 288 URLs.
+
+### 11. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://space.com/ -> https://www.space.com/ (positive check).
+
+### 12. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://space.com/ exposes 24 unique Disallow path(s) (#, *%7B*%7D*, *.freyr.*, */.events-handler*, */comments/*) and 2 sitemap reference(s)
+
+### 13. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on space.com.
+
+## Reproduction notes
+
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://space.com/ final status: 200 (final URL https://www.space.com/).
+- http://space.com/ initial status: 301.
+- Certificate: Let's Encrypt YR1, valid until 2026-11-17T15:38:00+00:00.

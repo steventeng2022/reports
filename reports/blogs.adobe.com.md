@@ -6,133 +6,32 @@
 |---|---|
 | Target | https://blogs.adobe.com/ |
 | Bug bounty program | [Adobe](https://hackerone.com/adobe) |
-| Listed scope domain | adobe.com |
-| Test date | 2026-09-24 00:54 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | blogs.adobe.com |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 1, Low: 9, Info: 3)
+Total findings: **2** (High: 0, Medium: 1, Low: 0, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | T1 | TLS certificate hostname mismatch (presents *.adobeaemcloud.com) | CWE-295 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H1 | Missing HSTS header | CWE-319 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H2 | Missing CSP header | CWE-1021 |
-| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 7 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 8 | low | H4 | No clickjacking protection | CWE-1023 |
-| 9 | low | H4 | No clickjacking protection | CWE-1023 |
-| 10 | low | R2 | No HTTP->HTTPS redirect (endpoint broken: HTTP 500, HTTPS 421) | CWE-319 |
-| 11 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 12 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 13 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | medium | T6 | Certificate hostname mismatch | CWE-297 |
+| 2 | info | X1 | HTTPS homepage unreachable | CWE-200 |
 
 ## Detailed findings
 
-### 1. [MEDIUM] TLS certificate hostname mismatch (presents *.adobeaemcloud.com) (`T1`)
+### 1. [MEDIUM] Certificate hostname mismatch (`T6`)
 
-- **CWE:** CWE-295
-- **Detail:** Verified via direct TLS handshake: the HTTPS vhost serving blogs.adobe.com presents a DigiCert certificate with CN=*.adobeaemcloud.com and SAN=DNS:*.adobeaemcloud.com only (valid to 2027-03-25). Browsers will report a hostname mismatch (curl exit 60, SEC_E_WRONG_PRINCIPAL) for any client that does not accept the mismatch, and users who override the warning are exposed to downgrade/MITM acceptance of the wrong-name certificate.
-- **Recommendation:** Review and remediate per CWE guidance.
+- **CWE:** CWE-297
+- **Detail:** Server certificate for blogs.adobe.com is not valid for its hostname (certificate verify failed: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'blogs.adobe.com'. (_ssl.c:1010)).
 
-### 2. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 3. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 4. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 5. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 6. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 7. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 8. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 9. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 10. [LOW] No HTTP->HTTPS redirect (endpoint broken: HTTP 500, HTTPS 421) (`R2`)
-
-- **CWE:** CWE-319
-- **Detail:** Verified: http://blogs.adobe.com/ returns 500 and https://blogs.adobe.com/ returns 421 (Misdirected Request) with no Location header on either scheme; the endpoint appears misconfigured or being decommissioned, so the missing HTTP->HTTPS redirect has limited exposure.
-- **Recommendation:** Add an HTTP->HTTPS redirect (currently returns an error code on port 80).
-
-### 11. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] HTTPS homepage unreachable (`X1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** https://blogs.adobe.com/: SSLError: HTTPSConnectionPool(host='blogs.adobe.com', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLCertVerificationError(1, "[SSL: CERTIFICATE_VERIF
 
-### 12. [INFO] Missing Referrer-Policy (`H5`)
+## Reproduction notes
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
-
-### 13. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: Varnish
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_status": 500,
-  "https_status": 421,
-  "content_type": "text/plain; charset=utf-8",
-  "title": "",
-  "path_gitconfig": 421,
-  "path_envfile": 421,
-  "path_securitytxt": 421,
-  "path_robots": 421
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- http://blogs.adobe.com/ initial status: 500.

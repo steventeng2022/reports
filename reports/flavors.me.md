@@ -7,41 +7,30 @@
 | Target | https://flavors.me/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | flavors.me |
-| Test date | 2026-09-24 07:24 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **1** (High: 0, Medium: 0, Low: 0, Info: 1)
+Total findings: **2** (High: 0, Medium: 0, Low: 0, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | info | R3 | Domain unresolvable at audit time (global DNS SERVFAIL) | CWE-1032 |
+| 1 | info | D0 | Scope host does not resolve in DNS | CWE-200 |
+| 2 | info | X1 | HTTPS homepage unreachable | CWE-200 |
 
 ## Detailed findings
 
-### 1. [INFO] Domain unresolvable at audit time (global DNS SERVFAIL) (`R3`)
+### 1. [INFO] Scope host does not resolve in DNS (`D0`)
 
-- **CWE:** CWE-1032
-- **Detail:** flavors.me failed DNS resolution during the audit; a DNS-over-HTTPS lookup (dns.google) also returns SERVFAIL with no A records, so the domain is unresolvable globally at audit time (service appears decommissioned).
-- **Recommendation:** Serve the site on port 80 with a redirect to HTTPS.
+- **CWE:** CWE-200
+- **Detail:** flavors.me returned no A/AAAA record.
 
-## Evidence (raw response observations)
+### 2. [INFO] HTTPS homepage unreachable (`X1`)
 
-```json
-{
-  "http_error": "getaddrinfo EAI_AGAIN flavors.me",
-  "https_error": "getaddrinfo ENOTFOUND flavors.me",
-  "probe_count": 28,
-  "probe_log": [
-    "sqli-reflect /search?q=%27+OR+1=1-- -> err",
-    "host no reflection -> err"
-  ]
-}
-```
+- **CWE:** CWE-200
+- **Detail:** https://flavors.me/: ConnectionError: HTTPSConnectionPool(host='flavors.me', port=443): Max retries exceeded with url: / (Caused by NameResolutionError("HTTPSConnection(host='flavors.me', port=443):
 
-## Notes
+## Reproduction notes
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.

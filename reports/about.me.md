@@ -1,4 +1,4 @@
-# Security Audit Report - about.me
+# Security Audit Report — about.me
 
 ## Scope and authorization
 
@@ -7,281 +7,99 @@
 | Target | https://about.me/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | about.me |
-| Test date | 2026-09-24 23:48 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 9, Info: 5)
+Total findings: **13** (High: 0, Medium: 0, Low: 6, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 2 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 3 | low | H1 | Missing HSTS header | CWE-319 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
+| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
 | 4 | low | H1 | Missing HSTS header | CWE-319 |
-| 5 | low | H2 | Missing CSP header | CWE-1021 |
-| 6 | low | H2 | Missing CSP header | CWE-1021 |
-| 7 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 8 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 9 | low | H4 | No clickjacking protection | CWE-1023 |
-| 10 | info | A4i | Sensitive paths exist (protected or app shells) | CWE-538 |
-| 11 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 12 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 13 | info | H6 | Server technology disclosure | CWE-200 |
-| 14 | info | H6 | Server technology disclosure | CWE-200 |
+| 5 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 6 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 7 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 10 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 11 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 12 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 13 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie authtkt lacks Secure attribute; transmitted over HTTP.
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 2. [LOW] Cookie without HttpOnly flag (`C2`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie authtkt lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://about.me/ without HttpOnly: authtkt. Readable by client-side script.
 
-### 3. [LOW] Missing HSTS header (`H1`)
+### 2. [LOW] Cookies set without Secure flag (`C2`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **CWE:** CWE-614
+- **Detail:** Set on https://about.me/ without Secure: authtkt. Will be transmitted over HTTP if the site is reachable cleartext.
+
+### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://about.me/ without SameSite=Lax/Strict: aboutme_anon_id, authtkt. Cross-site request cookies.
 
 ### 4. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** No Strict-Transport-Security header on https://about.me/. Clients may connect over plain HTTP on first visit.
 
-### 5. [LOW] Missing CSP header (`H2`)
+### 5. [LOW] Missing Content-Security-Policy (`H3`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://about.me/; no defense-in-depth against XSS/content injection.
 
-### 6. [LOW] Missing CSP header (`H2`)
+### 6. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://about.me/; browsers may MIME-sniff responses.
 
-### 7. [LOW] Missing X-Content-Type-Options (`H3`)
+### 7. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for about.me lists 1 name(s) besides the scope host: *.about.me
 
-### 8. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 9. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 10. [INFO] Sensitive paths exist (protected or app shells) (`A4i`)
-
-- **CWE:** CWE-538
-- **Detail:** Paths answering 401/403 or HTML shells: /admin (HTML shell), /console (HTML shell), /api (HTML shell), /debug (HTML shell), /trace (HTML shell), /phpmyadmin (HTML shell), /backup (HTML shell), /database (HTML shell), /config (HTML shell), /metrics (HTML shell).
-- **Recommendation:** No immediate action if the paths are genuinely protected; otherwise return a real 404 to unauthenticated probes for paths that should not exist.
-
-### 11. [INFO] Missing Referrer-Policy (`H5`)
+### 8. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://about.me/; full URL (incl. query strings) is sent as referrer by default.
 
-### 12. [INFO] Missing Referrer-Policy (`H5`)
+### 9. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://about.me/; browser features (camera, mic, geolocation) unrestricted.
 
-### 13. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 14. [INFO] Server technology disclosure (`H6`)
+### 10. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** sitemap.xml on https://about.me/ lists 0 URLs.
 
-## Aggressive probe campaign
+### 11. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-**Stage 1 - injection/reflection probes (28 requests):**
+- **CWE:** CWE-319
+- **Detail:** http://about.me/ -> https://about.me/ (positive check).
 
-- no stage-1 probe hits (all probes negative)
+### 12. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-**Stage 2 - aggressive probe suite v2 (99 requests):**
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://about.me/ exposes 10 unique Disallow path(s) (/, /ajax/, /content/, /dw/, /facebook/) and 1 sitemap reference(s)
 
-- sweep: {"high":[],"protected":["/admin (HTML shell)","/console (HTML shell)","/api (HTML shell)","/debug (HTML shell)","/trace (HTML shell)","/phpmyadmin (HTML shell)","/backup (HTML shell)","/database (HTML shell)","/config (HTML shell)","/metrics (HTML shell)"]}
-- robots_disallow: ["/facebook/","/twitter/","/linkedin/","/random/","/content/","/n/","/ajax/","/me/","/dw/","/","/","/","/","/","/","/","/","/","/","/"]
+### 13. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-Stage-2 probe log (observed responses):
-- timing base=256ms id=228 search=207
-- boolean b=200/234358 t1=200/234358 t2=200/234357
-- graphql /graphql -> 404
-- graphql /api/graphql -> 302
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 302
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 302
-- trav2 /%2e%2e%00.html -> 400
-- trav2 /static//../../../../../../etc/passwd -> 302
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 400
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 200
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 200
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 200
-- apicors /api -> 200
-- apicors /api/v1 -> 302
-- apicors /graphql -> 404
-- apicors /rest -> 404
-- apicors /v1 -> 404
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on about.me.
 
-**Stage 3 - live parameter harvest, takeover and injection probes (18 requests):**
+## Reproduction notes
 
-- params_harvested: ["id"]
-
-Stage-3 probe log (observed responses):
-- harvest discovered 1 live query params
-- xss3 https://www.googletagmanager.com/gtag/js?id -> err
-- subs no dangling service CNAMEs over 16 subdomains
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://about.me/",
-  "https_status": 200,
-  "content_type": "text/html; charset=utf-8",
-  "title": "about.me | your personal homepage",
-  "path_gitconfig": 302,
-  "path_envfile": 404,
-  "path_securitytxt": 302,
-  "path_robots": 200,
-  "robots_found": true,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 302",
-    "sqli /?id=1%27+OR+1=1-- -> 200",
-    "sqli /?q=%27 -> 200",
-    "sqli /products?filter=%27 -> 200",
-    "sqli /?p=1;-- -> 200",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 302",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 200",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 200",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 400",
-    "trav /static/../../../../../../../../etc/passwd -> 302",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 302",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 404",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 200",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 200",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 200",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 200",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 200",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 200",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 200",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 302",
-    "host no reflection -> err",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 200",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 200"
-  ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=256ms id=228 search=207",
-    "boolean b=200/234358 t1=200/234358 t2=200/234357",
-    "graphql /graphql -> 404",
-    "graphql /api/graphql -> 302",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 302",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 302",
-    "trav2 /%2e%2e%00.html -> 400",
-    "trav2 /static//../../../../../../etc/passwd -> 302",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 400",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 200",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 200",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 200",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 200",
-    "apicors /api/v1 -> 302",
-    "apicors /graphql -> 404",
-    "apicors /rest -> 404",
-    "apicors /v1 -> 404"
-  ],
-  "sweep": {
-    "high": [],
-    "protected": [
-      "/admin (HTML shell)",
-      "/console (HTML shell)",
-      "/api (HTML shell)",
-      "/debug (HTML shell)",
-      "/trace (HTML shell)",
-      "/phpmyadmin (HTML shell)",
-      "/backup (HTML shell)",
-      "/database (HTML shell)",
-      "/config (HTML shell)",
-      "/metrics (HTML shell)"
-    ]
-  },
-  "robots_disallow": [
-    "/facebook/",
-    "/twitter/",
-    "/linkedin/",
-    "/random/",
-    "/content/",
-    "/n/",
-    "/ajax/",
-    "/me/",
-    "/dw/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/"
-  ],
-  "v3_probe_count": 18,
-  "v3_log": [
-    "harvest discovered 1 live query params",
-    "xss3 https://www.googletagmanager.com/gtag/js?id -> err",
-    "subs no dangling service CNAMEs over 16 subdomains",
-    "cache X-Forwarded-Host not reflected -> 302"
-  ],
-  "params_harvested": [
-    "id"
-  ]
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://about.me/ final status: 200 (final URL https://about.me/).
+- http://about.me/ initial status: 301.
+- Certificate: Google Trust Services WE1, valid until 2026-11-29T11:48:44+00:00.

@@ -7,98 +7,63 @@
 | Target | https://ifttt.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | ifttt.com |
-| Test date | 2026-09-24 05:27 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **4** (High: 0, Medium: 0, Low: 1, Info: 3)
+Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | info | H6 | Server technology disclosure | CWE-200 |
-| 3 | info | H6 | Server technology disclosure | CWE-200 |
-| 4 | info | P3 | Missing security.txt | CWE-1038 |
+| 1 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 2 | info | H2c | HSTS not preloaded | CWE-319 |
+| 3 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 4 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 5 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 6 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 7 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for ifttt.com lists 1 name(s) besides the scope host: *.ifttt.com
+
+### 2. [INFO] HSTS not preloaded (`H2c`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** `max-age=63072000; includeSubDomains` lacks the preload directive.
 
-### 2. [INFO] Server technology disclosure (`H6`)
+### 3. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: CloudFront
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** No Permissions-Policy header on https://ifttt.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 3. [INFO] Server technology disclosure (`H6`)
+### 4. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: nginx
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** sitemap.xml on https://ifttt.com/ lists 7 URLs.
 
-### 4. [INFO] Missing security.txt (`P3`)
+### 5. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-1038
-- **Detail:** No .well-known/security.txt found (RFC 9116).
-- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+- **CWE:** CWE-319
+- **Detail:** http://ifttt.com/ -> https://ifttt.com/ (positive check).
 
-## Evidence (raw response observations)
+### 6. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://ifttt.com/",
-  "https_status": 200,
-  "content_type": "text/html; charset=utf-8",
-  "title": "Automate. Save time. Get more done. - IFTTT",
-  "path_gitconfig": 403,
-  "path_envfile": 302,
-  "path_securitytxt": 404,
-  "path_robots": 200,
-  "robots_found": true,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 301",
-    "sqli /?id=1%27+OR+1=1-- -> 200",
-    "sqli /?q=%27 -> 200",
-    "sqli /products?filter=%27 -> 301",
-    "sqli /?p=1;-- -> 200",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 301",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 200",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 200",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 400",
-    "trav /static/../../../../../../../../etc/passwd -> 404",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 404",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 307",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 200",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 200",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 301",
-    "host no reflection -> err",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404"
-  ]
-}
-```
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://ifttt.com/ exposes 8 unique Disallow path(s) (/create/api/, /dri/, /join, /login, /missing_link) and 1 sitemap reference(s)
 
-## Notes
+### 7. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on ifttt.com.
+
+## Reproduction notes
+
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://ifttt.com/ final status: 200 (final URL https://ifttt.com/).
+- http://ifttt.com/ initial status: 301.
+- Certificate: Amazon Amazon RSA 2048 M04, valid until 2026-11-27T23:59:59+00:00.

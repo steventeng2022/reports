@@ -7,112 +7,87 @@
 | Target | https://spotify.com/ |
 | Bug bounty program | [Spotify](https://hackerone.com/spotify) |
 | Listed scope domain | spotify.com |
-| Test date | 2026-09-23 19:25 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 6, Info: 4)
+Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | low | H4 | No clickjacking protection | CWE-1023 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H6 | Server technology disclosure | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 3 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 4 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 5 | info | H2c | HSTS not preloaded | CWE-319 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 9 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 10 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 11 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://spotify.com/ without HttpOnly: sp_new, sp_t. Readable by client-side script.
+
+### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://spotify.com/ without SameSite=Lax/Strict: sp_landing, sp_new, sp_t. Cross-site request cookies.
+
+### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for spotify.com lists 1 name(s) besides the scope host: *.spotify.com
+
+### 4. [INFO] HSTS without includeSubDomains (`H2b`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** `max-age=31536000` does not cover subdomains.
 
-### 2. [LOW] Missing CSP header (`H2`)
+### 5. [INFO] HSTS not preloaded (`H2c`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000` lacks the preload directive.
 
-### 3. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 5. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 6. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 7. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://spotify.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://spotify.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 9. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: envoy
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 10. [INFO] Server technology disclosure (`H6`)
+### 8. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: envoy
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** sitemap.xml on https://spotify.com/ lists 10 URLs.
 
-## Evidence (raw response observations)
+### 9. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://www.spotify.com/",
-  "https_status": 301,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 301,
-  "path_envfile": 301,
-  "path_securitytxt": 301,
-  "path_robots": 301
-}
-```
+- **CWE:** CWE-319
+- **Detail:** http://spotify.com/ -> https://www.spotify.com/ (positive check).
 
-## Notes
+### 10. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://spotify.com/ exposes 15 unique Disallow path(s) (/*/about-us/contact/contact-spotify-account/, /*/about-us/contact/contact-spotify-password/, /*/account/cls/*, /*/external/*, /*/get-spotify/*) and 1 sitemap reference(s)
+
+### 11. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+
+- **CWE:** CWE-200
+- **Detail:** security.txt present on https://spotify.com (248 bytes); contact: mailto:security@spotify.com
+
+## Reproduction notes
+
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://spotify.com/ final status: 200 (final URL https://open.spotify.com/).
+- http://spotify.com/ initial status: 301.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2027-01-23T23:59:59+00:00.

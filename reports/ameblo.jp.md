@@ -7,120 +7,63 @@
 | Target | https://ameblo.jp/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ameblo.jp |
-| Test date | 2026-09-24 12:21 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 16, Info: 1)
+Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H4 | No clickjacking protection | CWE-1023 |
-| 3 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 7 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 8 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 9 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 10 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 11 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 12 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 13 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 14 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 15 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 16 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 17 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 2 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 3 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 5 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 6 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 7 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
 ### 1. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security on https://ameblo.jp/
+- **Detail:** No Strict-Transport-Security header on https://ameblo.jp/. Clients may connect over plain HTTP on first visit.
 
-### 2. [LOW] No clickjacking protection (`H4`)
+### 2. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on https://ameblo.jp/
+- **CWE:** CWE-1021
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://ameblo.jp/; page may be rendered in a foreign frame.
 
-### 3. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://ameblo.jp/search reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for ameblo.jp lists 1 name(s) besides the scope host: *.ameblo.jp
 
-### 4. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter query on https://ameblo.jp/search reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 5. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://ameblo.jp/s reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 6. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://ameblo.jp/ reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 7. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://ameblo.jp/results reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 8. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://ameblo.jp/redirect reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 9. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://ameblo.jp/go reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 10. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://ameblo.jp/r reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 11. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://ameblo.jp/link reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 12. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://ameblo.jp/out reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 13. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://ameblo.jp/share reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 14. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://ameblo.jp/view reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 15. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter to on https://ameblo.jp/forward reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 16. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter to on https://ameblo.jp/jump reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 17. [INFO] Missing Referrer-Policy (`H5`)
+### 4. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://ameblo.jp/
+- **Detail:** No Referrer-Policy header on https://ameblo.jp/; full URL (incl. query strings) is sent as referrer by default.
+
+### 5. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://ameblo.jp/ -> https://ameblo.jp/ (positive check).
+
+### 6. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://ameblo.jp/ exposes 46 unique Disallow path(s) (/, /*/amemberentry-*.html, /*/amemberentrylist-*.html, /*/amemberentrylist.html, /*/archivetop.html) and 1 sitemap reference(s)
+
+### 7. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on ameblo.jp.
 
 ## Reproduction notes
 
-- Scanned 2026-09-24 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://ameblo.jp/ final status: 200 (final URL https://ameblo.jp/).
+- http://ameblo.jp/ initial status: 301.
+- Certificate: DigiCert Inc GeoTrust TLS RSA CA G1, valid until 2027-02-16T23:59:59+00:00.

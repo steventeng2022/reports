@@ -7,232 +7,93 @@
 | Target | https://hbo.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | hbo.com |
-| Test date | 2026-09-24 07:24 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **22** (High: 0, Medium: 0, Low: 18, Info: 4)
+Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 2 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 3 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 4 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 5 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 6 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 7 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 8 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 9 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 10 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 11 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 12 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 13 | low | H2 | Missing CSP header | CWE-1021 |
-| 14 | low | H2 | Missing CSP header | CWE-1021 |
-| 15 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 16 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 17 | low | H4 | No clickjacking protection | CWE-1023 |
-| 18 | low | H4 | No clickjacking protection | CWE-1023 |
-| 19 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 20 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 21 | info | H6 | Server technology disclosure | CWE-200 |
-| 22 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
+| 3 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 4 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 5 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 6 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 7 | info | H2c | HSTS not preloaded | CWE-319 |
+| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 10 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 11 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 12 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie countryCode lacks Secure attribute; transmitted over HTTP.
-- **Context:** http response
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 2. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie stateCode lacks Secure attribute; transmitted over HTTP.
-- **Context:** http response
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 3. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie geoData lacks Secure attribute; transmitted over HTTP.
-- **Context:** http response
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 4. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie countryCode lacks Secure attribute; transmitted over HTTP.
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 5. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie stateCode lacks Secure attribute; transmitted over HTTP.
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 6. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie geoData lacks Secure attribute; transmitted over HTTP.
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 7. [LOW] Cookie without HttpOnly flag (`C2`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie countryCode lacks HttpOnly; readable by client-side JS.
-- **Context:** http response
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://hbo.com/ without HttpOnly: countryCode, geoData, stateCode. Readable by client-side script.
 
-### 8. [LOW] Cookie without HttpOnly flag (`C2`)
+### 2. [LOW] Cookies set without Secure flag (`C2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Cookie stateCode lacks HttpOnly; readable by client-side JS.
-- **Context:** http response
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **CWE:** CWE-614
+- **Detail:** Set on https://hbo.com/ without Secure: countryCode, geoData, stateCode. Will be transmitted over HTTP if the site is reachable cleartext.
 
-### 9. [LOW] Cookie without HttpOnly flag (`C2`)
+### 3. [LOW] Missing Content-Security-Policy (`H3`)
 
-- **CWE:** CWE-1004
-- **Detail:** Cookie geoData lacks HttpOnly; readable by client-side JS.
-- **Context:** http response
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://hbo.com/; no defense-in-depth against XSS/content injection.
 
-### 10. [LOW] Cookie without HttpOnly flag (`C2`)
+### 4. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
 
-- **CWE:** CWE-1004
-- **Detail:** Cookie countryCode lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://hbo.com/; browsers may MIME-sniff responses.
 
-### 11. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie stateCode lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 12. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie geoData lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 13. [LOW] Missing CSP header (`H2`)
+### 5. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://hbo.com/; page may be rendered in a foreign frame.
 
-### 14. [LOW] Missing CSP header (`H2`)
+### 6. [INFO] HSTS without includeSubDomains (`H2b`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000;` does not cover subdomains.
 
-### 15. [LOW] Missing X-Content-Type-Options (`H3`)
+### 7. [INFO] HSTS not preloaded (`H2c`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000;` lacks the preload directive.
 
-### 16. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 17. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 18. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 19. [INFO] Missing Referrer-Policy (`H5`)
+### 8. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://hbo.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 20. [INFO] Missing Referrer-Policy (`H5`)
+### 9. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://hbo.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 21. [INFO] Server technology disclosure (`H6`)
+### 10. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: Varnish
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **CWE:** CWE-319
+- **Detail:** http://hbo.com/ -> https://hbo.com/ (positive check).
 
-### 22. [INFO] Server technology disclosure (`H6`)
+### 11. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: Varnish
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** robots.txt on https://hbo.com/ exposes 1 unique Disallow path(s) (/content/*) and 1 sitemap reference(s)
 
-## Evidence (raw response observations)
+### 12. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://hbo.com/",
-  "https_status": 308,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 308,
-  "path_envfile": 308,
-  "path_securitytxt": 308,
-  "path_robots": 308,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 308",
-    "sqli /?id=1%27+OR+1=1-- -> 308",
-    "sqli /?q=%27 -> 308",
-    "sqli /products?filter=%27 -> 308",
-    "sqli /?p=1;-- -> 308",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 308",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 308",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 308",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 308",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 308",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 308",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 308",
-    "trav /static/../../../../../../../../etc/passwd -> 308",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 308",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 308",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 308",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 308",
-    "host no reflection -> 421",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 308"
-  ]
-}
-```
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on hbo.com.
 
-## Notes
+## Reproduction notes
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://hbo.com/ final status: 200 (final URL https://www.hbo.com/).
+- http://hbo.com/ initial status: 301.
+- Certificate: GlobalSign nv-sa GlobalSign Atlas R3 DV TLS CA 2026 Q1, valid until 2027-02-23T17:25:14+00:00.

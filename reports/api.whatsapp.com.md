@@ -6,120 +6,70 @@
 |---|---|
 | Target | https://api.whatsapp.com/ |
 | Bug bounty program | [Facebook](https://www.facebook.com/whitehat) |
-| Listed scope domain | whatsapp.com |
-| Test date | 2026-09-23 18:45 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | api.whatsapp.com |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 1, Low: 5, Info: 5)
+Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | R2 | No HTTP->HTTPS redirect | CWE-319 |
-| 2 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 3 | low | H1 | Missing HSTS header | CWE-319 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H6 | Server technology disclosure | CWE-200 |
-| 10 | info | I1 | Proxy-Status header discloses internal proxy topology | CWE-200 |
-| 11 | info | P3 | Missing security.txt | CWE-1038 |
+| 1 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
+| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 3 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 4 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 5 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
+| 6 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 7 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 8 | info | X2 | HTTPS homepage returned HTTP 400 | CWE-200 |
 
 ## Detailed findings
 
-### 1. [MEDIUM] No HTTP->HTTPS redirect (`R2`)
+### 1. [LOW] TLS certificate expiring within 30 days (`T3`)
+
+- **CWE:** CWE-298
+- **Detail:** Certificate expires 2026-10-02T23:59:59+00:00 (7 days left) for api.whatsapp.com.
+
+### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for api.whatsapp.com lists 7 name(s) besides the scope host: *.cdn.whatsapp.net, *.snr.whatsapp.net, *.whatsapp.com, *.whatsapp.net, wa.me, whatsapp.com, whatsapp.net
+
+### 3. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header on https://api.whatsapp.com/; full URL (incl. query strings) is sent as referrer by default.
+
+### 4. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://api.whatsapp.com/; browser features (camera, mic, geolocation) unrestricted.
+
+### 5. [INFO] Plain HTTP returns non-redirect status (`N3`)
 
 - **CWE:** CWE-319
-- **Detail:** Verified: http://api.whatsapp.com/ returns 403 (text/plain, empty body) on port 80 without redirect. Response additionally discloses a Proxy-Status header containing internal proxy identifiers and VIP addresses (see below).
-- **Recommendation:** Add an HTTP->HTTPS redirect (currently returns an error code on port 80).
+- **Detail:** http://api.whatsapp.com/ returns 403 (no redirect to HTTPS).
 
-### 2. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie wa_lang_pref lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 3. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 4. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 6. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 7. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** robots.txt on https://api.whatsapp.com/ exposes 1 unique Disallow path(s) (/)
 
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** GET /.well-known/security.txt returned 404 on api.whatsapp.com.
 
-### 9. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: proxygen-bolt
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 10. [INFO] Proxy-Status header discloses internal proxy topology (`I1`)
+### 8. [INFO] HTTPS homepage returned HTTP 400 (`X2`)
 
 - **CWE:** CWE-200
-- **Detail:** Verified on http://api.whatsapp.com/ 403 response: Proxy-Status header contains e_proxy tokens, e_fb_vipaddr (VIP addresses), e_fb_zone and e_clientaddr values, revealing internal proxy/bolt infrastructure details.
-- **Recommendation:** Review and remediate per CWE guidance.
+- **Detail:** https://api.whatsapp.com/ responded 400 (passive check only; no further probing).
 
-### 11. [INFO] Missing security.txt (`P3`)
+## Reproduction notes
 
-- **CWE:** CWE-1038
-- **Detail:** No .well-known/security.txt found (RFC 9116).
-- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_status": 403,
-  "https_status": 200,
-  "content_type": "text/html; charset=\"utf-8\"",
-  "title": "Open WhatsApp",
-  "path_gitconfig": 404,
-  "path_envfile": 404,
-  "path_securitytxt": 404,
-  "path_robots": 200,
-  "robots_found": true
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://api.whatsapp.com/ final status: 400 (final URL https://api.whatsapp.com/).
+- http://api.whatsapp.com/ initial status: 403.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-02T23:59:59+00:00.

@@ -1,4 +1,4 @@
-# Security Audit Report - scribd.com
+# Security Audit Report — scribd.com
 
 ## Scope and authorization
 
@@ -7,210 +7,87 @@
 | Target | https://scribd.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | scribd.com |
-| Test date | 2026-09-24 09:38 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 8, Info: 4)
+Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | low | H4 | No clickjacking protection | CWE-1023 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H6 | Server technology disclosure | CWE-200 |
-| 12 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 2 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 3 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 5 | info | H2c | HSTS not preloaded | CWE-319 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 9 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 10 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 11 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookie without HttpOnly flag (`C2`)
+### 1. [LOW] Missing Content-Security-Policy (`H3`)
 
-- **CWE:** CWE-1004
-- **Detail:** Cookie scribd_ubtc lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://scribd.com/; no defense-in-depth against XSS/content injection.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 2. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
+
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://scribd.com/; browsers may MIME-sniff responses.
+
+### 3. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+
+- **CWE:** CWE-1021
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://scribd.com/; page may be rendered in a foreign frame.
+
+### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for scribd.com lists 1 name(s) besides the scope host: *.scribd.com
+
+### 5. [INFO] HSTS not preloaded (`H2c`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** `max-age=63072000; includeSubDomains` lacks the preload directive.
 
-### 3. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 4. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 6. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 7. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 8. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://scribd.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://scribd.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 11. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: Varnish
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 12. [INFO] Server technology disclosure (`H6`)
+### 8. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: Varnish
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** sitemap.xml on https://scribd.com/ lists 0 URLs.
 
-## Aggressive probe campaign
+### 9. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-**Stage 1 - injection/reflection probes (28 requests):**
+- **CWE:** CWE-319
+- **Detail:** http://scribd.com/ -> https://scribd.com/ (positive check).
 
-- no stage-1 probe hits (all probes negative)
+### 10. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-**Stage 2 - aggressive probe suite v2 (99 requests):**
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://scribd.com/ exposes 0 unique Disallow path(s)
 
-- no stage-2 probe hits (all probes negative)
+### 11. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
-Stage-2 probe log (observed responses):
-- timing base=432ms id=416 search=427
-- boolean b=302/0 t1=302/0 t2=302/0
-- graphql /graphql -> 302
-- graphql /api/graphql -> 308
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 302
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 302
-- trav2 /%2e%2e%00.html -> 302
-- trav2 /static//../../../../../../etc/passwd -> 302
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 302
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 302
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302
-- apicors /api -> 302
-- apicors /api/v1 -> 308
-- apicors /graphql -> 302
-- apicors /rest -> 302
-- apicors /v1 -> 302
+- **CWE:** CWE-200
+- **Detail:** security.txt present on https://scribd.com (3036 bytes)
 
-## Evidence (raw response observations)
+## Reproduction notes
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://scribd.com/",
-  "https_status": 302,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 302,
-  "path_envfile": 302,
-  "path_securitytxt": 302,
-  "path_robots": 302,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 302",
-    "sqli /?id=1%27+OR+1=1-- -> 302",
-    "sqli /?q=%27 -> 302",
-    "sqli /products?filter=%27 -> 302",
-    "sqli /?p=1;-- -> 302",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 302",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 302",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 302",
-    "trav /static/../../../../../../../../etc/passwd -> 302",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 302",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 302",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 302",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 302",
-    "host no reflection -> 421",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 308",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302"
-  ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=432ms id=416 search=427",
-    "boolean b=302/0 t1=302/0 t2=302/0",
-    "graphql /graphql -> 302",
-    "graphql /api/graphql -> 308",
-    "sweep no hits over 26 paths",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 302",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 302",
-    "trav2 /%2e%2e%00.html -> 302",
-    "trav2 /static//../../../../../../etc/passwd -> 302",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 302",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 302",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 302",
-    "apicors /api/v1 -> 308",
-    "apicors /graphql -> 302",
-    "apicors /rest -> 302",
-    "apicors /v1 -> 302"
-  ]
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent; each site was probed with a two-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection, XSS, traversal, CORS and redirect probes, up to ~100 requests per site).
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://scribd.com/ final status: 200 (final URL https://www.scribd.com/).
+- http://scribd.com/ initial status: 301.
+- Certificate: Let's Encrypt YR1, valid until 2026-11-24T16:53:07+00:00.

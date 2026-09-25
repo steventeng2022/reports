@@ -7,96 +7,75 @@
 | Target | https://maps.google.co.jp/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | maps.google.co.jp |
-| Test date | 2026-09-24 13:47 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 11, Info: 2)
+Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | T3 | HTTP redirect does not go to HTTPS | CWE-319 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | C1 | Cookies without Secure flag | CWE-614 |
-| 5 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
-| 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 7 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 8 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 9 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 10 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 11 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 12 | info | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 13 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 1 | low | H1 | Missing HSTS header | CWE-319 |
+| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 7 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 8 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 9 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] HTTP redirect does not go to HTTPS (`T3`)
+### 1. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** GET http://maps.google.co.jp/ redirected to http://maps.google.co.jp/maps (not an HTTPS URL).
+- **Detail:** No Strict-Transport-Security header on https://maps.google.co.jp/. Clients may connect over plain HTTP on first visit.
 
-### 2. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security on https://maps.google.co.jp/maps
-
-### 3. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on https://maps.google.co.jp/maps
-
-### 4. [LOW] Cookies without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** SEARCH_SAMESITE set without Secure on https://maps.google.co.jp/maps
-
-### 5. [LOW] Cookies without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** __Secure-STRP, SEARCH_SAMESITE set without HttpOnly on https://maps.google.co.jp/maps
-
-### 6. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 2. [LOW] Missing Content-Security-Policy (`H3`)
 
 - **CWE:** CWE-79
-- **Detail:** Parameter q on https://maps.google.co.jp/search reflects input verbatim in body context; encoding boundary not confirmed.
+- **Detail:** No CSP header on https://maps.google.co.jp/; no defense-in-depth against XSS/content injection.
 
-### 7. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter query on https://maps.google.co.jp/search reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://maps.google.co.jp/; browsers may MIME-sniff responses.
 
-### 8. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://maps.google.co.jp/ reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for maps.google.co.jp lists 2 name(s) besides the scope host: *.google.co.jp, google.co.jp
 
-### 9. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://maps.google.co.jp/search reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 10. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter query on https://maps.google.co.jp/search reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 11. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://maps.google.co.jp/ reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 12. [INFO] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No X-Content-Type-Options on https://maps.google.co.jp/maps
-
-### 13. [INFO] Missing Referrer-Policy (`H5`)
+### 5. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://maps.google.co.jp/maps
+- **Detail:** No Referrer-Policy header on https://maps.google.co.jp/; full URL (incl. query strings) is sent as referrer by default.
+
+### 6. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://maps.google.co.jp/; browser features (camera, mic, geolocation) unrestricted.
+
+### 7. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://maps.google.co.jp/ exposes 174 unique Disallow path(s) (/?, /?hl=*&, /?hl=*&*&gws_rd=ssl, /about/careers/applications-a/jobs/results, /about/careers/applications/candidate-prep) and 1 sitemap reference(s)
+
+### 8. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on maps.google.co.jp.
+
+### 9. [INFO] HTTPS root redirects to different host (`X3`)
+
+- **CWE:** CWE-200
+- **Detail:** https://maps.google.co.jp/ redirects to https://www.google.co.jp/maps.
 
 ## Reproduction notes
 
-- Scanned 2026-09-24 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://maps.google.co.jp/ final status: 200 (final URL https://www.google.co.jp/maps).
+- http://maps.google.co.jp/ initial status: 302.
+- Certificate: Google Trust Services WE2, valid until 2026-12-03T19:24:30+00:00.

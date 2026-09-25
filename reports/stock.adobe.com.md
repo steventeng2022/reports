@@ -6,111 +6,88 @@
 |---|---|
 | Target | https://stock.adobe.com/ |
 | Bug bounty program | [Adobe](https://hackerone.com/adobe) |
-| Listed scope domain | adobe.com |
-| Test date | 2026-09-24 00:53 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | stock.adobe.com |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 8, Info: 2)
+Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 2 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H4 | No clickjacking protection | CWE-1023 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | low | R2 | No HTTP->HTTPS redirect (403 bot-challenge on both schemes, HSTS present) | CWE-319 |
-| 8 | low | X2 | CORS origin reflection with credentials (observed on 403 challenge response) | CWE-942 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 3 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 5 | info | H2c | HSTS not preloaded | CWE-319 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
+| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 11 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookie without HttpOnly flag (`C2`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie datadome lacks HttpOnly; readable by client-side JS.
-- **Context:** http response
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://stock.adobe.com/ without HttpOnly: datadome. Readable by client-side script.
 
-### 2. [LOW] Cookie without HttpOnly flag (`C2`)
+### 2. [LOW] Missing Content-Security-Policy (`H3`)
 
-- **CWE:** CWE-1004
-- **Detail:** Cookie datadome lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://stock.adobe.com/; no defense-in-depth against XSS/content injection.
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 3. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://stock.adobe.com/; page may be rendered in a foreign frame.
 
-### 4. [LOW] Missing CSP header (`H2`)
+### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-1382
+- **Detail:** Certificate for stock.adobe.com lists 1 name(s) besides the scope host: *.stock.adobe.com
 
-### 5. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 6. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 7. [LOW] No HTTP->HTTPS redirect (403 bot-challenge on both schemes, HSTS present) (`R2`)
+### 5. [INFO] HSTS not preloaded (`H2c`)
 
 - **CWE:** CWE-319
-- **Detail:** Verified: http://stock.adobe.com/ and https://stock.adobe.com/ both return 403 (bot-challenge page) for non-browser clients with no Location header; the plain-HTTP 403 response carries HSTS (max-age=31536000; includeSubdomains), which mitigates downgrade risk. The missing port-80 upgrade redirect is noted for completeness.
-- **Recommendation:** Add an HTTP->HTTPS redirect (currently returns an error code on port 80).
+- **Detail:** `max-age=31536000; includeSubDomains` lacks the preload directive.
 
-### 8. [LOW] CORS origin reflection with credentials (observed on 403 challenge response) (`X2`)
-
-- **CWE:** CWE-942
-- **Detail:** Verified: GET https://stock.adobe.com/ without Origin returns Access-Control-Allow-Origin: *; with Origin: https://evil.example the 403 challenge response returns access-control-allow-origin: https://evil.example AND access-control-allow-credentials: true. The reflection occurs on the bot-challenge (403) response rather than a 200; the credentialed-reflection pattern on the Adobe edge warrants triage against 200 API responses.
-- **Recommendation:** Echo the Origin only after validating against an allow-list; avoid reflecting untrusted origins.
-
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://stock.adobe.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://stock.adobe.com/; browser features (camera, mic, geolocation) unrestricted.
 
-## Evidence (raw response observations)
+### 8. [INFO] Plain HTTP returns non-redirect status (`N3`)
 
-```json
-{
-  "http_status": 403,
-  "https_status": 403,
-  "content_type": "text/html;charset=utf-8",
-  "title": "adobe.com",
-  "path_gitconfig": 403,
-  "path_envfile": 403,
-  "path_securitytxt": 403,
-  "path_robots": 200,
-  "robots_found": true
-}
-```
+- **CWE:** CWE-319
+- **Detail:** http://stock.adobe.com/ returns 403 (no redirect to HTTPS).
 
-## Notes
+### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://stock.adobe.com/ exposes 68 unique Disallow path(s) (*/%3Cloc%3E/, */Ajax/, */Ajax/MediaData/, */Ajax/Similar/, */Download/) and 2 sitemap reference(s)
+
+### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 403 on stock.adobe.com.
+
+### 11. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+
+- **CWE:** CWE-200
+- **Detail:** https://stock.adobe.com/ responded 403 (passive check only; no further probing).
+
+## Reproduction notes
+
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://stock.adobe.com/ final status: 403 (final URL https://stock.adobe.com/).
+- http://stock.adobe.com/ initial status: 403.
+- Certificate: Let's Encrypt YR1, valid until 2026-11-28T15:38:51+00:00.

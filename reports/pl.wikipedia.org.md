@@ -1,4 +1,4 @@
-# Security Audit Report - pl.wikipedia.org
+# Security Audit Report — pl.wikipedia.org
 
 ## Scope and authorization
 
@@ -7,268 +7,81 @@
 | Target | https://pl.wikipedia.org/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | pl.wikipedia.org |
-| Test date | 2026-09-24 22:04 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 8, Info: 6)
+Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 2 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 3 | low | H1 | Missing HSTS header | CWE-319 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H2 | Missing CSP header | CWE-1021 |
-| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | low | H4 | No clickjacking protection | CWE-1023 |
-| 9 | info | A10 | robots.txt discloses sensitive paths | CWE-200 |
-| 10 | info | A4i | Sensitive paths exist (protected or app shells) | CWE-538 |
-| 11 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 12 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 13 | info | H6 | Server technology disclosure | CWE-200 |
-| 14 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 2 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 3 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 7 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 8 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 9 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 10 | info | X2 | HTTPS homepage returned HTTP 429 | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookie without HttpOnly flag (`C2`)
+### 1. [LOW] Missing Content-Security-Policy (`H3`)
 
-- **CWE:** CWE-1004
-- **Detail:** Cookie GeoIP lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://pl.wikipedia.org/; no defense-in-depth against XSS/content injection.
 
-### 2. [LOW] Cookie without HttpOnly flag (`C2`)
+### 2. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
 
-- **CWE:** CWE-1004
-- **Detail:** Cookie NetworkProbeLimit lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://pl.wikipedia.org/; browsers may MIME-sniff responses.
 
-### 3. [LOW] Missing HSTS header (`H1`)
+### 3. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+
+- **CWE:** CWE-1021
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://pl.wikipedia.org/; page may be rendered in a foreign frame.
+
+### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for pl.wikipedia.org lists 41 name(s) besides the scope host: *.m.mediawiki.org, *.m.wikibooks.org, *.m.wikidata.org, *.m.wikimedia.org, *.m.wikinews.org, *.m.wikipedia.org, *.m.wikiquote.org, *.m.wikisource.org...
+
+### 5. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header on https://pl.wikipedia.org/; full URL (incl. query strings) is sent as referrer by default.
+
+### 6. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://pl.wikipedia.org/; browser features (camera, mic, geolocation) unrestricted.
+
+### 7. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** http://pl.wikipedia.org/ -> https://pl.wikipedia.org/ (positive check).
 
-### 4. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 5. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 6. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 7. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 8. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 9. [INFO] robots.txt discloses sensitive paths (`A10`)
+### 8. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** Disallowed paths in robots.txt: /api/, /wiki/Wikipedia:Administratoren/Probleme/, /wiki/Wikipedia:Adminkandidaturen/, /wiki/Wikipedia:Administratoren/Notizen/, /wiki/Wikipedia_Diskussion:Adminkandidaturen/, /wiki/Wikipedia:Requests_for_adminship/, /wiki/Wikipedia%3ARequests_for_adminship/, /wiki/Wikipedia:Administratorer, /wiki/Wikipedia%3AAdministratorer, /wiki/Wikipedia-diskusjon:Administratorer.
-- **Recommendation:** Treat robots.txt as discovery, not a control: ensure listed sensitive paths are authenticated or rate-limited.
+- **Detail:** robots.txt on https://pl.wikipedia.org/ exposes 215 unique Disallow path(s) (#, /, /api/, /trap/, /w/) and 1 sitemap reference(s)
 
-### 10. [INFO] Sensitive paths exist (protected or app shells) (`A4i`)
-
-- **CWE:** CWE-538
-- **Detail:** Paths answering 401/403 or HTML shells: /server-status (403 protected).
-- **Recommendation:** No immediate action if the paths are genuinely protected; otherwise return a real 404 to unauthenticated probes for paths that should not exist.
-
-### 11. [INFO] Missing Referrer-Policy (`H5`)
+### 9. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** security.txt present on https://pl.wikipedia.org (222 bytes); contact: mailto:security@wikimedia.org
 
-### 12. [INFO] Missing Referrer-Policy (`H5`)
+### 10. [INFO] HTTPS homepage returned HTTP 429 (`X2`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** https://pl.wikipedia.org/ responded 429 (passive check only; no further probing).
 
-### 13. [INFO] Server technology disclosure (`H6`)
+## Reproduction notes
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: HAProxy
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 14. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: mw-web.eqiad.main-5f6ccd74f4-lkjvm
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-## Aggressive probe campaign
-
-**Stage 1 - injection/reflection probes (28 requests):**
-
-- no stage-1 probe hits (all probes negative)
-
-**Stage 2 - aggressive probe suite v2 (99 requests):**
-
-- sweep: {"high":[],"protected":["/server-status (403 protected)"]}
-- robots_disallow: ["/","/","User-agent:","#","/","/","/","/","/","/","/","/","/","/","/","/","/","/","/","/"]
-
-Stage-2 probe log (observed responses):
-- timing base=779ms id=845 search=390
-- boolean b=200/140664 t1=200/140765 t2=200/140765
-- graphql /graphql -> 404
-- graphql /api/graphql -> 404
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 404
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 404
-- trav2 /%2e%2e%00.html -> 404
-- trav2 /static//../../../../../../etc/passwd -> 404
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 404
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 200
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 404
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 200
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 200
-- apicors /api -> 301
-- apicors /api/v1 -> 404
-- apicors /graphql -> 404
-- apicors /rest -> 404
-- apicors /v1 -> 404
-
-**Stage 3 - live parameter harvest, takeover and injection probes (7 requests):**
-
-- no stage-3 probe hits (all probes negative)
-
-Stage-3 probe log (observed responses):
-- harvest no query params discovered on sampled pages
-- subs no dangling service CNAMEs over 16 subdomains
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://pl.wikipedia.org/",
-  "https_status": 301,
-  "content_type": "text/html; charset=UTF-8",
-  "title": "",
-  "path_gitconfig": 404,
-  "path_envfile": 404,
-  "path_securitytxt": 200,
-  "security_txt_found": true,
-  "path_robots": 200,
-  "robots_found": true,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 404",
-    "sqli /?id=1%27+OR+1=1-- -> 200",
-    "sqli /?q=%27 -> 200",
-    "sqli /products?filter=%27 -> 404",
-    "sqli /?p=1;-- -> 200",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 404",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 200",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 404",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 404",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 200",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 404",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 400",
-    "trav /static/../../../../../../../../etc/passwd -> 404",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 404",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 404",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 200",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 200",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 404",
-    "host no reflection -> 400",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404"
-  ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=779ms id=845 search=390",
-    "boolean b=200/140664 t1=200/140765 t2=200/140765",
-    "graphql /graphql -> 404",
-    "graphql /api/graphql -> 404",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 404",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 404",
-    "trav2 /%2e%2e%00.html -> 404",
-    "trav2 /static//../../../../../../etc/passwd -> 404",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 404",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 200",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 404",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 200",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 200",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 301",
-    "apicors /api/v1 -> 404",
-    "apicors /graphql -> 404",
-    "apicors /rest -> 404",
-    "apicors /v1 -> 404"
-  ],
-  "sweep": {
-    "high": [],
-    "protected": [
-      "/server-status (403 protected)"
-    ]
-  },
-  "robots_disallow": [
-    "/",
-    "/",
-    "User-agent:",
-    "#",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/",
-    "/"
-  ],
-  "v3_probe_count": 7,
-  "v3_log": [
-    "harvest no query params discovered on sampled pages",
-    "subs no dangling service CNAMEs over 16 subdomains",
-    "cache X-Forwarded-Host not reflected -> 301"
-  ]
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://pl.wikipedia.org/ final status: 429 (final URL https://pl.wikipedia.org/wiki/Wikipedia:Strona_g%C5%82%C3%B3wna).
+- http://pl.wikipedia.org/ initial status: 301.
+- Certificate: Let's Encrypt YE2, valid until 2026-11-03T19:15:40+00:00.

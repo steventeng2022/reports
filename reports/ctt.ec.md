@@ -1,4 +1,4 @@
-# Security Audit Report - ctt.ec
+# Security Audit Report — ctt.ec
 
 ## Scope and authorization
 
@@ -7,222 +7,111 @@
 | Target | https://ctt.ec/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | ctt.ec |
-| Test date | 2026-09-24 22:07 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 8, Info: 4)
+Total findings: **15** (High: 0, Medium: 0, Low: 8, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | low | H4 | No clickjacking protection | CWE-1023 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
+| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 4 | low | H1 | Missing HSTS header | CWE-319 |
+| 5 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 6 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 7 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 8 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
 | 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H6 | Server technology disclosure | CWE-200 |
-| 12 | info | H6 | Server technology disclosure | CWE-200 |
+| 10 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 11 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 12 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 13 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 14 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 15 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://ctt.ec/ without HttpOnly: PHPSESSID. Readable by client-side script.
+
+### 2. [LOW] Cookies set without Secure flag (`C2`)
+
+- **CWE:** CWE-614
+- **Detail:** Set on https://ctt.ec/ without Secure: PHPSESSID. Will be transmitted over HTTP if the site is reachable cleartext.
+
+### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://ctt.ec/ without SameSite=Lax/Strict: PHPSESSID. Cross-site request cookies.
+
+### 4. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** No Strict-Transport-Security header on https://ctt.ec/. Clients may connect over plain HTTP on first visit.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 5. [LOW] Missing Content-Security-Policy (`H3`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://ctt.ec/; no defense-in-depth against XSS/content injection.
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 6. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://ctt.ec/; browsers may MIME-sniff responses.
 
-### 4. [LOW] Missing CSP header (`H2`)
+### 7. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://ctt.ec/; page may be rendered in a foreign frame.
 
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
+### 8. [LOW] TLS certificate expiring within 30 days (`T3`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 6. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 7. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 8. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+- **CWE:** CWE-298
+- **Detail:** Certificate expires 2026-10-21T20:45:38+00:00 (26 days left) for ctt.ec.
 
 ### 9. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://ctt.ec/; full URL (incl. query strings) is sent as referrer by default.
 
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 10. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://ctt.ec/; browser features (camera, mic, geolocation) unrestricted.
 
-### 11. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: nginx/1.4.6 (Ubuntu)
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 12. [INFO] Server technology disclosure (`H6`)
+### 11. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: nginx/1.4.6 (Ubuntu)
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** sitemap.xml on https://ctt.ec/ lists 0 URLs.
 
-## Aggressive probe campaign
+### 12. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-**Stage 1 - injection/reflection probes (28 requests):**
+- **CWE:** CWE-319
+- **Detail:** http://ctt.ec/ -> https://ctt.ec/ (positive check).
 
-- no stage-1 probe hits (all probes negative)
+### 13. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-**Stage 2 - aggressive probe suite v2 (99 requests):**
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://ctt.ec/ exposes 1 unique Disallow path(s) (/go.php)
 
-- no stage-2 probe hits (all probes negative)
+### 14. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-Stage-2 probe log (observed responses):
-- timing base=6915ms id=2186 search=396
-- boolean b=301/193 t1=301/193 t2=301/193
-- graphql /graphql -> 301
-- graphql /api/graphql -> 301
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 301
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 301
-- trav2 /%2e%2e%00.html -> 400
-- trav2 /static//../../../../../../etc/passwd -> 301
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 301
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301
-- apicors /api -> 301
-- apicors /api/v1 -> 301
-- apicors /graphql -> 301
-- apicors /rest -> 301
-- apicors /v1 -> 301
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on ctt.ec.
 
-**Stage 3 - live parameter harvest, takeover and injection probes (8 requests):**
+### 15. [INFO] HTTPS root redirects to different host (`X3`)
 
-- no stage-3 probe hits (all probes negative)
+- **CWE:** CWE-200
+- **Detail:** https://ctt.ec/ redirects to https://clicktotweet.com/.
 
-Stage-3 probe log (observed responses):
-- harvest no query params discovered on sampled pages
-- subs no dangling service CNAMEs over 16 subdomains
+## Reproduction notes
 
-## Evidence (raw response observations)
-
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://ctt.ec/",
-  "https_status": 301,
-  "content_type": "text/html",
-  "title": "301 Moved Permanently",
-  "path_gitconfig": 301,
-  "path_envfile": 301,
-  "path_securitytxt": 301,
-  "path_robots": 301,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 301",
-    "sqli /?id=1%27+OR+1=1-- -> 301",
-    "sqli /?q=%27 -> 301",
-    "sqli /products?filter=%27 -> 301",
-    "sqli /?p=1;-- -> 301",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 301",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 301",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 400",
-    "trav /static/../../../../../../../../etc/passwd -> 301",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 301",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 301",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 301",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 301",
-    "host no reflection -> err",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301"
-  ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=6915ms id=2186 search=396",
-    "boolean b=301/193 t1=301/193 t2=301/193",
-    "graphql /graphql -> 301",
-    "graphql /api/graphql -> 301",
-    "sweep no hits over 26 paths",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 301",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 301",
-    "trav2 /%2e%2e%00.html -> 400",
-    "trav2 /static//../../../../../../etc/passwd -> 301",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 301",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 301",
-    "apicors /api/v1 -> 301",
-    "apicors /graphql -> 301",
-    "apicors /rest -> 301",
-    "apicors /v1 -> 301"
-  ],
-  "v3_probe_count": 8,
-  "v3_log": [
-    "harvest no query params discovered on sampled pages",
-    "subs no dangling service CNAMEs over 16 subdomains",
-    "cache X-Forwarded-Host not reflected -> 301"
-  ]
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://ctt.ec/ final status: 200 (final URL https://clicktotweet.com/).
+- http://ctt.ec/ initial status: 301.
+- Certificate: Let's Encrypt YR2, valid until 2026-10-21T20:45:38+00:00.

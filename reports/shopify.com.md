@@ -7,112 +7,81 @@
 | Target | https://shopify.com/ |
 | Bug bounty program | [Shopify](https://hackerone.com/shopify) |
 | Listed scope domain | shopify.com |
-| Test date | 2026-09-23 20:00 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 6, Info: 4)
+Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H4 | No clickjacking protection | CWE-1023 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H6 | Server technology disclosure | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 2 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 3 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 4 | info | H2 | Short HSTS max-age | CWE-319 |
+| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 7 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 10 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [LOW] Missing Content-Security-Policy (`H3`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://shopify.com/; no defense-in-depth against XSS/content injection.
 
-### 2. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 3. [LOW] Missing CSP header (`H2`)
+### 2. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://shopify.com/; page may be rendered in a foreign frame.
 
-### 4. [LOW] Missing CSP header (`H2`)
+### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-1382
+- **Detail:** Certificate for shopify.com lists 1 name(s) besides the scope host: *.shopify.com
 
-### 5. [LOW] No clickjacking protection (`H4`)
+### 4. [INFO] Short HSTS max-age (`H2`)
 
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+- **CWE:** CWE-319
+- **Detail:** HSTS max-age=15552000 (< 1 year): `max-age=15552000; includeSubDomains; preload`.
 
-### 6. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 7. [INFO] Missing Referrer-Policy (`H5`)
+### 5. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://shopify.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://shopify.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 9. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 10. [INFO] Server technology disclosure (`H6`)
+### 7. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** sitemap.xml on https://shopify.com/ lists 557 URLs.
 
-## Evidence (raw response observations)
+### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://www.shopify.com/",
-  "https_status": 301,
-  "content_type": "text/html; charset=UTF-8",
-  "title": "301 Moved Permanently",
-  "path_gitconfig": 301,
-  "path_envfile": 301,
-  "path_securitytxt": 301,
-  "path_robots": 200,
-  "robots_found": true
-}
-```
+- **CWE:** CWE-319
+- **Detail:** http://shopify.com/ -> https://www.shopify.com/ (positive check).
 
-## Notes
+### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://shopify.com/ exposes 2 unique Disallow path(s) (/*/account, /authentication/)
+
+### 10. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+
+- **CWE:** CWE-200
+- **Detail:** security.txt present on https://shopify.com (277 bytes); contact: https://www.shopify.com/security-response
+
+## Reproduction notes
+
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://shopify.com/ final status: 200 (final URL https://www.shopify.com/).
+- http://shopify.com/ initial status: 301.
+- Certificate: Google Trust Services WE1, valid until 2026-11-08T19:37:54+00:00.
