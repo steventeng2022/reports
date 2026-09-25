@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| es.wikipedia.org | 20 | 1 | 1 | 16 | 2 | top-websites gist (no active program match) |
 | vizio.com | 29 | 24 | 1 | 2 | 2 | top-websites gist (no active program match) |
 | moma.org | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | tf1.fr | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
