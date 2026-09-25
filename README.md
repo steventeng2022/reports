@@ -2,19 +2,19 @@
 
 Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the intersection of the provided top-websites list and active public bug-bounty program scopes.
 
-**Total findings across all sites: 5242**
+**Total findings across all sites: 5404**
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
-| discordapp.com | 32 | 0 | 3 | 25 | 4 | top-websites gist (no active program match) |
+| discordapp.com | 32 | 0 | 1 | 27 | 4 | top-websites gist (no active program match) |
 | bing.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | franchising.com | 5 | 0 | 0 | 4 | 1 | top-websites gist (no active program match) |
 | penguinrandomhouse.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
-| strava.com | 11 | 0 | 4 | 4 | 3 | top-websites gist (no active program match) |
-| docker.com | 9 | 0 | 5 | 2 | 2 | Docker |
-| raw.githubusercontent.com | 31 | 1 | 2 | 28 | 0 | top-websites gist (no active program match) |
+| strava.com | 11 | 0 | 2 | 6 | 3 | top-websites gist (no active program match) |
+| docker.com | 9 | 0 | 1 | 6 | 2 | Docker |
+| raw.githubusercontent.com | 31 | 0 | 1 | 29 | 0 | top-websites gist (no active program match) |
 | infusionsoft.com | 38 | 0 | 0 | 35 | 3 | top-websites gist (no active program match) |
-| wix.com | 12 | 0 | 3 | 7 | 2 | top-websites gist (no active program match) |
+| wix.com | 12 | 0 | 1 | 9 | 2 | top-websites gist (no active program match) |
 | time.com | 6 | 0 | 1 | 3 | 2 | TIME |
 | ranker.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
 | lh5.ggpht.com | 13 | 0 | 0 | 3 | 10 | top-websites gist (no active program match) |
@@ -23,9 +23,9 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | buzzsprout.com | 11 | 0 | 0 | 2 | 9 | top-websites gist (no active program match) |
 | w3schools.com | 8 | 0 | 2 | 5 | 1 | top-websites gist (no active program match) |
 | bizjournals.com | 32 | 0 | 0 | 29 | 3 | top-websites gist (no active program match) |
-| buymeacoffee.com | 35 | 0 | 1 | 31 | 3 | top-websites gist (no active program match) |
-| es.wikipedia.org | 20 | 1 | 1 | 16 | 2 | top-websites gist (no active program match) |
-| vizio.com | 29 | 24 | 1 | 2 | 2 | top-websites gist (no active program match) |
+| buymeacoffee.com | 35 | 0 | 0 | 32 | 3 | top-websites gist (no active program match) |
+| es.wikipedia.org | 20 | 0 | 1 | 17 | 2 | top-websites gist (no active program match) |
+| vizio.com | 29 | 0 | 25 | 2 | 2 | top-websites gist (no active program match) |
 | moma.org | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | tf1.fr | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
 | 1.usa.gov | 4 | 0 | 0 | 2 | 2 | TTS Bug Bounty |

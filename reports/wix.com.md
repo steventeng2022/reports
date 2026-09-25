@@ -12,13 +12,13 @@
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 3, Low: 7, Info: 2)
+Total findings: **12** (High: 0, Medium: 1, Low: 9, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 3 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 2 | low | S1 | mail.wix.com - managed Google Workspace alias on retest | CWE-916 |
+| 3 | low | S1 | status.wix.com - live Atlassian Statuspage on retest | CWE-916 |
 | 4 | low | H2 | Missing CSP header | CWE-1021 |
 | 5 | low | H4 | No clickjacking protection | CWE-1023 |
 | 6 | low | C1 | Cookies without Secure flag | CWE-614 |
@@ -36,15 +36,15 @@ Total findings: **12** (High: 0, Medium: 3, Low: 7, Info: 2)
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /blogtemp which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [LOW] mail.wix.com - managed Google Workspace alias on retest (`S1`)
 
 - **CWE:** CWE-916
-- **Detail:** Subdomain mail.wix.com resolves to 74.125.204.121 and is served by wix.com (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
+- **Detail:** mail.wix.com -> 74.125.204.121. RETEST 2026-09-25: over HTTP it 301-redirects to https://mail.google.com/a/wix.com (Server: ghs = Google) = a MANAGED Google Workspace group alias, not a dangling platform account. Over HTTPS the edge drops the TLS handshake (SNI mismatch quirk). Downgraded medium -> low (managed; TLS quirk noted).
 
-### 3. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 3. [LOW] status.wix.com - live Atlassian Statuspage on retest (`S1`)
 
 - **CWE:** CWE-916
-- **Detail:** Subdomain status.wix.com resolves to 3.169.55.43 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
+- **Detail:** status.wix.com. RETEST 2026-09-25: returns 200 (188KB) "Wix Status" served by AtlassianEdge = an active Atlassian Statuspage instance. Not dangling. Downgraded medium -> low.
 
 ### 4. [LOW] Missing CSP header (`H2`)
 

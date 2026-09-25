@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **20** (High: 1, Medium: 1, Low: 16, Info: 2)
+Total findings: **20** (High: 0, Medium: 1, Low: 17, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I2 | Reflected XSS via attribute injection | CWE-79 |
+| 1 | low | I2 | Input reflected in <title> of 404/edit pages - escape vectors sanitized on retest | CWE-79 |
 | 2 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
 | 3 | low | H4 | No clickjacking protection | CWE-1023 |
 | 4 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
@@ -39,10 +39,10 @@ Total findings: **20** (High: 1, Medium: 1, Low: 16, Info: 2)
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS via attribute injection (`I2`)
+### 1. [LOW] Input reflected in <title> of 404/edit pages - escape vectors sanitized on retest (`I2`)
 
 - **CWE:** CWE-79
-- **Detail:** Parameter title on https://es.wikipedia.org/w/index.php: injecting "\"' onerror=\"alert(1)//" yields an unquoted onerror handler. Event fires on render.
+- **Detail:** ?title=<token> on /w/index.php reflects the token UNENCODED in the page <title> of the 404 ("<tok> - Wikipedia, la enciclopedia libre") and 200 edit ("Creacion de «<tok>»") pages. RETEST 2026-09-25: title-escape was probed with ?title=%22%3e<script>alert(1)</script> and ?title=%3c%2ftitle%3e<script>alert(1)</script> - both return the generic sanitized 404 titled "Título incorrecto" (MediaWiki strips < and > from the title). Backslash/quote (\" and \") ARE preserved raw inside <title> but cannot terminate a CDATA title tag. /wiki/<title> normalizes special chars (301 to /wiki/%22_onfocus... = plain title). Verdict: no XSS breakout; kept as low (raw reflection into <title> for safe charset only).
 
 ### 2. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 

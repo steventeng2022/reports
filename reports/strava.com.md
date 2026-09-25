@@ -12,14 +12,14 @@
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 4, Low: 4, Info: 3)
+Total findings: **11** (High: 0, Medium: 2, Low: 6, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 3 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 4 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 2 | medium | S1 | ftp.strava.com - dormant CloudFront distribution (403 + TLS failure) | CWE-916 |
+| 3 | low | S1 | app.strava.com - live 301 to www.strava.com on retest | CWE-916 |
+| 4 | low | S1 | status.strava.com - live Atlassian Statuspage on retest | CWE-916 |
 | 5 | low | H1 | Missing HSTS header | CWE-319 |
 | 6 | low | H2 | Missing CSP header | CWE-1021 |
 | 7 | low | H4 | No clickjacking protection | CWE-1023 |
@@ -35,20 +35,20 @@ Total findings: **11** (High: 0, Medium: 4, Low: 4, Info: 3)
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /get-started which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [MEDIUM] ftp.strava.com - dormant CloudFront distribution (403 + TLS failure) (`S1`)
 
 - **CWE:** CWE-916
-- **Detail:** Subdomain ftp.strava.com resolves to 54.192.248.56 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 403
+- **Detail:** ftp.strava.com -> 54.192.248.56. RETEST 2026-09-25: over HTTP CloudFront returns 403 (via 1.1 dfa0b51d34f92a426f4ba3cbfc8199b0.cloudfront.net); over HTTPS the TLS handshake FAILS (ssl/tls alert handshake failure). Distribution exists but serves nothing = dormant CloudFront distribution, classic takeover candidate (claim the distribution/bucket behind it). KEPT as medium - best remaining takeover lead for strava.com.
 
-### 3. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
-
-- **CWE:** CWE-916
-- **Detail:** Subdomain app.strava.com resolves to 54.192.248.128 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
-
-### 4. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 3. [LOW] app.strava.com - live 301 to www.strava.com on retest (`S1`)
 
 - **CWE:** CWE-916
-- **Detail:** Subdomain status.strava.com resolves to 65.9.180.11 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
+- **Detail:** app.strava.com. RETEST 2026-09-25: 301 (istio-envoy behind CloudFront) -> https://www.strava.com/. Live managed redirect (app consolidated to main site), not dangling. Downgraded medium -> low.
+
+### 4. [LOW] status.strava.com - live Atlassian Statuspage on retest (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** status.strava.com. RETEST 2026-09-25: 200 (100KB) "Strava Status" served by AtlassianEdge = active Atlassian Statuspage. Not dangling. Downgraded medium -> low.
 
 ### 5. [LOW] Missing HSTS header (`H1`)
 

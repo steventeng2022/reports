@@ -16,7 +16,7 @@ Total findings: **6** (High: 0, Medium: 1, Low: 3, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | medium | S1 | mail.time.com - CloudFront dist + edge function, 404 default on all paths | CWE-916 |
 | 2 | low | H2 | Missing CSP header | CWE-1021 |
 | 3 | low | H4 | No clickjacking protection | CWE-1023 |
 | 4 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
@@ -25,10 +25,10 @@ Total findings: **6** (High: 0, Medium: 1, Low: 3, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [MEDIUM] mail.time.com - CloudFront distribution + edge function, 404 default on all paths (`S1`)
 
 - **CWE:** CWE-916
-- **Detail:** Subdomain mail.time.com resolves to 3.169.55.64 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
+- **Detail:** mail.time.com -> 3.169.55.64 (CloudFront 8ad72c38f68920ee5b40a6b6070b6b0). RETEST 2026-09-25: an edge CloudFront function (x-cache: LambdaGeneratedResponse) 301-redirects every path to a trailing-slash variant (/actuator -> /actuator/, /x -> /x/); the slash variants return the CloudFront DEFAULT 404 page (8475B, NOINDEX/NO-CACHE). Distribution is active but the origin serves nothing = dangling-content takeover candidate (claim the origin bucket/distribution). KEPT as medium.
 
 ### 2. [LOW] Missing CSP header (`H2`)
 

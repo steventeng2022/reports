@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **35** (High: 0, Medium: 1, Low: 31, Info: 3)
+Total findings: **35** (High: 0, Medium: 0, Low: 32, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I10 | Spring Boot actuator root exposed | CWE-538 |
+| 1 | low | I10 | /actuator soft-200 catch-all - SPA index HTML, not Spring actuator | CWE-538 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -54,10 +54,10 @@ Total findings: **35** (High: 0, Medium: 1, Low: 31, Info: 3)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Spring Boot actuator root exposed (`I10`)
+### 1. [LOW] /actuator soft-200 catch-all - SPA index HTML, not Spring actuator (`I10`)
 
 - **CWE:** CWE-538
-- **Detail:** GET https://buymeacoffee.com/actuator returned 200 (157930 bytes) with a matching signature.
+- **Detail:** Initial scan: GET https://buymeacoffee.com/actuator returned 200 (157930B) matching a soft-200 signature. RETEST 2026-09-25: apex /actuator = 200 text/html 157930B (the SPA index page, byte-identical to /), /health = 200 155887B HTML, /actuator/ = 301, /actuator/env | /info = 404 HTML. Every arbitrary path on the apex returns the SPA index (client-side routing catch-all) - there is no Spring Boot actuator behind it. Downgraded medium -> low (hygiene: soft-200 catch-all makes path probing ambiguous).
 
 ### 2. [LOW] Missing HSTS header (`H1`)
 

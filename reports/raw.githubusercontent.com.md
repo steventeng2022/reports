@@ -12,13 +12,13 @@
 
 ## Summary
 
-Total findings: **31** (High: 1, Medium: 2, Low: 28, Info: 0)
+Total findings: **31** (High: 0, Medium: 1, Low: 29, Info: 0)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I30 | Reflected XSS via attribute breakout (onfocus autofocus) | CWE-79 |
+| 1 | low | I30 | return_to on /login - single quote entity-encoded in hidden input; no breakout on retest | CWE-79 |
 | 2 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 3 | medium | I4 | Reflected input in HTML attribute context | CWE-79 |
+| 3 | low | I4 | return_to reflected in hidden input value - encoded, no breakout on retest | CWE-79 |
 | 4 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -50,17 +50,17 @@ Total findings: **31** (High: 1, Medium: 2, Low: 28, Info: 0)
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS via attribute breakout (onfocus autofocus) (`I30`)
+### 1. [LOW] return_to on /login - single quote entity-encoded in hidden input; no breakout on retest (`I30`)
 
 - **CWE:** CWE-79
-- **Detail:** Parameter return_to on https://github.com/login: injecting "' onfocus=alert(1) autofocus x='" breaks out of the attribute; onfocus fires automatically.
+- **Detail:** Parameter return_to on https://github.com/login reflects the token in <input type="hidden" name="return_to" value="..."> AND in the JSON dataLayer ("originating_url"). RETEST 2026-09-25: injecting ' onfocus=alert(1) autofocus x=' renders value="&#39; onfocus=alert(1) autofocus x=&#39;" - the single quote is ENTITY-encoded, so the payload stays inside the double-quoted attribute; the element is a hidden input (cannot receive programmatic focus) so onfocus never fires. URL-encoded chars (%, tab, newline, #) survive inside the attribute. No XSS breakout; downgraded HIGH -> low. (Report filed under raw.githubusercontent.com per listed scope; finding is on github.com/login.)
 
 ### 2. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /search/advanced which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
 
-### 3. [MEDIUM] Reflected input in HTML attribute context (`I4`)
+### 3. [LOW] return_to reflected in hidden input value - encoded, no breakout on retest (`I4`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter return_to on https://github.com/login reflects the token inside a quoted attribute; escape boundary should be verified (quote/angle breakout tested).
