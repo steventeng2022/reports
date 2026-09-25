@@ -539,3 +539,4 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | design.google | 4 | 0 | 0 | 1 | 3 | top-websites gist (no active program match) |
 | mlb.com | 3 | 0 | 0 | 3 | 0 | top-websites gist (no active program match) |
 | france24.com | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
+| gartner.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
