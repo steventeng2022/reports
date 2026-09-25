@@ -23,7 +23,7 @@ Total findings: **1** (High: 0, Medium: 0, Low: 0, Info: 1)
 ### 1. [INFO] HTTPS homepage unreachable (`X1`)
 
 - **CWE:** CWE-200
-- **Detail:** https://census.gov/: ConnectTimeout: HTTPSConnectionPool(host='census.gov', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<HTTPSConnection(host='census.gov', port=443) 
+- **Detail:** https://census.gov/: ConnectTimeout: HTTPSConnectionPool(host='census.gov', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<HTTPSConnection(host='census.gov', port=443)
 
 ## Reproduction notes
 

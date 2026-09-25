@@ -23,7 +23,7 @@ Total findings: **1** (High: 0, Medium: 0, Low: 0, Info: 1)
 ### 1. [INFO] HTTPS homepage unreachable (`X1`)
 
 - **CWE:** CWE-200
-- **Detail:** https://edx.org/: MemoryError: 
+- **Detail:** https://edx.org/: MemoryError:
 
 ## Reproduction notes
 
