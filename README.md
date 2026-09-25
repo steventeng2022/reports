@@ -2,7 +2,7 @@
 
 Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the intersection of the provided top-websites list and active public bug-bounty program scopes.
 
-**Total findings across all sites: 5055**
+**Total findings across all sites: 5242**
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -131,6 +131,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | collegehumor.com | 1 | 0 | 0 | 0 | 1 | top-websites gist (no active program match) |
 | constantcontact.com | 11 | 0 | 0 | 7 | 4 | Constant Contact |
 | copyright.gov | 12 | 0 | 0 | 5 | 7 | top-websites gist (no active program match) |
+| edx.org | 7 | 0 | 3 | 2 | 2 | top-websites gist (no active program match) |
 | coursera.org | 11 | 0 | 0 | 8 | 3 | Coursera |
 | createspace.com | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | creativecommons.org | 15 | 0 | 0 | 8 | 7 | top-websites gist (no active program match) |
