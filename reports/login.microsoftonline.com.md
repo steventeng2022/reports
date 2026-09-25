@@ -7,7 +7,7 @@
 | Target | https://login.microsoftonline.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | login.microsoftonline.com |
-| Test date | 2026-09-25 09:51 UTC |
+| Test date | 2026-09-25 15:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -33,7 +33,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 ### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
 - **CWE:** CWE-1004
-- **Detail:** Set on https://login.microsoftonline.com/ without SameSite=Lax/Strict: esctx-fShpkHCGrtA, fpc, x-ms-gateway-slice. Cross-site request cookies.
+- **Detail:** Set on https://login.microsoftonline.com/ without SameSite=Lax/Strict: esctx-MsmKU2NszdY, fpc, x-ms-gateway-slice. Cross-site request cookies.
 
 ### 2. [LOW] Missing Content-Security-Policy (`H3`)
 
@@ -87,7 +87,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://login.microsoftonline.com/ final status: 200 (final URL https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&redirect_uri=https%3A%2F%2Fwww.office.com%2Flandingv2&response_type=code%20id_token&scope=openid%20profile%20https%3A%2F%2Fwww.office.com%2Fv2%2FOfficeHome.All&response_mode=form_post&nonce=639259267768001581.NTI1Yzc2ZTAtNjg5ZC00MTA1LWFiZTUtMjU2OTcyMzJkNjEzMjJkYjRlYWYtNGQxMy00ZDNjLWI0YWMtMjJiYzEzN2IyMzZj&ui_locales=en-US&mkt=en-US&client-request-id=e4aecaf2-69b6-497e-a3aa-f5c97b293a70&siwa=1&siwg=1&state=P4KDpozs0GMNlcA4NUr2z-I438I_-yqZzyGQfXSS1KXyh9hSKRjD9NlfEbGvwjYdCwWrSJIEpAMG-60ESWYzfl4UCLYhbsCdJzG_-wHufSL_y3PiBYye1xTieRjdPMCzRgXr2GaAI9pFue9YwLy1LQBGKFkbXY2z9uqAT9AkOsGPCWTHBNswe_P7rwveYq_wrZZUQ18XRuoVIabtNh4KP2WNJ2B3butRdFodlAcCAIPgA2TuSylQesPDVKRm5vYPrC03RzX8FkN0pGCRzkLtlugb-8Z_XCBRcQ67PpgbQKK17SJiEdqaUXFXYW8YZRcalgXF1Jgaaq5We8fZCnlnRfwBA94NyoE8p6F1SN0jrXoqoPLvhgxPvADwFC1x1cU0coQUf-fUsMOGUbTklH-snMnP8Ltv99xaoBEuk4ON2lau2ecE-X55UwzEuLssyQSw&x-client-SKU=ID_NET8_0&x-client-ver=8.16.0.0).
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://login.microsoftonline.com/ final status: 200 (final URL https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&redirect_uri=https%3A%2F%2Fwww.office.com%2Flandingv2&response_type=code%20id_token&scope=openid%20profile%20https%3A%2F%2Fwww.office.com%2Fv2%2FOfficeHome.All&response_mode=form_post&nonce=639259479451523042.NGJmNWQxYmYtNDY4YS00MDYwLWI2ZWYtYjM0MTM2MzhkNzk4YTJiN2U2MzAtNTYyNy00YTk0LWEzZDEtNTdmNzE5ZDkyOGQz&ui_locales=en-US&mkt=en-US&client-request-id=c9e74ac6-707b-471c-9aab-3c694725141b&siwa=1&siwg=1&state=brUibsWlHuFLgq-oklyOHMePEhTogmgZHlc6xFHZW24ewy3q2zUxTliv1IeOCrHQZ0mqOQkvpVkg0iBRT5V1mJxZQk_qkOz4f__934SQiCgTgCdK2fGxwv0a9meY0rY5pJHSUpXQGewDJlEIfD82o5otrvWWyg4dJ0qsVEFQoQ5UiTFwIDkPpRam8GX_ydf1lChp4dxogDDuG-xjEvkidWTMbtajLnv660YX3uCPr9hS3jFdzUyggl8Bx1orqW6zM72yNYWzRcmdEv5toHf3Odl0AGWTDhHxqFW-xLfNZ5m9jct5pqFU69cvVpsIBLxvf9l5UjQTLo1uWMs9tGw41dKInDVqBPKxiuRuLvzJutUa2w05qh--XqdJiymac-Rub7lL00m7odkpnvcPBLsfFAtErhpHKITAQtH3NQcjrKgbm-rD70yrpdxtC7llcko6&x-client-SKU=ID_NET8_0&x-client-ver=8.16.0.0).
 - http://login.microsoftonline.com/ initial status: 302.
-- Certificate: Microsoft Corporation Microsoft TLS G2 RSA CA OCSP 04, valid until 2026-11-21T00:37:12+00:00.
+- Certificate: Microsoft Corporation Microsoft TLS G2 RSA CA OCSP 04, valid until 2026-12-17T15:12:54+00:00.

@@ -7,7 +7,7 @@
 | Target | https://docker.com/ |
 | Bug bounty program | Docker |
 | Listed scope domain | docker.com |
-| Test date | 2026-09-25 09:51 UTC |
+| Test date | 2026-09-25 15:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -69,17 +69,17 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://docker.com/ final status: 200 (final URL https://www.docker.com/).
 - http://docker.com/ initial status: 301.
 - Certificate: Let's Encrypt YR1, valid until 2026-10-28T10:32:23+00:00.
 
 ## Active agent cross-check (latest pre-merge `main` snapshot)
 
-The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before PR #1 was merged is preserved below for comparison and to avoid losing later verification work.
+The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before the latest passive re-audit was merged is preserved below for comparison and to avoid losing later verification work.
 
 <details>
-<summary>Expand active-scan snapshot — 9 findings: 0 high, 1 medium, 6 low, 2 info</summary>
+<summary>Expand active-scan snapshot — 8 findings: 0 high, 0 medium, 1 low, 7 info</summary>
 
 ### Security Audit Report — docker.com
 
@@ -90,10 +90,93 @@ The passive findings above remain the primary README/index counts. The active-sc
 | Target | https://docker.com/ |
 | Bug bounty program | Docker |
 | Listed scope domain | docker.com |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+
+#### Summary
+
+Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
+
+| # | Severity | ID | Finding | CWE |
+|---|---|---|---|---|
+| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 3 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 4 | info | H2c | HSTS not preloaded | CWE-319 |
+| 5 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 6 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 7 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 8 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+
+#### Detailed findings
+
+##### 1. [LOW] Missing Content-Security-Policy (`H3`)
+
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://docker.com/; no defense-in-depth against XSS/content injection.
+
+##### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for docker.com lists 1 name(s) besides the scope host: www.docker.com
+
+##### 3. [INFO] HSTS without includeSubDomains (`H2b`)
+
+- **CWE:** CWE-319
+- **Detail:** `max-age=31622400` does not cover subdomains.
+
+##### 4. [INFO] HSTS not preloaded (`H2c`)
+
+- **CWE:** CWE-319
+- **Detail:** `max-age=31622400` lacks the preload directive.
+
+##### 5. [INFO] sitemap.xml discloses URL inventory (`M1`)
+
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://docker.com/ lists 15 URLs.
+
+##### 6. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://docker.com/ -> https://www.docker.com/ (positive check).
+
+##### 7. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://docker.com/ exposes 24 unique Disallow path(s) (/c/, /cdn-cgi/, /company/contact-thank-you/, /ja-jp/c/, /ja-jp/cdn-cgi/) and 2 sitemap reference(s)
+
+##### 8. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+
+- **CWE:** CWE-200
+- **Detail:** security.txt present on https://docker.com (199 bytes); contact: mailto:security@docker.com
+
+#### Reproduction notes
+
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://docker.com/ final status: 200 (final URL https://www.docker.com/).
+- http://docker.com/ initial status: 301.
+- Certificate: Let's Encrypt YR1, valid until 2026-10-28T10:32:23+00:00.
+
+#### Active agent cross-check (latest pre-merge `main` snapshot)
+
+The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before PR #1 was merged is preserved below for comparison and to avoid losing later verification work.
+
+<details>
+<summary>Expand active-scan snapshot — 9 findings: 0 high, 1 medium, 6 low, 2 info</summary>
+
+##### Security Audit Report — docker.com
+
+###### Scope and authorization
+
+| Item | Value |
+|---|---|
+| Target | https://docker.com/ |
+| Bug bounty program | Docker |
+| Listed scope domain | docker.com |
 | Test date | 2026-09-25 04:25 UTC |
 | Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
 
-#### Summary
+###### Summary
 
 Total findings: **9** (High: 0, Medium: 1, Low: 6, Info: 2)
 
@@ -109,7 +192,7 @@ Total findings: **9** (High: 0, Medium: 1, Low: 6, Info: 2)
 | 8 | info | T2 | TLS certificate expiring within 34 days | CWE-295 |
 | 9 | info | H6 | Server technology disclosure | CWE-200 |
 
-#### Detailed findings
+###### Detailed findings
 
 ##### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
@@ -156,8 +239,10 @@ Total findings: **9** (High: 0, Medium: 1, Low: 6, Info: 2)
 - **CWE:** CWE-200
 - **Detail:** Server header: nginx
 
-#### Reproduction notes
+###### Reproduction notes
 
 - Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+</details>
 
 </details>

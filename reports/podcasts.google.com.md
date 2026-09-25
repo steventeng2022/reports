@@ -7,7 +7,7 @@
 | Target | https://podcasts.google.com/ |
 | Bug bounty program | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | Listed scope domain | podcasts.google.com |
-| Test date | 2026-09-25 09:51 UTC |
+| Test date | 2026-09-25 15:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -87,7 +87,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://podcasts.google.com/ final status: 200 (final URL https://music.youtube.com/googlepodcasts).
 - http://podcasts.google.com/ initial status: 301.
-- Certificate: Google Trust Services WE2, valid until 2026-12-03T19:22:00+00:00.
+- Certificate: Google Trust Services WR2, valid until 2026-12-03T19:21:52+00:00.

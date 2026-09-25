@@ -7,12 +7,58 @@
 | Target | https://linktr.ee/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | linktr.ee |
-| Test date | 2026-09-25 12:02 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 15:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **5** (High: 0, Medium: 2, Low: 3, Info: 0)
+Total findings: **5** (High: 0, Medium: 0, Low: 1, Info: 4)
+
+| # | Severity | ID | Finding | CWE |
+|---|---|---|---|---|
+| 1 | low | H1 | Missing HSTS header | CWE-319 |
+| 2 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 3 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 4 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 5 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+
+## Detailed findings
+
+### 1. [LOW] Missing HSTS header (`H1`)
+
+- **CWE:** CWE-319
+- **Detail:** No Strict-Transport-Security header on https://linktr.ee/. Clients may connect over plain HTTP on first visit.
+
+### 2. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://linktr.ee/; browser features (camera, mic, geolocation) unrestricted.
+
+### 3. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://linktr.ee/ -> https://linktr.ee/ (positive check).
+
+### 4. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://linktr.ee/ exposes 5 unique Disallow path(s) (/, /admin$, /admin/, /admin?, /s/about/trust-center/report) and 3 sitemap reference(s)
+
+### 5. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on linktr.ee.
+
+## Reproduction notes
+
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://linktr.ee/ final status: 200 (final URL https://linktr.ee/).
+- http://linktr.ee/ initial status: 301.
+- Certificate: Let's Encrypt YR1, valid until 2026-11-27T01:38:01+00:00.
+
+## Active agent cross-check (wave 7-9 aggressive scan on main - linktr.ee)
+
+Total findings: **5** - latest aggressive-method scan (main branch). Full detailed findings remain in the main-branch version of this file; passive re-audit above is the non-injection view.
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -21,34 +67,3 @@ Total findings: **5** (High: 0, Medium: 2, Low: 3, Info: 0)
 | 3 | low | H1 | Missing HSTS header | CWE-319 |
 | 4 | low | I11 | GraphQL introspection enabled on /api/graphql | CWE-200 |
 | 5 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-
-## Detailed findings
-
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
-
-- **CWE:** CWE-538
-- **Detail:** robots.txt disallows /s/about/trust-center/report which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
-
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
-
-- **CWE:** CWE-916
-- **Detail:** Subdomain status.linktr.ee resolves to 54.192.248.30 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
-
-### 3. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security on https://linktr.ee/
-
-### 4. [LOW] GraphQL introspection enabled on /api/graphql (`I11`)
-
-- **CWE:** CWE-200
-- **Detail:** POST https://linktr.ee/api/graphql with {__schema{types{name}}} returns the full type map.
-
-### 5. [LOW] Host header alters response (vhost behavior) (`I12`)
-
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: linktr.ee + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
-
-## Reproduction notes
-
-- Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).

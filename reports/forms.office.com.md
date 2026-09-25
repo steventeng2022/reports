@@ -7,7 +7,7 @@
 | Target | https://forms.office.com/ |
 | Bug bounty program | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
 | Listed scope domain | forms.office.com |
-| Test date | 2026-09-25 09:51 UTC |
+| Test date | 2026-09-25 15:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -56,7 +56,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 ### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
 - **CWE:** CWE-1382
-- **Detail:** Certificate for forms.office.com lists 11 name(s) besides the scope host: *.customervoice.microsoft.com, *.forms.microsoft.com, *.forms.office.com, *.forms.osi.office.net, customervoice.microsoft.com, eu.forms.office.com, forms.cloud.microsoft, forms.guest.usercontent.microsoft...
+- **Detail:** Certificate for forms.office.com lists 9 name(s) besides the scope host: afd.forms.office.com, eu.forms.office.com, forms.cloud.microsoft, forms.guest.usercontent.microsoft, forms.microsoft.com, forms.static.microsoft, tr-forms-afdonly.office.com, tr-forms-cafe.office.com...
 
 ### 6. [INFO] Short HSTS max-age (`H2`)
 
@@ -105,7 +105,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://forms.office.com/ final status: 200 (final URL https://forms.cloud.microsoft/).
-- http://forms.office.com/ initial status: 301.
-- Certificate: Microsoft Corporation Microsoft TLS G2 RSA CA OCSP 10, valid until 2027-01-09T09:12:18+00:00.
+- http://forms.office.com/ initial status: 307.
+- Certificate: Microsoft Corporation Microsoft TLS G2 RSA CA OCSP 02, valid until 2027-02-24T10:46:15+00:00.
