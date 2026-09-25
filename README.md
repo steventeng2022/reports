@@ -523,3 +523,4 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | zoom.us | 12 | 0 | 0 | 8 | 4 | Zoom |
 
 | googletagmanager.com | 7 | 0 | 0 | 5 | 2 | Google |
+| dailycaller.com | 9 | 0 | 0 | 7 | 2 | top-websites gist (no active program match) |
