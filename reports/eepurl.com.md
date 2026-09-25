@@ -7,54 +7,93 @@
 | Target | https://eepurl.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | eepurl.com |
-| Test date | 2026-09-24 19:10 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 00:44 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 0, Low: 3, Info: 3)
+Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H4 | No clickjacking protection | CWE-1023 |
-| 4 | info | T2 | TLS certificate expiring within 38 days | CWE-295 |
-| 5 | info | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
+| 10 | info | R1 | robots.txt protected | CWE-200 |
+| 11 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 12 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
 
 ## Detailed findings
 
 ### 1. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security on http://eepurl.com/
+- **Detail:** No Strict-Transport-Security header on https://eepurl.com/. Clients may connect over plain HTTP on first visit.
 
-### 2. [LOW] Missing CSP header (`H2`)
+### 2. [LOW] Missing Content-Security-Policy (`H3`)
+
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://eepurl.com/; no defense-in-depth against XSS/content injection.
+
+### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
+
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://eepurl.com/; browsers may MIME-sniff responses.
+
+### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on http://eepurl.com/
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://eepurl.com/; page may be rendered in a foreign frame.
 
-### 3. [LOW] No clickjacking protection (`H4`)
+### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on http://eepurl.com/
+- **CWE:** CWE-1382
+- **Detail:** Certificate for eepurl.com lists 30 name(s) besides the scope host: *.admin.mailchimp.com, *.api.mailchimp.com, *.campaign-archive.com, *.campaign-archive1.com, *.campaign-archive2.com, *.chimpstatic.com, *.e2e.mailchimpsites.com, *.eepurl.com... (1 no longer resolve)
 
-### 4. [INFO] TLS certificate expiring within 38 days (`T2`)
+### 6. [INFO] Possible dangling subdomain (`D2`)
 
-- **CWE:** CWE-295
-- **Detail:** Certificate for eepurl.com (CN=wildcardsan2.mailchimp.com) valid_to Oct 31 23:59:59 2026 GMT.
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `wildcardsan2.mailchimp.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
-### 5. [INFO] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No X-Content-Type-Options on http://eepurl.com/
-
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on http://eepurl.com/
+- **Detail:** No Referrer-Policy header on https://eepurl.com/; full URL (incl. query strings) is sent as referrer by default.
+
+### 8. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://eepurl.com/; browser features (camera, mic, geolocation) unrestricted.
+
+### 9. [INFO] Plain HTTP returns non-redirect status (`N3`)
+
+- **CWE:** CWE-319
+- **Detail:** http://eepurl.com/ returns 403 (no redirect to HTTPS).
+
+### 10. [INFO] robots.txt protected (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /robots.txt returned 403.
+
+### 11. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 403 on eepurl.com.
+
+### 12. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+
+- **CWE:** CWE-200
+- **Detail:** https://eepurl.com/ responded 403 (passive check only; no further probing).
 
 ## Reproduction notes
 
-- Scanned 2026-09-24 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- Scanned 2026-09-25 00:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://eepurl.com/ final status: 403 (final URL https://eepurl.com/).
+- http://eepurl.com/ initial status: 403.
+- Certificate: DigiCert Inc DigiCert Global G3 TLS ECC SHA384 2020 CA1, valid until 2026-10-31T23:59:59+00:00.

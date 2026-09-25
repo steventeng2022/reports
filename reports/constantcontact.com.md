@@ -7,12 +7,12 @@
 | Target | https://constantcontact.com/ |
 | Bug bounty program | [Constant Contact](https://bugcrowd.com/constantcontact) |
 | Listed scope domain | constantcontact.com |
-| Test date | 2026-09-24 22:14 UTC |
+| Test date | 2026-09-25 00:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
+Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,7 +25,8 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 | 7 | info | D2 | Possible dangling subdomain | CWE-1382 |
 | 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
 | 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 10 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
+| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 11 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
 
 ## Detailed findings
 
@@ -74,14 +75,19 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 - **CWE:** CWE-200
 - **Detail:** robots.txt on https://constantcontact.com/ exposes 10 unique Disallow path(s) (/blog/?s=, /blog/event/?*, /blog/events/?*, /blog/page/*/?s=, /blog/search/) and 1 sitemap reference(s)
 
-### 10. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on constantcontact.com.
+
+### 11. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
 
 - **CWE:** CWE-200
 - **Detail:** https://constantcontact.com/ responded 403 (passive check only; no further probing).
 
 ## Reproduction notes
 
-- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 00:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://constantcontact.com/ final status: 403 (final URL https://www.constantcontact.com/).
 - http://constantcontact.com/ initial status: 301.
 - Certificate: GlobalSign nv-sa GlobalSign Atlas R3 OV TLS CA 2025 Q4, valid until 2026-12-12T16:54:47+00:00.

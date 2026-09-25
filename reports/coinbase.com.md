@@ -7,7 +7,7 @@
 | Target | https://coinbase.com/ |
 | Bug bounty program | [Coinbase](https://hackerone.com/coinbase) |
 | Listed scope domain | coinbase.com |
-| Test date | 2026-09-24 22:14 UTC |
+| Test date | 2026-09-25 00:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -57,7 +57,7 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
 
 ## Reproduction notes
 
-- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 00:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://coinbase.com/ final status: 200 (final URL https://www.coinbase.com/).
 - http://coinbase.com/ initial status: 301.
 - Certificate: Google Trust Services WE1, valid until 2026-12-20T02:34:19+00:00.

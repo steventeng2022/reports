@@ -7,7 +7,7 @@
 | Target | https://paypal.me/ |
 | Bug bounty program | [PayPal](https://hackerone.com/paypal) |
 | Listed scope domain | paypal.me |
-| Test date | 2026-09-24 22:14 UTC |
+| Test date | 2026-09-25 00:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -49,22 +49,22 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 ### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
 - **CWE:** CWE-1382
-- **Detail:** Certificate for paypal.me lists 86 name(s) besides the scope host: articles.braintreepayments.com, assets.braintreegateway.com, braintreecharge.com, braintreefinancial.com, braintreepayments.com, braintreepaymentsolutions.com, brand.braintreepayments.com, business.paypal.com... (18 no longer resolve)
+- **Detail:** Certificate for paypal.me lists 101 name(s) besides the scope host: PAYPAL-DEUTSCHLAND.DE, PAYPAL-MARKETING.PL, PAYPAL.CO, PAYPAL.COM.MY, braintreepayments.com, buyindiaonline.com, cash2india.com, curv.cc... (5 no longer resolve)
 
 ### 5. [INFO] Possible dangling subdomain (`D2`)
 
 - **CWE:** CWE-1382
-- **Detail:** Certificate lists `braintreefinancial.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+- **Detail:** Certificate lists `paypal-corp.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
 ### 6. [INFO] Possible dangling subdomain (`D2`)
 
 - **CWE:** CWE-1382
-- **Detail:** Certificate lists `brand.braintreepayments.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+- **Detail:** Certificate lists `paypal-experience.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
 ### 7. [INFO] Possible dangling subdomain (`D2`)
 
 - **CWE:** CWE-1382
-- **Detail:** Certificate lists `content.paypalobjects.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+- **Detail:** Certificate lists `paypal-knowledge-test.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
 ### 8. [INFO] Missing Referrer-Policy (`H5`)
 
@@ -74,7 +74,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 ### 9. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
 - **CWE:** CWE-319
-- **Detail:** http://paypal.me/ -> https://paypal.me/ (positive check).
+- **Detail:** http://paypal.me/ -> https://www.paypal.me/ (positive check).
 
 ### 10. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
@@ -93,7 +93,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 
 ## Reproduction notes
 
-- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 00:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://paypal.me/ final status: 200 (final URL https://www.paypal.com/tw/digital-wallet/send-receive-money/send-money).
 - http://paypal.me/ initial status: 301.
-- Certificate: DigiCert Inc DigiCert EV RSA CA G2, valid until 2027-03-14T23:59:59+00:00.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-11-25T23:59:59+00:00.

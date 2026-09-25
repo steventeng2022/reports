@@ -7,7 +7,7 @@
 | Target | https://eventim.de/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | eventim.de |
-| Test date | 2026-09-24 22:14 UTC |
+| Test date | 2026-09-25 00:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -87,7 +87,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 
 ## Reproduction notes
 
-- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 00:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://eventim.de/ final status: 403 (final URL https://eventim.de/).
 - http://eventim.de/ initial status: 403.
 - Certificate: Let's Encrypt YR1, valid until 2026-12-15T11:37:01+00:00.

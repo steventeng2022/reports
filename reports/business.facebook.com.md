@@ -7,7 +7,7 @@
 | Target | https://business.facebook.com/ |
 | Bug bounty program | [Facebook](https://www.facebook.com/whitehat) |
 | Listed scope domain | business.facebook.com |
-| Test date | 2026-09-24 22:14 UTC |
+| Test date | 2026-09-25 00:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -31,7 +31,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
 ### 1. [LOW] TLS certificate expiring within 30 days (`T3`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires 2026-10-02T23:59:59+00:00 (8 days left) for business.facebook.com.
+- **Detail:** Certificate expires 2026-10-02T23:59:59+00:00 (7 days left) for business.facebook.com.
 
 ### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
@@ -75,7 +75,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
 
 ## Reproduction notes
 
-- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 00:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://business.facebook.com/ final status: 400 (final URL https://business.facebook.com/).
 - http://business.facebook.com/ initial status: 301.
 - Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-02T23:59:59+00:00.

@@ -7,7 +7,7 @@
 | Target | https://twitter.com/ |
 | Bug bounty program | [Twitter](https://hackerone.com/twitter) |
 | Listed scope domain | twitter.com |
-| Test date | 2026-09-24 22:14 UTC |
+| Test date | 2026-09-25 00:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -47,7 +47,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 ### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
 - **CWE:** CWE-1382
-- **Detail:** Certificate for twitter.com lists 6 name(s) besides the scope host: *.twitter.com, *.twitterintegration.com, *.watch.x.com, *.x.com, t.co, x.com
+- **Detail:** Certificate for twitter.com lists 2 name(s) besides the scope host: *.twitter.com, cdn.syndication.twitter.com
 
 ### 5. [INFO] HSTS not preloaded (`H2c`)
 
@@ -62,7 +62,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 ### 7. [INFO] Plain HTTP returns non-redirect status (`N3`)
 
 - **CWE:** CWE-319
-- **Detail:** http://twitter.com/ returns 500 (no redirect to HTTPS).
+- **Detail:** http://twitter.com/ returns 520 (no redirect to HTTPS).
 
 ### 8. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
@@ -81,7 +81,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 
 ## Reproduction notes
 
-- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 00:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://twitter.com/ final status: 200 (final URL https://x.com/).
-- http://twitter.com/ initial status: 500.
-- Certificate: Let's Encrypt YR2, valid until 2026-12-10T03:08:18+00:00.
+- http://twitter.com/ initial status: 520.
+- Certificate: Let's Encrypt YR1, valid until 2026-11-12T17:48:01+00:00.

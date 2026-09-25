@@ -7,12 +7,12 @@
 | Target | https://data.worldbank.org/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | data.worldbank.org |
-| Test date | 2026-09-24 22:14 UTC |
+| Test date | 2026-09-25 00:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 0, Low: 3, Info: 3)
+Total findings: **7** (High: 0, Medium: 0, Low: 3, Info: 4)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -22,6 +22,7 @@ Total findings: **6** (High: 0, Medium: 0, Low: 3, Info: 3)
 | 4 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
 | 5 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
 | 6 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 7 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
@@ -55,9 +56,14 @@ Total findings: **6** (High: 0, Medium: 0, Low: 3, Info: 3)
 - **CWE:** CWE-200
 - **Detail:** robots.txt on https://data.worldbank.org/ exposes 0 unique Disallow path(s)
 
+### 7. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on data.worldbank.org.
+
 ## Reproduction notes
 
-- Scanned 2026-09-24 22:14 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 00:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://data.worldbank.org/ final status: 200 (final URL https://data.worldbank.org/).
 - http://data.worldbank.org/ initial status: 301.
 - Certificate: Google Trust Services WE1, valid until 2026-12-15T09:03:19+00:00.
