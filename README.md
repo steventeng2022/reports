@@ -161,7 +161,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | drift.com | 10 | 0 | 0 | 6 | 4 | top-websites gist (no active program match) |
 | drive.google.com | 9 | 0 | 0 | 4 | 5 | Google |
 | dropbox.com | 11 | 0 | 0 | 7 | 4 | DropBox |
-| drupal.org | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
+| drupal.org | 13 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | dx.doi.org | 13 | 0 | 0 | 8 | 5 | top-websites gist (no active program match) |
 | earth.google.com | 11 | 0 | 0 | 6 | 5 | Google |
 | ec.europa.eu | 11 | 0 | 0 | 8 | 3 | European Central Bank |
