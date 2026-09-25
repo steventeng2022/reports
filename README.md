@@ -521,3 +521,5 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | zen.yandex.ru | 13 | 0 | 0 | 11 | 2 | Yandex |
 | zillow.com | 13 | 0 | 0 | 8 | 5 | top-websites gist (no active program match) |
 | zoom.us | 12 | 0 | 0 | 8 | 4 | Zoom |
+
+| googletagmanager.com | 7 | 0 | 0 | 5 | 2 | Google |
