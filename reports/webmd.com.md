@@ -12,7 +12,6 @@
 
 ## Summary
 
-<<<<<<< HEAD
 Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
@@ -126,9 +125,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 ## Active agent cross-check (wave 7-9 aggressive scan on main - webmd.com)
 
 Total findings: **36** - latest aggressive-method scan (main branch). Full detailed findings remain in the main-branch version of this file; passive re-audit above is the non-injection view.
-=======
 Total findings: **36** (High: 0, Medium: 0, Low: 5, Info: 31)
->>>>>>> 856185b (verify pass: webmd 19x I1, typekit 4x I1, ca.linkedin I2+4xI5, vogue SSTI all REFUTED (token matrices); reports+README updated; wave 10 shipped (122); chat)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -168,8 +165,6 @@ Total findings: **36** (High: 0, Medium: 0, Low: 5, Info: 31)
 | 34 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/graphql | CWE-942 |
 | 35 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/graphql | CWE-942 |
 | 36 | info | I26 | security.txt exposed (public vulnerability disclosure policy) | CWE-200 |
-<<<<<<< HEAD
-=======
 
 ## Detailed findings
 
@@ -358,4 +353,3 @@ Total findings: **36** (High: 0, Medium: 0, Low: 5, Info: 31)
 ## Reproduction notes
 
 - Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
->>>>>>> 856185b (verify pass: webmd 19x I1, typekit 4x I1, ca.linkedin I2+4xI5, vogue SSTI all REFUTED (token matrices); reports+README updated; wave 10 shipped (122); chat)

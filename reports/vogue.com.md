@@ -12,7 +12,6 @@
 
 ## Summary
 
-<<<<<<< HEAD
 Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
@@ -33,7 +32,6 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 ## Detailed findings
 
 ### 1. [LOW] Cookies set without HttpOnly (`C1`)
-=======
 Total findings: **5** (High: 0, Medium: 0, Low: 3, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
@@ -59,7 +57,6 @@ Total findings: **5** (High: 0, Medium: 0, Low: 3, Info: 2)
 - **Detail:** No Strict-Transport-Security on https://www.vogue.com/
 
 ### 3. [LOW] Cookies without HttpOnly flag (`C2`)
->>>>>>> 856185b (verify pass: webmd 19x I1, typekit 4x I1, ca.linkedin I2+4xI5, vogue SSTI all REFUTED (token matrices); reports+README updated; wave 10 shipped (122); chat)
 
 - **CWE:** CWE-1004
 - **Detail:** Set on https://vogue.com/ without HttpOnly: CN_geo_country_code, CN_segments, CN_xid, xid1. Readable by client-side script.

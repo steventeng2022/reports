@@ -12,7 +12,6 @@
 
 ## Summary
 
-<<<<<<< HEAD
 Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
@@ -31,7 +30,6 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 ## Detailed findings
 
 ### 1. [LOW] Cookies set without HttpOnly (`C1`)
-=======
 Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
@@ -55,7 +53,6 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 - **Verification (2026-09-26, rule 4):** REFUTED. Re-requested /redirect?url= with unique tokens (zzq7x2w9, quoted variants, x><svg/onload=alert(1)>): all return the same 200 / ~137,687-byte LinkedIn guest-home page; the token is not reflected anywhere. The engine onerror match was a static-content heuristic.
 
 ### 2. [LOW] Cookies without HttpOnly flag (`C2`)
->>>>>>> 856185b (verify pass: webmd 19x I1, typekit 4x I1, ca.linkedin I2+4xI5, vogue SSTI all REFUTED (token matrices); reports+README updated; wave 10 shipped (122); chat)
 
 - **CWE:** CWE-1004
 - **Detail:** Set on https://ca.linkedin.com/ without HttpOnly: JSESSIONID, bcookie, lang, lidc. Readable by client-side script.
@@ -65,31 +62,22 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 - **CWE:** CWE-1004
 - **Detail:** Set on https://ca.linkedin.com/ without SameSite=Lax/Strict: JSESSIONID, __cf_bm, bcookie, bscookie, lang, lidc. Cross-site request cookies.
 
-<<<<<<< HEAD
 ### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
-=======
 - **Verification (2026-09-26):** REFUTED - ?trk=ZZQtrk7x2w9 returns 200 (~137KB) with the token nowhere in the body; same for the other three trk entries below.
 
 ### 4. [INFO] Unencoded reflected parameter (XSS-adjacent) - REFUTED (`I5`)
->>>>>>> 856185b (verify pass: webmd 19x I1, typekit 4x I1, ca.linkedin I2+4xI5, vogue SSTI all REFUTED (token matrices); reports+README updated; wave 10 shipped (122); chat)
 
 - **CWE:** CWE-1382
 - **Detail:** Certificate for ca.linkedin.com lists 76 name(s) besides the scope host: ac.linkedin.com, ad.linkedin.com, ae.linkedin.com, af.linkedin.com, ag.linkedin.com, ai.linkedin.com, al.linkedin.com, am.linkedin.com...
 
-<<<<<<< HEAD
 ### 4. [INFO] HSTS without includeSubDomains (`H2b`)
-=======
 ### 5. [INFO] Unencoded reflected parameter (XSS-adjacent) - REFUTED (`I5`)
->>>>>>> 856185b (verify pass: webmd 19x I1, typekit 4x I1, ca.linkedin I2+4xI5, vogue SSTI all REFUTED (token matrices); reports+README updated; wave 10 shipped (122); chat)
 
 - **CWE:** CWE-319
 - **Detail:** `max-age=31536000` does not cover subdomains.
 
-<<<<<<< HEAD
 ### 5. [INFO] HSTS not preloaded (`H2c`)
-=======
 ### 6. [INFO] Unencoded reflected parameter (XSS-adjacent) - REFUTED (`I5`)
->>>>>>> 856185b (verify pass: webmd 19x I1, typekit 4x I1, ca.linkedin I2+4xI5, vogue SSTI all REFUTED (token matrices); reports+README updated; wave 10 shipped (122); chat)
 
 - **CWE:** CWE-319
 - **Detail:** `max-age=31536000` lacks the preload directive.
