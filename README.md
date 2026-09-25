@@ -1,8 +1,8 @@
+Total findings across all sites: 5541
 # Bounty Hunt - Findings Index
 
 Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the intersection of the provided top-websites list and active public bug-bounty program scopes.
 
-**Total findings across all sites: 5404**
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -120,6 +120,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | bloomberg.com | 23 | 0 | 0 | 22 | 1 | Bloomberg |
 | bluehost.com | 11 | 0 | 1 | 7 | 3 | Bluehost |
 | books.google.com | 10 | 0 | 0 | 5 | 5 | Google |
+| bookstackapp.com | 12 | 4 | 4 | 4 | 0 | top-websites gist (no active program match) |
 | breitbart.com | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | buffer.com | 15 | 0 | 0 | 9 | 6 | Buffer |
 | bugs.chromium.org | 13 | 0 | 0 | 8 | 5 | top-websites gist (no active program match) |
