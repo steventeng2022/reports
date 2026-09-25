@@ -6,153 +6,82 @@
 |---|---|
 | Target | https://mobile.twitter.com/ |
 | Bug bounty program | [Twitter](https://hackerone.com/twitter) |
-| Listed scope domain | twitter.com |
-| Test date | 2026-09-23 20:00 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | mobile.twitter.com |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 1, Low: 11, Info: 4)
+Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | R2 | No HTTP->HTTPS redirect | CWE-319 |
-| 2 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 3 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 4 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 5 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 6 | low | H1 | Missing HSTS header | CWE-319 |
-| 7 | low | H2 | Missing CSP header | CWE-1021 |
-| 8 | low | H2 | Missing CSP header | CWE-1021 |
-| 9 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 10 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 11 | low | H4 | No clickjacking protection | CWE-1023 |
-| 12 | low | X2 | CORS origin reflection without credentials (302 redirect response) | CWE-942 |
-| 13 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 14 | info | H6 | Server technology disclosure | CWE-200 |
-| 15 | info | H6 | Server technology disclosure | CWE-200 |
-| 16 | info | H7 | X-Powered-By disclosure | CWE-200 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 3 | info | C4 | Cookies scoped to parent/wildcard domain | CWE-200 |
+| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 5 | info | H2c | HSTS not preloaded | CWE-319 |
+| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 7 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
+| 8 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 9 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 10 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [MEDIUM] No HTTP->HTTPS redirect (`R2`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://mobile.twitter.com/ without HttpOnly: ct0, gt, guest_id, guest_id_ads, guest_id_marketing, personalization_id. Readable by client-side script.
+
+### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://mobile.twitter.com/ without SameSite=Lax/Strict: __cf_bm, guest_id, guest_id_ads, guest_id_marketing, personalization_id. Cross-site request cookies.
+
+### 3. [INFO] Cookies scoped to parent/wildcard domain (`C4`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookies set with domain beyond mobile.twitter.com: .x.com, x.com.
+
+### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for mobile.twitter.com lists 3 name(s) besides the scope host: *.twitter.com, cdn.syndication.twitter.com, twitter.com
+
+### 5. [INFO] HSTS not preloaded (`H2c`)
 
 - **CWE:** CWE-319
-- **Detail:** Verified: http://mobile.twitter.com/ returns 520 (Cloudflare origin error) with no Location header and no HSTS on the error response; https://mobile.twitter.com/ 302 -> https://twitter.com/ (HSTS max-age=631138519; includeSubdomains) -> https://x.com/. The plain-HTTP endpoint is broken rather than redirecting, and the 520 response lacks HSTS, leaving clients on HTTP without upgrade guidance.
-- **Recommendation:** Add an HTTP->HTTPS redirect (currently returns an error code on port 80).
+- **Detail:** `max-age=631138519; includeSubdomains` lacks the preload directive.
 
-### 2. [LOW] Cookie without HttpOnly flag (`C2`)
+### 6. [INFO] Missing Permissions-Policy (`H7`)
 
-- **CWE:** CWE-1004
-- **Detail:** Cookie guest_id_marketing lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://mobile.twitter.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 3. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie guest_id_ads lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 4. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie personalization_id lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 5. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie guest_id lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 6. [LOW] Missing HSTS header (`H1`)
+### 7. [INFO] Plain HTTP returns non-redirect status (`N3`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** http://mobile.twitter.com/ returns 520 (no redirect to HTTPS).
 
-### 7. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 8. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 9. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 10. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 11. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 12. [LOW] CORS origin reflection without credentials (302 redirect response) (`X2`)
-
-- **CWE:** CWE-942
-- **Detail:** Verified: GET https://mobile.twitter.com/ with Origin: https://evil.example returns 302 -> https://twitter.com/ with access-control-allow-origin: https://evil.example but WITHOUT access-control-allow-credentials. The reflection occurs on the redirect response (mobile.twitter.com is being retired in favor of twitter.com/x.com); without credentials, impact is limited.
-- **Recommendation:** Echo the Origin only after validating against an allow-list; avoid reflecting untrusted origins.
-
-### 13. [INFO] Missing Referrer-Policy (`H5`)
+### 8. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** robots.txt on https://mobile.twitter.com/ exposes 9 unique Disallow path(s) (/, /*/followers, /*/following, /*?, /account/deactivated)
 
-### 14. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 15. [INFO] Server technology disclosure (`H6`)
+### 9. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare envoy
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** security.txt present on https://mobile.twitter.com (532 bytes); contact: https://hackerone.com/twitter
 
-### 16. [INFO] X-Powered-By disclosure (`H7`)
+### 10. [INFO] HTTPS root redirects to different host (`X3`)
 
 - **CWE:** CWE-200
-- **Detail:** X-Powered-By: Express
-- **Recommendation:** Remove the X-Powered-By header.
+- **Detail:** https://mobile.twitter.com/ redirects to https://x.com/.
 
-## Evidence (raw response observations)
+## Reproduction notes
 
-```json
-{
-  "http_status": 520,
-  "https_status": 302,
-  "content_type": "text/plain; charset=utf-8",
-  "title": "",
-  "path_gitconfig": 403,
-  "path_envfile": 403,
-  "path_securitytxt": 302,
-  "path_robots": 200,
-  "robots_found": true
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://mobile.twitter.com/ final status: 200 (final URL https://x.com/).
+- http://mobile.twitter.com/ initial status: 520.
+- Certificate: Let's Encrypt YR1, valid until 2026-11-12T17:48:01+00:00.

@@ -6,119 +6,106 @@
 |---|---|
 | Target | https://i.imgur.com/ |
 | Bug bounty program | [Imgur](https://hackerone.com/imgur) |
-| Listed scope domain | imgur.com |
-| Test date | 2026-09-23 19:02 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | i.imgur.com |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 7, Info: 4)
+Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H2 | Missing CSP header | CWE-1021 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | low | H4 | No clickjacking protection | CWE-1023 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | low | X1 | CORS wildcard on 302 redirect response | CWE-942 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
+| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 4 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 6 | info | H2 | Short HSTS max-age | CWE-319 |
+| 7 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 8 | info | H2c | HSTS not preloaded | CWE-319 |
 | 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
-| 11 | info | H6 | Server technology disclosure | CWE-200 |
+| 10 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 11 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 12 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 13 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 14 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing CSP header (`H2`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-1004
+- **Detail:** Set on https://i.imgur.com/ without HttpOnly: postpagebeta. Readable by client-side script.
 
-### 2. [LOW] Missing CSP header (`H2`)
+### 2. [LOW] Cookies set without Secure flag (`C2`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-614
+- **Detail:** Set on https://i.imgur.com/ without Secure: postpagebeta. Will be transmitted over HTTP if the site is reachable cleartext.
 
-### 3. [LOW] Missing X-Content-Type-Options (`H3`)
+### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-1004
+- **Detail:** Set on https://i.imgur.com/ without SameSite=Lax/Strict: postpagebeta. Cross-site request cookies.
 
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
+### 4. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://i.imgur.com/; browsers may MIME-sniff responses.
 
-### 5. [LOW] No clickjacking protection (`H4`)
+### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for i.imgur.com lists 2 name(s) besides the scope host: *.imgur.com, imgur.com
 
-### 6. [LOW] No clickjacking protection (`H4`)
+### 6. [INFO] Short HSTS max-age (`H2`)
 
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+- **CWE:** CWE-319
+- **Detail:** HSTS max-age=300 (< 1 year): `max-age=300`.
 
-### 7. [LOW] CORS wildcard on 302 redirect response (`X1`)
+### 7. [INFO] HSTS without includeSubDomains (`H2b`)
 
-- **CWE:** CWE-942
-- **Detail:** Verified: https://i.imgur.com/ issues 302 to imgur.com; the 302 carries Access-Control-Allow-Origin: * and Access-Control-Allow-Methods: GET, OPTIONS. Redirect response itself carries no sensitive body. Informational.
-- **Recommendation:** Restrict Access-Control-Allow-Origin to known origins or add Vary: Origin.
+- **CWE:** CWE-319
+- **Detail:** `max-age=300` does not cover subdomains.
 
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 8. [INFO] HSTS not preloaded (`H2c`)
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **CWE:** CWE-319
+- **Detail:** `max-age=300` lacks the preload directive.
 
 ### 9. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://i.imgur.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 10. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: cat factory 1.0
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 11. [INFO] Server technology disclosure (`H6`)
+### 10. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: cat factory 1.0
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** No Permissions-Policy header on https://i.imgur.com/; browser features (camera, mic, geolocation) unrestricted.
 
-## Evidence (raw response observations)
+### 11. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://i.imgur.com/",
-  "https_status": 302,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 302,
-  "path_envfile": 302,
-  "path_securitytxt": 302,
-  "path_robots": 302
-}
-```
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://i.imgur.com/ lists 0 URLs.
 
-## Notes
+### 12. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-319
+- **Detail:** http://i.imgur.com/ -> https://i.imgur.com/ (positive check).
+
+### 13. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://i.imgur.com/ exposes 9 unique Disallow path(s) (/1/, /2/, /3/, /account/, /delete/)
+
+### 14. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+
+- **CWE:** CWE-200
+- **Detail:** security.txt present on https://i.imgur.com (6675 bytes)
+
+## Reproduction notes
+
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://i.imgur.com/ final status: 200 (final URL https://imgur.com/).
+- http://i.imgur.com/ initial status: 301.
+- Certificate: Sectigo Limited Sectigo Public Server Authentication CA DV R36, valid until 2027-02-15T23:59:59+00:00.

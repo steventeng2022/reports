@@ -6,126 +6,64 @@
 |---|---|
 | Target | https://apis.google.com/ |
 | Bug bounty program | [Google](https://www.google.com/about/appsecurity/reward-program/) |
-| Listed scope domain | google.com |
-| Test date | 2026-09-23 18:46 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | apis.google.com |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 1, Low: 6, Info: 5)
+Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | R1 | HTTP redirect to HTTP | CWE-319 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H1 | Missing HSTS header | CWE-319 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H2 | Missing CSP header | CWE-1021 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
-| 11 | info | H6 | Server technology disclosure | CWE-200 |
-| 12 | info | I3 | X-XSS-Protection header present | CWE-1038 |
+| 1 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 2 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 3 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 4 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 5 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 6 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 7 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [MEDIUM] HTTP redirect to HTTP (`R1`)
+### 1. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-319
-- **Detail:** Verified chain: http://apis.google.com/ 301 -> http://developers.google.com/ (plain HTTP) -> 301 -> https://developers.google.com/ 200. Two-hop redirect chain with an unencrypted intermediate hop.
-- **Recommendation:** Redirect http:// to https://.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for apis.google.com lists 1 name(s) besides the scope host: *.apis.google.com
 
-### 2. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 3. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 4. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 5. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 6. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 7. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://apis.google.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 3. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://apis.google.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 10. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: sffe
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 11. [INFO] Server technology disclosure (`H6`)
+### 4. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: sffe
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** sitemap.xml on https://apis.google.com/ lists 0 URLs.
 
-### 12. [INFO] X-XSS-Protection header present (`I3`)
+### 5. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-- **CWE:** CWE-1038
-- **Detail:** Verified: https://apis.google.com/ responses carry X-XSS-Protection: 0. Header is deprecated and can be removed (0 value indicates deliberate disabling of the legacy filter).
-- **Recommendation:** Review and remediate per CWE guidance.
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://apis.google.com/ exposes 0 unique Disallow path(s)
 
-## Evidence (raw response observations)
+### 6. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "http://developers.google.com/",
-  "https_status": 301,
-  "content_type": "text/html; charset=UTF-8",
-  "title": "301 Moved",
-  "path_gitconfig": 301,
-  "path_envfile": 301,
-  "path_securitytxt": 301,
-  "path_robots": 301
-}
-```
+- **CWE:** CWE-200
+- **Detail:** security.txt present on https://apis.google.com (144622 bytes); contact: https://www.googleapis.com/auth/developerprofiles
 
-## Notes
+### 7. [INFO] HTTPS root redirects to different host (`X3`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** https://apis.google.com/ redirects to https://developers.google.com/.
+
+## Reproduction notes
+
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://apis.google.com/ final status: 200 (final URL https://developers.google.com/).
+- http://apis.google.com/ initial status: 301.
+- Certificate: Google Trust Services WR2, valid until 2026-12-03T19:24:10+00:00.

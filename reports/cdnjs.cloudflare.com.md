@@ -6,111 +6,76 @@
 |---|---|
 | Target | https://cdnjs.cloudflare.com/ |
 | Bug bounty program | [Cloudflare](https://hackerone.com/cloudflare) |
-| Listed scope domain | cloudflare.com |
-| Test date | 2026-09-23 20:59 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | cdnjs.cloudflare.com |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 1, Low: 5, Info: 4)
+Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | R2 | No HTTP->HTTPS redirect | CWE-319 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 2 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 3 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 4 | info | H2 | Short HSTS max-age | CWE-319 |
+| 5 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 6 | info | H2c | HSTS not preloaded | CWE-319 |
 | 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H6 | Server technology disclosure | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
 
 ## Detailed findings
 
-### 1. [MEDIUM] No HTTP->HTTPS redirect (`R2`)
+### 1. [LOW] Missing Content-Security-Policy (`H3`)
+
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://cdnjs.cloudflare.com/; no defense-in-depth against XSS/content injection.
+
+### 2. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
+
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://cdnjs.cloudflare.com/; browsers may MIME-sniff responses.
+
+### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for cdnjs.cloudflare.com lists 1 name(s) besides the scope host: *.cdnjs.cloudflare.com
+
+### 4. [INFO] Short HSTS max-age (`H2`)
 
 - **CWE:** CWE-319
-- **Detail:** Verified: http://cdnjs.cloudflare.com/ returns 200 (text/html) directly over plain HTTP with no Location header and no HSTS on the HTTP response; the cdnjs landing page (Cloudflare public CDN index) is served unencrypted to initial visitors. Asset requests themselves are public CDN content.
-- **Recommendation:** Add an HTTP->HTTPS redirect (currently returns an error code on port 80).
+- **Detail:** HSTS max-age=15780000 (< 1 year): `max-age=15780000`.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 5. [INFO] HSTS without includeSubDomains (`H2b`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** `max-age=15780000` does not cover subdomains.
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 6. [INFO] HSTS not preloaded (`H2c`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 4. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 6. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-319
+- **Detail:** `max-age=15780000` lacks the preload directive.
 
 ### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://cdnjs.cloudflare.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://cdnjs.cloudflare.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 9. [INFO] Server technology disclosure (`H6`)
+### 9. [INFO] Plain HTTP returns non-redirect status (`N3`)
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **CWE:** CWE-319
+- **Detail:** http://cdnjs.cloudflare.com/ returns 200 (no redirect to HTTPS).
 
-### 10. [INFO] Server technology disclosure (`H6`)
+## Reproduction notes
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_status": 200,
-  "https_status": 200,
-  "content_type": "text/html",
-  "title": "cdnjs.cloudflare.com",
-  "path_gitconfig": 522,
-  "path_envfile": 522,
-  "path_securitytxt": 522,
-  "path_robots": 522
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://cdnjs.cloudflare.com/ final status: 200 (final URL https://cdnjs.cloudflare.com/).
+- http://cdnjs.cloudflare.com/ initial status: 200.
+- Certificate: Google Trust Services WE1, valid until 2026-12-06T15:43:45+00:00.

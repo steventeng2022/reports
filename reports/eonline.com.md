@@ -7,132 +7,93 @@
 | Target | https://eonline.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | eonline.com |
-| Test date | 2026-09-24 03:59 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 6, Info: 3)
+Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 2 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H4 | No clickjacking protection | CWE-1023 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | info | H6 | Server technology disclosure | CWE-200 |
-| 8 | info | H6 | Server technology disclosure | CWE-200 |
-| 9 | info | I5 | Open redirect candidate refuted (404 on www hop) | CWE-601 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 3 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 5 | info | H2 | Short HSTS max-age | CWE-319 |
+| 6 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 7 | info | H2c | HSTS not preloaded | CWE-319 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
+| 10 | info | R1 | robots.txt protected | CWE-200 |
+| 11 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 12 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookie without HttpOnly flag (`C2`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie geoEdition lacks HttpOnly; readable by client-side JS.
-- **Context:** http response
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://eonline.com/ without HttpOnly: geoEdition. Readable by client-side script.
 
-### 2. [LOW] Cookie without HttpOnly flag (`C2`)
+### 2. [LOW] Missing Content-Security-Policy (`H3`)
 
-- **CWE:** CWE-1004
-- **Detail:** Cookie geoEdition lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://eonline.com/; no defense-in-depth against XSS/content injection.
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 3. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://eonline.com/; page may be rendered in a foreign frame.
 
-### 4. [LOW] Missing CSP header (`H2`)
+### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-1382
+- **Detail:** Certificate for eonline.com lists 1 name(s) besides the scope host: *.eonline.com
 
-### 5. [LOW] No clickjacking protection (`H4`)
+### 5. [INFO] Short HSTS max-age (`H2`)
 
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+- **CWE:** CWE-319
+- **Detail:** HSTS max-age=86400 (< 1 year): `max-age=86400, max-age=31536000`.
 
-### 6. [LOW] No clickjacking protection (`H4`)
+### 6. [INFO] HSTS without includeSubDomains (`H2b`)
 
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+- **CWE:** CWE-319
+- **Detail:** `max-age=86400, max-age=31536000` does not cover subdomains.
 
-### 7. [INFO] Server technology disclosure (`H6`)
+### 7. [INFO] HSTS not preloaded (`H2c`)
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: AkamaiGHost
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **CWE:** CWE-319
+- **Detail:** `max-age=86400, max-age=31536000` lacks the preload directive.
 
-### 8. [INFO] Server technology disclosure (`H6`)
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: AkamaiGHost
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** No Permissions-Policy header on https://eonline.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 9. [INFO] Open redirect candidate refuted (404 on www hop) (`I5`)
+### 9. [INFO] Plain HTTP returns non-redirect status (`N3`)
 
-- **CWE:** CWE-601
-- **Detail:** https://eonline.com/redirect?url=301s to the www host, which returns 404; the parameter is not followed.
-- **Recommendation:** Review and remediate per CWE guidance.
+- **CWE:** CWE-319
+- **Detail:** http://eonline.com/ returns 403 (no redirect to HTTPS).
 
-## Evidence (raw response observations)
+### 10. [INFO] robots.txt protected (`R1`)
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://eonline.com/",
-  "https_status": 301,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 301,
-  "path_envfile": 403,
-  "path_securitytxt": 301,
-  "path_robots": 301,
-  "probe_count": 23,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 403",
-    "sqli /?id=1%27+OR+1=1-- -> 403",
-    "sqli /?q=%27 -> 301",
-    "sqli /products?filter=%27 -> 301",
-    "sqli /?p=1;-- -> 301",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 403",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 403",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 403",
-    "trav /static/../../../../../../../../etc/passwd -> 403",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 403",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 403",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 301",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 301",
-    "host no reflection -> err",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301"
-  ],
-  "open_redirect": {
-    "path": "/redirect?url=https%3A%2F%2Fevil-cors.example%2Fx",
-    "location": "https://www.eonline.com/redirect?url=https%3A%2F%2Fevil-cors.example%2Fx"
-  }
-}
-```
+- **CWE:** CWE-200
+- **Detail:** GET /robots.txt returned 403.
 
-## Notes
+### 11. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 403 on eonline.com.
+
+### 12. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+
+- **CWE:** CWE-200
+- **Detail:** https://eonline.com/ responded 403 (passive check only; no further probing).
+
+## Reproduction notes
+
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://eonline.com/ final status: 403 (final URL https://eonline.com/).
+- http://eonline.com/ initial status: 403.
+- Certificate: DigiCert Inc DigiCert Global G3 TLS ECC SHA384 2020 CA1, valid until 2027-01-02T23:59:59+00:00.

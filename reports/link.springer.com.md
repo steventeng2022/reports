@@ -7,120 +7,99 @@
 | Target | https://link.springer.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | link.springer.com |
-| Test date | 2026-09-24 12:21 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 15, Info: 2)
+Total findings: **13** (High: 0, Medium: 0, Low: 6, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H4 | No clickjacking protection | CWE-1023 |
-| 4 | low | C1 | Cookies without Secure flag | CWE-614 |
-| 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 7 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 8 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 9 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 10 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 11 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 12 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 13 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 14 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 15 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 16 | info | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 17 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 1 | low | C2 | Cookies set without Secure flag | CWE-614 |
+| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 3 | low | H1 | Missing HSTS header | CWE-319 |
+| 4 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 5 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 6 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 7 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 10 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 11 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 12 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 13 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security on https://link.springer.com/
-
-### 2. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on https://link.springer.com/
-
-### 3. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on https://link.springer.com/
-
-### 4. [LOW] Cookies without Secure flag (`C1`)
+### 1. [LOW] Cookies set without Secure flag (`C2`)
 
 - **CWE:** CWE-614
-- **Detail:** _fs_ch_st_FSBmUei20MqUiJb9 set without Secure on https://link.springer.com/
+- **Detail:** Set on https://link.springer.com/ without Secure: _fs_ch_st_FSBmUei20MqUiJb9. Will be transmitted over HTTP if the site is reachable cleartext.
 
-### 5. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://link.springer.com/s reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-1004
+- **Detail:** Set on https://link.springer.com/ without SameSite=Lax/Strict: _fs_ch_st_FSBmUei20MqUiJb9. Cross-site request cookies.
 
-### 6. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 3. [LOW] Missing HSTS header (`H1`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://link.springer.com/results reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-319
+- **Detail:** No Strict-Transport-Security header on https://link.springer.com/. Clients may connect over plain HTTP on first visit.
 
-### 7. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://link.springer.com/redirect reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 8. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 4. [LOW] Missing Content-Security-Policy (`H3`)
 
 - **CWE:** CWE-79
-- **Detail:** Parameter url on https://link.springer.com/go reflects input verbatim in body context; encoding boundary not confirmed.
+- **Detail:** No CSP header on https://link.springer.com/; no defense-in-depth against XSS/content injection.
 
-### 9. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 5. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://link.springer.com/r reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://link.springer.com/; browsers may MIME-sniff responses.
 
-### 10. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 6. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://link.springer.com/link reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-1021
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://link.springer.com/; page may be rendered in a foreign frame.
 
-### 11. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 7. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://link.springer.com/out reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for link.springer.com lists 1 name(s) besides the scope host: *.springer.com
 
-### 12. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://link.springer.com/share reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 13. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://link.springer.com/view reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 14. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter to on https://link.springer.com/forward reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 15. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter to on https://link.springer.com/jump reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 16. [INFO] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No X-Content-Type-Options on https://link.springer.com/
-
-### 17. [INFO] Missing Referrer-Policy (`H5`)
+### 8. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://link.springer.com/
+- **Detail:** No Referrer-Policy header on https://link.springer.com/; full URL (incl. query strings) is sent as referrer by default.
+
+### 9. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://link.springer.com/; browser features (camera, mic, geolocation) unrestricted.
+
+### 10. [INFO] sitemap.xml discloses URL inventory (`M1`)
+
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://link.springer.com/ lists 0 URLs.
+
+### 11. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://link.springer.com/ -> https://link.springer.com/ (positive check).
+
+### 12. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://link.springer.com/ exposes 0 unique Disallow path(s)
+
+### 13. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+
+- **CWE:** CWE-200
+- **Detail:** security.txt present on https://link.springer.com (3036 bytes)
 
 ## Reproduction notes
 
-- Scanned 2026-09-24 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://link.springer.com/ final status: 200 (final URL https://link.springer.com/).
+- http://link.springer.com/ initial status: 301.
+- Certificate: Let's Encrypt YR2, valid until 2026-12-22T11:18:56+00:00.

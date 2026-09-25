@@ -1,4 +1,4 @@
-# Security Audit Report - googlewebmastercentral.blogspot.com
+# Security Audit Report — googlewebmastercentral.blogspot.com
 
 ## Scope and authorization
 
@@ -7,192 +7,75 @@
 | Target | https://googlewebmastercentral.blogspot.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | googlewebmastercentral.blogspot.com |
-| Test date | 2026-09-24 19:32 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 1, Low: 2, Info: 5)
+Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | R2 | No HTTP->HTTPS redirect | CWE-319 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H1 | Missing HSTS header | CWE-319 |
-| 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 1 | low | H1 | Missing HSTS header | CWE-319 |
+| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 3 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 4 | info | D2 | Possible dangling subdomain | CWE-1382 |
 | 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 6 | info | H6 | Server technology disclosure | CWE-200 |
-| 7 | info | H6 | Server technology disclosure | CWE-200 |
-| 8 | info | P3 | Missing security.txt | CWE-1038 |
+| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 7 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
+| 8 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 9 | info | X2 | HTTPS homepage returned HTTP 404 | CWE-200 |
 
 ## Detailed findings
 
-### 1. [MEDIUM] No HTTP->HTTPS redirect (`R2`)
+### 1. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** http://googlewebmastercentral.blogspot.com returns 404 without redirecting to HTTPS. No Strict-Transport-Security observed on the HTTPS response.
-- **Recommendation:** Add an HTTP->HTTPS redirect (currently returns an error code on port 80).
+- **Detail:** No Strict-Transport-Security header on https://googlewebmastercentral.blogspot.com/. Clients may connect over plain HTTP on first visit.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for googlewebmastercentral.blogspot.com lists 139 name(s) besides the scope host: *.blogspot.ae, *.blogspot.al, *.blogspot.am, *.blogspot.ba, *.blogspot.be, *.blogspot.bg, *.blogspot.ca, *.blogspot.ch... (2 no longer resolve)
 
-### 3. [LOW] Missing HSTS header (`H1`)
+### 3. [INFO] Possible dangling subdomain (`D2`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `blogspot.vn` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
-### 4. [INFO] Missing Referrer-Policy (`H5`)
+### 4. [INFO] Possible dangling subdomain (`D2`)
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **CWE:** CWE-1382
+- **Detail:** Certificate lists `bp.blogspot.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
 ### 5. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://googlewebmastercentral.blogspot.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 6. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: GSE
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 7. [INFO] Server technology disclosure (`H6`)
+### 6. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: GSE
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** No Permissions-Policy header on https://googlewebmastercentral.blogspot.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 8. [INFO] Missing security.txt (`P3`)
+### 7. [INFO] Plain HTTP returns non-redirect status (`N3`)
 
-- **CWE:** CWE-1038
-- **Detail:** No .well-known/security.txt found (RFC 9116).
-- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+- **CWE:** CWE-319
+- **Detail:** http://googlewebmastercentral.blogspot.com/ returns 404 (no redirect to HTTPS).
 
-## Aggressive probe campaign
+### 8. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-**Stage 1 - injection/reflection probes (28 requests):**
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on googlewebmastercentral.blogspot.com.
 
-- no stage-1 probe hits (all probes negative)
+### 9. [INFO] HTTPS homepage returned HTTP 404 (`X2`)
 
-**Stage 2 - aggressive probe suite v2 (99 requests):**
+- **CWE:** CWE-200
+- **Detail:** https://googlewebmastercentral.blogspot.com/ responded 404 (passive check only; no further probing).
 
-- no stage-2 probe hits (all probes negative)
+## Reproduction notes
 
-Stage-2 probe log (observed responses):
-- timing base=1023ms id=325 search=590
-- boolean b=404/119013 t1=404/119024 t2=404/119023
-- graphql /graphql -> 404
-- graphql /api/graphql -> 404
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 404
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 404
-- trav2 /%2e%2e%00.html -> 400
-- trav2 /static//../../../../../../etc/passwd -> 404
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 404
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 404
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 404
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 404
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 404
-- apicors /api -> 404
-- apicors /api/v1 -> 404
-- apicors /graphql -> 404
-- apicors /rest -> 404
-- apicors /v1 -> 404
-
-**Stage 3 - live parameter harvest, takeover and injection probes (23 requests):**
-
-- no stage-3 probe hits (all probes negative)
-
-Stage-3 probe log (observed responses):
-- harvest no query params discovered on sampled pages
-- subs no dangling service CNAMEs over 16 subdomains
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_status": 404,
-  "https_status": 404,
-  "content_type": "text/html; charset=UTF-8",
-  "title": "找不���網誌",
-  "path_gitconfig": 404,
-  "path_envfile": 404,
-  "path_securitytxt": 404,
-  "path_robots": 404,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 404",
-    "sqli /?id=1%27+OR+1=1-- -> 404",
-    "sqli /?q=%27 -> 404",
-    "sqli /products?filter=%27 -> 404",
-    "sqli /?p=1;-- -> 404",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 404",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 404",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 404",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 404",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 404",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 404",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 404",
-    "trav /static/../../../../../../../../etc/passwd -> 404",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 404",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 404",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 404",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 404",
-    "host no reflection -> 404",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404"
-  ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=1023ms id=325 search=590",
-    "boolean b=404/119013 t1=404/119024 t2=404/119023",
-    "graphql /graphql -> 404",
-    "graphql /api/graphql -> 404",
-    "sweep no hits over 26 paths",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 404",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 404",
-    "trav2 /%2e%2e%00.html -> 400",
-    "trav2 /static//../../../../../../etc/passwd -> 404",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 404",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 404",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 404",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 404",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 404",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 404",
-    "apicors /api/v1 -> 404",
-    "apicors /graphql -> 404",
-    "apicors /rest -> 404",
-    "apicors /v1 -> 404"
-  ],
-  "v3_probe_count": 23,
-  "v3_log": [
-    "harvest no query params discovered on sampled pages",
-    "subs no dangling service CNAMEs over 16 subdomains",
-    "cache X-Forwarded-Host not reflected -> 404"
-  ]
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://googlewebmastercentral.blogspot.com/ final status: 404 (final URL https://googlewebmastercentral.blogspot.com/).
+- http://googlewebmastercentral.blogspot.com/ initial status: 404.
+- Certificate: Google Trust Services WE2, valid until 2026-12-03T19:23:10+00:00.

@@ -7,137 +7,87 @@
 | Target | https://acm.org/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | acm.org |
-| Test date | 2026-09-24 05:27 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 6, Info: 3)
+Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H6 | Server technology disclosure | CWE-200 |
-| 9 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 3 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
+| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 5 | info | H2 | Short HSTS max-age | CWE-319 |
+| 6 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 7 | info | H2c | HSTS not preloaded | CWE-319 |
+| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 11 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookie without Secure flag (`C1`)
+### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
-- **CWE:** CWE-614
-- **Detail:** Cookie __cf_bm lacks Secure attribute; transmitted over HTTP.
-- **Context:** http response
-- **Recommendation:** Add the Secure attribute to the cookie.
+- **CWE:** CWE-1004
+- **Detail:** Set on https://acm.org/ without SameSite=Lax/Strict: __cf_bm. Cross-site request cookies.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 2. [LOW] Missing Content-Security-Policy (`H3`)
+
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://acm.org/; no defense-in-depth against XSS/content injection.
+
+### 3. [LOW] TLS certificate expiring within 30 days (`T3`)
+
+- **CWE:** CWE-298
+- **Detail:** Certificate expires 2026-10-16T23:59:59+00:00 (21 days left) for acm.org.
+
+### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for acm.org lists 1 name(s) besides the scope host: *.acm.org
+
+### 5. [INFO] Short HSTS max-age (`H2`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** HSTS max-age=0 (< 1 year): `max-age=0`.
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 6. [INFO] HSTS without includeSubDomains (`H2b`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-319
+- **Detail:** `max-age=0` does not cover subdomains.
 
-### 4. [LOW] Missing CSP header (`H2`)
+### 7. [INFO] HSTS not preloaded (`H2c`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-319
+- **Detail:** `max-age=0` lacks the preload directive.
 
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
+### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-319
+- **Detail:** http://acm.org/ -> https://acm.org/ (positive check).
 
-### 6. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 7. [INFO] Missing Referrer-Policy (`H5`)
+### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** robots.txt on https://acm.org/ exposes 17 unique Disallow path(s) (/404, /Member/, /amg.html, /amturing-acm-org/, /award_winners) and 1 sitemap reference(s)
 
-### 8. [INFO] Server technology disclosure (`H6`)
+### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** GET /.well-known/security.txt returned 404 on acm.org.
 
-### 9. [INFO] Server technology disclosure (`H6`)
+### 11. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** https://acm.org/ responded 403 (passive check only; no further probing).
 
-## Evidence (raw response observations)
+## Reproduction notes
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://acm.org/",
-  "https_status": 403,
-  "content_type": "text/html; charset=UTF-8",
-  "title": "ACM",
-  "path_gitconfig": 403,
-  "path_envfile": 403,
-  "path_securitytxt": 302,
-  "path_robots": 302,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 403",
-    "sqli /?id=1%27+OR+1=1-- -> 403",
-    "sqli /?q=%27 -> 403",
-    "sqli /products?filter=%27 -> 403",
-    "sqli /?p=1;-- -> 403",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 403",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 403",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 400",
-    "trav /static/../../../../../../../../etc/passwd -> 403",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 403",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 403",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 403",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 403",
-    "host no reflection -> err",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403"
-  ]
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://acm.org/ final status: 403 (final URL https://acm.org/).
+- http://acm.org/ initial status: 301.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-16T23:59:59+00:00.

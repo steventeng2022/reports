@@ -7,108 +7,63 @@
 | Target | https://aub.edu.lb/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | aub.edu.lb |
-| Test date | 2026-09-24 12:21 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 14, Info: 1)
+Total findings: **7** (High: 0, Medium: 0, Low: 1, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 3 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 7 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 8 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 9 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 10 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 11 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 12 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 13 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 14 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 15 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 3 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 4 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 5 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 6 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 7 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
 
 ## Detailed findings
 
 ### 1. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security on https://aub.edu.lb/
+- **Detail:** No Strict-Transport-Security header on https://aub.edu.lb/. Clients may connect over plain HTTP on first visit.
 
-### 2. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter v on https://aub.edu.lb/Style%20Library/AUB/images/favicon.ico reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for aub.edu.lb lists 6 name(s) besides the scope host: *.aub.edu, *.aub.edu.lb, *.aubmc.org, *.aubmc.org.lb, aubmc.org, aubmc.org.lb
 
-### 3. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter v on https://aub.edu.lb/Style%20Library/AUB/css/bootstrapv7.css reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 4. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter ItemId on https://aub.edu.lb/Events/Pages/Details.aspx reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 5. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://aub.edu.lb/search reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 6. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter query on https://aub.edu.lb/search reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 7. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://aub.edu.lb/s reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 8. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://aub.edu.lb/results reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 9. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://aub.edu.lb/redirect reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 10. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://aub.edu.lb/go reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 11. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://aub.edu.lb/r reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 12. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://aub.edu.lb/link reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 13. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://aub.edu.lb/out reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 14. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://aub.edu.lb/share reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 15. [INFO] Missing Referrer-Policy (`H5`)
+### 3. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://aub.edu.lb/
+- **Detail:** No Referrer-Policy header on https://aub.edu.lb/; full URL (incl. query strings) is sent as referrer by default.
+
+### 4. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://aub.edu.lb/; browser features (camera, mic, geolocation) unrestricted.
+
+### 5. [INFO] sitemap.xml discloses URL inventory (`M1`)
+
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://aub.edu.lb/ lists 14 URLs.
+
+### 6. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://aub.edu.lb/ -> https://aub.edu.lb/ (positive check).
+
+### 7. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://aub.edu.lb/ exposes 5 unique Disallow path(s) (/*?*/, /_catalogs/, /_layouts/, /register/, /search/) and 1 sitemap reference(s)
 
 ## Reproduction notes
 
-- Scanned 2026-09-24 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://aub.edu.lb/ final status: 200 (final URL https://aub.edu.lb/).
+- http://aub.edu.lb/ initial status: 307.
+- Certificate: Hellenic Academic and Research Institutions CA GEANT TLS RSA 1, valid until 2027-02-06T23:39:42+00:00.

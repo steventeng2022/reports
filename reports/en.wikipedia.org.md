@@ -7,96 +7,69 @@
 | Target | https://en.wikipedia.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | en.wikipedia.org |
-| Test date | 2026-09-24 12:05 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 12, Info: 1)
+Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H4 | No clickjacking protection | CWE-1023 |
-| 2 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
-| 3 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 7 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 8 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 9 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 10 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 11 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 12 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-| 13 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 2 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 3 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 6 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 7 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 8 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on https://en.wikipedia.org/wiki/Main_Page
-
-### 2. [LOW] Cookies without HttpOnly flag (`C2`)
+### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
 - **CWE:** CWE-1004
-- **Detail:** GeoIP, NetworkProbeLimit set without HttpOnly on https://en.wikipedia.org/wiki/Main_Page
+- **Detail:** Set on https://en.wikipedia.org/ without SameSite=Lax/Strict: WMF-DP, WMF-Uniq. Cross-site request cookies.
 
-### 3. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 2. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter modules on https://en.wikipedia.org/w/load.php reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-1021
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://en.wikipedia.org/; page may be rendered in a foreign frame.
 
-### 4. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter action on https://en.wikipedia.org/w/api.php reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for en.wikipedia.org lists 41 name(s) besides the scope host: *.m.mediawiki.org, *.m.wikibooks.org, *.m.wikidata.org, *.m.wikimedia.org, *.m.wikinews.org, *.m.wikipedia.org, *.m.wikiquote.org, *.m.wikisource.org...
 
-### 5. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://en.wikipedia.org/search reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 6. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter query on https://en.wikipedia.org/search reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 7. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://en.wikipedia.org/s reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 8. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://en.wikipedia.org/ reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 9. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://en.wikipedia.org/results reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 10. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://en.wikipedia.org/redirect reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 11. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://en.wikipedia.org/go reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 12. [LOW] Host header alters response (vhost behavior) (`I12`)
-
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: en.wikipedia.org + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
-
-### 13. [INFO] Missing Referrer-Policy (`H5`)
+### 4. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://en.wikipedia.org/wiki/Main_Page
+- **Detail:** No Referrer-Policy header on https://en.wikipedia.org/; full URL (incl. query strings) is sent as referrer by default.
+
+### 5. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://en.wikipedia.org/; browser features (camera, mic, geolocation) unrestricted.
+
+### 6. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://en.wikipedia.org/ -> https://en.wikipedia.org/ (positive check).
+
+### 7. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://en.wikipedia.org/ exposes 410 unique Disallow path(s) (#, /, /api/, /trap/, /w/) and 1 sitemap reference(s)
+
+### 8. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+
+- **CWE:** CWE-200
+- **Detail:** security.txt present on https://en.wikipedia.org (222 bytes); contact: mailto:security@wikimedia.org
 
 ## Reproduction notes
 
-- Scanned 2026-09-24 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://en.wikipedia.org/ final status: 200 (final URL https://en.wikipedia.org/wiki/Main_Page).
+- http://en.wikipedia.org/ initial status: 301.
+- Certificate: Let's Encrypt YE2, valid until 2026-11-03T19:15:40+00:00.

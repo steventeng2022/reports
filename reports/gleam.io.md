@@ -7,54 +7,81 @@
 | Target | https://gleam.io/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | gleam.io |
-| Test date | 2026-09-24 13:46 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 0, Low: 5, Info: 1)
+Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H4 | No clickjacking protection | CWE-1023 |
-| 4 | low | C1 | Cookies without Secure flag | CWE-614 |
-| 5 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 3 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 5 | info | H2 | Short HSTS max-age | CWE-319 |
+| 6 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 7 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 8 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 9 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 10 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security on http://gleam.io/
+- **CWE:** CWE-1004
+- **Detail:** Set on https://gleam.io/ without SameSite=Lax/Strict: __cf_bm. Cross-site request cookies.
 
-### 2. [LOW] Missing CSP header (`H2`)
+### 2. [LOW] Missing Content-Security-Policy (`H3`)
+
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://gleam.io/; no defense-in-depth against XSS/content injection.
+
+### 3. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on http://gleam.io/
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://gleam.io/; page may be rendered in a foreign frame.
 
-### 3. [LOW] No clickjacking protection (`H4`)
+### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on http://gleam.io/
+- **CWE:** CWE-1382
+- **Detail:** Certificate for gleam.io lists 1 name(s) besides the scope host: *.gleam.io
 
-### 4. [LOW] Cookies without Secure flag (`C1`)
+### 5. [INFO] Short HSTS max-age (`H2`)
 
-- **CWE:** CWE-614
-- **Detail:** __cf_bm set without Secure on http://gleam.io/
+- **CWE:** CWE-319
+- **Detail:** HSTS max-age=15552000 (< 1 year): `max-age=15552000; includeSubDomains; preload`.
 
-### 5. [LOW] Host header alters response (vhost behavior) (`I12`)
-
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: gleam.io + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
-
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on http://gleam.io/
+- **Detail:** sitemap.xml on https://gleam.io/ lists 985 URLs.
+
+### 7. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://gleam.io/ -> https://gleam.io/ (positive check).
+
+### 8. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://gleam.io/ exposes 29 unique Disallow path(s) (/*-*?l=https*, /*/*?kw=, /*/completed-details, /*/contestant-details, /*/tracking-details) and 1 sitemap reference(s)
+
+### 9. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on gleam.io.
+
+### 10. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+
+- **CWE:** CWE-200
+- **Detail:** https://gleam.io/ responded 403 (passive check only; no further probing).
 
 ## Reproduction notes
 
-- Scanned 2026-09-24 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://gleam.io/ final status: 403 (final URL https://gleam.io/).
+- http://gleam.io/ initial status: 301.
+- Certificate: Google Trust Services WE1, valid until 2026-11-19T17:28:26+00:00.

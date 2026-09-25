@@ -7,72 +7,31 @@
 | Target | https://reacts.ru/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | reacts.ru |
-| Test date | 2026-09-24 22:21 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 2, Low: 4, Info: 3)
+Total findings: **2** (High: 0, Medium: 1, Low: 0, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | T2 | Expired TLS certificate | CWE-295 |
-| 2 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 3 | low | T3 | Site served over plain HTTP without redirect to HTTPS | CWE-319 |
-| 4 | low | H1 | Missing HSTS header | CWE-319 |
-| 5 | low | H2 | Missing CSP header | CWE-1021 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | info | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | medium | T5 | Certificate chain verification failure | CWE-298 |
+| 2 | info | X1 | HTTPS homepage unreachable | CWE-200 |
 
 ## Detailed findings
 
-### 1. [MEDIUM] Expired TLS certificate (`T2`)
+### 1. [MEDIUM] Certificate chain verification failure (`T5`)
 
-- **CWE:** CWE-295
-- **Detail:** Certificate for reacts.ru (CN=reacts.ru) valid_to Sep  3 22:44:32 2026 GMT is in the past.
+- **CWE:** CWE-298
+- **Detail:** certificate verify failed: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1010) for reacts.ru.
 
-### 2. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
-
-- **CWE:** CWE-538
-- **Detail:** robots.txt disallows /js/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
-
-### 3. [LOW] Site served over plain HTTP without redirect to HTTPS (`T3`)
-
-- **CWE:** CWE-319
-- **Detail:** GET http://reacts.ru/ returned 200 directly (no 301/302 to HTTPS); content and cookies transit unencrypted.
-
-### 4. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security on https://reacts.ru/
-
-### 5. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on https://reacts.ru/
-
-### 6. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on https://reacts.ru/
-
-### 7. [INFO] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No X-Content-Type-Options on https://reacts.ru/
-
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] HTTPS homepage unreachable (`X1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://reacts.ru/
-
-### 9. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header: nginx
+- **Detail:** https://reacts.ru/: SSLError: HTTPSConnectionPool(host='reacts.ru', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAIL
 
 ## Reproduction notes
 
-- Scanned 2026-09-24 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- http://reacts.ru/ initial status: 200.

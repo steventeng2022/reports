@@ -6,101 +6,76 @@
 |---|---|
 | Target | https://ja-jp.facebook.com/ |
 | Bug bounty program | [Facebook](https://www.facebook.com/whitehat) |
-| Listed scope domain | facebook.com |
-| Test date | 2026-09-23 18:45 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Listed scope domain | ja-jp.facebook.com |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 0, Low: 4, Info: 4)
+Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 4 | low | H4 | No clickjacking protection | CWE-1023 |
+| 1 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
+| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 3 | info | H2 | Short HSTS max-age | CWE-319 |
+| 4 | info | H2b | HSTS without includeSubDomains | CWE-319 |
 | 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 7 | info | H6 | Server technology disclosure | CWE-200 |
-| 8 | info | P2 | SPA fallback 200 on /.env (no env data exposed) | CWE-1038 |
+| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 7 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 8 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 9 | info | X2 | HTTPS homepage returned HTTP 400 | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [LOW] TLS certificate expiring within 30 days (`T3`)
+
+- **CWE:** CWE-298
+- **Detail:** Certificate expires 2026-10-02T23:59:59+00:00 (7 days left) for ja-jp.facebook.com.
+
+### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for ja-jp.facebook.com lists 11 name(s) besides the scope host: *.facebook.com, *.facebook.net, *.fbcdn.net, *.fbsbx.com, *.m.facebook.com, *.messenger.com, *.xx.fbcdn.net, *.xy.fbcdn.net...
+
+### 3. [INFO] Short HSTS max-age (`H2`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** HSTS max-age=15552000 (< 1 year): `max-age=15552000; preload`.
 
-### 2. [LOW] Missing CSP header (`H2`)
+### 4. [INFO] HSTS without includeSubDomains (`H2b`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 3. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 4. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+- **CWE:** CWE-319
+- **Detail:** `max-age=15552000; preload` does not cover subdomains.
 
 ### 5. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://ja-jp.facebook.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://ja-jp.facebook.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 7. [INFO] Server technology disclosure (`H6`)
+### 7. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://ja-jp.facebook.com/ -> https://ja-jp.facebook.com/ (positive check).
+
+### 8. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: proxygen-bolt
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** robots.txt on https://ja-jp.facebook.com/ exposes 44 unique Disallow path(s) (/, /*/plugins/*, /?*next=, /a/bz?, /ajax/)
 
-### 8. [INFO] SPA fallback 200 on /.env (no env data exposed) (`P2`)
+### 9. [INFO] HTTPS homepage returned HTTP 400 (`X2`)
 
-- **CWE:** CWE-1038
-- **Detail:** GET https://ja-jp.facebook.com/.env returns 200 with Facebook SPA headers (CSP/accept-ch); body is HTML application fallback, not an environment file. Informational.
-- **Recommendation:** Review and remediate per CWE guidance.
+- **CWE:** CWE-200
+- **Detail:** https://ja-jp.facebook.com/ responded 400 (passive check only; no further probing).
 
-## Evidence (raw response observations)
+## Reproduction notes
 
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://ja-jp.facebook.com/",
-  "https_status": 200,
-  "content_type": "text/html; charset=\"utf-8\"",
-  "title": "",
-  "path_gitconfig": 404,
-  "path_envfile": 200,
-  "path_securitytxt": 200,
-  "security_txt_found": true,
-  "path_robots": 200,
-  "robots_found": true
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://ja-jp.facebook.com/ final status: 400 (final URL https://ja-jp.facebook.com/).
+- http://ja-jp.facebook.com/ initial status: 301.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-02T23:59:59+00:00.

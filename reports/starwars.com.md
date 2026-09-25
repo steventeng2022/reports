@@ -1,4 +1,4 @@
-# Security Audit Report - starwars.com
+# Security Audit Report — starwars.com
 
 ## Scope and authorization
 
@@ -7,242 +7,87 @@
 | Target | https://starwars.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | starwars.com |
-| Test date | 2026-09-24 22:06 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 8, Info: 6)
+Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | low | H4 | No clickjacking protection | CWE-1023 |
-| 9 | info | A4i | Sensitive paths exist (protected or app shells) | CWE-538 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 12 | info | H6 | Server technology disclosure | CWE-200 |
-| 13 | info | H6 | Server technology disclosure | CWE-200 |
-| 14 | info | R2 | No HTTP->HTTPS redirect (re-verified: redirect present) | CWE-319 |
+| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 9 | info | R1 | robots.txt protected | CWE-200 |
+| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 11 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
 
 ## Detailed findings
 
 ### 1. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** No Strict-Transport-Security header on https://starwars.com/. Clients may connect over plain HTTP on first visit.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 2. [LOW] Missing Content-Security-Policy (`H3`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://starwars.com/; no defense-in-depth against XSS/content injection.
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://starwars.com/; browsers may MIME-sniff responses.
 
-### 4. [LOW] Missing CSP header (`H2`)
+### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://starwars.com/; page may be rendered in a foreign frame.
 
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
+### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for starwars.com lists 92 name(s) besides the scope host: 20th.lucasarts.com, au.starwars.com, battlefornaboo.lucasarts.com, collectables.starwars.com, collectibles.starwars.com, de.starwars.com, demolition.lucasarts.com, dk.starwars.com...
 
-### 6. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 7. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 8. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 9. [INFO] Sensitive paths exist (protected or app shells) (`A4i`)
-
-- **CWE:** CWE-538
-- **Detail:** Paths answering 401/403 or HTML shells: /config.yml (403 protected).
-- **Recommendation:** No immediate action if the paths are genuinely protected; otherwise return a real 404 to unauthenticated probes for paths that should not exist.
-
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Referrer-Policy header on https://starwars.com/; full URL (incl. query strings) is sent as referrer by default.
 
-### 11. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header on https://starwars.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 12. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: AkamaiGHost
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 13. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: AkamaiGHost
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 14. [INFO] No HTTP->HTTPS redirect (re-verified: redirect present) (`R2`)
+### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
 - **CWE:** CWE-319
-- **Detail:** Original probe saw http://starwars.com return 403 without redirect. Re-verified 2026-09-25: http://starwars.com now returns 301 -> https://starwars.com/; the redirect is in place (transient/fixed).
-- **Recommendation:** Add an HTTP->HTTPS redirect (currently returns an error code on port 80).
+- **Detail:** http://starwars.com/ -> https://starwars.com/ (positive check).
 
-## Aggressive probe campaign
+### 9. [INFO] robots.txt protected (`R1`)
 
-**Stage 1 - injection/reflection probes (28 requests):**
+- **CWE:** CWE-200
+- **Detail:** GET /robots.txt returned 403.
 
-- no stage-1 probe hits (all probes negative)
+### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-**Stage 2 - aggressive probe suite v2 (99 requests):**
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 403 on starwars.com.
 
-- sweep: {"high":[],"protected":["/config.yml (403 protected)"]}
+### 11. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
 
-Stage-2 probe log (observed responses):
-- timing base=565ms id=21 search=20
-- boolean b=301/0 t1=403/367 t2=403/367
-- graphql /graphql -> 301
-- graphql /api/graphql -> 301
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 403
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 403
-- trav2 /%2e%2e%00.html -> 301
-- trav2 /static//../../../../../../etc/passwd -> 403
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 403
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 403
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403
-- apicors /api -> 301
-- apicors /api/v1 -> 301
-- apicors /graphql -> 301
-- apicors /rest -> 301
-- apicors /v1 -> 301
+- **CWE:** CWE-200
+- **Detail:** https://starwars.com/ responded 403 (passive check only; no further probing).
 
-**Stage 3 - live parameter harvest, takeover and injection probes (10 requests):**
+## Reproduction notes
 
-- no stage-3 probe hits (all probes negative)
-
-Stage-3 probe log (observed responses):
-- harvest no query params discovered on sampled pages
-- subs no dangling service CNAMEs over 16 subdomains
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_status": 403,
-  "https_status": 403,
-  "content_type": "text/html",
-  "title": "Access Denied",
-  "path_gitconfig": 403,
-  "path_envfile": 403,
-  "path_securitytxt": 403,
-  "path_robots": 403,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 403",
-    "sqli /?id=1%27+OR+1=1-- -> 403",
-    "sqli /?q=%27 -> 403",
-    "sqli /products?filter=%27 -> 403",
-    "sqli /?p=1;-- -> 403",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 403",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 403",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 403",
-    "trav /static/../../../../../../../../etc/passwd -> 403",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 403",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 403",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 403",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 403",
-    "host no reflection -> err",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 403",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 403"
-  ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=565ms id=21 search=20",
-    "boolean b=301/0 t1=403/367 t2=403/367",
-    "graphql /graphql -> 301",
-    "graphql /api/graphql -> 301",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 403",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 403",
-    "trav2 /%2e%2e%00.html -> 301",
-    "trav2 /static//../../../../../../etc/passwd -> 403",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 403",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 403",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 301",
-    "apicors /api/v1 -> 301",
-    "apicors /graphql -> 301",
-    "apicors /rest -> 301",
-    "apicors /v1 -> 301"
-  ],
-  "sweep": {
-    "high": [],
-    "protected": [
-      "/config.yml (403 protected)"
-    ]
-  },
-  "v3_probe_count": 10,
-  "v3_log": [
-    "harvest no query params discovered on sampled pages",
-    "subs no dangling service CNAMEs over 16 subdomains",
-    "cache X-Forwarded-Host not reflected -> 301"
-  ]
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://starwars.com/ final status: 403 (final URL https://starwars.com/).
+- http://starwars.com/ initial status: 301.
+- Certificate: Let's Encrypt YR1, valid until 2026-11-22T03:49:52+00:00.

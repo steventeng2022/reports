@@ -7,118 +7,81 @@
 | Target | https://twitter.com/ |
 | Bug bounty program | [Twitter](https://hackerone.com/twitter) |
 | Listed scope domain | twitter.com |
-| Test date | 2026-09-23 17:36 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **11** (High: 1, Medium: 1, Low: 7, Info: 2)
+Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | X2 | CORS origin reflection | CWE-942 |
-| 2 | medium | R2 | No HTTP->HTTPS redirect | CWE-319 |
-| 3 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 4 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 5 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 6 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 7 | low | H1 | Missing HSTS header | CWE-319 |
-| 8 | low | H2 | Missing CSP header | CWE-1021 |
-| 9 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
-| 11 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 3 | info | C4 | Cookies scoped to parent/wildcard domain | CWE-200 |
+| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 5 | info | H2c | HSTS not preloaded | CWE-319 |
+| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 7 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
+| 8 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 9 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 10 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [HIGH] CORS origin reflection (`X2`)
-
-- **CWE:** CWE-942
-- **Detail:** Server reflects arbitrary Origin in Access-Control-Allow-Origin.
-- **Recommendation:** Echo the Origin only after validating against an allow-list; avoid reflecting untrusted origins.
-
-### 2. [MEDIUM] No HTTP->HTTPS redirect (`R2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://twitter.com returns 520 without redirecting to HTTPS.
-- **Recommendation:** Add an HTTP->HTTPS redirect (currently returns an error code on port 80).
-
-### 3. [LOW] Cookie without HttpOnly flag (`C2`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie guest_id_marketing lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://twitter.com/ without HttpOnly: ct0, gt, guest_id, guest_id_ads, guest_id_marketing, personalization_id. Readable by client-side script.
 
-### 4. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie guest_id_ads lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 5. [LOW] Cookie without HttpOnly flag (`C2`)
+### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie personalization_id lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://twitter.com/ without SameSite=Lax/Strict: __cf_bm, guest_id, guest_id_ads, guest_id_marketing, personalization_id. Cross-site request cookies.
 
-### 6. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie guest_id lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 7. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 8. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 9. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 10. [INFO] Server technology disclosure (`H6`)
+### 3. [INFO] Cookies scoped to parent/wildcard domain (`C4`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** Cookies set with domain beyond twitter.com: .x.com, x.com.
 
-### 11. [INFO] Server technology disclosure (`H6`)
+### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for twitter.com lists 2 name(s) besides the scope host: *.twitter.com, cdn.syndication.twitter.com
+
+### 5. [INFO] HSTS not preloaded (`H2c`)
+
+- **CWE:** CWE-319
+- **Detail:** `max-age=631138519; includeSubdomains` lacks the preload directive.
+
+### 6. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare envoy
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** No Permissions-Policy header on https://twitter.com/; browser features (camera, mic, geolocation) unrestricted.
 
-## Evidence (raw response observations)
+### 7. [INFO] Plain HTTP returns non-redirect status (`N3`)
 
-```json
-{
-  "http_status": 520,
-  "https_status": 301,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 403,
-  "path_envfile": 403,
-  "path_securitytxt": 200,
-  "security_txt_found": true,
-  "path_robots": 200,
-  "robots_found": true
-}
-```
+- **CWE:** CWE-319
+- **Detail:** http://twitter.com/ returns 520 (no redirect to HTTPS).
 
-## Notes
+### 8. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://twitter.com/ exposes 23 unique Disallow path(s) (*, /, /*/analytics, /*/followers, /*/following) and 1 sitemap reference(s)
+
+### 9. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+
+- **CWE:** CWE-200
+- **Detail:** security.txt present on https://twitter.com (532 bytes); contact: https://hackerone.com/twitter
+
+### 10. [INFO] HTTPS root redirects to different host (`X3`)
+
+- **CWE:** CWE-200
+- **Detail:** https://twitter.com/ redirects to https://x.com/.
+
+## Reproduction notes
+
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://twitter.com/ final status: 200 (final URL https://x.com/).
+- http://twitter.com/ initial status: 520.
+- Certificate: Let's Encrypt YR1, valid until 2026-11-12T17:48:01+00:00.

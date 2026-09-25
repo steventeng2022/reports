@@ -1,4 +1,4 @@
-# Security Audit Report - beian.gov.cn
+# Security Audit Report — beian.gov.cn
 
 ## Scope and authorization
 
@@ -7,73 +7,30 @@
 | Target | https://beian.gov.cn/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | beian.gov.cn |
-| Test date | 2026-09-24 14:16 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **1** (High: 0, Medium: 0, Low: 1, Info: 0)
+Total findings: **2** (High: 0, Medium: 0, Low: 0, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | R3 | HTTP endpoint unreachable | CWE-1032 |
+| 1 | info | D0 | Scope host does not resolve in DNS | CWE-200 |
+| 2 | info | X1 | HTTPS homepage unreachable | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] HTTP endpoint unreachable (`R3`)
+### 1. [INFO] Scope host does not resolve in DNS (`D0`)
 
-- **CWE:** CWE-1032
-- **Detail:** http://beian.gov.cn failed: getaddrinfo ENOTFOUND beian.gov.cn
-- **Recommendation:** Serve the site on port 80 with a redirect to HTTPS.
+- **CWE:** CWE-200
+- **Detail:** beian.gov.cn returned no A/AAAA record.
 
-## Aggressive probe campaign
+### 2. [INFO] HTTPS homepage unreachable (`X1`)
 
-**Stage 1 - injection/reflection probes (28 requests):**
+- **CWE:** CWE-200
+- **Detail:** https://beian.gov.cn/: ConnectionError: HTTPSConnectionPool(host='beian.gov.cn', port=443): Max retries exceeded with url: / (Caused by NameResolutionError("HTTPSConnection(host='beian.gov.cn', port=4
 
-- no stage-1 probe hits (all probes negative)
+## Reproduction notes
 
-**Stage 2 - aggressive probe suite v2 (99 requests):**
-
-- no stage-2 probe hits (all probes negative)
-
-Stage-2 probe log (observed responses):
-- timing base=errms id=err search=err
-
-**Stage 3 - live parameter harvest, takeover and injection probes (8 requests):**
-
-- no stage-3 probe hits (all probes negative)
-
-Stage-3 probe log (observed responses):
-- harvest no query params discovered on sampled pages
-- subs no dangling service CNAMEs over 16 subdomains
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_error": "getaddrinfo ENOTFOUND beian.gov.cn",
-  "https_error": "getaddrinfo ENOTFOUND beian.gov.cn",
-  "probe_count": 28,
-  "probe_log": [
-    "sqli-reflect /search?q=%27+OR+1=1-- -> err",
-    "host no reflection -> err"
-  ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=errms id=err search=err",
-    "sweep no hits over 26 paths",
-    "redir2 no hits over 49 requests"
-  ],
-  "v3_probe_count": 8,
-  "v3_log": [
-    "harvest no query params discovered on sampled pages",
-    "subs no dangling service CNAMEs over 16 subdomains"
-  ]
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.

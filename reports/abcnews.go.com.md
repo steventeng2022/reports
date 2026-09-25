@@ -7,221 +7,111 @@
 | Target | https://abcnews.go.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | abcnews.go.com |
-| Test date | 2026-09-24 03:59 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 16, Info: 5)
+Total findings: **15** (High: 0, Medium: 0, Low: 7, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 2 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 3 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 4 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 5 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 6 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 7 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 8 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
-| 9 | low | H1 | Missing HSTS header | CWE-319 |
-| 10 | low | H1 | Missing HSTS header | CWE-319 |
-| 11 | low | H2 | Missing CSP header | CWE-1021 |
-| 12 | low | H2 | Missing CSP header | CWE-1021 |
-| 13 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 14 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 15 | low | H4 | No clickjacking protection | CWE-1023 |
-| 16 | low | H4 | No clickjacking protection | CWE-1023 |
-| 17 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 18 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 19 | info | H6 | Server technology disclosure | CWE-200 |
-| 20 | info | H6 | Server technology disclosure | CWE-200 |
-| 21 | info | I5 | Open redirect candidate refuted (parameter ignored) | CWE-601 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
+| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 4 | low | H1 | Missing HSTS header | CWE-319 |
+| 5 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 6 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 7 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 8 | info | C4 | Cookies scoped to parent/wildcard domain | CWE-200 |
+| 9 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 11 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 12 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 13 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 14 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 15 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie region lacks Secure attribute; transmitted over HTTP.
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 2. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie _dcf lacks Secure attribute; transmitted over HTTP.
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 3. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie SWID lacks Secure attribute; transmitted over HTTP.
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 4. [LOW] Cookie without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie userab_1 lacks Secure attribute; transmitted over HTTP.
-- **Recommendation:** Add the Secure attribute to the cookie.
-
-### 5. [LOW] Cookie without HttpOnly flag (`C2`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie region lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://abcnews.go.com/ without HttpOnly: SWID, _dcf, region, userab_1. Readable by client-side script.
 
-### 6. [LOW] Cookie without HttpOnly flag (`C2`)
+### 2. [LOW] Cookies set without Secure flag (`C2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Cookie _dcf lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **CWE:** CWE-614
+- **Detail:** Set on https://abcnews.go.com/ without Secure: SWID, _dcf, region, userab_1. Will be transmitted over HTTP if the site is reachable cleartext.
 
-### 7. [LOW] Cookie without HttpOnly flag (`C2`)
+### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
 - **CWE:** CWE-1004
-- **Detail:** Cookie SWID lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
+- **Detail:** Set on https://abcnews.go.com/ without SameSite=Lax/Strict: SWID, _dcf, region, userab_1. Cross-site request cookies.
 
-### 8. [LOW] Cookie without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** Cookie userab_1 lacks HttpOnly; readable by client-side JS.
-- **Recommendation:** Add the HttpOnly attribute to the cookie.
-
-### 9. [LOW] Missing HSTS header (`H1`)
+### 4. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** No Strict-Transport-Security header on https://abcnews.go.com/. Clients may connect over plain HTTP on first visit.
 
-### 10. [LOW] Missing HSTS header (`H1`)
+### 5. [LOW] Missing Content-Security-Policy (`H3`)
+
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://abcnews.go.com/; no defense-in-depth against XSS/content injection.
+
+### 6. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
+
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://abcnews.go.com/; browsers may MIME-sniff responses.
+
+### 7. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+
+- **CWE:** CWE-1021
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://abcnews.go.com/; page may be rendered in a foreign frame.
+
+### 8. [INFO] Cookies scoped to parent/wildcard domain (`C4`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookies set with domain beyond abcnews.go.com: abcnews.com.
+
+### 9. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for abcnews.go.com lists 2 name(s) besides the scope host: app.abcnews.go.com, www.abcnews.go.com
+
+### 10. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header on https://abcnews.go.com/; full URL (incl. query strings) is sent as referrer by default.
+
+### 11. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://abcnews.go.com/; browser features (camera, mic, geolocation) unrestricted.
+
+### 12. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **Detail:** http://abcnews.go.com/ -> https://abcnews.go.com/ (positive check).
 
-### 11. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 12. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 13. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 14. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 15. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 16. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 17. [INFO] Missing Referrer-Policy (`H5`)
+### 13. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** robots.txt on https://abcnews.go.com/ exposes 46 unique Disallow path(s) (/, /*carousel/, /*popup?, /*videoLogin?, /0/) and 3 sitemap reference(s)
 
-### 18. [INFO] Missing Referrer-Policy (`H5`)
+### 14. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** GET /.well-known/security.txt returned 403 on abcnews.go.com.
 
-### 19. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: CloudFront
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 20. [INFO] Server technology disclosure (`H6`)
+### 15. [INFO] HTTPS root redirects to different host (`X3`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: Apache/2.4.6 (CentOS) PHP/5.4.16
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** https://abcnews.go.com/ redirects to https://abcnews.com/.
 
-### 21. [INFO] Open redirect candidate refuted (parameter ignored) (`I5`)
+## Reproduction notes
 
-- **CWE:** CWE-601
-- **Detail:** https://abcnews.go.com/?next=301s to the abcnews.com homepage (200); the next parameter is dropped, not followed.
-- **Recommendation:** Review and remediate per CWE guidance.
-
-## Evidence (raw response observations)
-
-```json
-{
-  "http_status": 301,
-  "http_redirect_to": "https://abcnews.go.com/",
-  "https_status": 301,
-  "content_type": "text/html; charset=iso-8859-1",
-  "title": "301 Moved Permanently",
-  "path_gitconfig": 404,
-  "path_envfile": 403,
-  "path_securitytxt": 301,
-  "path_robots": 200,
-  "robots_found": true,
-  "probe_count": 25,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 301",
-    "sqli /?id=1%27+OR+1=1-- -> 301",
-    "sqli /?q=%27 -> 301",
-    "sqli /products?filter=%27 -> 404",
-    "sqli /?p=1;-- -> 301",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 301",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 403",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 400",
-    "trav /static/../../../../../../../../etc/passwd -> 403",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 403",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 403",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 301",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 301",
-    "host no reflection -> err",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404"
-  ],
-  "open_redirect": {
-    "path": "/?next=https%3A%2F%2Fevil-cors.example%2Fx",
-    "location": "https://abcnews.com/?next=https%3A%2F%2Fevil-cors.example%2Fx"
-  }
-}
-```
-
-## Notes
-
-- All tests used a standard browser User-Agent and did not exceed ~8 requests per site.
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://abcnews.go.com/ final status: 200 (final URL https://abcnews.com/).
+- http://abcnews.go.com/ initial status: 301.
+- Certificate: Amazon Amazon RSA 2048 M04, valid until 2027-01-31T23:59:59+00:00.

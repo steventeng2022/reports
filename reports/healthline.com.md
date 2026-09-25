@@ -7,54 +7,93 @@
 | Target | https://healthline.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | healthline.com |
-| Test date | 2026-09-24 12:05 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 0, Low: 4, Info: 2)
+Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H2 | Missing CSP header | CWE-1021 |
-| 2 | low | H4 | No clickjacking protection | CWE-1023 |
-| 3 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
-| 4 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-| 5 | info | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 6 | info | H2c | HSTS not preloaded | CWE-319 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 10 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 11 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 12 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on https://www.healthline.com/
-
-### 2. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on https://www.healthline.com/
-
-### 3. [LOW] Cookies without HttpOnly flag (`C2`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
 - **CWE:** CWE-1004
-- **Detail:** blab set without HttpOnly on https://www.healthline.com/
+- **Detail:** Set on https://healthline.com/ without HttpOnly: blab. Readable by client-side script.
 
-### 4. [LOW] Host header alters response (vhost behavior) (`I12`)
+### 2. [LOW] Missing Content-Security-Policy (`H3`)
 
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: healthline.com + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://healthline.com/; no defense-in-depth against XSS/content injection.
 
-### 5. [INFO] Missing X-Content-Type-Options (`H3`)
+### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
 
-- **CWE:** CWE-1194
-- **Detail:** No X-Content-Type-Options on https://www.healthline.com/
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://healthline.com/; browsers may MIME-sniff responses.
 
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+
+- **CWE:** CWE-1021
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://healthline.com/; page may be rendered in a foreign frame.
+
+### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
+
+- **CWE:** CWE-1382
+- **Detail:** Certificate for healthline.com lists 1 name(s) besides the scope host: *.healthline.com
+
+### 6. [INFO] HSTS not preloaded (`H2c`)
+
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000; includeSubDomains` lacks the preload directive.
+
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://www.healthline.com/
+- **Detail:** No Referrer-Policy header on https://healthline.com/; full URL (incl. query strings) is sent as referrer by default.
+
+### 8. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://healthline.com/; browser features (camera, mic, geolocation) unrestricted.
+
+### 9. [INFO] sitemap.xml discloses URL inventory (`M1`)
+
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://healthline.com/ lists 6 URLs.
+
+### 10. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://healthline.com/ -> https://healthline.com/ (positive check).
+
+### 11. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://healthline.com/ exposes 40 unique Disallow path(s) (#, */inline$, */null$, /, /*/hm-test) and 2 sitemap reference(s)
+
+### 12. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+
+- **CWE:** CWE-200
+- **Detail:** security.txt present on https://healthline.com (38 bytes)
 
 ## Reproduction notes
 
-- Scanned 2026-09-24 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://healthline.com/ final status: 200 (final URL https://www.healthline.com/).
+- http://healthline.com/ initial status: 301.
+- Certificate: Amazon Amazon RSA 2048 M04, valid until 2027-03-05T23:59:59+00:00.

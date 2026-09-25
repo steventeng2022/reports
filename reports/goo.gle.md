@@ -1,4 +1,4 @@
-# Security Audit Report - goo.gle
+# Security Audit Report — goo.gle
 
 ## Scope and authorization
 
@@ -7,203 +7,105 @@
 | Target | https://goo.gle/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | goo.gle |
-| Test date | 2026-09-24 14:16 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 4, Info: 5)
+Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H2 | Missing CSP header | CWE-1021 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 7 | info | H6 | Server technology disclosure | CWE-200 |
-| 8 | info | H6 | Server technology disclosure | CWE-200 |
-| 9 | info | I7 | Host header reflection (transient, not reproduced) | CWE-200 |
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
+| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 4 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 5 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 6 | info | C4 | Cookies scoped to parent/wildcard domain | CWE-200 |
+| 7 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 8 | info | H2c | HSTS not preloaded | CWE-319 |
+| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 10 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 11 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 12 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 13 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 14 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing CSP header (`H2`)
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-1004
+- **Detail:** Set on https://goo.gle/ without HttpOnly: SEARCH_SAMESITE, __Secure-STRP. Readable by client-side script.
 
-### 2. [LOW] Missing CSP header (`H2`)
+### 2. [LOW] Cookies set without Secure flag (`C2`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-614
+- **Detail:** Set on https://goo.gle/ without Secure: SEARCH_SAMESITE. Will be transmitted over HTTP if the site is reachable cleartext.
 
-### 3. [LOW] Missing X-Content-Type-Options (`H3`)
+### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-1004
+- **Detail:** Set on https://goo.gle/ without SameSite=Lax/Strict: NID. Cross-site request cookies.
 
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
+### 4. [LOW] Missing Content-Security-Policy (`H3`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://goo.gle/; no defense-in-depth against XSS/content injection.
 
-### 5. [INFO] Missing Referrer-Policy (`H5`)
+### 5. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://goo.gle/; browsers may MIME-sniff responses.
 
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Cookies scoped to parent/wildcard domain (`C4`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** Cookies set with domain beyond goo.gle: .google.com.
 
-### 7. [INFO] Server technology disclosure (`H6`)
+### 7. [INFO] HSTS without includeSubDomains (`H2b`)
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: nginx
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000` does not cover subdomains.
 
-### 8. [INFO] Server technology disclosure (`H6`)
+### 8. [INFO] HSTS not preloaded (`H2c`)
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: nginx
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000` lacks the preload directive.
 
-### 9. [INFO] Host header reflection (transient, not reproduced) (`I7`)
+### 9. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** Original observation: GET https://goo.gle/ with Host: evil-host.example echoed the Host value in the response body. Re-verified 2026-09-24 (3 attempts): http://goo.gle/ -> 302 https://goo.gle/ (39-byte body, no echo); https://goo.gle/ -> 301 https://www.google.com (57-byte body, no echo); X-Forwarded-Host: evil-cors.example -> 301, no echo. Reflection is transient/experimental and not reproducible on re-verify.
-- **Recommendation:** Echo Host only from an allow-list; use X-Forwarded-Host only behind a trusted proxy.
+- **Detail:** No Referrer-Policy header on https://goo.gle/; full URL (incl. query strings) is sent as referrer by default.
 
-## Aggressive probe campaign
+### 10. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
-**Stage 1 - injection/reflection probes (28 requests):**
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://goo.gle/ lists 0 URLs.
 
-- host_reflect: true
+### 11. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-**Stage 2 - aggressive probe suite v2 (99 requests):**
+- **CWE:** CWE-319
+- **Detail:** http://goo.gle/ -> https://goo.gle/ (positive check).
 
-- robots_disallow: []
+### 12. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-Stage-2 probe log (observed responses):
-- timing base=230ms id=225 search=250
-- boolean b=301/57 t1=301/57 t2=301/57
-- graphql /graphql -> 302
-- graphql /api/graphql -> 301
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 301
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 301
-- trav2 /%2e%2e%00.html -> 400
-- trav2 /static//../../../../../../etc/passwd -> 301
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 301
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 301
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301
-- apicors /api -> 410
-- apicors /api/v1 -> 301
-- apicors /graphql -> 302
-- apicors /rest -> 302
-- apicors /v1 -> 302
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://goo.gle/ exposes 0 unique Disallow path(s)
 
-**Stage 3 - live parameter harvest, takeover and injection probes (8 requests):**
+### 13. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
-- no stage-3 probe hits (all probes negative)
+- **CWE:** CWE-200
+- **Detail:** security.txt present on https://goo.gle (228975 bytes)
 
-Stage-3 probe log (observed responses):
-- harvest no query params discovered on sampled pages
-- subs no dangling service CNAMEs over 16 subdomains
+### 14. [INFO] HTTPS root redirects to different host (`X3`)
 
-## Evidence (raw response observations)
+- **CWE:** CWE-200
+- **Detail:** https://goo.gle/ redirects to https://www.google.com.
 
-```json
-{
-  "http_status": 302,
-  "http_redirect_to": "https://goo.gle/",
-  "https_status": 301,
-  "content_type": "text/html; charset=utf-8",
-  "title": "",
-  "path_gitconfig": 301,
-  "path_envfile": 302,
-  "path_securitytxt": 301,
-  "path_robots": 200,
-  "robots_found": true,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 302",
-    "sqli /?id=1%27+OR+1=1-- -> 301",
-    "sqli /?q=%27 -> 301",
-    "sqli /products?filter=%27 -> 302",
-    "sqli /?p=1;-- -> 400",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 302",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 301",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 400",
-    "trav /static/../../../../../../../../etc/passwd -> 301",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 301",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 302",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 301",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 302",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302"
-  ],
-  "host_reflect": true,
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=230ms id=225 search=250",
-    "boolean b=301/57 t1=301/57 t2=301/57",
-    "graphql /graphql -> 302",
-    "graphql /api/graphql -> 301",
-    "sweep no hits over 26 paths",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 301",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 301",
-    "trav2 /%2e%2e%00.html -> 400",
-    "trav2 /static//../../../../../../etc/passwd -> 301",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 301",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 301",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 410",
-    "apicors /api/v1 -> 301",
-    "apicors /graphql -> 302",
-    "apicors /rest -> 302",
-    "apicors /v1 -> 302"
-  ],
-  "robots_disallow": [],
-  "v3_probe_count": 8,
-  "v3_log": [
-    "harvest no query params discovered on sampled pages",
-    "subs no dangling service CNAMEs over 16 subdomains",
-    "cache X-Forwarded-Host not reflected -> 301"
-  ]
-}
-```
+## Reproduction notes
 
-## Notes
-
-- All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).
-- No credentials were used; no state was modified on the target.
-- Findings are reported against the public program scope; submission through the program tracker is pending.
+- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://goo.gle/ final status: 200 (final URL https://www.google.com).
+- http://goo.gle/ initial status: 302.
+- Certificate: Let's Encrypt YR1, valid until 2026-11-06T12:52:19+00:00.
