@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| calendly.com | 31 | 0 | 1 | 25 | 5 | top-websites gist (no active program match) |
 | plaza.rakuten.co.jp | 16 | 0 | 0 | 14 | 2 | top-websites gist (no active program match) |
 | inc.com | 3 | 0 | 0 | 1 | 2 | top-websites gist (no active program match) |
 | google.it | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
