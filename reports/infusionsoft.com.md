@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **38** (High: 0, Medium: 0, Low: 35, Info: 3)
+Total findings: **41** (High: 0, Medium: 1, Low: 35, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -246,6 +246,27 @@ Total findings: **38** (High: 0, Medium: 0, Low: 35, Info: 3)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://www.infusionsoft.com/
+
+| 39 | medium | I31 | Pre-auth param-preserving meta-refresh redirector chain (infusionsoft -> keap -> accounts.infusionsoft) | CWE-668 |
+| 40 | info | I32 | Cloudflare WAF: full <script>/</title> sequences 403 in query, individual special chars pass + reflect URL-encoded | CWE-200 |
+| 41 | info | I33 | keap.com JSON-LD "url" property reflects request URL (URL-encoded, no breakout) | CWE-200 |
+
+## Detailed findings (deep-dive addendum 2026-09-25)
+
+### 39. [MEDIUM] Pre-auth param-preserving meta-refresh redirector chain (I31)
+
+- **CWE:** CWE-668
+- **Detail:** Verified 2026-09-25: ANY query on the www.infusionsoft.com apex is preserved verbatim in a 301 meta-refresh to keap.com - e.g. https://www.infusionsoft.com?cb=X -> <meta http-equiv="refresh" content="0;url='https://keap.com?cb=X'" /> with the X also reflected (URL-encoded) in the 301 page <title> ("Redirecting to https://keap.com?cb=X"). The same pattern exists at /keap/login?redirect=X -> keap.com/keap/login?redirect=X. Third hop: https://keap.com/login?redirect=X -> 301 meta-refresh -> https://accounts.infusionsoft.com/?redirect=X (parameter preserved into the auth host). The chain moves arbitrary parameters from the marketing apex into the login/account host before authentication. If accounts.infusionsoft.com performs an open redirect on /?redirect= post-login (auth-state re-test pending), this becomes a pre-auth phishing chain. File as medium until the post-login hop is confirmed.
+
+### 40. [INFO] Cloudflare WAF behavior on the redirector (I32)
+
+- **CWE:** CWE-200
+- **Detail:** Queries containing full <script> or </title> sequences return 403 (Cloudflare "Attention Required!"), while individual special characters - < (cb=%3c), >, space, newline, ", backslash, = - all pass and are reflected URL-ENCODed in the <title> (a%22b stays a%22b; %3C stays %3C). The encoding neutralizes the reflected chars; the WAF only blocks multi-char payload signatures.
+
+### 41. [INFO] keap.com JSON-LD url reflection (I33)
+
+- **CWE:** CWE-200
+- **Detail:** https://keap.com?cb=X (200, 290KB) reflects the request URL in the JSON-LD block: "url":"http://keap.com/?cb=X" inside a <script type="application/ld+json">. Quote/backslash/newline tests (a%22b, a%5cb, a%0ab) all remain percent-encoded inside the JSON string - no string breakout.
 
 ## Reproduction notes
 

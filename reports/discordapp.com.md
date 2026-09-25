@@ -12,13 +12,13 @@
 
 ## Summary
 
-Total findings: **32** (High: 0, Medium: 3, Low: 25, Info: 4)
+Total findings: **33** (High: 0, Medium: 1, Low: 27, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | medium | I4 | Reflected input in HTML attribute context | CWE-79 |
-| 3 | medium | I4 | Reflected input in HTML attribute context | CWE-79 |
+| 2 | low | I4 | Input reflected in search input value attr - fully entity-encoded on retest | CWE-79 |
+| 3 | low | I4 | Input reflected in search input value attr - fully entity-encoded on retest | CWE-79 |
 | 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -56,12 +56,12 @@ Total findings: **32** (High: 0, Medium: 3, Low: 25, Info: 4)
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /channels/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
 
-### 2. [MEDIUM] Reflected input in HTML attribute context (`I4`)
+### 2. [LOW] Input reflected in search input value attr - fully entity-encoded on retest (`I4`)
 
 - **CWE:** CWE-79
-- **Detail:** Parameter query on https://discord.com/search reflects the token inside a quoted attribute; escape boundary should be verified (quote/angle breakout tested).
+- **Detail:** Parameter query on https://discord.com/search reflects the token inside the VISIBLE search <input value="...">. RETEST 2026-09-25 raw-char matrix: " -> &quot;, ' -> &#x27;, > -> &gt; (all entity-encoded inside the double-quoted value attr); </script> and onfocus payloads 404-page (no reflection). No attribute breakout; downgraded medium -> low. Note discordapp.com itself is a redirect alias to discord.com (report kept under the listed domain).
 
-### 3. [MEDIUM] Reflected input in HTML attribute context (`I4`)
+### 3. [LOW] Input reflected in search input value attr - fully entity-encoded on retest (`I4`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter query on https://discord.com/search reflects the token inside a quoted attribute; escape boundary should be verified (quote/angle breakout tested).
@@ -210,6 +210,13 @@ Total findings: **32** (High: 0, Medium: 3, Low: 25, Info: 4)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://discord.com/.well-known/openid-configuration returned 200 (499 bytes) with a matching signature.
+
+| 33 | info | I27 | Full request URL reflected URL-encoded in og:url meta on 404 pages (no breakout) | CWE-200 |
+
+### 33. [INFO] og:url meta reflection on 404 pages (I27)
+
+- **CWE:** CWE-200
+- **Detail:** 2026-09-25 deep-dive: https://discord.com/newage?redirect=X (404) reflects the full request URL in <meta property="og:url" content="https://discord.com/newage?redirect=X" />. Raw-char matrix: " -> a%22b, ' -> a%27b, > -> a%3Eb, <script> -> %3Cscript%3E - all remain percent-encoded inside the content attribute. No meta/attribute breakout; documented for completeness. (discord.com/login?return_to= is NOT reflected; /download?redirect= not reflected.)
 
 ## Reproduction notes
 

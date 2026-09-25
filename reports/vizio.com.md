@@ -12,34 +12,34 @@
 
 ## Summary
 
-Total findings: **29** (High: 24, Medium: 1, Low: 2, Info: 2)
+Total findings: **29** (High: 0, Medium: 25, Low: 2, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 2 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 3 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 4 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 5 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 6 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 7 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 8 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 9 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 10 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 11 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 12 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 13 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 14 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 15 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 16 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 17 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 18 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 19 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 20 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 21 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 22 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 23 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 24 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
+| 1 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 2 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 3 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 4 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 5 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 6 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 7 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 8 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 9 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 10 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 11 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 12 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 13 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 14 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 15 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 16 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 17 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 18 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 19 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 20 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 21 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 22 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 23 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
+| 24 | medium | I1 | Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) | CWE-79 |
 | 25 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
 | 26 | low | H2 | Missing CSP header | CWE-1021 |
 | 27 | low | H4 | No clickjacking protection | CWE-1023 |
@@ -48,122 +48,122 @@ Total findings: **29** (High: 24, Medium: 1, Low: 2, Info: 2)
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 1. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
-- **Detail:** Parameter url on https://www.vizio.com/go reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
+- **Detail:** Parameter url on https://www.vizio.com/go reflected unescaped input inside <script> during the scan window. RETEST 2026-09-25 (10 retries + 12-path sweep via Cloudflare): /go /r /link /out /u /share /view /forward /redirect /s /results all return 404 (309B, Server: cloudflare); /search 301 -> /en/search?url=<tok> (200, 162KB) but the token is NOT reflected in the /en/search body. Route appears to have been removed or is region/A-B gated. Downgraded 24x HIGH -> MEDIUM per rule 4 (no live round-trip at retest time); re-test /go before submission - if the JS-context reflection returns, this cluster is a strong High.
 
-### 2. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 2. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter redirect on https://www.vizio.com/go reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 3. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 3. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.vizio.com/r reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 4. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 4. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter to on https://www.vizio.com/r reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 5. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 5. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.vizio.com/link reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 6. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 6. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.vizio.com/out reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 7. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 7. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.vizio.com/u reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 8. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 8. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.vizio.com/share reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 9. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 9. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.vizio.com/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 10. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 10. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter query on https://www.vizio.com/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 11. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 11. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.vizio.com/s reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 12. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 12. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.vizio.com/ reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 13. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 13. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.vizio.com/results reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 14. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 14. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.vizio.com/redirect reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 15. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 15. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.vizio.com/go reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 16. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 16. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter redirect on https://www.vizio.com/go reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 17. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 17. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.vizio.com/r reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 18. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 18. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter to on https://www.vizio.com/r reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 19. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 19. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.vizio.com/link reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 20. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 20. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.vizio.com/out reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 21. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 21. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.vizio.com/u reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 22. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 22. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.vizio.com/share reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 23. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 23. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.vizio.com/view reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 24. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 24. [MEDIUM] Reflected XSS in JavaScript context - intermittent route (retest 2026-09-25) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter to on https://www.vizio.com/forward reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").

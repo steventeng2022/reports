@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 8, Info: 4)
+Total findings: **13** (High: 0, Medium: 0, Low: 8, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 8, Info: 4)
 | 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
 | 11 | info | H6 | Server technology disclosure | CWE-200 |
 | 12 | info | H6 | Server technology disclosure | CWE-200 |
+| 13 | info | H7 | Site-wide JS client challenge on www (bot-challenge catch-all; ELMAH/console 200s refuted) | CWE-693 |
 
 ## Detailed findings
 
@@ -108,6 +109,13 @@ Total findings: **12** (High: 0, Medium: 0, Low: 8, Info: 4)
 - **CWE:** CWE-200
 - **Detail:** Server header reveals: Varnish
 - **Recommendation:** Consider hiding or shortening the Server header.
+
+### 13. [INFO] Site-wide JS client challenge on www.drupal.org (bot-challenge catch-all) (`H7`)
+
+- **CWE:** CWE-693
+- **Detail:** During testing on 2026-09-25 ~09:00 UTC, every request to www.drupal.org returned the identical 3038-byte "Client Challenge" page (md5 ef34477109bd), including `/`, `/elmah.axd`, `/console`, `/robots.txt`, `/trace.axd` and random 404 paths, regardless of User-Agent (browser, Googlebot, curl, Drupal). The challenge page is a JavaScript-gated page with assets under `/_fs-ch-1T1wmsGaOgGaSxcX/` and a strict inline CSP. Apex drupal.org still 302-redirects via Varnish.
+- **Context:** All non-JS clients (crawlers, RSS readers, API consumers) receive the challenge page instead of content for the duration of the challenge. An external ELMAH `/elmah.axd` 200 + `/console` 200 lead from a parallel sweep was verified against this catch-all and REFUTED: byte-identical page on all paths, no actual ELMAH handler present.
+- **Recommendation:** If the challenge is site-wide at test time, confirm non-JS clients (crawlers, robots.txt consumers) are not degraded; expose real /robots.txt to crawlers or allowlist bot IPs. If transient, note as a site-wide challenge incident.
 
 ## Aggressive probe campaign
 
