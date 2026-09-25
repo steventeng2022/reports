@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| ranker.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
 | lh5.ggpht.com | 13 | 0 | 0 | 3 | 10 | top-websites gist (no active program match) |
 | creativemarket.com | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
 | 1.bp.blogspot.com | 13 | 0 | 0 | 3 | 10 | top-websites gist (no active program match) |
