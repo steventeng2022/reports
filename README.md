@@ -6,6 +6,7 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| bizjournals.com | 32 | 0 | 0 | 29 | 3 | top-websites gist (no active program match) |
 | buymeacoffee.com | 35 | 0 | 1 | 31 | 3 | top-websites gist (no active program match) |
 | es.wikipedia.org | 20 | 1 | 1 | 16 | 2 | top-websites gist (no active program match) |
 | vizio.com | 29 | 24 | 1 | 2 | 2 | top-websites gist (no active program match) |
