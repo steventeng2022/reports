@@ -536,3 +536,4 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | disqus.com | 9 | 0 | 1 | 4 | 4 | top-websites gist (no active program match) |
 | gofundme.com | 15 | 0 | 5 | 7 | 3 | top-websites gist (no active program match) |
 | pixlr.com | 38 | 0 | 0 | 29 | 9 | top-websites gist (no active program match) |
+| design.google | 4 | 0 | 0 | 1 | 3 | top-websites gist (no active program match) |
