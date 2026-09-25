@@ -1,4 +1,4 @@
-Total findings across all sites: 5755
+Total findings across all sites: 5694
 # Bounty Hunt - Findings Index
 
 Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the intersection of the provided top-websites list and active public bug-bounty program scopes.
@@ -534,3 +534,4 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | pond5.com | 7 | 0 | 1 | 4 | 2 | top-websites gist (no active program match) |
 | linktr.ee | 5 | 0 | 2 | 3 | 0 | top-websites gist (no active program match) |
 | disqus.com | 9 | 0 | 1 | 4 | 4 | top-websites gist (no active program match) |
+| gofundme.com | 15 | 0 | 5 | 7 | 3 | top-websites gist (no active program match) |
