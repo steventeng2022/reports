@@ -7,7 +7,7 @@
 | Target | https://fr.wikipedia.org/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | fr.wikipedia.org |
-| Test date | 2026-09-25 04:28 UTC |
+| Test date | 2026-09-25 06:31 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -69,7 +69,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 04:28 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 06:31 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://fr.wikipedia.org/ final status: 200 (final URL https://fr.wikipedia.org/wiki/Wikip%C3%A9dia:Accueil_principal).
 - http://fr.wikipedia.org/ initial status: 301.
 - Certificate: Let's Encrypt YE2, valid until 2026-11-03T19:15:40+00:00.

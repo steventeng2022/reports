@@ -7,7 +7,7 @@
 | Target | https://tf1.fr/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | tf1.fr |
-| Test date | 2026-09-25 04:28 UTC |
+| Test date | 2026-09-25 06:31 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -81,7 +81,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 04:28 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 06:31 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://tf1.fr/ final status: 403 (final URL https://www.tf1.fr/).
 - http://tf1.fr/ initial status: 301.
 - Certificate: GlobalSign nv-sa GlobalSign RSA OV SSL CA 2018, valid until 2027-02-23T10:16:28+00:00.

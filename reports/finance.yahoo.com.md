@@ -7,7 +7,7 @@
 | Target | https://finance.yahoo.com/ |
 | Bug bounty program | [Yahoo!](https://app.intigriti.com/programs/yahoo/yahoobugbounty/detail) |
 | Listed scope domain | finance.yahoo.com |
-| Test date | 2026-09-25 04:28 UTC |
+| Test date | 2026-09-25 06:31 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -87,7 +87,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 04:28 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 06:31 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://finance.yahoo.com/ final status: 200 (final URL https://finance.yahoo.com/).
 - http://finance.yahoo.com/ initial status: 301.
 - Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-07T23:59:59+00:00.

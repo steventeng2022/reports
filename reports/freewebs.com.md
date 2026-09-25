@@ -7,7 +7,7 @@
 | Target | https://freewebs.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | freewebs.com |
-| Test date | 2026-09-25 04:28 UTC |
+| Test date | 2026-09-25 06:31 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -114,7 +114,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
 ### 16. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://freewebs.com (191040 bytes)
+- **Detail:** security.txt present on https://freewebs.com (191166 bytes)
 
 ### 17. [INFO] HTTPS root redirects to different host (`X3`)
 
@@ -123,7 +123,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 04:28 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 06:31 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://freewebs.com/ final status: 200 (final URL https://www.vistaprint.com/digital-marketing/webs-shutdown).
 - http://freewebs.com/ initial status: 301.
 - Certificate: Google Trust Services WE1, valid until 2026-11-14T23:50:56+00:00.

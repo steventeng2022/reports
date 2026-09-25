@@ -7,7 +7,7 @@
 | Target | https://squareup.com/ |
 | Bug bounty program | [Square](https://bugcrowd.com/square) |
 | Listed scope domain | squareup.com |
-| Test date | 2026-09-25 04:28 UTC |
+| Test date | 2026-09-25 06:31 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -32,17 +32,17 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 ### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
 - **CWE:** CWE-1004
-- **Detail:** Set on https://squareup.com/ without HttpOnly: exp_var_dg_mqls_multi_2p_v1, exp_var_pw_salesbot_entry_point_placement_experiment, exp_var_pw_signup_personalization_pricing_page_en_us_experiment_v2, exp_var_pw_signup_pricing_plan_subnav_and_cta_ctr_us_en_pricing_experiment, squareGeo. Readable by client-side script.
+- **Detail:** Set on https://squareup.com/ without HttpOnly: exp_var_pw_salesbot_entry_point_placement_experiment, exp_var_pw_signup_personalization_pricing_page_en_us_experiment_v2, exp_var_pw_signup_pricing_plan_subnav_and_cta_ctr_us_en_pricing_experiment, squareGeo. Readable by client-side script.
 
 ### 2. [LOW] Cookies set without Secure flag (`C2`)
 
 - **CWE:** CWE-614
-- **Detail:** Set on https://squareup.com/ without Secure: exp_var_dg_mqls_multi_2p_v1, exp_var_pw_salesbot_entry_point_placement_experiment, exp_var_pw_signup_personalization_pricing_page_en_us_experiment_v2, exp_var_pw_signup_pricing_plan_subnav_and_cta_ctr_us_en_pricing_experiment. Will be transmitted over HTTP if the site is reachable cleartext.
+- **Detail:** Set on https://squareup.com/ without Secure: exp_var_pw_salesbot_entry_point_placement_experiment, exp_var_pw_signup_personalization_pricing_page_en_us_experiment_v2, exp_var_pw_signup_pricing_plan_subnav_and_cta_ctr_us_en_pricing_experiment. Will be transmitted over HTTP if the site is reachable cleartext.
 
 ### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
 - **CWE:** CWE-1004
-- **Detail:** Set on https://squareup.com/ without SameSite=Lax/Strict: exp_var_dg_mqls_multi_2p_v1, exp_var_pw_salesbot_entry_point_placement_experiment, exp_var_pw_signup_personalization_pricing_page_en_us_experiment_v2, exp_var_pw_signup_pricing_plan_subnav_and_cta_ctr_us_en_pricing_experiment. Cross-site request cookies.
+- **Detail:** Set on https://squareup.com/ without SameSite=Lax/Strict: exp_var_pw_salesbot_entry_point_placement_experiment, exp_var_pw_signup_personalization_pricing_page_en_us_experiment_v2, exp_var_pw_signup_pricing_plan_subnav_and_cta_ctr_us_en_pricing_experiment. Cross-site request cookies.
 
 ### 4. [LOW] Missing Content-Security-Policy (`H3`)
 
@@ -81,7 +81,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 04:28 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 06:31 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://squareup.com/ final status: 200 (final URL https://squareup.com/us/en).
 - http://squareup.com/ initial status: 301.
 - Certificate: Google Trust Services WE1, valid until 2026-10-31T19:56:17+00:00.

@@ -7,54 +7,69 @@
 | Target | https://bing.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | bing.com |
-| Test date | 2026-09-25 04:25 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 06:31 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 0, Low: 4, Info: 2)
+Total findings: **8** (High: 0, Medium: 0, Low: 4, Info: 4)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | T3 | HTTP redirect does not go to HTTPS | CWE-319 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H4 | No clickjacking protection | CWE-1023 |
-| 5 | info | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 1 | low | H1 | Missing HSTS header | CWE-319 |
+| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
+| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
 | 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] HTTP redirect does not go to HTTPS (`T3`)
+### 1. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** GET http://bing.com/ redirected to http://www.bing.com/ (not an HTTPS URL).
+- **Detail:** No Strict-Transport-Security header on https://bing.com/. Clients may connect over plain HTTP on first visit.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 2. [LOW] Missing Content-Security-Policy (`H3`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security on https://www.bing.com/?toWww=1&redig=C693351F041D49E08BBBB7337B3E80F3
+- **CWE:** CWE-79
+- **Detail:** No CSP header on https://bing.com/; no defense-in-depth against XSS/content injection.
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
+
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://bing.com/; browsers may MIME-sniff responses.
+
+### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on https://www.bing.com/?toWww=1&redig=C693351F041D49E08BBBB7337B3E80F3
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://bing.com/; page may be rendered in a foreign frame.
 
-### 4. [LOW] No clickjacking protection (`H4`)
+### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on https://www.bing.com/?toWww=1&redig=C693351F041D49E08BBBB7337B3E80F3
-
-### 5. [INFO] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No X-Content-Type-Options on https://www.bing.com/?toWww=1&redig=C693351F041D49E08BBBB7337B3E80F3
+- **CWE:** CWE-1382
+- **Detail:** Certificate for bing.com lists 32 name(s) besides the scope host: *.api.bing.com, *.api.bing.net, *.appex.bing.com, *.bing.com, *.bingapis.com, *.cn.bing.com, *.cn.bing.net, *.m.bing.com...
 
 ### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://www.bing.com/?toWww=1&redig=C693351F041D49E08BBBB7337B3E80F3
+- **Detail:** No Referrer-Policy header on https://bing.com/; full URL (incl. query strings) is sent as referrer by default.
+
+### 7. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://bing.com/; browser features (camera, mic, geolocation) unrestricted.
+
+### 8. [INFO] HTTPS root redirects to different host (`X3`)
+
+- **CWE:** CWE-200
+- **Detail:** https://bing.com/ redirects to https://www.bing.com:443/?toWww=1&redig=826D5469A13D48968C6B46B4EC6809F0.
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- Scanned 2026-09-25 06:31 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://bing.com/ final status: 203 (final URL https://www.bing.com:443/?toWww=1&redig=826D5469A13D48968C6B46B4EC6809F0).
+- http://bing.com/ initial status: 301.
+- Certificate: Microsoft Corporation Microsoft TLS G2 RSA CA OCSP 04, valid until 2027-02-28T17:05:46+00:00.

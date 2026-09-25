@@ -7,7 +7,7 @@
 | Target | https://login.microsoftonline.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | login.microsoftonline.com |
-| Test date | 2026-09-25 04:28 UTC |
+| Test date | 2026-09-25 06:31 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -33,7 +33,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 ### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
 - **CWE:** CWE-1004
-- **Detail:** Set on https://login.microsoftonline.com/ without SameSite=Lax/Strict: esctx-7CH9DjQR6g, fpc, x-ms-gateway-slice. Cross-site request cookies.
+- **Detail:** Set on https://login.microsoftonline.com/ without SameSite=Lax/Strict: esctx-KEj2AFbbo74, fpc, x-ms-gateway-slice. Cross-site request cookies.
 
 ### 2. [LOW] Missing Content-Security-Policy (`H3`)
 
@@ -87,7 +87,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 04:28 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://login.microsoftonline.com/ final status: 200 (final URL https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&redirect_uri=https%3A%2F%2Fwww.office.com%2Flandingv2&response_type=code%20id_token&scope=openid%20profile%20https%3A%2F%2Fwww.office.com%2Fv2%2FOfficeHome.All&response_mode=form_post&nonce=639259073872609022.YTc2MjI5MDItNjZhNS00YjIxLThjMGMtMTZjMmIyNzE3MjRjNDMzZjhmNjAtY2E3Ny00OTE2LTliY2ItYmYwN2E0YTE1NGIz&ui_locales=en-US&mkt=en-US&client-request-id=95631c76-33cf-4365-ad07-066078e677a6&siwa=1&siwg=1&state=ShD25qFL4pTNiw4Y3e23Po75nyFQ33B9UV_UH7vXKcSdFZI_h2B9Gszr1x8K9KuiULFtycvuOrB0_fgNAn9SvuQ51ApRUP3z05d_7Nca2f8MUiEyVRagoXAWR_2tKzwITRlc2Vkhx2Da74D6tQobQQsWFGNXnP5AeHw5-AHeN32L4OOwruQkvSOkFjP-8zFWDTwpjbYCKapzzIj2cjyOZK2kZpyzEsPMfQNfPxILnuZg0aTiPxIQuOJ7B5SBONdRb4pNbJRxmWrsONYIgLGSiEtCV7dYLbPDpsebPCMV8FZzmMGZJ_eI-oAh45X7BMN_yVfena47uvZ5-DQVCt7XCRirDCHa1JwRbmVsiPmjHKa8_JZ920ILk3yJuST0lm5bF2KZ0ti8vFuC7Bckm2SFJ1l6EX6IfAoutjZHjL7te2weS8Z6Mc7g1dZ_JQ_SOVXA&x-client-SKU=ID_NET8_0&x-client-ver=8.16.0.0).
+- Scanned 2026-09-25 06:31 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://login.microsoftonline.com/ final status: 200 (final URL https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&redirect_uri=https%3A%2F%2Fwww.office.com%2Flandingv2&response_type=code%20id_token&scope=openid%20profile%20https%3A%2F%2Fwww.office.com%2Fv2%2FOfficeHome.All&response_mode=form_post&nonce=639259147785708868.ZTA3ZDUxMzUtNzAzYy00ODUyLWEwOWMtMGY1ZTJlMzExMmJlZTcyODQwY2ItYmQ2Mi00ZDliLTk1MmQtM2VhMmQ2MDAyM2Q1&ui_locales=en-US&mkt=en-US&client-request-id=5fd1e2b6-4624-40eb-87c9-aa97abc0976c&siwa=1&siwg=1&state=PtgJdZNdk3dT7-VzvTf-M5rifp5jOi_Fk2ZlDWdfcW39CWNXs7cZ7I9CuVT9JPNYUxxc8eE13ZlDQY8Uau6gWoY5o9asSVCpIK043Ljx_-qfG-gNB_hmgfArWZ99IvvMyv51QWg2BxihiPIlcci8bH9WU39pq2ocoROFxGnutCHFp07V6zDjxlHgVIfuU1Gy2xIJj6SZcUhaiK1yzPNlmuCWnkjyvQJp8hG3IfFtsgnrJF0S4GmDb95F4mt4gVTXZqt3Co48vmvgqho2ZRG2xka_42MS7RqceWlOHJNym7mq1TvX5fRSSMq9YO5WqtxQiz8W652GQn6oa2HjZvdyGzzBz1sd2BgCcaCsvTkmWk0Vgc-a_whL1SgVeeh5dREdiwrapkhpJ7ohXYwYNMsGdjjWn_ZwRq-Jd_YC0WUeRe00Wh6JMUIMhW6XhcyjvoZQ&x-client-SKU=ID_NET8_0&x-client-ver=8.16.0.0).
 - http://login.microsoftonline.com/ initial status: 302.
-- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-12-17T23:59:59+00:00.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-11-21T23:59:59+00:00.
