@@ -528,3 +528,4 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | webmd.com | 36 | 19 | 0 | 5 | 12 | top-websites gist (no active program match) |
 | youtube-nocookie.com | 3 | 0 | 0 | 2 | 1 | Google |
 | thinkgeek.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
+| funnyordie.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
