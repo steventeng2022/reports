@@ -531,3 +531,4 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | funnyordie.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | overcast.fm | 1 | 0 | 0 | 0 | 1 | top-websites gist (no active program match) |
 | allmusic.com | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
+| pond5.com | 7 | 0 | 1 | 4 | 2 | top-websites gist (no active program match) |
