@@ -1,5 +1,8 @@
 # Security Audit Report - time.com
 
+> **Consolidated report** - union of two independent passes on the same target: random bounty hunt phase 24 (agent-random, 2026-09-25) and aggressive injection hunt wave-6 (agent-aggressive, 2026-09-24/25). Findings below are the deduplicated union (matched by ID + finding name); per-pass provenance is in the reproduction notes.
+
+
 ## Scope and authorization
 
 | Item | Value |
@@ -12,102 +15,123 @@
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 6, Info: 6)
+Total findings: **15** (High: 0, Medium: 1, Low: 7, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
+| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | low | H4 | No clickjacking protection | CWE-1023 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
 | 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | info | A10b | Sitemap enumerates URLs | CWE-200 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
-| 11 | info | H7 | X-Powered-By disclosure | CWE-200 |
-| 12 | info | P3 | Missing security.txt | CWE-1038 |
+| 7 | low | H4 | No clickjacking protection | CWE-1023 |
+| 8 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
+| 9 | info | A10b | Sitemap enumerates URLs | CWE-200 |
+| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 11 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 12 | info | H6 | Server technology disclosure | CWE-200 |
+| 13 | info | H7 | X-Powered-By disclosure | CWE-200 |
+| 14 | info | P3 | Missing security.txt | CWE-1038 |
+| 15 | info | T2 | TLS certificate expiring within 18 days | CWE-295 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** Dangling subdomain served by third-party platform
+- **Recommendation:** Review and remediate per CWE guidance.
+
+### 2. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
 - **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
 - **Context:** http response
 - **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 2. [LOW] Missing CSP header (`H2`)
+### 3. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
 - **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
 - **Context:** http response
 - **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 4. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
 - **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
 - **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
+### 5. [LOW] Missing X-Content-Type-Options (`H3`)
 
 - **CWE:** CWE-1194
 - **Detail:** No nosniff directive; browsers may MIME-sniff responses.
 - **Context:** http response
 - **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 5. [LOW] No clickjacking protection (`H4`)
+### 6. [LOW] No clickjacking protection (`H4`)
 
 - **CWE:** CWE-1023
 - **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
 - **Context:** http response
 - **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 6. [LOW] No clickjacking protection (`H4`)
+### 7. [LOW] No clickjacking protection (`H4`)
 
 - **CWE:** CWE-1023
 - **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
 - **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 7. [INFO] Sitemap enumerates URLs (`A10b`)
+### 8. [LOW] Host header alters response (vhost behavior) (`I12`)
+
+- **CWE:** CWE-918
+- **Detail:** Host header alters response (vhost behavior)
+- **Recommendation:** Review and remediate per CWE guidance.
+
+### 9. [INFO] Sitemap enumerates URLs (`A10b`)
 
 - **CWE:** CWE-200
 - **Detail:** /sitemap.xml lists 5602 URLs; sensitive-looking entries: none.
 - **Recommendation:** Remove or protect internal/sensitive URLs from the public sitemap.
 
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 10. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
 - **Context:** http response
 - **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 11. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
 - **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 10. [INFO] Server technology disclosure (`H6`)
+### 12. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
 - **Detail:** Server header reveals: Varnish
 - **Context:** http response
 - **Recommendation:** Consider hiding or shortening the Server header.
 
-### 11. [INFO] X-Powered-By disclosure (`H7`)
+### 13. [INFO] X-Powered-By disclosure (`H7`)
 
 - **CWE:** CWE-200
 - **Detail:** X-Powered-By: Next.js
 - **Recommendation:** Remove the X-Powered-By header.
 
-### 12. [INFO] Missing security.txt (`P3`)
+### 14. [INFO] Missing security.txt (`P3`)
 
 - **CWE:** CWE-1038
 - **Detail:** No .well-known/security.txt found (RFC 9116).
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 15. [INFO] TLS certificate expiring within 18 days (`T2`)
+
+- **CWE:** CWE-295
+- **Detail:** TLS certificate expiring within 18 days
+- **Recommendation:** Review and remediate per CWE guidance.
 
 ## Aggressive probe campaign
 
@@ -264,7 +288,8 @@ Stage-3 probe log (observed responses):
     "branch",
     "source",
     "hl"
-  ]
+  ],
+  "source": " + merged aggressive-injection-hunt pass (agent-aggressive, wave-6, 2026-09-25)"
 }
 ```
 
