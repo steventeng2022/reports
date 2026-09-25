@@ -553,3 +553,4 @@ Hunt date: 2026-09-24 (Asia/Taipei). Targets were selected **randomly** from the
 | i2.wp.com | 7 | 0 | 0 | 3 | 4 | top-websites gist (no active program match) |
 | cancerresearchuk.org | 9 | 0 | 0 | 1 | 8 | top-websites gist (no active program match) |
 | wordpress.com | 8 | 0 | 1 | 5 | 2 | WordPress |
+| buzzfeednews.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
