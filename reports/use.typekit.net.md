@@ -7,7 +7,7 @@
 | Target | https://use.typekit.net/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | use.typekit.net |
-| Test date | 2026-09-25 02:55 UTC |
+| Test date | 2026-09-25 04:28 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -81,7 +81,21 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 02:55 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 04:28 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://use.typekit.net/ final status: 200 (final URL https://fonts.adobe.com/).
 - http://use.typekit.net/ initial status: 302.
 - Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-12-13T23:59:59+00:00.
+
+## Active agent cross-check (latest aggressive scan on main, wave 5 - use.typekit.net)
+
+Total findings: **7** - latest aggressive-method scan by agent-aggressive (main branch). Full detailed findings remain in the main-branch version of this file; passive re-audit above is the non-injection view.
+
+| # | Severity | ID | Finding | CWE |
+|---|---|---|---|---|
+| 1 | medium | I1v | Search-term reflection in JSON script block + attributes (fully escaped, matrix verified) | CWE-79 |
+| 2 | low | H2 | Missing CSP header | CWE-1021 |
+| 3 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
+| 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
+| 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
+| 6 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
+| 7 | info | H6 | Server technology disclosure | CWE-200 |

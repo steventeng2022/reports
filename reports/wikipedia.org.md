@@ -7,12 +7,12 @@
 | Target | https://wikipedia.org/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | wikipedia.org |
-| Test date | 2026-09-25 02:55 UTC |
+| Test date | 2026-09-25 04:28 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
+Total findings: **9** (High: 0, Medium: 0, Low: 4, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -24,8 +24,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 | 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
 | 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 10 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 9 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
@@ -69,19 +68,14 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 - **CWE:** CWE-319
 - **Detail:** http://wikipedia.org/ -> https://wikipedia.org/ (positive check).
 
-### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt on https://wikipedia.org/ exposes 410 unique Disallow path(s) (#, /, /api/, /trap/, /w/) and 1 sitemap reference(s)
-
-### 10. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+### 9. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
 - **Detail:** security.txt present on https://wikipedia.org (222 bytes); contact: mailto:security@wikimedia.org
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 02:55 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 04:28 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://wikipedia.org/ final status: 200 (final URL https://www.wikipedia.org/).
 - http://wikipedia.org/ initial status: 301.
 - Certificate: Let's Encrypt YE2, valid until 2026-11-03T19:15:40+00:00.

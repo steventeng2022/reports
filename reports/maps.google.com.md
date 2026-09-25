@@ -7,7 +7,7 @@
 | Target | https://maps.google.com/ |
 | Bug bounty program | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | Listed scope domain | maps.google.com |
-| Test date | 2026-09-25 02:55 UTC |
+| Test date | 2026-09-25 04:28 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -75,7 +75,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 02:55 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 04:28 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://maps.google.com/ final status: 200 (final URL https://www.google.com/maps).
 - http://maps.google.com/ initial status: 302.
 - Certificate: Google Trust Services WR2, valid until 2026-12-03T19:21:52+00:00.

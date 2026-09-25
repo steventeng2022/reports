@@ -7,12 +7,12 @@
 | Target | https://sketchfab.com/ |
 | Bug bounty program | [Epic Games](https://hackerone.com/epicgames) |
 | Listed scope domain | sketchfab.com |
-| Test date | 2026-09-25 02:55 UTC |
+| Test date | 2026-09-25 04:28 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
+Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 | 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 10 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
 | 11 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 12 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
@@ -85,9 +86,14 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 - **CWE:** CWE-200
 - **Detail:** robots.txt on https://sketchfab.com/ exposes 3 unique Disallow path(s) (/admin*, /i/*, /models/*/ar-redirect)
 
+### 12. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 403 on sketchfab.com.
+
 ## Reproduction notes
 
-- Scanned 2026-09-25 02:55 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 04:28 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://sketchfab.com/ final status: 200 (final URL https://sketchfab.com/).
 - http://sketchfab.com/ initial status: 301.
 - Certificate: Amazon Amazon RSA 2048 M04, valid until 2027-01-15T23:59:59+00:00.

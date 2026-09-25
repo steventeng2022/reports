@@ -7,7 +7,7 @@
 | Target | https://ncbi.nlm.nih.gov/ |
 | Bug bounty program | [U.S. Dept of Health & Human Services (HHS)](https://www.hhs.gov/vulnerability-disclosure-policy/index.html) |
 | Listed scope domain | ncbi.nlm.nih.gov |
-| Test date | 2026-09-25 02:55 UTC |
+| Test date | 2026-09-25 04:28 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -57,7 +57,7 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 02:55 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 04:28 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://ncbi.nlm.nih.gov/ final status: 200 (final URL https://ncbi.nlm.nih.gov/).
 - http://ncbi.nlm.nih.gov/ initial status: 301.
 - Certificate: GoDaddy.com GoDaddy TLS Intermediate CA DV - R1v1, valid until 2027-03-14T16:31:19+00:00.

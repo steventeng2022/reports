@@ -7,7 +7,7 @@
 | Target | https://1drv.ms/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | 1drv.ms |
-| Test date | 2026-09-25 02:55 UTC |
+| Test date | 2026-09-25 04:28 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -105,7 +105,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 02:55 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 04:28 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://1drv.ms/ final status: 404 (final URL https://1drv.ms/).
 - http://1drv.ms/ initial status: 404.
 - Certificate: Microsoft Corporation Microsoft TLS G2 RSA CA OCSP 04, valid until 2027-03-19T06:06:01+00:00.

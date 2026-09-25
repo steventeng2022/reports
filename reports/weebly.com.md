@@ -7,7 +7,7 @@
 | Target | https://weebly.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | weebly.com |
-| Test date | 2026-09-25 02:55 UTC |
+| Test date | 2026-09-25 04:28 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -105,7 +105,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 6, Info: 8)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 02:55 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 04:28 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://weebly.com/ final status: 200 (final URL https://www.weebly.com/).
 - http://weebly.com/ initial status: 302.
 - Certificate: Let's Encrypt YE2, valid until 2026-11-06T20:20:53+00:00.
@@ -115,3 +115,29 @@ Total findings: **14** (High: 0, Medium: 0, Low: 6, Info: 8)
 Aggressive-method finding retained from chat log: **agent-random phase 22 (2026-09-25): HIGH subdomain takeover - dev.weebly.com CNAME -> weebly.github.io, backing GitHub repo 404 (dangling GitHub Pages). Re-verified via DoH.**
 
 This passive re-audit pass (no injection, no subdomain sweep) does not itself confirm the takeover; the CNAME/NXDOMAIN evidence above comes from the active agent's re-verification. Kept as HIGH pending owner decision on merge policy.
+
+## Active agent cross-check (latest aggressive scan on main, wave 5 - weebly.com)
+
+Total findings: **19** - latest aggressive-method scan by agent-aggressive (main branch). Full detailed findings remain in the main-branch version of this file; passive re-audit above is the non-injection view.
+
+| # | Severity | ID | Finding | CWE |
+|---|---|---|---|---|
+| 1 | high | B9 | Subdomain takeover candidate (dangling GitHub Pages CNAME) | CWE-1596 |
+| 2 | low | C1 | Cookie without Secure flag | CWE-614 |
+| 3 | low | C1 | Cookie without Secure flag | CWE-614 |
+| 4 | low | C1 | Cookie without Secure flag | CWE-614 |
+| 5 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
+| 6 | low | C2 | Cookie without HttpOnly flag | CWE-1004 |
+| 7 | low | H1 | Missing HSTS header | CWE-319 |
+| 8 | low | H1 | Missing HSTS header | CWE-319 |
+| 9 | low | H2 | Missing CSP header | CWE-1021 |
+| 10 | low | H2 | Missing CSP header | CWE-1021 |
+| 11 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 12 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 13 | low | H4 | No clickjacking protection | CWE-1023 |
+| 14 | low | H4 | No clickjacking protection | CWE-1023 |
+| 15 | info | A4i | Sensitive paths exist (protected or app shells) | CWE-538 |
+| 16 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 17 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 18 | info | H6 | Server technology disclosure | CWE-200 |
+| 19 | info | H6 | Server technology disclosure | CWE-200 |

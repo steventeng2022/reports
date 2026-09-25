@@ -7,7 +7,7 @@
 | Target | https://gitlab.com/ |
 | Bug bounty program | [GitLab](https://hackerone.com/gitlab) |
 | Listed scope domain | gitlab.com |
-| Test date | 2026-09-25 02:55 UTC |
+| Test date | 2026-09-25 04:28 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -86,7 +86,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 ### 11. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
 - **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://gitlab.com/ lists 1892 URLs.
+- **Detail:** sitemap.xml on https://gitlab.com/ lists 1928 URLs.
 
 ### 12. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
@@ -105,7 +105,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 02:55 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 04:28 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://gitlab.com/ final status: 200 (final URL https://about.gitlab.com/).
 - http://gitlab.com/ initial status: 301.
 - Certificate: Sectigo Limited Sectigo Public Server Authentication CA DV R36, valid until 2026-11-10T23:59:59+00:00.

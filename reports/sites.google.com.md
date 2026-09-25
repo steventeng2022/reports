@@ -7,7 +7,7 @@
 | Target | https://sites.google.com/ |
 | Bug bounty program | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | Listed scope domain | sites.google.com |
-| Test date | 2026-09-25 02:55 UTC |
+| Test date | 2026-09-25 04:28 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -54,16 +54,16 @@ Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
 ### 6. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://sites.google.com (310079 bytes)
+- **Detail:** security.txt present on https://sites.google.com (305075 bytes)
 
 ### 7. [INFO] HTTPS root redirects to different host (`X3`)
 
 - **CWE:** CWE-200
-- **Detail:** https://sites.google.com/ redirects to https://accounts.google.com/v3/signin/identifier?continue=https://sites.google.com/&followup=https://sites.google.com/&osid=1&passive=1209600&service=wise&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S-703914188:1790305046827977.
+- **Detail:** https://sites.google.com/ redirects to https://accounts.google.com/v3/signin/identifier?continue=https://sites.google.com/&followup=https://sites.google.com/&osid=1&passive=1209600&service=wise&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S1023466057:1790310622500183.
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 02:55 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://sites.google.com/ final status: 200 (final URL https://accounts.google.com/v3/signin/identifier?continue=https://sites.google.com/&followup=https://sites.google.com/&osid=1&passive=1209600&service=wise&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S-703914188:1790305046827977).
+- Scanned 2026-09-25 04:28 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://sites.google.com/ final status: 200 (final URL https://accounts.google.com/v3/signin/identifier?continue=https://sites.google.com/&followup=https://sites.google.com/&osid=1&passive=1209600&service=wise&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S1023466057:1790310622500183).
 - http://sites.google.com/ initial status: 301.
-- Certificate: Google Trust Services WE2, valid until 2026-12-03T19:22:00+00:00.
+- Certificate: Google Trust Services WR2, valid until 2026-12-03T19:21:52+00:00.

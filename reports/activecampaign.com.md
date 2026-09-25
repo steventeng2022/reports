@@ -7,7 +7,7 @@
 | Target | https://activecampaign.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | activecampaign.com |
-| Test date | 2026-09-25 02:55 UTC |
+| Test date | 2026-09-25 04:28 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -75,7 +75,30 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 02:55 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 04:28 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://activecampaign.com/ final status: 200 (final URL https://www.activecampaign.com/).
 - http://activecampaign.com/ initial status: 301.
 - Certificate: DigiCert Inc GeoTrust EV RSA CA G2, valid until 2026-10-26T23:59:59+00:00.
+
+## Active agent cross-check (latest aggressive scan on main, wave 5 - activecampaign.com)
+
+Total findings: **16** - latest aggressive-method scan by agent-aggressive (main branch). Full detailed findings remain in the main-branch version of this file; passive re-audit above is the non-injection view.
+
+| # | Severity | ID | Finding | CWE |
+|---|---|---|---|---|
+| 1 | medium | I1v | URL params reflected in Cloudflare challenge JS string (safely escaped, verified) | CWE-79 |
+| 2 | medium | I6v | Campaign redirect endpoint /go?url= (challenge-gated, account re-test pending) | CWE-601 |
+| 28 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
+| 29 | medium | I20 | CORS reflects attacker-controlled Origin (preflight) | CWE-942 |
+| 30 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
+| 31 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
+| 32 | medium | I20 | CORS reflects attacker-controlled Origin (preflight) | CWE-942 |
+| 33 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
+| 34 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 35 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 36 | low | H2 | Missing CSP header | CWE-1021 |
+| 37 | low | H4 | No clickjacking protection | CWE-1023 |
+| 38 | low | I22 | Protected path listed in robots.txt | CWE-538 |
+| 39 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
+| 40 | info | T2 | TLS certificate expiring within 33 days | CWE-295 |
+| 41 | info | H5 | Missing Referrer-Policy | CWE-200 |

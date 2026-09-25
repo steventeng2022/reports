@@ -7,7 +7,7 @@
 | Target | https://telegram.me/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | telegram.me |
-| Test date | 2026-09-25 02:55 UTC |
+| Test date | 2026-09-25 04:28 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -84,7 +84,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 ### 11. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://telegram.me (19863 bytes)
+- **Detail:** security.txt present on https://telegram.me (19862 bytes)
 
 ### 12. [INFO] HTTPS root redirects to different host (`X3`)
 
@@ -93,7 +93,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 02:55 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 04:28 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://telegram.me/ final status: 200 (final URL https://telegram.org/).
 - http://telegram.me/ initial status: 301.
 - Certificate: GoDaddy.com, Inc. Go Daddy Secure Certificate Authority - G2, valid until 2026-10-21T13:09:49+00:00.
