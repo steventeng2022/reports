@@ -1,17 +1,8 @@
+Total findings across all sites: 5738
 # Bounty Hunt - Findings Index
 
 Hunt dates: 2026-09-24 to 2026-09-25 (Asia/Taipei). This repository combines the original scan results with the 2026-09-25 **passive / non-intrusive re-audit**. Passive checks used TLS, HTTP headers, cookie attributes, redirects, well-known files, DNS, and certificate SAN data without parameter injection, form submission, or authenticated sessions. Where a passive report replaced an active scan, the latest pre-merge active report is preserved in a collapsible appendix.
 
-**Indexed reports: 586**
-
-**Total primary findings across all sites: 5733** (High: 0, Medium: 12, Low: 1658, Info: 4063)
-
-| Site | Findings | High | Med | Low | Info | Program |
-|---|---:|---:|---:|---:|---:|---|
-| 1.bp.blogspot.com | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
-| 1.usa.gov | 9 | 0 | 0 | 1 | 8 | [TTS Bug Bounty](https://hackerone.com/tts) |
-| 1drv.ms | 14 | 0 | 0 | 3 | 11 | top-websites gist (no active program match) |
-| 2.bp.blogspot.com | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
 | 3.bp.blogspot.com | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
 | 4.bp.blogspot.com | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
 | 7-zip.org | 9 | 0 | 0 | 4 | 5 | top-websites gist (no active program match) |
