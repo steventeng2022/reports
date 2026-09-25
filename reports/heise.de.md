@@ -7,7 +7,7 @@
 | Target | https://heise.de/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | heise.de |
-| Test date | 2026-09-25 13:34 UTC |
+| Test date | 2026-09-25 15:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -61,7 +61,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
 ### 7. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
 - **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://heise.de/ lists 1818 URLs.
+- **Detail:** sitemap.xml on https://heise.de/ lists 1819 URLs.
 
 ### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
@@ -75,7 +75,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 13:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://heise.de/ final status: 200 (final URL https://www.heise.de/).
 - http://heise.de/ initial status: 301.
 - Certificate: Let's Encrypt YR1, valid until 2026-12-01T22:23:03+00:00.

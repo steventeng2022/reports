@@ -7,7 +7,7 @@
 | Target | https://skype.com/ |
 | Bug bounty program | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
 | Listed scope domain | skype.com |
-| Test date | 2026-09-25 13:34 UTC |
+| Test date | 2026-09-25 15:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -81,7 +81,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 0, Info: 10)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 13:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://skype.com/ final status: 200 (final URL https://teams.live.com/free?source=skype).
 - http://skype.com/ initial status: 301.
 - Certificate: Microsoft Corporation Microsoft TLS G2 RSA CA OCSP 10, valid until 2026-12-13T07:05:27+00:00.

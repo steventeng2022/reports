@@ -7,7 +7,7 @@
 | Target | https://docker.com/ |
 | Bug bounty program | Docker |
 | Listed scope domain | docker.com |
-| Test date | 2026-09-25 13:34 UTC |
+| Test date | 2026-09-25 15:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -69,7 +69,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 13:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://docker.com/ final status: 200 (final URL https://www.docker.com/).
 - http://docker.com/ initial status: 301.
 - Certificate: Let's Encrypt YR1, valid until 2026-10-28T10:32:23+00:00.
@@ -81,10 +81,10 @@ Total findings: **9** - latest aggressive-method scan by agent-aggressive (main 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 3 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 4 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 5 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 2 | low | S1 | test.docker.com - live S3 (Docker install script) on retest | CWE-916 |
+| 3 | low | S1 | beta.docker.com - 301 to www.docker.com on retest | CWE-916 |
+| 4 | low | S1 | status.docker.com - 301 to dockerstatus.com on retest | CWE-916 |
+| 5 | low | S1 | docs.docker.com - live S3 (Docker Docs) on retest | CWE-916 |
 | 6 | low | H2 | Missing CSP header | CWE-1021 |
 | 7 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
 | 8 | info | T2 | TLS certificate expiring within 34 days | CWE-295 |

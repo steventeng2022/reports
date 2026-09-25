@@ -7,12 +7,12 @@
 | Target | https://cbs.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | cbs.com |
-| Test date | 2026-09-25 13:34 UTC |
+| Test date | 2026-09-25 15:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
+Total findings: **9** (High: 0, Medium: 0, Low: 4, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,7 +25,6 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 | 7 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
 | 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
 | 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 10 | info | X2 | HTTPS homepage returned HTTP 406 | CWE-200 |
 
 ## Detailed findings
 
@@ -74,14 +73,9 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 - **CWE:** CWE-200
 - **Detail:** robots.txt on https://cbs.com/ exposes 52 unique Disallow path(s) (/casting/includes/, /cbs_cares/includes/, /cbs_evening_news/includes/, /classics/30_days_of_classics/includes/, /classics/beauty_and_the_beast/includes/) and 1 sitemap reference(s)
 
-### 10. [INFO] HTTPS homepage returned HTTP 406 (`X2`)
-
-- **CWE:** CWE-200
-- **Detail:** https://cbs.com/ responded 406 (passive check only; no further probing).
-
 ## Reproduction notes
 
-- Scanned 2026-09-25 13:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://cbs.com/ final status: 406 (final URL https://www.cbs.com/).
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://cbs.com/ final status: 200 (final URL https://www.cbs.com/).
 - http://cbs.com/ initial status: 301.
 - Certificate: Let's Encrypt YE1, valid until 2026-12-07T00:46:32+00:00.

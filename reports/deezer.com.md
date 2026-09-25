@@ -7,7 +7,7 @@
 | Target | https://deezer.com/ |
 | Bug bounty program | [Deezer](https://yeswehack.com/programs/deezer-bug-bounty-program-2019) |
 | Listed scope domain | deezer.com |
-| Test date | 2026-09-25 13:34 UTC |
+| Test date | 2026-09-25 15:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -87,7 +87,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 13:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://deezer.com/ final status: 403 (final URL https://www.deezer.com/).
 - http://deezer.com/ initial status: 301.
 - Certificate: Gandi SAS GandiCert, valid until 2027-01-30T23:59:59+00:00.

@@ -7,7 +7,7 @@
 | Target | https://upwork.com/ |
 | Bug bounty program | [Upwork](https://bugcrowd.com/upwork) |
 | Listed scope domain | upwork.com |
-| Test date | 2026-09-25 13:34 UTC |
+| Test date | 2026-09-25 15:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -44,7 +44,7 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
 ### 4. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
 - **CWE:** CWE-319
-- **Detail:** http://upwork.com/ -> https://www.upwork.com (positive check).
+- **Detail:** http://upwork.com/ -> https://upwork.com/ (positive check).
 
 ### 5. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
@@ -63,7 +63,7 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 13:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://upwork.com/ final status: 403 (final URL https://upwork.com/).
 - http://upwork.com/ initial status: 301.
 - Certificate: Google Trust Services WE1, valid until 2026-12-07T05:52:39+00:00.

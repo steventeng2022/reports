@@ -7,7 +7,7 @@
 | Target | https://developer.chrome.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | developer.chrome.com |
-| Test date | 2026-09-25 13:34 UTC |
+| Test date | 2026-09-25 15:44 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -81,7 +81,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 0, Info: 10)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 13:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://developer.chrome.com/ final status: 200 (final URL https://developer.chrome.com/).
 - http://developer.chrome.com/ initial status: 301.
 - Certificate: Google Trust Services WE2, valid until 2026-12-03T19:22:33+00:00.
