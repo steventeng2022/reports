@@ -7,90 +7,339 @@
 | Target | https://fiverr.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | fiverr.com |
-| Test date | 2026-09-26 06:48 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-26 14:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 2, Low: 6, Info: 4)
+Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
-| 2 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H4 | No clickjacking protection | CWE-1023 |
-| 5 | low | C1 | Cookies without Secure flag | CWE-614 |
-| 6 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
-| 7 | low | I22 | Protected path listed in robots.txt | CWE-538 |
-| 8 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-| 9 | info | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | I26 | humans.txt exposed (team/contact enumeration) | CWE-200 |
-| 12 | info | I26 | security.txt exposed (public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | PRT8080 | Alternate web service (port 8080) reachable | CWE-200 |
+| 3 | info | PRT8443 | Alternate web service (port 8443) reachable | CWE-200 |
+| 4 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 5 | low | H2 | Missing CSP header | CWE-1021 |
+| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 7 | low | H4 | No clickjacking protection | CWE-1023 |
+| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 11 | info | H6 | Server technology disclosure | CWE-200 |
+| 12 | info | P8 | Missing security.txt | CWE-1038 |
+| 13 | info | CT1 | 44 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 14 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
-### 1. [MEDIUM] CORS reflects attacker-controlled Origin (`I20`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-942
-- **Detail:** Request to https://www.fiverr.com/ with Origin: null returned Access-Control-Allow-Origin: null with Access-Control-Allow-Credentials: true. Browsers will expose cross-origin responses to any origin the attacker chooses.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [MEDIUM] CORS reflects attacker-controlled Origin (`I20`)
+### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
-- **CWE:** CWE-942
-- **Detail:** Request to https://www.fiverr.com/graphql with Origin: null returned Access-Control-Allow-Origin: null with Access-Control-Allow-Credentials: true. Browsers will expose cross-origin responses to any origin the attacker chooses.
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 104.18.114.47:8080 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 104.18.114.47:8443 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 4. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: cloudflare; Cloudflare CDN/WAF
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 5. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on https://www.fiverr.com/
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 4. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on https://www.fiverr.com/
-
-### 5. [LOW] Cookies without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** go_back_to_fiverr_url, logged_out_currency, flashes, _pxhd set without Secure on https://www.fiverr.com/
-
-### 6. [LOW] Cookies without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** u_guid, go_back_to_fiverr_url, logged_out_currency, flashes, _pxhd set without HttpOnly on https://www.fiverr.com/
-
-### 7. [LOW] Protected path listed in robots.txt (`I22`)
-
-- **CWE:** CWE-538
-- **Detail:** robots.txt disallows /categories/Postcards which returns 403, indicating a hidden/protected resource exists at that path.
-
-### 8. [LOW] Host header alters response (vhost behavior) (`I12`)
-
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: fiverr.com + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
-
-### 9. [INFO] Missing X-Content-Type-Options (`H3`)
+### 6. [LOW] Missing X-Content-Type-Options (`H3`)
 
 - **CWE:** CWE-1194
-- **Detail:** No X-Content-Type-Options on https://www.fiverr.com/
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+
+### 8. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://www.fiverr.com/
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 11. [INFO] humans.txt exposed (team/contact enumeration) (`I26`)
-
-- **CWE:** CWE-200
-- **Detail:** GET https://www.fiverr.com/humans.txt returned 200 (158 bytes) with a matching signature.
-
-### 12. [INFO] security.txt exposed (public vulnerability disclosure policy) (`I26`)
+### 9. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** GET https://www.fiverr.com/.well-known/security.txt returned 200 (29 bytes) with a matching signature.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 10. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-26 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 11. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: cloudflare
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 12. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 13. [INFO] 44 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: dev.fiverr.com, okteto.dev.fiverr.com, pci-internal.dev.fiverr.com, pci.dev.fiverr.com, pro.dev.fiverr.com
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+### 14. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+
+- **CWE:** CWE-200
+- **Detail:** Historical subdomains no longer have A/AAAA records: pci-internal.dev.fiverr.com; content may still be served via virtual-host fallback.
+- **Recommendation:** Reclaim or delete dangling subdomains to reduce virtual-hosting attack surface.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "fiverr.com",
+  "dns": {
+    "a": [
+      "104.18.114.47",
+      "104.18.113.47"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "alt2.aspmx.l.google.com (pref 30)",
+      "aspmx.l.google.com (pref 10)",
+      "aspmx3.googlemail.com (pref 50)",
+      "aspmx2.googlemail.com (pref 40)",
+      "alt1.aspmx.l.google.com (pref 20)"
+    ],
+    "ns": [
+      "sid.ns.cloudflare.com.",
+      "lucy.ns.cloudflare.com."
+    ],
+    "spf": [
+      "00D7z00000Zok0H=1TB7z0000000Q0v",
+      "google-site-verification=kMxO4LGDSjWFroQsa4yAFrJqPmPKg1S-LQ6RUC10DqQ",
+      "wiz-domain-verification=5c2bc898460351b783ced51189ad2f3d7ec3a8a6d63f2dc26fa3ec4123d899ab",
+      "apple-domain-verification=qnipzrtidRJDoQCh",
+      "jai1f598eosu9g2ua6hdcpvo5r",
+      "fastly-domain-delegation-j93rv73ms7qpmtzhqhqq-883244-2025-02-18",
+      "facebook-domain-verification=mzxc9iigaciqjvtj28n064sk2rzbk5",
+      "v=spf1 ip4:34.192.34.210 ip4:34.192.87.38 ip4:34.243.203.200 include:sendgrid.net include:mail.zendesk.com include:_spf.google.com include:_spf.salesforce.com include:spf1.fiverr.com -all",
+      "google-site-verification=OjzIGtAACARGfq-pzfMWJMxPn6MgwCqnz8SuJ0agnGs",
+      "google-site-verification=O55kJ9s5kFZ4ZBKNCc0ZoJn40YyB7yM_vONo2l3W_pc",
+      "google-site-verification=ijrZ6Yqf-IkTyWct0jRahvbn9D3kphesRnUe4VZT9dE",
+      "anthropic-domain-verification-nh998a=YsbxIDUYEOhBI910nAo65cY2R",
+      "sending_domain1079702=fe376d47978ba73b85655072c1359a2bde21692a90cdd2ac949ec76c9f5643f0",
+      "ZOOM_verify_t3nnvUw_QNuEQ4zcJbNWvg",
+      "atlassian-domain-verification=an+ckXl/FPR7+1gsMUQxtq4syuZoBklOsT5vcFXtDtvx9PN0bsiMTfVAGRTmOOWT",
+      "8faqpd2tgvlfjq9an0q8311pv4",
+      "miro-verification=6a9e176e900b5e728d0f62659369d5d5593e28c3",
+      "globalsign-domain-verification=8frsHcE2ag-0ccaaP5BTpPmUJC8ob8pdjDQchfAWzD",
+      "apple-domain-verification=9KpxtRRlTnV9CMWj",
+      "mongodb-site-verification=qwSddVOKDfrufdjzWe8XcrxiXFqsH3HH",
+      "mixpanel-domain-verify=90c3d81c-7a7c-4d4d-9b0d-5a60ae994e90",
+      "pardot1046343=0c19387b5d416ad576c0938517af3c23e0ec43bb16096e6201065cda46f41092",
+      "g2hsd2r7uqt07crr95ts25hgec",
+      "monday-com-verification=DHMhr9r0SLQ1XbH-UgVehCcq-kI5NO-3gC3T2YhsHNs",
+      "google-site-verification=8GwcSuHShuYh0Zl7pqbKLFl2Vy4LJwb663OKdq7oAfU",
+      "google-site-verification=ngPwP5LN0jLJFSwOIs3QPjWdNeXSBaNlAaiK489xW3w",
+      "sendinblue-code:00c77aaa511d14ef758415286cceb8f8",
+      "google-site-verification=iNB30Gch08wWB6x_texeR3GWax3SYEanzhkPIgu5NHY",
+      "dropbox-domain-verification=8ilu3axidut2",
+      "jamf-site-verification=qTZ2kHy5JVbJULQo_cm6sw",
+      "citrix-verification-code=a6b5039d-7719-4399-a895-8dc16ee2be75",
+      "cursor-domain-verification-snmncy=v2sK6oZqni8YXE6z4r2hYiDk2",
+      "google-site-verification=SO-X1xOZnZI8nCyaqDcVFT2iMKXHKzh78QZ-hQZXdDg",
+      "MS=ms20976924",
+      "sending_domain1046343=a12cb274f55f4a914e10a7258cd1e59efe2d8d2d2cb275a91f531a3d4829d84b",
+      "google-site-verification=YRULw1rJRupVM3WOgi-oe0G-ha41QBBrm1P8irxmMj4",
+      "00Df2000000vILs=1TBPn0000000Tmn",
+      "google-site-verification=hgsUdXptruag4sbh8wh7u9sOpz0rScqytDJKMTj_cUU"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; pct=100; rua=mailto:dca17281@mxtoolbox.dmarc-report.com; ruf=mailto:dca17281@forensics.dmarc-report.com"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.2",
+    "cipher": "ECDHE-ECDSA-AES128-GCM-SHA256",
+    "subject": "commonName=fiverr.com",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE1",
+    "notBefore": "Sep 25 18:45:45 2026 GMT",
+    "notAfter": "Dec 24 19:45:27 2026 GMT",
+    "san": [
+      "fiverr.com",
+      "*.post.workspace.fiverr.com",
+      "*.nl.fiverr.com",
+      "*.pt.fiverr.com",
+      "*.affiliates.fiverr.com",
+      "*.announce.fiverr.com",
+      "*.app.develop.workspace.fiverr.com",
+      "*.app.stage.workspace.fiverr.com",
+      "*.app.workspace.fiverr.com",
+      "*.business.fiverr.com",
+      "*.de.fiverr.com",
+      "*.develop.workspace.fiverr.com",
+      "*.es.fiverr.com",
+      "*.fr.fiverr.com",
+      "*.it.fiverr.com",
+      "*.notifications.fiverr.com",
+      "*.post.develop.workspace.fiverr.com",
+      "*.post.stage.workspace.fiverr.com",
+      "*.pro.fiverr.com",
+      "*.refs.develop.workspace.fiverr.com",
+      "*.refs.stage.workspace.fiverr.com",
+      "*.refs.workspace.fiverr.com",
+      "*.stage.workspace.fiverr.com",
+      "*.updates.develop.workspace.fiverr.com",
+      "*.updates.stage.workspace.fiverr.com",
+      "*.updates.workspace.fiverr.com",
+      "*.workspace.fiverr.com",
+      "pro.fiverr.com",
+      "workspace.fiverr.com"
+    ],
+    "days_left": 89,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": false
+    }
+  },
+  "ports": {
+    "ip": "104.18.114.47",
+    "open": [
+      8080,
+      8443
+    ]
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: cloudflare",
+    "Cloudflare CDN/WAF"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.fiverr.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://fiverr.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 44,
+    "notable": [
+      "dev.fiverr.com",
+      "okteto.dev.fiverr.com",
+      "pci-internal.dev.fiverr.com",
+      "pci.dev.fiverr.com",
+      "pro.dev.fiverr.com"
+    ],
+    "sample": [
+      "affiliates.fiverr.com",
+      "answers.fiverr.com",
+      "capig.fiverr.com",
+      "checkup-api.fiverr.com",
+      "checkup.fiverr.com",
+      "community.fiverr.com",
+      "connect.fiverr.com",
+      "contests.fiverr.com",
+      "dev.fiverr.com",
+      "develop.workspace.fiverr.com",
+      "discover.fiverr.com",
+      "enterprise.fiverr.com",
+      "events.fiverr.com",
+      "fiverr.com",
+      "gop.fiverr.com",
+      "groove.fiverr.com",
+      "investors.fiverr.com",
+      "land.fiverr.com",
+      "learn.fiverr.com",
+      "lp.enterprise.fiverr.com"
+    ],
+    "dangling": [
+      "pci-internal.dev.fiverr.com"
+    ]
+  },
+  "elapsed_s": 6.7,
+  "rechecked": "2026-09-26 14:53 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

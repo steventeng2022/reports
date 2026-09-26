@@ -4,103 +4,209 @@
 
 | Item | Value |
 |---|---|
-| Target | https://www.ietf.org/admin/login/?next=/admin/ |
+| Target | https://www.ietf.org/ |
 | Bug bounty program | IETF |
-| Listed scope domain | ietf.org |
-| Test date | 2026-09-26 04:41 UTC |
-| Method | Active testing against the Wagtail admin login: redirect-validation matrix on the `next` parameter, login-form reflection and enumeration, password-reset flow, HTTP methods, host-header behavior, static-asset fingerprinting (hash match against PyPI release wheels), response header and cookie review; non-destructive, no valid credentials, site behind Cloudflare |
+| Listed scope domain | www.ietf.org |
+| Test date | 2026-09-26 14:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
-
-The target is a **Wagtail 7.4.3** CMS admin (login page titled "Sign in - Wagtail"; static JS bundle hash-matched against the Wagtail 7.4.3 PyPI wheel), which requires Django >= 5.2, served behind Cloudflare. The open-redirect surface on `next` is strongly defended by Django's `url_has_allowed_host_and_scheme`; remaining findings are hygiene items (missing HSTS/CSP, cookie attributes, control characters preserved in the validated redirect target, version fingerprinting).
+Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | C1 | csrftoken cookie missing Secure attribute | CWE-614 |
-| 4 | info | V1 | Wagtail 7.4.3 / Django >= 5.2 version fingerprint via static asset hash | CWE-200 |
-| 5 | info | R1 | Login next parameter accepts same-host absolute URL (case-insensitive scheme) | CWE-601 |
-| 6 | info | R2 | Backslash-leading next value (\evil.example/) passes validation as relative | CWE-601 |
-| 7 | info | R3 | Control characters (NUL, tab, space, LF) preserved in validated next value | CWE-601 |
-| 8 | info | I1 | Username re-echoed on failed login (escaped; response length tracks input length) | CWE-200 |
-| 9 | info | I2 | Client maxlength=150 vs server max_length=254 mismatch on username | CWE-20 |
-| 10 | info | H3 | Missing Permissions-Policy header | CWE-200 |
-| 11 | info | S1 | No .well-known/security.txt (404) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | PRT8080 | Alternate web service (port 8080) reachable | CWE-200 |
+| 3 | info | PRT8443 | Alternate web service (port 8443) reachable | CWE-200 |
+| 4 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 5 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 6 | low | H1 | Missing HSTS header | CWE-319 |
+| 7 | low | H2 | Missing CSP header | CWE-1021 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H6 | Server technology disclosure | CWE-200 |
+| 10 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (H1)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
+
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
+
+### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 104.16.44.99:8080 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 104.16.44.99:8443 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 4. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: cloudflare; Cloudflare CDN/WAF
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 5. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
+
+- **CWE:** CWE-200
+- **Detail:** Alt-Svc: h3=":443"; ma=86400
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
+
+### 6. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security on https://www.ietf.org/admin/login/ (fresh capture 2026-09-26 04:41 UTC). Consistent with the ietf.org root finding; the admin surface has no HSTS pin.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 2. [LOW] Missing CSP header (H2)
+### 7. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on the admin login page. The page loads many admin JS bundles; a CSP would bound the impact of any future script injection.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 3. [LOW] csrftoken cookie missing Secure attribute (C1)
-
-- **CWE:** CWE-614
-- **Detail:** The login page sets: Set-Cookie: csrftoken=...; expires=...; Max-Age=31449600; Path=/; SameSite=Lax — no Secure flag. With no HSTS and no HTTP->HTTPS enforcement, the cookie could in principle be carried over an unencrypted connection. SameSite=Lax limits cross-site use. (Not HttpOnly, which is standard for CSRF tokens.)
-
-### 4. [INFO] Wagtail 7.4.3 / Django >= 5.2 version fingerprint via static asset hash (V1)
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /static/wagtailadmin/js/core.83202c8036ac.js is byte-identical (SHA-256 142B19155DAB97845D6F9C5793D3C6B998BED71A86347A3DAB744D71D937F49F) to wagtail/admin/static/wagtailadmin/js/core.js inside the Wagtail 7.4.3 wheel on PyPI; wheels from 5.2.8 through 7.4.3 were compared and only 7.4.3 matched. Corroboration: page title "Sign in - Wagtail" and the embedded wagtail-config JSON (admin API URLs, CSRF header name X-Csrftoken, second masked CSRF token). Wagtail 7.4.x requires Django >= 5.2, so the framework pair is pinned for CVE triage.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 5. [INFO] Login next parameter accepts same-host absolute URL (R1)
-
-- **CWE:** CWE-601
-- **Detail:** GET /admin/login/?next=https://www.ietf.org/ (and HTTPS://www.ietf.org/ — scheme comparison is case-insensitive) is accepted and reflected into the hidden next field used for the post-login redirect. Django's url_has_allowed_host_and_scheme permits absolute URLs on the same host when require_https is met. Same-host, so not an open redirect, but post-login navigation can be steered to any absolute path on the site.
-
-### 6. [INFO] Backslash-leading next value passes validation as relative (R2)
-
-- **CWE:** CWE-601
-- **Detail:** ?next=\evil.example/ is accepted: a leading backslash is not normalized the way // is, so the value parses as a relative path and survives validation with the backslash intact. Contrasts with /\evil.example/ and //evil.example/, which are rejected and fall back to /admin/. Browsers normalize \ to / during navigation, so this is an edge-case hygiene item rather than an open redirect.
-
-### 7. [INFO] Control characters preserved in validated next value (R3)
-
-- **CWE:** CWE-601
-- **Detail:** Validated next values retain embedded control characters that land in the post-login Location header: /admin/%00 (NUL preserved), %09/admin/ (leading tab), %20/admin/ (leading space), and https://www.ietf.org/%0a (raw LF, U+000A, preserved after percent-decoding). Single LF is not a CRLF injection, but raw control characters in Location are sloppy header hygiene.
-
-### 8. [INFO] Username re-echoed on failed login (I1)
+### 9. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** On failed login the submitted username is re-echoed into value="..." in the login form (HTML-escaped). Same-length existing (admin) vs nonexistent (adman) usernames return identical response sizes (13580 bytes) with comparable timing (~550-620 ms); response size varies only with input length, so only length is leaked, not existence. Error text is generic: "Your username and password didn't match. Please try again."
+- **Detail:** Header reveals: cloudflare
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
 
-### 9. [INFO] Client maxlength=150 vs server max_length=254 mismatch (I2)
+### 10. [INFO] Missing security.txt (`P8`)
 
-- **CWE:** CWE-20
-- **Detail:** The login username input declares maxlength="150" while the server form validates up to 254 characters (255 chars -> form error "Ensure this value has at most 254 characters (it has 255)."; 200 chars passes validation and reaches the auth check). The 151-254 range is reachable programmatically.
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 10. [INFO] Missing Permissions-Policy header (H3)
+## Evidence (raw response observations)
 
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on the admin login page.
+```json
+{
+  "domain": "www.ietf.org",
+  "dns": {
+    "a": [
+      "104.16.44.99",
+      "104.16.45.99"
+    ],
+    "aaaa": [
+      "2606:4700::6810:2d63",
+      "2606:4700::6810:2c63"
+    ],
+    "cname": null,
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=ietf.org",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YE2",
+    "notBefore": "Sep  4 19:46:39 2026 GMT",
+    "notAfter": "Dec  3 19:46:38 2026 GMT",
+    "san": [
+      "*.ietf.org",
+      "ietf.org"
+    ],
+    "days_left": 68,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "104.16.44.99",
+    "open": [
+      8080,
+      8443
+    ]
+  },
+  "https": {
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "title": "IETF | Internet Engineering Task Force"
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: cloudflare",
+    "Cloudflare CDN/WAF"
+  ],
+  "cookies": [
+    {
+      "domain": "ietf.org",
+      "samesite": "none"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.www.ietf.org",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://www.ietf.org/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 200,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 404,
+    "/.git/HEAD": 403,
+    "/.git/config": 403,
+    "/.env": 403,
+    "/.htaccess": 403,
+    "/wp-login.php": 403,
+    "/phpmyadmin/index.php": 403,
+    "/server-status": 301,
+    "/api/": 404
+  },
+  "subdomains": {
+    "status": "crt.sh ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='crt.sh', port=443): Read (certspotter 429)"
+  },
+  "elapsed_s": 25.0,
+  "rechecked": "2026-09-26 14:53 UTC"
+}
+```
 
-### 11. [INFO] No .well-known/security.txt (S1)
+## Notes
 
-- **CWE:** CWE-200
-- **Detail:** https://www.ietf.org/.well-known/security.txt returns 404 (site 404 page), so there is no published disclosure policy.
-
-## Controls verified (no findings)
-
-- **Open-redirect defense on next is strong:** https://evil.example/, //evil.example/, ///evil.example/, https://www.ietf.org.evil.example/, https://www.ietf.org@evil.example/, https://www.ietf.org:8443/, https://ietf.org/ and http://www.ietf.org/ (require_https) are all rejected with fallback to /admin/; javascript:alert(1) in the query is blocked by the Cloudflare WAF (403).
-- **Host-header attacks:** Host: ietf.org -> 301 to the canonical host (query dropped); admin.ietf.org / evil.ietf.org -> 530 (Cloudflare); localhost / 127.0.0.1 / evil.com -> 403 (Cloudflare); www.ietf.org:443 -> 200 but next re-validated. No open redirect via Host.
-- **Password reset:** /admin/password_reset/ enabled; nonexistent and existing addresses both return the same 302 to /admin/password_reset/done/ with comparable timing (~0.27-0.7 s); completion page wording is generic ("A link to reset your password has been emailed to you if an account exists for this address."). No user enumeration observed.
-- **Unauthenticated admin surface:** /admin/, /admin/pages/, /admin/users/, /admin/account/, /admin/api/main/*, /admin/dismissibles/, and unknown /admin/* paths all 302 to login with a server-generated next; no sessionid is set pre-login; all source maps 404; /admin/sprite/ is a public 64 KB SVG icon sprite (harmless).
-- **Methods:** OPTIONS 200; PUT/PATCH/DELETE 403 (CSRF).
-- **CSRF:** Django 4.1+ masked tokens (three differing masked values for one raw secret is expected); on HTTPS the Origin header is checked first — POSTs without Origin get 403 even with a valid token.
-- **Headers present:** X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Cross-Origin-Opener-Policy: same-origin, Referrer-Policy: same-origin, Cache-Control: no-cache/no-store.
-- **Cloudflare WAF:** backtick/quote payloads in the POST body are blocked ("Sorry, you have been blocked", 5483 B page), providing defense-in-depth for the reflected username.
-
-## Reproduction notes
-
-- Tested 2026-09-26 from Asia/Taipei (UTC+8) via HTTPS through Cloudflare; non-destructive. Several failed logins (200/255-char usernames, XSS payloads) and ~6 password-reset POSTs were made, of which 4 used admin@ietf.org — a few reset emails may have been sent to that address.
-- Working POST recipe: fresh GET of the login page to obtain a new csrftoken + csrfmiddlewaretoken, then POST in the same session with Content-Type: application/x-www-form-urlencoded and Origin: https://www.ietf.org (Django 5.2 checks Origin first on HTTPS; without it the request is 403 "Referer header required" even with a valid token).
-- next matrix examples: curl -sS "https://www.ietf.org/admin/login/?next=https://www.ietf.org/" (accepted), ?next=\evil.example/ (accepted), ?next=//evil.example/ (rejected -> /admin/), ?next=https://www.ietf.org/%0a (raw LF preserved in the reflected value).
-- curl -L -X POST note: following the password-reset 302 with -X POST keeps the POST method but drops the body (no Content-Length), so the CSRF token is missing and the done page returns 403 "CSRF verification failed. Request aborted." A manual POST to /admin/password_reset/done/ with token + Origin returns 405 (correct). This is client behavior, not a server finding.
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

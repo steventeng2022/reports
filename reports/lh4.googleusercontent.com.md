@@ -7,8 +7,8 @@
 | Target | https://lh4.googleusercontent.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | lh4.googleusercontent.com |
-| Test date | 2026-09-26 14:05 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-26 16:42 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -16,87 +16,365 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H4 | No clickjacking protection | CWE-1023 |
-| 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 5 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/ | CWE-942 |
-| 6 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/ | CWE-942 |
-| 7 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/ | CWE-942 |
-| 8 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/api | CWE-942 |
-| 9 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/api | CWE-942 |
-| 10 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/api | CWE-942 |
-| 11 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/graphql | CWE-942 |
-| 12 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/graphql | CWE-942 |
-| 13 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/graphql | CWE-942 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 4 | low | H1 | Missing HSTS header | CWE-319 |
+| 5 | low | H2 | Missing CSP header | CWE-1021 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | CORS4 | CORS: wildcard Access-Control-Allow-Origin | CWE-942 |
+| 12 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
+| 13 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security on http://lh4.googleusercontent.com/
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on http://lh4.googleusercontent.com/
-
-### 3. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on http://lh4.googleusercontent.com/
-
-### 4. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on http://lh4.googleusercontent.com/
+- **Detail:** Detected: Server: fife
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 5. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/ (`I19`)
+### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
+
+- **CWE:** CWE-200
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
+
+### 4. [LOW] Missing HSTS header (`H1`)
+
+- **CWE:** CWE-319
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+
+### 5. [LOW] Missing CSP header (`H2`)
+
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 6. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+
+### 7. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+
+### 8. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
+
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 10. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: fife
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 11. [INFO] CORS: wildcard Access-Control-Allow-Origin (`CORS4`)
 
 - **CWE:** CWE-942
-- **Detail:** GET http://lh4.googleusercontent.com/ responds with Access-Control-Allow-Origin: * (Content-Type: text/html; charset=UTF-8). Any site can read responses cross-origin.
+- **Detail:** Access-Control-Allow-Origin: * is set for cross-origin requests.
+- **Context:** https response, /
+- **Recommendation:** Restrict the allowed origins if sensitive data is exposed via the API.
 
-### 6. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/ (`I19`)
-
-- **CWE:** CWE-942
-- **Detail:** GET http://lh4.googleusercontent.com/ responds with Access-Control-Allow-Origin: * (Content-Type: text/html; charset=UTF-8). Any site can read responses cross-origin.
-
-### 7. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/ (`I19`)
+### 12. [INFO] CORS: subdomain origin origin accepted (no credentials) (`CORS2`)
 
 - **CWE:** CWE-942
-- **Detail:** GET http://lh4.googleusercontent.com/ responds with Access-Control-Allow-Origin: * (Content-Type: text/html; charset=UTF-8). Any site can read responses cross-origin.
+- **Detail:** Origin https://sub.lh4.googleusercontent.com was echoed in Access-Control-Allow-Origin.
+- **Context:** https response, /
+- **Recommendation:** Confirm whether arbitrary origin echoing is intended.
 
-### 8. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/api (`I19`)
+### 13. [INFO] Missing security.txt (`P8`)
 
-- **CWE:** CWE-942
-- **Detail:** GET http://lh4.googleusercontent.com/api responds with Access-Control-Allow-Origin: * (Content-Type: text/html; charset=UTF-8). Any site can read responses cross-origin.
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 9. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/api (`I19`)
+## Evidence (raw response observations)
 
-- **CWE:** CWE-942
-- **Detail:** GET http://lh4.googleusercontent.com/api responds with Access-Control-Allow-Origin: * (Content-Type: text/html; charset=UTF-8). Any site can read responses cross-origin.
+```json
+{
+  "domain": "lh4.googleusercontent.com",
+  "dns": {
+    "a": [
+      "142.251.170.132"
+    ],
+    "aaaa": [
+      "2404:6800:4008:c19::84"
+    ],
+    "cname": "googlehosted.l.googleusercontent.com.",
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=*.googleusercontent.com",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
+    "notBefore": "Sep 10 19:23:26 2026 GMT",
+    "notAfter": "Dec  3 19:23:25 2026 GMT",
+    "san": [
+      "*.googleusercontent.com",
+      "commondatastorage.googleapis.com",
+      "*.commondatastorage.googleapis.com",
+      "storage.googleapis.com",
+      "*.storage.googleapis.com",
+      "storage-p2.googleapis.com",
+      "*.storage-p2.googleapis.com",
+      "storage.mtls.googleapis.com",
+      "*.appspot.com.storage.googleapis.com",
+      "*.content-storage.googleapis.com",
+      "*.content-storage-p2.googleapis.com",
+      "*.content-storage-upload.googleapis.com",
+      "*.content-storage-download.googleapis.com",
+      "*.storage-upload.googleapis.com",
+      "*.storage-download.googleapis.com",
+      "blogspot.com",
+      "*.blogspot.com",
+      "bp.blogspot.com",
+      "*.bp.blogspot.com",
+      "doubleclickusercontent.com",
+      "*.doubleclickusercontent.com",
+      "ggpht.com",
+      "*.ggpht.com",
+      "googledrive.com",
+      "*.googledrive.com",
+      "*.googlesyndication.com",
+      "*.safeframe.googlesyndication.com",
+      "googleusercontent.com",
+      "*.byoid.googleusercontent.com",
+      "usercontent.goog",
+      "*.usercontent.goog",
+      "*.ucp.usercontent.goog",
+      "*.h5games.usercontent.goog",
+      "*.playables.usercontent.goog",
+      "*.allownetworkplayables.usercontent.goog",
+      "*.safeframe.usercontent.goog",
+      "*.sandbox.usercontent.goog",
+      "*.scf.usercontent.goog",
+      "*.isolated.usercontent.goog",
+      "*.static.usercontent.goog",
+      "*.ads-static.usercontent.goog",
+      "*.executionbox.usercontent.goog",
+      "*.aiplayables.usercontent.goog",
+      "*.playground.usercontent.goog",
+      "*.labs-studios.usercontent.goog",
+      "rbm-smb-experience.business.usercontent.goog",
+      "rbm-smb-experience-autopush.business.usercontent.goog",
+      "manifest.c.mail.googleusercontent.com",
+      "manifest.lh3-da.googleusercontent.com",
+      "manifest.lh3-db.googleusercontent.com",
+      "manifest.lh3-dc.googleusercontent.com",
+      "manifest.lh3-dd.googleusercontent.com",
+      "manifest.lh3-de.googleusercontent.com",
+      "manifest.lh3-df.googleusercontent.com",
+      "manifest.lh3-dg.googleusercontent.com",
+      "manifest.lh3-dz.googleusercontent.com",
+      "manifest.lh3.googleusercontent.com",
+      "manifest.lh3.photos.google.com",
+      "googleweblight.com",
+      "*.googleweblight.com",
+      "translate.goog",
+      "*.translate.goog",
+      "*.search.translate.goog",
+      "*.dev.amp4mail.googleusercontent.com",
+      "*.prod.amp4mail.googleusercontent.com",
+      "*.playground.amp4mail.googleusercontent.com",
+      "*.playground-internal.amp4mail.googleusercontent.com",
+      "*.aiplatform-notebook.googleusercontent.com",
+      "*.aiplatform-training.googleusercontent.com",
+      "*.aiplatform-training.byoid.googleusercontent.com",
+      "*.audiobook-additional-material-staging.googleusercontent.com",
+      "*.audiobook-additional-material.googleusercontent.com",
+      "*.apps.googleusercontent.com",
+      "*.safenup.googleusercontent.com",
+      "*.sandbox.googleusercontent.com",
+      "*.backupdr.googleusercontent.com",
+      "*.backupdr.byoid.googleusercontent.com",
+      "*.backupdr-staging.googleusercontent.com",
+      "*.backupdr-staging.byoid.googleusercontent.com",
+      "*.backupdr-autopush.googleusercontent.com",
+      "*.backupdr-autopush.byoid.googleusercontent.com",
+      "*.backupdr-dev.googleusercontent.com",
+      "*.backupdr-dev.byoid.googleusercontent.com",
+      "*.backupdr-sandbox.googleusercontent.com",
+      "*.backupdr-sandbox.byoid.googleusercontent.com",
+      "*.composer.googleusercontent.com",
+      "*.composer.byoid.googleusercontent.com",
+      "*.composer-staging.googleusercontent.com",
+      "*.composer-staging.byoid.googleusercontent.com",
+      "*.composer-qa.googleusercontent.com",
+      "*.composer-qa.byoid.googleusercontent.com",
+      "*.composer-dev.googleusercontent.com",
+      "*.composer-dev.byoid.googleusercontent.com",
+      "*.dataplex.googleusercontent.com",
+      "*.dataplex-staging.googleusercontent.com",
+      "*.dataplex-dev.googleusercontent.com",
+      "*.dataproc.googleusercontent.com",
+      "*.dataproc.byoid.googleusercontent.com",
+      "*.dataproc-image-staging.googleusercontent.com",
+      "*.dataproc-image-staging.byoid.googleusercontent.com",
+      "*.dataproc-staging.googleusercontent.com",
+      "*.dataproc-staging.byoid.googleusercontent.com",
+      "*.dataproc-test.googleusercontent.com",
+      "*.dataproc-test.byoid.googleusercontent.com",
+      "*.datafusion.googleusercontent.com",
+      "*.datafusion.byoid.googleusercontent.com",
+      "*.datafusion-staging.googleusercontent.com",
+      "*.datafusion-staging.byoid.googleusercontent.com",
+      "*.datafusion-dev.googleusercontent.com",
+      "*.datafusion-dev.byoid.googleusercontent.com",
+      "*.datafusion-api.googleusercontent.com",
+      "*.datafusion-api.byoid.googleusercontent.com",
+      "*.datafusion-api-staging.googleusercontent.com",
+      "*.datafusion-api-staging.byoid.googleusercontent.com",
+      "*.datafusion-api-dev.googleusercontent.com",
+      "*.datafusion-api-dev.byoid.googleusercontent.com",
+      "*.gsc.googleusercontent.com",
+      "*.gcc.googleusercontent.com",
+      "*.tuf.googleusercontent.com",
+      "*.tuf-autopush.googleusercontent.com",
+      "*.tuf-dev.googleusercontent.com",
+      "*.tuf-staging.googleusercontent.com",
+      "*.fuchsia-updates.googleusercontent.com",
+      "*.fuchsia-updates-autopush.googleusercontent.com",
+      "*.fuchsia-updates-autopush-qual.googleusercontent.com",
+      "*.fuchsia-updates-dev.googleusercontent.com",
+      "*.fuchsia-updates-staging.googleusercontent.com",
+      "*.machinelearningtools.googleusercontent.com",
+      "*.machinelearningtools-staging.googleusercontent.com",
+      "*.machinelearningtools-autopush.googleusercontent.com",
+      "*.machinelearningtools-dev.googleusercontent.com",
+      "*.mos-updates.googleusercontent.com",
+      "*.mos-updates-autopush.googleusercontent.com",
+      "*.mos-updates-autopush-qual.googleusercontent.com",
+      "*.mos-updates-dev.googleusercontent.com",
+      "*.mos-updates-staging.googleusercontent.com",
+      "*.notebooks.googleusercontent.com",
+      "*.notebooks.byoid.googleusercontent.com",
+      "*.pipelines.googleusercontent.com",
+      "*.tensorboard.googleusercontent.com",
+      "*.tensorboard-autopush.googleusercontent.com",
+      "*.tensorboard-dev.googleusercontent.com",
+      "*.tensorboard-staging.googleusercontent.com",
+      "*.tensorboard-test.googleusercontent.com",
+      "*.kernels.googleusercontent.com",
+      "*.kernels-staging.googleusercontent.com",
+      "*.kernels-test.googleusercontent.com",
+      "*.cloudshell.googleusercontent.com",
+      "*.cloudworkstations.googleusercontent.com",
+      "*.vast.googleusercontent.com",
+      "*.vast-staging.googleusercontent.com",
+      "*.vast-autopush.googleusercontent.com",
+      "*.vast-sandbox.googleusercontent.com"
+    ],
+    "days_left": 68,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "142.251.170.132",
+    "open": []
+  },
+  "https": {
+    "status": 400,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: fife"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "*",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.lh4.googleusercontent.com",
+      "acao": "*",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 400
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 400",
+    "/redirect?next=https://evil-auditor.example/x -> 400",
+    "/go?url=https://evil-auditor.example/x -> 400",
+    "/url?url=https://evil-auditor.example/x -> 400"
+  ],
+  "paths": {
+    "/robots.txt": 400,
+    "/sitemap.xml": 400,
+    "/.well-known/security.txt": 400,
+    "/security.txt": 400,
+    "/.git/HEAD": 400,
+    "/.git/config": 400,
+    "/.env": 400,
+    "/.htaccess": 400,
+    "/wp-login.php": 400,
+    "/phpmyadmin/index.php": 400,
+    "/server-status": 400,
+    "/api/": 400
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 0,
+    "notable": [],
+    "sample": []
+  },
+  "elapsed_s": 3.8,
+  "rechecked": "2026-09-26 16:42 UTC"
+}
+```
 
-### 10. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/api (`I19`)
+## Notes
 
-- **CWE:** CWE-942
-- **Detail:** GET http://lh4.googleusercontent.com/api responds with Access-Control-Allow-Origin: * (Content-Type: text/html; charset=UTF-8). Any site can read responses cross-origin.
-
-### 11. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/graphql (`I19`)
-
-- **CWE:** CWE-942
-- **Detail:** GET http://lh4.googleusercontent.com/graphql responds with Access-Control-Allow-Origin: * (Content-Type: text/html; charset=UTF-8). Any site can read responses cross-origin.
-
-### 12. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/graphql (`I19`)
-
-- **CWE:** CWE-942
-- **Detail:** GET http://lh4.googleusercontent.com/graphql responds with Access-Control-Allow-Origin: * (Content-Type: text/html; charset=UTF-8). Any site can read responses cross-origin.
-
-### 13. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on http://lh4.googleusercontent.com/graphql (`I19`)
-
-- **CWE:** CWE-942
-- **Detail:** GET http://lh4.googleusercontent.com/graphql responds with Access-Control-Allow-Origin: * (Content-Type: text/html; charset=UTF-8). Any site can read responses cross-origin.
-
-## Reproduction notes
-
-- Scanned 2026-09-26 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.
