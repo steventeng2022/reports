@@ -60,6 +60,7 @@ Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the
 | analytics.google.com | 8 | 0 | 0 | 3 | 5 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | ancestry.com | 9 | 0 | 0 | 3 | 6 | top-websites gist (no active program match) |
 | animoto.com | 7 | 0 | 0 | 1 | 6 | top-websites gist (no active program match) |
+| apache.org | 23 | 0 | 1 | 7 | 15 | top-websites gist (no active program match) |
 | api.whatsapp.com | 8 | 0 | 0 | 1 | 7 | [Facebook](https://www.facebook.com/whitehat) |
 | apis.google.com | 7 | 0 | 0 | 0 | 7 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | app.box.com | 13 | 0 | 0 | 3 | 10 | top-websites gist (no active program match) |
@@ -238,6 +239,7 @@ Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the
 | fr.wikipedia.org | 8 | 0 | 0 | 2 | 6 | top-websites gist (no active program match) |
 | france24.com | 16 | 0 | 0 | 6 | 10 | top-websites gist (no active program match) |
 | franchising.com | 8 | 0 | 0 | 1 | 7 | top-websites gist (no active program match) |
+| freecodecamp.org | 19 | 2 | 13 | 4 | 0 | top-websites gist (no active program match) |
 | freelancer.com | 12 | 0 | 0 | 3 | 9 | top-websites gist (no active program match) |
 | freewebs.com | 17 | 0 | 0 | 6 | 11 | top-websites gist (no active program match) |
 | ftc.gov | 14 | 0 | 0 | 3 | 11 | top-websites gist (no active program match) |
@@ -257,6 +259,7 @@ Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the
 | gleam.io | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
 | globalnews.ca | 10 | 0 | 0 | 2 | 8 | top-websites gist (no active program match) |
 | gmpg.org | 1 | 0 | 0 | 0 | 1 | top-websites gist (no active program match) |
+| go.dev | 13 | 0 | 1 | 8 | 4 | Google |
 | gofundme.com | 13 | 0 | 0 | 6 | 7 | top-websites gist (no active program match) |
 | golang.org | 11 | 0 | 0 | 1 | 10 | top-websites gist (no active program match) |
 | goo.gle | 14 | 0 | 0 | 5 | 9 | top-websites gist (no active program match) |
@@ -410,6 +413,7 @@ Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the
 | otto.de | 11 | 0 | 0 | 2 | 9 | top-websites gist (no active program match) |
 | overcast.fm | 4 | 0 | 0 | 0 | 4 | top-websites gist (no active program match) |
 | ow.ly | 8 | 0 | 0 | 2 | 6 | [Hootsuite](https://www.hootsuite.com/security) |
+| owasp.org | 8 | 0 | 3 | 4 | 1 | top-websites gist (no active program match) |
 | patents.google.com | 8 | 0 | 0 | 2 | 6 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | paypal.com | 10 | 0 | 0 | 2 | 8 | [PayPal](https://hackerone.com/paypal) |
 | paypal.me | 12 | 0 | 0 | 2 | 10 | [PayPal](https://hackerone.com/paypal) |
@@ -594,7 +598,3 @@ Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the
 | zen.yandex.ru | 12 | 0 | 0 | 2 | 10 | [Yandex](https://yandex.com/bugbounty/index) |
 | zillow.com | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
 | zoom.us | 15 | 0 | 0 | 4 | 11 | [Zoom](https://explore.zoom.us/docs/ent/h1.html) |
-| owasp.org | 8 | 0 | 3 | 4 | 1 | top-websites gist (no active program match) |
-| apache.org | 23 | 0 | 1 | 7 | 15 | top-websites gist (no active program match) |
-| go.dev | 13 | 0 | 1 | 8 | 4 | Google |
-| freecodecamp.org | 19 | 2 | 13 | 4 | 0 | top-websites gist (no active program match) |
