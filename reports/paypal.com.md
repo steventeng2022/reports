@@ -7,7 +7,7 @@
 | Target | https://paypal.com/ |
 | Bug bounty program | [PayPal](https://hackerone.com/paypal) |
 | Listed scope domain | paypal.com |
-| Test date | 2026-09-25 19:34 UTC |
+| Test date | 2026-09-26 01:40 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -32,12 +32,12 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 ### 1. [LOW] Cookies set without HttpOnly (`C1`)
 
 - **CWE:** CWE-1004
-- **Detail:** Set on https://paypal.com/ without HttpOnly: enforce_policy, ts_c. Readable by client-side script.
+- **Detail:** Set on https://paypal.com/ without HttpOnly: ts_c. Readable by client-side script.
 
 ### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
 
 - **CWE:** CWE-1004
-- **Detail:** Set on https://paypal.com/ without SameSite=Lax/Strict: LANG, enforce_policy, ts, ts_c, tsrce, x-pp-s. Cross-site request cookies.
+- **Detail:** Set on https://paypal.com/ without SameSite=Lax/Strict: LANG, ts, ts_c. Cross-site request cookies.
 
 ### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
@@ -67,7 +67,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 ### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
 - **CWE:** CWE-319
-- **Detail:** http://paypal.com/ -> https://www.paypal.com/ (positive check).
+- **Detail:** http://paypal.com/ -> https://paypal.com/ (positive check).
 
 ### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
@@ -81,7 +81,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://paypal.com/ final status: 200 (final URL https://www.paypal.com/tw/home).
 - http://paypal.com/ initial status: 301.
 - Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-11-25T23:59:59+00:00.

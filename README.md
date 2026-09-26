@@ -2,14 +2,14 @@
 
 Hunt date: 2026-09-25 (Asia/Taipei). This is a **passive / non-intrusive re-audit** of the same random target set scanned on 2026-09-24. Re-test method: no parameter injection of any kind - instead each target was assessed via TLS protocol/cipher/certificate analysis, security-header audit (HSTS, CSP, nosniff, clickjacking, Referrer-Policy, Permissions-Policy), cookie flag audit (HttpOnly, Secure, SameSite, domain scope), plain-HTTP vs HTTPS behavior, well-known file probing (robots.txt, .well-known/security.txt, sitemap.xml), and passive DNS / certificate-SAN subdomain discovery. Non-destructive GET/TLS/DNS only; no forms submitted; no authenticated sessions.
 
-**Total findings across all sites: 5505** (High: 0, Medium: 5, Low: 1486, Info: 4014)
+**Total findings across all sites: 5719** (High: 0, Medium: 5, Low: 1538, Info: 4176)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
 | discordapp.com | 6 | 0 | 0 | 0 | 6 | top-websites gist (no active program match) |
 | bing.com | 8 | 0 | 0 | 4 | 4 | top-websites gist (no active program match) |
 | franchising.com | 8 | 0 | 0 | 1 | 7 | top-websites gist (no active program match) |
-| penguinrandomhouse.com | 4 | 0 | 0 | 0 | 4 | top-websites gist (no active program match) |
+| penguinrandomhouse.com | 8 | 0 | 0 | 3 | 5 | top-websites gist (no active program match) |
 | strava.com | 11 | 0 | 0 | 5 | 6 | top-websites gist (no active program match) |
 | docker.com | 8 | 0 | 0 | 1 | 7 | Docker |
 | raw.githubusercontent.com | 8 | 0 | 0 | 1 | 7 | top-websites gist (no active program match) |
@@ -43,7 +43,7 @@ Hunt date: 2026-09-25 (Asia/Taipei). This is a **passive / non-intrusive re-audi
 | accessify.com | 10 | 0 | 0 | 4 | 6 | [top-websites gist (no active program match)]() |
 | accounts.google.com | 6 | 0 | 0 | 0 | 6 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | acm.org | 11 | 0 | 0 | 3 | 8 | [top-websites gist (no active program match)]() |
-| activecampaign.com | 9 | 0 | 0 | 2 | 7 | top-websites gist (no active program match) |
+| activecampaign.com | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
 | ad.doubleclick.net | 9 | 0 | 0 | 2 | 7 | [top-websites gist (no active program match)]() |
 | adage.com | 12 | 0 | 0 | 3 | 9 | [top-websites gist (no active program match)]() |
 | addons.mozilla.org | 10 | 0 | 0 | 1 | 9 | top-websites gist (no active program match) |
@@ -57,22 +57,22 @@ Hunt date: 2026-09-25 (Asia/Taipei). This is a **passive / non-intrusive re-audi
 | airtable.com | 10 | 0 | 0 | 5 | 5 | [Airtable](https://hackerone.com/airtable) |
 | ajax.googleapis.com | 10 | 0 | 0 | 0 | 10 | Google |
 | aliexpress.com | 14 | 0 | 0 | 7 | 7 | [Alibaba](https://hackerone.com/alibaba) |
-| amazon.ca | 9 | 0 | 0 | 4 | 5 | [Amazon](https://hackerone.com/amazonvrp) |
+| amazon.ca | 10 | 0 | 0 | 4 | 6 | [Amazon](https://hackerone.com/amazonvrp) |
 | amazon.co.jp | 13 | 0 | 0 | 4 | 9 | [Amazon](https://hackerone.com/amazonvrp) |
 | amazon.co.uk | 12 | 0 | 0 | 4 | 8 | [Amazon](https://hackerone.com/amazonvrp) |
-| amazon.com.au | 15 | 0 | 0 | 6 | 9 | [Amazon](https://hackerone.com/amazonvrp) |
-| amazon.com.br | 10 | 0 | 0 | 4 | 6 | [Amazon](https://hackerone.com/amazonvrp) |
+| amazon.com.au | 13 | 0 | 0 | 4 | 9 | [Amazon](https://hackerone.com/amazonvrp) |
+| amazon.com.br | 9 | 0 | 0 | 4 | 5 | [Amazon](https://hackerone.com/amazonvrp) |
 | amazon.com | 13 | 0 | 0 | 4 | 9 | [Amazon](https://hackerone.com/amazonvrp) |
-| amazon.de | 14 | 0 | 0 | 6 | 8 | [Amazon](https://hackerone.com/amazonvrp) |
+| amazon.de | 15 | 0 | 0 | 6 | 9 | [Amazon](https://hackerone.com/amazonvrp) |
 | amazon.es | 9 | 0 | 0 | 4 | 5 | [Amazon](https://hackerone.com/amazonvrp) |
 | amazon.fr | 9 | 0 | 0 | 4 | 5 | [Amazon](https://hackerone.com/amazonvrp) |
-| amazon.in | 10 | 0 | 0 | 4 | 6 | [Amazon](https://hackerone.com/amazonvrp) |
-| amazon.it | 12 | 0 | 0 | 6 | 6 | [Amazon](https://hackerone.com/amazonvrp) |
+| amazon.in | 12 | 0 | 0 | 6 | 6 | [Amazon](https://hackerone.com/amazonvrp) |
+| amazon.it | 9 | 0 | 0 | 4 | 5 | [Amazon](https://hackerone.com/amazonvrp) |
 | ameblo.jp | 7 | 0 | 0 | 2 | 5 | top-websites gist (no active program match) |
 | amzn.com | 14 | 0 | 0 | 4 | 10 | [top-websites gist (no active program match)]() |
 | amzn.to | 8 | 0 | 0 | 4 | 4 | [top-websites gist (no active program match)]() |
 | analytics.google.com | 8 | 0 | 0 | 3 | 5 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
-| ancestry.com | 7 | 0 | 0 | 2 | 5 | [top-websites gist (no active program match)]() |
+| ancestry.com | 9 | 0 | 0 | 3 | 6 | [top-websites gist (no active program match)]() |
 | animoto.com | 7 | 0 | 0 | 1 | 6 | [top-websites gist (no active program match)]() |
 | api.whatsapp.com | 8 | 0 | 0 | 1 | 7 | [Facebook](https://www.facebook.com/whitehat) |
 | apis.google.com | 7 | 0 | 0 | 0 | 7 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
@@ -80,7 +80,7 @@ Hunt date: 2026-09-25 (Asia/Taipei). This is a **passive / non-intrusive re-audi
 | apple.com | 8 | 0 | 0 | 3 | 5 | [Apple](https://security.apple.com) |
 | apps.apple.com | 7 | 0 | 0 | 0 | 7 | [Apple](https://security.apple.com) |
 | apps.facebook.com | 10 | 0 | 0 | 1 | 9 | [Facebook](https://www.facebook.com/whitehat) |
-| archives.gov | 2 | 0 | 0 | 0 | 2 | [top-websites gist (no active program match)]() |
+| archives.gov | 8 | 0 | 0 | 1 | 7 | [top-websites gist (no active program match)]() |
 | arstechnica.com | 9 | 0 | 0 | 0 | 9 | top-websites gist (no active program match) |
 | artsandculture.google.com | 8 | 0 | 0 | 2 | 6 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | asus.com | 2 | 0 | 0 | 0 | 2 | [top-websites gist (no active program match)]() |
@@ -88,14 +88,14 @@ Hunt date: 2026-09-25 (Asia/Taipei). This is a **passive / non-intrusive re-audi
 | aws.amazon.com | 13 | 0 | 0 | 4 | 9 | [Amazon](https://hackerone.com/amazonvrp) |
 | axios.com | 8 | 0 | 0 | 2 | 6 | [top-websites gist (no active program match)]() |
 | azure.microsoft.com | 13 | 0 | 0 | 5 | 8 | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
-| baidu.com | 14 | 0 | 0 | 7 | 7 | [Baidu](https://bsrc.baidu.com/v2/#/en) |
+| baidu.com | 16 | 0 | 0 | 6 | 10 | [Baidu](https://bsrc.baidu.com/v2/#/en) |
 | bandcamp.com | 9 | 0 | 0 | 2 | 7 | [Epic Games](https://hackerone.com/epicgames) |
 | bbc.com | 8 | 0 | 0 | 1 | 7 | [BBC](https://www.bbc.com/backstage/security-disclosure-policy/) |
 | beian.gov.cn | 2 | 0 | 0 | 0 | 2 | [top-websites gist (no active program match)]() |
 | bhphotovideo.com | 7 | 0 | 0 | 2 | 5 | top-websites gist (no active program match) |
-| bigthink.com | 11 | 0 | 0 | 5 | 6 | [top-websites gist (no active program match)]() |
+| bigthink.com | 10 | 0 | 0 | 4 | 6 | [top-websites gist (no active program match)]() |
 | bild.de | 12 | 0 | 0 | 1 | 11 | [top-websites gist (no active program match)]() |
-| blockchain.info | 9 | 0 | 0 | 3 | 6 | [Blockchain](https://hackerone.com/blockchain) |
+| blockchain.info | 8 | 0 | 0 | 1 | 7 | [Blockchain](https://hackerone.com/blockchain) |
 | blog.google | 9 | 0 | 0 | 3 | 6 | Google |
 | blog.hubspot.com | 7 | 0 | 0 | 1 | 6 | [HubSpot](https://bugcrowd.com/hubspot) |
 | blog.livedoor.jp | 2 | 0 | 1 | 0 | 1 | [top-websites gist (no active program match)]() |
@@ -121,7 +121,7 @@ Hunt date: 2026-09-25 (Asia/Taipei). This is a **passive / non-intrusive re-audi
 | cargocollective.com | 11 | 0 | 0 | 4 | 7 | [top-websites gist (no active program match)]() |
 | cbs.com | 10 | 0 | 0 | 4 | 6 | [top-websites gist (no active program match)]() |
 | cdc.gov | 12 | 0 | 0 | 5 | 7 | [U.S. Dept of Health & Human Services (HHS)](https://www.hhs.gov/vulnerability-disclosure-policy/index.html) |
-| cdn.shopify.com | 8 | 0 | 0 | 2 | 6 | [Shopify](https://hackerone.com/shopify) |
+| cdn.shopify.com | 7 | 0 | 0 | 2 | 5 | [Shopify](https://hackerone.com/shopify) |
 | cdnjs.cloudflare.com | 9 | 0 | 0 | 2 | 7 | [Cloudflare](https://hackerone.com/cloudflare) |
 | cell.com | 7 | 0 | 0 | 0 | 7 | top-websites gist (no active program match) |
 | chase.com | 13 | 0 | 0 | 4 | 9 | [Chase](https://responsibledisclosure.jpmorganchase.com) |
@@ -150,8 +150,8 @@ Hunt date: 2026-09-25 (Asia/Taipei). This is a **passive / non-intrusive re-audi
 | cse.google.com | 10 | 0 | 0 | 3 | 7 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | css-tricks.com | 10 | 0 | 0 | 2 | 8 | [top-websites gist (no active program match)]() |
 | ctt.ec | 15 | 0 | 0 | 8 | 7 | [top-websites gist (no active program match)]() |
-| cyber.law.harvard.edu | 8 | 0 | 0 | 0 | 8 | [Harvard](https://huit.harvard.edu/responsible-vulnerability-reporting-standards#inscope) |
-| dailymotion.com | 10 | 0 | 0 | 4 | 6 | [Dailymotion](https://yeswehack.com/programs/dailymotion-public-bug-bounty) |
+| cyber.law.harvard.edu | 11 | 0 | 0 | 0 | 11 | [Harvard](https://huit.harvard.edu/responsible-vulnerability-reporting-standards#inscope) |
+| dailymotion.com | 11 | 0 | 0 | 4 | 7 | [Dailymotion](https://yeswehack.com/programs/dailymotion-public-bug-bounty) |
 | dashlane.com | 8 | 0 | 0 | 3 | 5 | [Dashlane](https://hackerone.com/dashlane) |
 | data.worldbank.org | 6 | 0 | 0 | 3 | 3 | [top-websites gist (no active program match)]() |
 | de-de.facebook.com | 9 | 0 | 0 | 1 | 8 | [Facebook](https://www.facebook.com/whitehat) |
@@ -194,10 +194,10 @@ Hunt date: 2026-09-25 (Asia/Taipei). This is a **passive / non-intrusive re-audi
 | europarl.europa.eu | 9 | 0 | 0 | 3 | 6 | [European Central Bank](https://www.ecb.europa.eu/services/responsible-disclosure/html/index.nl.html) |
 | event.on24.com | 9 | 0 | 0 | 3 | 6 | [top-websites gist (no active program match)]() |
 | eventbrite.com | 11 | 0 | 0 | 5 | 6 | [Eventbrite](https://www.eventbrite.com/security/) |
-| eventim.de | 12 | 0 | 0 | 4 | 8 | [top-websites gist (no active program match)]() |
+| eventim.de | 11 | 0 | 0 | 4 | 7 | [top-websites gist (no active program match)]() |
 | events.google.com | 9 | 0 | 0 | 3 | 6 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | evernote.com | 9 | 0 | 0 | 4 | 5 | [Evernote](https://hackerone.com/evernote) |
-| expedia.com | 11 | 0 | 0 | 5 | 6 | [Expedia Group](https://hackerone.com/expediagroup) |
+| expedia.com | 10 | 0 | 0 | 4 | 6 | [Expedia Group](https://hackerone.com/expediagroup) |
 | faa.gov | 13 | 0 | 0 | 7 | 6 | [top-websites gist (no active program match)]() |
 | facebook.com | 9 | 0 | 0 | 1 | 8 | [Facebook](https://www.facebook.com/whitehat) |
 | families.google.com | 9 | 0 | 0 | 2 | 7 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
@@ -280,7 +280,7 @@ Hunt date: 2026-09-25 (Asia/Taipei). This is a **passive / non-intrusive re-audi
 | is.gd | 7 | 0 | 0 | 2 | 5 | [top-websites gist (no active program match)]() |
 | issuu.com | 11 | 0 | 0 | 1 | 10 | [Issuu](https://issuu.com/responsible-disclosure) |
 | istockphoto.com | 11 | 0 | 0 | 4 | 7 | [top-websites gist (no active program match)]() |
-| it.linkedin.com | 10 | 0 | 0 | 3 | 7 | [top-websites gist (no active program match)]() |
+| it.linkedin.com | 10 | 0 | 0 | 2 | 8 | [top-websites gist (no active program match)]() |
 | itunes.apple.com | 10 | 0 | 0 | 3 | 7 | [Apple](https://security.apple.com) |
 | ja-jp.facebook.com | 9 | 0 | 0 | 1 | 8 | [Facebook](https://www.facebook.com/whitehat) |
 | japantimes.co.jp | 6 | 0 | 0 | 1 | 5 | [top-websites gist (no active program match)]() |
@@ -301,7 +301,7 @@ Hunt date: 2026-09-25 (Asia/Taipei). This is a **passive / non-intrusive re-audi
 | linkedin.com | 10 | 0 | 0 | 2 | 8 | [top-websites gist (no active program match)]() |
 | livestream.com | 11 | 0 | 0 | 2 | 9 | [Livestream](https://hackerone.com/livestream) |
 | login.microsoftonline.com | 11 | 0 | 0 | 3 | 8 | [top-websites gist (no active program match)]() |
-| logitech.com | 6 | 0 | 0 | 1 | 5 | [Logitech](https://hackerone.com/logitech) |
+| logitech.com | 9 | 0 | 0 | 1 | 8 | [Logitech](https://hackerone.com/logitech) |
 | lulu.com | 12 | 0 | 0 | 6 | 6 | [top-websites gist (no active program match)]() |
 | lynda.com | 11 | 0 | 0 | 2 | 9 | [top-websites gist (no active program match)]() |
 | m.facebook.com | 10 | 0 | 0 | 1 | 9 | [Facebook](https://www.facebook.com/whitehat) |
@@ -338,7 +338,7 @@ Hunt date: 2026-09-25 (Asia/Taipei). This is a **passive / non-intrusive re-audi
 | neilpatel.com | 9 | 0 | 0 | 2 | 7 | [top-websites gist (no active program match)]() |
 | netflix.com | 15 | 0 | 0 | 4 | 11 | [Netflix](https://bugcrowd.com/netflix) |
 | networkadvertising.org | 14 | 0 | 0 | 5 | 9 | top-websites gist (no active program match) |
-| newegg.com | 12 | 0 | 0 | 2 | 10 | [Newegg](https://hackerone.com/newegg) |
+| newegg.com | 9 | 0 | 0 | 2 | 7 | [Newegg](https://hackerone.com/newegg) |
 | news.google.com | 9 | 0 | 0 | 1 | 8 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | news.harvard.edu | 6 | 0 | 0 | 2 | 4 | [Harvard](https://huit.harvard.edu/responsible-vulnerability-reporting-standards#inscope) |
 | news.mit.edu | 11 | 0 | 0 | 1 | 10 | [top-websites gist (no active program match)]() |
@@ -409,10 +409,10 @@ Hunt date: 2026-09-25 (Asia/Taipei). This is a **passive / non-intrusive re-audi
 | seroundtable.com | 11 | 0 | 0 | 4 | 7 | [top-websites gist (no active program match)]() |
 | services.google.com | 13 | 0 | 0 | 5 | 8 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | shareasale.com | 13 | 0 | 0 | 3 | 10 | [top-websites gist (no active program match)]() |
-| shopify.com | 11 | 0 | 0 | 3 | 8 | [Shopify](https://hackerone.com/shopify) |
+| shopify.com | 10 | 0 | 0 | 2 | 8 | [Shopify](https://hackerone.com/shopify) |
 | shutterstock.com | 13 | 0 | 0 | 5 | 8 | [top-websites gist (no active program match)]() |
 | sites.google.com | 7 | 0 | 0 | 0 | 7 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
-| sketchfab.com | 10 | 0 | 0 | 2 | 8 | [Epic Games](https://hackerone.com/epicgames) |
+| sketchfab.com | 12 | 0 | 0 | 2 | 10 | [Epic Games](https://hackerone.com/epicgames) |
 | skfb.ly | 11 | 0 | 0 | 2 | 9 | [top-websites gist (no active program match)]() |
 | skype.com | 10 | 0 | 0 | 0 | 10 | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
 | slack.com | 10 | 0 | 0 | 4 | 6 | [Slack](https://hackerone.com/slack) |
@@ -468,7 +468,7 @@ Hunt date: 2026-09-25 (Asia/Taipei). This is a **passive / non-intrusive re-audi
 | trustpilot.com | 11 | 0 | 0 | 4 | 7 | [Trustpilot](https://hackerone.com/trustpilot) |
 | twitter.com | 10 | 0 | 0 | 2 | 8 | [Twitter](https://hackerone.com/twitter) |
 | uber.com | 12 | 0 | 0 | 2 | 10 | [Uber](https://hackerone.com/uber) |
-| udemy.com | 8 | 0 | 0 | 2 | 6 | [Udemy](https://hackerone.com/udemy) |
+| udemy.com | 7 | 0 | 0 | 2 | 5 | [Udemy](https://hackerone.com/udemy) |
 | un.org | 9 | 0 | 0 | 3 | 6 | [top-websites gist (no active program match)]() |
 | united.com | 16 | 0 | 0 | 5 | 11 | [United Airlines](https://bugcrowd.com/united-vdp) |
 | untappd.com | 6 | 0 | 0 | 1 | 5 | [top-websites gist (no active program match)]() |
@@ -498,13 +498,13 @@ Hunt date: 2026-09-25 (Asia/Taipei). This is a **passive / non-intrusive re-audi
 | wordpress.org | 12 | 0 | 0 | 2 | 10 | [WordPress](https://hackerone.com/wordpress) |
 | www-01.ibm.com | 15 | 0 | 0 | 3 | 12 | [IBM](https://hackerone.com/ibm) |
 | yahoo.com | 13 | 0 | 0 | 3 | 10 | [Yahoo!](https://app.intigriti.com/programs/yahoo/yahoobugbounty/detail) |
-| yandex.com | 2 | 0 | 0 | 0 | 2 | [Yandex](https://yandex.com/bugbounty/index) |
-| yandex.ru | 2 | 0 | 0 | 0 | 2 | [Yandex](https://yandex.com/bugbounty/index) |
+| yandex.com | 9 | 0 | 0 | 2 | 7 | [Yandex](https://yandex.com/bugbounty/index) |
+| yandex.ru | 9 | 0 | 0 | 2 | 7 | [Yandex](https://yandex.com/bugbounty/index) |
 | yelp.com | 12 | 0 | 0 | 5 | 7 | [Yelp](https://hackerone.com/yelp) |
 | youtube.com | 8 | 0 | 0 | 1 | 7 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | zdnet.com | 11 | 0 | 0 | 3 | 8 | [top-websites gist (no active program match)]() |
 | zeit.de | 10 | 0 | 0 | 4 | 6 | [top-websites gist (no active program match)]() |
-| zen.yandex.ru | 3 | 0 | 0 | 0 | 3 | [Yandex](https://yandex.com/bugbounty/index) |
+| zen.yandex.ru | 12 | 0 | 0 | 2 | 10 | [Yandex](https://yandex.com/bugbounty/index) |
 | zillow.com | 10 | 0 | 0 | 3 | 7 | [top-websites gist (no active program match)]() |
 | zoom.us | 15 | 0 | 0 | 4 | 11 | [Zoom](https://explore.zoom.us/docs/ent/h1.html) |
 | aljazeera.com | 14 | 0 | 0 | 3 | 11 | [top-websites gist (no active program match)]() |
@@ -568,8 +568,27 @@ Hunt date: 2026-09-25 (Asia/Taipei). This is a **passive / non-intrusive re-audi
 | i2.wp.com | 10 | 0 | 0 | 4 | 6 | top-websites gist (no active program match) |
 | cancerresearchuk.org | 9 | 0 | 0 | 1 | 8 | top-websites gist (no active program match) |
 | wordpress.com | 11 | 0 | 0 | 3 | 8 | WordPress |
-| buzzfeednews.com | 7 | 0 | 0 | 0 | 7 | top-websites gist (no active program match) |
+| buzzfeednews.com | 8 | 0 | 0 | 0 | 8 | top-websites gist (no active program match) |
 | meetup.com | 11 | 0 | 0 | 2 | 9 | top-websites gist (no active program match) |
 | automattic.com | 11 | 0 | 0 | 2 | 9 | top-websites gist (no active program match) |
 | ietf.org | 9 | 0 | 0 | 2 | 7 | IETF |
 | abc.net.au | 16 | 0 | 0 | 6 | 10 | top-websites gist (no active program match) |
+| accessdata.fda.gov | 2 | 0 | 0 | 0 | 2 | [top-websites gist (no active program match)]() |
+| blogs.scientificamerican.com | 6 | 0 | 0 | 0 | 6 | [top-websites gist (no active program match)]() |
+| boredpanda.com | 14 | 0 | 0 | 7 | 7 | [top-websites gist (no active program match)]() |
+| codecanyon.net | 8 | 0 | 0 | 2 | 6 | [top-websites gist (no active program match)]() |
+| fastcompany.com | 11 | 0 | 0 | 3 | 8 | [top-websites gist (no active program match)]() |
+| hbr.org | 9 | 0 | 0 | 1 | 8 | [top-websites gist (no active program match)]() |
+| in.linkedin.com | 10 | 0 | 0 | 2 | 8 | [top-websites gist (no active program match)]() |
+| j.mp | 9 | 0 | 0 | 3 | 6 | [top-websites gist (no active program match)]() |
+| justgiving.com | 6 | 0 | 0 | 1 | 5 | [top-websites gist (no active program match)]() |
+| m.me | 7 | 0 | 0 | 1 | 6 | [top-websites gist (no active program match)]() |
+| maps.googleapis.com | 10 | 0 | 0 | 0 | 10 | [top-websites gist (no active program match)]() |
+| mixcloud.com | 13 | 0 | 0 | 6 | 7 | [top-websites gist (no active program match)]() |
+| pitchfork.com | 10 | 0 | 0 | 3 | 7 | [top-websites gist (no active program match)]() |
+| residentadvisor.net | 15 | 0 | 0 | 5 | 10 | [top-websites gist (no active program match)]() |
+| reverbnation.com | 9 | 0 | 0 | 2 | 7 | [top-websites gist (no active program match)]() |
+| sxsw.com | 11 | 0 | 0 | 4 | 7 | [top-websites gist (no active program match)]() |
+| t.me | 9 | 0 | 0 | 3 | 6 | [top-websites gist (no active program match)]() |
+| themarthablog.com | 5 | 0 | 0 | 2 | 3 | [top-websites gist (no active program match)]() |
+| yoursite.com | 14 | 0 | 0 | 4 | 10 | [top-websites gist (no active program match)]() |

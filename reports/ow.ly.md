@@ -7,7 +7,7 @@
 | Target | https://ow.ly/ |
 | Bug bounty program | [Hootsuite](https://www.hootsuite.com/security) |
 | Listed scope domain | ow.ly |
-| Test date | 2026-09-25 19:34 UTC |
+| Test date | 2026-09-26 01:40 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -69,7 +69,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://ow.ly/ final status: 404 (final URL https://ow.ly/).
 - http://ow.ly/ initial status: 404.
 - Certificate: Amazon Amazon RSA 2048 M01, valid until 2026-12-29T23:59:59+00:00.

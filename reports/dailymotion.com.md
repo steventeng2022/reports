@@ -7,12 +7,12 @@
 | Target | https://dailymotion.com/ |
 | Bug bounty program | [Dailymotion](https://yeswehack.com/programs/dailymotion-public-bug-bounty) |
 | Listed scope domain | dailymotion.com |
-| Test date | 2026-09-25 19:34 UTC |
+| Test date | 2026-09-26 01:40 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
+Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,7 +25,8 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 | 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 8 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
 | 9 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 10 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 10 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 11 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
@@ -47,7 +48,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 ### 4. [LOW] TLS certificate expiring within 30 days (`T3`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires 2026-10-25T23:59:59+00:00 (30 days left) for dailymotion.com.
+- **Detail:** Certificate expires 2026-10-25T23:59:59+00:00 (29 days left) for dailymotion.com.
 
 ### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
@@ -74,14 +75,19 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 - **CWE:** CWE-319
 - **Detail:** http://dailymotion.com/ -> https://dailymotion.com/ (positive check).
 
-### 10. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+### 10. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://dailymotion.com/ exposes 108 unique Disallow path(s) (*/adfit/*, */alphaaz/, */alphaza/, */bookmarks/, */cookie/dmaid/*) and 9 sitemap reference(s)
+
+### 11. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
 - **Detail:** security.txt present on https://dailymotion.com (205 bytes); contact: mailto:security@dailymotion.com
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://dailymotion.com/ final status: 200 (final URL https://www.dailymotion.com/).
 - http://dailymotion.com/ initial status: 301.
 - Certificate: ZeroSSL GmbH ZeroSSL RSA DV SSL CA 2, valid until 2026-10-25T23:59:59+00:00.

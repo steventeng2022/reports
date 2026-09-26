@@ -7,12 +7,12 @@
 | Target | https://amazon.com.br/ |
 | Bug bounty program | [Amazon](https://hackerone.com/amazonvrp) |
 | Listed scope domain | amazon.com.br |
-| Test date | 2026-09-25 19:34 UTC |
+| Test date | 2026-09-26 01:40 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
+Total findings: **9** (High: 0, Medium: 0, Low: 4, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,7 +25,6 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 | 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
 | 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
@@ -74,14 +73,9 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 - **CWE:** CWE-200
 - **Detail:** robots.txt on https://amazon.com.br/ exposes 22 unique Disallow path(s) (/, /-/, /gp/ask-widget/askWidget, /gp/aw/shoppingAids/, /gp/cart)
 
-### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on amazon.com.br.
-
 ## Reproduction notes
 
-- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://amazon.com.br/ final status: 202 (final URL https://www.amazon.com.br/).
 - http://amazon.com.br/ initial status: 301.
 - Certificate: Amazon Amazon RSA 2048 M04, valid until 2027-03-22T23:59:59+00:00.

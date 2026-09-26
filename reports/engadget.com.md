@@ -7,7 +7,7 @@
 | Target | https://engadget.com/ |
 | Bug bounty program | [Yahoo!](https://app.intigriti.com/programs/yahoo/yahoobugbounty/detail) |
 | Listed scope domain | engadget.com |
-| Test date | 2026-09-25 19:34 UTC |
+| Test date | 2026-09-26 01:40 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -71,11 +71,11 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
 ### 9. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://engadget.com (108424 bytes)
+- **Detail:** security.txt present on https://engadget.com (108817 bytes)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://engadget.com/ final status: 200 (final URL https://www.engadget.com/).
 - http://engadget.com/ initial status: 301.
 - Certificate: Amazon Amazon RSA 2048 M01, valid until 2026-11-11T23:59:59+00:00.

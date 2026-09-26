@@ -7,12 +7,12 @@
 | Target | https://eventim.de/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | eventim.de |
-| Test date | 2026-09-25 19:34 UTC |
+| Test date | 2026-09-26 01:40 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
+Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -21,13 +21,12 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 | 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
 | 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
 | 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 9 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
-| 10 | info | R1 | robots.txt protected | CWE-200 |
-| 11 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
-| 12 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
+| 9 | info | R1 | robots.txt protected | CWE-200 |
+| 10 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 11 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
 
 ## Detailed findings
 
@@ -54,46 +53,41 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 ### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
 - **CWE:** CWE-1382
-- **Detail:** Certificate for eventim.de lists 44 name(s) besides the scope host: billetlugen.dk, cts.eventim.bg, cts.eventim.hr, cts.eventim.hu, cts.eventim.ro, cts.eventim.si, entradas.com, eventim.ca... (1 no longer resolve)
+- **Detail:** Certificate for eventim.de lists 44 name(s) besides the scope host: billetlugen.dk, cts.eventim.bg, cts.eventim.hr, cts.eventim.hu, cts.eventim.ro, cts.eventim.si, entradas.com, eventim.ca...
 
-### 6. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `cts.eventim.hu` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 7. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header on https://eventim.de/; full URL (incl. query strings) is sent as referrer by default.
 
-### 8. [INFO] Missing Permissions-Policy (`H7`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
 - **Detail:** No Permissions-Policy header on https://eventim.de/; browser features (camera, mic, geolocation) unrestricted.
 
-### 9. [INFO] Plain HTTP returns non-redirect status (`N3`)
+### 8. [INFO] Plain HTTP returns non-redirect status (`N3`)
 
 - **CWE:** CWE-319
 - **Detail:** http://eventim.de/ returns 403 (no redirect to HTTPS).
 
-### 10. [INFO] robots.txt protected (`R1`)
+### 9. [INFO] robots.txt protected (`R1`)
 
 - **CWE:** CWE-200
 - **Detail:** GET /robots.txt returned 403.
 
-### 11. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+### 10. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
 - **Detail:** security.txt present on https://eventim.de (140 bytes); contact: mailto:itsecurity@eventim.de
 
-### 12. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+### 11. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
 
 - **CWE:** CWE-200
 - **Detail:** https://eventim.de/ responded 403 (passive check only; no further probing).
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://eventim.de/ final status: 403 (final URL https://eventim.de/).
 - http://eventim.de/ initial status: 403.
 - Certificate: Let's Encrypt YR1, valid until 2026-12-15T11:37:01+00:00.

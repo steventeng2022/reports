@@ -7,7 +7,7 @@
 | Target | https://snapchat.com/ |
 | Bug bounty program | [Snapchat](https://hackerone.com/snapchat) |
 | Listed scope domain | snapchat.com |
-| Test date | 2026-09-25 19:34 UTC |
+| Test date | 2026-09-26 01:40 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -41,7 +41,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 ### 2. [LOW] TLS certificate expiring within 30 days (`T3`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires 2026-10-16T23:59:59+00:00 (21 days left) for snapchat.com.
+- **Detail:** Certificate expires 2026-10-16T23:59:59+00:00 (20 days left) for snapchat.com.
 
 ### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
@@ -105,7 +105,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://snapchat.com/ final status: 200 (final URL https://www.snapchat.com:443/).
 - http://snapchat.com/ initial status: 301.
 - Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-16T23:59:59+00:00.

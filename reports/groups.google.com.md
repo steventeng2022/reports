@@ -7,7 +7,7 @@
 | Target | https://groups.google.com/ |
 | Bug bounty program | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | Listed scope domain | groups.google.com |
-| Test date | 2026-09-25 19:34 UTC |
+| Test date | 2026-09-26 01:40 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -59,11 +59,11 @@ Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
 ### 7. [INFO] HTTPS root redirects to different host (`X3`)
 
 - **CWE:** CWE-200
-- **Detail:** https://groups.google.com/ redirects to https://accounts.google.com/v3/signin/identifier?continue=https://groups.google.com/&followup=https://groups.google.com/&osid=1&passive=1209600&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S220179041:1790364932496090.
+- **Detail:** https://groups.google.com/ redirects to https://accounts.google.com/v3/signin/identifier?continue=https://groups.google.com/&followup=https://groups.google.com/&osid=1&passive=1209600&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S538224403:1790386931198019.
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://groups.google.com/ final status: 200 (final URL https://accounts.google.com/v3/signin/identifier?continue=https://groups.google.com/&followup=https://groups.google.com/&osid=1&passive=1209600&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S220179041:1790364932496090).
+- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://groups.google.com/ final status: 200 (final URL https://accounts.google.com/v3/signin/identifier?continue=https://groups.google.com/&followup=https://groups.google.com/&osid=1&passive=1209600&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S538224403:1790386931198019).
 - http://groups.google.com/ initial status: 301.
 - Certificate: Google Trust Services WE2, valid until 2026-12-03T19:22:00+00:00.

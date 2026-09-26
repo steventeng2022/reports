@@ -7,12 +7,12 @@
 | Target | https://amazon.ca/ |
 | Bug bounty program | [Amazon](https://hackerone.com/amazonvrp) |
 | Listed scope domain | amazon.ca |
-| Test date | 2026-09-25 19:34 UTC |
+| Test date | 2026-09-26 01:40 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 4, Info: 5)
+Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,6 +25,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 4, Info: 5)
 | 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
 | 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
@@ -73,9 +74,14 @@ Total findings: **9** (High: 0, Medium: 0, Low: 4, Info: 5)
 - **CWE:** CWE-200
 - **Detail:** robots.txt on https://amazon.ca/ exposes 64 unique Disallow path(s) (/, /-/, /ap/signin, /dp/e-mail-friend/, /dp/product-availability/)
 
+### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on amazon.ca.
+
 ## Reproduction notes
 
-- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://amazon.ca/ final status: 202 (final URL https://www.amazon.ca/).
 - http://amazon.ca/ initial status: 301.
 - Certificate: Amazon Amazon RSA 2048 M01, valid until 2027-01-10T23:59:59+00:00.

@@ -7,7 +7,7 @@
 | Target | https://socialmediatoday.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | socialmediatoday.com |
-| Test date | 2026-09-25 19:34 UTC |
+| Test date | 2026-09-26 01:40 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -69,7 +69,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 3, Info: 5)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://socialmediatoday.com/ final status: 403 (final URL https://socialmediatoday.com/).
 - http://socialmediatoday.com/ initial status: 301.
 - Certificate: Google Trust Services WE1, valid until 2026-11-16T17:51:54+00:00.

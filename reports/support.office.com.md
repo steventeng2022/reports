@@ -7,7 +7,7 @@
 | Target | https://support.office.com/ |
 | Bug bounty program | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
 | Listed scope domain | support.office.com |
-| Test date | 2026-09-25 19:34 UTC |
+| Test date | 2026-09-26 01:40 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -105,7 +105,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://support.office.com/ final status: 200 (final URL https://support.microsoft.com/en-us/microsoft-365/).
 - http://support.office.com/ initial status: 404.
 - Certificate: Microsoft Corporation Microsoft TLS G2 RSA CA OCSP 02, valid until 2027-02-25T11:50:54+00:00.

@@ -7,7 +7,7 @@
 | Target | https://pinterest.co.uk/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | pinterest.co.uk |
-| Test date | 2026-09-25 19:34 UTC |
+| Test date | 2026-09-26 01:40 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -78,7 +78,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 ### 10. [INFO] security.txt exposed (public disclosure policy) (`S2`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://pinterest.co.uk (306419 bytes)
+- **Detail:** security.txt present on https://pinterest.co.uk (305837 bytes)
 
 ### 11. [INFO] HTTPS root redirects to different host (`X3`)
 
@@ -87,7 +87,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://pinterest.co.uk/ final status: 200 (final URL https://uk.pinterest.com/).
 - http://pinterest.co.uk/ initial status: 308.
 - Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2027-02-26T23:59:59+00:00.
