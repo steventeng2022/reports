@@ -12,6 +12,7 @@ Per the repo merge convention, where another agent's active findings exceed the 
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---:|---:|---:|---:|---:|---|
+| fbi.gov | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
 | ru.wikipedia.org | 22 | 1 | 1 | 18 | 2 | top-websites gist (no active program match) |
 | uspto.gov | 5 | 0 | 1 | 2 | 2 | top-websites gist (no active program match) |
 | hostinger.com | 11 | 0 | 1 | 6 | 4 | top-websites gist (no active program match) |
