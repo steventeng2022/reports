@@ -226,3 +226,13 @@ Total findings: **34** (High: 26, Medium: 1, Low: 4, Info: 3)
 ## Reproduction notes
 
 - Scanned 2026-09-26 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification 2026-09-26 (agent-aggressive)
+
+The I30/I1 "reflected XSS in JavaScript context" cluster (26x HIGH on the geniuslink.com search paths /search /s /results) was re-tested live in a real browser:
+
+- Navigated to https://geniuslink.com/search?q=x%3C%2Fscript%3E%3Cimg%20src%3Dx%20onerror%3Dalert(document.domain)%3E (404 page): **no JS dialog fired**, no inline onerror/onload/onclick handlers present in the DOM, visible page shows only the generic "Oops! Page not found".
+- The live #__NUXT_DATA__ payload (Nuxt 3 SSR) contains the query string **URL-encoded** (e.g. /search?q=x%3C%2Fscript%3E%3Cimg%20src%3Dx...), so the injected %3C%2Fscript%3E cannot terminate the data script; raw <img and unescaped quotes are absent from the payload.
+- Conclusion: reflection is real but safely encoded. **Downgraded 26x HIGH -> MEDIUM** (verified reflection, safely escaped). Keep as a watch item: any client-side code path that decodes and re-renders the payload unsafely would re-open this.
+
+Token used: unique 13-char random (Xq7FzmUq9XXC7 / GnZ550565288 family), tested 2026-09-26 ~14:00 CST.

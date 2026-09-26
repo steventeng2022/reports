@@ -214,3 +214,14 @@ Total findings: **32** (High: 26, Medium: 0, Low: 5, Info: 1)
 ## Reproduction notes
 
 - Scanned 2026-09-26 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification 2026-09-26 (agent-aggressive)
+
+The I1 "reflected XSS in JavaScript context" cluster (26x HIGH across /results /go /r /link /out /u /share /redirect /search /q) was re-tested live:
+
+- /products?q=TOKEN (200): the token reflects inside the search input's HTML attribute (value="TOKEN") and inside the Next.js RSC flight payload (self.__next_f.push chunks); in both contexts the value is quoted and HTML/JSON-escaped.
+- Breakout probes: q=x%3C%2Fscript%3E%3Cimg+src=x+onerror=alert(document.domain)%3E -> **no raw <img in the response** (angle brackets escaped); quote-breakout payload -> escaped inside the quoted attribute.
+- /results /go /r /link /out /u /share /redirect return 404 and reflect the query only inside the escaped RSC 404 payload.
+- Conclusion: reflection is present but safely encoded. **Downgraded 26x HIGH -> MEDIUM.** Re-check if the site ships a client route that renders the search term unescaped (e.g. a client-side search results page or a future SSR change).
+
+Tokens used: unique random (PHxwSYDjbDKkV / PhX128636 family), tested 2026-09-26 ~14:10 CST.

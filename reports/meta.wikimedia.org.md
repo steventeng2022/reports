@@ -172,3 +172,11 @@ Total findings: **25** (High: 2, Medium: 1, Low: 20, Info: 2)
 ## Reproduction notes
 
 - Scanned 2026-09-26 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification 2026-09-26 (agent-aggressive)
+
+The I2 "attribute injection on /w/index.php" cluster (2x HIGH) was re-tested live in a real browser:
+
+- Navigated to /w/index.php?title=<token>"%20onerror=alert(document.domain): MediaWiki **normalized the title** into /wiki/<token>%22_onerror%3Dalert(document.domain) (quote percent-encoded, space turned into underscore), and rendered a normal "page does not exist" content page. **No JS dialog fired**; no inline onerror/onload handlers; the title appears only as entity-escaped text in the page header.
+- Plain-HTTP probes of /w/index.php?title=/url=/search= intermittently returned **429** (Wikimedia rate limiting) on 09-26; the browser-based test succeeded and is the authoritative result.
+- Conclusion: safely normalized + escaped. **Downgraded 2x HIGH -> MEDIUM.**

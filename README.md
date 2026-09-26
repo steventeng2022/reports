@@ -1,14 +1,17 @@
-# Bounty Hunt - Findings Index (Passive Re-audit)
+# Bounty Hunt - Findings Index
 
-Re-test date: 2026-09-25/26 (UTC; Asia/Taipei 2026-09-25/26). **586 of the 623 sites currently in this repo were passively re-audited (re-run #9, branch codex/passive-redo); the 37 added to main after the branch fork are carried as-is from main's current reports (re-audit queued next pass)** with a non-aggressive methodology: passive reconnaissance (DNS records, DNSSEC status, SPF/DMARC, certificate-transparency subdomain logs) plus read-only checks (TLS protocol/cipher/certificate analysis, HTTP/HTTPS security headers, cookie flags, CORS behavior with Origin header, GET-only open-redirect and sensitive-path probes, TCP-connect port state). No injection, no fuzzing, no forms submitted, no authenticated sessions, no state changes.
-
-Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
+Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the original scan results with the 2026-09-25 **passive / non-intrusive re-audit**. Where an active report was replaced, the latest pre-merge active report is preserved in a collapsible appendix.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 7050** (High: 82, Medium: 87, Low: 2203, Info: 4678)
+Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
+
+
+**Indexed reports: 623**
+
+**Total primary findings across all sites: 7050** (High: 28, Medium: 141, Low: 2203, Info: 4678)
 
 | Site | Findings | High | Med | Low | Info | Program |
-|---|---|---|---|---|---|---|
+|---|---:|---:|---:|---:|---:|---|
 | 1.bp.blogspot.com | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
 | 1.usa.gov | 9 | 0 | 0 | 1 | 8 | [TTS Bug Bounty](https://hackerone.com/tts) |
 | 1drv.ms | 14 | 0 | 0 | 3 | 11 | top-websites gist (no active program match) |
@@ -256,7 +259,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | g.page | 12 | 0 | 0 | 0 | 12 | top-websites gist (no active program match) |
 | g1.globo.com | 9 | 0 | 0 | 2 | 7 | top-websites gist (no active program match) |
 | gartner.com | 11 | 0 | 0 | 4 | 7 | top-websites gist (no active program match) |
-| geni.us | 34 | 26 | 1 | 4 | 3 | top-websites gist (no active program match) |
+| geni.us | 34 | 0 | 27 | 4 | 3 | top-websites gist (no active program match) |
 | get.adobe.com | 11 | 0 | 0 | 4 | 7 | [Adobe](https://hackerone.com/adobe) |
 | get.google.com | 13 | 0 | 0 | 5 | 8 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | getpocket.com | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
@@ -386,7 +389,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | mega.nz | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
 | mentalfloss.com | 13 | 0 | 0 | 4 | 9 | top-websites gist (no active program match) |
 | messenger.com | 11 | 0 | 0 | 5 | 6 | [Facebook](https://www.facebook.com/whitehat) |
-| meta.wikimedia.org | 25 | 2 | 1 | 20 | 2 | top-websites gist (no active program match) |
+| meta.wikimedia.org | 25 | 0 | 3 | 20 | 2 | top-websites gist (no active program match) |
 | metmuseum.org | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
 | microsoft.com | 14 | 0 | 0 | 3 | 11 | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
 | mixcloud.com | 15 | 0 | 0 | 4 | 11 | top-websites gist (no active program match) |
@@ -469,7 +472,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | prnewswire.com | 10 | 0 | 0 | 2 | 8 | top-websites gist (no active program match) |
 | prnt.sc | 15 | 0 | 0 | 5 | 10 | top-websites gist (no active program match) |
 | productforums.google.com | 11 | 0 | 0 | 5 | 6 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
-| producthunt.com | 32 | 26 | 0 | 5 | 1 | top-websites gist (no active program match) |
+| producthunt.com | 32 | 0 | 26 | 5 | 1 | top-websites gist (no active program match) |
 | profiles.google.com | 9 | 0 | 0 | 3 | 6 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | psychologytoday.com | 12 | 0 | 0 | 4 | 8 | top-websites gist (no active program match) |
 | pt.slideshare.net | 13 | 0 | 0 | 5 | 8 | top-websites gist (no active program match) |
