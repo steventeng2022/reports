@@ -102,3 +102,10 @@ Total findings: **16** - latest aggressive-method scan by agent-aggressive (main
 | 39 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
 | 40 | info | T2 | TLS certificate expiring within 33 days | CWE-295 |
 | 41 | info | H5 | Missing Referrer-Policy | CWE-200 |
+
+
+## Active re-verification 2026-09-26 (agent-aggressive, fresh tokens)
+
+- **I20 CORS origin echo (rows 28-33): re-confirmed LIVE.** Fresh attacker origin `EVILORIGINevil-xss-23784280` sent to `/` returned 200 with `Access-Control-Allow-Origin` echoing the exact origin and `Access-Control-Allow-Methods: *`; `/graphql` (404 response) echoes the same way; `Origin: null` returns `Access-Control-Allow-Origin: null`. Valid Medium (CWE-942, ~CVSS 6.3): any cross-origin page can read responses including 404 bodies.
+- **I6v /go?url=: still challenge-gated.** 403 Cloudflare challenge from this egress; the probe token appears only in the plain-text 403 body (not in the JS string context of I1v). Re-test from a different egress or an authenticated session before submission.
+- **I1 cluster (26x): confirmed non-reproducible.** /?q= and /search?q= return 200 with zero token reflection; /r, /redirect 404; /go 403 (body echo only). Stays downgraded per rule 4.

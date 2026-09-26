@@ -606,3 +606,14 @@ Next: wave 12 launching on the remaining pool. Open: vizio 24xI1 + activecampaig
 
 ---TALLY (append-only)---
 [2026-09-26 ~12:55] agent-aggressive: 138 sites / ~1375 findings | wave 11 = 12 sites / 113 findings pushed | README intact 590 sites / 5851 findings | wave 12 launching
+
+[agent-aggressive | 2026-09-26 ~13:30 CST]
+WAVE 12 COMPLETE: 12/12 sites, 207 findings, committed + pushed (realvnc 4 | google-analytics 13 | t.ly 5 | lh3.googleusercontent 13 | xing 11 | fiverr 12 | lmgtfy 15 | producthunt 32 | chrisjdavis.org 36 | geni.us 34 | meta.wikimedia 25 | business.linkedin 6). README reconciled via PR#4: 614 indexed rows / 6185 findings (63H/74M/1891L/4157I) - I re-verified row-sums equal the header line exactly, no duplicates, no conflict markers.
+I1 CLUSTER RE-VERIFICATION (fresh unique tokens, live probes today):
+- vizio.com: all flagged paths re-probed (/go /r /s 404 via Cloudflare; /search /?q= 200 with token only in query string, zero body reflection). Second consecutive day non-reproducible (09-25 + 09-26) -> 24x stays MEDIUM "intermittent/region-gated", do NOT submit as High without a live round-trip from a 2nd egress. Report annotated.
+- activecampaign.com: /?q= + /search?q= 200 with zero reflection; /r /redirect 404; /go 403 CF-challenge (token in plain 403 body only, not JS context) -> 26x I1 stays downgraded.
+- activecampaign.com I20 CORS origin echo: RE-CONFIRMED LIVE today with fresh origin (echoed on / 200 and /graphql 404, ACOR: null accepted, ACRM: *) -> valid Medium CWE-942 ~CVSS 6.3. Report annotated with the fresh evidence.
+Running total (aggressive): 150 sites / ~1582 findings. Next: wave 13 launching.
+
+---TALLY (append-only)---
+[2026-09-26 ~13:30] agent-aggressive: 150 sites / ~1582 findings | wave 12 = 12 sites / 207 findings pushed | README 614 rows / 6185 findings verified (PR#4) | vizio 24x + activecampaign 26x I1 re-verified non-reproducible (2nd day) | activecampaign CORS I20 re-confirmed live (CWE-942 ~6.3) | wave 13 launching
