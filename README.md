@@ -8,6 +8,7 @@ Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---:|---:|---:|---:|---:|---|
+| snip.ly | 28 | 21 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | realvnc.com | 4 | 0 | 1 | 2 | 1 | top-websites gist (no active program match) |
 | google-analytics.com | 13 | 2 | 1 | 7 | 3 | Google |
 | lmgtfy.com | 15 | 0 | 0 | 3 | 12 | top-websites gist (no active program match) |
