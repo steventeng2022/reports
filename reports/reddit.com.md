@@ -7,12 +7,12 @@
 | Target | https://reddit.com/ |
 | Bug bounty program | Reddit |
 | Listed scope domain | reddit.com |
-| Test date | 2026-09-25 10:12 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
+Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -24,6 +24,12 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 | 6 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 7 | info | H6 | Server technology disclosure | CWE-200 |
 | 8 | info | P8 | Missing security.txt | CWE-1038 |
+| 9 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 10 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 11 | low | DNS3 | Wildcard DNS detected | CWE-345 |
+| 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -81,6 +87,42 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 9. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 10. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 11. [LOW] Wildcard DNS detected (`DNS3`)
+
+- **CWE:** CWE-345
+- **Detail:** Two random labels (yza3eusf8w2r3d.reddit.com and nyi93ffkluywxj.reddit.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
+
+### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=zZHozYbAJmSLOMG4OjQFoHiVqkxtdgvyBzsE7wUGFiw; onetrust-domain-verification=6b98ba3dd087405399bbf45b6cbdcd37; atlassian-domain-verification=vBaV6PXyyu4OAPLiQFbxFMCboSTjoR/qxKJ2OlpI46ZEpZL/FV
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of reddit.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 1 disallow path(s), e.g. /
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -88,60 +130,60 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
   "domain": "reddit.com",
   "dns": {
     "a": [
+      "151.101.129.140",
       "151.101.1.140",
       "151.101.193.140",
-      "151.101.65.140",
-      "151.101.129.140"
+      "151.101.65.140"
     ],
     "aaaa": [
-      "2a04:4e42:600::396",
-      "2a04:4e42::396",
       "2a04:4e42:200::396",
-      "2a04:4e42:400::396"
+      "2a04:4e42::396",
+      "2a04:4e42:400::396",
+      "2a04:4e42:600::396"
     ],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
       "aspmx3.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-378.awsdns-47.com.",
-      "ns-1887.awsdns-43.co.uk.",
+      "ns-1029.awsdns-00.org.",
       "ns-557.awsdns-05.net.",
-      "ns-1029.awsdns-00.org."
+      "ns-1887.awsdns-43.co.uk.",
+      "ns-378.awsdns-47.com."
     ],
     "spf": [
-      "atlassian-domain-verification=aGWDxGvt+oY3p7qTWt5v2uJDVJkoJAeHxwGqKmGQLMEsUXUJJe/Pm/k+GGNPpn6M",
-      "google-site-verification=QO4VY1PRzsG-MxiQn3j0kxd_ZaFjcTk6MWBfKru0_5I",
-      "google-site-verification=0uv13-wxlHK8FFKaUpgzyrVmL1YdNYW6v3PupLdw3JI",
-      "cursor-domain-verification-f9fw38=WVB8yAMGTZXO7Je9DLuj1DIZB",
-      "protonmail-verification=24cb91442caf54c8b820f4a0347292f143531210",
+      "00Dbf000005OCTN=1TBbf0000000Mer",
+      "v=spf1 include:spf0.reddit.com -all",
+      "google-site-verification=zZHozYbAJmSLOMG4OjQFoHiVqkxtdgvyBzsE7wUGFiw",
       "onetrust-domain-verification=6b98ba3dd087405399bbf45b6cbdcd37",
+      "atlassian-domain-verification=vBaV6PXyyu4OAPLiQFbxFMCboSTjoR/qxKJ2OlpI46ZEpZL/FVTIfMlgoM5Hy9eY",
+      "stripe-verification=80aa7e2c9775fee2653f61b04b46da6fd227b56fecd9499e5f63cd0dcf563984",
       "a5897185-49e1-4181-9065-51bd24737466",
+      "614ac4be-8664-4cea-8e29-f84d08ad875c",
+      "postman-domain-verification=ad4c89daaf83d06f70cb6e8737cb323b039aeaae9e0e288c75081b0a715812a2d30e7c31402da867c70287ad8216da42074ffe7b4fcfcbf86f9316301329308f",
+      "google-site-verification=QO4VY1PRzsG-MxiQn3j0kxd_ZaFjcTk6MWBfKru0_5I",
+      "box-domain-verification=95c33f4ee4b11d8827190dbc5371ca7df25b961019116e5565ce4aa36de9be3a",
+      "apple-domain-verification=qC3rSSKrh10DoMI7",
+      "stripe-verification=9bd70dd1884421b47f596fea301e14838c9825cdba5b209990968fdc6f8010c7",
       "twilio-domain-verification=5e37855d7c9445e967b31c5e0371ebb5",
       "00Do0000000I6Pa=1TBcv0000000HQh",
-      "postman-domain-verification=ad4c89daaf83d06f70cb6e8737cb323b039aeaae9e0e288c75081b0a715812a2d30e7c31402da867c70287ad8216da42074ffe7b4fcfcbf86f9316301329308f",
       "yahoo-verification-key=I0We5FayJi0Q8XdjDgE5oN0ujM08heSVe46o/FvsMkk=",
-      "atlassian-domain-verification=vBaV6PXyyu4OAPLiQFbxFMCboSTjoR/qxKJ2OlpI46ZEpZL/FVTIfMlgoM5Hy9eY",
-      "jamf-site-verification=EGK11tNR4hezQg0jZaIDpA",
-      "google-site-verification=zZHozYbAJmSLOMG4OjQFoHiVqkxtdgvyBzsE7wUGFiw",
-      "00Dbf000005OCTN=1TBbf0000000Mer",
-      "liveramp-site-verification=hNZ5ZAy1ufTpXrpCELrrtSzTlb4KU4h7UtDPpZdj9XA",
-      "stripe-verification=9bd70dd1884421b47f596fea301e14838c9825cdba5b209990968fdc6f8010c7",
       "00DV90000052YKT=1TBV90000000AsD",
-      "stripe-verification=80aa7e2c9775fee2653f61b04b46da6fd227b56fecd9499e5f63cd0dcf563984",
-      "jetbrains-domain-verification=bjn7o9fxbduga0omhaepeewtx",
+      "atlassian-domain-verification=aGWDxGvt+oY3p7qTWt5v2uJDVJkoJAeHxwGqKmGQLMEsUXUJJe/Pm/k+GGNPpn6M",
       "00Dbf000005OCRl=1TBbf0000000MJt",
-      "614ac4be-8664-4cea-8e29-f84d08ad875c",
-      "docusign=6ba0c5a9-5a5e-41f8-a7c8-8b4c6e35c10c",
-      "apple-domain-verification=qC3rSSKrh10DoMI7",
-      "google-site-verification=oh_YJE560y0e6FHP1RT7NIjyTlBhACNMvD2EgSss0sc",
+      "cursor-domain-verification-f9fw38=WVB8yAMGTZXO7Je9DLuj1DIZB",
+      "jamf-site-verification=EGK11tNR4hezQg0jZaIDpA",
+      "liveramp-site-verification=hNZ5ZAy1ufTpXrpCELrrtSzTlb4KU4h7UtDPpZdj9XA",
       "MS=ms71041902",
-      "v=spf1 include:spf0.reddit.com -all",
-      "box-domain-verification=95c33f4ee4b11d8827190dbc5371ca7df25b961019116e5565ce4aa36de9be3a",
+      "docusign=6ba0c5a9-5a5e-41f8-a7c8-8b4c6e35c10c",
+      "jetbrains-domain-verification=bjn7o9fxbduga0omhaepeewtx",
+      "protonmail-verification=24cb91442caf54c8b820f4a0347292f143531210",
+      "google-site-verification=0uv13-wxlHK8FFKaUpgzyrVmL1YdNYW6v3PupLdw3JI",
+      "google-site-verification=oh_YJE560y0e6FHP1RT7NIjyTlBhACNMvD2EgSss0sc",
       "google-site-verification=5Qzlkl8HJJSBKnMI7rQGDr9Sgiir4Ey6klx1rWQCJ2M"
     ],
     "dmarc": [
@@ -162,7 +204,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
       "*.reddit.com",
       "reddit.com"
     ],
-    "days_left": 144,
+    "days_left": 143,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -172,7 +214,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
     }
   },
   "ports": {
-    "ip": "151.101.1.140",
+    "ip": "151.101.129.140",
     "open": []
   },
   "https": {
@@ -222,10 +264,36 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 27.2,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "wildcard_dns": true,
+  "apex_txt": [
+    "google-site-verification=zZHozYbAJmSLOMG4OjQFoHiVqkxtdgvyBzsE7wUGFiw",
+    "onetrust-domain-verification=6b98ba3dd087405399bbf45b6cbdcd37",
+    "atlassian-domain-verification=vBaV6PXyyu4OAPLiQFbxFMCboSTjoR/qxKJ2OlpI46ZEpZL/FV",
+    "stripe-verification=80aa7e2c9775fee2653f61b04b46da6fd227b56fecd9499e5f63cd0dcf56",
+    "postman-domain-verification=ad4c89daaf83d06f70cb6e8737cb323b039aeaae9e0e288c7508"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true,
+    "robots_disallow": [
+      "/"
+    ]
+  },
+  "elapsed_s": 13.7,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -234,4 +302,5 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

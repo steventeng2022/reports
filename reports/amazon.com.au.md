@@ -7,12 +7,12 @@
 | Target | https://amazon.com.au/ |
 | Bug bounty program | Amazon |
 | Listed scope domain | amazon.com.au |
-| Test date | 2026-09-25 08:25 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:38 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -105,6 +110,36 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo; google-site-verification=34wOR4ff2wUmhJYNBtvXYwo0WsSt5dKuQCO1AOldRJM; adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2a
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of amazon.com.au has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 185 disallow path(s), e.g. /dp/product-availability/, /dp/rate-this-item/, /exec/obidos/account-access-login, /exec/obidos/change-style, /exec/obidos/dt/assoc/handle-buy-box
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -112,9 +147,9 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
   "domain": "amazon.com.au",
   "dns": {
     "a": [
+      "18.246.101.26",
       "18.246.97.211",
-      "18.246.102.0",
-      "18.246.101.26"
+      "18.246.102.0"
     ],
     "aaaa": [],
     "cname": null,
@@ -122,40 +157,40 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
       "amazon-smtp.amazon.com (pref 10)"
     ],
     "ns": [
-      "ns1.amzndns.net.",
       "ns2.amzndns.net.",
-      "ns1.amzndns.com.",
-      "ns1.amzndns.org.",
       "ns2.amzndns.com.",
       "ns2.amzndns.org.",
+      "ns1.amzndns.net.",
+      "ns1.amzndns.com.",
+      "ns1.amzndns.org.",
       "ns1.amzndns.co.uk.",
       "ns2.amzndns.co.uk."
     ],
     "spf": [
-      "sending_domain608861=d308320d80293ea27debf99bfb65df61a5a5533dc905757adfaab309beacc85d",
-      "canva-site-verification=Bxf88Q8PXuF2I343L5w2zQ",
-      "docker-verification=c50aa452-dfa4-41cb-8219-5a7fea9156f1",
-      "google-site-verification=JRIRRJp9kRJ3sxP5dqUEHyr8MWvoiiyXdi9vL8vmiAc",
-      "sending_domain608861=02111684abe75590f1d69e5e553d7161304877e3997a46bd986dd250bf789903",
-      "ZOOM_verify_QSHzSsY1990HQOIwdcc6an",
-      "kahoot-domain-verification=df3b0967f037c4069fa43fdceb1379e66f1cb3c8cedb1c43ef5161725c22c721",
-      "sending_domain229492=f2c63538e12c59c4408ab1dd75c743d70392e079087b71e367aedd2958ee9b48",
-      "sending_domain229492=7d4d64d0b55c5ca37c7ab337de1def400c69c7f69d6206d0010ec41e6db08383",
-      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
-      "sending_domain1003771=8a01320175f69ac365904579a7dc3de1d55f044afd4367fbb5b003b4e9db8861",
-      "spf2.0/pra include:amazon.com -all",
-      "sending_domain1003771=1a5b0afe286d365da0519f2761cad76ffac27bb3ddc3f6d7b982fe2e3aaacc5f",
-      "google-site-verification=mDEghGAOUAiiSIo5ba_EJd1ZYRzZSZ5rQQ60A98QDj8",
-      "google-site-verification=34wOR4ff2wUmhJYNBtvXYwo0WsSt5dKuQCO1AOldRJM",
-      "autodesk-domain-verification=xE0E3DApePbOXs4s_drg",
-      "MS=ms73620188",
-      "91v2nbygcpmc0y5pkbd6mmz4knhhchfm",
-      "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814",
-      "facebook-domain-verification=ombfl5vbrfyo80gfz4bmw5drem3sav",
-      "MS=ms74130121",
       "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
+      "spf2.0/pra include:amazon.com -all",
+      "google-site-verification=34wOR4ff2wUmhJYNBtvXYwo0WsSt5dKuQCO1AOldRJM",
+      "sending_domain608861=02111684abe75590f1d69e5e553d7161304877e3997a46bd986dd250bf789903",
+      "sending_domain608861=d308320d80293ea27debf99bfb65df61a5a5533dc905757adfaab309beacc85d",
+      "sending_domain1003771=1a5b0afe286d365da0519f2761cad76ffac27bb3ddc3f6d7b982fe2e3aaacc5f",
+      "MS=ms74130121",
+      "sending_domain229492=f2c63538e12c59c4408ab1dd75c743d70392e079087b71e367aedd2958ee9b48",
+      "MS=ms73620188",
+      "v=spf1 include:amazon.com -all",
+      "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814",
+      "google-site-verification=JRIRRJp9kRJ3sxP5dqUEHyr8MWvoiiyXdi9vL8vmiAc",
+      "canva-site-verification=Bxf88Q8PXuF2I343L5w2zQ",
+      "kahoot-domain-verification=df3b0967f037c4069fa43fdceb1379e66f1cb3c8cedb1c43ef5161725c22c721",
       "bluebeam-verification=bnne3s2t1ynv515ug95rocbw7gb0tb",
-      "v=spf1 include:amazon.com -all"
+      "sending_domain1003771=8a01320175f69ac365904579a7dc3de1d55f044afd4367fbb5b003b4e9db8861",
+      "sending_domain229492=7d4d64d0b55c5ca37c7ab337de1def400c69c7f69d6206d0010ec41e6db08383",
+      "docker-verification=c50aa452-dfa4-41cb-8219-5a7fea9156f1",
+      "google-site-verification=mDEghGAOUAiiSIo5ba_EJd1ZYRzZSZ5rQQ60A98QDj8",
+      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
+      "91v2nbygcpmc0y5pkbd6mmz4knhhchfm",
+      "facebook-domain-verification=ombfl5vbrfyo80gfz4bmw5drem3sav",
+      "autodesk-domain-verification=xE0E3DApePbOXs4s_drg",
+      "ZOOM_verify_QSHzSsY1990HQOIwdcc6an"
     ],
     "dmarc": [
       "v=DMARC1;",
@@ -224,7 +259,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
       "edgeflow-dp.aero.abe2c2f23-frontier.amazon.de",
       "shop.business.amazon.com"
     ],
-    "days_left": 192,
+    "days_left": 191,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -234,7 +269,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
     }
   },
   "ports": {
-    "ip": "18.246.97.211",
+    "ip": "18.246.101.26",
     "open": []
   },
   "https": {
@@ -284,10 +319,48 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 101.8,
-  "rechecked": "2026-09-25 13:59 UTC"
+  "apex_txt": [
+    "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
+    "google-site-verification=34wOR4ff2wUmhJYNBtvXYwo0WsSt5dKuQCO1AOldRJM",
+    "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2a",
+    "google-site-verification=JRIRRJp9kRJ3sxP5dqUEHyr8MWvoiiyXdi9vL8vmiAc",
+    "canva-site-verification=Bxf88Q8PXuF2I343L5w2zQ"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/dp/product-availability/",
+      "/dp/rate-this-item/",
+      "/exec/obidos/account-access-login",
+      "/exec/obidos/change-style",
+      "/exec/obidos/dt/assoc/handle-buy-box",
+      "/exec/obidos/flex-sign-in",
+      "/exec/obidos/handle-buy-box",
+      "/exec/obidos/refer-a-friend-login",
+      "/exec/obidos/subst/associates/join",
+      "/exec/obidos/subst/marketplace/sell-your-collection.html",
+      "/exec/obidos/subst/marketplace/sell-your-stuff.html",
+      "/exec/obidos/subst/partners/friends/access.html",
+      "/exec/obidos/tg/cm/member/",
+      "/gp/cart",
+      "/gp/content-form"
+    ]
+  },
+  "elapsed_s": 20.6,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -296,4 +369,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://ec.europa.eu/ |
 | Bug bounty program | European Central Bank |
 | Listed scope domain | ec.europa.eu |
-| Test date | 2026-09-25 09:27 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,6 +26,12 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 | 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | info | SEC2 | security.txt published without a contact address | CWE-1038 |
 
 ## Detailed findings
 
@@ -97,6 +103,42 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
+### 11. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 12. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-w18fn5=aCZHCSXAOr6mwQB6zAVj4LGSJ; yahoo-verification-key=mIbs1g4mUnS9N9xQpPywHyyQ462sU/5p7+ObnIeT6QE=; apple-domain-verification=0zqmupc9IJswQan3
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of ec.europa.eu has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 201 disallow path(s), e.g. /eurostat/tgm/, /europeaid/prag/, /archives/, /cgi-bin/, /clima/ets/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 16. [INFO] security.txt published without a contact address (`SEC2`)
+
+- **CWE:** CWE-1038
+- **Detail:** /.well-known/security.txt returns 200 but contains no mailto:/URL contact.
+- **Recommendation:** Add a Contact: field per RFC 9116.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -104,12 +146,12 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
   "domain": "ec.europa.eu",
   "dns": {
     "a": [
-      "147.67.210.30",
-      "147.67.34.30"
+      "147.67.34.30",
+      "147.67.210.30"
     ],
     "aaaa": [
-      "2a01:7080:14:100::666:30",
-      "2a01:7080:24:100::666:30"
+      "2a01:7080:24:100::666:30",
+      "2a01:7080:14:100::666:30"
     ],
     "cname": null,
     "mx": [
@@ -119,19 +161,19 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
     ],
     "ns": [],
     "spf": [
-      "cisco-ci-domain-verification=d9a4e5f569f0c36f811a4eb618d520d8d73a90beac438e9234a915465c56a2",
-      "atlassian-domain-verification=CdVasMY4c9BTCt8IJvPUjKbyz8YkV095KyECi5dLyhg481LAhkwutfFJHSjULhnx",
-      "google-site-verification=eyHX1dZlZS9ZXUW4486Y8_HpDHE1ubuzInqkzRjnVBE",
-      "atlassian-domain-verification=Sn5ZgXoanhUhLAap/3tkBbsCa4Kag0SfkSMmpJX8piK6/NsGjt5l7QJZYiDlhYh7",
-      "DN6kiCaIRHg011SWPd/y5wK0nF1lAB0vxkimTgK6YHQ=",
-      "yahoo-verification-key=mIbs1g4mUnS9N9xQpPywHyyQ462sU/5p7+ObnIeT6QE=",
       "anthropic-domain-verification-w18fn5=aCZHCSXAOr6mwQB6zAVj4LGSJ",
-      "google-site-verification=Hf3TsilSdPh4WhYu26eFxy_8pIrtGVdDgqbAdjbbAw8",
-      "MS=ms93839866",
-      "globalsign-domain-verification=U-m3rn1OpP3XdBtI6G_e7kKw156XwchHbjmX3n0iKq",
+      "yahoo-verification-key=mIbs1g4mUnS9N9xQpPywHyyQ462sU/5p7+ObnIeT6QE=",
+      "DN6kiCaIRHg011SWPd/y5wK0nF1lAB0vxkimTgK6YHQ=",
       "apple-domain-verification=0zqmupc9IJswQan3",
+      "atlassian-domain-verification=CdVasMY4c9BTCt8IJvPUjKbyz8YkV095KyECi5dLyhg481LAhkwutfFJHSjULhnx",
+      "atlassian-domain-verification=Sn5ZgXoanhUhLAap/3tkBbsCa4Kag0SfkSMmpJX8piK6/NsGjt5l7QJZYiDlhYh7",
+      "google-site-verification=eyHX1dZlZS9ZXUW4486Y8_HpDHE1ubuzInqkzRjnVBE",
+      "cisco-ci-domain-verification=71375d94308e5d9c151ed03fb38e6e7c40081021ffaad12391a0797f3487236f",
+      "globalsign-domain-verification=U-m3rn1OpP3XdBtI6G_e7kKw156XwchHbjmX3n0iKq",
+      "MS=ms93839866",
+      "cisco-ci-domain-verification=d9a4e5f569f0c36f811a4eb618d520d8d73a90beac438e9234a915465c56a2",
       "v=spf1 include:_spf.tech.ec.europa.eu include:_spf-jrc.tech.ec.europa.eu -all",
-      "cisco-ci-domain-verification=71375d94308e5d9c151ed03fb38e6e7c40081021ffaad12391a0797f3487236f"
+      "google-site-verification=Hf3TsilSdPh4WhYu26eFxy_8pIrtGVdDgqbAdjbbAw8"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:swtyii6t@ag.eu.dmarcadvisor.com; adkim=s; aspf=s"
@@ -151,7 +193,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
       "*.ec.europa.eu",
       "ec.europa.eu"
     ],
-    "days_left": 142,
+    "days_left": 141,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -161,7 +203,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
     }
   },
   "ports": {
-    "ip": "147.67.210.30",
+    "ip": "147.67.34.30",
     "open": []
   },
   "https": {
@@ -211,10 +253,48 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
     "/api/": 404
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 90.4,
-  "rechecked": "2026-09-25 10:43 UTC"
+  "apex_txt": [
+    "anthropic-domain-verification-w18fn5=aCZHCSXAOr6mwQB6zAVj4LGSJ",
+    "yahoo-verification-key=mIbs1g4mUnS9N9xQpPywHyyQ462sU/5p7+ObnIeT6QE=",
+    "apple-domain-verification=0zqmupc9IJswQan3",
+    "atlassian-domain-verification=CdVasMY4c9BTCt8IJvPUjKbyz8YkV095KyECi5dLyhg481LAhk",
+    "atlassian-domain-verification=Sn5ZgXoanhUhLAap/3tkBbsCa4Kag0SfkSMmpJX8piK6/NsGjt"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/eurostat/tgm/",
+      "/europeaid/prag/",
+      "/archives/",
+      "/cgi-bin/",
+      "/clima/ets/",
+      "/clima/sites/registry/",
+      "/commission_2010-2014/katainen/",
+      "/creative-europe/404_en.htm",
+      "/culture/404_en.htm",
+      "/dgs/education_culture/404_en.htm",
+      "/eclas/",
+      "/education/404_en.htm",
+      "/employment_social/anticipedia/xwiki/bin/attach/",
+      "/employment_social/anticipedia/xwiki/bin/cancel/",
+      "/employment_social/anticipedia/xwiki/bin/commentadd/"
+    ]
+  },
+  "elapsed_s": 30.2,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -223,4 +303,5 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

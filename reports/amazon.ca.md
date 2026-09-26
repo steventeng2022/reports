@@ -7,12 +7,12 @@
 | Target | https://amazon.ca/ |
 | Bug bounty program | Amazon |
 | Listed scope domain | amazon.ca |
-| Test date | 2026-09-25 08:24 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:38 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,8 +27,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
-| 12 | info | CT1 | 109 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 13 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | CT1 | 109 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 18 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -107,13 +112,43 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 12. [INFO] 109 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: uber-domain-verification=7a35217f-6956-41a0-be5c-a28ea2646964; google-site-verification=LivBRhp5Uf9LRKW4XC5YEaexYZPWZw0GVN7qWtMT-1o; uber-domain-verification=01e9f567-7b84-45dd-9326-53992a028b40
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of amazon.ca has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 163 disallow path(s), e.g. /exec/obidos/account-access-login, /exec/obidos/change-style, /exec/obidos/flex-sign-in, /exec/obidos/handle-buy-box, /exec/obidos/tg/cm/member/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 17. [INFO] 109 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.app.social.amazon.ca, api.social.amazon.ca, app.social.amazon.ca, help.amazon.ca, internal.campfire.amazon.ca, shop.social.amazon.ca, sophap.beta.gql.music.amazon.ca, support.amazon.ca
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 13. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 18. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: api.app.social.amazon.ca; content may still be served via virtual-host fallback.
@@ -126,9 +161,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
   "domain": "amazon.ca",
   "dns": {
     "a": [
-      "98.87.170.205",
       "98.82.155.12",
-      "98.87.171.159"
+      "98.87.171.159",
+      "98.87.170.205"
     ],
     "aaaa": [],
     "cname": null,
@@ -136,33 +171,33 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
       "amazon-smtp.amazon.com (pref 10)"
     ],
     "ns": [
-      "ns-1561.awsdns-03.co.uk.",
-      "ns-1036.awsdns-01.org.",
       "ns-520.awsdns-01.net.",
-      "ns-52.awsdns-06.com."
+      "ns-1561.awsdns-03.co.uk.",
+      "ns-52.awsdns-06.com.",
+      "ns-1036.awsdns-01.org."
     ],
     "spf": [
       "uber-domain-verification=7a35217f-6956-41a0-be5c-a28ea2646964",
-      "sending_domain229492=82f7d92f23b48fbe1e1a03ef83cb5a33aab6ffcbfc94faa5dccb681d9e488903",
+      "google-site-verification=LivBRhp5Uf9LRKW4XC5YEaexYZPWZw0GVN7qWtMT-1o",
       "uber-domain-verification=01e9f567-7b84-45dd-9326-53992a028b40",
-      "sending_domain608861=78ca61d8b9a7c1a753b6770dffea9e6eb4ce681513fec5c35638f1c81bd375cf",
-      "sending_domain229492=8fc1e4db25ccac36897136580c51327bbe8a5256582e84a7bb2f64c4453383e0",
-      "uber-domain-verification=0ddb4c64-175c-4e7a-8a7a-f552034222e8",
+      "sending_domain1003771=d8fbb81d5f6de3bfb9d5cf396770c228dd3ada847b97e2bc12700deea6d90c87",
+      "uber-domain-verification=5f5cc242-4dbe-4871-b726-bbbe085ff053",
       "canva-site-verification=o1N9Yacy_Q9Kl0710BHpzw",
       "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
-      "docker-verification=749d27fa-18f7-4933-bef5-ed333f53556b",
-      "uber-domain-verification=72ffdffb-d431-452c-932e-cd1030d1eb46",
+      "sending_domain1003771=0212f52e68db5e2cffad95c587e13549995e8dcf28629ac3c8d1b3ea0dbd2fee",
       "v=spf1 include:amazon.com -all",
+      "uber-domain-verification=0ddb4c64-175c-4e7a-8a7a-f552034222e8",
+      "spf2.0/pra include:amazon.com -all",
       "box-domain-verification=ffea95cd0e0d61c302198367155b07e74fd534fa1d867662dc9bf9969b6f535d",
       "sending_domain608861=fd6e4e5c8ac1742d0173098538a216ea73818f1f4f8c4094ba26303da6007ee6",
-      "sending_domain1003771=0212f52e68db5e2cffad95c587e13549995e8dcf28629ac3c8d1b3ea0dbd2fee",
+      "sending_domain608861=78ca61d8b9a7c1a753b6770dffea9e6eb4ce681513fec5c35638f1c81bd375cf",
+      "docker-verification=749d27fa-18f7-4933-bef5-ed333f53556b",
+      "sending_domain229492=8fc1e4db25ccac36897136580c51327bbe8a5256582e84a7bb2f64c4453383e0",
+      "uber-domain-verification=72ffdffb-d431-452c-932e-cd1030d1eb46",
+      "sending_domain229492=82f7d92f23b48fbe1e1a03ef83cb5a33aab6ffcbfc94faa5dccb681d9e488903",
       "facebook-domain-verification=ps3oomhw99zvbl2f2j55zgjmwgksys",
       "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
-      "spf2.0/pra include:amazon.com -all",
-      "google-site-verification=L1r_iURvVl8iMPeesmTnJMjir81-5xK_8r-SOS9vL3w",
-      "google-site-verification=LivBRhp5Uf9LRKW4XC5YEaexYZPWZw0GVN7qWtMT-1o",
-      "uber-domain-verification=5f5cc242-4dbe-4871-b726-bbbe085ff053",
-      "sending_domain1003771=d8fbb81d5f6de3bfb9d5cf396770c228dd3ada847b97e2bc12700deea6d90c87"
+      "google-site-verification=L1r_iURvVl8iMPeesmTnJMjir81-5xK_8r-SOS9vL3w"
     ],
     "dmarc": [
       "v=DMARC1;",
@@ -194,7 +229,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
       "origin-www.amazon.ca",
       "p-nt-www-amazon-ca-kalias.amazon.ca"
     ],
-    "days_left": 107,
+    "days_left": 106,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -204,7 +239,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
     }
   },
   "ports": {
-    "ip": "98.87.170.205",
+    "ip": "98.82.155.12",
     "open": []
   },
   "https": {
@@ -292,8 +327,46 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
       "api.app.social.amazon.ca"
     ]
   },
-  "elapsed_s": 126.5,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "uber-domain-verification=7a35217f-6956-41a0-be5c-a28ea2646964",
+    "google-site-verification=LivBRhp5Uf9LRKW4XC5YEaexYZPWZw0GVN7qWtMT-1o",
+    "uber-domain-verification=01e9f567-7b84-45dd-9326-53992a028b40",
+    "uber-domain-verification=5f5cc242-4dbe-4871-b726-bbbe085ff053",
+    "canva-site-verification=o1N9Yacy_Q9Kl0710BHpzw"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/exec/obidos/account-access-login",
+      "/exec/obidos/change-style",
+      "/exec/obidos/flex-sign-in",
+      "/exec/obidos/handle-buy-box",
+      "/exec/obidos/tg/cm/member/",
+      "/exec/obidos/refer-a-friend-login",
+      "/exec/obidos/subst/partners/friends/access.html",
+      "/exec/obidos/subst/marketplace/sell-your-stuff.html",
+      "/exec/obidos/subst/marketplace/sell-your-collection.html",
+      "/exec/obidos/subst/associates/join",
+      "/gp/cart",
+      "/gp/customer-media/upload",
+      "/gp/flex",
+      "/gp/sign-in",
+      "/gp/slides/make-money"
+    ]
+  },
+  "elapsed_s": 23.9,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -302,4 +375,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

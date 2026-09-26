@@ -7,12 +7,12 @@
 | Target | https://shopify.com/ |
 | Bug bounty program | Shopify |
 | Listed scope domain | shopify.com |
-| Test date | 2026-09-25 10:14 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 | 11 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 12 | info | H6 | Server technology disclosure | CWE-200 |
 | 13 | info | P8 | Missing security.txt | CWE-1038 |
+| 14 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
+| 15 | low | DNS3 | Wildcard DNS detected | CWE-345 |
+| 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -118,6 +123,36 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 14. [LOW] MTA-STS TXT published but policy file missing/invalid (`MAIL12`)
+
+- **CWE:** CWE-285
+- **Detail:** GET https://mta-sts.shopify.com/.well-known/mta-sts/policy.txt -> 404
+- **Recommendation:** Publish a valid policy.txt (version, max_age, mode) or remove the TXT record.
+
+### 15. [LOW] Wildcard DNS detected (`DNS3`)
+
+- **CWE:** CWE-345
+- **Detail:** Two random labels (yiaxz27epbedb0.shopify.com and 7h0d1qpitkiiyj.shopify.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
+
+### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: dtm-domain-verification=LhGwRr1DLWJoF6bVodh035n_BRj4Xu8PaEZ6bvvgd2Y; openai-domain-verification=dv-3UNPEg4DuUI5Ace0uw1hzLq3; klaviyo-site-verification=RcWeYn
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of shopify.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 2 disallow path(s), e.g. /authentication/, /*/account
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -130,71 +165,71 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt3.aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
+      "gold.foundationdns.org.",
       "gold.foundationdns.com.",
-      "gold.foundationdns.net.",
-      "gold.foundationdns.org."
+      "gold.foundationdns.net."
     ],
     "spf": [
-      "ca3-86f15a314f3342baac2abe7a8849163c",
-      "openai-domain-verification=dv-SSeJm7iAiW11oexpj9ZCqdil",
-      "klaviyo-site-verification=UfTdFX",
-      "apple-domain-verification=eMDCoIZdcJThX3yQ",
-      "google-site-verification=96L28-MtSBLeQmyYR04q9iKI_Ib5qZd0YzVL8s1_gD0",
-      "openai-domain-verification=dv-3UNPEg4DuUI5Ace0uw1hzLq3",
-      "atlassian-domain-verification=aakXh8UjEwy75X6ck4l8jTIJDWHQ9CIunnUsE00mRgxM8IUzaJGlIt8zIINLFALR",
-      "globalsign-domain-verification=lfM-pzwumuFWKV-wNEGq7a3KtsmRLJKsDxZzQaMjkw",
-      "klaviyo-site-verification=VbLhyy",
-      "yahoo-verification-key=9t6XYs7YEajKycpYmHz742ZV/lm84njkfUfGUldOtZM=",
-      "google-site-verification=a4GkGdS7vBnkI284VSCo4bfYDNg-8OcEyjz8PR8ZhDM",
-      "qqmail-site-verification=bc0dd9aa889c6a66d9a58b31e496873cc7ae214ca8f",
-      "zapier-domain-verification-challenge=506c545d-443f-4439-8d84-64648211b1f1",
-      "openai-domain-verification=dv-2etxemuOx7cXQDQ5EjEWGZ9A",
-      "autodesk-domain-verification=e9Nbi4FUDsS7clWU8iNj",
-      "klaviyo-site-verification=UBeZ6P",
-      "klaviyo-site-verification=VrspSg",
-      "stripe-verification=61e8fb112f5e7ac2708127ea93fd0369d6a4f768bd498fd0d928c206a6240bd7",
-      "lucidlink-verification=7VB3ACRNY28GWP54ZC3YXN7QWR",
-      "klaviyo-site-verification=Y2Hvrx",
-      "twilio-domain-verification=ebc01f01cee0f1aea3f4c069b8865de9",
-      "teamviewer-sso-verification=85d99b4ff4b64f03a469d0c42c1eee61",
-      "globalsign-domain-verification=Cpw4zOAIT5WSnINjnI4gafPgxsCJlEF4Ac_70Xm93I",
-      "MS=ms27001972",
-      "linear-domain-verification=3xuktyudsdny",
-      "facebook-domain-verification=u17rffysxyek688vqh4s02307suaza",
-      "drift-domain-verification=9b23e1f43b57171c988b4510e75a686bda241639096f7eaabe8ff3d72ac63476",
-      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:sendgrid.net ~all",
-      "docusign=de9614db-a0fa-4060-a1fa-2c444429ed9a",
-      "ca3-fc9272b0aba34ba6991c0a62bc1998a0",
-      "adobe-idp-site-verification=45576d365ff5492a15bc403c11382aad83403810324300fd62c5f196ce9e9063",
-      "mongodb-site-verification=vBP464dSOK9bgg6FWBthUMqVjYfqnjuY",
-      "google-site-verification=0nU18bxQue6doDAWZDptfd66kTIqHqW00fDhfJSd9es",
-      "00078847",
       "0lc931fl5ld2dpl15vx2flfkdwyvrrzx",
-      "mailru-verification: a6784d11ca5a5f7b",
-      "liveramp-site-verification=N48gDNFN3IB2NKIf75Fl46_sUzjxAbY3c1mfWs5pIKM",
-      "_globalsign-domain-verification=_PJNYsq_1XyZleC1yx45rb_EUgbgkaJU36yk3CK0tk",
-      "rfs0f736s88q7ml97jw9qhg1yy2wmdy5",
-      "klaviyo-site-verification=XxDdwy",
-      "google-site-verification=knwYi_vDES4v7XUl8OOtP4gu4qhwAzIBbeB2ou2jx8Y",
-      "_globalsign-domain-verification=1x11a1Wg3i08rScgK7aAMUJm_fdzKxH4whkWxr1bbg",
-      "klaviyo-site-verification=RcWeYn",
-      "klaviyo-site-verification=SuEeFy",
-      "klaviyo-site-verification=SA72ug",
-      "google-site-verification=Vm4475oXq82Dl_WCtZcmlaW3xrpB-6fyQXboHBjzzPY",
-      "klaviyo-site-verification=YA4hNy",
-      "bitrise-verification=990e159e8448fcb6-hCIxnrabFeH9",
-      "google-site-verification=vEpSvWK6hOKDBrCrJ4uUeCliFPV0nyP9m_UCOEjJv1Q",
-      "amazonses:CxAO0EM1odef6TrFP0hDQh/2R7RoZYy8YlHYktk2Frk=",
-      "protonmail-verification=c7bd7e61072d9855cfcab2f08804404f639439f9",
       "dtm-domain-verification=LhGwRr1DLWJoF6bVodh035n_BRj4Xu8PaEZ6bvvgd2Y",
-      "rzp-site-verification=0c152e27933f70c5c7df025be3319f65"
+      "openai-domain-verification=dv-3UNPEg4DuUI5Ace0uw1hzLq3",
+      "klaviyo-site-verification=RcWeYn",
+      "00078847",
+      "protonmail-verification=c7bd7e61072d9855cfcab2f08804404f639439f9",
+      "google-site-verification=vEpSvWK6hOKDBrCrJ4uUeCliFPV0nyP9m_UCOEjJv1Q",
+      "mailru-verification: a6784d11ca5a5f7b",
+      "globalsign-domain-verification=Cpw4zOAIT5WSnINjnI4gafPgxsCJlEF4Ac_70Xm93I",
+      "klaviyo-site-verification=UBeZ6P",
+      "adobe-idp-site-verification=45576d365ff5492a15bc403c11382aad83403810324300fd62c5f196ce9e9063",
+      "atlassian-domain-verification=aakXh8UjEwy75X6ck4l8jTIJDWHQ9CIunnUsE00mRgxM8IUzaJGlIt8zIINLFALR",
+      "klaviyo-site-verification=YA4hNy",
+      "rfs0f736s88q7ml97jw9qhg1yy2wmdy5",
+      "linear-domain-verification=3xuktyudsdny",
+      "ca3-86f15a314f3342baac2abe7a8849163c",
+      "amazonses:CxAO0EM1odef6TrFP0hDQh/2R7RoZYy8YlHYktk2Frk=",
+      "google-site-verification=knwYi_vDES4v7XUl8OOtP4gu4qhwAzIBbeB2ou2jx8Y",
+      "_globalsign-domain-verification=_PJNYsq_1XyZleC1yx45rb_EUgbgkaJU36yk3CK0tk",
+      "google-site-verification=96L28-MtSBLeQmyYR04q9iKI_Ib5qZd0YzVL8s1_gD0",
+      "qqmail-site-verification=bc0dd9aa889c6a66d9a58b31e496873cc7ae214ca8f",
+      "ca3-fc9272b0aba34ba6991c0a62bc1998a0",
+      "google-site-verification=Vm4475oXq82Dl_WCtZcmlaW3xrpB-6fyQXboHBjzzPY",
+      "google-site-verification=0nU18bxQue6doDAWZDptfd66kTIqHqW00fDhfJSd9es",
+      "klaviyo-site-verification=SuEeFy",
+      "_globalsign-domain-verification=1x11a1Wg3i08rScgK7aAMUJm_fdzKxH4whkWxr1bbg",
+      "klaviyo-site-verification=UfTdFX",
+      "globalsign-domain-verification=lfM-pzwumuFWKV-wNEGq7a3KtsmRLJKsDxZzQaMjkw",
+      "openai-domain-verification=dv-2etxemuOx7cXQDQ5EjEWGZ9A",
+      "yahoo-verification-key=9t6XYs7YEajKycpYmHz742ZV/lm84njkfUfGUldOtZM=",
+      "rzp-site-verification=0c152e27933f70c5c7df025be3319f65",
+      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:sendgrid.net ~all",
+      "liveramp-site-verification=N48gDNFN3IB2NKIf75Fl46_sUzjxAbY3c1mfWs5pIKM",
+      "facebook-domain-verification=u17rffysxyek688vqh4s02307suaza",
+      "teamviewer-sso-verification=85d99b4ff4b64f03a469d0c42c1eee61",
+      "mongodb-site-verification=vBP464dSOK9bgg6FWBthUMqVjYfqnjuY",
+      "twilio-domain-verification=ebc01f01cee0f1aea3f4c069b8865de9",
+      "google-site-verification=a4GkGdS7vBnkI284VSCo4bfYDNg-8OcEyjz8PR8ZhDM",
+      "stripe-verification=61e8fb112f5e7ac2708127ea93fd0369d6a4f768bd498fd0d928c206a6240bd7",
+      "autodesk-domain-verification=e9Nbi4FUDsS7clWU8iNj",
+      "bitrise-verification=990e159e8448fcb6-hCIxnrabFeH9",
+      "lucidlink-verification=7VB3ACRNY28GWP54ZC3YXN7QWR",
+      "klaviyo-site-verification=XxDdwy",
+      "klaviyo-site-verification=Y2Hvrx",
+      "klaviyo-site-verification=SA72ug",
+      "apple-domain-verification=eMDCoIZdcJThX3yQ",
+      "docusign=de9614db-a0fa-4060-a1fa-2c444429ed9a",
+      "drift-domain-verification=9b23e1f43b57171c988b4510e75a686bda241639096f7eaabe8ff3d72ac63476",
+      "klaviyo-site-verification=VbLhyy",
+      "zapier-domain-verification-challenge=506c545d-443f-4439-8d84-64648211b1f1",
+      "MS=ms27001972",
+      "openai-domain-verification=dv-SSeJm7iAiW11oexpj9ZCqdil",
+      "klaviyo-site-verification=VrspSg"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; fo=1; rua=mailto:dmarc-aggregate@shopify.com;ruf=mailto:dmarc-reports@shopify.com"
@@ -214,7 +249,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "shopify.com",
       "*.shopify.com"
     ],
-    "days_left": 44,
+    "days_left": 43,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -278,10 +313,36 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 20.6,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "wildcard_dns": true,
+  "apex_txt": [
+    "dtm-domain-verification=LhGwRr1DLWJoF6bVodh035n_BRj4Xu8PaEZ6bvvgd2Y",
+    "openai-domain-verification=dv-3UNPEg4DuUI5Ace0uw1hzLq3",
+    "klaviyo-site-verification=RcWeYn",
+    "protonmail-verification=c7bd7e61072d9855cfcab2f08804404f639439f9",
+    "google-site-verification=vEpSvWK6hOKDBrCrJ4uUeCliFPV0nyP9m_UCOEjJv1Q"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/authentication/",
+      "/*/account"
+    ]
+  },
+  "elapsed_s": 4.4,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -290,4 +351,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://surveymonkey.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | surveymonkey.com |
-| Test date | 2026-09-25 10:20 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
+Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,13 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 | 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 11 | info | H6 | Server technology disclosure | CWE-200 |
 | 12 | info | P8 | Missing security.txt | CWE-1038 |
+| 13 | low | MAIL7 | SPF include: points to unresolvable domain(s) | CWE-285 |
+| 14 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 16 | low | DNS3 | Wildcard DNS detected | CWE-345 |
+| 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -112,6 +119,48 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 13. [LOW] SPF include: points to unresolvable domain(s) (`MAIL7`)
+
+- **CWE:** CWE-285
+- **Detail:** Broken include(s): us. (no A/TXT record).
+- **Recommendation:** Fix or remove the broken include directives.
+
+### 14. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 15. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 16. [LOW] Wildcard DNS detected (`DNS3`)
+
+- **CWE:** CWE-345
+- **Detail:** Two random labels (wdelajtdiknx1q.surveymonkey.com and rqoqx0bzvjsa49.surveymonkey.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
+
+### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=asjlbqcsmgsjco17qidfpfi82a9n7f; gc-ai-domain-verification-8m6kgf=E1mwfXukrQWqurSC6BwoYbmNu; atlassian-domain-verification=keQyzOto0ziFKZDVbwTZ2DhKevhwLaTNteFi1PpPs31I0CQ4GB
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of surveymonkey.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 19. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 21 disallow path(s), e.g. /billing/confirmed, /billing/invoice*, /cc/, /content-svc/, /create/survey/preview*
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -119,8 +168,8 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
   "domain": "surveymonkey.com",
   "dns": {
     "a": [
-      "65.9.180.5",
       "65.9.180.59",
+      "65.9.180.5",
       "65.9.180.3",
       "65.9.180.53"
     ],
@@ -131,46 +180,46 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "us-smtp-inbound-2.mimecast.com (pref 10)"
     ],
     "ns": [
+      "ns-588.awsdns-09.net.",
       "ns-1380.awsdns-44.org.",
-      "ns-344.awsdns-43.com.",
       "ns-1757.awsdns-27.co.uk.",
-      "ns-588.awsdns-09.net."
+      "ns-344.awsdns-43.com."
     ],
     "spf": [
-      "_knfbojommw8fgbvijgndlnl58gxdcs9",
-      "openai-domain-verification=dv-Rizz1TAurN3w0Gk3aKfiY4U3",
-      "stripe-verification=3BC4A50A1E91CF90D3A2954A08BBF11F16272C3BB3576499B69A54AA5A2EB9F1",
-      "lovable_verification=CsnCfnhpmMIm2YolPLFw",
-      "globalsign-domain-verification=273eFvKCuCXR3P_oKS85yffiPwBPz0qc1fEV1-x8Aq",
-      "google-site-verification=bS37nCLe4WX0alwAbP2aaEs3hgNXpocNevsjIyjJoX8",
-      "apple-domain-verification=KMruPJeKeD2jHgiK",
-      "nlsy424z3ktz0097zg4cw6hk44chc551",
-      "ps-cd-verification=24840ced-b149-4e15-8b6c-04b567ba36da",
-      "anthropic-domain-verification-b77rgg=i8sv1gogitHA9QiiiBEdIE2q2",
-      "docusign=37225db5-de2e-4e7a-be46-db11ef071be9",
-      "asv=37950f1917e5f9e7e48b305f9e529116",
+      "facebook-domain-verification=asjlbqcsmgsjco17qidfpfi82a9n7f",
+      "gc-ai-domain-verification-8m6kgf=E1mwfXukrQWqurSC6BwoYbmNu",
       "atlassian-domain-verification=keQyzOto0ziFKZDVbwTZ2DhKevhwLaTNteFi1PpPs31I0CQ4GBiYXNZVhfxEhJv5",
+      "lovable_verification=CsnCfnhpmMIm2YolPLFw",
+      "_knfbojommw8fgbvijgndlnl58gxdcs9",
+      "adobe-idp-site-verification=257235a8b871a199b2d89ab4f7cdaec03a65d1bf7ac30838dececcacace5a86c",
+      "OSSRH-89589",
+      "atlassian-domain-verification=tXdvJPw4WMjcNH3/0im4gOSMKwX5hyvl1CIiMtoHaTqygGKWQmk315B62OOR0pYe",
+      "docusign=37225db5-de2e-4e7a-be46-db11ef071be9",
+      "rOX6b5VqFrkPW2GtNMoaCyVEhwU",
+      "docker-verification=b29c9172-8a00-44e6-9ea4-5d4de0569f58",
+      "MS=ms60646135",
+      "apple-domain-verification=KMruPJeKeD2jHgiK",
+      "jamf-site-verification=pEif9hbPcODSQUOKmu0Szw",
+      "cursor-domain-verification-6181me=rebW4WaJ5ylTKff9K0qedvm00",
+      "miro-verification=81a06891162a7afb6cb31cdeb0c608b35ce224db",
       "smartsheet-site-validation=CmW6YpxpRVTHe6aNhQxtwQmYpyT9koJf",
       "google-site-verification=E8ZYHCDCcYtOkFiZMiBjfE3ml9AmqWzOpnd_MCOFYRM",
       "dpq1d680yv30b.cloudfront.net",
-      "rOX6b5VqFrkPW2GtNMoaCyVEhwU",
-      "1password-site-verification=44TOWBB3QJBB5N4OLOAOZO3IFQ",
-      "google-site-verification=sEtassJLvphOixgHm2AhnGmM2DkWMHjIaC-vB17aitY",
-      "onetrust-domain-verification=749bac94de654f24be6f1186b41d64d5",
-      "atlassian-domain-verification=tXdvJPw4WMjcNH3/0im4gOSMKwX5hyvl1CIiMtoHaTqygGKWQmk315B62OOR0pYe",
-      "cursor-domain-verification-6181me=rebW4WaJ5ylTKff9K0qedvm00",
+      "anthropic-domain-verification-b77rgg=i8sv1gogitHA9QiiiBEdIE2q2",
       "v=spf1 include:us._netblocks.mimecast.com include:surveymonkey.com._nspf.vali.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
-      "adobe-idp-site-verification=257235a8b871a199b2d89ab4f7cdaec03a65d1bf7ac30838dececcacace5a86c",
-      "miro-verification=81a06891162a7afb6cb31cdeb0c608b35ce224db",
-      "OSSRH-89589",
-      "jamf-site-verification=pEif9hbPcODSQUOKmu0Szw",
-      "MS=ms60646135",
-      "docker-verification=b29c9172-8a00-44e6-9ea4-5d4de0569f58",
-      "jvMLQ8xH8X38HutWDQXyDJP7T-iqxBoYAg1AYT0omb",
-      "facebook-domain-verification=asjlbqcsmgsjco17qidfpfi82a9n7f",
+      "asv=37950f1917e5f9e7e48b305f9e529116",
+      "google-site-verification=sEtassJLvphOixgHm2AhnGmM2DkWMHjIaC-vB17aitY",
       "google-site-verification=2ccit_qZjaKZqS5Ce8UFhP5hVYJDQXXOSup5UtUWZPo",
-      "gc-ai-domain-verification-8m6kgf=E1mwfXukrQWqurSC6BwoYbmNu",
-      "google-site-verification=qa36tpLOjyqVlObx-4lr7c-bQy2eL3AmktntNwMubnk"
+      "google-site-verification=qa36tpLOjyqVlObx-4lr7c-bQy2eL3AmktntNwMubnk",
+      "jvMLQ8xH8X38HutWDQXyDJP7T-iqxBoYAg1AYT0omb",
+      "globalsign-domain-verification=273eFvKCuCXR3P_oKS85yffiPwBPz0qc1fEV1-x8Aq",
+      "onetrust-domain-verification=749bac94de654f24be6f1186b41d64d5",
+      "nlsy424z3ktz0097zg4cw6hk44chc551",
+      "openai-domain-verification=dv-Rizz1TAurN3w0Gk3aKfiY4U3",
+      "ps-cd-verification=24840ced-b149-4e15-8b6c-04b567ba36da",
+      "stripe-verification=3BC4A50A1E91CF90D3A2954A08BBF11F16272C3BB3576499B69A54AA5A2EB9F1",
+      "1password-site-verification=44TOWBB3QJBB5N4OLOAOZO3IFQ",
+      "google-site-verification=bS37nCLe4WX0alwAbP2aaEs3hgNXpocNevsjIyjJoX8"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc_agg@vali.email,mailto:dmarc_agg@auth.returnpath.net,mailto:mailadmin@surveymonkey.com; ruf=mailto:dmarc_afrf@auth.returnpath.net,mailto:mailadmin@surveymonkey.com; rf=afrf"
@@ -219,7 +268,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "surveymonkey.eu",
       "*.eu.research.net"
     ],
-    "days_left": 62,
+    "days_left": 61,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -229,7 +278,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
     }
   },
   "ports": {
-    "ip": "65.9.180.5",
+    "ip": "65.9.180.59",
     "open": []
   },
   "https": {
@@ -279,10 +328,49 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 23.2,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "wildcard_dns": true,
+  "apex_txt": [
+    "facebook-domain-verification=asjlbqcsmgsjco17qidfpfi82a9n7f",
+    "gc-ai-domain-verification-8m6kgf=E1mwfXukrQWqurSC6BwoYbmNu",
+    "atlassian-domain-verification=keQyzOto0ziFKZDVbwTZ2DhKevhwLaTNteFi1PpPs31I0CQ4GB",
+    "lovable_verification=CsnCfnhpmMIm2YolPLFw",
+    "adobe-idp-site-verification=257235a8b871a199b2d89ab4f7cdaec03a65d1bf7ac30838dece"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/billing/confirmed",
+      "/billing/invoice*",
+      "/cc/",
+      "/content-svc/",
+      "/create/survey/preview*",
+      "/login/",
+      "/mp/lp/",
+      "/panelweb*",
+      "/r/instant/response*",
+      "/sign-up/",
+      "/tr/v1/",
+      "/user/",
+      "/user/sign-up/sso-redirect",
+      "/*?usecase=",
+      "/*?query="
+    ]
+  },
+  "elapsed_s": 9.8,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -291,4 +379,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

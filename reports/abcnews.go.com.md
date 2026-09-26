@@ -7,12 +7,12 @@
 | Target | https://abcnews.go.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | abcnews.go.com |
-| Test date | 2026-09-25 08:09 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:38 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
+Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,6 +36,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
 | 18 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
 | 19 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
 | 20 | info | P8 | Missing security.txt | CWE-1038 |
+| 21 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 22 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 23 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -177,6 +180,24 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 21. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=twvwxd607usevkqo11lc3cj9d8i35x
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 22. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of abcnews.go.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 23. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 56 disallow path(s), e.g. /, /, /, /, /
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -184,10 +205,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
   "domain": "abcnews.go.com",
   "dns": {
     "a": [
-      "54.239.180.79",
+      "54.239.180.106",
       "54.239.180.57",
-      "54.239.180.31",
-      "54.239.180.106"
+      "54.239.180.79",
+      "54.239.180.31"
     ],
     "aaaa": [],
     "cname": null,
@@ -218,7 +239,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
       "www.abcnews.go.com",
       "app.abcnews.go.com"
     ],
-    "days_left": 128,
+    "days_left": 127,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -228,7 +249,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
     }
   },
   "ports": {
-    "ip": "54.239.180.79",
+    "ip": "54.239.180.106",
     "open": []
   },
   "https": {
@@ -287,10 +308,44 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
     "/api/": 404
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 108.4,
-  "rechecked": "2026-09-25 13:59 UTC"
+  "apex_txt": [
+    "facebook-domain-verification=twvwxd607usevkqo11lc3cj9d8i35x"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/search?searchtext=*",
+      "/disneyid/*",
+      "/assets/static/ads/*",
+      "/cgi"
+    ]
+  },
+  "elapsed_s": 19.9,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -299,4 +354,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

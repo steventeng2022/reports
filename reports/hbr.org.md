@@ -7,12 +7,12 @@
 | Target | https://hbr.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | hbr.org |
-| Test date | 2026-09-26 01:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 0, Low: 3, Info: 5)
+Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -22,8 +22,15 @@ Total findings: **8** (High: 0, Medium: 0, Low: 3, Info: 5)
 | 4 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 5 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 6 | info | P8 | Missing security.txt | CWE-1038 |
-| 7 | info | CT1 | 26 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 8 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 7 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 8 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 9 | low | DNS3 | Wildcard DNS detected | CWE-345 |
+| 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | info | CT1 | 26 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 15 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -68,13 +75,55 @@ Total findings: **8** (High: 0, Medium: 0, Low: 3, Info: 5)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 7. [INFO] 26 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 7. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 8. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 9. [LOW] Wildcard DNS detected (`DNS3`)
+
+- **CWE:** CWE-345
+- **Detail:** Two random labels (qrf106x5msh58o.hbr.org and lqbzl0eoxto1vd.hbr.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
+
+### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=hvrm85rd5hvr18o50vzpd1lprkjg76; webexdomainverification.4C675B8B1892B136E053AB06FC0A3F65=7b2ac320-8920-4cf1-826d; onetrust-domain-verification=0df7d79642a64b338bb91818045b158d
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of hbr.org has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 12. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but hbr.org is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 13. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 26 disallow path(s), e.g. /resources/, /fastanswers, /my-library*, /email-colleague/, /add-to-cart/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 14. [INFO] 26 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: login.hbr.org, login.qa.hbr.org, store.hbr.org, store.qa.hbr.org
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 8. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 15. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: login.hbr.org; content may still be served via virtual-host fallback.
@@ -87,44 +136,44 @@ Total findings: **8** (High: 0, Medium: 0, Low: 3, Info: 5)
   "domain": "hbr.org",
   "dns": {
     "a": [
-      "65.9.180.29",
+      "65.9.180.80",
       "65.9.180.70",
       "65.9.180.27",
-      "65.9.180.80"
+      "65.9.180.29"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "usb-smtp-inbound-2.mimecast.com (pref 10)",
-      "usb-smtp-inbound-1.mimecast.com (pref 10)"
+      "usb-smtp-inbound-1.mimecast.com (pref 10)",
+      "usb-smtp-inbound-2.mimecast.com (pref 10)"
     ],
     "ns": [
+      "ns-604.awsdns-11.net.",
       "ns-469.awsdns-58.com.",
       "ns-1877.awsdns-42.co.uk.",
-      "ns-604.awsdns-11.net.",
       "ns-1175.awsdns-18.org."
     ],
     "spf": [
-      "webexdomainverification.4C675B8B1892B136E053AB06FC0A3F65=7b2ac320-8920-4cf1-826d-975f96f199cb",
       "MS=ms51679339",
-      "google-site-verification=ikLo_eYH7jY56yB4qtVoDTxY9WUWl7NkUEsM-UB6DT0",
+      "sip=m699vbpan7kdoitobogsq38e1k",
+      "smartsheet-site-validation=76f6Fdn8EnnOgbwX-KcCnJ5Nj66wRUeo",
+      "facebook-domain-verification=hvrm85rd5hvr18o50vzpd1lprkjg76",
+      "docusign=59df337d-04fe-422f-bd8e-438fc3e80d21",
+      "lyncdiscover = seh3q1rpvadu98fpk213q7htq2",
+      "webexdomainverification.4C675B8B1892B136E053AB06FC0A3F65=7b2ac320-8920-4cf1-826d-975f96f199cb",
+      "onetrust-domain-verification=0df7d79642a64b338bb91818045b158d",
       "_1nl5kysnqxswpmo75e1u1fdcbs0fptr",
+      "extensis-domain-verification=3decd987-0352-469b-8111-a273b429588a",
+      "google-site-verification=o-E502ZnlfSSAM2JRb0RUfIxROmYDcYVOZnzlVRknS0",
+      "Wo71J1PNbWKkAikjb4WeqxCjBcNQwf6hcll0LJM6s9peRMF1ImcaCENQfddffLROaJY6wZHW2jrUsDNXC38vjg==",
+      "ciscocidomainverification=3a5e2e428cc891b6aef0b7598537338dd5c2bf8fe96326d58d87f62324dd9733",
+      "google-site-verification=0fyEgLpijqbt_OMG0ncBIK4G153eKqHF7UeGfTZgZk0",
+      "google-site-verification=ikLo_eYH7jY56yB4qtVoDTxY9WUWl7NkUEsM-UB6DT0",
       "google-site-verification=P1JGD_hnkAqlxSPmsFW_M2nifpmJC2iBjnfmKi1uJCc",
       "knowbe4-site-verification=f00a4d6e618b4a00b6f39e0b4c9e093f",
-      "docusign=59df337d-04fe-422f-bd8e-438fc3e80d21",
-      "Wo71J1PNbWKkAikjb4WeqxCjBcNQwf6hcll0LJM6s9peRMF1ImcaCENQfddffLROaJY6wZHW2jrUsDNXC38vjg==",
       "v=spf1 ip4:167.89.5.215 include:hbsp.harvard.edu include:amazonses.com include:u12602457.wl208.sendgrid.net include:aspmx.sailthru.com include:_spf.bigcommerce.com ~all",
-      "onetrust-domain-verification=0df7d79642a64b338bb91818045b158d",
-      "smartsheet-site-validation=76f6Fdn8EnnOgbwX-KcCnJ5Nj66wRUeo",
-      "atlassian-domain-verification=5VnB9cXf8cZ+rqMksjlq1KyEzUSjGsBJ5irmtvOZtpwtq6AsKSs+jGHcKUhotODA",
       "openai-domain-verification=dv-yzIW4FvevpXrgKYrQ9Ndlm4V",
-      "ciscocidomainverification=3a5e2e428cc891b6aef0b7598537338dd5c2bf8fe96326d58d87f62324dd9733",
-      "lyncdiscover = seh3q1rpvadu98fpk213q7htq2",
-      "extensis-domain-verification=3decd987-0352-469b-8111-a273b429588a",
-      "sip=m699vbpan7kdoitobogsq38e1k",
-      "google-site-verification=0fyEgLpijqbt_OMG0ncBIK4G153eKqHF7UeGfTZgZk0",
-      "facebook-domain-verification=hvrm85rd5hvr18o50vzpd1lprkjg76",
-      "google-site-verification=o-E502ZnlfSSAM2JRb0RUfIxROmYDcYVOZnzlVRknS0"
+      "atlassian-domain-verification=5VnB9cXf8cZ+rqMksjlq1KyEzUSjGsBJ5irmtvOZtpwtq6AsKSs+jGHcKUhotODA"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:ufwln6jz@ag.dmarcian.com; ruf=mailto:ufwln6jz@fr.dmarcian.com"
@@ -154,7 +203,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 3, Info: 5)
     }
   },
   "ports": {
-    "ip": "65.9.180.29",
+    "ip": "65.9.180.80",
     "open": []
   },
   "https": {
@@ -235,8 +284,47 @@ Total findings: **8** (High: 0, Medium: 0, Low: 3, Info: 5)
       "login.hbr.org"
     ]
   },
-  "elapsed_s": 16.2,
-  "rechecked": "2026-09-26 04:00 UTC"
+  "wildcard_dns": true,
+  "apex_txt": [
+    "facebook-domain-verification=hvrm85rd5hvr18o50vzpd1lprkjg76",
+    "webexdomainverification.4C675B8B1892B136E053AB06FC0A3F65=7b2ac320-8920-4cf1-826d",
+    "onetrust-domain-verification=0df7d79642a64b338bb91818045b158d",
+    "extensis-domain-verification=3decd987-0352-469b-8111-a273b429588a",
+    "google-site-verification=o-E502ZnlfSSAM2JRb0RUfIxROmYDcYVOZnzlVRknS0"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/resources/",
+      "/fastanswers",
+      "/my-library*",
+      "/email-colleague/",
+      "/add-to-cart/",
+      "/login*",
+      "/shopping-cart/",
+      "/shipping-payment",
+      "/review-order",
+      "/order/thank-you/",
+      "/content/ipad/",
+      "/newsletters*",
+      "/product/recommended*",
+      "/webinar-assessment",
+      "/search*"
+    ]
+  },
+  "elapsed_s": 22.9,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -245,4 +333,5 @@ Total findings: **8** (High: 0, Medium: 0, Low: 3, Info: 5)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

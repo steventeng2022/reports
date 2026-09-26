@@ -7,12 +7,12 @@
 | Target | https://europarl.europa.eu/ |
 | Bug bounty program | European Central Bank |
 | Listed scope domain | europarl.europa.eu |
-| Test date | 2026-09-25 09:36 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,6 +26,12 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 | 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 9 | info | H6 | Server technology disclosure | CWE-200 |
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
+| 11 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -97,6 +103,42 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 11. [LOW] SPF record has no explicit all mechanism (implicit +all) (`MAIL6`)
+
+- **CWE:** CWE-285
+- **Detail:** Without -all/~all/+all the SPF record implicitly authorizes all senders.
+- **Recommendation:** End the SPF record with -all or ~all.
+
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: flexera-domain-verification-lpktsstialtzvdbc; webexdomainverification.=b646d9da-b47b-4aab-bef6-239fa2ea87d5; flexera-domain-verification-dwtjdzijulkjpxak
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of europarl.europa.eu has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 31 disallow path(s), e.g. /, /calendar/, /debats/, /pv1/, /pv2/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -112,30 +154,30 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
       "ucsgusrlp002.ep.europa.eu (pref 100)",
       "ucsgusrbp002.ep.europa.eu (pref 100)",
       "ucsgusrlp004.ep.europa.eu (pref 100)",
-      "ucsgusrbp001.ep.europa.eu (pref 100)",
-      "ucsgusrbp004.ep.europa.eu (pref 100)",
-      "ucsgusrlp001.ep.europa.eu (pref 100)",
       "ucsgusrbp003.ep.europa.eu (pref 100)",
-      "ucsgusrlp003.ep.europa.eu (pref 100)"
+      "ucsgusrbp001.ep.europa.eu (pref 100)",
+      "ucsgusrlp003.ep.europa.eu (pref 100)",
+      "ucsgusrbp004.ep.europa.eu (pref 100)",
+      "ucsgusrlp001.ep.europa.eu (pref 100)"
     ],
     "ns": [
+      "ans1.cw.net.",
       "ans2.cw.net.",
       "itecluxadnsout.europarl.europa.eu.",
-      "ans1.cw.net.",
       "itecbruadnsout.europarl.europa.eu."
     ],
     "spf": [
-      "globalsign-domain-verification=288574904BAFBDAD213CEFABB639A762",
-      "apple-domain-verification=qKbdxzkhADwOAk4X",
-      "flexera-domain-verification-nwvxicwkiqqnfbfq",
-      "flexera-domain-verification-dwtjdzijulkjpxak",
       "flexera-domain-verification-lpktsstialtzvdbc",
-      "v=spf1 redirect=_spf.ep.europa.eu",
-      "cisco-ci-domain-verification=18335c80bc24811455d7efc1f94edae0da5e8d126b83f5b3a4124f0e6437f9",
+      "webexdomainverification.=b646d9da-b47b-4aab-bef6-239fa2ea87d5",
+      "flexera-domain-verification-dwtjdzijulkjpxak",
+      "flexera-domain-verification-zqsztipmwceljguc",
       "globalsign-domain-verification=BD0D62B15C7A7E05066B725206878608",
       "MS=ms56498925",
-      "flexera-domain-verification-zqsztipmwceljguc",
-      "webexdomainverification.=b646d9da-b47b-4aab-bef6-239fa2ea87d5"
+      "cisco-ci-domain-verification=18335c80bc24811455d7efc1f94edae0da5e8d126b83f5b3a4124f0e6437f9",
+      "globalsign-domain-verification=288574904BAFBDAD213CEFABB639A762",
+      "flexera-domain-verification-nwvxicwkiqqnfbfq",
+      "v=spf1 redirect=_spf.ep.europa.eu",
+      "apple-domain-verification=qKbdxzkhADwOAk4X"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:abuse@europarl.europa.eu"
@@ -155,7 +197,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
       "*.europarl.europa.eu",
       "europarl.europa.eu"
     ],
-    "days_left": 75,
+    "days_left": 74,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -215,10 +257,48 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 164.9,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "flexera-domain-verification-lpktsstialtzvdbc",
+    "webexdomainverification.=b646d9da-b47b-4aab-bef6-239fa2ea87d5",
+    "flexera-domain-verification-dwtjdzijulkjpxak",
+    "flexera-domain-verification-zqsztipmwceljguc",
+    "globalsign-domain-verification=BD0D62B15C7A7E05066B725206878608"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/",
+      "/calendar/",
+      "/debats/",
+      "/pv1/",
+      "/pv2/",
+      "/searchdeb/",
+      "/guidemep_info_2009/",
+      "/votre-europarl/",
+      "/comparl/",
+      "/parliament/public/traineeship/secured/",
+      "/parliament/public/transltraineeship/secured",
+      "/activities/committees/studies/",
+      "/activities/committees/studiesCom/",
+      "/meps/*/pdf*",
+      "/meps/*/xml*"
+    ]
+  },
+  "elapsed_s": 29.4,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -227,4 +307,5 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

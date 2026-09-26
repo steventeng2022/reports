@@ -7,12 +7,12 @@
 | Target | https://economictimes.indiatimes.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | economictimes.indiatimes.com |
-| Test date | 2026-09-26 14:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
+Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,8 +25,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 | 7 | low | CK1 | Cookie set without Secure flag over HTTPS | CWE-614 |
 | 8 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
 | 9 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
-| 10 | info | CT1 | 245 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 11 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 13 | info | CT1 | 245 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 14 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -90,13 +93,31 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Confirm whether arbitrary origin echoing is intended.
 
-### 10. [INFO] 245 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of economictimes.indiatimes.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but economictimes.indiatimes.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 199 disallow path(s), e.g. /PDAET/, /7176/, */notify.htm?*, /default1.cms, /default.cms
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 13. [INFO] 245 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.economictimes.indiatimes.com, apps.economictimes.indiatimes.com, hr.economictimes.indiatimes.com, img.economictimes.indiatimes.com, payment.economictimes.indiatimes.com, static.economictimes.indiatimes.com, www.hr.economictimes.indiatimes.com, www.infra.economictimes.indiatimes.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 11. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 14. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: img.economictimes.indiatimes.com; content may still be served via virtual-host fallback.
@@ -331,8 +352,43 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
       "img.economictimes.indiatimes.com"
     ]
   },
-  "elapsed_s": 12.0,
-  "rechecked": "2026-09-26 14:53 UTC"
+  "cname_chain": [
+    "economictimes.indiatimes.com-v1.edgekey.net",
+    "e180620.dscj.akamaiedge.net"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/PDAET/",
+      "/7176/",
+      "*/notify.htm?*",
+      "/default1.cms",
+      "/default.cms",
+      "/*rssarticleshow*",
+      "/*cms.dll*",
+      "/*/opinions/",
+      "/pmcomment/",
+      "/logtopickeywords.cms",
+      "/logtopickeywords.cms?query=",
+      "/researchview.cms?searchid=",
+      "/researchviewcomm.cms?searchid=",
+      "/articleshow_cmtofartac/",
+      "/cmtofart/"
+    ]
+  },
+  "elapsed_s": 9.7,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -341,4 +397,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

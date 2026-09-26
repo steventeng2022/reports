@@ -7,12 +7,12 @@
 | Target | https://yadi.sk/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | yadi.sk |
-| Test date | 2026-09-26 14:57 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 0, Low: 2, Info: 4)
+Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -22,6 +22,10 @@ Total findings: **6** (High: 0, Medium: 0, Low: 2, Info: 4)
 | 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
 | 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 6 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 7 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 8 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 9 | low | CK4 | Session-like cookie without HttpOnly | CWE-1004 |
+| 10 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -66,6 +70,30 @@ Total findings: **6** (High: 0, Medium: 0, Low: 2, Info: 4)
 - **Context:** https response, /
 - **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
+### 7. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=ZIE7lnBAHKRRAGoG_hFijsNTqp_so1pEzNwsMUA4xI
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 8. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of yadi.sk has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 9. [LOW] Session-like cookie without HttpOnly (`CK4`)
+
+- **CWE:** CWE-1004
+- **Detail:** Cookie 'yandex_360_session_exp_cache' looks session-related and has no HttpOnly attribute.
+- **Recommendation:** Set HttpOnly on session cookies.
+
+### 10. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 27 disallow path(s), e.g. /pay/, /activation_failed, /cfg, /folder, /copy
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -85,8 +113,8 @@ Total findings: **6** (High: 0, Medium: 0, Low: 2, Info: 4)
       "ns4.yandex.ru."
     ],
     "spf": [
-      "45e3b7565dc5130458f2bead528f8f6000d78f2b5fd904b06355c19f0cd3e4f",
       "_globalsign-domain-verification=ZIE7lnBAHKRRAGoG_hFijsNTqp_so1pEzNwsMUA4xI",
+      "45e3b7565dc5130458f2bead528f8f6000d78f2b5fd904b06355c19f0cd3e4f",
       "96ecd6928cf6313019cf2d11dc11d6fa945e5d808fcd391ce076bcd6968aa39"
     ],
     "dmarc": [],
@@ -241,10 +269,44 @@ Total findings: **6** (High: 0, Medium: 0, Low: 2, Info: 4)
     "/api/": 200
   },
   "subdomains": {
-    "status": "crt.sh ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='crt.sh', port=443): Read (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 45.6,
-  "rechecked": "2026-09-26 14:53 UTC"
+  "apex_txt": [
+    "_globalsign-domain-verification=ZIE7lnBAHKRRAGoG_hFijsNTqp_so1pEzNwsMUA4xI"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/pay/",
+      "/activation_failed",
+      "/cfg",
+      "/folder",
+      "/copy",
+      "/download/Yandex.Disk.Mac.dmg",
+      "/download/YandexDiskSetup.exe",
+      "/download/YandexDiskSetupPack.exe",
+      "/client/",
+      "/models/",
+      "/tuning/",
+      "/gift",
+      "/payment/",
+      "/ping",
+      "/monitoring.txt"
+    ]
+  },
+  "elapsed_s": 34.5,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -253,4 +315,5 @@ Total findings: **6** (High: 0, Medium: 0, Low: 2, Info: 4)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://ancestry.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ancestry.com |
-| Test date | 2026-09-25 08:32 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:39 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
+Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,8 +27,12 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
-| 12 | info | CT1 | 50 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 13 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | CT1 | 50 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 17 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -104,13 +108,37 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 12. [INFO] 50 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: cisco-ci-domain-verification=7e9f05a57120466147f6696af195ece74794ffcb865912d4841; Validity-Domain-Verification=ahh6a--ajdta71&akhdggS76SHKEUGkd; adobe-idp-site-verification=1222e2336a518f7a8664dbdc6462f85d80c35afb4f46542ba5a3
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of ancestry.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] 50 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: careers.ancestry.com, media.nbc.ancestry.com, vpn.ancestry.com, vpn.l1-pci.ancestry.com, wiki.ancestry.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 13. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 17. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: vpn.l1-pci.ancestry.com; content may still be served via virtual-host fallback.
@@ -133,40 +161,40 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "mxb-002f8e01.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns-737.awsdns-28.net.",
-      "ns-1996.awsdns-57.co.uk.",
       "ns-1429.awsdns-50.org.",
-      "ns-415.awsdns-51.com."
+      "ns-415.awsdns-51.com.",
+      "ns-737.awsdns-28.net.",
+      "ns-1996.awsdns-57.co.uk."
     ],
     "spf": [
-      "Validity-Domain-Verification=ahh6a--ajdta71&akhdggS76SHKEUGkd",
-      "cisco-ci-domain-verification=7e9f05a57120466147f6696af195ece74794ffcb865912d4841a6cfae29682fa",
-      "facebook-domain-verification=jyq4fxqp7asgs8a4uos7lv175smrw0",
-      "atlassian-domain-verification=w3rz7z0y8xvagZiMhu44qJQUXTISEt1vlB5JLH44YwEGaJu1oJQweoaSPwzZwRDa",
-      "es-domain-verification=572c7e4d-8a43-477d-a7c1-6ec480ca835e",
-      "LfWMRqtDo2P6V4y6XUr/J+AhoqnLN10va/BBwWlFW2swSuUuJIy0H7InunZ5t1x11GbBXDUuPLFrNb9i6xtZJg==",
-      "v=spf1 ip4:148.163.143.216 ip4:148.163.146.21 ip4:40.92.0.0/15 ip4:40.107.0.0/16 ip4:52.100.0.0/14 ip4:104.47.0.0/17 include:spfa1.ancestry.com include:spfa2.ancestry.com include:spfa3.ancestry.com include:spfa4.ancestry.com -all",
-      "1h8615NzQEFqgIY5PxudWlC6duCLMQfBMw+fv5fm3NA7wz2Sl7G2nXilA3HMfQdoU3YUwadBga5qJlKymzJUNg==",
-      "bw=V0nvzHI6aiJ+zDVV34NJIpjumOt94AbC2UVMYwNiV94K",
-      "apple-domain-verification=H7sVwFfpXAjrg5cjwMiD04RqrUPw-yk8nws1ZQLX0OE",
-      "ca3-5bb298b2372e4cd59aadef5eb8cdc5e2",
-      "google-site-verification=IhnfKIdiEJloKVWygvyOX-OXEqYvnNW3a36zIqvI7s8",
-      "google-site-verification=7cbq4pQ7-mroQaqnQzd_NWlY6FnXHB5jXvaOBv9PvKE",
-      "atlassian-sending-domain-verification=84372097-817a-4816-8e7f-2c3b32ac6895",
-      "apple-domain-verification=aRPuENZQPpkMdwYD",
-      "dtm-domain-verification=SC0ne4rDlm2aeoiu8c76XQPK2EThQ20Dlu700pGs87k",
-      "workplace-domain-verification=8M7WF3aEGWMl1TYqg8a0WPoeU5nGzn",
-      "_globalsign-domain-verification=kXS4kgWQ9hbGjWDmISoLGlXLaOx8-EdTig6ux0WZ2x",
-      "google-site-verification=xzRJaI_84GE45yCfP1XGewPRGYGYtoKN2taBi0W1tvw",
       "ZOOM_verify_pUR3qD3KTUmjq_VepUKiNQ",
+      "1h8615NzQEFqgIY5PxudWlC6duCLMQfBMw+fv5fm3NA7wz2Sl7G2nXilA3HMfQdoU3YUwadBga5qJlKymzJUNg==",
+      "LfWMRqtDo2P6V4y6XUr/J+AhoqnLN10va/BBwWlFW2swSuUuJIy0H7InunZ5t1x11GbBXDUuPLFrNb9i6xtZJg==",
+      "cisco-ci-domain-verification=7e9f05a57120466147f6696af195ece74794ffcb865912d4841a6cfae29682fa",
+      "Validity-Domain-Verification=ahh6a--ajdta71&akhdggS76SHKEUGkd",
+      "v=spf1 ip4:148.163.143.216 ip4:148.163.146.21 ip4:40.92.0.0/15 ip4:40.107.0.0/16 ip4:52.100.0.0/14 ip4:104.47.0.0/17 include:spfa1.ancestry.com include:spfa2.ancestry.com include:spfa3.ancestry.com include:spfa4.ancestry.com -all",
       "adobe-idp-site-verification=1222e2336a518f7a8664dbdc6462f85d80c35afb4f46542ba5a329749a24a22a",
-      "ca3-8ace22ca65d242f287d5417e8f1ccd9b",
-      "uber-domain-verification=bae1e0bc-36c1-4ddc-82cb-9df008237fbc",
+      "bw=V0nvzHI6aiJ+zDVV34NJIpjumOt94AbC2UVMYwNiV94K",
+      "atlassian-sending-domain-verification=84372097-817a-4816-8e7f-2c3b32ac6895",
+      "jamf-site-verification=bKnm7mL8x9P7tTbBibqUnw",
       "google-site-verification=-AzknqzfMwXyfxPvw1tFMWHQop_hZggmsBKQaxTtJ_Y",
-      "wiz-domain-verification=6f1d3544773aad264133bcc557338a5f84b607290582a33eb48cc6e768f48b95",
-      "mixpanel-domain-verify=030ac2cc-dd22-46ab-abd2-ffe6a6e01dde",
+      "es-domain-verification=572c7e4d-8a43-477d-a7c1-6ec480ca835e",
+      "facebook-domain-verification=jyq4fxqp7asgs8a4uos7lv175smrw0",
+      "_globalsign-domain-verification=kXS4kgWQ9hbGjWDmISoLGlXLaOx8-EdTig6ux0WZ2x",
       "docusign=60713c36-f380-42c6-bc97-c0a2f7bb0288",
-      "jamf-site-verification=bKnm7mL8x9P7tTbBibqUnw"
+      "mixpanel-domain-verify=030ac2cc-dd22-46ab-abd2-ffe6a6e01dde",
+      "google-site-verification=IhnfKIdiEJloKVWygvyOX-OXEqYvnNW3a36zIqvI7s8",
+      "workplace-domain-verification=8M7WF3aEGWMl1TYqg8a0WPoeU5nGzn",
+      "dtm-domain-verification=SC0ne4rDlm2aeoiu8c76XQPK2EThQ20Dlu700pGs87k",
+      "apple-domain-verification=aRPuENZQPpkMdwYD",
+      "ca3-5bb298b2372e4cd59aadef5eb8cdc5e2",
+      "google-site-verification=7cbq4pQ7-mroQaqnQzd_NWlY6FnXHB5jXvaOBv9PvKE",
+      "wiz-domain-verification=6f1d3544773aad264133bcc557338a5f84b607290582a33eb48cc6e768f48b95",
+      "uber-domain-verification=bae1e0bc-36c1-4ddc-82cb-9df008237fbc",
+      "google-site-verification=xzRJaI_84GE45yCfP1XGewPRGYGYtoKN2taBi0W1tvw",
+      "ca3-8ace22ca65d242f287d5417e8f1ccd9b",
+      "atlassian-domain-verification=w3rz7z0y8xvagZiMhu44qJQUXTISEt1vlB5JLH44YwEGaJu1oJQweoaSPwzZwRDa",
+      "apple-domain-verification=H7sVwFfpXAjrg5cjwMiD04RqrUPw-yk8nws1ZQLX0OE"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc_rua@emaildefense.proofpoint.com,mailto:dmarc_agg@dmarc.everest.email; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com,mailto:dmarc_fr@dmarc.everest.email; fo=1"
@@ -187,7 +215,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "*.ancestry.com",
       "*.ajax.ancestry.com"
     ],
-    "days_left": 66,
+    "days_left": 65,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -290,8 +318,30 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "vpn.l1-pci.ancestry.com"
     ]
   },
-  "elapsed_s": 128.7,
-  "rechecked": "2026-09-25 13:59 UTC"
+  "apex_txt": [
+    "cisco-ci-domain-verification=7e9f05a57120466147f6696af195ece74794ffcb865912d4841",
+    "Validity-Domain-Verification=ahh6a--ajdta71&akhdggS76SHKEUGkd",
+    "adobe-idp-site-verification=1222e2336a518f7a8664dbdc6462f85d80c35afb4f46542ba5a3",
+    "atlassian-sending-domain-verification=84372097-817a-4816-8e7f-2c3b32ac6895",
+    "jamf-site-verification=bKnm7mL8x9P7tTbBibqUnw"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true
+  },
+  "elapsed_s": 5.7,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -300,4 +350,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://bandcamp.com/ |
 | Bug bounty program | Epic Games |
 | Listed scope domain | bandcamp.com |
-| Test date | 2026-09-25 08:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:39 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
+Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,6 +25,12 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 | 7 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 8 | info | H6 | Server technology disclosure | CWE-200 |
 | 9 | info | P8 | Missing security.txt | CWE-1038 |
+| 10 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
+| 11 | low | DNS3 | Wildcard DNS detected | CWE-345 |
+| 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -88,6 +94,42 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 10. [LOW] MTA-STS TXT published but policy file missing/invalid (`MAIL12`)
+
+- **CWE:** CWE-285
+- **Detail:** GET https://mta-sts.bandcamp.com/.well-known/mta-sts/policy.txt -> 404
+- **Recommendation:** Publish a valid policy.txt (version, max_age, mode) or remove the TXT record.
+
+### 11. [LOW] Wildcard DNS detected (`DNS3`)
+
+- **CWE:** CWE-345
+- **Detail:** Two random labels (7ybn4ccz9fkveh.bandcamp.com and chnjrvll6r9vyb.bandcamp.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
+
+### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=R2K3ueaK09kESoG_YBuvOdRI7KWlKTgJket4pCrObTs; anthropic-domain-verification-k95236=fP5eU7agEB5py1gXXJmNmUrfK; google-site-verification=n7VFVIsha5YafmTLSe77JvVFOMw95jU5S5BQRRL_6Qc
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of bandcamp.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 14. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but bandcamp.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 28 disallow path(s), e.g. /tools, /checkout, /download_check, /cart/, /corpbanner/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -95,36 +137,36 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
   "domain": "bandcamp.com",
   "dns": {
     "a": [
-      "151.101.1.91",
-      "151.101.65.91",
       "151.101.193.91",
-      "151.101.129.91"
+      "151.101.1.91",
+      "151.101.129.91",
+      "151.101.65.91"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 10)",
-      "aspmx2.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)"
+      "aspmx2.googlemail.com (pref 10)",
+      "aspmx3.googlemail.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
+      "ns-cloud-d1.googledomains.com.",
       "ns-cloud-d2.googledomains.com.",
       "ns-cloud-d4.googledomains.com.",
-      "ns-cloud-d1.googledomains.com.",
       "ns-cloud-d3.googledomains.com."
     ],
     "spf": [
-      "anthropic-domain-verification-k95236=fP5eU7agEB5py1gXXJmNmUrfK",
-      "_globalsign-domain-verification=nx5U56FiDUqhsckpguh1BWVo8oJVRsFtwCfGxdBN4e",
-      "google-site-verification=1zzPh4J8oCSfyiKMYuZRhpD4rf1iip6VEZ4m5URsIh0",
-      "box-domain-verification=90c68eb309746ce326626165eadc4785e6094731b6e841ac85dab1c1d08a071c",
-      "apple-domain-verification=YnAbPC9ay7NlvPfJ",
-      "v=spf1 include:sendgrid.net include:_spf.google.com include:servers.mcsv.net include:smtp.app.echomark.com ~all",
       "google-site-verification=R2K3ueaK09kESoG_YBuvOdRI7KWlKTgJket4pCrObTs",
-      "atlassian-domain-verification=BTH5hOYBqeIEweoD5sO+R9uM4HGvi6XMLhyOGmvQWowfdg2+QBoGpOUygbJG54Xn",
+      "anthropic-domain-verification-k95236=fP5eU7agEB5py1gXXJmNmUrfK",
       "google-site-verification=n7VFVIsha5YafmTLSe77JvVFOMw95jU5S5BQRRL_6Qc",
+      "atlassian-domain-verification=BTH5hOYBqeIEweoD5sO+R9uM4HGvi6XMLhyOGmvQWowfdg2+QBoGpOUygbJG54Xn",
+      "_globalsign-domain-verification=nx5U56FiDUqhsckpguh1BWVo8oJVRsFtwCfGxdBN4e",
+      "v=spf1 include:sendgrid.net include:_spf.google.com include:servers.mcsv.net include:smtp.app.echomark.com ~all",
+      "google-site-verification=1zzPh4J8oCSfyiKMYuZRhpD4rf1iip6VEZ4m5URsIh0",
+      "apple-domain-verification=YnAbPC9ay7NlvPfJ",
+      "box-domain-verification=90c68eb309746ce326626165eadc4785e6094731b6e841ac85dab1c1d08a071c",
       "knowbe4-site-verification=bd869772c82849fbe473ecd2303fd637"
     ],
     "dmarc": [
@@ -145,7 +187,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
       "*.bandcamp.com",
       "bandcamp.com"
     ],
-    "days_left": 60,
+    "days_left": 59,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -155,7 +197,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
     }
   },
   "ports": {
-    "ip": "151.101.1.91",
+    "ip": "151.101.193.91",
     "open": []
   },
   "https": {
@@ -205,10 +247,49 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
     "/api/": 200
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 115.1,
-  "rechecked": "2026-09-25 13:59 UTC"
+  "wildcard_dns": true,
+  "apex_txt": [
+    "google-site-verification=R2K3ueaK09kESoG_YBuvOdRI7KWlKTgJket4pCrObTs",
+    "anthropic-domain-verification-k95236=fP5eU7agEB5py1gXXJmNmUrfK",
+    "google-site-verification=n7VFVIsha5YafmTLSe77JvVFOMw95jU5S5BQRRL_6Qc",
+    "atlassian-domain-verification=BTH5hOYBqeIEweoD5sO+R9uM4HGvi6XMLhyOGmvQWowfdg2+QB",
+    "_globalsign-domain-verification=nx5U56FiDUqhsckpguh1BWVo8oJVRsFtwCfGxdBN4e"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/tools",
+      "/checkout",
+      "/download_check",
+      "/cart/",
+      "/corpbanner/",
+      "/stream",
+      "/api/",
+      "/design_tokens",
+      "/search",
+      "/*_cb$",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/"
+    ]
+  },
+  "elapsed_s": 21.4,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -217,4 +298,5 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

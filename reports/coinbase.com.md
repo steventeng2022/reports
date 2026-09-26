@@ -7,12 +7,12 @@
 | Target | https://coinbase.com/ |
 | Bug bounty program | Coinbase |
 | Listed scope domain | coinbase.com |
-| Test date | 2026-09-25 09:06 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:42 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
+Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,10 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | low | MAIL12 | MTA-STS TXT published but policy file unreachable | CWE-285 |
+| 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -39,13 +43,13 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.152.241:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.35.15:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.152.241:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.35.15:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -103,6 +107,30 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 12. [LOW] MTA-STS TXT published but policy file unreachable (`MAIL12`)
+
+- **CWE:** CWE-285
+- **Detail:** GET https://mta-sts.coinbase.com/.well-known/mta-sts/policy.txt failed from this vantage point.
+- **Recommendation:** Publish a reachable policy.txt or remove the TXT record.
+
+### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: verification_token=fsUf5PQLIwq7nf4HOoQN6ZUCz; apple-domain-verification=8HpWlON81jar5xva; atlassian-domain-verification=hDuZ4Ho1Rts/J4kaoxR9K2Qnywy2Uo+GV8bDIwXEsE4uovTo0v
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of coinbase.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 22 disallow path(s), e.g. /oauth/, /*/oauth/, /signup-interstitial, /*/signup-interstitial, /join/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -110,68 +138,68 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
   "domain": "coinbase.com",
   "dns": {
     "a": [
-      "172.64.152.241",
-      "104.18.35.15"
+      "104.18.35.15",
+      "172.64.152.241"
     ],
     "aaaa": [
-      "2a06:98c1:310d::6812:230f",
-      "2a06:98c1:3102::ac40:98f1"
+      "2a06:98c1:3102::ac40:98f1",
+      "2a06:98c1:310d::6812:230f"
     ],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)",
-      "alt4.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
       "sam.ns.cloudflare.com.",
       "sue.ns.cloudflare.com."
     ],
     "spf": [
-      "1password-site-verification=2JYSQ7TWXVDP7DWPHTZRLBRESI",
-      "google-site-verification=gwL0hNTFdVrIO_MRAN6m07GJs7aZFGC-XkJcaq8We2s",
-      "dropbox-domain-verification=ap29irieph9f",
-      "amp-by-sourcegraph-domain-verification-h888ba=g5N2hQggP0wSY4x7gSMgfvyyg",
-      "applause-verification:4e8f0335-526a-4a52-8da4-f4ecedc931ef",
-      "atlassian-domain-verification=hDuZ4Ho1Rts/J4kaoxR9K2Qnywy2Uo+GV8bDIwXEsE4uovTo0vcL+8AVpI4+3j2V",
-      "google-site-verification=qyTrwiATuVJMBGXPOYPOr-NSYW90-idNJU7uTh6-v7Y",
-      "giga-domain-verification-956jz3=BliOUPqeH2xWvVWYcEmFCxcwC",
-      "docusign=8ace657e-b7bc-4ed2-9cb3-8aa55e7d0597",
-      "slack-domain-verification=MlD3gzX7txujPKkmWsULE6w264DyKkTkxbT7nPTd",
-      "pylon-domain-verification-sc64gk=B7nJiLr0KeZ0CRv2aVkYTNfjs",
-      "mongodb-site-verification=hME8tDWzya9rzZbckAxwpiEiv12KX8Gd",
-      "google-site-verification=Mf-1A418PKg0c9t2nAaK4zjWv2A_N8uNGu078EWqCZc",
-      "cloudflare_dashboard_sso=2306d311a1bc9c50590c204bf0e527d8",
-      "docusign=642eb6c3-8697-4ebd-8a51-a48a05713018",
-      "onetrust-domain-verification=f131f1d66b1b445cb8edc36b8edd78e8",
-      "facebook-domain-verification=qbphvvib286cbvluswam0qypj99ofm",
-      "cursor-domain-verification-tqme34=zHJPl1GeHjzl9e5kOqNqpcepA",
-      "jumio-up-idp-domain-verification=59dc5c59-80b3-4697-a85f-e4432d7ba047",
-      "google-site-verification=veWhMcRP5-ISDr7tSAI7Mjh9ELqQ7ndOvbHY-xcsl9o",
-      "verification_token=KH5SwHZXz5rsFGMABj81aGBnF",
-      "verification_token=N5mizUogMNMbNmoFTKuh7KCwg",
-      "de7f455f-f2f0-4669-8193-08e31bfab40f",
-      "verification_token=fsUf5PQLIwq7nf4HOoQN6ZUCz",
-      "apple-domain-verification=7XHeC6zhfdUOulBSjnUyABNhGLx2RMnjebZj2HMPH4w",
-      "apple-domain-verification=8HpWlON81jar5xva",
       "TSW_ODg1dGVyYXN3aXRjaA==",
-      "v=spf1 include:amazonses.com include:_spf.google.com -all",
-      "ahrefs-site-verification_cc6fbe8f6b26b9b07f97892536cda45b7ce7917b040baacf81facc14e820e887",
-      "DirectFedAuthUrl=https://coinbase.okta.com/app/coinbase_pwc_1/exk1ke47d0l3gh5gp0x8/sso/saml",
-      "plain-domain-verification-5y5tn9=TNqQhlpQ8Bn39aDEnApFcwOxC",
+      "verification_token=fsUf5PQLIwq7nf4HOoQN6ZUCz",
+      "apple-domain-verification=8HpWlON81jar5xva",
+      "de7f455f-f2f0-4669-8193-08e31bfab40f",
+      "atlassian-domain-verification=hDuZ4Ho1Rts/J4kaoxR9K2Qnywy2Uo+GV8bDIwXEsE4uovTo0vcL+8AVpI4+3j2V",
+      "openai-domain-verification=dv-lWXbBpm6xG2ptEFodATJULvV",
+      "stripe-verification=f66cbde9148f67d1bb992cfe5ae3fc1efa829c816b726b0bb28ff243325344dc",
+      "google-site-verification=5Vrsjlgs1uhwN5AU2Vg1TPuEBasNdhX3CgxtfTdXOQQ",
       "google-site-verification=8ww1MRKa0mZPc-WdoZ7YdL64qIE_2bJuIyIagaQqzFo",
+      "ahrefs-site-verification_cc6fbe8f6b26b9b07f97892536cda45b7ce7917b040baacf81facc14e820e887",
+      "docusign=642eb6c3-8697-4ebd-8a51-a48a05713018",
+      "verification_token=KH5SwHZXz5rsFGMABj81aGBnF",
+      "DirectFedAuthUrl=https://coinbase.okta.com/app/coinbase_pwc_1/exk1ke47d0l3gh5gp0x8/sso/saml",
+      "jumio-up-idp-domain-verification=59dc5c59-80b3-4697-a85f-e4432d7ba047",
+      "1password-site-verification=2JYSQ7TWXVDP7DWPHTZRLBRESI",
+      "slack-domain-verification=MlD3gzX7txujPKkmWsULE6w264DyKkTkxbT7nPTd",
       "MS=ms23710130",
       "google-site-verification=F0pv18D2VaKyH77hhpE9OZuDVipTi_YUGqKGzSOUfnQ",
-      "miro-verification=790dc2010116c659230c25705d7a5358cd78d99b",
       "tiktok-developers-site-verification=HrFgIdc7KnV2NknroIrwPpiieVmSJjYz",
-      "openai-domain-verification=dv-lWXbBpm6xG2ptEFodATJULvV",
+      "mongodb-site-verification=hME8tDWzya9rzZbckAxwpiEiv12KX8Gd",
+      "apple-domain-verification=7XHeC6zhfdUOulBSjnUyABNhGLx2RMnjebZj2HMPH4w",
+      "verification_token=N5mizUogMNMbNmoFTKuh7KCwg",
       "smartsheet-site-validation=kyRJbpapnk1ExowiffTo0f3Pc-9XKoSh",
-      "google-site-verification=5Vrsjlgs1uhwN5AU2Vg1TPuEBasNdhX3CgxtfTdXOQQ",
+      "miro-verification=790dc2010116c659230c25705d7a5358cd78d99b",
+      "pylon-domain-verification-sc64gk=B7nJiLr0KeZ0CRv2aVkYTNfjs",
+      "google-site-verification=Mf-1A418PKg0c9t2nAaK4zjWv2A_N8uNGu078EWqCZc",
       "vercel-domain-verification-zvp7d4=jvZ5HXRxnwIhxdzt26biEw6Oh",
-      "stripe-verification=f66cbde9148f67d1bb992cfe5ae3fc1efa829c816b726b0bb28ff243325344dc",
-      "keybase-site-verification=UlVJ6_FMc2ceBGKC2cjhy8FF1iGw-iuvdc1WzRX7foU"
+      "docusign=8ace657e-b7bc-4ed2-9cb3-8aa55e7d0597",
+      "cursor-domain-verification-tqme34=zHJPl1GeHjzl9e5kOqNqpcepA",
+      "facebook-domain-verification=qbphvvib286cbvluswam0qypj99ofm",
+      "onetrust-domain-verification=f131f1d66b1b445cb8edc36b8edd78e8",
+      "keybase-site-verification=UlVJ6_FMc2ceBGKC2cjhy8FF1iGw-iuvdc1WzRX7foU",
+      "google-site-verification=gwL0hNTFdVrIO_MRAN6m07GJs7aZFGC-XkJcaq8We2s",
+      "dropbox-domain-verification=ap29irieph9f",
+      "google-site-verification=veWhMcRP5-ISDr7tSAI7Mjh9ELqQ7ndOvbHY-xcsl9o",
+      "v=spf1 include:amazonses.com include:_spf.google.com -all",
+      "cloudflare_dashboard_sso=2306d311a1bc9c50590c204bf0e527d8",
+      "giga-domain-verification-956jz3=BliOUPqeH2xWvVWYcEmFCxcwC",
+      "amp-by-sourcegraph-domain-verification-h888ba=g5N2hQggP0wSY4x7gSMgfvyyg",
+      "applause-verification:4e8f0335-526a-4a52-8da4-f4ecedc931ef",
+      "google-site-verification=qyTrwiATuVJMBGXPOYPOr-NSYW90-idNJU7uTh6-v7Y",
+      "plain-domain-verification-5y5tn9=TNqQhlpQ8Bn39aDEnApFcwOxC"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; adkim=s; aspf=s; fo=1; rua=mailto:jpohmdhp@ag.dmarcian.com; ruf=mailto:jpohmdhp@fr.dmarcian.com;"
@@ -191,7 +219,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
       "coinbase.com",
       "*.cdp.coinbase.com"
     ],
-    "days_left": 85,
+    "days_left": 84,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -201,7 +229,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
     }
   },
   "ports": {
-    "ip": "172.64.152.241",
+    "ip": "104.18.35.15",
     "open": [
       8080,
       8443
@@ -264,10 +292,49 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
     "/api/": 302
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 134.2,
-  "rechecked": "2026-09-25 10:43 UTC"
+  "apex_txt": [
+    "verification_token=fsUf5PQLIwq7nf4HOoQN6ZUCz",
+    "apple-domain-verification=8HpWlON81jar5xva",
+    "atlassian-domain-verification=hDuZ4Ho1Rts/J4kaoxR9K2Qnywy2Uo+GV8bDIwXEsE4uovTo0v",
+    "openai-domain-verification=dv-lWXbBpm6xG2ptEFodATJULvV",
+    "stripe-verification=f66cbde9148f67d1bb992cfe5ae3fc1efa829c816b726b0bb28ff2433253"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true,
+    "robots_disallow": [
+      "/oauth/",
+      "/*/oauth/",
+      "/signup-interstitial",
+      "/*/signup-interstitial",
+      "/join/",
+      "/*/join/",
+      "/spot/*",
+      "/*/spot/*",
+      "/advanced-trade/spot/",
+      "/*/advanced-trade/spot/",
+      "/converter/*/*?currencyPage*",
+      "/*/converter/*/*?currencyPage*",
+      "/price/*?locale*",
+      "/*/price/*?locale*",
+      "/partner/"
+    ]
+  },
+  "elapsed_s": 10.4,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -276,4 +343,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://gartner.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | gartner.com |
-| Test date | 2026-09-25 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
+Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
+| 13 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
@@ -105,6 +110,36 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 12. [LOW] SPF record has no explicit all mechanism (implicit +all) (`MAIL6`)
+
+- **CWE:** CWE-285
+- **Detail:** Without -all/~all/+all the SPF record implicitly authorizes all senders.
+- **Recommendation:** End the SPF record with -all or ~all.
+
+### 13. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 14. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=k0GE0BCT91wGwIyD74bKOw2pu76vgckNG8XTkpxj93w; anthropic-domain-verification-ednxat=IQ65KbsWwqCgfrFDGjU3Dox5R; google-site-verification=npR9iwOMNUbkau8Pwvd4kBqqPDMyXCUu8g5iP1PW_44
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of gartner.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -118,51 +153,51 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxb-0016aa01.gslb.pphosted.com (pref 10)",
-      "mxa-0016aa01.gslb.pphosted.com (pref 10)",
       "mx0b-0016aa01.pphosted.com (pref 5)",
-      "mx0a-0016aa01.pphosted.com (pref 5)"
+      "mx0a-0016aa01.pphosted.com (pref 5)",
+      "mxb-0016aa01.gslb.pphosted.com (pref 10)",
+      "mxa-0016aa01.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "pdns77.ultradns.com.",
-      "a3-65.akam.net.",
-      "a1-109.akam.net.",
-      "a5-64.akam.net.",
-      "a14-64.akam.net.",
       "a28-65.akam.net.",
+      "a14-64.akam.net.",
+      "a1-109.akam.net.",
       "a4-64.akam.net.",
-      "pdns77.ultradns.org."
+      "a5-64.akam.net.",
+      "pdns77.ultradns.org.",
+      "a3-65.akam.net.",
+      "pdns77.ultradns.com."
     ],
     "spf": [
-      "prowly-verification=0a18c790f75457f4100202545f5060298b4099a9f9ad953a6f2cd406187d096e",
-      "google-site-verification=aKIAxvYjZsxgy4fvr3ys8D_D4naYE21UpdGV3jKNbb0",
-      "docusign=176ba6ee-d141-4b4f-951f-ed65844926a4",
       "apple-domain-verification=k0GE0BCT91wGwIyD74bKOw2pu76vgckNG8XTkpxj93w",
+      "anthropic-domain-verification-ednxat=IQ65KbsWwqCgfrFDGjU3Dox5R",
+      "google-site-verification=npR9iwOMNUbkau8Pwvd4kBqqPDMyXCUu8g5iP1PW_44",
+      "onetrust-domain-verification=5b726d00265b47399bae397d6aa108eb",
+      "drift-domain-verification=84b976bbb9c08c9f8507ed99d05493997c0f91557421b746b4ef017d64d036b6",
+      "prowly-verification=0a18c790f75457f4100202545f5060298b4099a9f9ad953a6f2cd406187d096e",
+      "docusign=fbd0b5e3-fd26-4058-a01e-f3231247d403",
+      "slido-domain-verification=ca6c3a71-8061-4091-8dac-a342e0bd8e4b",
+      "uber-domain-verification=db80ddee-dc1a-47b4-b0f9-5382e61b8cc7",
+      "lucidlink-verification=8CP62E0W0ET4MRZQS36V2YH1P8",
+      "docusign=1b2f90f6-48c2-4394-8d1d-bf2ede024866",
+      "openai-domain-verification=dv-1CqASnTt5JNxuOGMkbJziedR",
+      "canva-site-verification=NiX71ocXK6Nit9EcqeZZ_A",
+      "hWbBxLhyKc36IrHY2zusOB2kDAgSqdhLvJAxHo7pCUBuRh8ZpBeGKBbQix2ic6FerMsaTaiZY4gzCVnjOpqaNw==",
+      "00DRu00000RGlmb=1TBRu00000014kj",
       "v=spf1 include:evspf1.gartner.com include:evspf2.gartner.com include:_spf.salesforce.com include:spf.mandrillapp.com ip4:8.15.203.113 ip4:8.15.203.114 ip4:8.15.203.115 ip4:8.15.203.116 ip4:148.59.100.16/28 ",
       "ip4:216.221.170.72/29 ip4:216.221.170.250/31 ip4:216.221.171.8/29 -all",
-      "docker-verification=0894b02a-7530-4d69-a114-b173e16374f7",
-      "drift-domain-verification=84b976bbb9c08c9f8507ed99d05493997c0f91557421b746b4ef017d64d036b6",
-      "docusign=1b2f90f6-48c2-4394-8d1d-bf2ede024866",
-      "ciscocidomainverification=57f18449faaaa96630528f3cab6ca711051e21cb8aecdd166f57444d93b57c5",
-      "webexdomainverification.FZF7=b569771f-24c7-4cd9-b087-75b779846dde",
-      "atlassian-domain-verification=8jqx2ryRUppyajabhJkDQFuiurOAJuQysDFi/wyqM11w4JVloZs9oKlFWUg0RFcu",
-      "00DRu00000RGlmb=1TBRu00000014kj",
       "ZOOM_verify_ccu8Ucbb3XjDVqaWJxKT5F",
-      "docusign=fbd0b5e3-fd26-4058-a01e-f3231247d403",
-      "00DEm00000SNtEz=1TBEm0000000wjx",
-      "canva-site-verification=NiX71ocXK6Nit9EcqeZZ_A",
-      "paloaltonetworks-site-verification=89f74fa49f2affd44039a4cfce3efa8b83e2eee7d8f52ac84ce59d7a6f41ebb4",
-      "uber-domain-verification=db80ddee-dc1a-47b4-b0f9-5382e61b8cc7",
-      "hWbBxLhyKc36IrHY2zusOB2kDAgSqdhLvJAxHo7pCUBuRh8ZpBeGKBbQix2ic6FerMsaTaiZY4gzCVnjOpqaNw==",
-      "onetrust-domain-verification=9615d0536ed947b2bde2aff220e66c8b",
-      "x98FvuwX6an-AAO7F0eMahTQny_-",
-      "slido-domain-verification=ca6c3a71-8061-4091-8dac-a342e0bd8e4b",
-      "anthropic-domain-verification-ednxat=IQ65KbsWwqCgfrFDGjU3Dox5R",
+      "docusign=176ba6ee-d141-4b4f-951f-ed65844926a4",
       "00DD20000003MjH=1TBD20000004CBs;00DEa00000R3lsT=1TBEa0000000PWH;00DD40000009zec=1TBD4000000000v",
-      "onetrust-domain-verification=5b726d00265b47399bae397d6aa108eb",
-      "lucidlink-verification=8CP62E0W0ET4MRZQS36V2YH1P8",
-      "openai-domain-verification=dv-1CqASnTt5JNxuOGMkbJziedR",
-      "google-site-verification=npR9iwOMNUbkau8Pwvd4kBqqPDMyXCUu8g5iP1PW_44"
+      "atlassian-domain-verification=8jqx2ryRUppyajabhJkDQFuiurOAJuQysDFi/wyqM11w4JVloZs9oKlFWUg0RFcu",
+      "onetrust-domain-verification=9615d0536ed947b2bde2aff220e66c8b",
+      "00DEm00000SNtEz=1TBEm0000000wjx",
+      "docker-verification=0894b02a-7530-4d69-a114-b173e16374f7",
+      "x98FvuwX6an-AAO7F0eMahTQny_-",
+      "google-site-verification=aKIAxvYjZsxgy4fvr3ys8D_D4naYE21UpdGV3jKNbb0",
+      "paloaltonetworks-site-verification=89f74fa49f2affd44039a4cfce3efa8b83e2eee7d8f52ac84ce59d7a6f41ebb4",
+      "ciscocidomainverification=57f18449faaaa96630528f3cab6ca711051e21cb8aecdd166f57444d93b57c5",
+      "webexdomainverification.FZF7=b569771f-24c7-4cd9-b087-75b779846dde"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com;"
@@ -182,7 +217,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
       "gartner.com",
       "www.gartner.com"
     ],
-    "days_left": 116,
+    "days_left": 115,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -242,10 +277,29 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 15.6,
-  "rechecked": "2026-09-25 17:50 UTC"
+  "apex_txt": [
+    "apple-domain-verification=k0GE0BCT91wGwIyD74bKOw2pu76vgckNG8XTkpxj93w",
+    "anthropic-domain-verification-ednxat=IQ65KbsWwqCgfrFDGjU3Dox5R",
+    "google-site-verification=npR9iwOMNUbkau8Pwvd4kBqqPDMyXCUu8g5iP1PW_44",
+    "onetrust-domain-verification=5b726d00265b47399bae397d6aa108eb",
+    "drift-domain-verification=84b976bbb9c08c9f8507ed99d05493997c0f91557421b746b4ef01"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 20.1,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -254,4 +308,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

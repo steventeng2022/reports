@@ -7,12 +7,12 @@
 | Target | https://vogue.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | vogue.com |
-| Test date | 2026-09-25 07:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,7 +27,12 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
-| 12 | info | CT1 | 39 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | CT1 | 39 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -106,7 +111,37 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 12. [INFO] 39 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=TotKJyzGHFh-Cx9RPOCylr-TeWAhHQW4-wx-m09MA0w; atlassian-domain-verification=mYtQWl3namqmk5ikMKT48XVnS+XdjdbkLlkWMcNyvsddK2JDAi; pinterest-site-verification=079bd01e42d8f0eaa5422e8618a6c6d4
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of vogue.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 20 disallow path(s), e.g. /*?, /auth/, /account/, /user/, /user-context
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 17. [INFO] 39 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.vogue.com, app.link.vogue.com, app.vogue.com, assets.vogue.com, my.vogue.com, shop.vogue.com
@@ -123,43 +158,43 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "166.117.251.134"
     ],
     "aaaa": [
-      "2600:9000:a707:a46c:560f:b721:9702:d75e",
-      "2600:9000:a41b:ef95:eff:32b3:411c:f36c"
+      "2600:9000:a41b:ef95:eff:32b3:411c:f36c",
+      "2600:9000:a707:a46c:560f:b721:9702:d75e"
     ],
     "cname": null,
     "mx": [
       "aspmx.l.google.com (pref 1)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)"
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-28.awsdns-03.com.",
       "ns-1116.awsdns-11.org.",
-      "ns-1935.awsdns-49.co.uk.",
-      "ns-836.awsdns-40.net."
+      "ns-28.awsdns-03.com.",
+      "ns-836.awsdns-40.net.",
+      "ns-1935.awsdns-49.co.uk."
     ],
     "spf": [
-      "atlassian-domain-verification=mYtQWl3namqmk5ikMKT48XVnS+XdjdbkLlkWMcNyvsddK2JDAib+9a8MJCXTDMyJ",
-      "google-site-verification=0rCw3th8Nz8zUpLrjnI5ddz-wT-iv-IfYFYE4W434Pw",
-      "google-site-verification=zcD6BQv00vEAHz7gR-RM32XcQ6viddAOiZ1r5DNkQgo",
-      "fastly-domain-delegation-LRX8J5E7-877731-20250130",
-      "v=spf1 include:_u.vogue.com._spf.smart.ondmarc.com -all",
-      "facebook-domain-verification=6x1dytzup5zmced9tfbjt53v381sd5",
       "google-site-verification=TotKJyzGHFh-Cx9RPOCylr-TeWAhHQW4-wx-m09MA0w",
-      "google-site-verification=KC8kypqWuXMriWr2c1yLNvTa_h8Lj3u3Ls7utthC3dQ",
-      "pinterest-site-verification=079bd01e42d8f0eaa5422e8618a6c6d4",
-      "MS=ms23179707",
-      "adobe-idp-site-verification=c2108b9dbc0fc05ff0794006df1c41b6c945bd2c8a904bef754ec850a7c6873f",
-      "yahoo-verification-key=wNK397wYlhUjvNegBd2B9l5tgqbgfLIRT0BSY2zQ910=",
-      "fastly-domain-delegation-grdt7uboiyaqqtgjenzi-789661-2024-07-19",
-      "MS=ms95711702",
+      "atlassian-domain-verification=mYtQWl3namqmk5ikMKT48XVnS+XdjdbkLlkWMcNyvsddK2JDAib+9a8MJCXTDMyJ",
       "ZOOM_verify_kdyAdyAMRLmIhWagXSIIAg",
-      "google-site-verification=Zg2QYDSkRzso69ytr0XEOkPovxRiyUzmaxpLG6cmvho",
-      "google-site-verification=75Jd5pu9q9ASOY0VZggn-TZZGwGsVXex4POiiGCUKJc",
+      "pinterest-site-verification=079bd01e42d8f0eaa5422e8618a6c6d4",
+      "v=spf1 include:_u.vogue.com._spf.smart.ondmarc.com -all",
+      "yahoo-verification-key=wNK397wYlhUjvNegBd2B9l5tgqbgfLIRT0BSY2zQ910=",
       "xt2rbt7mdy4gk53hgy2mf3sx8j9f22v8",
-      "zapier-domain-verification-challenge=9acd95dc-f346-4b72-acb0-ceb88d996ba4"
+      "MS=ms95711702",
+      "google-site-verification=0rCw3th8Nz8zUpLrjnI5ddz-wT-iv-IfYFYE4W434Pw",
+      "fastly-domain-delegation-grdt7uboiyaqqtgjenzi-789661-2024-07-19",
+      "MS=ms23179707",
+      "google-site-verification=zcD6BQv00vEAHz7gR-RM32XcQ6viddAOiZ1r5DNkQgo",
+      "google-site-verification=75Jd5pu9q9ASOY0VZggn-TZZGwGsVXex4POiiGCUKJc",
+      "zapier-domain-verification-challenge=9acd95dc-f346-4b72-acb0-ceb88d996ba4",
+      "adobe-idp-site-verification=c2108b9dbc0fc05ff0794006df1c41b6c945bd2c8a904bef754ec850a7c6873f",
+      "google-site-verification=KC8kypqWuXMriWr2c1yLNvTa_h8Lj3u3Ls7utthC3dQ",
+      "facebook-domain-verification=6x1dytzup5zmced9tfbjt53v381sd5",
+      "fastly-domain-delegation-LRX8J5E7-877731-20250130",
+      "google-site-verification=Zg2QYDSkRzso69ytr0XEOkPovxRiyUzmaxpLG6cmvho"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; sp=reject; rua=mailto:a6816915@inbox.ondmarc.com; ruf=mailto:a6816915@inbox.ondmarc.com; adkim=r; aspf=r; fo=1; rf=afrf; ri=3600"
@@ -269,7 +304,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "condenastdigital.de",
       "condenastmexico-latam.com"
     ],
-    "days_left": 57,
+    "days_left": 56,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -362,8 +397,46 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "photovogue-admin.vogue.com"
     ]
   },
-  "elapsed_s": 113.8,
-  "rechecked": "2026-09-25 13:59 UTC"
+  "apex_txt": [
+    "google-site-verification=TotKJyzGHFh-Cx9RPOCylr-TeWAhHQW4-wx-m09MA0w",
+    "atlassian-domain-verification=mYtQWl3namqmk5ikMKT48XVnS+XdjdbkLlkWMcNyvsddK2JDAi",
+    "pinterest-site-verification=079bd01e42d8f0eaa5422e8618a6c6d4",
+    "yahoo-verification-key=wNK397wYlhUjvNegBd2B9l5tgqbgfLIRT0BSY2zQ910=",
+    "google-site-verification=0rCw3th8Nz8zUpLrjnI5ddz-wT-iv-IfYFYE4W434Pw"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/*?",
+      "/auth/",
+      "/account/",
+      "/user/",
+      "/user-context",
+      "/preview/",
+      "/search",
+      "/product/",
+      "/cdn-cgi/",
+      "/services.min.js",
+      "/com.condenast/yv8",
+      "/reject-all",
+      "/slideshow/*-inline$",
+      "*/vogue-club/perk/",
+      "/https://player.cnevids.com/"
+    ]
+  },
+  "elapsed_s": 8.7,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -372,4 +445,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://kobo.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | kobo.com |
-| Test date | 2026-09-25 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 | 12 | info | H6 | Server technology disclosure | CWE-200 |
 | 13 | info | RED2 | Soft redirect (302/303) for HTTP to HTTPS | CWE-319 |
 | 14 | info | P8 | Missing security.txt | CWE-1038 |
+| 15 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 16 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -42,13 +47,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.150.101:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.37.155:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.150.101:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.37.155:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -127,6 +132,36 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 15. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 16. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=TMvqQdCrWZE_zq_PIvMaWObopFipEhVGM3-NQ1D5qfY; status-page-domain-verification=9t2wdqtpqygk; google-site-verification=3aKt7utuf138msKSFHlGaxHSWaUfmh7xexzcZNtlSN0
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of kobo.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 19. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 95 disallow path(s), e.g. /Book/AddToLibrary/, /Book/AddPreviewToLibrary/, /Purchase/Buy, /*/purchase/buy/*, /ShoppingCartWidget/Add
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -134,8 +169,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
   "domain": "kobo.com",
   "dns": {
     "a": [
-      "172.64.150.101",
-      "104.18.37.155"
+      "104.18.37.155",
+      "172.64.150.101"
     ],
     "aaaa": [],
     "cname": null,
@@ -143,28 +178,28 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "kobo-com.mail.protection.outlook.com (pref 5)"
     ],
     "ns": [
+      "ns-cloud-e1.googledomains.com.",
       "ns-cloud-e4.googledomains.com.",
-      "ns-cloud-e2.googledomains.com.",
       "ns-cloud-e3.googledomains.com.",
-      "ns-cloud-e1.googledomains.com."
+      "ns-cloud-e2.googledomains.com."
     ],
     "spf": [
-      "status-page-domain-verification=9t2wdqtpqygk",
-      "17c61b51fd3e47faa7bbb0cb888ecbb0",
-      "v=spf1 mx include:spf1.kobo.com include:spf.protection.outlook.com include:_spf.alchemer.eu include:stspg-customer.com include:_spf.mlsend.com include:shops.shopify.com include:mail.zendesk.com include:amazonses.com ~all",
-      "google-site-verification=Q25CMQs0FyZeTBTcsd2e3pVmeINoplPPcC0OyZp-cYw",
-      "google-site-verification=3aKt7utuf138msKSFHlGaxHSWaUfmh7xexzcZNtlSN0",
-      "eI4nDhTkhHLFkVn2I0H86PYkbQzHr26YA6ndMom0SKIrZENOFNfL3EFFlWHcp+r4uBL1NDg63BxMrflvKQkl+w==",
-      "ca3-763497e7b6ed42dab28acd1f86e299cf",
-      "hj-ownership=fvkv30Fnyx78b9M",
-      "fastly-domain-delegation-fddelt00540045-10-22-25",
-      "google-site-verification=TPfQLJMxDmDJ7QLK1G7_9WKCyT33Zd4OKl8Y3xcVUmA",
       "google-site-verification=TMvqQdCrWZE_zq_PIvMaWObopFipEhVGM3-NQ1D5qfY",
+      "eI4nDhTkhHLFkVn2I0H86PYkbQzHr26YA6ndMom0SKIrZENOFNfL3EFFlWHcp+r4uBL1NDg63BxMrflvKQkl+w==",
+      "hj-ownership=fvkv30Fnyx78b9M",
+      "status-page-domain-verification=9t2wdqtpqygk",
+      "google-site-verification=3aKt7utuf138msKSFHlGaxHSWaUfmh7xexzcZNtlSN0",
       "google-site-verification=fubvUR2vWX0-_N-3h9Q6fR9el0Vi-OPTf-ysDQ2alrU",
-      "google-site-verification=SN46x048vtTZTeC4pcKIeVtbSbhp22YtkZIaMnlEWKY",
       "MS=ms57345456",
+      "v=spf1 mx include:spf1.kobo.com include:spf.protection.outlook.com include:_spf.alchemer.eu include:stspg-customer.com include:_spf.mlsend.com include:shops.shopify.com include:mail.zendesk.com include:amazonses.com ~all",
+      "ca3-763497e7b6ed42dab28acd1f86e299cf",
+      "facebook-domain-verification=asza9zmotc5y3jf2vvxuox1fh4zwal",
+      "google-site-verification=SN46x048vtTZTeC4pcKIeVtbSbhp22YtkZIaMnlEWKY",
       "cloudflare_dashboard_sso=9953105deb781640ed8a6f7e927897bf",
-      "facebook-domain-verification=asza9zmotc5y3jf2vvxuox1fh4zwal"
+      "google-site-verification=TPfQLJMxDmDJ7QLK1G7_9WKCyT33Zd4OKl8Y3xcVUmA",
+      "fastly-domain-delegation-fddelt00540045-10-22-25",
+      "17c61b51fd3e47faa7bbb0cb888ecbb0",
+      "google-site-verification=Q25CMQs0FyZeTBTcsd2e3pVmeINoplPPcC0OyZp-cYw"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:kobo-DMARC_Report@mail.rakuten.com,mailto:dmarc-report-a@rx.rakuten.co.jp"
@@ -184,7 +219,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "kobo.com",
       "*.kobo.com"
     ],
-    "days_left": 52,
+    "days_left": 51,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -194,7 +229,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     }
   },
   "ports": {
-    "ip": "172.64.150.101",
+    "ip": "104.18.37.155",
     "open": [
       8080,
       8443
@@ -248,10 +283,48 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     "/api/": 302
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 4.7,
-  "rechecked": "2026-09-25 17:50 UTC"
+  "apex_txt": [
+    "google-site-verification=TMvqQdCrWZE_zq_PIvMaWObopFipEhVGM3-NQ1D5qfY",
+    "status-page-domain-verification=9t2wdqtpqygk",
+    "google-site-verification=3aKt7utuf138msKSFHlGaxHSWaUfmh7xexzcZNtlSN0",
+    "google-site-verification=fubvUR2vWX0-_N-3h9Q6fR9el0Vi-OPTf-ysDQ2alrU",
+    "facebook-domain-verification=asza9zmotc5y3jf2vvxuox1fh4zwal"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/Book/AddToLibrary/",
+      "/Book/AddPreviewToLibrary/",
+      "/Purchase/Buy",
+      "/*/purchase/buy/*",
+      "/ShoppingCartWidget/Add",
+      "/InstantPreviewWidget/LoadInstantPreviewMetadata",
+      "/MarketingContentWidget/GetCurrentBanner",
+      "/Uploads/Books/Reviews/",
+      "/shoppingcartwidget/add",
+      "*/shoppingcartwidget*",
+      "*/checkout/createpurchase",
+      "*/checkout/createpurchaseifallowed",
+      "/Tracking/VerifyHuman",
+      "*/*Tracking/VerifyHuman",
+      "/tracking/verifyhuman"
+    ]
+  },
+  "elapsed_s": 5.0,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -260,4 +333,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

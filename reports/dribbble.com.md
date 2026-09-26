@@ -7,12 +7,12 @@
 | Target | https://dribbble.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | dribbble.com |
-| Test date | 2026-09-25 09:25 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:43 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
+Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,7 +25,14 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 | 7 | info | H6 | Server technology disclosure | CWE-200 |
 | 8 | info | CORS4 | CORS: wildcard Access-Control-Allow-Origin | CWE-942 |
 | 9 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
-| 10 | info | CT1 | 16 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 10 | info | MAIL10 | DMARC subdomain policy (sp=) set while apex policy is p=none | CWE-285 |
+| 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 13 | low | DNS3 | Wildcard DNS detected | CWE-345 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | CT1 | 16 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -89,7 +96,49 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 - **Context:** https response, /
 - **Recommendation:** Confirm whether arbitrary origin echoing is intended.
 
-### 10. [INFO] 16 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 10. [INFO] DMARC subdomain policy (sp=) set while apex policy is p=none (`MAIL10`)
+
+- **CWE:** CWE-285
+- **Detail:** Subdomains are enforced while the apex domain is monitor-only.
+- **Recommendation:** Confirm the split policy is intended.
+
+### 11. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 12. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 13. [LOW] Wildcard DNS detected (`DNS3`)
+
+- **CWE:** CWE-345
+- **Detail:** Two random labels (t9mw0fu1292sm8.dribbble.com and h85rdip99l9vvy.dribbble.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=ybbtm3dCtyshdETl5YMLL3YdRh1D50P1uLkcav13IG8; google-site-verification=nBBj8ycb88f7pry7MiUNDo7KdXDBxl-WOYEPHRCQw8E; google-site-verification=6ehiKlbD2ElK4AJXLe8nDTBOw7FNfb8uj1LukQgJnqY
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of dribbble.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 39 disallow path(s), e.g. /*/buckets$, /*/click?type=*$, /*/click$, /*/followers$, /*/following$
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 17. [INFO] 16 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: checkout.dribbble.com, okta.dribbble.com
@@ -102,43 +151,43 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
   "domain": "dribbble.com",
   "dns": {
     "a": [
-      "54.192.100.37",
-      "54.192.100.54",
-      "54.192.100.42",
-      "54.192.100.8"
+      "18.155.192.81",
+      "18.155.192.59",
+      "18.155.192.103",
+      "18.155.192.128"
     ],
     "aaaa": [
-      "2600:9000:24bb:5400:18:db55:bf00:93a1",
-      "2600:9000:24bb:4e00:18:db55:bf00:93a1",
-      "2600:9000:24bb:e600:18:db55:bf00:93a1",
-      "2600:9000:24bb:3400:18:db55:bf00:93a1",
-      "2600:9000:24bb:8c00:18:db55:bf00:93a1",
-      "2600:9000:24bb:c200:18:db55:bf00:93a1",
-      "2600:9000:24bb:3a00:18:db55:bf00:93a1",
-      "2600:9000:24bb:600:18:db55:bf00:93a1"
+      "2600:9000:24bb:c00:18:db55:bf00:93a1",
+      "2600:9000:24bb:e200:18:db55:bf00:93a1",
+      "2600:9000:24bb:cc00:18:db55:bf00:93a1",
+      "2600:9000:24bb:4200:18:db55:bf00:93a1",
+      "2600:9000:24bb:200:18:db55:bf00:93a1",
+      "2600:9000:24bb:6600:18:db55:bf00:93a1",
+      "2600:9000:24bb:a000:18:db55:bf00:93a1",
+      "2600:9000:24bb:7600:18:db55:bf00:93a1"
     ],
     "cname": null,
     "mx": [
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx3.googlemail.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
-      "aspmx2.googlemail.com (pref 10)"
+      "aspmx2.googlemail.com (pref 10)",
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
       "ns4.dnsimple-edge.org.",
-      "ns2.dnsimple-edge.net.",
+      "ns1.dnsimple-edge.com.",
       "ns3.dnsimple-edge.io.",
-      "ns1.dnsimple-edge.com."
+      "ns2.dnsimple-edge.net."
     ],
     "spf": [
+      "v=spf1 include:_spf.google.com -all",
+      "google-site-verification=ybbtm3dCtyshdETl5YMLL3YdRh1D50P1uLkcav13IG8",
+      "google-site-verification=nBBj8ycb88f7pry7MiUNDo7KdXDBxl-WOYEPHRCQw8E",
+      "kbjtt2313vqsxb13wy2tzr8mwmbwnsjb",
       "google-site-verification=6ehiKlbD2ElK4AJXLe8nDTBOw7FNfb8uj1LukQgJnqY",
       "google-site-verification=70pPwM6XlplaQ7lxSmW3PZa-U9VVMRcx6Q4ht8uv6nM",
-      "v=spf1 include:_spf.google.com -all",
-      "globalsign-domain-verification=FnXWfFjPqReOGiIH8ITAbUasqKxnix6ftvTUzPOKHF",
-      "kbjtt2313vqsxb13wy2tzr8mwmbwnsjb",
-      "google-site-verification=nBBj8ycb88f7pry7MiUNDo7KdXDBxl-WOYEPHRCQw8E",
-      "google-site-verification=ybbtm3dCtyshdETl5YMLL3YdRh1D50P1uLkcav13IG8"
+      "globalsign-domain-verification=FnXWfFjPqReOGiIH8ITAbUasqKxnix6ftvTUzPOKHF"
     ],
     "dmarc": [
       "v=DMARC1; p=none; sp=none; rua=mailto:re+ea6f80d01f44@inbound.dmarcdigests.com; aspf=r; pct=100"
@@ -158,7 +207,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
       "*.dribbble.com",
       "dribbble.com"
     ],
-    "days_left": 61,
+    "days_left": 60,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -168,7 +217,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
     }
   },
   "ports": {
-    "ip": "54.192.100.37",
+    "ip": "18.155.192.81",
     "open": []
   },
   "https": {
@@ -210,7 +259,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
     "/security.txt": 200,
     "/.git/HEAD": 404,
     "/.git/config": 404,
-    "/.env": 0,
+    "/.env": 403,
     "/.htaccess": 403,
     "/wp-login.php": 404,
     "/phpmyadmin/index.php": 404,
@@ -243,8 +292,48 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
       "www.industry-trends.dribbble.com"
     ]
   },
-  "elapsed_s": 179.2,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "wildcard_dns": true,
+  "apex_txt": [
+    "google-site-verification=ybbtm3dCtyshdETl5YMLL3YdRh1D50P1uLkcav13IG8",
+    "google-site-verification=nBBj8ycb88f7pry7MiUNDo7KdXDBxl-WOYEPHRCQw8E",
+    "google-site-verification=6ehiKlbD2ElK4AJXLe8nDTBOw7FNfb8uj1LukQgJnqY",
+    "google-site-verification=70pPwM6XlplaQ7lxSmW3PZa-U9VVMRcx6Q4ht8uv6nM",
+    "globalsign-domain-verification=FnXWfFjPqReOGiIH8ITAbUasqKxnix6ftvTUzPOKHF"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true,
+    "robots_disallow": [
+      "/*/buckets$",
+      "/*/click?type=*$",
+      "/*/click$",
+      "/*/followers$",
+      "/*/following$",
+      "/*/listings$",
+      "/*/tags$",
+      "/*/tags/*",
+      "/account$",
+      "/admin$",
+      "/ads$",
+      "/auth$",
+      "/autocompletes/*",
+      "/buckets/*/edit",
+      "/blocks/*"
+    ]
+  },
+  "elapsed_s": 20.2,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -253,4 +342,5 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

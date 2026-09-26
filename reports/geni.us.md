@@ -7,27 +7,32 @@
 | Target | https://geni.us/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | geni.us |
-| Test date | 2026-09-26 14:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
 | 2 | info | MAIL4 | DMARC policy is p=none (monitor only) | CWE-200 |
-| 3 | low | H1 | Missing HSTS header | CWE-319 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 3 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 4 | low | H1 | Missing HSTS header | CWE-319 |
 | 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 9 | info | H6 | Server technology disclosure | CWE-200 |
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
-| 11 | info | CT1 | 40 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 12 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 11 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | CT1 | 40 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 17 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -43,19 +48,18 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
 - **Detail:** DMARC is published but policy is 'none'; failing mail is not quarantined.
 - **Recommendation:** Move to p=quarantine/reject once monitor reports are clean.
 
-### 3. [LOW] Missing HSTS header (`H1`)
+### 3. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: nginx
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 4. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
 - **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
 - **Context:** https response, /
 - **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 4. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** https response, /
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
 ### 5. [LOW] Missing X-Content-Type-Options (`H3`)
 
@@ -64,33 +68,33 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 6. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** https response, /
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 7. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
 - **Context:** https response, /
 - **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 8. [INFO] Missing Permissions-Policy (`H7`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
 - **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
 - **Context:** https response, /
 - **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
 - **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
 - **Context:** https response, /
 - **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 9. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: nginx
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
 
 ### 10. [INFO] Missing security.txt (`P8`)
 
@@ -99,13 +103,43 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 11. [INFO] 40 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 11. [LOW] SPF record has no explicit all mechanism (implicit +all) (`MAIL6`)
+
+- **CWE:** CWE-285
+- **Detail:** Without -all/~all/+all the SPF record implicitly authorizes all senders.
+- **Recommendation:** End the SPF record with -all or ~all.
+
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=tyexc4pj94jtntzlgetkc9h6qlxaj7; status-page-domain-verification=px3r907b3k7k; google-site-verification=mpRbKoQ7OleZ5yhUF-NSmdN9RhrbGisKciCwo4ufIE4
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of geni.us has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] 40 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.geni.us, blog.geni.us, cdn.geni.us, chums.api.geni.us, fmtc.api.geni.us, help.geni.us, kit.api.geni.us, status.geni.us
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 12. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 17. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: chums.api.geni.us; content may still be served via virtual-host fallback.
@@ -118,30 +152,30 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
   "domain": "geni.us",
   "dns": {
     "a": [
-      "172.105.69.103"
+      "64.225.89.3"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx2.googlemail.com (pref 30)",
       "aspmx3.googlemail.com (pref 30)",
       "aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 20)",
-      "alt1.aspmx.l.google.com (pref 20)"
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx2.googlemail.com (pref 30)"
     ],
     "ns": [
-      "ns5.geniuslink.com.",
-      "ns1.geniuslink.com.",
+      "ns4.geniuslink.com.",
       "ns6.geniuslink.com.",
-      "ns3.geniuslink.com.",
+      "ns5.geniuslink.com.",
       "ns2.geniuslink.com.",
-      "ns4.geniuslink.com."
+      "ns1.geniuslink.com.",
+      "ns3.geniuslink.com."
     ],
     "spf": [
-      "google-site-verification=mpRbKoQ7OleZ5yhUF-NSmdN9RhrbGisKciCwo4ufIE4",
       "facebook-domain-verification=tyexc4pj94jtntzlgetkc9h6qlxaj7",
       "status-page-domain-verification=px3r907b3k7k",
-      "v=spf1 redirect=geni.us.hosted.spf-report.com"
+      "v=spf1 redirect=geni.us.hosted.spf-report.com",
+      "google-site-verification=mpRbKoQ7OleZ5yhUF-NSmdN9RhrbGisKciCwo4ufIE4"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:9bb5d347@mxtoolbox.dmarc-report.com,mailto:bmeip0rx@ag.us.dmarcian.com,mailto:adc00ec0f5@rua.easydmarc.us; ruf=mailto:9bb5d347@forensics.dmarc-report.com,mailto:adc00ec0f5@ruf.easydmarc.us,",
@@ -179,15 +213,18 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
     }
   },
   "ports": {
-    "ip": "172.105.69.103",
+    "ip": "64.225.89.3",
     "open": []
   },
   "https": {
-    "status": 429,
+    "status": 301,
     "content_type": "",
     "title": ""
   },
   "mixed_content": [],
+  "tech": [
+    "Server: nginx"
+  ],
   "cookies": [],
   "cors": [
     {
@@ -206,15 +243,15 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
     "location": "https://geniuslink.com"
   },
   "redir_probes": [
-    "/redirect?url=https://evil-auditor.example/x -> 429",
-    "/redirect?next=https://evil-auditor.example/x -> 429",
-    "/go?url=https://evil-auditor.example/x -> 429",
-    "/url?url=https://evil-auditor.example/x -> 429"
+    "/redirect?url=https://evil-auditor.example/x -> 302",
+    "/redirect?next=https://evil-auditor.example/x -> 302",
+    "/go?url=https://evil-auditor.example/x -> 404",
+    "/url?url=https://evil-auditor.example/x -> 302"
   ],
   "paths": {
-    "/robots.txt": 429,
-    "/sitemap.xml": 429,
-    "/.well-known/security.txt": 429,
+    "/robots.txt": 200,
+    "/sitemap.xml": 404,
+    "/.well-known/security.txt": 404,
     "/security.txt": 429,
     "/.git/HEAD": 429,
     "/.git/config": 429,
@@ -264,8 +301,25 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
       "chums.api.geni.us"
     ]
   },
-  "elapsed_s": 41.8,
-  "rechecked": "2026-09-26 16:29 UTC"
+  "apex_txt": [
+    "facebook-domain-verification=tyexc4pj94jtntzlgetkc9h6qlxaj7",
+    "status-page-domain-verification=px3r907b3k7k",
+    "google-site-verification=mpRbKoQ7OleZ5yhUF-NSmdN9RhrbGisKciCwo4ufIE4"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.3",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 22.7,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -274,4 +328,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

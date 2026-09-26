@@ -7,12 +7,12 @@
 | Target | https://hostgator.com/ |
 | Bug bounty program | Host Gator |
 | Listed scope domain | hostgator.com |
-| Test date | 2026-09-25 09:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
+Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 | 13 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 14 | info | H6 | Server technology disclosure | CWE-200 |
 | 15 | info | P8 | Missing security.txt | CWE-1038 |
+| 16 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
+| 17 | low | MAIL7 | SPF include: points to unresolvable domain(s) | CWE-285 |
+| 18 | info | MAIL10 | DMARC subdomain policy (sp=) set while apex policy is p=none | CWE-285 |
+| 19 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 20 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 21 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 22 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
@@ -133,6 +140,48 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 16. [LOW] SPF record has no explicit all mechanism (implicit +all) (`MAIL6`)
+
+- **CWE:** CWE-285
+- **Detail:** Without -all/~all/+all the SPF record implicitly authorizes all senders.
+- **Recommendation:** End the SPF record with -all or ~all.
+
+### 17. [LOW] SPF include: points to unresolvable domain(s) (`MAIL7`)
+
+- **CWE:** CWE-285
+- **Detail:** Broken include(s): spf.websitewelco (no A/TXT record).
+- **Recommendation:** Fix or remove the broken include directives.
+
+### 18. [INFO] DMARC subdomain policy (sp=) set while apex policy is p=none (`MAIL10`)
+
+- **CWE:** CWE-285
+- **Detail:** Subdomains are enforced while the apex domain is monitor-only.
+- **Recommendation:** Confirm the split policy is intended.
+
+### 19. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 20. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 21. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=XD3tFbXKRYV0fG-3zRGEzPC2irkiXg9Rz2eIKCG-0IQ; google-site-verification=WH8320OT9w-ZORb35j4X4VbeUNoMrUyhXoAzISUhEo0; knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 22. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of hostgator.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -149,21 +198,21 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "hostgator-com.mail.eo.outlook.com (pref 0)"
     ],
     "ns": [
-      "cody.ns.cloudflare.com.",
-      "erin.ns.cloudflare.com."
+      "erin.ns.cloudflare.com.",
+      "cody.ns.cloudflare.com."
     ],
     "spf": [
-      "google-site-verification=WH8320OT9w-ZORb35j4X4VbeUNoMrUyhXoAzISUhEo0",
-      "google-site-verification=pj2LYTgRxkGunX03DSguHxBxwaBABFEUxEDsLgOdlys",
-      "knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77",
-      "google-site-verification=yx1ED4Liv7PN2PvYnLuop_CVyyyxLz8lc5M2MRnSNWk",
       "google-site-verification=XD3tFbXKRYV0fG-3zRGEzPC2irkiXg9Rz2eIKCG-0IQ",
+      "google-site-verification=WH8320OT9w-ZORb35j4X4VbeUNoMrUyhXoAzISUhEo0",
+      "knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77",
+      "MS=ms19427866",
       "v=spf1 ip4:209.17.115.0/24 ip4:64.69.218.0/24 include:spf.constantcontact.com include:_spf.salesforce.com include:_spf2.hostgator.com include:spf.protection.outlook.com include:eig.spf.a.cloudfilter.net include:_spf.myorderbox.com include:spf.websitewelco",
       "me.com -all",
       "google-site-verification=268NzFe_2w_P3-j4fg2PDTwC5tgY0m__CQR9hYG7hSA",
-      "MS=ms19427866",
-      "google-site-verification=HUY22ADwgB0ij1JaYucTVtUI6dAvbNp5g4nQQ9tKHHc",
+      "google-site-verification=pj2LYTgRxkGunX03DSguHxBxwaBABFEUxEDsLgOdlys",
       "google-site-verification=0vcyIt2ASVGA-Hnox9hZPXaaLIX5pYSm8dZd0_0HLyU",
+      "google-site-verification=HUY22ADwgB0ij1JaYucTVtUI6dAvbNp5g4nQQ9tKHHc",
+      "google-site-verification=yx1ED4Liv7PN2PvYnLuop_CVyyyxLz8lc5M2MRnSNWk",
       "google-site-verification=oYqxGxAsuHwvRDo4FqADW6ToV1nf8ITUfcw728UUvuI"
     ],
     "dmarc": [
@@ -184,7 +233,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "hostgator.com",
       "*.hostgator.com"
     ],
-    "days_left": 59,
+    "days_left": 57,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -252,10 +301,29 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 22.8,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "google-site-verification=XD3tFbXKRYV0fG-3zRGEzPC2irkiXg9Rz2eIKCG-0IQ",
+    "google-site-verification=WH8320OT9w-ZORb35j4X4VbeUNoMrUyhXoAzISUhEo0",
+    "knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77",
+    "google-site-verification=268NzFe_2w_P3-j4fg2PDTwC5tgY0m__CQR9hYG7hSA",
+    "google-site-verification=pj2LYTgRxkGunX03DSguHxBxwaBABFEUxEDsLgOdlys"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 4.9,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -264,4 +332,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

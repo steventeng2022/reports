@@ -7,12 +7,12 @@
 | Target | https://nejm.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | nejm.org |
-| Test date | 2026-09-26 14:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **19** (High: 0, Medium: 0, Low: 7, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,7 +28,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | RED2 | Soft redirect (302/303) for HTTP to HTTPS | CWE-319 |
 | 12 | info | P8 | Missing security.txt | CWE-1038 |
-| 13 | info | CT1 | 73 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 13 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
+| 14 | low | MAIL7 | SPF include: points to unresolvable domain(s) | CWE-285 |
+| 15 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
+| 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 19 | info | CT1 | 73 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -114,7 +120,43 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 13. [INFO] 73 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 13. [LOW] SPF record has no explicit all mechanism (implicit +all) (`MAIL6`)
+
+- **CWE:** CWE-285
+- **Detail:** Without -all/~all/+all the SPF record implicitly authorizes all senders.
+- **Recommendation:** End the SPF record with -all or ~all.
+
+### 14. [LOW] SPF include: points to unresolvable domain(s) (`MAIL7`)
+
+- **CWE:** CWE-285
+- **Detail:** Broken include(s): us. (no A/TXT record).
+- **Recommendation:** Fix or remove the broken include directives.
+
+### 15. [LOW] MTA-STS TXT published but policy file missing/invalid (`MAIL12`)
+
+- **CWE:** CWE-285
+- **Detail:** GET https://mta-sts.nejm.org/.well-known/mta-sts/policy.txt -> 404
+- **Recommendation:** Publish a valid policy.txt (version, max_age, mode) or remove the TXT record.
+
+### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-wxcd0c=BgSYxLEu4oZNGb1STL7CkvTPg; atlassian-domain-verification=NNeumMyMPkAxVMrj7qq1zrhVVGl/5usz/MXkCgRheK8j05h3hD; onetrust-domain-verification=aea188f6772b4e0a9e7464f3a5d39d88
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of nejm.org has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 35 disallow path(s), e.g. /action, /help, /search, /feedback, /rss
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 19. [INFO] 73 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: staging.ad.nejm.org, staging.catalyst-drsite.nejm.org, staging.prod.nejm.org, staging.qa.nejm.org, staging.voices.nejm.org, store.nejm.org
@@ -127,8 +169,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   "domain": "nejm.org",
   "dns": {
     "a": [
-      "3.81.128.132",
       "174.129.166.77",
+      "3.81.128.132",
       "34.194.248.53"
     ],
     "aaaa": [],
@@ -138,26 +180,26 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "us-smtp-inbound-2.mimecast.com (pref 10)"
     ],
     "ns": [
-      "ns-928.awsdns-52.net.",
-      "ns-165.awsdns-20.com.",
+      "ns-1559.awsdns-02.co.uk.",
       "ns-1284.awsdns-32.org.",
-      "ns-1559.awsdns-02.co.uk."
+      "ns-165.awsdns-20.com.",
+      "ns-928.awsdns-52.net."
     ],
     "spf": [
-      "4k87v34q679nnktm7msw176n2mjjt2f2",
-      "tz7y9ps639fshlhk6fmljls36vsgmsh2",
-      "adobe-idp-site-verification=55cac8ffb5b23b50c94d629752efc925f61ea92c1254d16d8bd6f0affe96e97e",
-      "onetrust-domain-verification=aea188f6772b4e0a9e7464f3a5d39d88",
-      "v=spf1 ip4:54.240.121.128/27 ip4:52.6.112.187 include:us._netblocks.mimecast.com include:spf.abila.info include:mail.zendesk.com ip4:74.220.145.8 ip4:74.203.48.0/23 ip4:74.203.57.0/24 ip4:174.46.206.0/23",
-      " ip4:174.46.10.129/32 ip4:143.220.15.0/24 ip4:143.220.17.0/24 ip4:143.220.32.0/24 ip4:216.71.144.176 ip4:207.54.86.45 include:_spf.qualtrics.com include:amazonses.com ~all",
-      "6hszhhybwmrbh92rpj7m8rm8rclry7gs",
-      "0ed1fe018af5796b96adc34642aa2a42756ef1a82e",
       "xVXYh2htSzJmE6VkToy/aGAmNs8cxK2vV+6I70GL/zlQHSbfrd6n2vPKyYeokIK4okHucqCOzxF9J/FLb7VQZA==",
       "anthropic-domain-verification-wxcd0c=BgSYxLEu4oZNGb1STL7CkvTPg",
-      "openai-domain-verification=dv-8uyHnjMDd4ZJ1w1CapYvN7jZ",
-      "MS=ms51433796",
       "docusign=52095567-2918-44fb-ba89-2af8aa120c2b",
-      "atlassian-domain-verification=NNeumMyMPkAxVMrj7qq1zrhVVGl/5usz/MXkCgRheK8j05h3hDbEs6zZdYhHhGt8"
+      "atlassian-domain-verification=NNeumMyMPkAxVMrj7qq1zrhVVGl/5usz/MXkCgRheK8j05h3hDbEs6zZdYhHhGt8",
+      "MS=ms51433796",
+      "tz7y9ps639fshlhk6fmljls36vsgmsh2",
+      "0ed1fe018af5796b96adc34642aa2a42756ef1a82e",
+      "v=spf1 ip4:54.240.121.128/27 ip4:52.6.112.187 include:us._netblocks.mimecast.com include:spf.abila.info include:mail.zendesk.com ip4:74.220.145.8 ip4:74.203.48.0/23 ip4:74.203.57.0/24 ip4:174.46.206.0/23",
+      " ip4:174.46.10.129/32 ip4:143.220.15.0/24 ip4:143.220.17.0/24 ip4:143.220.32.0/24 ip4:216.71.144.176 ip4:207.54.86.45 include:_spf.qualtrics.com include:amazonses.com ~all",
+      "4k87v34q679nnktm7msw176n2mjjt2f2",
+      "onetrust-domain-verification=aea188f6772b4e0a9e7464f3a5d39d88",
+      "openai-domain-verification=dv-8uyHnjMDd4ZJ1w1CapYvN7jZ",
+      "adobe-idp-site-verification=55cac8ffb5b23b50c94d629752efc925f61ea92c1254d16d8bd6f0affe96e97e",
+      "6hszhhybwmrbh92rpj7m8rm8rclry7gs"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=25; rua=mailto:dmarc_agg@vali.email,mailto:dmarc@mms-org.uriports.com; ruf=mailto:dmarc@mms-org.uriports.com; fo=1:d:s"
@@ -186,7 +228,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     }
   },
   "ports": {
-    "ip": "3.81.128.132",
+    "ip": "174.129.166.77",
     "open": []
   },
   "https": {
@@ -269,8 +311,46 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "m.c.nejm.org"
     ]
   },
-  "elapsed_s": 44.6,
-  "rechecked": "2026-09-26 16:29 UTC"
+  "apex_txt": [
+    "anthropic-domain-verification-wxcd0c=BgSYxLEu4oZNGb1STL7CkvTPg",
+    "atlassian-domain-verification=NNeumMyMPkAxVMrj7qq1zrhVVGl/5usz/MXkCgRheK8j05h3hD",
+    "onetrust-domain-verification=aea188f6772b4e0a9e7464f3a5d39d88",
+    "openai-domain-verification=dv-8uyHnjMDd4ZJ1w1CapYvN7jZ",
+    "adobe-idp-site-verification=55cac8ffb5b23b50c94d629752efc925f61ea92c1254d16d8bd6"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.2",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/action",
+      "/help",
+      "/search",
+      "/feedback",
+      "/rss",
+      "/action/clickThrough",
+      "/action/showLogin",
+      "/page/account-confirmation-thanks",
+      "/media",
+      "/servlet/linkout",
+      "/author/",
+      "/doi/mlt/",
+      "/",
+      "/action",
+      "/help"
+    ]
+  },
+  "elapsed_s": 31.9,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -279,4 +359,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

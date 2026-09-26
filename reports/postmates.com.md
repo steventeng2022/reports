@@ -7,12 +7,12 @@
 | Target | https://postmates.com/ |
 | Bug bounty program | Postmates |
 | Listed scope domain | postmates.com |
-| Test date | 2026-09-25 10:10 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
+Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,13 @@ Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 17 | low | CK4 | Session-like cookie without HttpOnly | CWE-1004 |
+| 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -39,13 +46,13 @@ Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 69.48.218.1:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.36.195.2:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 69.48.218.1:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.36.195.2:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [LOW] Mixed content: HTTP resources referenced from HTTPS page (`MIX1`)
@@ -101,6 +108,48 @@ Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba65; status-page-domain-verification=vbzgm2f4x75m; google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of postmates.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but postmates.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 17. [LOW] Session-like cookie without HttpOnly (`CK4`)
+
+- **CWE:** CWE-1004
+- **Detail:** Cookie 'uev2.id.session' looks session-related and has no HttpOnly attribute.
+- **Recommendation:** Set HttpOnly on session cookies.
+
+### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 2250 disallow path(s), e.g. */delivery-details, */group-orders/, */search?, */select-language, */checkout
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -108,35 +157,35 @@ Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
   "domain": "postmates.com",
   "dns": {
     "a": [
-      "69.48.218.1"
+      "104.36.195.2"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "aspmx3.googlemail.com (pref 10)",
-      "aspmx4.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)",
+      "aspmx3.googlemail.com (pref 10)",
+      "aspmx5.googlemail.com (pref 10)",
+      "aspmx4.googlemail.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx5.googlemail.com (pref 10)"
+      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "edns126.ultradns.com.",
       "edns126.ultradns.net.",
-      "edns126.ultradns.biz.",
-      "edns126.ultradns.org."
+      "edns126.ultradns.org.",
+      "edns126.ultradns.com.",
+      "edns126.ultradns.biz."
     ],
     "spf": [
-      "ZOOM_verify_38TrrxQgRki7d9IxN3-DPw",
-      "stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba6578d6",
       "hkjvwlbv3sdq8x3n7k7xg6814fktgwt9",
+      "stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba6578d6",
       "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
-      "fhtfbm1hh3v7nwps06d0t8410d5r93tc",
+      "status-page-domain-verification=vbzgm2f4x75m",
       "google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4",
-      "facebook-domain-verification=lanbzff5xfbystm65ipwykm0arewgy",
+      "ZOOM_verify_38TrrxQgRki7d9IxN3-DPw",
+      "fhtfbm1hh3v7nwps06d0t8410d5r93tc",
       "google-site-verification=2Ilvgbr78yRVip_eIEMEDS5i2w9I8WqlkC5MGwtT9mc",
-      "status-page-domain-verification=vbzgm2f4x75m"
+      "facebook-domain-verification=lanbzff5xfbystm65ipwykm0arewgy"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc_agg@vali.email"
@@ -156,7 +205,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
       "*.postmates.com",
       "postmates.com"
     ],
-    "days_left": 88,
+    "days_left": 87,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -166,7 +215,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
     }
   },
   "ports": {
-    "ip": "69.48.218.1",
+    "ip": "104.36.195.2",
     "open": [
       8080,
       8443
@@ -252,10 +301,48 @@ Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
     "/api/": 404
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 35.1,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba65",
+    "status-page-domain-verification=vbzgm2f4x75m",
+    "google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4",
+    "google-site-verification=2Ilvgbr78yRVip_eIEMEDS5i2w9I8WqlkC5MGwtT9mc",
+    "facebook-domain-verification=lanbzff5xfbystm65ipwykm0arewgy"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.3",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "*/delivery-details",
+      "*/group-orders/",
+      "*/search?",
+      "*/select-language",
+      "*/checkout",
+      "*/closest",
+      "*/delivery-details",
+      "*/feed",
+      "*/login-redirect/",
+      "*/order",
+      "*恒博国际app下载*",
+      "/DC/",
+      "/JP-JP/",
+      "/_/defaults",
+      "/_/diagnostics"
+    ]
+  },
+  "elapsed_s": 20.8,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -264,4 +351,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

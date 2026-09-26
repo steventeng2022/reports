@@ -7,12 +7,12 @@
 | Target | https://fiverr.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | fiverr.com |
-| Test date | 2026-09-26 14:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
+Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,8 +28,14 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 | 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 11 | info | H6 | Server technology disclosure | CWE-200 |
 | 12 | info | P8 | Missing security.txt | CWE-1038 |
-| 13 | info | CT1 | 44 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 14 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 13 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | SEC2 | security.txt published without a contact address | CWE-1038 |
+| 19 | info | CT1 | 44 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 20 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -42,13 +48,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.114.47:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.113.47:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.114.47:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.113.47:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -113,13 +119,49 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 13. [INFO] 44 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 13. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 14. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=kMxO4LGDSjWFroQsa4yAFrJqPmPKg1S-LQ6RUC10DqQ; google-site-verification=hgsUdXptruag4sbh8wh7u9sOpz0rScqytDJKMTj_cUU; google-site-verification=O55kJ9s5kFZ4ZBKNCc0ZoJn40YyB7yM_vONo2l3W_pc
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of fiverr.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 17. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 55 disallow path(s), e.g. /orders/timeline/*, */pinned_flashes/*, /gigs/*/share/, /gigs/*/share?*, /specials/*
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 18. [INFO] security.txt published without a contact address (`SEC2`)
+
+- **CWE:** CWE-1038
+- **Detail:** /.well-known/security.txt returns 200 but contains no mailto:/URL contact.
+- **Recommendation:** Add a Contact: field per RFC 9116.
+
+### 19. [INFO] 44 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: dev.fiverr.com, okteto.dev.fiverr.com, pci-internal.dev.fiverr.com, pci.dev.fiverr.com, pro.dev.fiverr.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 14. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 20. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: pci-internal.dev.fiverr.com; content may still be served via virtual-host fallback.
@@ -132,61 +174,61 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
   "domain": "fiverr.com",
   "dns": {
     "a": [
-      "104.18.114.47",
-      "104.18.113.47"
+      "104.18.113.47",
+      "104.18.114.47"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 30)",
-      "aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx3.googlemail.com (pref 50)",
-      "aspmx2.googlemail.com (pref 40)",
-      "alt1.aspmx.l.google.com (pref 20)"
+      "aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 30)",
+      "aspmx2.googlemail.com (pref 40)"
     ],
     "ns": [
-      "sid.ns.cloudflare.com.",
-      "lucy.ns.cloudflare.com."
+      "lucy.ns.cloudflare.com.",
+      "sid.ns.cloudflare.com."
     ],
     "spf": [
-      "00D7z00000Zok0H=1TB7z0000000Q0v",
       "google-site-verification=kMxO4LGDSjWFroQsa4yAFrJqPmPKg1S-LQ6RUC10DqQ",
-      "wiz-domain-verification=5c2bc898460351b783ced51189ad2f3d7ec3a8a6d63f2dc26fa3ec4123d899ab",
-      "apple-domain-verification=qnipzrtidRJDoQCh",
-      "jai1f598eosu9g2ua6hdcpvo5r",
-      "fastly-domain-delegation-j93rv73ms7qpmtzhqhqq-883244-2025-02-18",
-      "facebook-domain-verification=mzxc9iigaciqjvtj28n064sk2rzbk5",
-      "v=spf1 ip4:34.192.34.210 ip4:34.192.87.38 ip4:34.243.203.200 include:sendgrid.net include:mail.zendesk.com include:_spf.google.com include:_spf.salesforce.com include:spf1.fiverr.com -all",
-      "google-site-verification=OjzIGtAACARGfq-pzfMWJMxPn6MgwCqnz8SuJ0agnGs",
-      "google-site-verification=O55kJ9s5kFZ4ZBKNCc0ZoJn40YyB7yM_vONo2l3W_pc",
-      "google-site-verification=ijrZ6Yqf-IkTyWct0jRahvbn9D3kphesRnUe4VZT9dE",
-      "anthropic-domain-verification-nh998a=YsbxIDUYEOhBI910nAo65cY2R",
+      "google-site-verification=hgsUdXptruag4sbh8wh7u9sOpz0rScqytDJKMTj_cUU",
       "sending_domain1079702=fe376d47978ba73b85655072c1359a2bde21692a90cdd2ac949ec76c9f5643f0",
-      "ZOOM_verify_t3nnvUw_QNuEQ4zcJbNWvg",
-      "atlassian-domain-verification=an+ckXl/FPR7+1gsMUQxtq4syuZoBklOsT5vcFXtDtvx9PN0bsiMTfVAGRTmOOWT",
-      "8faqpd2tgvlfjq9an0q8311pv4",
-      "miro-verification=6a9e176e900b5e728d0f62659369d5d5593e28c3",
-      "globalsign-domain-verification=8frsHcE2ag-0ccaaP5BTpPmUJC8ob8pdjDQchfAWzD",
-      "apple-domain-verification=9KpxtRRlTnV9CMWj",
-      "mongodb-site-verification=qwSddVOKDfrufdjzWe8XcrxiXFqsH3HH",
-      "mixpanel-domain-verify=90c3d81c-7a7c-4d4d-9b0d-5a60ae994e90",
-      "pardot1046343=0c19387b5d416ad576c0938517af3c23e0ec43bb16096e6201065cda46f41092",
       "g2hsd2r7uqt07crr95ts25hgec",
+      "google-site-verification=O55kJ9s5kFZ4ZBKNCc0ZoJn40YyB7yM_vONo2l3W_pc",
+      "ZOOM_verify_t3nnvUw_QNuEQ4zcJbNWvg",
+      "jai1f598eosu9g2ua6hdcpvo5r",
+      "google-site-verification=iNB30Gch08wWB6x_texeR3GWax3SYEanzhkPIgu5NHY",
+      "mongodb-site-verification=qwSddVOKDfrufdjzWe8XcrxiXFqsH3HH",
       "monday-com-verification=DHMhr9r0SLQ1XbH-UgVehCcq-kI5NO-3gC3T2YhsHNs",
+      "sendinblue-code:00c77aaa511d14ef758415286cceb8f8",
+      "8faqpd2tgvlfjq9an0q8311pv4",
+      "google-site-verification=SO-X1xOZnZI8nCyaqDcVFT2iMKXHKzh78QZ-hQZXdDg",
+      "apple-domain-verification=9KpxtRRlTnV9CMWj",
+      "google-site-verification=YRULw1rJRupVM3WOgi-oe0G-ha41QBBrm1P8irxmMj4",
+      "cursor-domain-verification-snmncy=v2sK6oZqni8YXE6z4r2hYiDk2",
+      "citrix-verification-code=a6b5039d-7719-4399-a895-8dc16ee2be75",
       "google-site-verification=8GwcSuHShuYh0Zl7pqbKLFl2Vy4LJwb663OKdq7oAfU",
       "google-site-verification=ngPwP5LN0jLJFSwOIs3QPjWdNeXSBaNlAaiK489xW3w",
-      "sendinblue-code:00c77aaa511d14ef758415286cceb8f8",
-      "google-site-verification=iNB30Gch08wWB6x_texeR3GWax3SYEanzhkPIgu5NHY",
-      "dropbox-domain-verification=8ilu3axidut2",
+      "globalsign-domain-verification=8frsHcE2ag-0ccaaP5BTpPmUJC8ob8pdjDQchfAWzD",
+      "google-site-verification=OjzIGtAACARGfq-pzfMWJMxPn6MgwCqnz8SuJ0agnGs",
       "jamf-site-verification=qTZ2kHy5JVbJULQo_cm6sw",
-      "citrix-verification-code=a6b5039d-7719-4399-a895-8dc16ee2be75",
-      "cursor-domain-verification-snmncy=v2sK6oZqni8YXE6z4r2hYiDk2",
-      "google-site-verification=SO-X1xOZnZI8nCyaqDcVFT2iMKXHKzh78QZ-hQZXdDg",
       "MS=ms20976924",
-      "sending_domain1046343=a12cb274f55f4a914e10a7258cd1e59efe2d8d2d2cb275a91f531a3d4829d84b",
-      "google-site-verification=YRULw1rJRupVM3WOgi-oe0G-ha41QBBrm1P8irxmMj4",
       "00Df2000000vILs=1TBPn0000000Tmn",
-      "google-site-verification=hgsUdXptruag4sbh8wh7u9sOpz0rScqytDJKMTj_cUU"
+      "pardot1046343=0c19387b5d416ad576c0938517af3c23e0ec43bb16096e6201065cda46f41092",
+      "google-site-verification=ijrZ6Yqf-IkTyWct0jRahvbn9D3kphesRnUe4VZT9dE",
+      "facebook-domain-verification=mzxc9iigaciqjvtj28n064sk2rzbk5",
+      "mixpanel-domain-verify=90c3d81c-7a7c-4d4d-9b0d-5a60ae994e90",
+      "00D7z00000Zok0H=1TB7z0000000Q0v",
+      "anthropic-domain-verification-nh998a=YsbxIDUYEOhBI910nAo65cY2R",
+      "miro-verification=6a9e176e900b5e728d0f62659369d5d5593e28c3",
+      "apple-domain-verification=qnipzrtidRJDoQCh",
+      "dropbox-domain-verification=8ilu3axidut2",
+      "fastly-domain-delegation-j93rv73ms7qpmtzhqhqq-883244-2025-02-18",
+      "v=spf1 ip4:34.192.34.210 ip4:34.192.87.38 ip4:34.243.203.200 include:sendgrid.net include:mail.zendesk.com include:_spf.google.com include:_spf.salesforce.com include:spf1.fiverr.com -all",
+      "sending_domain1046343=a12cb274f55f4a914e10a7258cd1e59efe2d8d2d2cb275a91f531a3d4829d84b",
+      "wiz-domain-verification=5c2bc898460351b783ced51189ad2f3d7ec3a8a6d63f2dc26fa3ec4123d899ab",
+      "atlassian-domain-verification=an+ckXl/FPR7+1gsMUQxtq4syuZoBklOsT5vcFXtDtvx9PN0bsiMTfVAGRTmOOWT"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:dca17281@mxtoolbox.dmarc-report.com; ruf=mailto:dca17281@forensics.dmarc-report.com"
@@ -243,7 +285,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     }
   },
   "ports": {
-    "ip": "104.18.114.47",
+    "ip": "104.18.113.47",
     "open": [
       8080,
       8443
@@ -332,8 +374,47 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "pci-internal.dev.fiverr.com"
     ]
   },
-  "elapsed_s": 6.7,
-  "rechecked": "2026-09-26 14:53 UTC"
+  "apex_txt": [
+    "google-site-verification=kMxO4LGDSjWFroQsa4yAFrJqPmPKg1S-LQ6RUC10DqQ",
+    "google-site-verification=hgsUdXptruag4sbh8wh7u9sOpz0rScqytDJKMTj_cUU",
+    "google-site-verification=O55kJ9s5kFZ4ZBKNCc0ZoJn40YyB7yM_vONo2l3W_pc",
+    "google-site-verification=iNB30Gch08wWB6x_texeR3GWax3SYEanzhkPIgu5NHY",
+    "mongodb-site-verification=qwSddVOKDfrufdjzWe8XcrxiXFqsH3HH"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.2",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true,
+    "robots_disallow": [
+      "/orders/timeline/*",
+      "*/pinned_flashes/*",
+      "/gigs/*/share/",
+      "/gigs/*/share?*",
+      "/specials/*",
+      "/packages/*",
+      "/categories/silly",
+      "/categories/fifa",
+      "/categories/Halloween",
+      "/categories/Postcards",
+      "/purchases",
+      "/user_sessions",
+      "/users/",
+      "/counter/*?",
+      "/collaborate/*"
+    ]
+  },
+  "elapsed_s": 5.7,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -342,4 +423,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

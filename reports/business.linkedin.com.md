@@ -7,12 +7,12 @@
 | Target | https://business.linkedin.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | business.linkedin.com |
-| Test date | 2026-09-26 14:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:40 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
+Total findings: **15** (High: 0, Medium: 0, Low: 0, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,7 +26,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
 | 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 9 | info | H6 | Server technology disclosure | CWE-200 |
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
-| 11 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 13 | info | CK5 | Cookie scoped to parent domain (.linkedin.com) | CWE-200 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -39,13 +43,13 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.41.41:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.64.146.215:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.41.41:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.64.146.215:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -95,7 +99,31 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 11. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of business.linkedin.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 12. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but business.linkedin.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 13. [INFO] Cookie scoped to parent domain (.linkedin.com) (`CK5`)
+
+- **CWE:** CWE-200
+- **Detail:** Set-Cookie Domain attribute is broader than the request host business.linkedin.com.
+- **Recommendation:** Confirm the wider cookie scope is intended.
+
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 15 disallow path(s), e.g. /content/, /*site-resources/, /*site-forms/, /*3qa, /*3qb
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 15. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -108,8 +136,8 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
   "domain": "business.linkedin.com",
   "dns": {
     "a": [
-      "104.18.41.41",
-      "172.64.146.215"
+      "172.64.146.215",
+      "104.18.41.41"
     ],
     "aaaa": [
       "2a06:98c1:310b::ac40:92d7",
@@ -230,7 +258,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
     }
   },
   "ports": {
-    "ip": "104.18.41.41",
+    "ip": "172.64.146.215",
     "open": [
       8080,
       8443
@@ -300,8 +328,45 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
       "www.business.linkedin.com"
     ]
   },
-  "elapsed_s": 8.6,
-  "rechecked": "2026-09-26 14:53 UTC"
+  "cname_chain": [
+    "microsites-cn.linkedin.com",
+    "microsites.linkedin.com",
+    "microsites.es.lnkdns.net",
+    "www.linkedin.com.cdn.cloudflare.net"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/content/",
+      "/*site-resources/",
+      "/*site-forms/",
+      "/*3qa",
+      "/*3qb",
+      "/*3qc",
+      "/*gracias",
+      "/*mercie",
+      "/*grazie",
+      "/*bedankt",
+      "/*obrigado",
+      "/*vielen-dank",
+      "/me/",
+      "/lem/",
+      "/cx/"
+    ]
+  },
+  "elapsed_s": 9.6,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -310,4 +375,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

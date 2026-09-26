@@ -7,12 +7,12 @@
 | Target | https://policies.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | policies.google.com |
-| Test date | 2026-09-25 10:10 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
+Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,6 +25,12 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
 | 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
 | 8 | info | H6 | Server technology disclosure | CWE-200 |
 | 9 | info | P8 | Missing security.txt | CWE-1038 |
+| 10 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
+| 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | CK5 | Cookie scoped to parent domain (.google.com) | CWE-200 |
 
 ## Detailed findings
 
@@ -87,6 +93,42 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 10. [LOW] SPF record has no explicit all mechanism (implicit +all) (`MAIL6`)
+
+- **CWE:** CWE-285
+- **Detail:** Without -all/~all/+all the SPF record implicitly authorizes all senders.
+- **Recommendation:** End the SPF record with -all or ~all.
+
+### 11. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 12. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: tiktok-developers-site-verification=JNBpjtNtdyoiPfoZ8xhXCxeprdUXFXOF
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of policies.google.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 15. [INFO] Cookie scoped to parent domain (.google.com) (`CK5`)
+
+- **CWE:** CWE-200
+- **Detail:** Set-Cookie Domain attribute is broader than the request host policies.google.com.
+- **Recommendation:** Confirm the wider cookie scope is intended.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -94,26 +136,18 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
   "domain": "policies.google.com",
   "dns": {
     "a": [
-      "64.233.187.100",
-      "64.233.187.102",
-      "64.233.187.101",
-      "64.233.187.138",
-      "64.233.187.139",
-      "64.233.187.113"
+      "142.250.77.206"
     ],
     "aaaa": [
-      "2404:6800:4008:c05::66",
-      "2404:6800:4008:c05::65",
-      "2404:6800:4008:c05::71",
-      "2404:6800:4008:c05::8b"
+      "2404:6800:4012::200e"
     ],
     "cname": null,
     "mx": [
-      "gmr-smtp-in.l.google.com (pref 5)",
       "alt4.gmr-smtp-in.l.google.com (pref 40)",
-      "alt2.gmr-smtp-in.l.google.com (pref 20)",
+      "alt3.gmr-smtp-in.l.google.com (pref 30)",
+      "gmr-smtp-in.l.google.com (pref 5)",
       "alt1.gmr-smtp-in.l.google.com (pref 10)",
-      "alt3.gmr-smtp-in.l.google.com (pref 30)"
+      "alt2.gmr-smtp-in.l.google.com (pref 20)"
     ],
     "ns": [],
     "spf": [
@@ -129,9 +163,9 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=*.google.com",
-    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
-    "notBefore": "Sep 10 19:22:01 2026 GMT",
-    "notAfter": "Dec  3 19:22:00 2026 GMT",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
+    "notBefore": "Sep 10 19:21:53 2026 GMT",
+    "notAfter": "Dec  3 19:21:52 2026 GMT",
     "san": [
       "*.google.com",
       "*.appengine.google.com",
@@ -199,7 +233,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
       "android.clients.google.com",
       "*.aistudio.google.com"
     ],
-    "days_left": 69,
+    "days_left": 68,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -209,7 +243,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
     }
   },
   "ports": {
-    "ip": "64.233.187.100",
+    "ip": "142.250.77.206",
     "open": []
   },
   "https": {
@@ -264,10 +298,25 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
     "/api/": 404
   },
   "subdomains": {
-    "status": "crt.sh ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='crt.sh', port=443): Read (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 26.6,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "tiktok-developers-site-verification=JNBpjtNtdyoiPfoZ8xhXCxeprdUXFXOF"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 10.7,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -276,4 +325,5 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

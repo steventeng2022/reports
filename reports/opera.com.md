@@ -7,12 +7,12 @@
 | Target | https://opera.com/ |
 | Bug bounty program | Opera Public Bug Bounty |
 | Listed scope domain | opera.com |
-| Test date | 2026-09-25 10:06 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
+Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,6 +25,11 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
 | 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 9 | info | H6 | Server technology disclosure | CWE-200 |
+| 10 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 11 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -89,6 +94,36 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
+### 10. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-kjAJTFRCoOY6YboxYHmIN5wi; adobe-idp-site-verification=61e18c604ee93df7fb52b11bab48531b3112c62f0db7249f9946; google-site-verification=zsu8s2znTOAuZ0dkksfMdQE3HmkoNNyuijNib1xkiQo
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of opera.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 13. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but opera.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 34 disallow path(s), e.g. /o/, /*/o/, /abtest/, /*/abtest/, /api/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -96,41 +131,41 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
   "domain": "opera.com",
   "dns": {
     "a": [
-      "185.26.182.104",
-      "185.26.182.103"
+      "185.26.182.103",
+      "185.26.182.104"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "ALT4.ASPMX.L.GOOGLE.com (pref 10)",
-      "ALT2.ASPMX.L.GOOGLE.com (pref 5)",
-      "ASPMX.L.GOOGLE.com (pref 1)",
+      "ALT1.ASPMX.L.GOOGLE.com (pref 5)",
       "ALT3.ASPMX.L.GOOGLE.com (pref 10)",
-      "ALT1.ASPMX.L.GOOGLE.com (pref 5)"
+      "ALT4.ASPMX.L.GOOGLE.com (pref 10)",
+      "ASPMX.L.GOOGLE.com (pref 1)",
+      "ALT2.ASPMX.L.GOOGLE.com (pref 5)"
     ],
     "ns": [
       "nic4.opera.com.",
       "nic3.opera.com.",
-      "nic1.opera.com.",
       "nic2.opera.com.",
+      "nic1.opera.com.",
       "nic6.opera.com."
     ],
     "spf": [
-      "google-site-verification=mi7mVeHWYoxrnV4M85YytexDvFMwa23tvOOcg0f0w-E",
+      "openai-domain-verification=dv-kjAJTFRCoOY6YboxYHmIN5wi",
+      "adobe-idp-site-verification=61e18c604ee93df7fb52b11bab48531b3112c62f0db7249f99463fa327f9c69d",
+      "_nt0mk4rbdlrkccjcxafujsak0umpiu7",
+      "google-site-verification=zsu8s2znTOAuZ0dkksfMdQE3HmkoNNyuijNib1xkiQo",
       "google-site-verification=M1WsVfJ0xUplsAdeDZ76BkHn9QL-IOWDyq9zziApgAI",
       "facebook-domain-verification=up2ljn0zco95f4f16hjxe6we815q19",
-      "openai-domain-verification=dv-kjAJTFRCoOY6YboxYHmIN5wi",
-      "FIO7ppPA1vjosCuWmpg32zcajEQgpx5RgsHG78x2T5oojZ2C6ujnN",
+      "v=spf1 ip4:185.26.182.76 ip4:195.189.142.89 ip6:2001:4c28:4000:722:185:26:182:76 ip6:2001:4c28:4000:779:195:189:142:89 mx include:_spf.google.com ~all",
+      "apple-domain-verification=SWfwiYtREsASOqwv",
       "teamtailor=baaff065e3b7dbc102b34ce11a472f5c",
-      "adobe-idp-site-verification=61e18c604ee93df7fb52b11bab48531b3112c62f0db7249f99463fa327f9c69d",
+      "keybase-site-verification=uH1gfE9c0VONYIy9Hq-WuhCOx6JclPV3_M3j9fAPnXU",
+      "BQ33d38Z4c0YY0OBRQuXcXsgWcVd9_w",
+      "FIO7ppPA1vjosCuWmpg32zcajEQgpx5RgsHG78x2T5oojZ2C6ujnN",
       "baaff065e3b7dbc102b34ce11a472f5c",
       "07b121f99e9843a192c18b3cf340b8fb",
-      "apple-domain-verification=SWfwiYtREsASOqwv",
-      "BQ33d38Z4c0YY0OBRQuXcXsgWcVd9_w",
-      "google-site-verification=zsu8s2znTOAuZ0dkksfMdQE3HmkoNNyuijNib1xkiQo",
-      "_nt0mk4rbdlrkccjcxafujsak0umpiu7",
-      "keybase-site-verification=uH1gfE9c0VONYIy9Hq-WuhCOx6JclPV3_M3j9fAPnXU",
-      "v=spf1 ip4:185.26.182.76 ip4:195.189.142.89 ip6:2001:4c28:4000:722:185:26:182:76 ip6:2001:4c28:4000:779:195:189:142:89 mx include:_spf.google.com ~all"
+      "google-site-verification=mi7mVeHWYoxrnV4M85YytexDvFMwa23tvOOcg0f0w-E"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; aspf=s; adkim=s; ri=86400; rua=mailto:c22187dc@in.mailhardener.com"
@@ -150,7 +185,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
       "*.opera.com",
       "opera.com"
     ],
-    "days_left": 134,
+    "days_left": 133,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -160,7 +195,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
     }
   },
   "ports": {
-    "ip": "185.26.182.104",
+    "ip": "185.26.182.103",
     "open": []
   },
   "https": {
@@ -210,10 +245,48 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 41.4,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "openai-domain-verification=dv-kjAJTFRCoOY6YboxYHmIN5wi",
+    "adobe-idp-site-verification=61e18c604ee93df7fb52b11bab48531b3112c62f0db7249f9946",
+    "google-site-verification=zsu8s2znTOAuZ0dkksfMdQE3HmkoNNyuijNib1xkiQo",
+    "google-site-verification=M1WsVfJ0xUplsAdeDZ76BkHn9QL-IOWDyq9zziApgAI",
+    "facebook-domain-verification=up2ljn0zco95f4f16hjxe6we815q19"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/o/",
+      "/*/o/",
+      "/abtest/",
+      "/*/abtest/",
+      "/api/",
+      "/client/",
+      "/downloadassets/",
+      "/*/downloadassets/",
+      "/download/get*",
+      "/get$",
+      "/get/",
+      "/promoassets/",
+      "/*/promoassets/",
+      "/campaign/",
+      "/*/campaign/"
+    ]
+  },
+  "elapsed_s": 26.1,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -222,4 +295,5 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

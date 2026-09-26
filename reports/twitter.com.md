@@ -7,12 +7,12 @@
 | Target | https://twitter.com/ |
 | Bug bounty program | Twitter |
 | Listed scope domain | twitter.com |
-| Test date | 2026-09-25 10:24 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
+Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -23,6 +23,11 @@ Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
 | 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 6 | info | H6 | Server technology disclosure | CWE-200 |
 | 7 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
+| 8 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 9 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -71,6 +76,36 @@ Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Confirm whether arbitrary origin echoing is intended.
 
+### 8. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 9. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=q1ghWjGLX9Ba-Gy_B4n_pAgC_mQYzWmQpOD8CMWl_Hw; canva-site-verification=lMnZ3wMh7c1uqZqa-cxZTg; google-site-verification=P9-NRZ0gaRKRGNDOXOjct5XETPtr3P9D-XA8HnlbAy4
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of twitter.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 45 disallow path(s), e.g. /*?lang=en-ss, /search/realtime, /search/users, /search/*/grid, /*/analytics
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -83,47 +118,47 @@ Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt3.aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)",
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "c.r06.twtrdns.net.",
-      "d.r06.twtrdns.net.",
+      "a.r06.twtrdns.net.",
       "c.u06.twtrdns.net.",
+      "b.r06.twtrdns.net.",
       "b.u06.twtrdns.net.",
       "d.u06.twtrdns.net.",
-      "a.r06.twtrdns.net.",
-      "b.r06.twtrdns.net.",
-      "a.u06.twtrdns.net."
+      "c.r06.twtrdns.net.",
+      "a.u06.twtrdns.net.",
+      "d.r06.twtrdns.net."
     ],
     "spf": [
-      "adobe-idp-site-verification=a2ff8fc40c434d1d6f02f68b0b1a683e400572ab8c1f2c180c71c3d985b9270a",
-      "atlassian-domain-verification=j6u0o1PTkobCXC84uEF/sWpIPtaZURBVYqKzmTvT8wugLcHT1vvrzzA63iP1qSLN",
-      "google-site-verification=F2uUiLUsD6kQlpUVQzxUM3PHa0uPo5GBS84SCG8QwXI",
-      "0a8c0fc6-bfa5-4ea7-b09b-87f2989022d6",
+      "google-site-verification=q1ghWjGLX9Ba-Gy_B4n_pAgC_mQYzWmQpOD8CMWl_Hw",
+      "canva-site-verification=lMnZ3wMh7c1uqZqa-cxZTg",
+      "google-site-verification=P9-NRZ0gaRKRGNDOXOjct5XETPtr3P9D-XA8HnlbAy4",
       "wrike-verification=MjU4MTA5MjoyN2UzNDc1MjU3MDZiZTY4NjBiNzliNDQ2OTUwNWY3NmM5NDgyMTBlYzFkNTcwYTE2YWNmZDdkNTY2ZmE4Yzlh",
       "miro-verification=6e1ca9ad6d0c2cd2e4186141265f23ed618cfe37",
-      "apple-domain-verification=zd1iHoEO9LILEQIq",
-      "canva-site-verification=lMnZ3wMh7c1uqZqa-cxZTg",
-      "mixpanel-domain-verify=164dda91-31f4-41e8-a816-0f59b38fea30",
-      "traction-guest=6882b04e-4188-4ff9-8bb4-bff5a3d358e6",
-      "google-site-verification=600dQ0pZYsH2xOFt4hYmf5f5NpjCbWE_qk5Y04dErYM",
-      "google-site-verification=TNhAkfLUeIbzzzSgPNxS5aEkKMf3aUcpPmCK1_kmIvU",
-      "google-site-verification=P9-NRZ0gaRKRGNDOXOjct5XETPtr3P9D-XA8HnlbAy4",
-      "MS=BEE202D20C326867290BDEFA2DDDF4594B5D6860",
       "linear-domain-verification=t5iq7e7nbw5w",
+      "adobe-idp-site-verification=a2ff8fc40c434d1d6f02f68b0b1a683e400572ab8c1f2c180c71c3d985b9270a",
       "v=spf1 ip4:199.16.156.0/22 ip4:199.59.148.0/22 ip4:8.25.194.0/23 ip4:8.25.196.0/23 ip4:204.92.114.203 ip4:204.92.114.204/31 include:_spf.google.com include:_thirdparty.twitter.com -all",
-      "stripe-verification=46F7B88485621DC18923B43D12E90E6CDBCE232F2FEBCF084E6EFA91F6BA707D",
-      "slack-domain-verification=9oO8P4Glf4252QJDOg4rHGs6KlSkBuI5ZVmWRO8d",
-      "loom-site-verification=638c6bc173b9458997f64d305bf42499",
-      "bj6sbt5xqs9hw9jrfvz7hplrg0l680sb",
-      "google-site-verification=q1ghWjGLX9Ba-Gy_B4n_pAgC_mQYzWmQpOD8CMWl_Hw",
+      "traction-guest=6882b04e-4188-4ff9-8bb4-bff5a3d358e6",
+      "apple-domain-verification=zd1iHoEO9LILEQIq",
+      "google-site-verification=TNhAkfLUeIbzzzSgPNxS5aEkKMf3aUcpPmCK1_kmIvU",
       "traction-guest=a4d0248d-fe01-4222-8fcc-33f68323e667",
+      "0a8c0fc6-bfa5-4ea7-b09b-87f2989022d6",
+      "notion-domain-verification=uKi5TAGxlhWMHG9uHKHkDY3cVc6zraAE1I44bILENlB",
+      "google-site-verification=F2uUiLUsD6kQlpUVQzxUM3PHa0uPo5GBS84SCG8QwXI",
+      "MS=BEE202D20C326867290BDEFA2DDDF4594B5D6860",
+      "stripe-verification=46F7B88485621DC18923B43D12E90E6CDBCE232F2FEBCF084E6EFA91F6BA707D",
+      "google-site-verification=600dQ0pZYsH2xOFt4hYmf5f5NpjCbWE_qk5Y04dErYM",
+      "bj6sbt5xqs9hw9jrfvz7hplrg0l680sb",
       "google-site-verification=h6dJIv0HXjLOkGAotLAWEzvoi9SxqP4vjpx98vrCvvQ",
-      "notion-domain-verification=uKi5TAGxlhWMHG9uHKHkDY3cVc6zraAE1I44bILENlB"
+      "slack-domain-verification=9oO8P4Glf4252QJDOg4rHGs6KlSkBuI5ZVmWRO8d",
+      "atlassian-domain-verification=j6u0o1PTkobCXC84uEF/sWpIPtaZURBVYqKzmTvT8wugLcHT1vvrzzA63iP1qSLN",
+      "mixpanel-domain-verify=164dda91-31f4-41e8-a816-0f59b38fea30",
+      "loom-site-verification=638c6bc173b9458997f64d305bf42499"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:d3omt-8484@rua.dmarc.emailanalyst.com; ruf=mailto:d3omt-8484@ruf.dmarc.emailanalyst.com; fo=1"
@@ -144,7 +179,7 @@ Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
       "cdn.syndication.twitter.com",
       "twitter.com"
     ],
-    "days_left": 48,
+    "days_left": 46,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -228,10 +263,49 @@ Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='crt.sh', port=443): Read (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 25.6,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "google-site-verification=q1ghWjGLX9Ba-Gy_B4n_pAgC_mQYzWmQpOD8CMWl_Hw",
+    "canva-site-verification=lMnZ3wMh7c1uqZqa-cxZTg",
+    "google-site-verification=P9-NRZ0gaRKRGNDOXOjct5XETPtr3P9D-XA8HnlbAy4",
+    "wrike-verification=MjU4MTA5MjoyN2UzNDc1MjU3MDZiZTY4NjBiNzliNDQ2OTUwNWY3NmM5NDgyM",
+    "miro-verification=6e1ca9ad6d0c2cd2e4186141265f23ed618cfe37"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true,
+    "robots_disallow": [
+      "/*?lang=en-ss",
+      "/search/realtime",
+      "/search/users",
+      "/search/*/grid",
+      "/*/analytics",
+      "/*/followers",
+      "/*/following",
+      "/*/verified_followers",
+      "/account/deactivated",
+      "/settings/deactivated",
+      "/*/likes",
+      "/*/likes?",
+      "/*/retweets",
+      "/*/retweets?",
+      "/*/media"
+    ]
+  },
+  "elapsed_s": 7.6,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -240,4 +314,5 @@ Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

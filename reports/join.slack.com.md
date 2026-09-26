@@ -7,12 +7,12 @@
 | Target | https://join.slack.com/ |
 | Bug bounty program | Slack |
 | Listed scope domain | join.slack.com |
-| Test date | 2026-09-25 09:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
+Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,10 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 | 10 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 11 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 12 | info | H6 | Server technology disclosure | CWE-200 |
+| 13 | low | MAIL12 | MTA-STS TXT published but policy file unreachable | CWE-285 |
+| 14 | low | DNS3 | Wildcard DNS detected | CWE-345 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -111,6 +115,30 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
+### 13. [LOW] MTA-STS TXT published but policy file unreachable (`MAIL12`)
+
+- **CWE:** CWE-285
+- **Detail:** GET https://mta-sts.join.slack.com/.well-known/mta-sts/policy.txt failed from this vantage point.
+- **Recommendation:** Publish a reachable policy.txt or remove the TXT record.
+
+### 14. [LOW] Wildcard DNS detected (`DNS3`)
+
+- **CWE:** CWE-345
+- **Detail:** Two random labels (vvqxpor26cljaf.join.slack.com and 7grwfjph3sl3kz.join.slack.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of join.slack.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 15 disallow path(s), e.g. /messages, /quickstart, /go/, /unsub/, /answers/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -118,10 +146,10 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
   "domain": "join.slack.com",
   "dns": {
     "a": [
-      "52.192.46.121",
-      "35.74.58.174",
+      "35.73.126.78",
       "52.196.128.139",
-      "35.73.126.78"
+      "35.74.58.174",
+      "52.192.46.121"
     ],
     "aaaa": [],
     "cname": null,
@@ -150,7 +178,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "*.slack.com",
       "slack.com"
     ],
-    "days_left": 39,
+    "days_left": 38,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -160,7 +188,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
     }
   },
   "ports": {
-    "ip": "52.192.46.121",
+    "ip": "35.73.126.78",
     "open": []
   },
   "https": {
@@ -210,10 +238,42 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='crt.sh', port=443): Read (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 35.7,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "wildcard_dns": true,
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/messages",
+      "/quickstart",
+      "/go/",
+      "/unsub/",
+      "/answers/",
+      "/help/requests/new?app_id=*",
+      "/what-is-slack",
+      "/collaborating-with-slack",
+      "/lp/three",
+      "/documents/slack_pilot_dpa",
+      "/openid",
+      "/oauth",
+      "/careers/",
+      "/join/shared_invite",
+      "/files-pri/"
+    ]
+  },
+  "elapsed_s": 22.8,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -222,4 +282,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

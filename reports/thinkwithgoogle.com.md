@@ -7,12 +7,12 @@
 | Target | https://thinkwithgoogle.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | thinkwithgoogle.com |
-| Test date | 2026-09-25 10:21 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
+Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,7 +27,10 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
-| 12 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -105,7 +108,25 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 12. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=sbvz693hyqny6ag4fjqyse15bm6uz0
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of thinkwithgoogle.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 1 disallow path(s), e.g. /*?query=
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 15. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -118,30 +139,22 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
   "domain": "thinkwithgoogle.com",
   "dns": {
     "a": [
-      "74.125.204.101",
-      "74.125.204.113",
-      "74.125.204.139",
-      "74.125.204.100",
-      "74.125.204.138",
-      "74.125.204.102"
+      "142.250.77.206"
     ],
     "aaaa": [
-      "2404:6800:4008:c04::8b",
-      "2404:6800:4008:c04::8a",
-      "2404:6800:4008:c04::64",
-      "2404:6800:4008:c04::65"
+      "2404:6800:4012::200e"
     ],
     "cname": null,
     "mx": [],
     "ns": [
-      "ns3.google.com.",
       "ns4.google.com.",
-      "ns1.google.com.",
-      "ns2.google.com."
+      "ns3.google.com.",
+      "ns2.google.com.",
+      "ns1.google.com."
     ],
     "spf": [
-      "v=spf1 -all",
-      "facebook-domain-verification=sbvz693hyqny6ag4fjqyse15bm6uz0"
+      "facebook-domain-verification=sbvz693hyqny6ag4fjqyse15bm6uz0",
+      "v=spf1 -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:mailauth-reports@google.com"
@@ -154,9 +167,9 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=*.appspot.com",
-    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
-    "notBefore": "Sep 10 19:21:47 2026 GMT",
-    "notAfter": "Dec  3 19:21:46 2026 GMT",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
+    "notBefore": "Sep 10 19:21:39 2026 GMT",
+    "notAfter": "Dec  3 19:21:38 2026 GMT",
     "san": [
       "*.appspot.com",
       "appspot.com",
@@ -205,7 +218,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "app.google",
       "*.app.google"
     ],
-    "days_left": 69,
+    "days_left": 68,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -215,7 +228,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
     }
   },
   "ports": {
-    "ip": "74.125.204.101",
+    "ip": "142.250.77.206",
     "open": []
   },
   "https": {
@@ -272,8 +285,28 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "thinkwithgoogle.com"
     ]
   },
-  "elapsed_s": 36.1,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "facebook-domain-verification=sbvz693hyqny6ag4fjqyse15bm6uz0"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/*?query="
+    ]
+  },
+  "elapsed_s": 6.1,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -282,4 +315,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

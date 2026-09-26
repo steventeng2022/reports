@@ -7,104 +7,374 @@
 | Target | https://activecampaign.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | activecampaign.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-26 17:38 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
+Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 2 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 3 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
-| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 7 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | TLS4 | TLS certificate expires within 30 days | CWE-298 |
+| 3 | info | PRT8080 | Alternate web service (port 8080) reachable | CWE-200 |
+| 4 | info | PRT8443 | Alternate web service (port 8443) reachable | CWE-200 |
+| 5 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 6 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 7 | low | H2 | Missing CSP header | CWE-1021 |
+| 8 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 9 | low | H4 | No clickjacking protection | CWE-1023 |
+| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 11 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 12 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 13 | info | H6 | Server technology disclosure | CWE-200 |
+| 14 | info | P8 | Missing security.txt | CWE-1038 |
+| 15 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
+| 16 | low | MAIL7 | SPF include: points to unresolvable domain(s) | CWE-285 |
+| 17 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 18 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 19 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 20 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 21 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 22 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing Content-Security-Policy (`H3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://activecampaign.com/; no defense-in-depth against XSS/content injection.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
-
-- **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://activecampaign.com/; page may be rendered in a foreign frame.
-
-### 3. [LOW] TLS certificate expiring within 30 days (`T3`)
+### 2. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires 2026-10-26T23:59:59+00:00 (30 days left) for activecampaign.com.
+- **Detail:** Certificate expires in 30 days (notAfter Oct 26 23:59:59 2026 GMT).
+- **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
-### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for activecampaign.com lists 1 name(s) besides the scope host: www.activecampaign.com
-
-### 5. [INFO] Missing Referrer-Policy (`H5`)
+### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://activecampaign.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** TCP connect to 104.20.0.15:8080 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 6. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://activecampaign.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 7. [INFO] sitemap.xml discloses URL inventory (`M1`)
+### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://activecampaign.com/ lists 21 URLs.
+- **Detail:** TCP connect to 104.20.0.15:8443 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+### 5. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: cloudflare; Cloudflare CDN/WAF
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 6. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
+
+- **CWE:** CWE-200
+- **Detail:** Alt-Svc: h3=":443"; ma=86400
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
+
+### 7. [LOW] Missing CSP header (`H2`)
+
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 8. [LOW] Missing X-Content-Type-Options (`H3`)
+
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
+
+### 9. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+
+### 10. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+
+### 11. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
+
+### 12. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 13. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: cloudflare
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 14. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 15. [LOW] SPF record has no explicit all mechanism (implicit +all) (`MAIL6`)
+
+- **CWE:** CWE-285
+- **Detail:** Without -all/~all/+all the SPF record implicitly authorizes all senders.
+- **Recommendation:** End the SPF record with -all or ~all.
+
+### 16. [LOW] SPF include: points to unresolvable domain(s) (`MAIL7`)
+
+- **CWE:** CWE-285
+- **Detail:** Broken include(s): usb. (no A/TXT record).
+- **Recommendation:** Fix or remove the broken include directives.
+
+### 17. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 18. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 19. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=0wCIZBGn1K/9SerwAoj1UyInzqjUZyJTODZJ1UPpBu+swTTfNB; stripe-verification=B8A6127A871981E95923CC0E59815D7C397AD696A04B0E5B60CBE58F81D5; canva-site-verification=jr7ubLUf4AdQz7NWkCAPnQ
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 20. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of activecampaign.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 21. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
-- **Detail:** http://activecampaign.com/ -> https://www.activecampaign.com/ (positive check).
+- **Detail:** Strict-Transport-Security is served but activecampaign.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt on https://activecampaign.com/ exposes 28 unique Disallow path(s) (/, /.env, /apps/search/, /blog/archives, /blog/inside-activecampaign) and 6 sitemap reference(s)
-
-### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 22. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on activecampaign.com.
+- **Detail:** robots.txt lists 28 disallow path(s), e.g. /.env, /apps/search/, /blog/archives, /blog/inside-activecampaign, /blog/page
+- **Recommendation:** Review disallowed paths; robots is not access control.
 
-## Reproduction notes
+## Evidence (raw response observations)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://activecampaign.com/ final status: 200 (final URL https://www.activecampaign.com/).
-- http://activecampaign.com/ initial status: 301.
-- Certificate: DigiCert Inc GeoTrust EV RSA CA G2, valid until 2026-10-26T23:59:59+00:00.
+```json
+{
+  "domain": "activecampaign.com",
+  "dns": {
+    "a": [
+      "104.20.0.15",
+      "104.20.1.15"
+    ],
+    "aaaa": [
+      "2606:4700:10::6814:f",
+      "2606:4700:10::6814:10f"
+    ],
+    "cname": null,
+    "mx": [
+      "usb-smtp-inbound-2.mimecast.com (pref 10)",
+      "usb-smtp-inbound-1.mimecast.com (pref 10)"
+    ],
+    "ns": [
+      "abby.ns.cloudflare.com.",
+      "alex.ns.cloudflare.com."
+    ],
+    "spf": [
+      "cloudflare_dashboard_sso=68e80b6640cd17c492819fa073f4c765",
+      "atlassian-domain-verification=0wCIZBGn1K/9SerwAoj1UyInzqjUZyJTODZJ1UPpBu+swTTfNBZxL2WhQZGvkfo/",
+      "vnr8cy64z7nvm6vq9xycm1t9t3wx625z",
+      "docusign=b6411fd9-d54c-42ec-9a1e-9c718099b208",
+      "stripe-verification=B8A6127A871981E95923CC0E59815D7C397AD696A04B0E5B60CBE58F81D54B65",
+      "canva-site-verification=jr7ubLUf4AdQz7NWkCAPnQ",
+      "ps-cd-verification=445a8aa6-f462-4ac5-89b9-cf62b8f9ea91",
+      "google-site-verification=yZpqL2DYnFgeE1CANvNSvCaY6vchX6cUsOnKIswM9nY",
+      "facebook-domain-verification=vj4bbc79ppnrt612769n33gxnqezjt",
+      "google-site-verification=bsPOFNz4WrydBvfNkWbSIfsIlkRev4iGBxCHnB3wsA4",
+      "docker-verification=88049882-e3b0-454f-bfc6-99f5945ec081",
+      "v=DMARC1; p=none; rua=mailto:dmarc@activecampaign.com",
+      "pendo-domain-verification=JK5zYujOmKqXb5aS1pRudbgHp2s",
+      "google-site-verification=z4cu4ksSlD1F4VwsV7aeuI3agrK4xT2HzLJwvNqXh-I",
+      "google-site-verification=5ecE6QK-uN7epMvq2briZD_vYB2nC_5Y3BukiSILBUI",
+      "openai-domain-verification=dv-hGDc7dQuUtX9y1AaOh3g5zLk",
+      "apple-domain-verification=VblInNeuuVuHySfU",
+      "MS=ms78211706",
+      "google-site-verification=pns8v6xoUCNjHvUFVWiTCI4LJj7LHyz5CPghUG4ZYvc",
+      "google-site-verification=aZc8XNJa2DPnRqQMK58izlsKurjRm-hwdl-U4nsIBjY",
+      "v=spf1 ip4:173.236.20.0/24 ip4:192.92.97.0/24 ip4:52.128.40.0/21 ip4:217.8.118.0/24 ip4:103.229.233.0/24 include:usb._netblocks.mimecast.com include:_spf.google.com include:mail.zendesk.com include:stspg-customer.com include:sent-via.netsuite.com include:",
+      "_spf-",
+      "lrn.activecampaign.com ~all",
+      "asv=2a7893285fd0ab817b0ac10ee4afcded",
+      "status-page-domain-verification=8wyn9807n4gs",
+      "ahrefs-site-verification_13f6592c6dbc2e2fd5a07a7ba689ee0acaf5285f7dbf7a1c3eed5fcc8799689a",
+      "cursor-domain-verification-mggxet=yI5H5w8prfWJQbesZn4JgSFiX",
+      "google-site-verification=hLQ1bCw_QcM04p9JX8V-EF2yFMN1phpFf4F1XAYSkXg",
+      "ZOOM_verify_X_DkuppUTyaf0Col_X_dWQ",
+      "google-site-verification=ZO9kf3bTT021P8qlB2BQ5rmk1e4bS8rsoYTnSpo9Nqg",
+      "intacct-esk=4FED1A5177F8769BE0538C06A8C0589E",
+      "google-site-verification=oZuy90wJc1WtJL-OqSxrqLKcqE_xWlBcRncm88kc6xo",
+      "anthropic-domain-verification-2wy46r=746EyPf5UdzlAhUQfRnbJGFAi"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; rua=mailto:re+eab9f0889f10@inbound.dmarcdigests.com; fo=1;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "jurisdictionCountryName=US, jurisdictionStateOrProvinceName=Delaware, businessCategory=Private Organization, serialNumber=5943439, countryName=US, stateOrProvinceName=Illinois, localityName=Chicago, organizationName=ActiveCampaign, LLC, commonName=www.activecampaign.com",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=GeoTrust EV RSA CA G2",
+    "notBefore": "Sep 25 00:00:00 2025 GMT",
+    "notAfter": "Oct 26 23:59:59 2026 GMT",
+    "san": [
+      "www.activecampaign.com",
+      "activecampaign.com"
+    ],
+    "days_left": 30,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "104.20.0.15",
+    "open": [
+      8080,
+      8443
+    ]
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: cloudflare",
+    "Cloudflare CDN/WAF"
+  ],
+  "cookies": [
+    {
+      "domain": "activecampaign.com",
+      "samesite": "none"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.activecampaign.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://www.activecampaign.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 403,
+    "/.git/config": 403,
+    "/.env": 403,
+    "/.htaccess": 403,
+    "/wp-login.php": 403,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "ct-pending"
+  },
+  "apex_txt": [
+    "atlassian-domain-verification=0wCIZBGn1K/9SerwAoj1UyInzqjUZyJTODZJ1UPpBu+swTTfNB",
+    "stripe-verification=B8A6127A871981E95923CC0E59815D7C397AD696A04B0E5B60CBE58F81D5",
+    "canva-site-verification=jr7ubLUf4AdQz7NWkCAPnQ",
+    "ps-cd-verification=445a8aa6-f462-4ac5-89b9-cf62b8f9ea91",
+    "google-site-verification=yZpqL2DYnFgeE1CANvNSvCaY6vchX6cUsOnKIswM9nY"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/.env",
+      "/apps/search/",
+      "/blog/archives",
+      "/blog/inside-activecampaign",
+      "/blog/page",
+      "/blog/tag",
+      "/c/",
+      "/cache/",
+      "/comment-page-1",
+      "/cpresources/",
+      "/elementor-*",
+      "/l/",
+      "/learn/category/",
+      "/learn/tag/",
+      "/podcast/feed"
+    ]
+  },
+  "elapsed_s": 8.2,
+  "rechecked": "2026-09-26 17:38 UTC"
+}
+```
 
-## Active agent cross-check (latest aggressive scan on main, wave 5 - activecampaign.com)
+## Notes
 
-Total findings: **16** - latest aggressive-method scan by agent-aggressive (main branch). Full detailed findings remain in the main-branch version of this file; passive re-audit above is the non-injection view.
-
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | medium | I1v | URL params reflected in Cloudflare challenge JS string (safely escaped, verified) | CWE-79 |
-| 2 | medium | I6v | Campaign redirect endpoint /go?url= (challenge-gated, account re-test pending) | CWE-601 |
-| 28 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
-| 29 | medium | I20 | CORS reflects attacker-controlled Origin (preflight) | CWE-942 |
-| 30 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
-| 31 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
-| 32 | medium | I20 | CORS reflects attacker-controlled Origin (preflight) | CWE-942 |
-| 33 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
-| 34 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 35 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 36 | low | H2 | Missing CSP header | CWE-1021 |
-| 37 | low | H4 | No clickjacking protection | CWE-1023 |
-| 38 | low | I22 | Protected path listed in robots.txt | CWE-538 |
-| 39 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-| 40 | info | T2 | TLS certificate expiring within 33 days | CWE-295 |
-| 41 | info | H5 | Missing Referrer-Policy | CWE-200 |
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

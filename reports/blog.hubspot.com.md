@@ -7,12 +7,12 @@
 | Target | https://blog.hubspot.com/ |
 | Bug bounty program | HubSpot |
 | Listed scope domain | blog.hubspot.com |
-| Test date | 2026-09-25 08:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:40 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 0, Info: 9)
+Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,6 +25,9 @@ Total findings: **9** (High: 0, Medium: 0, Low: 0, Info: 9)
 | 7 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 8 | info | H6 | Server technology disclosure | CWE-200 |
 | 9 | info | P8 | Missing security.txt | CWE-1038 |
+| 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -86,6 +89,24 @@ Total findings: **9** (High: 0, Medium: 0, Low: 0, Info: 9)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-gws-recovery-domain-verification=49109286
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of blog.hubspot.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 79 disallow path(s), e.g. /wt-assets/static-files/mktg-analytics, /_hcms/iplookup, /_hcms/perf, *?portalId=, *?inpageEditorUI=
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -97,14 +118,14 @@ Total findings: **9** (High: 0, Medium: 0, Low: 0, Info: 9)
       "104.18.33.148"
     ],
     "aaaa": [
-      "2606:4700:440a::ac40:9a6c",
-      "2606:4700:4407::6812:2194"
+      "2606:4700:4407::6812:2194",
+      "2606:4700:440a::ac40:9a6c"
     ],
     "cname": null,
     "mx": [],
     "ns": [
-      "rosalyn.ns.cloudflare.com.",
-      "archer.ns.cloudflare.com."
+      "archer.ns.cloudflare.com.",
+      "rosalyn.ns.cloudflare.com."
     ],
     "spf": [
       "google-gws-recovery-domain-verification=49109286"
@@ -127,7 +148,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 0, Info: 9)
       "b8768f2b.sni.cloudflaressl.com",
       "blog.hubspot.com"
     ],
-    "days_left": 60,
+    "days_left": 59,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -196,10 +217,45 @@ Total findings: **9** (High: 0, Medium: 0, Low: 0, Info: 9)
     "/api/": 404
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 163.3,
-  "rechecked": "2026-09-25 13:59 UTC"
+  "apex_txt": [
+    "google-gws-recovery-domain-verification=49109286"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true,
+    "robots_disallow": [
+      "/wt-assets/static-files/mktg-analytics",
+      "/_hcms/iplookup",
+      "/_hcms/perf",
+      "*?portalId=",
+      "*?inpageEditorUI=",
+      "*?cssPath=",
+      "*?_health_check_=",
+      "*?_preview=",
+      "*?benderPackage=",
+      "*?preview_key=",
+      "*?staticVersion=",
+      "*?cacheBurst=",
+      "*?tc_deviceCategory=",
+      "*?isPreview=",
+      "*?preview_theme="
+    ]
+  },
+  "elapsed_s": 19.7,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -208,4 +264,5 @@ Total findings: **9** (High: 0, Medium: 0, Low: 0, Info: 9)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

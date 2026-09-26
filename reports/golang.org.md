@@ -7,12 +7,12 @@
 | Target | https://golang.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | golang.org |
-| Test date | 2026-09-25 07:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
+Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,7 +27,10 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
 | 9 | info | H6 | Server technology disclosure | CWE-200 |
 | 10 | info | RED2 | Soft redirect (302/303) for HTTP to HTTPS | CWE-319 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
-| 12 | info | CT1 | 100 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 12 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
+| 13 | low | DNS3 | Wildcard DNS detected | CWE-345 |
+| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | CT1 | 100 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -104,7 +107,25 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 12. [INFO] 100 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 12. [LOW] MTA-STS TXT published but policy file missing/invalid (`MAIL12`)
+
+- **CWE:** CWE-285
+- **Detail:** GET https://mta-sts.golang.org/.well-known/mta-sts/policy.txt -> 404
+- **Recommendation:** Publish a valid policy.txt (version, max_age, mode) or remove the TXT record.
+
+### 13. [LOW] Wildcard DNS detected (`DNS3`)
+
+- **CWE:** CWE-345
+- **Detail:** Two random labels (xdjl69jfnsp7yo.golang.org and 9kioyhcr876tfd.golang.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
+
+### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of golang.org has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 15. [INFO] 100 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -117,23 +138,23 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
   "domain": "golang.org",
   "dns": {
     "a": [
-      "142.250.204.49"
+      "142.250.196.209"
     ],
     "aaaa": [
-      "2404:6800:4012:9::2011"
+      "2404:6800:4012:6::2011"
     ],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "alt2.aspmx.l.google.com (pref 2)",
       "alt3.aspmx.l.google.com (pref 2)",
-      "alt1.aspmx.l.google.com (pref 2)"
+      "aspmx.l.google.com (pref 1)",
+      "alt1.aspmx.l.google.com (pref 2)",
+      "alt2.aspmx.l.google.com (pref 2)"
     ],
     "ns": [
       "ns4.google.com.",
-      "ns3.google.com.",
       "ns1.google.com.",
-      "ns2.google.com."
+      "ns2.google.com.",
+      "ns3.google.com."
     ],
     "spf": [
       "v=spf1 include:_spf.google.com ~all"
@@ -482,7 +503,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
       "app-ads-services.com",
       "*.app-ads-services.com"
     ],
-    "days_left": 69,
+    "days_left": 68,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -492,7 +513,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
     }
   },
   "ports": {
-    "ip": "142.250.204.49",
+    "ip": "142.250.196.209",
     "open": []
   },
   "https": {
@@ -568,8 +589,24 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
       "alt06415.gomotessh.golang.org"
     ]
   },
-  "elapsed_s": 16.8,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "wildcard_dns": true,
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true
+  },
+  "elapsed_s": 10.1,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -578,4 +615,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://denverpost.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | denverpost.com |
-| Test date | 2026-09-25 09:13 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:43 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
+Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,6 +26,12 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 | 8 | info | H6 | Server technology disclosure | CWE-200 |
 | 9 | info | P11 | WordPress login page exposed | CWE-200 |
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
+| 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -96,6 +102,42 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 11. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 12. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=nx5U56FiDUqhsckpguh1BWVo8oJVRsFtwCfGxdBN4e; _globalsign-domain-verification=qu9bswx7_efyr0AnoYMkd0ZmvFdZNxur1nGSq55P5P; google-site-verification=f0YC07m4ehdn8TAFlPwmgd6cUL2ne-J8HSQ4XjVwXzk
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of denverpost.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 15. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but denverpost.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 70 disallow path(s), e.g. /wp-admin/, /cgi-bin/, /wp-includes/, /xmlrpc.php, /wp-content/plugins/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -109,52 +151,52 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
     "cname": null,
     "mx": [
       "aspmx3.googlemail.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)",
-      "alt2.aspmx.l.google.com (pref 20)",
       "aspmx2.googlemail.com (pref 30)",
-      "aspmx.l.google.com (pref 10)"
+      "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
-      "ns-1220.awsdns-24.org.",
       "ns-503.awsdns-62.com.",
       "ns-1019.awsdns-63.net.",
+      "ns-1220.awsdns-24.org.",
       "ns-1679.awsdns-17.co.uk."
     ],
     "spf": [
-      "k0710qvbmi4c1pu6fp5fpvq3h",
-      "36ailchom7s11o20nu6uqgo69o",
-      "_globalsign-domain-verification=_OUsAbDOaFYPYWOgAjdN9k-kV76av1Rf5Pg4XHx3dL",
-      "_globalsign-domain-verification=gctAD22GIK3YS4qVlothF9J8N9P35BDNYtltbRXnnM",
-      "specops-verification-code=700c2dff-5af8-4409-a777-25df1fb770e6",
-      "globalsign-domain-verification=wdsjy5b1d3sGjlpf2ZSfdpjPcsNrXC_iOKH4GEnR0_",
-      "e3fltk8am78ee4uept7hiqftu0",
+      "_globalsign-domain-verification=nx5U56FiDUqhsckpguh1BWVo8oJVRsFtwCfGxdBN4e",
       "_globalsign-domain-verification=qu9bswx7_efyr0AnoYMkd0ZmvFdZNxur1nGSq55P5P",
-      "knowbe4-site-verification=a9ce6449edf2d51c41eed1f3517d26f9",
-      "_globalsign-domain-verification=SGSNuVFXgku36Q1g39h5zCWUAutWLDNr2xISH37_-n",
+      "google-site-verification=f0YC07m4ehdn8TAFlPwmgd6cUL2ne-J8HSQ4XjVwXzk",
+      "aslt820givt06ua5qjmkutdm4b",
+      "_globalsign-domain-verification=gctAD22GIK3YS4qVlothF9J8N9P35BDNYtltbRXnnM",
+      "globalsign-domain-verification=wdsjy5b1d3sGjlpf2ZSfdpjPcsNrXC_iOKH4GEnR0_",
       "1lhc1bmucsjp7q8b91t87nhm01",
-      "sl4nmnrb1rno4slakgbovshcs0",
-      "google-site-verification=2bKNvyyGh6DUlOvH1PYsmKN4KRlb-0ZI7TvFtuKLeAc",
-      "IP26DG603F9M48358IST7R5L3I",
+      "knowbe4-site-verification=a9ce6449edf2d51c41eed1f3517d26f9",
+      "facebook-domain-verification=1yiyurr8k1l0cfwvgyjk5w823lm9ua",
+      "bw=o2AhWgmJR//LI2rv8ZuBaKChD0Ub6rd1lZ53Dg9MG4fp",
+      "v=spf1 include:_spf.google.com include:_spf.salesforce.com include:_spf.mnginteractive.com include:sendgrid.net include:amazonses.com include:outboundmail.blackbaud.net include:mmsend.com ip4:52.6.112.187  ip4:63.87.106.0/23 ip4:68.232.128.0/19 -all",
+      "_globalsign-domain-verification=0TyIZcbLmgSwoVohQ9GWaLbZq22eAkpviTlcN7JXo3",
+      "k0710qvbmi4c1pu6fp5fpvq3h",
+      "_globalsign-domain-verification=B57sRQpmte4G4w-gavZbVNmmNsMxGp5kcL19UP2599",
+      "_globalsign-domain-verification=SGSNuVFXgku36Q1g39h5zCWUAutWLDNr2xISH37_-n",
+      "ega5pobqtumor93gg1fighan98",
+      "tollbit-domain-verification=d3cc43d6a25115e73321be2cb765b25a1cc2c7ec945ec934dde6bbc20dcef9f9",
+      "7bsbnac1nf7c1tfrv8c7gamjrf",
+      "_globalsign-domain-verification=_OUsAbDOaFYPYWOgAjdN9k-kV76av1Rf5Pg4XHx3dL",
+      "llib6qvjasng0m5c7562bvdl78",
       "MS=ms42763989",
       "84CEACD71A34A37DDA18007FD39FA913473B8C85",
-      "google-site-verification=f0YC07m4ehdn8TAFlPwmgd6cUL2ne-J8HSQ4XjVwXzk",
-      "_globalsign-domain-verification=B57sRQpmte4G4w-gavZbVNmmNsMxGp5kcL19UP2599",
-      "_globalsign-domain-verification=nx5U56FiDUqhsckpguh1BWVo8oJVRsFtwCfGxdBN4e",
-      "aslt820givt06ua5qjmkutdm4b",
-      "v=spf1 include:_spf.google.com include:_spf.salesforce.com include:_spf.mnginteractive.com include:sendgrid.net include:amazonses.com include:outboundmail.blackbaud.net include:mmsend.com ip4:52.6.112.187  ip4:63.87.106.0/23 ip4:68.232.128.0/19 -all",
-      "bw=o2AhWgmJR//LI2rv8ZuBaKChD0Ub6rd1lZ53Dg9MG4fp",
-      "google-site-verification=d2473NFa5jCbg_yQ0m3ZZyA4fO_q5Bnt7C2XNlx9JRk",
-      "llib6qvjasng0m5c7562bvdl78",
-      "7bsbnac1nf7c1tfrv8c7gamjrf",
-      "4pj8eagm2vmptskd6g1hk0gm5t",
+      "sl4nmnrb1rno4slakgbovshcs0",
       "1lhc1bmucsjp7q8b91t87nhm01.",
-      "_globalsign-domain-verification=0TyIZcbLmgSwoVohQ9GWaLbZq22eAkpviTlcN7JXo3",
       "MS=63BE0B5C6D28D2CE1C330D9F740E9E25038D5DB2",
-      "3mmibbsavpv6o2hkq39uqhsr49",
-      "facebook-domain-verification=1yiyurr8k1l0cfwvgyjk5w823lm9ua",
       "00D6A000000u2db=1TBRP00000001SL",
-      "tollbit-domain-verification=d3cc43d6a25115e73321be2cb765b25a1cc2c7ec945ec934dde6bbc20dcef9f9",
-      "ega5pobqtumor93gg1fighan98"
+      "36ailchom7s11o20nu6uqgo69o",
+      "IP26DG603F9M48358IST7R5L3I",
+      "3mmibbsavpv6o2hkq39uqhsr49",
+      "google-site-verification=2bKNvyyGh6DUlOvH1PYsmKN4KRlb-0ZI7TvFtuKLeAc",
+      "4pj8eagm2vmptskd6g1hk0gm5t",
+      "google-site-verification=d2473NFa5jCbg_yQ0m3ZZyA4fO_q5Bnt7C2XNlx9JRk",
+      "e3fltk8am78ee4uept7hiqftu0",
+      "specops-verification-code=700c2dff-5af8-4409-a777-25df1fb770e6"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc_agg@dmarc.everest.email; fo=1; pct=100; rf=afrf"
@@ -174,7 +216,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
       "denverpost.com",
       "www.denverpost.com"
     ],
-    "days_left": 70,
+    "days_left": 68,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -234,10 +276,48 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 100.7,
-  "rechecked": "2026-09-25 10:43 UTC"
+  "apex_txt": [
+    "_globalsign-domain-verification=nx5U56FiDUqhsckpguh1BWVo8oJVRsFtwCfGxdBN4e",
+    "_globalsign-domain-verification=qu9bswx7_efyr0AnoYMkd0ZmvFdZNxur1nGSq55P5P",
+    "google-site-verification=f0YC07m4ehdn8TAFlPwmgd6cUL2ne-J8HSQ4XjVwXzk",
+    "_globalsign-domain-verification=gctAD22GIK3YS4qVlothF9J8N9P35BDNYtltbRXnnM",
+    "globalsign-domain-verification=wdsjy5b1d3sGjlpf2ZSfdpjPcsNrXC_iOKH4GEnR0_"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.3",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/wp-admin/",
+      "/cgi-bin/",
+      "/wp-includes/",
+      "/xmlrpc.php",
+      "/wp-content/plugins/",
+      "/wp-content/cache/",
+      "/trackback/",
+      "/comments/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/"
+    ]
+  },
+  "elapsed_s": 23.4,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -246,4 +326,5 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

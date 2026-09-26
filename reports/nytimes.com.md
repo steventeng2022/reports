@@ -7,12 +7,12 @@
 | Target | https://nytimes.com/ |
 | Bug bounty program | The New York Times |
 | Listed scope domain | nytimes.com |
-| Test date | 2026-09-25 08:02 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
+Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,7 +25,12 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 | 7 | low | CK1 | Cookie set without Secure flag over HTTPS | CWE-614 |
 | 8 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
 | 9 | info | P8 | Missing security.txt | CWE-1038 |
-| 10 | info | CT1 | 88 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 10 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | CT1 | 88 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -90,7 +95,37 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 10. [INFO] 88 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 10. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 11. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=OJl4BugQ_esE20V0QtVc9DhqvnnxOLHnf5AmFjdLSqk; gamma-domain-verification-m0hfp8=Kn1CNDywmVQvNK2EE60GxQORI; wrike-verification=NjYxMTMwODpmZGRiNmQ3Yjc1Yzk5NjFhMDk2OWI4MWM2NDhkZmYxNjdmOThhO
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of nytimes.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 150 disallow path(s), e.g. /ads/, /adx/bin/, /athletic/wp/wp-admin/, /athletic/async-*, /athletic/search/*
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 15. [INFO] 88 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: a.et.dev.nytimes.com, abra.api.nytimes.com, algo.dev.nytimes.com, api.nytimes.com, community.api.nytimes.com, community.api.stg.nytimes.com, cooking-admin.dev.nytimes.com, feast.ml.dev.nytimes.com, lb.a.purr.dev.nytimes.com, lire-ui-preview.auth.dev.nytimes.com
@@ -103,77 +138,77 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
   "domain": "nytimes.com",
   "dns": {
     "a": [
+      "151.101.129.164",
       "151.101.65.164",
-      "151.101.193.164",
       "151.101.1.164",
-      "151.101.129.164"
+      "151.101.193.164"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "alt1.aspmx.l.google.com (pref 5)",
-      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
       "alt3.aspmx.l.google.com (pref 10)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "aspmx.l.google.com (pref 1)"
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-244.awsdns-30.com.",
       "dns2.p06.nsone.net.",
       "ns-1652.awsdns-14.co.uk.",
-      "ns-1328.awsdns-38.org.",
-      "ns-635.awsdns-15.net.",
+      "dns4.p06.nsone.net.",
       "dns1.p06.nsone.net.",
+      "ns-635.awsdns-15.net.",
+      "ns-244.awsdns-30.com.",
       "dns3.p06.nsone.net.",
-      "dns4.p06.nsone.net."
+      "ns-1328.awsdns-38.org."
     ],
     "spf": [
-      "wiz-domain-verification=f58277d3dd68296f29aace3a12b746a054eee9f6c472f21673207cfcc1991081",
-      "notion-domain-verification=4wS9fYEvnEgZg6Fc4cQ3atgsNuaj2zZIKwRP34uAGse",
-      "klaviyo-site-verification=NsTtn9",
-      "docusign=6a4f88fd-cd2f-4917-acdb-bb2f343438a1",
-      "253961548-4297453",
-      "shade-domain-verification-wys4jv=w07FFVQR3MSW3TNoXqZAYS7O0",
-      "onetrust-domain-verification=dee1266d6a984549b43a1bd101957a8f",
-      "_wufmw8f1leho148v35f8zaogcyux7lx",
-      "parallels-domain-verification=df31386535ac4cbe8d70cde19722e58da9831b130c3d46299f64ca5d0ed0f94d",
-      "google-site-verification=aReMr8hkX3gxeHLKKk4tJ1s970U7QdEqUMIhMmLUfjQ",
-      "docusign=bd506110-db79-430e-b159-cc1d74fe1176",
-      "ZOOM_verify_ClSSgAI2bqqZQA66rT4Z1x",
-      "google-site-verification=ZTCMdpSKM7HwqTvGUf_00Ef008JhOnbzGgCSUGYfsro",
-      "google-site-verification=ZsySMeZ_SRbJZFu-53ptepytP7h5pxHO0qAg8Z2bKug",
-      "adobe-idp-site-verification=5ce4d99c-af0a-4b76-9217-bd49d3336df0",
-      "jamf-site-verification=PIprfFrz8CBhH0TK0nNhnQ",
       "google-site-verification=OJl4BugQ_esE20V0QtVc9DhqvnnxOLHnf5AmFjdLSqk",
-      "google-site-verification=q5oM_szMOT79db0AJjdk_JP1xeurksaWmhbv_dd-MEM",
-      "NV=6b9b6zcshr98ey1x",
-      "apple-domain-verification=1BVLidj37w9zRMnU",
-      "MS=ms22827202",
-      "v=spf1 include:nytimes.com._nspf.vali.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email include:_spf.e.sparkpost.com include:amazonses.com ~all",
-      "google-site-verification=NIqXa_F8IaqdPJhTtexgR0NYbzVLD_-X-uRUvyf4GyQ",
-      "atlassian-domain-verification=Vrn33GZgJTapfeggl1snZZ5a8HjNwfFb1K5kBxVNhp7jlMFlRZGUytV9rIHhGdR8",
-      "google-site-verification=4TE2ggBoy6PktLjtZ03t32A2oEZ0VD0PY6MnTj8IL_g",
-      "google-site-verification=jZcmQFxPEP38yqYpmRvo0v_9hQFAdBZPUEBwTNUPUF8",
-      "MS=A1BFCA84E21B7011CA98DF9DC251CDDF90E0174B",
-      "google-site-verification=dNxU4aqYrP-m9U4J4OO_hvaOfjepywv2BN8Luc-q4o8",
-      "dropbox-domain-verification=4ld3jahx0psi",
-      "klaviyo-site-verification=PkxYaQ",
-      "atlassian-sending-domain-verification=1b4b110f-a2dd-4853-8b13-de36c831aa81",
-      "miro-verification=ee856857f05022ca58c04ab6f8e4014e564b3d6b",
-      "klaviyo-site-verification=VBhmML",
-      "dell-technologies-domain-verification=nytimes.com_e9803e4c-210b-4501-a26b-705148cb7292_1777730473",
-      "wrike-verification=NjYxMTMwODpmZGRiNmQ3Yjc1Yzk5NjFhMDk2OWI4MWM2NDhkZmYxNjdmOThhODQ2MDJmZmI0ZTMxNTUxOTMzZGRlMzQwZDEw",
-      "google-site-verification=NSmi94k0NzvQaksUCNXeJZPYtJPSoUf52cjJsJcZFy4",
-      "onetrust-domain-verification=1e62f8d767fc41a39fdf3f77025a8105",
-      "cursor-domain-verification-cbqk6b=DdvvVJNHMmVswd6oRmD8GZX50",
-      "serval-domain-verification-bew4y4=VA1qmSGnvHaYCguEOONe1E2Nq",
-      "google-site-verification=4qJm5sAZa1_29BTwFjqW09t7_7D4Vee3LBFQqg8xYbs",
-      "masv=oFbRBdtBUCoWWHaQiRJLZcKASUJZboJz",
-      "segment-site-verification=Z6wALFPYli6z0AlPlgjZXpMVRLZ2KiRb",
       "gamma-domain-verification-m0hfp8=Kn1CNDywmVQvNK2EE60GxQORI",
+      "wrike-verification=NjYxMTMwODpmZGRiNmQ3Yjc1Yzk5NjFhMDk2OWI4MWM2NDhkZmYxNjdmOThhODQ2MDJmZmI0ZTMxNTUxOTMzZGRlMzQwZDEw",
+      "ZOOM_verify_ClSSgAI2bqqZQA66rT4Z1x",
+      "253961548-4297453",
+      "onetrust-domain-verification=1e62f8d767fc41a39fdf3f77025a8105",
+      "google-site-verification=NSmi94k0NzvQaksUCNXeJZPYtJPSoUf52cjJsJcZFy4",
+      "klaviyo-site-verification=VBhmML",
+      "MS=ms22827202",
+      "dropbox-domain-verification=4ld3jahx0psi",
+      "cursor-domain-verification-cbqk6b=DdvvVJNHMmVswd6oRmD8GZX50",
+      "masv=oFbRBdtBUCoWWHaQiRJLZcKASUJZboJz",
+      "google-site-verification=aReMr8hkX3gxeHLKKk4tJ1s970U7QdEqUMIhMmLUfjQ",
+      "segment-site-verification=Z6wALFPYli6z0AlPlgjZXpMVRLZ2KiRb",
+      "docusign=bd506110-db79-430e-b159-cc1d74fe1176",
+      "klaviyo-site-verification=PkxYaQ",
+      "atlassian-domain-verification=Vrn33GZgJTapfeggl1snZZ5a8HjNwfFb1K5kBxVNhp7jlMFlRZGUytV9rIHhGdR8",
+      "jamf-site-verification=PIprfFrz8CBhH0TK0nNhnQ",
+      "NV=6b9b6zcshr98ey1x",
+      "google-site-verification=dNxU4aqYrP-m9U4J4OO_hvaOfjepywv2BN8Luc-q4o8",
+      "klaviyo-site-verification=NsTtn9",
+      "google-site-verification=ZsySMeZ_SRbJZFu-53ptepytP7h5pxHO0qAg8Z2bKug",
+      "google-site-verification=q5oM_szMOT79db0AJjdk_JP1xeurksaWmhbv_dd-MEM",
+      "adobe-idp-site-verification=5ce4d99c-af0a-4b76-9217-bd49d3336df0",
+      "MS=A1BFCA84E21B7011CA98DF9DC251CDDF90E0174B",
+      "parallels-domain-verification=df31386535ac4cbe8d70cde19722e58da9831b130c3d46299f64ca5d0ed0f94d",
+      "v=spf1 include:nytimes.com._nspf.vali.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email include:_spf.e.sparkpost.com include:amazonses.com ~all",
+      "miro-verification=ee856857f05022ca58c04ab6f8e4014e564b3d6b",
+      "onetrust-domain-verification=dee1266d6a984549b43a1bd101957a8f",
+      "wiz-domain-verification=f58277d3dd68296f29aace3a12b746a054eee9f6c472f21673207cfcc1991081",
+      "google-site-verification=4qJm5sAZa1_29BTwFjqW09t7_7D4Vee3LBFQqg8xYbs",
+      "google-site-verification=tvhSn0gaSi6CUrrc9N1pvq4tmJrzvbfJbKVWPrgg_6Q",
+      "dell-technologies-domain-verification=nytimes.com_e9803e4c-210b-4501-a26b-705148cb7292_1777730473",
+      "docusign=6a4f88fd-cd2f-4917-acdb-bb2f343438a1",
+      "google-site-verification=4TE2ggBoy6PktLjtZ03t32A2oEZ0VD0PY6MnTj8IL_g",
+      "notion-domain-verification=4wS9fYEvnEgZg6Fc4cQ3atgsNuaj2zZIKwRP34uAGse",
+      "google-site-verification=NIqXa_F8IaqdPJhTtexgR0NYbzVLD_-X-uRUvyf4GyQ",
+      "google-site-verification=jZcmQFxPEP38yqYpmRvo0v_9hQFAdBZPUEBwTNUPUF8",
+      "atlassian-sending-domain-verification=1b4b110f-a2dd-4853-8b13-de36c831aa81",
+      "shade-domain-verification-wys4jv=w07FFVQR3MSW3TNoXqZAYS7O0",
+      "serval-domain-verification-bew4y4=VA1qmSGnvHaYCguEOONe1E2Nq",
+      "apple-domain-verification=1BVLidj37w9zRMnU",
       "lucidlink-verification=PZP4S4XGS2MW9TT3H76V0TPSY0",
       "_b2ao2yybjl1klqaw0mahepejqyvwgq1",
-      "google-site-verification=tvhSn0gaSi6CUrrc9N1pvq4tmJrzvbfJbKVWPrgg_6Q"
+      "google-site-verification=ZTCMdpSKM7HwqTvGUf_00Ef008JhOnbzGgCSUGYfsro",
+      "_wufmw8f1leho148v35f8zaogcyux7lx"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@vali.email,mailto:dmarc.report@nytimes.com"
@@ -220,7 +255,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
       "timestalks.com",
       "*.myaccount-preview.stg.nytimes.com"
     ],
-    "days_left": 175,
+    "days_left": 174,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -230,7 +265,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
     }
   },
   "ports": {
-    "ip": "151.101.65.164",
+    "ip": "151.101.129.164",
     "open": []
   },
   "https": {
@@ -330,8 +365,47 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
       "cooking-admin.stg.nytimes.com"
     ]
   },
-  "elapsed_s": 83.0,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "google-site-verification=OJl4BugQ_esE20V0QtVc9DhqvnnxOLHnf5AmFjdLSqk",
+    "gamma-domain-verification-m0hfp8=Kn1CNDywmVQvNK2EE60GxQORI",
+    "wrike-verification=NjYxMTMwODpmZGRiNmQ3Yjc1Yzk5NjFhMDk2OWI4MWM2NDhkZmYxNjdmOThhO",
+    "onetrust-domain-verification=1e62f8d767fc41a39fdf3f77025a8105",
+    "google-site-verification=NSmi94k0NzvQaksUCNXeJZPYtJPSoUf52cjJsJcZFy4"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true,
+    "robots_disallow": [
+      "/ads/",
+      "/adx/bin/",
+      "/athletic/wp/wp-admin/",
+      "/athletic/async-*",
+      "/athletic/search/*",
+      "/athletic/checkout/",
+      "/athletic/checkout?plan_id*",
+      "/athletic/checkout2*",
+      "/athletic/login/",
+      "/athletic/login?login_source*",
+      "/athletic/login?ref_page*",
+      "/athletic/login2/",
+      "/athletic/login2?login_source*",
+      "/athletic/login2?ref_page*",
+      "/athletic/report/"
+    ]
+  },
+  "elapsed_s": 13.0,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -340,4 +414,5 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

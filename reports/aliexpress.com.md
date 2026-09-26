@@ -7,12 +7,12 @@
 | Target | https://aliexpress.com/ |
 | Bug bounty program | Alibaba |
 | Listed scope domain | aliexpress.com |
-| Test date | 2026-09-25 08:22 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:38 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 7, Info: 9)
+Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 7, Info: 9)
 | 14 | low | CORS1 | CORS: subdomain origin origin accepted with credentials | CWE-942 |
 | 15 | info | P6 | phpMyAdmin endpoint reachable | CWE-200 |
 | 16 | info | P8 | Missing security.txt | CWE-1038 |
+| 17 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 18 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 19 | low | DNS3 | Wildcard DNS detected | CWE-345 |
+| 20 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 21 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 22 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -144,6 +150,42 @@ Total findings: **16** (High: 0, Medium: 0, Low: 7, Info: 9)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 17. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 18. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 19. [LOW] Wildcard DNS detected (`DNS3`)
+
+- **CWE:** CWE-345
+- **Detail:** Two random labels (71dpr6uzd9eu71.aliexpress.com and 9d3ss5oyvu8msu.aliexpress.com) both resolve to distinct addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
+
+### 20. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: Validity-Domain-Verification=yidvO17A1k5rojYMFX81UL2y7Cw=; google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw; google-site-verification=GCJUnSbd3EWW3g7cRvHi57DLpGuR6CEJHzkk6-SOjAs
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 21. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of aliexpress.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 22. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 69 disallow path(s), e.g. */aeglodetailweb/api/msite/item?productId*, /items/*, /bin/*, /search/*, /productdetail/*
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -164,18 +206,18 @@ Total findings: **16** (High: 0, Medium: 0, Low: 7, Info: 9)
       "ns1.alibabadns.com."
     ],
     "spf": [
+      "Validity-Domain-Verification=yidvO17A1k5rojYMFX81UL2y7Cw=",
+      "google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw",
+      "f6t8k5j81d8psl001ddncwt7zd1v0rr4",
+      "google-site-verification=GCJUnSbd3EWW3g7cRvHi57DLpGuR6CEJHzkk6-SOjAs",
+      "tnz9gvzzksy8l6y5jcmz0slnjk3yxbgm",
+      "8rlnys07lnz6xvr7wsr4zg0kkz8yd6d5",
       "cloudflare-verify.aliexpress.com=366647249-1105276800",
       "v=BIMI1;l=https://bimi.entrust.net/aliexpress.com/logo.svg;a=https://bimi.entrust.net/aliexpress.com/certchain.pem",
-      "8rlnys07lnz6xvr7wsr4zg0kkz8yd6d5",
       "v=spf1 include:spf1.service.alibaba.com include:spf2.service.alibaba.com include:spf2.ocm.aliyun.com -all",
+      "mailru-verification: c9feb214b705f911",
       "_globalsign-domain-verification=yhVu_dlmWJNswki9B4Za7HtMd7ihnDDIzpm-RM7nMR",
-      "f6t8k5j81d8psl001ddncwt7zd1v0rr4",
-      "google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw",
-      "Validity-Domain-Verification=yidvO17A1k5rojYMFX81UL2y7Cw=",
-      "google-site-verification=GCJUnSbd3EWW3g7cRvHi57DLpGuR6CEJHzkk6-SOjAs",
-      "apple-domain-verification=qipEZ2Q9JVgKJxvS-0G3nvAh729OMkjaAouGkcSxVBE",
-      "tnz9gvzzksy8l6y5jcmz0slnjk3yxbgm",
-      "mailru-verification: c9feb214b705f911"
+      "apple-domain-verification=qipEZ2Q9JVgKJxvS-0G3nvAh729OMkjaAouGkcSxVBE"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-ap@service.alibaba.com; ruf=mailto:dmarc-ap@service.alibaba.com"
@@ -285,7 +327,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 7, Info: 9)
       "www.aliexpress.fr",
       "aliexpress.com"
     ],
-    "days_left": 69,
+    "days_left": 67,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -349,10 +391,49 @@ Total findings: **16** (High: 0, Medium: 0, Low: 7, Info: 9)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 120.8,
-  "rechecked": "2026-09-25 13:59 UTC"
+  "wildcard_dns": true,
+  "apex_txt": [
+    "Validity-Domain-Verification=yidvO17A1k5rojYMFX81UL2y7Cw=",
+    "google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw",
+    "google-site-verification=GCJUnSbd3EWW3g7cRvHi57DLpGuR6CEJHzkk6-SOjAs",
+    "mailru-verification: c9feb214b705f911",
+    "_globalsign-domain-verification=yhVu_dlmWJNswki9B4Za7HtMd7ihnDDIzpm-RM7nMR"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.2",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "*/aeglodetailweb/api/msite/item?productId*",
+      "/items/*",
+      "/bin/*",
+      "/search/*",
+      "/productdetail/*",
+      "/api/*",
+      "/api*.do",
+      "/apps/*",
+      "/downloads/*",
+      "/wishlist/*",
+      "/shopcart/*",
+      "/brands/*",
+      "/cp/*",
+      "/item-img/*",
+      "/product/*"
+    ]
+  },
+  "elapsed_s": 15.4,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -361,4 +442,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 7, Info: 9)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

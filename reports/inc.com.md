@@ -7,12 +7,12 @@
 | Target | https://inc.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | inc.com |
-| Test date | 2026-09-25 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
+Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,6 +25,11 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 | 7 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 8 | info | H6 | Server technology disclosure | CWE-200 |
 | 9 | info | P8 | Missing security.txt | CWE-1038 |
+| 10 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -89,6 +94,36 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 10. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 11. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=APaxpIAa4juxpYQJps3fN06tfR49J2ahejAmgOB0Vq8; _globalsign-domain-verification=7P-WTP_6W3ncIzOhnL53ZJIFdR_9a2hcgUBPdnX2R_; tollbit-domain-verification=0bb9da110153e3ef443b83e0a17df0277ebe84b481b3a4884c78
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of inc.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 38 disallow path(s), e.g. /rest, /rest, /rest, /rest, /
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -96,10 +131,10 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
   "domain": "inc.com",
   "dns": {
     "a": [
-      "151.101.129.54",
-      "151.101.1.54",
+      "151.101.193.54",
       "151.101.65.54",
-      "151.101.193.54"
+      "151.101.129.54",
+      "151.101.1.54"
     ],
     "aaaa": [],
     "cname": null,
@@ -108,22 +143,22 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
       "mx2-us1.ppe-hosted.com (pref 10)"
     ],
     "ns": [
-      "ns-1109.awsdns-10.org.",
-      "ns-346.awsdns-43.com.",
       "ns-1662.awsdns-15.co.uk.",
-      "ns-762.awsdns-31.net."
+      "ns-762.awsdns-31.net.",
+      "ns-346.awsdns-43.com.",
+      "ns-1109.awsdns-10.org."
     ],
     "spf": [
-      "MS=ms64498210",
-      "v=spf1 a:dispatch-us.ppe-hosted.com include:_spf.google.com include:spf.mandrillapp.com include:spf.protection.outlook.com include:mail.zendesk.com include:amazonses.com ~all",
-      "_globalsign-domain-verification=7P-WTP_6W3ncIzOhnL53ZJIFdR_9a2hcgUBPdnX2R_",
       "google-site-verification=APaxpIAa4juxpYQJps3fN06tfR49J2ahejAmgOB0Vq8",
-      "MS=345EAD34CB523CA1BAF8C153C2587D912E4FBCE1",
-      "ZOOM_verify_ucBYh9XLDMPjutQbTLLADa",
+      "v=spf1 a:dispatch-us.ppe-hosted.com include:_spf.google.com include:spf.mandrillapp.com include:spf.protection.outlook.com include:mail.zendesk.com include:amazonses.com ~all",
+      "HHab7c2Gq6pdo6dnyV+J40QqejNy/T8xyY/hz8cMOm73dnKeIo2xdb7P+/SpxsVzujstzkiOqgMS1jGJTlLKVQ==",
+      "_globalsign-domain-verification=7P-WTP_6W3ncIzOhnL53ZJIFdR_9a2hcgUBPdnX2R_",
       "tollbit-domain-verification=0bb9da110153e3ef443b83e0a17df0277ebe84b481b3a4884c7892cc3794f834",
-      "google-site-verification=UhzQsqT1WFFLI4xngP3JlJRoiLTGHnUpbdYVKFhDk74",
+      "MS=345EAD34CB523CA1BAF8C153C2587D912E4FBCE1",
       "airtable-verification=2ca2d21d659ff05241fa7c467952e845",
-      "HHab7c2Gq6pdo6dnyV+J40QqejNy/T8xyY/hz8cMOm73dnKeIo2xdb7P+/SpxsVzujstzkiOqgMS1jGJTlLKVQ=="
+      "MS=ms64498210",
+      "google-site-verification=UhzQsqT1WFFLI4xngP3JlJRoiLTGHnUpbdYVKFhDk74",
+      "ZOOM_verify_ucBYh9XLDMPjutQbTLLADa"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc@inc.com; ruf=mailto:dmarc@inc.com; aspf=s;"
@@ -163,7 +198,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
       "mansueto.com",
       "*.dev.inc.com"
     ],
-    "days_left": 127,
+    "days_left": 126,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -173,7 +208,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
     }
   },
   "ports": {
-    "ip": "151.101.129.54",
+    "ip": "151.101.193.54",
     "open": []
   },
   "https": {
@@ -223,10 +258,48 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 11.1,
-  "rechecked": "2026-09-25 17:50 UTC"
+  "apex_txt": [
+    "google-site-verification=APaxpIAa4juxpYQJps3fN06tfR49J2ahejAmgOB0Vq8",
+    "_globalsign-domain-verification=7P-WTP_6W3ncIzOhnL53ZJIFdR_9a2hcgUBPdnX2R_",
+    "tollbit-domain-verification=0bb9da110153e3ef443b83e0a17df0277ebe84b481b3a4884c78",
+    "airtable-verification=2ca2d21d659ff05241fa7c467952e845",
+    "google-site-verification=UhzQsqT1WFFLI4xngP3JlJRoiLTGHnUpbdYVKFhDk74"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/rest",
+      "/rest",
+      "/rest",
+      "/rest",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/"
+    ]
+  },
+  "elapsed_s": 15.1,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -235,4 +308,5 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

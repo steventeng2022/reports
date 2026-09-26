@@ -7,12 +7,12 @@
 | Target | https://ietf.org/ |
 | Bug bounty program | IETF |
 | Listed scope domain | ietf.org |
-| Test date | 2026-09-25 23:12 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,8 +31,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 13 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 14 | info | H6 | Server technology disclosure | CWE-200 |
 | 15 | info | P8 | Missing security.txt | CWE-1038 |
-| 16 | info | CT1 | 66 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 17 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 16 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 17 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 18 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 19 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 20 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 21 | info | CT1 | 66 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 22 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -135,13 +140,43 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 16. [INFO] 66 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 17. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 18. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=NQpGlv9isd8O_RHzO31C0lOw1XKfQfFoVhZbmir6Lm4; google-site-verification=mvpHmuqmM4wrWv5w3S1AAqssmhAITNo2QqPqVLrVWEo
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 19. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of ietf.org has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 20. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 2 disallow path(s), e.g. /admin/, /search/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 21. [INFO] 66 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: demo.ietf.org, dev.ietf.org, files.meeting.ietf.org, git.noc.ietf.org, grafana.noc.ietf.org, k8s.ietf.org, ops.ietf.org, staging.ietf.org, store.ietf.org, www.store.ietf.org
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 17. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 22. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: demo.ietf.org; content may still be served via virtual-host fallback.
@@ -158,22 +193,22 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "104.16.44.99"
     ],
     "aaaa": [
-      "2606:4700::6810:2c63",
-      "2606:4700::6810:2d63"
+      "2606:4700::6810:2d63",
+      "2606:4700::6810:2c63"
     ],
     "cname": null,
     "mx": [
       "mx.ietf.org (pref 0)"
     ],
     "ns": [
-      "ken.ns.cloudflare.com.",
-      "jill.ns.cloudflare.com."
+      "jill.ns.cloudflare.com.",
+      "ken.ns.cloudflare.com."
     ],
     "spf": [
-      "v=spf1 ip4:166.84.6.31 ip4:166.84.7.238 ip6:2602:f977:800:f7f6::/64 ip4:166.84.7.34 ip6:2602:f977:800::e276:63ff:fe66:3400 include:_spf.google.com include:spf.hostedrt.com ~all",
       "google-site-verification=NQpGlv9isd8O_RHzO31C0lOw1XKfQfFoVhZbmir6Lm4",
-      "google-site-verification=mvpHmuqmM4wrWv5w3S1AAqssmhAITNo2QqPqVLrVWEo",
+      "v=spf1 ip4:166.84.6.31 ip4:166.84.7.238 ip6:2602:f977:800:f7f6::/64 ip4:166.84.7.34 ip6:2602:f977:800::e276:63ff:fe66:3400 include:_spf.google.com include:spf.hostedrt.com ~all",
       "vs58md9pf8hu6knlglfda9lk6g",
+      "google-site-verification=mvpHmuqmM4wrWv5w3S1AAqssmhAITNo2QqPqVLrVWEo",
       "ca3-5567e36d3f9947308ac2892e009840cc"
     ],
     "dmarc": [
@@ -194,7 +229,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "ietf.org",
       "idnits.ietf.org"
     ],
-    "days_left": 82,
+    "days_left": 81,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -303,8 +338,30 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "demo.ietf.org"
     ]
   },
-  "elapsed_s": 7.8,
-  "rechecked": "2026-09-25 23:12 UTC"
+  "apex_txt": [
+    "google-site-verification=NQpGlv9isd8O_RHzO31C0lOw1XKfQfFoVhZbmir6Lm4",
+    "google-site-verification=mvpHmuqmM4wrWv5w3S1AAqssmhAITNo2QqPqVLrVWEo"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/admin/",
+      "/search/"
+    ]
+  },
+  "elapsed_s": 6.3,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -313,4 +370,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://skfb.ly/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | skfb.ly |
-| Test date | 2026-09-25 10:15 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
+Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,9 +27,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 | 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 11 | info | H6 | Server technology disclosure | CWE-200 |
-| 12 | info | CORS4 | CORS: wildcard Access-Control-Allow-Origin | CWE-942 |
-| 13 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
-| 14 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | P8 | Missing security.txt | CWE-1038 |
+| 13 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
@@ -48,7 +50,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 ### 3. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** Detected: Server: CloudFront
+- **Detail:** Detected: Server: awselb/2.0
 - **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
 ### 4. [LOW] Missing HSTS header (`H1`)
@@ -103,30 +105,40 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 ### 11. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** Header reveals: CloudFront
+- **Detail:** Header reveals: awselb/2.0
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
-### 12. [INFO] CORS: wildcard Access-Control-Allow-Origin (`CORS4`)
-
-- **CWE:** CWE-942
-- **Detail:** Access-Control-Allow-Origin: * is set for cross-origin requests.
-- **Context:** https response, /
-- **Recommendation:** Restrict the allowed origins if sensitive data is exposed via the API.
-
-### 13. [INFO] CORS: subdomain origin origin accepted (no credentials) (`CORS2`)
-
-- **CWE:** CWE-942
-- **Detail:** Origin https://sub.skfb.ly was echoed in Access-Control-Allow-Origin.
-- **Context:** https response, /
-- **Recommendation:** Confirm whether arbitrary origin echoing is intended.
-
-### 14. [INFO] Missing security.txt (`P8`)
+### 12. [INFO] Missing security.txt (`P8`)
 
 - **CWE:** CWE-1038
 - **Detail:** No .well-known/security.txt found (RFC 9116).
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 13. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 14. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=xiyMajOtcVSOrj79ps7_lNNPigbBCIPD0h3DeHI0jGE
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of skfb.ly has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
 ## Evidence (raw response observations)
 
@@ -136,24 +148,24 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
   "dns": {
     "a": [
       "54.192.248.119",
-      "54.192.248.123",
+      "54.192.248.90",
       "54.192.248.88",
-      "54.192.248.90"
+      "54.192.248.123"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt4.aspmx.l.google.com (pref 10)",
+      "alt3.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
-      "alt3.aspmx.l.google.com (pref 10)"
+      "alt4.aspmx.l.google.com (pref 10)",
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "ns-1345.awsdns-40.org.",
       "ns-479.awsdns-59.com.",
       "ns-876.awsdns-45.net.",
-      "ns-1605.awsdns-08.co.uk."
+      "ns-1605.awsdns-08.co.uk.",
+      "ns-1345.awsdns-40.org."
     ],
     "spf": [
       "google-site-verification=xiyMajOtcVSOrj79ps7_lNNPigbBCIPD0h3DeHI0jGE"
@@ -181,7 +193,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
       "blog.sketchfab.com",
       "www.sketchfab.com"
     ],
-    "days_left": 112,
+    "days_left": 111,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -195,41 +207,42 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
     "open": []
   },
   "https": {
-    "status": 202,
-    "content_type": "text/html; charset=UTF-8",
+    "status": 301,
+    "content_type": "",
     "title": ""
   },
   "mixed_content": [],
   "tech": [
-    "Server: CloudFront"
+    "Server: awselb/2.0"
   ],
   "cookies": [],
   "cors": [
     {
       "origin": "https://evil-auditor.example",
-      "acao": "*",
+      "acao": "",
       "acac": ""
     },
     {
       "origin": "https://sub.skfb.ly",
-      "acao": "*",
+      "acao": "",
       "acac": ""
     }
   ],
   "http": {
-    "status": 202
+    "status": 301,
+    "location": "https://sketchfab.com:443/s/"
   },
   "redir_probes": [
     "/redirect?url=https://evil-auditor.example/x -> 202",
-    "/redirect?next=https://evil-auditor.example/x -> 202",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
     "/go?url=https://evil-auditor.example/x -> 202",
-    "/url?url=https://evil-auditor.example/x -> 202"
+    "/url?url=https://evil-auditor.example/x -> 301"
   ],
   "paths": {
     "/robots.txt": 202,
     "/sitemap.xml": 202,
     "/.well-known/security.txt": 202,
-    "/security.txt": 202,
+    "/security.txt": 301,
     "/.git/HEAD": 202,
     "/.git/config": 202,
     "/.env": 202,
@@ -240,10 +253,25 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
     "/api/": 202
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 39.9,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "google-site-verification=xiyMajOtcVSOrj79ps7_lNNPigbBCIPD0h3DeHI0jGE"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 7.3,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -252,4 +280,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

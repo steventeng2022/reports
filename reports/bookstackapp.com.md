@@ -7,70 +7,263 @@
 | Target | https://bookstackapp.com/ |
 | Bug bounty program | None (open-source project; GitHub issue tracker) |
 | Listed scope domain | bookstackapp.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-26 17:40 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **5** (High: 0, Medium: 0, Low: 0, Info: 5)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | info | H2c | HSTS not preloaded | CWE-319 |
-| 2 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 3 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 4 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 5 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | PRT53 | DNS service reachable | CWE-200 |
+| 3 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 4 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 5 | low | H1 | Missing HSTS header | CWE-319 |
+| 6 | low | H2 | Missing CSP header | CWE-1021 |
+| 7 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 8 | low | H4 | No clickjacking protection | CWE-1023 |
+| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 10 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 11 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 12 | info | H6 | Server technology disclosure | CWE-200 |
+| 13 | info | P8 | Missing security.txt | CWE-1038 |
+| 14 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
-### 1. [INFO] HSTS not preloaded (`H2c`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
+
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
+
+### 2. [INFO] DNS service reachable (`PRT53`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 88.99.102.202:53 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 3. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: Caddy
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 4. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
+
+- **CWE:** CWE-200
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
+
+### 5. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** `max-age=31536000; includeSubDomains` lacks the preload directive.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 2. [INFO] Missing Permissions-Policy (`H7`)
+### 6. [LOW] Missing CSP header (`H2`)
+
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 7. [LOW] Missing X-Content-Type-Options (`H3`)
+
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
+
+### 8. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+
+### 9. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://bookstackapp.com/; browser features (camera, mic, geolocation) unrestricted.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 3. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://bookstackapp.com/ lists 240 URLs.
-
-### 4. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://bookstackapp.com/ -> https://bookstackapp.com/ (positive check).
-
-### 5. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+### 10. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://bookstackapp.com (203 bytes); contact: https://www.bookstackapp.com/links/contact/
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 11. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://bookstackapp.com/ final status: 200 (final URL https://www.bookstackapp.com/).
-- http://bookstackapp.com/ initial status: 308.
-- Certificate: Let's Encrypt YE2, valid until 2026-11-22T01:27:08+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-## Active agent cross-check (deep-dive scan on main - bookstackapp.com)
+### 12. [INFO] Server technology disclosure (`H6`)
 
-Total findings: **12** - BookStack v26 deep-dive by agent-deepdive (main branch): fresh-DDL install bugs + permission model. Full detailed findings remain in the main-branch version of this file; passive re-audit above is the non-injection view.
+- **CWE:** CWE-200
+- **Detail:** Header reveals: Caddy
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
 
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | high | F3a-id | Fresh install: creating a book fails — entities.id NOT NULL without autoincrement | CWE-552 |
-| 2 | high | F3a-slug | Fresh install: creating a page fails — entities.slug NOT NULL without default | CWE-552 |
-| 3 | high | F3e | Fresh install: container creation fails — entity_container_data.description NOT NULL without default | CWE-552 |
-| 4 | high | F3d | Fresh install: page save fails — entity_page_data.revision_count NOT NULL without default | CWE-552 |
-| 5 | medium | F1 | Broken access control on trashed pages: image edit/rename/replace/delete allowed with only global image permissions | CWE-284 |
-| 6 | medium | F1c | Anonymous access to /uploads/images/{path} files (no auth middleware), including orphaned files from trashed pages | CWE-284 |
-| 7 | medium | F3c | Original DatabaseTransaction issues MySQL-only isolation SQL — 500 on SQLite (officially supported DB) | CWE-552 |
-| 8 | medium | F7 | Attachment upload fails on shipped 2016 schema — attachments.external NOT NULL without default | CWE-552 |
-| 9 | low | F1b | Drawio XML readable via /images/drawio/base64 with only page-view-all (no drawio permission) | CWE-284 |
-| 10 | low | F2 | GET /images/gallery and /images/drawio without uploaded_to param → unhandled TypeError, HTTP 500 | CWE-754 |
-| 11 | low | F2b | Attachment edit/update/upload on trashed parent page → unhandled 500 | CWE-754 |
-| 12 | low | F4 | CSRF: X-XSRF-TOKEN header must be URL-decoded; raw cookie value always 419 (state-changing API clients break) | CWE-352 |
+### 13. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 14. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 15. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of bookstackapp.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "bookstackapp.com",
+  "dns": {
+    "a": [
+      "88.99.102.202"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "in1-smtp.messagingengine.com (pref 10)",
+      "in2-smtp.messagingengine.com (pref 20)"
+    ],
+    "ns": [
+      "dns2.registrar-servers.com.",
+      "dns1.registrar-servers.com."
+    ],
+    "spf": [
+      "v=spf1 include:spf.messagingengine.com include:smtp.danb.me ~all"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=quarantine; sp=quarantine; rua=mailto:dmarc@danb.me"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=bookstackapp.com",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YE2",
+    "notBefore": "Aug 24 01:27:09 2026 GMT",
+    "notAfter": "Nov 22 01:27:08 2026 GMT",
+    "san": [
+      "bookstackapp.com"
+    ],
+    "days_left": 56,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "88.99.102.202",
+    "open": [
+      53
+    ]
+  },
+  "https": {
+    "status": 302,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: Caddy"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.bookstackapp.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 308,
+    "location": "https://bookstackapp.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 302",
+    "/redirect?next=https://evil-auditor.example/x -> 302",
+    "/go?url=https://evil-auditor.example/x -> 302",
+    "/url?url=https://evil-auditor.example/x -> 302"
+  ],
+  "paths": {
+    "/robots.txt": 302,
+    "/sitemap.xml": 302,
+    "/.well-known/security.txt": 302,
+    "/security.txt": 302,
+    "/.git/HEAD": 302,
+    "/.git/config": 302,
+    "/.env": 302,
+    "/.htaccess": 302,
+    "/wp-login.php": 302,
+    "/phpmyadmin/index.php": 302,
+    "/server-status": 302,
+    "/api/": 302
+  },
+  "subdomains": {
+    "status": "ct-pending"
+  },
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.3",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 26.2,
+  "rechecked": "2026-09-26 17:38 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

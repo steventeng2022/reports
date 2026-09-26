@@ -7,363 +7,339 @@
 | Target | https://discordapp.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | discordapp.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-26 17:43 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 2 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 3 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 4 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 5 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
-| 6 | info | X3 | HTTPS root redirects to different host | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | PRT8080 | Alternate web service (port 8080) reachable | CWE-200 |
+| 3 | info | PRT8443 | Alternate web service (port 8443) reachable | CWE-200 |
+| 4 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 5 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 6 | low | H1 | Missing HSTS header | CWE-319 |
+| 7 | low | H2 | Missing CSP header | CWE-1021 |
+| 8 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 9 | low | H4 | No clickjacking protection | CWE-1023 |
+| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 11 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 12 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 13 | info | H6 | Server technology disclosure | CWE-200 |
+| 14 | low | MAIL12 | MTA-STS TXT published but policy file unreachable | CWE-285 |
+| 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for discordapp.com lists 1 name(s) besides the scope host: *.discordapp.com
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://discordapp.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** TCP connect to 162.159.133.233:8080 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 3. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 162.159.133.233:8443 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 4. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: cloudflare; Cloudflare CDN/WAF
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 5. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
+
+- **CWE:** CWE-200
+- **Detail:** Alt-Svc: h3=":443"; ma=86400
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
+
+### 6. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** http://discordapp.com/ -> https://discordapp.com/ (positive check).
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 4. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 7. [LOW] Missing CSP header (`H2`)
 
-- **CWE:** CWE-200
-- **Detail:** robots.txt on https://discordapp.com/ exposes 25 unique Disallow path(s) (/, /api, /api/, /authorize-ip, /authorize-ip/) and 7 sitemap reference(s)
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 5. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+### 8. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-200
-- **Detail:** security.txt present on https://discordapp.com (247 bytes); contact: https://discord.com/security
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 6. [INFO] HTTPS root redirects to different host (`X3`)
+### 9. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-200
-- **Detail:** https://discordapp.com/ redirects to https://discord.com/.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-## Reproduction notes
-
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://discordapp.com/ final status: 200 (final URL https://discord.com/).
-- http://discordapp.com/ initial status: 301.
-- Certificate: Google Trust Services WE1, valid until 2026-11-26T23:09:41+00:00.
-
-## Active agent cross-check (latest pre-merge `main` snapshot)
-
-The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before the latest passive re-audit was merged is preserved below for comparison and to avoid losing later verification work.
-
-<details>
-<summary>Expand active-scan snapshot — 6 findings: 0 high, 0 medium, 0 low, 6 info</summary>
-
-### Security Audit Report — discordapp.com
-
-#### Scope and authorization
-
-| Item | Value |
-|---|---|
-| Target | https://discordapp.com/ |
-| Bug bounty program | top-websites gist (no active program match) |
-| Listed scope domain | discordapp.com |
-| Test date | 2026-09-25 09:51 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
-
-#### Summary
-
-Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
-
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 2 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 3 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 4 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 5 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
-| 6 | info | X3 | HTTPS root redirects to different host | CWE-200 |
-
-#### Detailed findings
-
-##### 1. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for discordapp.com lists 1 name(s) besides the scope host: *.discordapp.com
-
-##### 2. [INFO] Missing Referrer-Policy (`H5`)
+### 10. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://discordapp.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-##### 3. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://discordapp.com/ -> https://discordapp.com/ (positive check).
-
-##### 4. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 11. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://discordapp.com/ exposes 25 unique Disallow path(s) (/, /api, /api/, /authorize-ip, /authorize-ip/) and 7 sitemap reference(s)
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-##### 5. [INFO] security.txt exposed (public disclosure policy) (`S2`)
-
-- **CWE:** CWE-200
-- **Detail:** security.txt present on https://discordapp.com (247 bytes); contact: https://discord.com/security
-
-##### 6. [INFO] HTTPS root redirects to different host (`X3`)
+### 12. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** https://discordapp.com/ redirects to https://discord.com/.
-
-#### Reproduction notes
-
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://discordapp.com/ final status: 200 (final URL https://discord.com/).
-- http://discordapp.com/ initial status: 301.
-- Certificate: Google Trust Services WE1, valid until 2026-11-26T23:09:41+00:00.
-
-#### Active agent cross-check (latest pre-merge `main` snapshot)
-
-The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before PR #1 was merged is preserved below for comparison and to avoid losing later verification work.
-
-<details>
-<summary>Expand active-scan snapshot — 33 findings: 0 high, 1 medium, 27 low, 5 info</summary>
-
-##### Security Audit Report — discordapp.com
-
-###### Scope and authorization
-
-| Item | Value |
-|---|---|
-| Target | https://discordapp.com/ |
-| Bug bounty program | top-websites gist (no active program match) |
-| Listed scope domain | discordapp.com |
-| Test date | 2026-09-25 04:25 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
-
-###### Summary
-
-Total findings: **33** (High: 0, Medium: 1, Low: 27, Info: 5)
-
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | low | I4 | Input reflected in search input value attr - fully entity-encoded on retest | CWE-79 |
-| 3 | low | I4 | Input reflected in search input value attr - fully entity-encoded on retest | CWE-79 |
-| 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 7 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 8 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 9 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 10 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 11 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 12 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 13 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 14 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 15 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 16 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 17 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 18 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 19 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 20 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 21 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 22 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 23 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 24 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 25 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 26 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 27 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 28 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-| 29 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 30 | info | I26 | humans.txt exposed (team/contact enumeration) | CWE-200 |
-| 31 | info | I26 | security.txt exposed (public vulnerability disclosure policy) | CWE-200 |
-| 32 | info | I26 | OpenID configuration exposed (identity endpoints enumerable) | CWE-200 |
-
-###### Detailed findings
-
-##### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
-
-- **CWE:** CWE-538
-- **Detail:** robots.txt disallows /channels/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
-
-##### 2. [LOW] Input reflected in search input value attr - fully entity-encoded on retest (`I4`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter query on https://discord.com/search reflects the token inside the VISIBLE search <input value="...">. RETEST 2026-09-25 raw-char matrix: " -> &quot;, ' -> &#x27;, > -> &gt; (all entity-encoded inside the double-quoted value attr); </script> and onfocus payloads 404-page (no reflection). No attribute breakout; downgraded medium -> low. Note discordapp.com itself is a redirect alias to discord.com (report kept under the listed domain).
-
-##### 3. [LOW] Input reflected in search input value attr - fully entity-encoded on retest (`I4`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter query on https://discord.com/search reflects the token inside a quoted attribute; escape boundary should be verified (quote/angle breakout tested).
-
-##### 4. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://discord.com/s reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 5. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://discord.com/results reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 6. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://discord.com/redirect reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 7. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://discord.com/go reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 8. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter redirect on https://discord.com/go reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 9. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://discord.com/r reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 10. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter to on https://discord.com/r reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 11. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://discord.com/link reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 12. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://discord.com/out reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 13. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://discord.com/u reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 14. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://discord.com/share reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 15. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://discord.com/s reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 16. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://discord.com/results reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 17. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://discord.com/redirect reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 18. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://discord.com/go reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 19. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter redirect on https://discord.com/go reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 20. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://discord.com/r reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 21. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter to on https://discord.com/r reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 22. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://discord.com/link reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 23. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://discord.com/out reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 24. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://discord.com/u reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 25. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://discord.com/share reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 26. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://discord.com/view reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 27. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter to on https://discord.com/forward reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 28. [LOW] Host header alters response (vhost behavior) (`I12`)
-
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: discordapp.com + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
-
-##### 29. [INFO] Missing Referrer-Policy (`H5`)
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 13. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://discord.com/
+- **Detail:** Header reveals: cloudflare
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
 
-##### 30. [INFO] humans.txt exposed (team/contact enumeration) (`I26`)
+### 14. [LOW] MTA-STS TXT published but policy file unreachable (`MAIL12`)
 
-- **CWE:** CWE-200
-- **Detail:** GET https://discord.com/humans.txt returned 200 (996 bytes) with a matching signature.
+- **CWE:** CWE-285
+- **Detail:** GET https://mta-sts.discordapp.com/.well-known/mta-sts/policy.txt failed from this vantage point.
+- **Recommendation:** Publish a reachable policy.txt or remove the TXT record.
 
-##### 31. [INFO] security.txt exposed (public vulnerability disclosure policy) (`I26`)
-
-- **CWE:** CWE-200
-- **Detail:** GET https://discord.com/.well-known/security.txt returned 200 (247 bytes) with a matching signature.
-
-##### 32. [INFO] OpenID configuration exposed (identity endpoints enumerable) (`I26`)
+### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** GET https://discord.com/.well-known/openid-configuration returned 200 (499 bytes) with a matching signature.
+- **Detail:** Apex TXT records with verification/token content: gc-ai-domain-verification-h4p9zv=mTSLyVQqkAlNuctKXdWWZ7MLC; logmein-verification-code=2d4b306a-e291-4dc9-a09f-2cc3277288cc; onetrust-domain-verification=3e11024ff11441678e3d59aa6b3a87bc
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-| 33 | info | I27 | Full request URL reflected URL-encoded in og:url meta on 404 pages (no breakout) | CWE-200 |
+### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
 
-##### 33. [INFO] og:url meta reflection on 404 pages (I27)
+- **CWE:** CWE-603
+- **Detail:** Certificate of discordapp.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 17. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
-- **Detail:** 2026-09-25 deep-dive: https://discord.com/newage?redirect=X (404) reflects the full request URL in <meta property="og:url" content="https://discord.com/newage?redirect=X" />. Raw-char matrix: " -> a%22b, ' -> a%27b, > -> a%3Eb, <script> -> %3Cscript%3E - all remain percent-encoded inside the content attribute. No meta/attribute breakout; documented for completeness. (discord.com/login?return_to= is NOT reflected; /download?redirect= not reflected.)
+- **Detail:** robots.txt lists 46 disallow path(s), e.g. /channels, /channels/, /verify, /verify/, /reset
+- **Recommendation:** Review disallowed paths; robots is not access control.
 
-###### Reproduction notes
+## Evidence (raw response observations)
 
-- Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+```json
+{
+  "domain": "discordapp.com",
+  "dns": {
+    "a": [
+      "162.159.133.233",
+      "162.159.130.233",
+      "162.159.135.233",
+      "162.159.129.233",
+      "162.159.134.233"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "aspmx2.googlemail.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
+      "aspmx3.googlemail.com (pref 10)"
+    ],
+    "ns": [
+      "gabe.ns.cloudflare.com.",
+      "sima.ns.cloudflare.com."
+    ],
+    "spf": [
+      "gc-ai-domain-verification-h4p9zv=mTSLyVQqkAlNuctKXdWWZ7MLC",
+      "logmein-verification-code=2d4b306a-e291-4dc9-a09f-2cc3277288cc",
+      "onetrust-domain-verification=3e11024ff11441678e3d59aa6b3a87bc",
+      "adobe-idp-site-verification=954e966634e7f12b8a9a2876a989bf5e7f5050a5192c3f529b9917cc4a7d1436",
+      "apple-domain-verification=xPWro2NHlvCQs7LI",
+      "dropbox-domain-verification=66jnk5y945ew",
+      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:sendgrid.net include:3885857.spf06.hubspotemail.net include:_spf.salesforce.com -all",
+      "google-site-verification=ihjYpERVTt6QLWL2IBBLsEZroHPjP3vVQHQG97oXZlI",
+      "loom-site-verification=3b8db7a74102494ba9569c862bbc5587",
+      "hubspot-domain-verification=YmIxMDNhZDEtMzI3Mi00ZWNjLTk4MTYtNmViZGU5NzYyZDM5",
+      "adobe-sign-verification=d19200aacd69c1b8e10cd1a5b47c91c3",
+      "google-site-verification=jtVaxAcfspCN94ECrH12n9XJhdqO6Y2j2u3eh1XsApE",
+      "docker-verification=f765b7ff-5ce5-4f27-b00a-28091eddacce",
+      "jamf-site-verification=xf0BRLPJ0fkW9oZxiDbxaQ",
+      "dust-domain-verification-kz9236=gJamMWiktWPTDezEQ9uvTDzyS",
+      "MS=CD44642CAC1658ABE588B1F34173984181355D4E",
+      "zapier-domain-verification-challenge=d87a2680-bf27-4b61-8174-5ceed32bb8c7",
+      "google-site-verification=PmQRNDYVKwgF3tM6HulK5Fmmna3DSKklkjl-epmhplA",
+      "5508A8F48F",
+      "logmein-verification-code=e675be17-2988-4b0b-9e19-d6793fc28655",
+      "atlassian-domain-verification=JNe2Ze7P8p623k8f7xRaHDyQWb6VzLxjFga1tu8M7lmVXC0bo1XgdnEsYuGIRFHv",
+      "slack-domain-verification=wmXS8pleSDJ3LgREcHasvMfdkHmBbUvNI6nHNnJl",
+      "stripe-verification=b449d3730bb78d03e0744aa61ae3fa2f35f80572bff9e48ad9a1927508291ea1",
+      "notion_verify_A}38XvVG2tiA3b6w4kU89}p~hasV-%G^E8U0.Evvp?^a==pC1]12+eXq]BgW+%hmodpfn]",
+      "google-site-verification=DGERr7gTRtGPVmghE_qE_w3X2kyTXdqiDVR2pBDpndQ",
+      "stripe-verification=1d56fec5a0f745dabfbe48592806853324fe50a8d4448c10e524136d1fac1cae",
+      "jetbrains-domain-verification=b5av2j0mg51z6vn0dpigrxbxx",
+      "google-site-verification=27NMadvvj0pSQl1hkMaX3X5bwpjdFmE_FvX-MAgdLBE",
+      "autodesk-domain-verification=2sh4O6xiIc4ReP9Aee8h",
+      "HjRfQW6OV2YOkDOgNju3gYI0_cx9H1iF"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; rua=mailto:eb13ef68c6894cf0bc517e8303852ee3@dmarc-reports.cloudflare.net;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=discordapp.com",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE1",
+    "notBefore": "Aug 28 22:09:52 2026 GMT",
+    "notAfter": "Nov 26 23:09:41 2026 GMT",
+    "san": [
+      "discordapp.com",
+      "*.discordapp.com"
+    ],
+    "days_left": 61,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "162.159.133.233",
+    "open": [
+      8080,
+      8443
+    ]
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: cloudflare",
+    "Cloudflare CDN/WAF"
+  ],
+  "cookies": [
+    {
+      "domain": "discordapp.com",
+      "samesite": "none"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.discordapp.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://discordapp.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 200,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 404
+  },
+  "subdomains": {
+    "status": "ct-pending"
+  },
+  "apex_txt": [
+    "gc-ai-domain-verification-h4p9zv=mTSLyVQqkAlNuctKXdWWZ7MLC",
+    "logmein-verification-code=2d4b306a-e291-4dc9-a09f-2cc3277288cc",
+    "onetrust-domain-verification=3e11024ff11441678e3d59aa6b3a87bc",
+    "adobe-idp-site-verification=954e966634e7f12b8a9a2876a989bf5e7f5050a5192c3f529b99",
+    "apple-domain-verification=xPWro2NHlvCQs7LI"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/channels",
+      "/channels/",
+      "/verify",
+      "/verify/",
+      "/reset",
+      "/reset/",
+      "/authorize-ip",
+      "/authorize-ip/",
+      "/reject-ip",
+      "/reject-ip/",
+      "/reject-mfa",
+      "/reject-mfa/",
+      "/oauth2",
+      "/oauth2/",
+      "/api"
+    ]
+  },
+  "elapsed_s": 4.6,
+  "rechecked": "2026-09-26 17:38 UTC"
+}
+```
 
-</details>
+## Notes
 
-</details>
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

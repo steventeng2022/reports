@@ -7,332 +7,362 @@
 | Target | https://wix.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | wix.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-26 17:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
+Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
-| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 4 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 5 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 6 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 7 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 8 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 9 | info | H2c | HSTS not preloaded | CWE-319 |
-| 10 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 11 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 12 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 13 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 14 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | H1b | Weak HSTS (max-age < 1 year) | CWE-319 |
+| 3 | low | H2 | Missing CSP header | CWE-1021 |
+| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 5 | low | H4 | No clickjacking protection | CWE-1023 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 9 | info | P8 | Missing security.txt | CWE-1038 |
+| 10 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 12 | low | DNS3 | Wildcard DNS detected | CWE-345 |
+| 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://wix.com/ without HttpOnly: _wixCIDX, _wixUIDX, sec-fetch-unsupported, ssr-caching. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without Secure flag (`C2`)
+### 2. [LOW] Weak HSTS (max-age < 1 year) (`H1b`)
 
-- **CWE:** CWE-614
-- **Detail:** Set on https://wix.com/ without Secure: ssr-caching. Will be transmitted over HTTP if the site is reachable cleartext.
+- **CWE:** CWE-319
+- **Detail:** HSTS present but max-age=121 (< 31536000).
+- **Context:** https response, /
+- **Recommendation:** Increase max-age to at least 31536000; add includeSubDomains/preload.
 
-### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://wix.com/ without SameSite=Lax/Strict: _wixCIDX, _wixUIDX, ssr-caching. Cross-site request cookies.
-
-### 4. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://wix.com/; no defense-in-depth against XSS/content injection.
-
-### 5. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 3. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://wix.com/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 6. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 4. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for wix.com lists 5 name(s) besides the scope host: *.editorx.com, *.wix.com, *.wixsite.com, editorx.com, wixsite.com (1 no longer resolve)
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 7. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `wixsite.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 8. [INFO] HSTS without includeSubDomains (`H2b`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` does not cover subdomains.
-
-### 9. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` lacks the preload directive.
-
-### 10. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://wix.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 11. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://wix.com/ lists 1442 URLs.
-
-### 12. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://wix.com/ -> https://www.wix.com/ (positive check).
-
-### 13. [INFO] robots.txt discloses crawl rules/paths (`R1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt on https://wix.com/ exposes 87 unique Disallow path(s) (*/fullscreen-page, */laboratory/conductAllInScope, /*?sort=, /*cacheKiller=, /*hubs_content) and 1 sitemap reference(s)
-
-### 14. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on wix.com.
-
-## Reproduction notes
-
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://wix.com/ final status: 200 (final URL https://www.wix.com/).
-- http://wix.com/ initial status: 301.
-- Certificate: Let's Encrypt YR2, valid until 2026-11-06T11:34:35+00:00.
-
-## Active agent cross-check (latest pre-merge `main` snapshot)
-
-The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before the latest passive re-audit was merged is preserved below for comparison and to avoid losing later verification work.
-
-<details>
-<summary>Expand active-scan snapshot — 14 findings: 0 high, 0 medium, 5 low, 9 info</summary>
-
-### Security Audit Report — wix.com
-
-#### Scope and authorization
-
-| Item | Value |
-|---|---|
-| Target | https://wix.com/ |
-| Bug bounty program | top-websites gist (no active program match) |
-| Listed scope domain | wix.com |
-| Test date | 2026-09-25 09:51 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
-
-#### Summary
-
-Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
-
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
-| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 4 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 5 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 6 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 7 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 8 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 9 | info | H2c | HSTS not preloaded | CWE-319 |
-| 10 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 11 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 12 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 13 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 14 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
-
-#### Detailed findings
-
-##### 1. [LOW] Cookies set without HttpOnly (`C1`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://wix.com/ without HttpOnly: _wixCIDX, _wixUIDX, sec-fetch-unsupported, ssr-caching. Readable by client-side script.
-
-##### 2. [LOW] Cookies set without Secure flag (`C2`)
-
-- **CWE:** CWE-614
-- **Detail:** Set on https://wix.com/ without Secure: ssr-caching. Will be transmitted over HTTP if the site is reachable cleartext.
-
-##### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://wix.com/ without SameSite=Lax/Strict: _wixCIDX, _wixUIDX, ssr-caching. Cross-site request cookies.
-
-##### 4. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://wix.com/; no defense-in-depth against XSS/content injection.
-
-##### 5. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
-
-- **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://wix.com/; page may be rendered in a foreign frame.
-
-##### 6. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for wix.com lists 5 name(s) besides the scope host: *.editorx.com, *.wix.com, *.wixsite.com, editorx.com, wixsite.com (1 no longer resolve)
-
-##### 7. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `wixsite.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-##### 8. [INFO] HSTS without includeSubDomains (`H2b`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` does not cover subdomains.
-
-##### 9. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` lacks the preload directive.
-
-##### 10. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://wix.com/; browser features (camera, mic, geolocation) unrestricted.
-
-##### 11. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://wix.com/ lists 1468 URLs.
-
-##### 12. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://wix.com/ -> https://www.wix.com/ (positive check).
-
-##### 13. [INFO] robots.txt discloses crawl rules/paths (`R1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt on https://wix.com/ exposes 87 unique Disallow path(s) (*/fullscreen-page, */laboratory/conductAllInScope, /*?sort=, /*cacheKiller=, /*hubs_content) and 1 sitemap reference(s)
-
-##### 14. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on wix.com.
-
-#### Reproduction notes
-
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://wix.com/ final status: 200 (final URL https://www.wix.com/).
-- http://wix.com/ initial status: 301.
-- Certificate: Let's Encrypt YR2, valid until 2026-11-06T11:34:35+00:00.
-
-#### Active agent cross-check (latest pre-merge `main` snapshot)
-
-The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before PR #1 was merged is preserved below for comparison and to avoid losing later verification work.
-
-<details>
-<summary>Expand active-scan snapshot — 12 findings: 0 high, 1 medium, 9 low, 2 info</summary>
-
-##### Security Audit Report — wix.com
-
-###### Scope and authorization
-
-| Item | Value |
-|---|---|
-| Target | https://wix.com/ |
-| Bug bounty program | top-websites gist (no active program match) |
-| Listed scope domain | wix.com |
-| Test date | 2026-09-25 04:25 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
-
-###### Summary
-
-Total findings: **12** (High: 0, Medium: 1, Low: 9, Info: 2)
-
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | low | S1 | mail.wix.com - managed Google Workspace alias on retest | CWE-916 |
-| 3 | low | S1 | status.wix.com - live Atlassian Statuspage on retest | CWE-916 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H4 | No clickjacking protection | CWE-1023 |
-| 6 | low | C1 | Cookies without Secure flag | CWE-614 |
-| 7 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
-| 8 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 9 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 10 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-| 11 | info | T2 | TLS certificate expiring within 43 days | CWE-295 |
-| 12 | info | I23 | XML sitemap exposes 1398 indexed URLs | CWE-200 |
-
-###### Detailed findings
-
-##### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
-
-- **CWE:** CWE-538
-- **Detail:** robots.txt disallows /blogtemp which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
-
-##### 2. [LOW] mail.wix.com - managed Google Workspace alias on retest (`S1`)
-
-- **CWE:** CWE-916
-- **Detail:** mail.wix.com -> 74.125.204.121. RETEST 2026-09-25: over HTTP it 301-redirects to https://mail.google.com/a/wix.com (Server: ghs = Google) = a MANAGED Google Workspace group alias, not a dangling platform account. Over HTTPS the edge drops the TLS handshake (SNI mismatch quirk). Downgraded medium -> low (managed; TLS quirk noted).
-
-##### 3. [LOW] status.wix.com - live Atlassian Statuspage on retest (`S1`)
-
-- **CWE:** CWE-916
-- **Detail:** status.wix.com. RETEST 2026-09-25: returns 200 (188KB) "Wix Status" served by AtlassianEdge = an active Atlassian Statuspage instance. Not dangling. Downgraded medium -> low.
-
-##### 4. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on https://www.wix.com/
-
-##### 5. [LOW] No clickjacking protection (`H4`)
+### 5. [LOW] No clickjacking protection (`H4`)
 
 - **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on https://www.wix.com/
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-##### 6. [LOW] Cookies without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** ssr-caching set without Secure on https://www.wix.com/
-
-##### 7. [LOW] Cookies without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** ssr-caching, sec-fetch-unsupported, _wixCIDX, _wixUIDX set without HttpOnly on https://www.wix.com/
-
-##### 8. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://www.wix.com/ reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 9. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://www.wix.com/ reflects input verbatim in body context; encoding boundary not confirmed.
-
-##### 10. [LOW] Host header alters response (vhost behavior) (`I12`)
-
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: wix.com + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
-
-##### 11. [INFO] TLS certificate expiring within 43 days (`T2`)
-
-- **CWE:** CWE-295
-- **Detail:** Certificate for www.wix.com (CN=*.wix.com) valid_to Nov  6 11:34:35 2026 GMT.
-
-##### 12. [INFO] XML sitemap exposes 1398 indexed URLs (`I23`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** GET https://www.wix.com/sitemap.xml returns a sitemap with 1398 URLs, aiding enumeration of the site surface.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-###### Reproduction notes
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
-- Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-</details>
+### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-</details>
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 9. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 10. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 11. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 12. [LOW] Wildcard DNS detected (`DNS3`)
+
+- **CWE:** CWE-345
+- **Detail:** Two random labels (aps8foznfegtqv.wix.com and 16zw35iz2f4xn8.wix.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
+
+### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=igUuyfBRZoBZQ0BFNepTw5JslX4b4ilhiFYSgT6muOE; tiktok-developers-site-verification=gzeUQu5YG50bjEvjyo0ZfbVZ5j0V999U; canva-site-verification=qnvjScw_870K8yKfi-_rTg
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of wix.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 15. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but wix.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 87 disallow path(s), e.g. /api/, /blogtemp, /wixblog, /bo/, /editor.jsp
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "wix.com",
+  "dns": {
+    "a": [
+      "199.15.163.133"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt4.aspmx.l.google.com (pref 10)"
+    ],
+    "ns": [
+      "dns1.p03.nsone.net.",
+      "dns4.p03.nsone.net.",
+      "dns2.p03.nsone.net.",
+      "dns3.p03.nsone.net."
+    ],
+    "spf": [
+      "google-site-verification=igUuyfBRZoBZQ0BFNepTw5JslX4b4ilhiFYSgT6muOE",
+      "tiktok-developers-site-verification=gzeUQu5YG50bjEvjyo0ZfbVZ5j0V999U",
+      "docusign=5e9b707a-aa10-4cc8-8c18-44ba07c7261d",
+      "canva-site-verification=qnvjScw_870K8yKfi-_rTg",
+      "MS=ms84842189",
+      "google-site-verification=bgK_1_cVW1tLXaQirTZFxyCNGwebJrSrtxEnhi8nj34",
+      "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A",
+      "astro-domain-verification=cmdn44xpt2r0g01n6ltozezn0",
+      "attio-domain-verification=Z2ET4PUWKCF36X53R79B3D4B",
+      "stripe-verification=90fcaa8e136e2e6061f8be2b71a3415891ea8673424e9ff92247249c019912e6",
+      "cloudflare_dashboard_sso=6509b3cf451e0682879ea790c12c0f25",
+      "lucidlink-verification=Q6AYQQCN4FGFRCQR0AF47JR318",
+      "google-site-verification=JO8-pIBHBq2rsYKaFQQDYV0LLq8RbBMxJ3sJmGAvop4",
+      "google-site-verification=cPL86MHWzrMGIKsTjOEI-oy3ISSoZhhnwuudVWrhvrU",
+      "have-i-been-pwned-verification=7bc715f972068147270244a4389abc6d",
+      "apple-domain-verification=q4AHUtVh9qSoTPfP",
+      "openai-domain-verification=dv-FVMlkPb2ttnAtrpY3PbRxymv",
+      "msfpkey=5uza2mr5f7gagdu4v6mibe905",
+      "ZOOM_verify_MfQI7nhORG2Puh-3X5ATPg",
+      "google-site-verification=n0cDifZIn0mJu7nixM4mDeq05V87pc2G0idMzBfwpyw",
+      "wq3kgvs1qvcjxqx95561tx37v6hgssjj",
+      "_globalsign-domain-verification=hJCPfpeQg9VcjdDQFrVs_lkJML8ynoEnfwBUsQJ6zB",
+      "cursor-domain-verification-1tkm1m=rRuMFC1cXEdKxx2xnJVQHycAq",
+      "stripe-verification=0d2a575bc62dd29de9df29436fb90d8ed6f29050dfae2d211c1ad9aeafbd897e",
+      "globalsign-domain-verification=pyR6ci6IB7uVAxLPZN5Z7_imdnvGJLhXCcmfs8v5RP",
+      "google-site-verification=VIxXEU16_I7ytV2OZx7MribDyDrrO8qdo3zN_Z4midI",
+      "stripe-verification=87df6886f3e159f187fde2e275ec83dc599278c4d7c88dee2391c5879643626a",
+      "anthropic-domain-verification-wj1991=6IRjBpZdVnL6nplaTY4n69b7J",
+      "aO7RBfR",
+      "google-site-verification=ogdABx45v2ErCVBP-Ms5Wm2fNT-LJq4emfL0AecJZZA",
+      "v=MCPv1; k=ed25519; p=EbQt/aJoTxU91btvOjmJoFgANaxHhXpEw07phT5RZp4=",
+      "stripe-verification=3d38b8ba77051423fc63beab24fd133e79c48c38c129e6f32a8f31dd1442b257",
+      "atlassian-domain-verification=csQ4SmhA03xwafLVCnb97huNyHYH1UukzPuDqZGNUAxVncR0FaSIvgm0VUxSpDA9",
+      "jamf-site-verification=_Sa01rGeZhiS_fErQgeIfA",
+      "google-site-verification=MvlfsFt9kmoBIEA-kfNZGc1DoBWCpDeO2I0BFi2r0Ls",
+      "anodot-domain-verification=22a37350bc036e536d9fbb047513c15f1d09de30af60f87c20af295836a05e53",
+      "google-site-verification=tidJNtRp7m6rB1RoNn3WWu94llPGNf69LO5cMRL2aog",
+      "google-site-verification=GK0pXfNH9o0j611VmQUTjL4d24lbdaLr4464gb0325s",
+      "MS=ms67587784",
+      "openai-domain-verification=dv-pLJ3xAPCIeMa3cC4XNtNDJX2",
+      "t9Mb1J4w2JVvj8BbxdSv/0Vq6ijiuUn5uWS/LqkvNkE=",
+      "mixpanel-domain-verify=50fec8a0-784f-4f4d-9e78-0e0a16f8babe",
+      "v=spf1 include:wix.com._nspf.vali.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email  ~all",
+      "stripe-verification=acd68941bb2908ddb9252b6af7dfb0bec4c44516bf8ddf6281064d5267d6fe16",
+      "google-site-verification=mlu2CMylrUqQGNZj8kf-TLOgvFtObPuYG8iDyF40-yw",
+      "bpdvtdlgubb2u4fibokgbtimqm",
+      "mentimeter-26622928-e74c-4bef-bd86-6fb3ef16da73",
+      "google-site-verification=caM2lnCRLah4A1mGepO9qL_hg8cqHdh3UzqMkNMaNAA",
+      "miro-verification=1400621c6beb4ad13c3ab05208a4bcc4446e4ead",
+      "google-site-verification=LlgLpcZTcUwtCuZ6rbFW3qpMhBRXM6TRPLWTaJIz6qo",
+      "docusign=79f63237-be11-4e2d-b4b4-91ab6dce95fc",
+      "h1-domain-verification=PcpK2wxKRm5TX3bUxcufNmYpDJfshghw8GwndcysTzykjNsF",
+      "stripe-verification=96483778492eb4f2255ee7fcb447f01413aa413328443b4ef81edadbcbe56af1",
+      "mongodb-site-verification=gdhANZR3xAzZgoC98tNYliiKI87AerWD",
+      "zapier-domain-verification-challenge=b9a64e2d-2ca9-415d-bd69-cfa2d9fa9907",
+      "stripe-verification=c332fc1713103584e6975aff689df49f78df9ea5980c7d124640f12561857924",
+      "stripe-verification=9a57080fa5c5d67942dead568a7b95d81e0b004381ccfda174b91c5a84b370aa",
+      "487477444-11657476",
+      "stripe-verification=c20e469bd7bbf272f6048b664b7f9cc406b912f67ad8fa91647eff8350b65f21",
+      "amazonses:kmAm6mAq2E1NgyaEam+5i0Mnyf/O2i4kosh3YVJwJZo=",
+      "vLXvkpGVsBpywsoGExNq4Y9fpP78GQ",
+      "c5d403d181be4c99af6bfc33a6b174ef",
+      "twilio-domain-verification=833bfa35c546d96f3c57986df3eb723e",
+      "Dynatrace-site-verification=501eb6b7-ec68-4d6e-9cff-542d23e861a6__2sdtlct1d5od1saarpf7t3ivro",
+      "atlassian-domain-verification=/0xGMpS1a6Y4hkYjG5Rprk0LKayTNxlYBFefwdxm2FhvHJaFr9MiYUbL0wEu8NYs",
+      "hubspot-developer-verification=OGU2OTcxZmMtOTQ5ZS00MmE4LWEwNGMtZDU5ODVjMjFlNzE3",
+      "stripe-verification=e5d336648c47bc8257c95e6b90f8e72cefe71d491fdb5f05e7e91f7dba43b373",
+      "google-site-verification=FXlaz4eC6IRkW2WmIRbIk4CArdmHESk0yNe3AFUDhp0",
+      "google-site-verification=WXWCve5A0fdvZG9JuNcYOlPnkIfD5jCwtx-Hz6ky6wA"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=quarantine; rua=mailto:dmarc_agg@vali.email,mailto:postmaster@wix.com"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=*.wix.com",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YR2",
+    "notBefore": "Aug  8 11:34:36 2026 GMT",
+    "notAfter": "Nov  6 11:34:35 2026 GMT",
+    "san": [
+      "*.editorx.com",
+      "*.wix.com",
+      "*.wixsite.com",
+      "editorx.com",
+      "wix.com",
+      "wixsite.com"
+    ],
+    "days_left": 40,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "199.15.163.133",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.wix.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://www.wix.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "ct-pending"
+  },
+  "wildcard_dns": true,
+  "apex_txt": [
+    "google-site-verification=igUuyfBRZoBZQ0BFNepTw5JslX4b4ilhiFYSgT6muOE",
+    "tiktok-developers-site-verification=gzeUQu5YG50bjEvjyo0ZfbVZ5j0V999U",
+    "canva-site-verification=qnvjScw_870K8yKfi-_rTg",
+    "google-site-verification=bgK_1_cVW1tLXaQirTZFxyCNGwebJrSrtxEnhi8nj34",
+    "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/api/",
+      "/blogtemp",
+      "/wixblog",
+      "/bo/",
+      "/editor.jsp",
+      "/noflashhtml",
+      "/siteBackHtml",
+      "/wix/",
+      "/wixpress/",
+      "/wixdemo/",
+      "/wix-editor/",
+      "/editor2.jsp",
+      "/flash/",
+      "/flash-templates/",
+      "/website-template/view/flash/"
+    ]
+  },
+  "elapsed_s": 20.9,
+  "rechecked": "2026-09-26 17:38 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,487 +7,327 @@
 | Target | https://time.com/ |
 | Bug bounty program | TIME |
 | Listed scope domain | time.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-26 17:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 2 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 3 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
-| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 5 | info | H2c | HSTS not preloaded | CWE-319 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | TLS4 | TLS certificate expires within 30 days | CWE-298 |
+| 3 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H4 | No clickjacking protection | CWE-1023 |
 | 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
 | 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 8 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 9 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 10 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 9 | info | P8 | Missing security.txt | CWE-1038 |
+| 10 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
+| 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing Content-Security-Policy (`H3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://time.com/; no defense-in-depth against XSS/content injection.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
-
-- **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://time.com/; page may be rendered in a foreign frame.
-
-### 3. [LOW] TLS certificate expiring within 30 days (`T3`)
+### 2. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires 2026-10-12T16:26:59+00:00 (16 days left) for time.com.
+- **Detail:** Certificate expires in 15 days (notAfter Oct 12 16:26:59 2026 GMT).
+- **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
-### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 3. [INFO] Technology fingerprint (`TECH1`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for time.com lists 1 name(s) besides the scope host: *.time.com
+- **CWE:** CWE-200
+- **Detail:** Detected: X-Powered-By: Next.js
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 5. [INFO] HSTS not preloaded (`H2c`)
+### 4. [LOW] Missing CSP header (`H2`)
 
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000; includeSubDomains` lacks the preload directive.
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 5. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
 ### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://time.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
 ### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://time.com/; browser features (camera, mic, geolocation) unrestricted.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 8. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://time.com/ lists 3175 URLs.
-
-### 9. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://time.com/ -> https://time.com/ (positive check).
-
-### 10. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://time.com/ exposes 79 unique Disallow path(s) (*/munich/index_html*, /*?*/*ref, /*?*002/*0902, /*?*2&hubs_content, /*?*PageSpeed) and 9 sitemap reference(s)
-
-## Reproduction notes
-
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://time.com/ final status: 200 (final URL https://time.com/).
-- http://time.com/ initial status: 301.
-- Certificate: Certainly Certainly Intermediate R1, valid until 2026-10-12T16:26:59+00:00.
-
-## Active agent cross-check (latest pre-merge `main` snapshot)
-
-The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before the latest passive re-audit was merged is preserved below for comparison and to avoid losing later verification work.
-
-<details>
-<summary>Expand active-scan snapshot — 10 findings: 0 high, 0 medium, 3 low, 7 info</summary>
-
-### Security Audit Report — time.com
-
-#### Scope and authorization
-
-| Item | Value |
-|---|---|
-| Target | https://time.com/ |
-| Bug bounty program | TIME |
-| Listed scope domain | time.com |
-| Test date | 2026-09-25 09:51 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
-
-#### Summary
-
-Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
-
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 2 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 3 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
-| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 5 | info | H2c | HSTS not preloaded | CWE-319 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 8 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 9 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 10 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-
-#### Detailed findings
-
-##### 1. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://time.com/; no defense-in-depth against XSS/content injection.
-
-##### 2. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
-
-- **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://time.com/; page may be rendered in a foreign frame.
-
-##### 3. [LOW] TLS certificate expiring within 30 days (`T3`)
-
-- **CWE:** CWE-298
-- **Detail:** Certificate expires 2026-10-12T16:26:59+00:00 (17 days left) for time.com.
-
-##### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for time.com lists 1 name(s) besides the scope host: *.time.com
-
-##### 5. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000; includeSubDomains` lacks the preload directive.
-
-##### 6. [INFO] Missing Referrer-Policy (`H5`)
-
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://time.com/; full URL (incl. query strings) is sent as referrer by default.
-
-##### 7. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://time.com/; browser features (camera, mic, geolocation) unrestricted.
-
-##### 8. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://time.com/ lists 3175 URLs.
-
-##### 9. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://time.com/ -> https://time.com/ (positive check).
-
-##### 10. [INFO] robots.txt discloses crawl rules/paths (`R1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt on https://time.com/ exposes 79 unique Disallow path(s) (*/munich/index_html*, /*?*/*ref, /*?*002/*0902, /*?*2&hubs_content, /*?*PageSpeed) and 9 sitemap reference(s)
-
-#### Reproduction notes
-
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://time.com/ final status: 200 (final URL https://time.com/).
-- http://time.com/ initial status: 301.
-- Certificate: Certainly Certainly Intermediate R1, valid until 2026-10-12T16:26:59+00:00.
-
-#### Active agent cross-check (latest pre-merge `main` snapshot)
-
-The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before PR #1 was merged is preserved below for comparison and to avoid losing later verification work.
-
-<details>
-<summary>Expand active-scan snapshot — 15 findings: 0 high, 1 medium, 7 low, 7 info</summary>
-
-##### Security Audit Report - time.com
-
-> **Consolidated report** - union of two independent passes on the same target: random bounty hunt phase 24 (agent-random, 2026-09-25) and aggressive injection hunt wave-6 (agent-aggressive, 2026-09-24/25). Findings below are the deduplicated union (matched by ID + finding name); per-pass provenance is in the reproduction notes.
-
-
-###### Scope and authorization
-
-| Item | Value |
-|---|---|
-| Target | https://time.com/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
-| Listed scope domain | time.com |
-| Test date | 2026-09-25 00:40 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
-
-###### Summary
-
-Total findings: **15** (High: 0, Medium: 1, Low: 7, Info: 7)
-
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-| 9 | info | A10b | Sitemap enumerates URLs | CWE-200 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 12 | info | H6 | Server technology disclosure | CWE-200 |
-| 13 | info | H7 | X-Powered-By disclosure | CWE-200 |
-| 14 | info | P3 | Missing security.txt | CWE-1038 |
-| 15 | info | T2 | TLS certificate expiring within 18 days | CWE-295 |
-
-###### Detailed findings
-
-##### 1. [MEDIUM] mail.time.com - CloudFront distribution + edge function, 404 default on all paths (`S1`)
-
-- **CWE:** CWE-916
-- **Detail:** mail.time.com -> 3.169.55.64 (CloudFront 8ad72c38f68920ee5b40a6b6070b6b0). RETEST 2026-09-25: an edge CloudFront function (x-cache: LambdaGeneratedResponse) 301-redirects every path to a trailing-slash variant (/actuator -> /actuator/, /x -> /x/); the slash variants return the CloudFront DEFAULT 404 page (8475B, NOINDEX/NO-CACHE). Distribution is active but the origin serves nothing = dangling-content takeover candidate (claim the origin bucket/distribution). KEPT as medium.
-
-##### 2. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-##### 3. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-##### 4. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-##### 5. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-##### 6. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-##### 7. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-##### 8. [LOW] Host header alters response (vhost behavior) (`I12`)
-
-- **CWE:** CWE-918
-- **Detail:** Host header alters response (vhost behavior)
-- **Recommendation:** Review and remediate per CWE guidance.
-
-##### 9. [INFO] Sitemap enumerates URLs (`A10b`)
-
-- **CWE:** CWE-200
-- **Detail:** /sitemap.xml lists 5602 URLs; sensitive-looking entries: none.
-- **Recommendation:** Remove or protect internal/sensitive URLs from the public sitemap.
-
-##### 10. [INFO] Missing Referrer-Policy (`H5`)
-
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
-
-##### 11. [INFO] Missing Referrer-Policy (`H5`)
-
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
-
-##### 12. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: Varnish
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-##### 13. [INFO] X-Powered-By disclosure (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** X-Powered-By: Next.js
-- **Recommendation:** Remove the X-Powered-By header.
-
-##### 14. [INFO] Missing security.txt (`P3`)
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 9. [INFO] Missing security.txt (`P8`)
 
 - **CWE:** CWE-1038
 - **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-##### 15. [INFO] TLS certificate expiring within 18 days (`T2`)
+### 10. [LOW] SPF record has no explicit all mechanism (implicit +all) (`MAIL6`)
 
-- **CWE:** CWE-295
-- **Detail:** TLS certificate expiring within 18 days
-- **Recommendation:** Review and remediate per CWE guidance.
+- **CWE:** CWE-285
+- **Detail:** Without -all/~all/+all the SPF record implicitly authorizes all senders.
+- **Recommendation:** End the SPF record with -all or ~all.
 
-###### Aggressive probe campaign
+### 11. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
 
-**Stage 1 - injection/reflection probes (28 requests):**
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
 
-- no stage-1 probe hits (all probes negative)
+### 12. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
 
-**Stage 2 - aggressive probe suite v2 (99 requests):**
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
 
-- robots_disallow: ["/?search*","/*?pano=*","*/munich/index_html*","/*?__rmid___get___page","/*?*__hsfp","/*?*__hstc","/*?*__rmid","/*?*__rmidpage","/*?*/*ref","/*?*002/*0902","/*?*2&hubs_content","/*?*ajs_event","/*?*app","/*?*attachment_id","/*?*author","/*?*bcpid","/*?*bcpidpage","/*?*cat","/*?*controlsVisibleOnLoad","/*?*country"]
-- sitemap: {"total":5602,"sensitive":[]}
+### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
-Stage-2 probe log (observed responses):
-- timing base=563ms id=268 search=139
-- boolean b=200/1319985 t1=406/0 t2=200/1320017
-- graphql /graphql -> 301
-- graphql /api/graphql -> 301
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 301
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 406
-- trav2 /%2e%2e%00.html -> 406
-- trav2 /static//../../../../../../etc/passwd -> 301
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 301
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 406
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 406
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 406
-- apicors /api -> 301
-- apicors /api/v1 -> 301
-- apicors /graphql -> 301
-- apicors /rest -> 301
-- apicors /v1 -> 301
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: jamf-site-verification=87WfhercEjwL8sNL32kdvA; adobe-idp-site-verification=f156d69676f01a5fdbb783b2313c1b98a30fe75b832d8b04da98; cursor-domain-verification-b4e0x8=kQIIIWnjZtcwWTXdJ0Uz40IHT
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-**Stage 3 - live parameter harvest, takeover and injection probes (43 requests):**
+### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
 
-- params_harvested: ["render","id","branch","source","hl"]
+- **CWE:** CWE-603
+- **Detail:** Certificate of time.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-Stage-3 probe log (observed responses):
-- harvest discovered 5 live query params
-- xss3 https://www.google.com/recaptcha/enterprise.js?render -> err
-- xss3 https://www.googletagmanager.com/gtm.js?id -> err
-- xss3 https://static.time.com/v3/assets/bltea6093859af6183b/blt15191143a1927dff/6ab190c8bbb02aa678181934/admiral-paparo-time-2026-03.jpg?branch -> err
-- xss3 /newsletters/?source -> 406
-- xss3 https://www.instagram.com/time/?hl -> err
-- subs no dangling service CNAMEs over 16 subdomains
+### 15. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
-###### Evidence (raw response observations)
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but time.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 79 disallow path(s), e.g. /?search*, /*?pano=*, */munich/index_html*, /*?__rmid___get___page, /*?*__hsfp
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+## Evidence (raw response observations)
 
 ```json
 {
-  "http_status": 301,
-  "http_redirect_to": "https://time.com/",
-  "https_status": 200,
-  "content_type": "text/html; charset=utf-8",
-  "title": "TIME | Current &amp; Breaking News | National &amp; World Updates",
-  "path_gitconfig": 301,
-  "path_envfile": 404,
-  "path_securitytxt": 404,
-  "path_robots": 200,
-  "robots_found": true,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 301",
-    "sqli /?id=1%27+OR+1=1-- -> 406",
-    "sqli /?q=%27 -> 200",
-    "sqli /products?filter=%27 -> 301",
-    "sqli /?p=1;-- -> 200",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 301",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 406",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 406",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 406",
-    "trav /static/../../../../../../../../etc/passwd -> 301",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 301",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 406",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 200",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 200",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 301",
-    "host no reflection -> 421",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301"
-  ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=563ms id=268 search=139",
-    "boolean b=200/1319985 t1=406/0 t2=200/1320017",
-    "graphql /graphql -> 301",
-    "graphql /api/graphql -> 301",
-    "sweep no hits over 26 paths",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 301",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 406",
-    "trav2 /%2e%2e%00.html -> 406",
-    "trav2 /static//../../../../../../etc/passwd -> 301",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 301",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 406",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 406",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 406",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 301",
-    "apicors /api/v1 -> 301",
-    "apicors /graphql -> 301",
-    "apicors /rest -> 301",
-    "apicors /v1 -> 301"
-  ],
-  "robots_disallow": [
-    "/?search*",
-    "/*?pano=*",
-    "*/munich/index_html*",
-    "/*?__rmid___get___page",
-    "/*?*__hsfp",
-    "/*?*__hstc",
-    "/*?*__rmid",
-    "/*?*__rmidpage",
-    "/*?*/*ref",
-    "/*?*002/*0902",
-    "/*?*2&hubs_content",
-    "/*?*ajs_event",
-    "/*?*app",
-    "/*?*attachment_id",
-    "/*?*author",
-    "/*?*bcpid",
-    "/*?*bcpidpage",
-    "/*?*cat",
-    "/*?*controlsVisibleOnLoad",
-    "/*?*country"
-  ],
-  "sitemap": {
-    "total": 5602,
-    "sensitive": []
+  "domain": "time.com",
+  "dns": {
+    "a": [
+      "151.101.195.52",
+      "151.101.131.52",
+      "151.101.67.52",
+      "151.101.3.52"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)",
+      "aspmx.l.google.com (pref 1)"
+    ],
+    "ns": [
+      "dns3.p08.nsone.net.",
+      "dns2.p08.nsone.net.",
+      "dns1.p08.nsone.net.",
+      "dns4.p08.nsone.net."
+    ],
+    "spf": [
+      "jamf-site-verification=87WfhercEjwL8sNL32kdvA",
+      "adobe-idp-site-verification=f156d69676f01a5fdbb783b2313c1b98a30fe75b832d8b04da980dd684eed620",
+      "cursor-domain-verification-b4e0x8=kQIIIWnjZtcwWTXdJ0Uz40IHT",
+      "MS=ms29369399",
+      "apple-domain-verification=N28wrioNU3ynpxLU",
+      "_ctk70nhwf7p4b8x1qj7qbktvaqk61so",
+      "78UC9yVP0t41WOHMwbhHq33V0IZJTL7Lna8+FnXKLhat7SZ8oXFTnSUEJDwYM0otMKFtV8kLKmqce9uDvD4kJQ==",
+      "MS=ms82252414",
+      "d2ui9nnamrs90a.cloudfront.net",
+      "google-site-verification=cKBPop8tXdt1cPh2IcyChxlmkjAMKD0oEYzUcBfBJq0",
+      "openai-domain-verification=dv-QMM3mdP3BeSDPDRYGi04uHcu",
+      "openai-domain-verification=dv-tUsE1gBsBbDTnbsH2HV6kmIC",
+      "anthropic-domain-verification-q9n3tg=cBBH8yGQWYRhUR2NeV0frsZTp",
+      "google-site-verification=L9bonByL82ay1IZibs5Dogu6IWqfcJfSxNiszm9k_IU",
+      "_erp6efm4nh2adi86mlbulfbt6tib78i",
+      "google-site-verification=CZLtrEtXICkKdVI2KPODQ6BN8ZpjenbgVuRFbnQi4So",
+      "google-site-verification=R05S4oN1f2pYfvNk6TyJl699jeVKBepFxxaZioigodU",
+      "mongodb-site-verification=Ru5QtdQhXmo14irx2raA1HUoorhijQoZ",
+      "_globalsign-domain-verification=eRi2ZQZJ99fAou8jrSC06eUJpasrvj8YgWl21vaW5G",
+      "docusign=3bc4cebc-b475-402a-85d3-5bdc15ec8af5",
+      "v=spf1 include:_spf.google.com include:_spf.psm.knowbe4.com include:_spf.ultipro.com include:u13624957.wl208.sendgrid.net include:mail.zendesk.com include:mail.cdsfulfillment.com include:amazonses.com ip4:54.236.128.150 ip4:54.236.109.30 ip4:204.115.118.3",
+      "3/27 ip4:149.72.199.98 ip4:149.72.231.47 -all",
+      "d25h5mis1xkx6t.cloudfront.net",
+      "zapier-domain-verification-challenge=fd1df879-d018-430f-901e-5c7032530304",
+      "google-site-verification=hA9c-cMQhZs8Ctq4AMlrJSMepvPZkZYaGXe2NeUObgQ",
+      "smartsheet-site-validation=xLX1FZAOW1XpZ6rvLDFaQAjJyldzSMD5",
+      "ZOOM_verify_bzijKevE4xQ6ZDUKZXC1hl",
+      "jamf-site-verification=oCncFWaydjYnb05EqaLL3Q",
+      "facebook-domain-verification=u27a6xq3jf0wefngdl43tukaif4h91",
+      "notion-domain-verification=M4zfeQiDcuDEI6tdW6oxbAmgOgvgzOfUqPEYwMlkC0w",
+      "onetrust-domain-verification=8b1d76064c704281a9a73005d042a4bd",
+      "google-site-verification=dUkrwcI6UUkTNiTFi8YXabuGM8W8GBG5RPGTcjxVcyo",
+      "slack-domain-verification=yXCTB2FtQGLo20MdJaKgHwMHdpYb0jEMkJwpA4sZ",
+      "tollbit-domain-verification=b42d076ebd6673fe3faf1951441c4b26c9c028e7d2b9378d6f0d97162247c37e",
+      "_py36delibd4b67nimszksh8ak1y3374"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; rua=mailto:dmarc@time.com; ruf=mailto:dmarc@time.com"
+    ],
+    "dnssec_authenticated": false
   },
-  "v3_probe_count": 43,
-  "v3_log": [
-    "harvest discovered 5 live query params",
-    "xss3 https://www.google.com/recaptcha/enterprise.js?render -> err",
-    "xss3 https://www.googletagmanager.com/gtm.js?id -> err",
-    "xss3 https://static.time.com/v3/assets/bltea6093859af6183b/blt15191143a1927dff/6ab190c8bbb02aa678181934/admiral-paparo-time-2026-03.jpg?branch -> err",
-    "xss3 /newsletters/?source -> 406",
-    "xss3 https://www.instagram.com/time/?hl -> err",
-    "subs no dangling service CNAMEs over 16 subdomains",
-    "cache X-Forwarded-Host not reflected -> 200"
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=*.time.com",
+    "issuer": "countryName=US, organizationName=Certainly, commonName=Certainly Intermediate R1",
+    "notBefore": "Sep 12 16:27:00 2026 GMT",
+    "notAfter": "Oct 12 16:26:59 2026 GMT",
+    "san": [
+      "*.time.com",
+      "time.com"
+    ],
+    "days_left": 15,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "151.101.195.52",
+    "open": []
+  },
+  "https": {
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "title": "TIME | Current &amp; Breaking News | National &amp; World Updates"
+  },
+  "mixed_content": [],
+  "tech": [
+    "X-Powered-By: Next.js"
   ],
-  "params_harvested": [
-    "render",
-    "id",
-    "branch",
-    "source",
-    "hl"
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.time.com",
+      "acao": "",
+      "acac": ""
+    }
   ],
-  "source": " + merged aggressive-injection-hunt pass (agent-aggressive, wave-6, 2026-09-25)"
+  "http": {
+    "status": 301,
+    "location": "https://time.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 200,
+    "/.well-known/security.txt": 406,
+    "/security.txt": 406,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 406,
+    "/.htaccess": 406,
+    "/wp-login.php": 406,
+    "/phpmyadmin/index.php": 406,
+    "/server-status": 301,
+    "/api/": 406
+  },
+  "subdomains": {
+    "status": "ct-pending"
+  },
+  "apex_txt": [
+    "jamf-site-verification=87WfhercEjwL8sNL32kdvA",
+    "adobe-idp-site-verification=f156d69676f01a5fdbb783b2313c1b98a30fe75b832d8b04da98",
+    "cursor-domain-verification-b4e0x8=kQIIIWnjZtcwWTXdJ0Uz40IHT",
+    "apple-domain-verification=N28wrioNU3ynpxLU",
+    "google-site-verification=cKBPop8tXdt1cPh2IcyChxlmkjAMKD0oEYzUcBfBJq0"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/?search*",
+      "/*?pano=*",
+      "*/munich/index_html*",
+      "/*?__rmid___get___page",
+      "/*?*__hsfp",
+      "/*?*__hstc",
+      "/*?*__rmid",
+      "/*?*__rmidpage",
+      "/*?*/*ref",
+      "/*?*002/*0902",
+      "/*?*2&hubs_content",
+      "/*?*ajs_event",
+      "/*?*app",
+      "/*?*attachment_id",
+      "/*?*author"
+    ]
+  },
+  "elapsed_s": 15.1,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
-###### Notes
+## Notes
 
-- All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).
-- No credentials were used; no state was modified on the target.
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.
-
-</details>
-
-</details>

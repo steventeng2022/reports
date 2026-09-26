@@ -7,12 +7,12 @@
 | Target | https://analytics.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | analytics.google.com |
-| Test date | 2026-09-25 08:33 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:39 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
+Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
@@ -104,6 +105,12 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of analytics.google.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -111,13 +118,10 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
   "domain": "analytics.google.com",
   "dns": {
     "a": [
-      "216.239.36.181",
-      "216.239.34.181",
-      "216.239.32.181",
-      "216.239.38.181"
+      "142.250.198.78"
     ],
     "aaaa": [
-      "2404:6800:4012:2::200e"
+      "2404:6800:4012:8::200e"
     ],
     "cname": null,
     "mx": [],
@@ -132,9 +136,9 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=*.google.com",
-    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
-    "notBefore": "Sep 10 19:22:01 2026 GMT",
-    "notAfter": "Dec  3 19:22:00 2026 GMT",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
+    "notBefore": "Sep 10 19:21:53 2026 GMT",
+    "notAfter": "Dec  3 19:21:52 2026 GMT",
     "san": [
       "*.google.com",
       "*.appengine.google.com",
@@ -202,7 +206,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
       "android.clients.google.com",
       "*.aistudio.google.com"
     ],
-    "days_left": 69,
+    "days_left": 68,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -212,7 +216,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
     }
   },
   "ports": {
-    "ip": "216.239.36.181",
+    "ip": "142.250.198.78",
     "open": []
   },
   "https": {
@@ -262,10 +266,25 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
     "/api/": 404
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 134.8,
-  "rechecked": "2026-09-25 13:59 UTC"
+  "cname_chain": [
+    "analytics-alv.google.com"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 6.1,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -274,4 +293,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

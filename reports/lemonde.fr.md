@@ -7,12 +7,12 @@
 | Target | https://lemonde.fr/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | lemonde.fr |
-| Test date | 2026-09-26 16:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,8 +27,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
-| 12 | info | CT1 | 147 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 13 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | CT1 | 147 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 18 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -107,13 +112,43 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 12. [INFO] 147 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-nQ1ldfkkoDfrWmjKfXdqLG2h; jamf-site-verification=zUEgWKIxDl9-X3pb0bIY7A; _globalsign-domain-verification=yRdIt507tQIZyVRXF6VBvVbEIWhqpzJaxh8r1qdSUr
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of lemonde.fr has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 332 disallow path(s), e.g. /ajax/, /ajah/, /api/, /beta, /element/commun/afficher/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 17. [INFO] 147 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: blog.chefsimon.lemonde.fr, checkout.lemonde.fr, dev.carnet.lemonde.fr, dev.cities.lemonde.fr, dev.debats-afrique.lemonde.fr, dev.festival.lemonde.fr, dev.webserver.carnet.lemonde.fr, docs.forecast.lemonde.fr, media.lemonde.fr, webmail.lemonde.fr
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 13. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 18. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: blog.chefsimon.lemonde.fr; content may still be served via virtual-host fallback.
@@ -132,31 +167,31 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
     "cname": null,
     "mx": [
       "alt2.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "aspmx.l.google.com (pref 1)",
-      "alt3.aspmx.l.google.com (pref 10)"
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "ns-cloud-b3.googledomains.com.",
-      "ns-cloud-b2.googledomains.com.",
       "ns-cloud-b4.googledomains.com.",
+      "ns-cloud-b2.googledomains.com.",
+      "ns-cloud-b3.googledomains.com.",
       "ns-cloud-b1.googledomains.com."
     ],
     "spf": [
-      "00DWx000008KcED=1TBSb0000000Ak9",
-      "mandrill_verify.2xFVS2iRdBArj1vR6iXqDw",
       "v=spf1 include:spf1.lemonde.fr include:spf2.lemonde.fr include:_spf.salesforce.com ip4:79.99.32.203 ip4:79.99.32.185 ip4:79.99.32.186 ip4:217.74.103.211 ip4:195.154.80.82 ip4:163.172.55.8 ip4:35.181.34.138 ip4:35.181.85.71 ip4:52.143.135.92 -all",
-      "_globalsign-domain-verification=yRdIt507tQIZyVRXF6VBvVbEIWhqpzJaxh8r1qdSUr",
+      "00DWx000008KcED=1TBSb0000000Ak9",
       "00DAP00000MRjsP=1TBAP0000000CHJ",
-      "sendinblue-code:bfdbbdc264502c94bb90794d2a902e50",
-      "recyclagerecylum=1fd014598415abe7ca04160fccf87442",
-      "00DAU00000LLlRQ=1TBAU0000000GJJ",
       "openai-domain-verification=dv-nQ1ldfkkoDfrWmjKfXdqLG2h",
-      "google-site-verification=712IVumgXvK3v6WCyCJVLS6O96hThcw39o84JSN9m_k",
-      "d7o5vwenp6",
       "jamf-site-verification=zUEgWKIxDl9-X3pb0bIY7A",
-      "fastly-domain-delegation-x2kl6p87n3g5b6FDG-79324-2018-04-10"
+      "00DAU00000LLlRQ=1TBAU0000000GJJ",
+      "d7o5vwenp6",
+      "recyclagerecylum=1fd014598415abe7ca04160fccf87442",
+      "mandrill_verify.2xFVS2iRdBArj1vR6iXqDw",
+      "sendinblue-code:bfdbbdc264502c94bb90794d2a902e50",
+      "fastly-domain-delegation-x2kl6p87n3g5b6FDG-79324-2018-04-10",
+      "_globalsign-domain-verification=yRdIt507tQIZyVRXF6VBvVbEIWhqpzJaxh8r1qdSUr",
+      "google-site-verification=712IVumgXvK3v6WCyCJVLS6O96hThcw39o84JSN9m_k"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=quarantine; adkim=r; aspf=r; pct=100; rua=mailto:dmarc.report@lemonde.fr"
@@ -277,8 +312,45 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
       "blog.chefsimon.lemonde.fr"
     ]
   },
-  "elapsed_s": 46.3,
-  "rechecked": "2026-09-26 16:42 UTC"
+  "apex_txt": [
+    "openai-domain-verification=dv-nQ1ldfkkoDfrWmjKfXdqLG2h",
+    "jamf-site-verification=zUEgWKIxDl9-X3pb0bIY7A",
+    "_globalsign-domain-verification=yRdIt507tQIZyVRXF6VBvVbEIWhqpzJaxh8r1qdSUr",
+    "google-site-verification=712IVumgXvK3v6WCyCJVLS6O96hThcw39o84JSN9m_k"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/ajax/",
+      "/ajah/",
+      "/api/",
+      "/beta",
+      "/element/commun/afficher/",
+      "/petites-annonces/",
+      "/qui-sommes-nous/",
+      "/txt/",
+      "/verification/source/*",
+      "/noscript/",
+      "/ws/*",
+      "/lemonde-beta/*",
+      "/_rprt/*",
+      "/layout/*",
+      "/cgi-bin/*"
+    ]
+  },
+  "elapsed_s": 28.6,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -287,4 +359,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

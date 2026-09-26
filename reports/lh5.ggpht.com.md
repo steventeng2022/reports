@@ -7,87 +7,394 @@
 | Target | https://lh5.ggpht.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | lh5.ggpht.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-26 17:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
+Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 3 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 5 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 7 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 10 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
-| 11 | info | X2 | HTTPS homepage returned HTTP 400 | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 4 | low | H1 | Missing HSTS header | CWE-319 |
+| 5 | low | H2 | Missing CSP header | CWE-1021 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | CORS4 | CORS: wildcard Access-Control-Allow-Origin | CWE-942 |
+| 12 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
+| 13 | info | P8 | Missing security.txt | CWE-1038 |
+| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
+
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
+
+### 2. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: fife
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
+
+- **CWE:** CWE-200
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
+
+### 4. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header on https://lh5.ggpht.com/. Clients may connect over plain HTTP on first visit.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 2. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://lh5.ggpht.com/; no defense-in-depth against XSS/content injection.
-
-### 3. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 5. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://lh5.ggpht.com/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 6. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for lh5.ggpht.com lists 153 name(s) besides the scope host: *.ads-static.usercontent.goog, *.aiplatform-notebook.googleusercontent.com, *.aiplatform-training.byoid.googleusercontent.com, *.aiplatform-training.googleusercontent.com, *.aiplayables.usercontent.goog, *.allownetworkplayables.usercontent.goog, *.apps.googleusercontent.com, *.appspot.com.storage.googleapis.com... (4 no longer resolve)
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 5. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `bp.blogspot.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 6. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `doubleclickusercontent.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 7. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `ggpht.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://lh5.ggpht.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 9. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://lh5.ggpht.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 10. [INFO] Plain HTTP returns non-redirect status (`N3`)
-
-- **CWE:** CWE-319
-- **Detail:** http://lh5.ggpht.com/ returns 400 (no redirect to HTTPS).
-
-### 11. [INFO] HTTPS homepage returned HTTP 400 (`X2`)
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** https://lh5.ggpht.com/ responded 400 (passive check only; no further probing).
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://lh5.ggpht.com/ final status: 400 (final URL https://lh5.ggpht.com/).
-- http://lh5.ggpht.com/ initial status: 400.
-- Certificate: Google Trust Services WE2, valid until 2026-12-03T19:23:25+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 10. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: fife
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 11. [INFO] CORS: wildcard Access-Control-Allow-Origin (`CORS4`)
+
+- **CWE:** CWE-942
+- **Detail:** Access-Control-Allow-Origin: * is set for cross-origin requests.
+- **Context:** https response, /
+- **Recommendation:** Restrict the allowed origins if sensitive data is exposed via the API.
+
+### 12. [INFO] CORS: subdomain origin origin accepted (no credentials) (`CORS2`)
+
+- **CWE:** CWE-942
+- **Detail:** Origin https://sub.lh5.ggpht.com was echoed in Access-Control-Allow-Origin.
+- **Context:** https response, /
+- **Recommendation:** Confirm whether arbitrary origin echoing is intended.
+
+### 13. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of lh5.ggpht.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "lh5.ggpht.com",
+  "dns": {
+    "a": [
+      "142.250.192.129"
+    ],
+    "aaaa": [
+      "2404:6800:4012:2::2001"
+    ],
+    "cname": "photos-ugc.l.googleusercontent.com.",
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=*.googleusercontent.com",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
+    "notBefore": "Sep 10 19:23:17 2026 GMT",
+    "notAfter": "Dec  3 19:23:16 2026 GMT",
+    "san": [
+      "*.googleusercontent.com",
+      "commondatastorage.googleapis.com",
+      "*.commondatastorage.googleapis.com",
+      "storage.googleapis.com",
+      "*.storage.googleapis.com",
+      "storage-p2.googleapis.com",
+      "*.storage-p2.googleapis.com",
+      "storage.mtls.googleapis.com",
+      "*.appspot.com.storage.googleapis.com",
+      "*.content-storage.googleapis.com",
+      "*.content-storage-p2.googleapis.com",
+      "*.content-storage-upload.googleapis.com",
+      "*.content-storage-download.googleapis.com",
+      "*.storage-upload.googleapis.com",
+      "*.storage-download.googleapis.com",
+      "blogspot.com",
+      "*.blogspot.com",
+      "bp.blogspot.com",
+      "*.bp.blogspot.com",
+      "doubleclickusercontent.com",
+      "*.doubleclickusercontent.com",
+      "ggpht.com",
+      "*.ggpht.com",
+      "googledrive.com",
+      "*.googledrive.com",
+      "*.googlesyndication.com",
+      "*.safeframe.googlesyndication.com",
+      "googleusercontent.com",
+      "*.byoid.googleusercontent.com",
+      "usercontent.goog",
+      "*.usercontent.goog",
+      "*.ucp.usercontent.goog",
+      "*.h5games.usercontent.goog",
+      "*.playables.usercontent.goog",
+      "*.allownetworkplayables.usercontent.goog",
+      "*.safeframe.usercontent.goog",
+      "*.sandbox.usercontent.goog",
+      "*.scf.usercontent.goog",
+      "*.isolated.usercontent.goog",
+      "*.static.usercontent.goog",
+      "*.ads-static.usercontent.goog",
+      "*.executionbox.usercontent.goog",
+      "*.aiplayables.usercontent.goog",
+      "*.playground.usercontent.goog",
+      "*.labs-studios.usercontent.goog",
+      "rbm-smb-experience.business.usercontent.goog",
+      "rbm-smb-experience-autopush.business.usercontent.goog",
+      "manifest.c.mail.googleusercontent.com",
+      "manifest.lh3-da.googleusercontent.com",
+      "manifest.lh3-db.googleusercontent.com",
+      "manifest.lh3-dc.googleusercontent.com",
+      "manifest.lh3-dd.googleusercontent.com",
+      "manifest.lh3-de.googleusercontent.com",
+      "manifest.lh3-df.googleusercontent.com",
+      "manifest.lh3-dg.googleusercontent.com",
+      "manifest.lh3-dz.googleusercontent.com",
+      "manifest.lh3.googleusercontent.com",
+      "manifest.lh3.photos.google.com",
+      "googleweblight.com",
+      "*.googleweblight.com",
+      "translate.goog",
+      "*.translate.goog",
+      "*.search.translate.goog",
+      "*.dev.amp4mail.googleusercontent.com",
+      "*.prod.amp4mail.googleusercontent.com",
+      "*.playground.amp4mail.googleusercontent.com",
+      "*.playground-internal.amp4mail.googleusercontent.com",
+      "*.aiplatform-notebook.googleusercontent.com",
+      "*.aiplatform-training.googleusercontent.com",
+      "*.aiplatform-training.byoid.googleusercontent.com",
+      "*.audiobook-additional-material-staging.googleusercontent.com",
+      "*.audiobook-additional-material.googleusercontent.com",
+      "*.apps.googleusercontent.com",
+      "*.safenup.googleusercontent.com",
+      "*.sandbox.googleusercontent.com",
+      "*.backupdr.googleusercontent.com",
+      "*.backupdr.byoid.googleusercontent.com",
+      "*.backupdr-staging.googleusercontent.com",
+      "*.backupdr-staging.byoid.googleusercontent.com",
+      "*.backupdr-autopush.googleusercontent.com",
+      "*.backupdr-autopush.byoid.googleusercontent.com",
+      "*.backupdr-dev.googleusercontent.com",
+      "*.backupdr-dev.byoid.googleusercontent.com",
+      "*.backupdr-sandbox.googleusercontent.com",
+      "*.backupdr-sandbox.byoid.googleusercontent.com",
+      "*.composer.googleusercontent.com",
+      "*.composer.byoid.googleusercontent.com",
+      "*.composer-staging.googleusercontent.com",
+      "*.composer-staging.byoid.googleusercontent.com",
+      "*.composer-qa.googleusercontent.com",
+      "*.composer-qa.byoid.googleusercontent.com",
+      "*.composer-dev.googleusercontent.com",
+      "*.composer-dev.byoid.googleusercontent.com",
+      "*.dataplex.googleusercontent.com",
+      "*.dataplex-staging.googleusercontent.com",
+      "*.dataplex-dev.googleusercontent.com",
+      "*.dataproc.googleusercontent.com",
+      "*.dataproc.byoid.googleusercontent.com",
+      "*.dataproc-image-staging.googleusercontent.com",
+      "*.dataproc-image-staging.byoid.googleusercontent.com",
+      "*.dataproc-staging.googleusercontent.com",
+      "*.dataproc-staging.byoid.googleusercontent.com",
+      "*.dataproc-test.googleusercontent.com",
+      "*.dataproc-test.byoid.googleusercontent.com",
+      "*.datafusion.googleusercontent.com",
+      "*.datafusion.byoid.googleusercontent.com",
+      "*.datafusion-staging.googleusercontent.com",
+      "*.datafusion-staging.byoid.googleusercontent.com",
+      "*.datafusion-dev.googleusercontent.com",
+      "*.datafusion-dev.byoid.googleusercontent.com",
+      "*.datafusion-api.googleusercontent.com",
+      "*.datafusion-api.byoid.googleusercontent.com",
+      "*.datafusion-api-staging.googleusercontent.com",
+      "*.datafusion-api-staging.byoid.googleusercontent.com",
+      "*.datafusion-api-dev.googleusercontent.com",
+      "*.datafusion-api-dev.byoid.googleusercontent.com",
+      "*.gsc.googleusercontent.com",
+      "*.gcc.googleusercontent.com",
+      "*.tuf.googleusercontent.com",
+      "*.tuf-autopush.googleusercontent.com",
+      "*.tuf-dev.googleusercontent.com",
+      "*.tuf-staging.googleusercontent.com",
+      "*.fuchsia-updates.googleusercontent.com",
+      "*.fuchsia-updates-autopush.googleusercontent.com",
+      "*.fuchsia-updates-autopush-qual.googleusercontent.com",
+      "*.fuchsia-updates-dev.googleusercontent.com",
+      "*.fuchsia-updates-staging.googleusercontent.com",
+      "*.machinelearningtools.googleusercontent.com",
+      "*.machinelearningtools-staging.googleusercontent.com",
+      "*.machinelearningtools-autopush.googleusercontent.com",
+      "*.machinelearningtools-dev.googleusercontent.com",
+      "*.mos-updates.googleusercontent.com",
+      "*.mos-updates-autopush.googleusercontent.com",
+      "*.mos-updates-autopush-qual.googleusercontent.com",
+      "*.mos-updates-dev.googleusercontent.com",
+      "*.mos-updates-staging.googleusercontent.com",
+      "*.notebooks.googleusercontent.com",
+      "*.notebooks.byoid.googleusercontent.com",
+      "*.pipelines.googleusercontent.com",
+      "*.tensorboard.googleusercontent.com",
+      "*.tensorboard-autopush.googleusercontent.com",
+      "*.tensorboard-dev.googleusercontent.com",
+      "*.tensorboard-staging.googleusercontent.com",
+      "*.tensorboard-test.googleusercontent.com",
+      "*.kernels.googleusercontent.com",
+      "*.kernels-staging.googleusercontent.com",
+      "*.kernels-test.googleusercontent.com",
+      "*.cloudshell.googleusercontent.com",
+      "*.cloudworkstations.googleusercontent.com",
+      "*.vast.googleusercontent.com",
+      "*.vast-staging.googleusercontent.com",
+      "*.vast-autopush.googleusercontent.com",
+      "*.vast-sandbox.googleusercontent.com"
+    ],
+    "days_left": 68,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "142.250.192.129",
+    "open": []
+  },
+  "https": {
+    "status": 400,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: fife"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "*",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.lh5.ggpht.com",
+      "acao": "*",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 400
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 400",
+    "/redirect?next=https://evil-auditor.example/x -> 400",
+    "/go?url=https://evil-auditor.example/x -> 400",
+    "/url?url=https://evil-auditor.example/x -> 400"
+  ],
+  "paths": {
+    "/robots.txt": 400,
+    "/sitemap.xml": 400,
+    "/.well-known/security.txt": 400,
+    "/security.txt": 400,
+    "/.git/HEAD": 400,
+    "/.git/config": 400,
+    "/.env": 400,
+    "/.htaccess": 400,
+    "/wp-login.php": 400,
+    "/phpmyadmin/index.php": 400,
+    "/server-status": 400,
+    "/api/": 400
+  },
+  "subdomains": {
+    "status": "ct-pending"
+  },
+  "cname_chain": [
+    "photos-ugc.l.googleusercontent.com"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 3.5,
+  "rechecked": "2026-09-26 17:38 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

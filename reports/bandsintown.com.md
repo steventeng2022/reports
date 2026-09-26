@@ -7,12 +7,12 @@
 | Target | https://bandsintown.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | bandsintown.com |
-| Test date | 2026-09-25 17:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:40 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
+Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,7 +26,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 | 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 9 | info | H6 | Server technology disclosure | CWE-200 |
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
-| 11 | info | CT1 | 36 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 11 | low | MAIL12 | MTA-STS TXT published but policy file unreachable | CWE-285 |
+| 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 15 | info | CT1 | 36 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -98,7 +102,31 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 11. [INFO] 36 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 11. [LOW] MTA-STS TXT published but policy file unreachable (`MAIL12`)
+
+- **CWE:** CWE-285
+- **Detail:** GET https://mta-sts.bandsintown.com/.well-known/mta-sts/policy.txt failed from this vantage point.
+- **Recommendation:** Publish a reachable policy.txt or remove the TXT record.
+
+### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=szd9g5rep5c2wm6e3yrxk5uqkuygh9; rippling-domain-verification=b5726a43207e41d6; stripe-verification=D1EF7AE8AFB0BBF02CD7A76B56B3BB6CE12B3D6678A1B8A22C2EF8B5621A
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of bandsintown.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 14. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but bandsintown.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 15. [INFO] 36 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: adops.staging.bandsintown.com, cdn.bandsintown.com, help.pro.bandsintown.com, help.venues.bandsintown.com, oauth.bandsintown.com, publishers.staging.bandsintown.com, status.bandsintown.com
@@ -111,43 +139,43 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
   "domain": "bandsintown.com",
   "dns": {
     "a": [
-      "3.212.79.149",
       "184.193.167.6",
-      "34.200.152.179"
+      "3.212.79.149",
+      "54.152.243.55"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "aspmx.l.google.com (pref 1)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx3.googlemail.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx2.googlemail.com (pref 10)",
-      "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "aspmx2.googlemail.com (pref 10)"
     ],
     "ns": [
       "ns-417.awsdns-52.com.",
-      "ns-1630.awsdns-11.co.uk.",
+      "ns-1367.awsdns-42.org.",
       "ns-645.awsdns-16.net.",
-      "ns-1367.awsdns-42.org."
+      "ns-1630.awsdns-11.co.uk."
     ],
     "spf": [
-      "dailymotion-domain-verification=dm21h9ylyllu1p69n",
-      "google-site-verification=f1CWKwhuZPLcgwoyE41lip_z1dZCy2xnA-Q7evMzrSU",
-      "v=spf1 a mx include:sendgrid.net include:_spf.google.com include:spf.protection.outlook.com include:stspg-customer.com -all",
       "facebook-domain-verification=szd9g5rep5c2wm6e3yrxk5uqkuygh9",
-      "MS=ms12811150",
-      "mandrill_verify.dMoB27k4ZLW5-FAhb5RTgg",
-      "status-page-domain-verification=qn6chxt05qrd",
-      "mlkfx9phjb4y6h395lt8lsy5b4sjkgc4",
-      "anthropic-domain-verification-tww6x4=SWB50zFKsYjXe3H2zayd8Sz1t",
-      "atlassian-domain-verification=n3FcpfaRP0Kv679ha0/mirPFGK3ftRdN7l97Ca2T9Zz1uaL3wysi2f4VO536tNMm",
       "rippling-domain-verification=b5726a43207e41d6",
-      "asv=aeeef7fc6b18aca440b92141741bdb9f",
-      "9fldg144ers8mh6f24ffrc3thk",
-      "perplexity-ai-domain-verification-376w2f=2PeL8yNlYAkys7oM52uT6wTdC",
-      "hmkuhqbttdq4i998kareathvto",
+      "MS=ms12811150",
       "stripe-verification=D1EF7AE8AFB0BBF02CD7A76B56B3BB6CE12B3D6678A1B8A22C2EF8B5621AD9CB",
-      "rippling-domain-verification=e5824847937fee1e"
+      "asv=aeeef7fc6b18aca440b92141741bdb9f",
+      "mandrill_verify.dMoB27k4ZLW5-FAhb5RTgg",
+      "google-site-verification=f1CWKwhuZPLcgwoyE41lip_z1dZCy2xnA-Q7evMzrSU",
+      "9fldg144ers8mh6f24ffrc3thk",
+      "v=spf1 a mx include:sendgrid.net include:_spf.google.com include:spf.protection.outlook.com include:stspg-customer.com -all",
+      "dailymotion-domain-verification=dm21h9ylyllu1p69n",
+      "perplexity-ai-domain-verification-376w2f=2PeL8yNlYAkys7oM52uT6wTdC",
+      "mlkfx9phjb4y6h395lt8lsy5b4sjkgc4",
+      "hmkuhqbttdq4i998kareathvto",
+      "status-page-domain-verification=qn6chxt05qrd",
+      "rippling-domain-verification=e5824847937fee1e",
+      "atlassian-domain-verification=n3FcpfaRP0Kv679ha0/mirPFGK3ftRdN7l97Ca2T9Zz1uaL3wysi2f4VO536tNMm",
+      "anthropic-domain-verification-tww6x4=SWB50zFKsYjXe3H2zayd8Sz1t"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; rua=mailto:de1f17b4@mxtoolbox.dmarc-report.com,mailto:dmarc@bandsintown.com; ruf=mailto:de1f17b4@forensics.dmarc-report.com,mailto:dmarc@bandsintown.com; adkim=r; fo=1; pct=100; ri=86400"
@@ -169,7 +197,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
       "*.bandsintown.com",
       "*.prod.bandsintown.com"
     ],
-    "days_left": 65,
+    "days_left": 64,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -179,7 +207,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
     }
   },
   "ports": {
-    "ip": "3.212.79.149",
+    "ip": "184.193.167.6",
     "open": []
   },
   "https": {
@@ -264,8 +292,27 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
       "oauth.bandsintown.com"
     ]
   },
-  "elapsed_s": 23.9,
-  "rechecked": "2026-09-25 17:50 UTC"
+  "apex_txt": [
+    "facebook-domain-verification=szd9g5rep5c2wm6e3yrxk5uqkuygh9",
+    "rippling-domain-verification=b5726a43207e41d6",
+    "stripe-verification=D1EF7AE8AFB0BBF02CD7A76B56B3BB6CE12B3D6678A1B8A22C2EF8B5621A",
+    "google-site-verification=f1CWKwhuZPLcgwoyE41lip_z1dZCy2xnA-Q7evMzrSU",
+    "dailymotion-domain-verification=dm21h9ylyllu1p69n"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.2",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 33.6,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -274,4 +321,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

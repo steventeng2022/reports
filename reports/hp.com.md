@@ -7,12 +7,12 @@
 | Target | https://hp.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | hp.com |
-| Test date | 2026-09-25 09:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
+Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -22,6 +22,13 @@ Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
 | 4 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 5 | info | H6 | Server technology disclosure | CWE-200 |
 | 6 | info | P8 | Missing security.txt | CWE-1038 |
+| 7 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
+| 8 | low | MAIL7 | SPF include: points to unresolvable domain(s) | CWE-285 |
+| 9 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 10 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 11 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 
 ## Detailed findings
 
@@ -65,6 +72,48 @@ Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 7. [LOW] SPF record has no explicit all mechanism (implicit +all) (`MAIL6`)
+
+- **CWE:** CWE-285
+- **Detail:** Without -all/~all/+all the SPF record implicitly authorizes all senders.
+- **Recommendation:** End the SPF record with -all or ~all.
+
+### 8. [LOW] SPF include: points to unresolvable domain(s) (`MAIL7`)
+
+- **CWE:** CWE-285
+- **Detail:** Broken include(s): us. (no A/TXT record).
+- **Recommendation:** Fix or remove the broken include directives.
+
+### 9. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 10. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=ajtjung8rHe1-msfHMrttoZdDlZeeoWJNpQ5jNZcqfo; google-site-verification=GdVvq6F-s2Vr-eD8eeZeo11J1HXnWdA2ZNM_M_IivjY; facebook-domain-verification=1f6jis8ngyl6xhtopb196nk2jzb6wm
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of hp.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 13. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but hp.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
 ## Evidence (raw response observations)
 
 ```json
@@ -72,10 +121,10 @@ Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
   "domain": "hp.com",
   "dns": {
     "a": [
-      "13.249.165.75",
       "13.249.165.48",
-      "13.249.165.6",
-      "13.249.165.52"
+      "13.249.165.75",
+      "13.249.165.52",
+      "13.249.165.6"
     ],
     "aaaa": [],
     "cname": null,
@@ -83,72 +132,72 @@ Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
       "us-smtp-inbound-1.mimecast.com (pref 10)"
     ],
     "ns": [
-      "ns1.hp.com.",
       "ns6.hp.com.",
-      "ns2.hp.com.",
-      "ns3.hp.com.",
       "ns5.hp.com.",
-      "ns4.hp.com."
+      "ns1.hp.com.",
+      "ns3.hp.com.",
+      "ns4.hp.com.",
+      "ns2.hp.com."
     ],
     "spf": [
-      "SFMC-f7skz24QEr_YzGdBqMHR3sC2xGZPNQ3mZdXDFFow",
-      "google-site-verification:2kiyv1SjebKUcEmaJ4QtapQe2EcbqPcYmhiJ-XJMZsY",
-      "atlassian-domain-verification=mjss59VLEmjHpiASn3FUy/Hfb/9QbLAAOR9fiqjavAJ6O1uCyNnChSTbNAxo7IIS",
-      "atlassian-domain-verification=cbeZ9ZZ8XZI9vcf3e6CYWsA3pQ/6Xfc2mSUGdHuK5bWhjzVD0ksLTbFdabq//Sd5",
       "google-site-verification=ajtjung8rHe1-msfHMrttoZdDlZeeoWJNpQ5jNZcqfo",
-      "bv-domain-verification=ca416dec3e1078035e8f94141e8542a1207d3415febb81cdecc6f69d491ee03c",
-      "C6ekla14kZc9ySs2tWLx5+qoT3uFAcPKfM9z8SnOjKPxduvwIiHCJI75yVt8cOynDwTRpNGAoAu7WBKTky3QhQ==",
-      "google-site-verification=ior6EHEPCvMGbBIF1Cfzg3-yTDw30PaIbETytGrl1zY",
-      "02.14.2024",
-      "google-site-verification=SYstg4r0qao99bYV9-4uWYGTHLSIL3Py60GZvR_OJ1c",
-      "SFMC-VXyPhU37JRfzHa1B_-XfXzHjl2WKI7af1rdKH-wR",
-      "teamviewer-sso-verification=9a8bdacd256d426aadef7c9435cc05f7",
-      "MS=ms38857149",
-      "SFMC-TkI3rEvFMq3uO7c3713TrP-cg1S7j0K0iKyNVXIY",
-      "SFMC-z90jhAqnCFzmMAy46Qo1vy13u6YlOQ4afVWEPZmS",
-      "7155-7871-A6E8-AEB1-5764-4DE3-D4DD-6680",
-      "SFMC-Gj1r4WT7h7LuH9CgR-ATrs4dQiyHzeRW5mkk_qg9",
-      "SFMC-aJMC0Gi9MPXTz-l4Iv3LtRXfhaeOB0OCsGwNXkzM",
-      "facebook-domain-verification=1f6jis8ngyl6xhtopb196nk2jzb6wm",
       "IQI2xT+r6hj2PuJ171J02xOMMXSUHl4I2VJ5a4CB2OsyfPJkfHXHbmJ5e2Ee6kbNjJQsERvcm3d4IeS2e7xPPQ==",
-      "docker-verification=ad83199a-7103-4f01-8acf-41979b12ba00",
-      "SFMC-gC-INJ9awb38orE0daCKtYQOdTzA26V3zBYVruOP",
-      "canva-site-verification=phuz1k47EJb7b9wGXtCeYw",
-      "google-site-verification=N-C2RScU5fi3a4_9J7hYoQhoL9H566pkx6gM8PI6Jqo",
-      "Dynatrace-site-verification=fb0772f5-465e-4c26-9c6e-de883a321a31__ko3f16m3vui8oi46qls2l305im",
-      "liveramp-site-verification=LpuGIkdkGN7Dr495prdDxPoD0K4Y8zox5B40KiQVq08",
-      "fastly-domain-delegation-ndopinwe32-10142022",
-      "paloaltonetworks-site-verification=1490b1ee9f50f41d487a017ed98225cd2f0bcbed857fa5841aa276a5a009b604",
-      "teamviewer-sso-verification=14e16276afc843e58d056742e9f89d26",
-      "_t0t2hodeyznakvwlx7hkbim4oojp151",
-      "google-site-verification=7CCNFPK5u6aSDkOkTOxz_yOePZI8_thHJnaJl6EtSwk",
-      "pendo-domain-verification=f79d1d3d-277a-4a70-982c-677c77a2f011",
-      "gem-domain-verification=BTTGt2-RR8Zy86kgA6dRzh",
-      "launchdarkly-domain-verification=c190690f-6cf2-4084-9ea4-ddbeebcebc80",
-      "google-site-verification=lf2HoI19pw29dSNCWe1ex0zlgiGiMSUZjRWjW61SLXk",
-      "mongodb-site-verification=NNt4TMRanOtPk2qCvhWpTMXpY8SOb7BO",
-      "hpe-greenlake-domain-verification=7151716b744d3467684e427773486a5244794c3172676333326e753537787941",
-      "airtable-verification=fd35e3a14eafa013a4ef8ec307159c57",
-      "tiktok-domain-verification=c31cb3ab1359c3755fc548a1a60875056dff634430d936d99b825643f08293c4",
-      "google-site-verification=ZKYzB8FoSfCdYZzesihRSd5OsBfrtDOvG6zrqYcMcd0",
+      "C6ekla14kZc9ySs2tWLx5+qoT3uFAcPKfM9z8SnOjKPxduvwIiHCJI75yVt8cOynDwTRpNGAoAu7WBKTky3QhQ==",
       "google-site-verification=GdVvq6F-s2Vr-eD8eeZeo11J1HXnWdA2ZNM_M_IivjY",
+      "facebook-domain-verification=1f6jis8ngyl6xhtopb196nk2jzb6wm",
+      "google-site-verification=lf2HoI19pw29dSNCWe1ex0zlgiGiMSUZjRWjW61SLXk",
+      "SFMC-VXyPhU37JRfzHa1B_-XfXzHjl2WKI7af1rdKH-wR",
+      "atlassian-domain-verification=aD0fVXowmsHVk7AN3xQWoTk3fWQjFOAolW1g5Ae492aMfXofVIdEeASIKtjKtOjn",
+      "SFMC-ZWQ1KX6NcnbWgSDBdMcM5hev9zt7KIW2ujakv25u",
+      "SFMC-aJMC0Gi9MPXTz-l4Iv3LtRXfhaeOB0OCsGwNXkzM",
+      "google-site-verification=7CCNFPK5u6aSDkOkTOxz_yOePZI8_thHJnaJl6EtSwk",
+      "bv-domain-verification=ca416dec3e1078035e8f94141e8542a1207d3415febb81cdecc6f69d491ee03c",
+      "google-site-verification:2kiyv1SjebKUcEmaJ4QtapQe2EcbqPcYmhiJ-XJMZsY",
+      "_ndgc16081saphv6ayms33rbsvl6rj68",
+      "google-site-verification=N-C2RScU5fi3a4_9J7hYoQhoL9H566pkx6gM8PI6Jqo",
+      "launchdarkly-domain-verification=c190690f-6cf2-4084-9ea4-ddbeebcebc80",
       "shopify-verification-code=U5Mvz3J5IScCrDvvcy49c7chv8Iwxp",
-      "adobe-sign-verification=8d7c98c65d9a78aa4fe83e40ac618269",
+      "google-site-verification=K295XYTk_JOny2cGYgQiv5OBkqX-vsPbflRWCajmZmQ",
+      "mongodb-site-verification=NNt4TMRanOtPk2qCvhWpTMXpY8SOb7BO",
+      "pendo-domain-verification=f79d1d3d-277a-4a70-982c-677c77a2f011",
+      "docker-verification=ad83199a-7103-4f01-8acf-41979b12ba00",
+      "SFMC-Gj1r4WT7h7LuH9CgR-ATrs4dQiyHzeRW5mkk_qg9",
+      "_t0t2hodeyznakvwlx7hkbim4oojp151",
+      "MS=ms38857149",
+      "SFMC-z90jhAqnCFzmMAy46Qo1vy13u6YlOQ4afVWEPZmS",
+      "gem-domain-verification=BTTGt2-RR8Zy86kgA6dRzh",
       "hcp-domain-verification=d172505ee1cb87d71e2f402ab1e6123f01c858917022925ee9fe25ce1ea6a398",
+      "Dynatrace-site-verification=fb0772f5-465e-4c26-9c6e-de883a321a31__ko3f16m3vui8oi46qls2l305im",
+      "google-site-verification=SYstg4r0qao99bYV9-4uWYGTHLSIL3Py60GZvR_OJ1c",
+      "perplexity-ai-domain-verification-9026ms=pYLmCXhTHCODhZSFIiyoguCNL",
+      "goodnotes-verification=08e7496e-47ad-4e16-8b9a-12c40efbe0f9",
+      "SFMC-MNg49ZTRiJXS6s5M39xVpTy1s_E-1IHXs9eMp9TV",
       "v=spf1 mx include:_spf.hp.com include:_spf.salesforce.com include:us._netblocks.mimecast.com",
       " include:spf.protection.outlook.com include:standardregisterSPF.smtp.com ip4:205.219.85.237 ip4:74.209.251.23 ip4:198.245.88.159 ip4:198.245.88.160 ip4:198.245.88.161 ip4:198.245.88.162 ~all",
-      "SFMC-ZWQ1KX6NcnbWgSDBdMcM5hev9zt7KIW2ujakv25u",
-      "_ndgc16081saphv6ayms33rbsvl6rj68",
-      "SFMC-MNg49ZTRiJXS6s5M39xVpTy1s_E-1IHXs9eMp9TV",
-      "perplexity-ai-domain-verification-9026ms=pYLmCXhTHCODhZSFIiyoguCNL",
+      "fastly-domain-delegation-ndopinwe32-10142022",
+      "SFMC-TkI3rEvFMq3uO7c3713TrP-cg1S7j0K0iKyNVXIY",
+      "liveramp-site-verification=LpuGIkdkGN7Dr495prdDxPoD0K4Y8zox5B40KiQVq08",
       "SFMC-CrddN9mLDmj3nCgVdj6F1xvJWHcDiUha4ypozOYM",
-      "asv=3ac585f916271e3615c45c5cc1c446af",
+      "canva-site-verification=phuz1k47EJb7b9wGXtCeYw",
+      "adobe-sign-verification=8d7c98c65d9a78aa4fe83e40ac618269",
       "",
       "google-site-verification=iBm5BtEQIPx_1KICdm-iKrhED8pwZmS12JcztEGkEEw\"\"\"",
-      "google-site-verification=K295XYTk_JOny2cGYgQiv5OBkqX-vsPbflRWCajmZmQ",
-      "goodnotes-verification=08e7496e-47ad-4e16-8b9a-12c40efbe0f9",
-      "atlassian-domain-verification=aD0fVXowmsHVk7AN3xQWoTk3fWQjFOAolW1g5Ae492aMfXofVIdEeASIKtjKtOjn",
-      "perplexity-ai-domain-verification-9026ms=OwUIgCvAepDBJvWzS6xNO3zPX"
+      "SFMC-gC-INJ9awb38orE0daCKtYQOdTzA26V3zBYVruOP",
+      "teamviewer-sso-verification=9a8bdacd256d426aadef7c9435cc05f7",
+      "teamviewer-sso-verification=14e16276afc843e58d056742e9f89d26",
+      "02.14.2024",
+      "hpe-greenlake-domain-verification=7151716b744d3467684e427773486a5244794c3172676333326e753537787941",
+      "SFMC-f7skz24QEr_YzGdBqMHR3sC2xGZPNQ3mZdXDFFow",
+      "7155-7871-A6E8-AEB1-5764-4DE3-D4DD-6680",
+      "atlassian-domain-verification=cbeZ9ZZ8XZI9vcf3e6CYWsA3pQ/6Xfc2mSUGdHuK5bWhjzVD0ksLTbFdabq//Sd5",
+      "google-site-verification=ZKYzB8FoSfCdYZzesihRSd5OsBfrtDOvG6zrqYcMcd0",
+      "airtable-verification=fd35e3a14eafa013a4ef8ec307159c57",
+      "perplexity-ai-domain-verification-9026ms=OwUIgCvAepDBJvWzS6xNO3zPX",
+      "google-site-verification=ior6EHEPCvMGbBIF1Cfzg3-yTDw30PaIbETytGrl1zY",
+      "asv=3ac585f916271e3615c45c5cc1c446af",
+      "atlassian-domain-verification=mjss59VLEmjHpiASn3FUy/Hfb/9QbLAAOR9fiqjavAJ6O1uCyNnChSTbNAxo7IIS",
+      "paloaltonetworks-site-verification=1490b1ee9f50f41d487a017ed98225cd2f0bcbed857fa5841aa276a5a009b604",
+      "tiktok-domain-verification=c31cb3ab1359c3755fc548a1a60875056dff634430d936d99b825643f08293c4"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=none; pct=100; fo=1; rua=mailto:l1rcsnp0@ag.dmarcian.com; ruf=mailto:l1rcsnp0@fr.dmarcian.com;"
@@ -263,7 +312,7 @@ Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
       "123.hp.com",
       "www.123.hp.com"
     ],
-    "days_left": 127,
+    "days_left": 126,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -273,7 +322,7 @@ Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
     }
   },
   "ports": {
-    "ip": "13.249.165.75",
+    "ip": "13.249.165.48",
     "open": []
   },
   "https": {
@@ -323,10 +372,29 @@ Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
     "/api/": 302
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 41.1,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "google-site-verification=ajtjung8rHe1-msfHMrttoZdDlZeeoWJNpQ5jNZcqfo",
+    "google-site-verification=GdVvq6F-s2Vr-eD8eeZeo11J1HXnWdA2ZNM_M_IivjY",
+    "facebook-domain-verification=1f6jis8ngyl6xhtopb196nk2jzb6wm",
+    "google-site-verification=lf2HoI19pw29dSNCWe1ex0zlgiGiMSUZjRWjW61SLXk",
+    "atlassian-domain-verification=aD0fVXowmsHVk7AN3xQWoTk3fWQjFOAolW1g5Ae492aMfXofVI"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 9.1,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -335,4 +403,5 @@ Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

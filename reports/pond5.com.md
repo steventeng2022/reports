@@ -7,12 +7,12 @@
 | Target | https://pond5.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | pond5.com |
-| Test date | 2026-09-25 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
+Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,12 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 | 11 | low | CORS3 | CORS: external origin accepted with credentials | CWE-942 |
 | 12 | low | CORS1 | CORS: subdomain origin origin accepted with credentials | CWE-942 |
 | 13 | info | P8 | Missing security.txt | CWE-1038 |
+| 14 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 16 | low | DNS3 | Wildcard DNS detected | CWE-345 |
+| 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 19 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 
 ## Detailed findings
 
@@ -120,6 +126,42 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 14. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 15. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 16. [LOW] Wildcard DNS detected (`DNS3`)
+
+- **CWE:** CWE-345
+- **Detail:** Two random labels (pyfy8fy6jv9cwv.pond5.com and x6s4awj5nwkuyo.pond5.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
+
+### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=JYDGEEK8YrzU6E9EoZldTSk1FhtJ7KdO3hgtDwQqP5M; google-site-verification=zjmmVprufGivs-Vsfh3ZurrqrI_3NVdzpmFgI3ZkJnM; facebook-domain-verification=92m49ul471bnn1nl2t11m7wav1of7c
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of pond5.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 19. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but pond5.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
 ## Evidence (raw response observations)
 
 ```json
@@ -127,33 +169,33 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
   "domain": "pond5.com",
   "dns": {
     "a": [
-      "3.169.121.23",
       "3.169.121.94",
-      "3.169.121.75",
-      "3.169.121.26"
+      "3.169.121.23",
+      "3.169.121.26",
+      "3.169.121.75"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx2.googlemail.com (pref 20)",
-      "alt1.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 0)",
-      "alt2.aspmx.l.google.com (pref 10)"
+      "alt1.aspmx.l.google.com (pref 10)",
+      "aspmx2.googlemail.com (pref 20)"
     ],
     "ns": [
+      "ns-1659.awsdns-15.co.uk.",
       "ns-462.awsdns-57.com.",
       "ns-576.awsdns-08.net.",
-      "ns-1659.awsdns-15.co.uk.",
       "ns-1208.awsdns-23.org."
     ],
     "spf": [
       "MS=ms59996724",
-      "google-site-verification=qvuceO7yLnt4fP8wqJDDx-ezTWbZSSvuZvCXBqN6-XQ",
-      "yahoo-verification-key=fB6vCB3FfQW5U/lwe9qf/TJ2vtko0ulEC/nwgCoQ2dI=",
-      "google-site-verification=JYDGEEK8YrzU6E9EoZldTSk1FhtJ7KdO3hgtDwQqP5M",
-      "facebook-domain-verification=92m49ul471bnn1nl2t11m7wav1of7c",
       "v=spf1 include:_spf.google.com include:amazonses.com include:mail.zendesk.com include:sendgrid.net include:aspmx.sailthru.com ip4:52.205.38.218/32 ip4:50.16.37.18/32 -all",
-      "google-site-verification=zjmmVprufGivs-Vsfh3ZurrqrI_3NVdzpmFgI3ZkJnM"
+      "google-site-verification=JYDGEEK8YrzU6E9EoZldTSk1FhtJ7KdO3hgtDwQqP5M",
+      "google-site-verification=zjmmVprufGivs-Vsfh3ZurrqrI_3NVdzpmFgI3ZkJnM",
+      "facebook-domain-verification=92m49ul471bnn1nl2t11m7wav1of7c",
+      "yahoo-verification-key=fB6vCB3FfQW5U/lwe9qf/TJ2vtko0ulEC/nwgCoQ2dI=",
+      "google-site-verification=qvuceO7yLnt4fP8wqJDDx-ezTWbZSSvuZvCXBqN6-XQ"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@dmarc.250ok.net,mailto:add78bd9e2@rua.easydmarc.us; ruf=mailto:dmarc_fr@dmarc.250ok.net,mailto:dmarc-reports@shutterstock.com; fo=1; pct=100; rf=afrf"
@@ -173,7 +215,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
       "*.pond5.com",
       "pond5.com"
     ],
-    "days_left": 59,
+    "days_left": 58,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -183,7 +225,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
     }
   },
   "ports": {
-    "ip": "3.169.121.23",
+    "ip": "3.169.121.94",
     "open": []
   },
   "https": {
@@ -238,10 +280,30 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
     "/api/": 403
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 6.4,
-  "rechecked": "2026-09-25 17:50 UTC"
+  "wildcard_dns": true,
+  "apex_txt": [
+    "google-site-verification=JYDGEEK8YrzU6E9EoZldTSk1FhtJ7KdO3hgtDwQqP5M",
+    "google-site-verification=zjmmVprufGivs-Vsfh3ZurrqrI_3NVdzpmFgI3ZkJnM",
+    "facebook-domain-verification=92m49ul471bnn1nl2t11m7wav1of7c",
+    "yahoo-verification-key=fB6vCB3FfQW5U/lwe9qf/TJ2vtko0ulEC/nwgCoQ2dI=",
+    "google-site-verification=qvuceO7yLnt4fP8wqJDDx-ezTWbZSSvuZvCXBqN6-XQ"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 7.1,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -250,4 +312,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

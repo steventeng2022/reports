@@ -7,12 +7,12 @@
 | Target | https://yahoo.com/ |
 | Bug bounty program | Yahoo! |
 | Listed scope domain | yahoo.com |
-| Test date | 2026-09-25 10:29 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
+Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -23,6 +23,12 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
 | 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 6 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 7 | info | H6 | Server technology disclosure | CWE-200 |
+| 8 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
+| 9 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
+| 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -35,7 +41,7 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
 ### 2. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires in 26 days (notAfter Oct 21 23:59:59 2026 GMT).
+- **Detail:** Certificate expires in 25 days (notAfter Oct 21 23:59:59 2026 GMT).
 - **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
 ### 3. [INFO] Technology fingerprint (`TECH1`)
@@ -72,6 +78,42 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
+### 8. [LOW] SPF record has no explicit all mechanism (implicit +all) (`MAIL6`)
+
+- **CWE:** CWE-285
+- **Detail:** Without -all/~all/+all the SPF record implicitly authorizes all senders.
+- **Recommendation:** End the SPF record with -all or ~all.
+
+### 9. [LOW] MTA-STS TXT published but policy file missing/invalid (`MAIL12`)
+
+- **CWE:** CWE-285
+- **Detail:** GET https://mta-sts.yahoo.com/.well-known/mta-sts/policy.txt -> 404
+- **Recommendation:** Publish a valid policy.txt (version, max_age, mode) or remove the TXT record.
+
+### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=2b8irRvU5a2h4Mb-H_fdqNrqWjS00qmPfPcWqm8BhxI; google-site-verification=w4N2bNopAWw1xYrdXKORILxx-WW3_LIiyX6dIMIidgk; google-site-verification=GLp01gkFNopm_JItbLxml4iuVbTgJa3rKu0-eq1RvsE
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of yahoo.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 12. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but yahoo.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 13. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 23 disallow path(s), e.g. /info/p.gif, /p/, /r/, /bin/, /caas/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -79,20 +121,20 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
   "domain": "yahoo.com",
   "dns": {
     "a": [
+      "98.137.11.163",
       "74.6.231.21",
-      "74.6.143.25",
-      "74.6.143.26",
       "98.137.11.164",
+      "74.6.143.26",
       "74.6.231.20",
-      "98.137.11.163"
+      "74.6.143.25"
     ],
     "aaaa": [
       "2001:4998:24:120d::1:0",
-      "2001:4998:44:3507::8000",
-      "2001:4998:124:1507::f001",
       "2001:4998:24:120d::1:1",
+      "2001:4998:124:1507::f000",
+      "2001:4998:44:3507::8000",
       "2001:4998:44:3507::8001",
-      "2001:4998:124:1507::f000"
+      "2001:4998:124:1507::f001"
     ],
     "cname": null,
     "mx": [
@@ -101,25 +143,25 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
       "mta7.am0.yahoodns.net (pref 1)"
     ],
     "ns": [
-      "ns4.yahoo.com.",
-      "ns1.yahoo.com.",
       "ns2.yahoo.com.",
+      "ns3.yahoo.com.",
+      "ns4.yahoo.com.",
       "ns5.yahoo.com.",
-      "ns3.yahoo.com."
+      "ns1.yahoo.com."
     ],
     "spf": [
-      "google-site-verification=GLp01gkFNopm_JItbLxml4iuVbTgJa3rKu0-eq1RvsE",
-      "google-site-verification=w4N2bNopAWw1xYrdXKORILxx-WW3_LIiyX6dIMIidgk",
-      "Zoom=13284637",
-      "_globalsign-domain-verification=3rQPnwMFlx5UmUzSMV-JeDoNEMeG8BYFKvKDsHEzr9",
       "google-site-verification=2b8irRvU5a2h4Mb-H_fdqNrqWjS00qmPfPcWqm8BhxI",
-      "edb3bff2c0d64622a9b2250438277a59",
-      "google-site-verification=GU8WAl0zPqaxdcZqDjuN7pqdfPCpR9Amz9rwxMG91qw",
-      "google-site-verification=Z3-Vh6zqUMgybVH4wQl1GxKSKN7JE13kyCyeZ3TZZ-I",
-      "facebook-domain-verification=gysqrcd69g0ej34f4jfn0huivkym1p",
       "v=spf1 redirect=_spf.mail.yahoo.com",
-      "google-site-verification=xoBvU6aKxP0gYgNL0iXqF0EccAg6nFrO7XxsHnc3iNQ",
-      "google-site-verification=2b0Glh8l2icXIAgAcjOcFx16Jt26yWDgEyrk5hPD-ZY"
+      "google-site-verification=w4N2bNopAWw1xYrdXKORILxx-WW3_LIiyX6dIMIidgk",
+      "google-site-verification=GLp01gkFNopm_JItbLxml4iuVbTgJa3rKu0-eq1RvsE",
+      "facebook-domain-verification=gysqrcd69g0ej34f4jfn0huivkym1p",
+      "_globalsign-domain-verification=3rQPnwMFlx5UmUzSMV-JeDoNEMeG8BYFKvKDsHEzr9",
+      "google-site-verification=GU8WAl0zPqaxdcZqDjuN7pqdfPCpR9Amz9rwxMG91qw",
+      "edb3bff2c0d64622a9b2250438277a59",
+      "google-site-verification=2b0Glh8l2icXIAgAcjOcFx16Jt26yWDgEyrk5hPD-ZY",
+      "google-site-verification=Z3-Vh6zqUMgybVH4wQl1GxKSKN7JE13kyCyeZ3TZZ-I",
+      "Zoom=13284637",
+      "google-site-verification=xoBvU6aKxP0gYgNL0iXqF0EccAg6nFrO7XxsHnc3iNQ"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:d@rua.agari.com; ruf=mailto:d@ruf.agari.com;"
@@ -153,7 +195,7 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
       "*.att.yahoo.com",
       "*.amp.yimg.com"
     ],
-    "days_left": 26,
+    "days_left": 25,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -163,7 +205,7 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
     }
   },
   "ports": {
-    "ip": "74.6.231.21",
+    "ip": "98.137.11.163",
     "open": []
   },
   "https": {
@@ -213,10 +255,48 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 40.0,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "google-site-verification=2b8irRvU5a2h4Mb-H_fdqNrqWjS00qmPfPcWqm8BhxI",
+    "google-site-verification=w4N2bNopAWw1xYrdXKORILxx-WW3_LIiyX6dIMIidgk",
+    "google-site-verification=GLp01gkFNopm_JItbLxml4iuVbTgJa3rKu0-eq1RvsE",
+    "facebook-domain-verification=gysqrcd69g0ej34f4jfn0huivkym1p",
+    "_globalsign-domain-verification=3rQPnwMFlx5UmUzSMV-JeDoNEMeG8BYFKvKDsHEzr9"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/info/p.gif",
+      "/p/",
+      "/r/",
+      "/bin/",
+      "/caas/",
+      "/blank.html",
+      "/includes/",
+      "/_td_api",
+      "/tdv2_fp",
+      "/nel_ms",
+      "/fp_ms",
+      "/sports_fp_ms",
+      "/search_ms",
+      "/_tdpp_api",
+      "/_remote"
+    ]
+  },
+  "elapsed_s": 27.6,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -225,4 +305,5 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

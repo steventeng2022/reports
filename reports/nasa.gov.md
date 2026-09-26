@@ -7,12 +7,12 @@
 | Target | https://nasa.gov/ |
 | Bug bounty program | Nasa VDP |
 | Listed scope domain | nasa.gov |
-| Test date | 2026-09-25 10:03 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
+Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,6 +26,10 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 | 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 9 | info | H6 | Server technology disclosure | CWE-200 |
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
+| 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
@@ -97,6 +101,30 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 11. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 12. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=oNzRM7G9GIAL/LLP5c7sPOQiAHsHrQ1hKcU7GGZ0ADRZJFhUB/; apple-domain-verification=qw51K0kGzRHLbN9S; google-site-verification=ZKpcXLqaBX3jND8Fybkvr3MaaOpC_6MRjXBYm0XNkJQ
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of nasa.gov has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -114,36 +142,36 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
       "nasa-gov.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "a5-66.akam.net.",
-      "a9-64.akam.net.",
-      "a14-67.akam.net.",
-      "a8-66.akam.net.",
       "a1-32.akam.net.",
-      "a12-64.akam.net."
+      "a5-66.akam.net.",
+      "a12-64.akam.net.",
+      "a14-67.akam.net.",
+      "a9-64.akam.net.",
+      "a8-66.akam.net."
     ],
     "spf": [
-      "pvv8mevb6qrmqvqi8alhmreg42",
-      "1HqDXPHdt8JOt02qy6FB+l3+Z1zXScqcPxlE/faXjZLS9FRbVhHCUCHQE2bWofZt2TWKPchjjma3Pqli4FULFw==",
-      "google-site-verification=BUxd0xTJY4ZjGohBwKDpNms-yOATz92Y54kgme4eKHs",
-      "MS=ms93625004",
-      "nmh1f9tgxhmfmjkshg7qh595drdfgnf1",
-      "smartsheet-site-validation=gnL11HAQqHlH1tQabmxKf12b5ZCNxJfx",
-      "v=spf1 include:_spf-4a.nasa.gov include:_spf-4b.nasa.gov include:_spf-4c.nasa.gov include:_spf-4d.nasa.gov include:_spf-4g.nasa.gov include:_spf-4m.nasa.gov include:_spf-4x.nasa.gov include:_spf-6a.nasa.gov include:spf.protection.outlook.com -all",
-      "atlassian-sending-domain-verification=4730ddf4-d24e-4a91-9612-cb14998d0e47",
-      "openai-domain-verification=dv-CO0ENDLO7EB9V5E4JnmE6pS8",
-      "webexdomainverification.1YPST=f98a61ea-b92e-41f2-87aa-5651b2af43b8",
-      "amazonses:PvUL7T41LO87xjr+2nfgxTu11i75NeT9HzY3xYv82Ko=",
-      "mj8729pr7k44dx62wwtx5745xr5njzkn",
-      "docusign=4025560e-93c9-4920-bb13-849c6fc35d58",
-      "amazonses:FXFVeQnEO3Wua+aY/H4aOIH3sSwteE+7YpGrwm8kF/s=",
       "atlassian-domain-verification=oNzRM7G9GIAL/LLP5c7sPOQiAHsHrQ1hKcU7GGZ0ADRZJFhUB/upe935/2RYq/jO",
-      "HRlHXyx8jXo+9pIaJWFVBPOLVfeI2biAj3VT1woaTFpp05D5/q6AoD5KpUgws539/d2jl8wBJiEr58OEsRVugQ==",
-      "uechcfoubh169akghg2214p54n",
+      "amazonses:PvUL7T41LO87xjr+2nfgxTu11i75NeT9HzY3xYv82Ko=",
       "n39n7frbwnkhcmky2nps779y4ttn61wl",
-      "asv=12d88629ae88f5017642bfc4981f8dd7",
       "apple-domain-verification=qw51K0kGzRHLbN9S",
+      "nmh1f9tgxhmfmjkshg7qh595drdfgnf1",
+      "mj8729pr7k44dx62wwtx5745xr5njzkn",
+      "v=spf1 include:_spf-4a.nasa.gov include:_spf-4b.nasa.gov include:_spf-4c.nasa.gov include:_spf-4d.nasa.gov include:_spf-4g.nasa.gov include:_spf-4m.nasa.gov include:_spf-4x.nasa.gov include:_spf-6a.nasa.gov include:spf.protection.outlook.com -all",
+      "HRlHXyx8jXo+9pIaJWFVBPOLVfeI2biAj3VT1woaTFpp05D5/q6AoD5KpUgws539/d2jl8wBJiEr58OEsRVugQ==",
+      "asv=12d88629ae88f5017642bfc4981f8dd7",
+      "uechcfoubh169akghg2214p54n",
+      "google-site-verification=ZKpcXLqaBX3jND8Fybkvr3MaaOpC_6MRjXBYm0XNkJQ",
+      "google-site-verification=BUxd0xTJY4ZjGohBwKDpNms-yOATz92Y54kgme4eKHs",
+      "smartsheet-site-validation=gnL11HAQqHlH1tQabmxKf12b5ZCNxJfx",
+      "amazonses:FXFVeQnEO3Wua+aY/H4aOIH3sSwteE+7YpGrwm8kF/s=",
+      "pvv8mevb6qrmqvqi8alhmreg42",
+      "atlassian-sending-domain-verification=4730ddf4-d24e-4a91-9612-cb14998d0e47",
       "openai-domain-verification=dv-Fbq5PVntP9qLelQPUBKniDjr",
-      "google-site-verification=ZKpcXLqaBX3jND8Fybkvr3MaaOpC_6MRjXBYm0XNkJQ"
+      "MS=ms93625004",
+      "openai-domain-verification=dv-CO0ENDLO7EB9V5E4JnmE6pS8",
+      "1HqDXPHdt8JOt02qy6FB+l3+Z1zXScqcPxlE/faXjZLS9FRbVhHCUCHQE2bWofZt2TWKPchjjma3Pqli4FULFw==",
+      "docusign=4025560e-93c9-4920-bb13-849c6fc35d58",
+      "webexdomainverification.1YPST=f98a61ea-b92e-41f2-87aa-5651b2af43b8"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarcmail@mail.nasa.gov,mailto:reports@dmarc.cyber.dhs.gov"
@@ -163,7 +191,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
       "nasa.gov",
       "www.nasa.gov"
     ],
-    "days_left": 45,
+    "days_left": 44,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -223,10 +251,32 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
     "/api/": 302
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 46.1,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "atlassian-domain-verification=oNzRM7G9GIAL/LLP5c7sPOQiAHsHrQ1hKcU7GGZ0ADRZJFhUB/",
+    "apple-domain-verification=qw51K0kGzRHLbN9S",
+    "google-site-verification=ZKpcXLqaBX3jND8Fybkvr3MaaOpC_6MRjXBYm0XNkJQ",
+    "google-site-verification=BUxd0xTJY4ZjGohBwKDpNms-yOATz92Y54kgme4eKHs",
+    "atlassian-sending-domain-verification=4730ddf4-d24e-4a91-9612-cb14998d0e47"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.3",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true
+  },
+  "elapsed_s": 16.3,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -235,4 +285,5 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

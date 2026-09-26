@@ -7,12 +7,12 @@
 | Target | https://digitalocean.com/ |
 | Bug bounty program | DigitalOcean |
 | Listed scope domain | digitalocean.com |
-| Test date | 2026-09-25 09:20 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:43 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 | 11 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 12 | info | H6 | Server technology disclosure | CWE-200 |
 | 13 | info | P8 | Missing security.txt | CWE-1038 |
+| 14 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -41,13 +46,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.19.173.68:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.19.174.68:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.19.173.68:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.19.174.68:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -119,6 +124,36 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 14. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 15. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=fuHvbNU2hYfbN9RoK0XFtSLh0qAMAI9Ucw42eYDUTOc; parallels-domain-verification=fa1f1607144e4383bb6e48e2e045d550c15ce091b4894845b9; anthropic-domain-verification-dh0bxk=TJRyEfjJC38Zqu4LB1dulxSBf
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of digitalocean.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 4 disallow path(s), e.g. /v1/login, /auth-error, /community/login, /community/register
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -126,8 +161,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   "domain": "digitalocean.com",
   "dns": {
     "a": [
-      "104.19.173.68",
-      "104.19.174.68"
+      "104.19.174.68",
+      "104.19.173.68"
     ],
     "aaaa": [
       "2606:4700::6813:ad44",
@@ -135,51 +170,51 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     ],
     "cname": null,
     "mx": [
-      "aspmx2.googlemail.com (pref 10)",
-      "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx3.googlemail.com (pref 10)"
+      "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx3.googlemail.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
+      "aspmx2.googlemail.com (pref 10)"
     ],
     "ns": [
       "kim.ns.cloudflare.com.",
       "walt.ns.cloudflare.com."
     ],
     "spf": [
-      "stripe-verification=421878fd7101a929f0ea36163be2295b3fc012b9a0bc99ffd484a83e60996e01",
-      "stripe-verification=a973e20b4ad2b58603dc6df1e1511f1f0974766512c2ff5c5533099a59fb115c",
-      "teamviewer-sso-verification=614425da1843404ebe7504af4bff0dcd",
-      "teamviewer-sso-verification=5c39eae7664e4e80a7e5bae6bc4d3991",
-      "stripe-verification=de7b481fb94c6c8a20a9c55ff303f96a039ef4fc3131ea11364d9916c4e9a21f",
-      "google-site-verification=6_lXIKeIJtrPwaQhZcDcaXQja4ByeiFU2gDcTMuTijQ",
-      "stripe-verification=b69a661304f47463194cd46b2c35c8f8e1862539e29f1bddbb69579426a53ef9",
-      "dtuqIuOjtDLiAl7YTXvTJJ78bbQq6ACm",
-      "stripe-verification=dab9251d3476acbdb63d9c93c21c8371c4d9143bdfc7214ee2611326f3b051d3",
-      "status-page-domain-verification=tj3q88fkv3j1",
-      "sprout-social-db4e46f7-f461-4675-b4d5-a172a9a30ade",
-      "anthropic-domain-verification-dh0bxk=TJRyEfjJC38Zqu4LB1dulxSBf",
-      "v=spf1 include:spf.digitalocean.com include:_spf.google.com include:_spf.salesforce.com include:mg-spf.greenhouse.io include:helpscoutemail.com -all",
       "google-site-verification=fuHvbNU2hYfbN9RoK0XFtSLh0qAMAI9Ucw42eYDUTOc",
-      "smartsheet-site-validation=TLcMGw2JGRoifAi2GdDaLat1-825u5vb",
-      "stripe-verification=7744401ba1e29e328fe564961edab72baa98a6e918e0079bb22df62cb5bf6f23",
-      "stripe-verification=3fe3198a843102a2e47a8eb52f0953da4c982db06a26d5dce9a7624cad785d5e",
-      "stripe-verification=8DF3E7E1EAC07BB343B0BDF23F93163838648386C6114E107E085B6F170E67DE",
-      "stripe-verification=ef8010dac57762d5dbc26b1aab014279f3ef0ebc3f06c5ae6c42c33dba2233b0",
-      "_uz7uxsojbrthbcfwkfhrsd3abwyzryf",
-      "mixpanel-domain-verify=4ff6bde2-746a-4794-87e3-6f17921293c8",
-      "stripe-verification=8BF765DED74005431CDF0A65578C22B307C4B648290C808972410FE2DA6BB589",
-      "stripe-verification=2BCFA2CD117F45F83F39DEDA5A7E6106299C28A23B5010E6E3BA5FDB2F61F54D",
-      "stripe-verification=9FCE4410B23190F9C5C7EF5FDFEFEE821AF589CB703E6C8C6DA924FD4A99475C",
-      "stripe-verification=45e8c480f3cd8e399a5a575cd6907be931bdb63ffa4a474b08e220d8c391a2b2",
-      "stripe-verification=F691FE072DF56977FEC2B21F484548F5F150CA5A9E9B972A2479AE04C2C60F35",
-      "asv=b5f543d370a3a7fee9ff29f31d312e65",
       "parallels-domain-verification=fa1f1607144e4383bb6e48e2e045d550c15ce091b4894845b934496071c81db0",
-      "jamf-site-verification=WcdOvJYHqFoQ42iFjqJVsg",
+      "anthropic-domain-verification-dh0bxk=TJRyEfjJC38Zqu4LB1dulxSBf",
+      "dtuqIuOjtDLiAl7YTXvTJJ78bbQq6ACm",
+      "stripe-verification=F691FE072DF56977FEC2B21F484548F5F150CA5A9E9B972A2479AE04C2C60F35",
+      "stripe-verification=b69a661304f47463194cd46b2c35c8f8e1862539e29f1bddbb69579426a53ef9",
+      "mixpanel-domain-verify=4ff6bde2-746a-4794-87e3-6f17921293c8",
       "stripe-verification=1C9C705D562471C3AA3D743AB2EC0ABBF75B3A775CA7A086A3F65835BACFB2CB",
-      "MS=ms33165602",
-      "jetbrains-domain-verification=1hmiczqdw7qr1se179z8tqxfy",
       "cursor-domain-verification-362gj0=wtPDNjMWC1AkVAKVJ5hz5JACn",
-      "atlassian-domain-verification=vNGhwIzzcLrF7H9pazlsH17hC9W5zBEPX6o0C8f4hFfguiPaZdwZg3O4wSS8cYZ0"
+      "MS=ms33165602",
+      "v=spf1 include:spf.digitalocean.com include:_spf.google.com include:_spf.salesforce.com include:mg-spf.greenhouse.io include:helpscoutemail.com -all",
+      "stripe-verification=9FCE4410B23190F9C5C7EF5FDFEFEE821AF589CB703E6C8C6DA924FD4A99475C",
+      "stripe-verification=8BF765DED74005431CDF0A65578C22B307C4B648290C808972410FE2DA6BB589",
+      "teamviewer-sso-verification=614425da1843404ebe7504af4bff0dcd",
+      "stripe-verification=dab9251d3476acbdb63d9c93c21c8371c4d9143bdfc7214ee2611326f3b051d3",
+      "jamf-site-verification=WcdOvJYHqFoQ42iFjqJVsg",
+      "google-site-verification=6_lXIKeIJtrPwaQhZcDcaXQja4ByeiFU2gDcTMuTijQ",
+      "stripe-verification=2BCFA2CD117F45F83F39DEDA5A7E6106299C28A23B5010E6E3BA5FDB2F61F54D",
+      "stripe-verification=7744401ba1e29e328fe564961edab72baa98a6e918e0079bb22df62cb5bf6f23",
+      "stripe-verification=8DF3E7E1EAC07BB343B0BDF23F93163838648386C6114E107E085B6F170E67DE",
+      "stripe-verification=45e8c480f3cd8e399a5a575cd6907be931bdb63ffa4a474b08e220d8c391a2b2",
+      "stripe-verification=3fe3198a843102a2e47a8eb52f0953da4c982db06a26d5dce9a7624cad785d5e",
+      "asv=b5f543d370a3a7fee9ff29f31d312e65",
+      "stripe-verification=ef8010dac57762d5dbc26b1aab014279f3ef0ebc3f06c5ae6c42c33dba2233b0",
+      "stripe-verification=a973e20b4ad2b58603dc6df1e1511f1f0974766512c2ff5c5533099a59fb115c",
+      "stripe-verification=de7b481fb94c6c8a20a9c55ff303f96a039ef4fc3131ea11364d9916c4e9a21f",
+      "jetbrains-domain-verification=1hmiczqdw7qr1se179z8tqxfy",
+      "atlassian-domain-verification=vNGhwIzzcLrF7H9pazlsH17hC9W5zBEPX6o0C8f4hFfguiPaZdwZg3O4wSS8cYZ0",
+      "teamviewer-sso-verification=5c39eae7664e4e80a7e5bae6bc4d3991",
+      "stripe-verification=421878fd7101a929f0ea36163be2295b3fc012b9a0bc99ffd484a83e60996e01",
+      "_uz7uxsojbrthbcfwkfhrsd3abwyzryf",
+      "smartsheet-site-validation=TLcMGw2JGRoifAi2GdDaLat1-825u5vb",
+      "status-page-domain-verification=tj3q88fkv3j1",
+      "sprout-social-db4e46f7-f461-4675-b4d5-a172a9a30ade"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:fdpfb1lo@ag.dmarcian.com; ruf=mailto:fdpfb1lo@fr.dmarcian.com;"
@@ -199,7 +234,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "digitalocean.com",
       "*.digitalocean.com"
     ],
-    "days_left": 75,
+    "days_left": 74,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -209,7 +244,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     }
   },
   "ports": {
-    "ip": "104.19.173.68",
+    "ip": "104.19.174.68",
     "open": [
       8080,
       8443
@@ -268,10 +303,37 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 117.2,
-  "rechecked": "2026-09-25 10:43 UTC"
+  "apex_txt": [
+    "google-site-verification=fuHvbNU2hYfbN9RoK0XFtSLh0qAMAI9Ucw42eYDUTOc",
+    "parallels-domain-verification=fa1f1607144e4383bb6e48e2e045d550c15ce091b4894845b9",
+    "anthropic-domain-verification-dh0bxk=TJRyEfjJC38Zqu4LB1dulxSBf",
+    "stripe-verification=F691FE072DF56977FEC2B21F484548F5F150CA5A9E9B972A2479AE04C2C6",
+    "stripe-verification=b69a661304f47463194cd46b2c35c8f8e1862539e29f1bddbb69579426a5"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/v1/login",
+      "/auth-error",
+      "/community/login",
+      "/community/register"
+    ]
+  },
+  "elapsed_s": 5.0,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -280,4 +342,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://boredpanda.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | boredpanda.com |
-| Test date | 2026-09-26 01:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:40 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 6, Info: 8)
+Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,7 +29,12 @@ Total findings: **14** (High: 0, Medium: 0, Low: 6, Info: 8)
 | 11 | low | RED7 | HTTPS root redirects to plain HTTP | CWE-319 |
 | 12 | low | RED1 | HTTP redirect points to another host over plain HTTP | CWE-319 |
 | 13 | info | P8 | Missing security.txt | CWE-1038 |
-| 14 | info | CT1 | 44 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 14 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 19 | info | CT1 | 44 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -122,7 +127,37 @@ Total findings: **14** (High: 0, Medium: 0, Low: 6, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 14. [INFO] 44 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 14. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 15. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM; google-site-verification=E-VWzamHJVxn2aKoEbD2dNX18GG_rEuHAJIAcsZ9JQY; trustpilot-one-time-verification-id=9eb08d90-b03e-4784-821f-4256acbae37d
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of boredpanda.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 11 disallow path(s), e.g. /, /, /, /, /?s=
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 19. [INFO] 44 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: 2.stage.boredpanda.com, api.backbone.boredpanda.com, api.boredpanda.com, api.ideas.boredpanda.com, assets.boredpanda.com, growthbook-api.internal.boredpanda.com, growthbook.internal.boredpanda.com, img.boredpanda.com, img.stage.boredpanda.com, jobs.boredpanda.com
@@ -135,10 +170,10 @@ Total findings: **14** (High: 0, Medium: 0, Low: 6, Info: 8)
   "domain": "boredpanda.com",
   "dns": {
     "a": [
-      "44.216.138.152",
-      "98.86.20.9",
-      "100.57.211.191",
-      "3.212.94.116"
+      "35.168.213.86",
+      "44.220.98.194",
+      "44.221.107.254",
+      "54.204.103.197"
     ],
     "aaaa": [],
     "cname": null,
@@ -146,26 +181,26 @@ Total findings: **14** (High: 0, Medium: 0, Low: 6, Info: 8)
       "smtp.google.com (pref 1)"
     ],
     "ns": [
-      "ns-972.awsdns-57.net.",
       "ns-1425.awsdns-50.org.",
+      "ns-972.awsdns-57.net.",
       "ns-1985.awsdns-56.co.uk.",
       "ns-173.awsdns-21.com."
     ],
     "spf": [
-      "google-site-verification=E-VWzamHJVxn2aKoEbD2dNX18GG_rEuHAJIAcsZ9JQY",
-      "google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM",
-      "v=spf1 a mx include:_spf.mlsend.com include:_spf.google.com include:spf.mailjet.com ~all",
-      "google-site-verification=KIIUiAJna3_1-eDilP2A9ENUy2oiWftdyHXyCMhnz3s",
       "brevo-code:59ddf176bd2029a7dea7a297ba5967ef",
-      "MS=ms42183495",
+      "google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM",
+      "google-site-verification=E-VWzamHJVxn2aKoEbD2dNX18GG_rEuHAJIAcsZ9JQY",
+      "trustpilot-one-time-verification-id=9eb08d90-b03e-4784-821f-4256acbae37d",
+      "anthropic-domain-verification-qp0t5e=qyjWbKPmD6hTz77lb10rBJ2hi",
       "google-site-verification=XuF5a9eahvWOgNLrh7WkeiFQpnIjdbpEgbWPZ0a1oYY",
       "google-site-verification=MxIMpuiT8s52Vltu5GksnMWb3AmEfjHaawL4ii8SD_Q",
-      "google-site-verification=QyUw3s4mkxY3wZMMy4oMT3yHhdCqtiBuusYhmvAdgVM",
+      "MS=ms42183495",
+      "google-site-verification=KIIUiAJna3_1-eDilP2A9ENUy2oiWftdyHXyCMhnz3s",
+      "v=spf1 a mx include:_spf.mlsend.com include:_spf.google.com include:spf.mailjet.com ~all",
       "MS=E04C457D679181C1054598D9F097241502D2B900",
-      "anthropic-domain-verification-qp0t5e=qyjWbKPmD6hTz77lb10rBJ2hi",
-      "trustpilot-one-time-verification-id=9eb08d90-b03e-4784-821f-4256acbae37d",
+      "facebook-domain-verification=fgwdxllanmj6qtcuvmke1si9ec60ia",
       "apple-domain-verification=hops-EdsP_znUZ0tgSnyMFqx9WcQ6J6CLUlLwNJuseY",
-      "facebook-domain-verification=fgwdxllanmj6qtcuvmke1si9ec60ia"
+      "google-site-verification=QyUw3s4mkxY3wZMMy4oMT3yHhdCqtiBuusYhmvAdgVM"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:ipm7lrx@ar.glockapps.com,mailto:ipm5swv@ar.glockapps.com,mailto:dmarc_agg@vali.email; ruf=mailto:ipm7lrx@fr.glockapps.com,mailto:ipm5swv@fr.glockapps.com; fo=1;"
@@ -197,7 +232,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 6, Info: 8)
     }
   },
   "ports": {
-    "ip": "44.216.138.152",
+    "ip": "35.168.213.86",
     "open": []
   },
   "https": {
@@ -288,8 +323,42 @@ Total findings: **14** (High: 0, Medium: 0, Low: 6, Info: 8)
       "img.stage.boredpanda.com"
     ]
   },
-  "elapsed_s": 43.1,
-  "rechecked": "2026-09-26 03:17 UTC"
+  "apex_txt": [
+    "google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM",
+    "google-site-verification=E-VWzamHJVxn2aKoEbD2dNX18GG_rEuHAJIAcsZ9JQY",
+    "trustpilot-one-time-verification-id=9eb08d90-b03e-4784-821f-4256acbae37d",
+    "anthropic-domain-verification-qp0t5e=qyjWbKPmD6hTz77lb10rBJ2hi",
+    "google-site-verification=XuF5a9eahvWOgNLrh7WkeiFQpnIjdbpEgbWPZ0a1oYY"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.2",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/",
+      "/",
+      "/",
+      "/",
+      "/?s=",
+      "/search/",
+      "/*wp-admin/",
+      "/*wp-includes",
+      "/*wp-content",
+      "/*wp-json",
+      "/contributor/"
+    ]
+  },
+  "elapsed_s": 34.5,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -298,4 +367,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 6, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

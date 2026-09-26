@@ -7,12 +7,12 @@
 | Target | https://metmuseum.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | metmuseum.org |
-| Test date | 2026-09-25 10:02 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,6 +26,13 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 | 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 9 | info | H6 | Server technology disclosure | CWE-200 |
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
+| 11 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -97,6 +104,48 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 11. [LOW] SPF record has no explicit all mechanism (implicit +all) (`MAIL6`)
+
+- **CWE:** CWE-285
+- **Detail:** Without -all/~all/+all the SPF record implicitly authorizes all senders.
+- **Recommendation:** End the SPF record with -all or ~all.
+
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: extensis-domain-verification=64d62f29-f7c1-457b-b212-9972174d08b4; google-site-verification=hrppBmJ36sxIUGM5QO4H2KSNFpNInE51Rpl8ywfVKD8; adobe-idp-site-verification=7cdfc1c42bc9f50fb0dd80a29eb348968c45a33bfba6f8937b96
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of metmuseum.org has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but metmuseum.org is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 17. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 6 disallow path(s), e.g. /temp, /upload, /ghidorah, /style-guide, /style
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -112,34 +161,34 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
       "metmuseum-org.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "pdns92.ultradns.biz.",
-      "pdns92.ultradns.com.",
       "pdns92.ultradns.org.",
+      "pdns92.ultradns.com.",
+      "pdns92.ultradns.biz.",
       "pdns92.ultradns.net."
     ],
     "spf": [
-      "_globalsign-domain-verification=Iiihy-iv_vLdlIMtHvh-aCdqO2T53oCoknhW44njXn",
       "_v7iu22xssho63kc3sqq8vkuf0brhpig",
-      "yahoo-verification-key=M30EgMMvntbzmly9p6SjiP1owtFPrCNOnyer5Wnwf5w=",
-      "google-site-verification=H3p9Zh2qyUXRQN9Z7Pyo8jAQKATelcFBGYJUDcr0Qk0",
-      "anthropic-domain-verification-fwca5e=etIfJNLc1ugZsnUY9xuc9vCWW",
-      "adobe-idp-site-verification=7cdfc1c42bc9f50fb0dd80a29eb348968c45a33bfba6f8937b962f4dd796ed01",
       "extensis-domain-verification=64d62f29-f7c1-457b-b212-9972174d08b4",
       "google-site-verification=hrppBmJ36sxIUGM5QO4H2KSNFpNInE51Rpl8ywfVKD8",
-      "_globalsign-domain-verification=e0UD0VNNHSeLLHVn1VGMLAh6UuhGGncs1mt_b10K1e",
-      "zcCtOkNeEUS5AhURLjAKgUup4mBdbnfcdxpTMP9F5MG5cP86XWHAxif02eiy2wsVIMuwGiKZ+fLbYAzTd8WPxw==",
-      "MS=ms31930746 ",
-      "ZOOM_verify_4DQ4So2gQjaBPJy5E4oSZw",
-      "_globalsign-domain-verification=3SUS0WYrw3pgtCV8LhJ0CNa7rPISdz4ZfGaMxjfEd4",
-      "_1mnx599abfj9txyutcs6ekxv2jn5369",
+      "bw=U/atUAMQ0LSMGwn/d1ymtfHNKm7lpzUtDVCL0uGFAEUg",
       "7067qnns8u7dmfhmavt7i4f5vc",
+      "adobe-idp-site-verification=7cdfc1c42bc9f50fb0dd80a29eb348968c45a33bfba6f8937b962f4dd796ed01",
+      "google-site-verification=H3p9Zh2qyUXRQN9Z7Pyo8jAQKATelcFBGYJUDcr0Qk0",
+      "_globalsign-domain-verification=Iiihy-iv_vLdlIMtHvh-aCdqO2T53oCoknhW44njXn",
+      "ZOOM_verify_4DQ4So2gQjaBPJy5E4oSZw",
       "v=spf1 ip4:209.177.165.160 ip4:209.177.169.160 ip4:209.177.169.164 ip4:50.16.201.234 ip4:198.168.106.0/23 ip4:209.177.160.9/32 ip4:209.177.169.161/32 ip4:209.177.170.161/32 ip4:216.17.112.211/32 ip4:206.107.42.249/32 ip4:206.107.42.254/32 ip4:198.168.107.",
       "24 ip4:69.72.32.253 ip4:69.72.34.120 ip4:69.72.41.2 ip4:69.72.41.28 ip4:69.72.45.120 ip4:69.72.47.188 ip4:159.135.226.248 ip4:159.135.233.165 ip4:198.168.106.101 include:spf.protection.outlook.com include:_shortspf.launchmetrics.com include:em4317.metmuse",
       "um.org -all",
+      "yahoo-verification-key=M30EgMMvntbzmly9p6SjiP1owtFPrCNOnyer5Wnwf5w=",
+      "_1mnx599abfj9txyutcs6ekxv2jn5369",
+      "zcCtOkNeEUS5AhURLjAKgUup4mBdbnfcdxpTMP9F5MG5cP86XWHAxif02eiy2wsVIMuwGiKZ+fLbYAzTd8WPxw==",
+      "_globalsign-domain-verification=3SUS0WYrw3pgtCV8LhJ0CNa7rPISdz4ZfGaMxjfEd4",
+      "anthropic-domain-verification-fwca5e=etIfJNLc1ugZsnUY9xuc9vCWW",
+      "_globalsign-domain-verification=e0UD0VNNHSeLLHVn1VGMLAh6UuhGGncs1mt_b10K1e",
       "_globalsign-domain-verification=pYvnbIbmL21kgEXtHUixR6GwqZYBpnxR-WrjYRc-Nx",
-      "_p3a3a89hww4r6t7rd0j5catko4ly0c9",
-      "bw=U/atUAMQ0LSMGwn/d1ymtfHNKm7lpzUtDVCL0uGFAEUg",
-      "apple-domain-verification=ey0edqzOCPCylkrb"
+      "MS=ms31930746 ",
+      "apple-domain-verification=ey0edqzOCPCylkrb",
+      "_p3a3a89hww4r6t7rd0j5catko4ly0c9"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:metmuseum_dmarc@metmuseum.org,mailto:dmarc_agg@vali.email"
@@ -159,7 +208,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
       "metmuseum.org",
       "www.metmuseum.org"
     ],
-    "days_left": 70,
+    "days_left": 69,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -219,10 +268,39 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
     "/api/": 308
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 21.5,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "extensis-domain-verification=64d62f29-f7c1-457b-b212-9972174d08b4",
+    "google-site-verification=hrppBmJ36sxIUGM5QO4H2KSNFpNInE51Rpl8ywfVKD8",
+    "adobe-idp-site-verification=7cdfc1c42bc9f50fb0dd80a29eb348968c45a33bfba6f8937b96",
+    "google-site-verification=H3p9Zh2qyUXRQN9Z7Pyo8jAQKATelcFBGYJUDcr0Qk0",
+    "_globalsign-domain-verification=Iiihy-iv_vLdlIMtHvh-aCdqO2T53oCoknhW44njXn"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/temp",
+      "/upload",
+      "/ghidorah",
+      "/style-guide",
+      "/style",
+      "/welcome"
+    ]
+  },
+  "elapsed_s": 7.0,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -231,4 +309,5 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://cnbc.com/ |
 | Bug bounty program | Nasdaq |
 | Listed scope domain | cnbc.com |
-| Test date | 2026-09-25 08:01 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:41 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
+Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,10 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
 | 9 | low | CK1 | Cookie set without Secure flag over HTTPS | CWE-614 |
 | 10 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
@@ -106,6 +110,30 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=9cB8liQRQb28dQBqxzTce9QxKrQ-i49TaUC1gb9hDZE; google-site-verification=6CESE_rGuHHElgUcDrWhTikFRYmAa9UxkS8l-7DHXp8; google-site-verification=MwlAu7EQcQ0wfEXmAg1AQ7jPjZA-obI23zD_6t70cOA
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of cnbc.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -113,45 +141,45 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
   "domain": "cnbc.com",
   "dns": {
     "a": [
-      "184.192.129.132",
-      "3.231.36.148",
-      "34.202.51.101"
+      "35.174.251.224",
+      "34.202.51.101",
+      "3.231.36.148"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "mx0b-00a17301.pphosted.com (pref 20)",
-      "mx0a-00a17301.pphosted.com (pref 20)",
+      "mxa-00a17301.gslb.pphosted.com (pref 10)",
       "mxb-00a17301.gslb.pphosted.com (pref 10)",
-      "mxa-00a17301.gslb.pphosted.com (pref 10)"
+      "mx0a-00a17301.pphosted.com (pref 20)"
     ],
     "ns": [
-      "dns3.p05.nsone.net.",
       "dns4.p05.nsone.net.",
+      "dns2.p05.nsone.net.",
       "dns1.p05.nsone.net.",
-      "dns2.p05.nsone.net."
+      "dns3.p05.nsone.net."
     ],
     "spf": [
-      "ZOOM_verify_xWhArnaoktgfC9TPnJyepZ",
-      "_00z279402xehowo4mbv2r2qi42l9tyg",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com include:amazonses.com ~all",
-      "google-site-verification=5L_AJnC2bIXTvxGA7YN8mWF736oIS25va0YgjoMMl8o",
-      "google-site-verification=MwlAu7EQcQ0wfEXmAg1AQ7jPjZA-obI23zD_6t70cOA",
-      "facebook-domain-verification=wuce6e5xzen63kvin0wnezovdrsx64",
       "google-site-verification=9cB8liQRQb28dQBqxzTce9QxKrQ-i49TaUC1gb9hDZE",
-      "inbound",
-      "google-site-verification=sgPd3o6avBeNjQQHck1SdY9T9tCIpY7uuTEKgrjSUzI",
+      "_00z279402xehowo4mbv2r2qi42l9tyg",
+      "ZOOM_verify_xWhArnaoktgfC9TPnJyepZ",
+      "_7zwim549e9t4hdm5b38khfp9ua3ar2b",
       "MS=ms58192621",
-      "_1h4qah587e8c66rkz1bw624l2gu9nn1",
+      "google-site-verification=6CESE_rGuHHElgUcDrWhTikFRYmAa9UxkS8l-7DHXp8",
+      "google-site-verification=MwlAu7EQcQ0wfEXmAg1AQ7jPjZA-obI23zD_6t70cOA",
+      "dropbox-domain-verification=201yvjsfrkv5",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com include:amazonses.com ~all",
+      "facebook-domain-verification=wuce6e5xzen63kvin0wnezovdrsx64",
+      "_lq9l7q95inxvwkxmxp9tm04ee47nw3u",
+      "smartsheet-site-validation=oMy2hiSOxZp9S8vm9DKkUPKNqqB0ufdZ",
+      "google-site-verification=sgPd3o6avBeNjQQHck1SdY9T9tCIpY7uuTEKgrjSUzI",
       "cursor-domain-verification-3smzbv=BtSKIbSN5gsLoFMzwFlfLmHxz",
       "adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe98526fe9bcd1502",
+      "_1h4qah587e8c66rkz1bw624l2gu9nn1",
       "yahoo-verification-key=ASAGciLz+ZkbF3NlmI5cq6bGG3Dke7+mxOSR9CmHTus=",
-      "_7zwim549e9t4hdm5b38khfp9ua3ar2b",
-      "dropbox-domain-verification=201yvjsfrkv5",
-      "google-site-verification=6CESE_rGuHHElgUcDrWhTikFRYmAa9UxkS8l-7DHXp8",
-      "smartsheet-site-validation=oMy2hiSOxZp9S8vm9DKkUPKNqqB0ufdZ",
-      "_lq9l7q95inxvwkxmxp9tm04ee47nw3u",
-      "Verification Token=056br29gq2n3bxrrgnycn5gl5t7x84gv"
+      "google-site-verification=5L_AJnC2bIXTvxGA7YN8mWF736oIS25va0YgjoMMl8o",
+      "Verification Token=056br29gq2n3bxrrgnycn5gl5t7x84gv",
+      "inbound"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -171,7 +199,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
       "cnbc.com",
       "*.cnbc.com"
     ],
-    "days_left": 138,
+    "days_left": 137,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -181,7 +209,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
     }
   },
   "ports": {
-    "ip": "184.192.129.132",
+    "ip": "35.174.251.224",
     "open": []
   },
   "https": {
@@ -233,10 +261,29 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 111.1,
-  "rechecked": "2026-09-25 13:59 UTC"
+  "apex_txt": [
+    "google-site-verification=9cB8liQRQb28dQBqxzTce9QxKrQ-i49TaUC1gb9hDZE",
+    "google-site-verification=6CESE_rGuHHElgUcDrWhTikFRYmAa9UxkS8l-7DHXp8",
+    "google-site-verification=MwlAu7EQcQ0wfEXmAg1AQ7jPjZA-obI23zD_6t70cOA",
+    "dropbox-domain-verification=201yvjsfrkv5",
+    "facebook-domain-verification=wuce6e5xzen63kvin0wnezovdrsx64"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 24.5,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -245,4 +292,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

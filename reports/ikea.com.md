@@ -7,12 +7,12 @@
 | Target | https://ikea.com/ |
 | Bug bounty program | IKEA |
 | Listed scope domain | ikea.com |
-| Test date | 2026-09-25 09:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
+Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,8 +29,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 | 11 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 12 | info | H6 | Server technology disclosure | CWE-200 |
 | 13 | info | P8 | Missing security.txt | CWE-1038 |
-| 14 | info | CT1 | 93 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 15 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 14 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
+| 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | CT1 | 93 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 19 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -121,13 +125,37 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 14. [INFO] 93 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 14. [LOW] MTA-STS TXT published but policy file missing/invalid (`MAIL12`)
+
+- **CWE:** CWE-285
+- **Detail:** GET https://mta-sts.ikea.com/.well-known/mta-sts/policy.txt -> 404
+- **Recommendation:** Publish a valid policy.txt (version, max_age, mode) or remove the TXT record.
+
+### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=eJkdNhxbvSwwMjpJCul26vIgWgojR_DQtUXD9CZMXZY; adobe-sign-verification=cedca323afb86422862e301984996075; airtable-verification=1a7ed489e90d747183dc48f953dc38e2
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of ikea.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 17. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 93 disallow path(s), e.g. /, */search/?q=*, */search/products/?q=*, */search/content/?q=*, */search/?category=*
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 18. [INFO] 93 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.food.inter.ikea.com, api.inter.ikea.com, cloud.ap-northeast-2.api.homesmart.ikea.com, cloud.ap-southeast-2.api.homesmart.ikea.com, cloud.api.homesmart.ikea.com, cloud.eu-central-1.api.homesmart.ikea.com, cloud.eu-west-1.api.homesmart.ikea.com, cloud.us-east-1.api.homesmart.ikea.com, history.api.homesmart.ikea.com, hub01.api.ikea.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 15. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 19. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: api.inter.ikea.com; content may still be served via virtual-host fallback.
@@ -144,48 +172,48 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "104.18.13.173"
     ],
     "aaaa": [
-      "2606:4700::6812:dad",
-      "2606:4700::6812:cad"
+      "2606:4700::6812:cad",
+      "2606:4700::6812:dad"
     ],
     "cname": null,
     "mx": [
       "ikea-com.i-v1.mx.microsoft (pref 0)"
     ],
     "ns": [
-      "udns1.cscdns.net.",
-      "udns2.cscdns.uk."
+      "udns2.cscdns.uk.",
+      "udns1.cscdns.net."
     ],
     "spf": [
-      "openai-domain-verification=dv-NuhNTz6e8ZuA6QC8JPuNWQVI",
-      "google-site-verification=E6gWPPnFbnlfZhWvziCK1jbFr7ovdO740_nfJIsM26g",
-      "adobe-sign-verification=cedca323afb86422862e301984996075",
-      "pwr1x9yqrt58dp5q97xdqc2tjvbfdpfv",
-      "v=spf1 include:_spf.ikea.com include:spf.protection.outlook.com -all",
-      "c1uaul3js4qk63pu2rlbbipukl",
-      "verification=4b7a9cf113659b548dd81c74867cc6e8cdb666dcdedd89006a4b6df841436db9",
-      "google-site-verification=eJkdNhxbvSwwMjpJCul26vIgWgojR_DQtUXD9CZMXZY",
-      "ecostruxure-it-verification=aed1c019-11ed-4ef4-985a-9d57e6880300",
       "c7w8ywlzkqtsjrj37zwx3rls92xtg2v2",
+      "google-site-verification=eJkdNhxbvSwwMjpJCul26vIgWgojR_DQtUXD9CZMXZY",
       "vuc9hf2qrdsa1rht6jbsvlmm63",
+      "ipimblog.azurewebsites.net",
+      "c1uaul3js4qk63pu2rlbbipukl",
+      "bc3r1bhgiiv5glji4a4e5q7feq",
+      "_0f5qdsfyf94runrfkk8kj91gwjunhv1",
+      "v=spf1 include:_spf.ikea.com include:spf.protection.outlook.com -all",
+      "adobe-sign-verification=cedca323afb86422862e301984996075",
+      "r9l0gn0j4tfvikcnfsoabna4he",
+      "airtable-verification=1a7ed489e90d747183dc48f953dc38e2",
+      "ibmid= 402dfd6a-c923-4b4b-8b0b-d48321ad0c03",
+      "yf27ml09h67l135bgfj8r7k8l06ct0b0",
+      "google-site-verification=E6gWPPnFbnlfZhWvziCK1jbFr7ovdO740_nfJIsM26g",
+      "google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY",
       "ad44n1huq06eqo04mlhp525gs8",
       "9gk35lcm87nrdcur8l5jc95ffg",
-      "bc3r1bhgiiv5glji4a4e5q7feq",
-      "1gsbjx5k4dg72szsrycjtvbjdxnz7f9w",
-      "ibmid= 402dfd6a-c923-4b4b-8b0b-d48321ad0c03",
-      "openai-domain-verification=dv-ruk8aBZomN7tKPUudFE6f4xB",
-      "apple-domain-verification=lcR3r6mOMUXCfIBeISYyewJZUPc9Z7njjsCWH3wMJTU",
-      "r9l0gn0j4tfvikcnfsoabna4he",
-      "schrgk1ftng0xtbk5hzdm37z1qm50c5x",
-      "_0f5qdsfyf94runrfkk8kj91gwjunhv1",
+      "ecostruxure-it-verification=aed1c019-11ed-4ef4-985a-9d57e6880300",
       "google-site-verification=6HRUbiMS72DqS9m1xZA7e2lERsd76qlRP3wjZdbrrr4",
+      "openai-domain-verification=dv-ruk8aBZomN7tKPUudFE6f4xB",
       "apple-domain-verification=z2IPRZRTU1JvIXzc",
-      "ipimblog.azurewebsites.net",
-      "yf27ml09h67l135bgfj8r7k8l06ct0b0",
-      "_0ydey5x097gtj2z92fc6xf342jhw8bm",
-      "google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY",
+      "openai-domain-verification=dv-NuhNTz6e8ZuA6QC8JPuNWQVI",
       "google-site-verification=5BcCWPMkzRJlhB6Kj1oxpQD-XIiBf1I4axz_YKZhPt8",
-      "airtable-verification=1a7ed489e90d747183dc48f953dc38e2",
-      "pendo-domain-verification=kNv_0V-tt2G-fFDGQQ35qbcUUIk"
+      "1gsbjx5k4dg72szsrycjtvbjdxnz7f9w",
+      "apple-domain-verification=lcR3r6mOMUXCfIBeISYyewJZUPc9Z7njjsCWH3wMJTU",
+      "verification=4b7a9cf113659b548dd81c74867cc6e8cdb666dcdedd89006a4b6df841436db9",
+      "pwr1x9yqrt58dp5q97xdqc2tjvbfdpfv",
+      "_0ydey5x097gtj2z92fc6xf342jhw8bm",
+      "pendo-domain-verification=kNv_0V-tt2G-fFDGQQ35qbcUUIk",
+      "schrgk1ftng0xtbk5hzdm37z1qm50c5x"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@ikea.com; ruf=mailto:dmarc_ruf@ikea.com"
@@ -204,7 +232,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
     "san": [
       "ikea.com"
     ],
-    "days_left": 87,
+    "days_left": 86,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -313,8 +341,46 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "api.inter.ikea.com"
     ]
   },
-  "elapsed_s": 21.1,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "google-site-verification=eJkdNhxbvSwwMjpJCul26vIgWgojR_DQtUXD9CZMXZY",
+    "adobe-sign-verification=cedca323afb86422862e301984996075",
+    "airtable-verification=1a7ed489e90d747183dc48f953dc38e2",
+    "google-site-verification=E6gWPPnFbnlfZhWvziCK1jbFr7ovdO740_nfJIsM26g",
+    "google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/",
+      "*/search/?q=*",
+      "*/search/products/?q=*",
+      "*/search/content/?q=*",
+      "*/search/?category=*",
+      "*/search/all/?q=*",
+      "/compare*",
+      "*?filter=*",
+      "*?priceFilter*",
+      "*?sorting=*",
+      "*&sorting=*",
+      "*?storeId=*",
+      "/catalog/packagepopup/",
+      "/iows/",
+      "*OrderItemDisplay*"
+    ]
+  },
+  "elapsed_s": 6.6,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -323,4 +389,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

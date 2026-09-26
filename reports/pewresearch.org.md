@@ -7,12 +7,12 @@
 | Target | https://pewresearch.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | pewresearch.org |
-| Test date | 2026-09-25 07:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
+Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,7 +26,12 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 | 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 9 | info | H6 | Server technology disclosure | CWE-200 |
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
-| 11 | info | CT1 | 13 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | info | CT1 | 13 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -98,7 +103,37 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 11. [INFO] 13 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 11. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 12. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=jwmmtXct21FKveAwprcQKkMrhqVY7ac2TtxUvubWT30; hcp-domain-verification=a3c6e4dafba5b710eebea68d3af09226b78e92d2c41ac640723ab9c5; google-site-verification=EuKSpyq2IYv-oJplq6yQlPQKYsV1LWeqwQjs9lu3Z-o
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of pewresearch.org has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 6 disallow path(s), e.g. /wp-admin/, /wp-content/plugins/prc-icon-library/, /wp-content/plugins/prc-icon-library/, /search/, /search
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 16. [INFO] 13 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: assets.pewresearch.org, beta.pewresearch.org, status.pewresearch.org
@@ -119,44 +154,44 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
       "pewresearch-org.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "ns-281.awsdns-35.com.",
       "ns-795.awsdns-35.net.",
-      "ns-1318.awsdns-36.org.",
-      "ns-1841.awsdns-38.co.uk."
+      "ns-1841.awsdns-38.co.uk.",
+      "ns-281.awsdns-35.com.",
+      "ns-1318.awsdns-36.org."
     ],
     "spf": [
-      "facebook-domain-verification=79sdy6w4z5ih1t1h56pzbtfg98s2b1",
+      "google-site-verification=jwmmtXct21FKveAwprcQKkMrhqVY7ac2TtxUvubWT30",
+      "hcp-domain-verification=a3c6e4dafba5b710eebea68d3af09226b78e92d2c41ac640723ab9c5ef82f330",
+      "citrix.mobile.ads.otp=kd0jxp1wb9rh0n6flcz64s",
+      "google-site-verification=EuKSpyq2IYv-oJplq6yQlPQKYsV1LWeqwQjs9lu3Z-o",
+      "apple-domain-verification=JyKtturocxJ7e8bI",
       "workbrew-domain-verification-b91wyv=bPXNAREVhl7vOrFTnQdCJbRFZ",
-      "linear-domain-verification=aeaz7jeynne3",
-      "MS=ms53170065",
-      "81mjlnmdt3ilhf605acjac3142",
-      "LEu+WRccDmqfd4AKPAO6X54Tg6icB74LQc1Cok7AIhhwxvY4OA6ZiVNYRLUclWqM5Qmx3c/rhinRNrB+yUCcuQ==",
+      "apple-domain-verification=DQ3TtP8IS4sFJC9EKMrlcZ2yCjEHmQGa66M46pg6m3k",
+      "j8p1v8uvnjiungbkieg6894ctb",
       "google-site-verification=a39GDHtKkznS6vJx2Bd4tLCPiu3gprTJYBsfeJ-Afy4",
-      "jpq4l34skjc4madsqn48odfika",
-      "cursor-domain-verification-36qzmn=mNriG0xAskkvI4tGbhcGakb2s",
+      "81mjlnmdt3ilhf605acjac3142",
+      "ZOOM_verify_JaT9z62TGWk4Xq1EBKbVqZ",
+      "LEu+WRccDmqfd4AKPAO6X54Tg6icB74LQc1Cok7AIhhwxvY4OA6ZiVNYRLUclWqM5Qmx3c/rhinRNrB+yUCcuQ==",
+      "n+rGfPXv0394s7Mav6oftRucHJ3XrkPA5Gu2efLCfMNgvA9Q2j5wLodRQMBf09AxhL/ZJr158ExNxMgdKLykAQ==",
+      "v=spf1 include:spf.protection.outlook.com  include:spf.predictiveresponse.net include:servers.mcsv.net include:cust-spf.exacttarget.com include:_spf.pewresearch.org -all",
+      "docusign=db8286b4-617d-4518-a8d2-ffd9c7d6b445",
+      "tollbit-domain-verification=c379eea53a12f277b7e1b4ddb627fdf3c39380c133229681529aae9c7df3c531",
+      "MS=ms53170065",
+      "anthropic-domain-verification-27dfqx=89zzqeHhnNFCvRLyUPN6Rrm2S",
+      "cisco-ci-domain-verification=59488ea3a94920c64294e106be6efcfec41e63d9329d22edb6423a746c309339",
       "5fg2mqnnnwjw1cw30f0jtgslypdvlglc",
+      "t35wwdky16ymmmcgvvs20r2bv8zny0j0",
+      "cursor-domain-verification-36qzmn=mNriG0xAskkvI4tGbhcGakb2s",
+      "adobe-idp-site-verification=dce4a001508adff6a7b1ce11bcee94997898dc790dbe672077b69fd9e362a3cf",
+      "jpq4l34skjc4madsqn48odfika",
+      "70tqopf58gehn5q0l172ijp4s9",
       "m7unfqgh2tqd69cmft07vog4u2",
       "MS=ms46499721",
-      "google-site-verification=EuKSpyq2IYv-oJplq6yQlPQKYsV1LWeqwQjs9lu3Z-o",
-      "apple-domain-verification=DQ3TtP8IS4sFJC9EKMrlcZ2yCjEHmQGa66M46pg6m3k",
-      "tollbit-domain-verification=c379eea53a12f277b7e1b4ddb627fdf3c39380c133229681529aae9c7df3c531",
-      "n+rGfPXv0394s7Mav6oftRucHJ3XrkPA5Gu2efLCfMNgvA9Q2j5wLodRQMBf09AxhL/ZJr158ExNxMgdKLykAQ==",
-      "hcp-domain-verification=a3c6e4dafba5b710eebea68d3af09226b78e92d2c41ac640723ab9c5ef82f330",
-      "google-site-verification=jwmmtXct21FKveAwprcQKkMrhqVY7ac2TtxUvubWT30",
-      "docusign=db8286b4-617d-4518-a8d2-ffd9c7d6b445",
-      "apple-domain-verification=JyKtturocxJ7e8bI",
-      "adobe-idp-site-verification=dce4a001508adff6a7b1ce11bcee94997898dc790dbe672077b69fd9e362a3cf",
-      "v=spf1 include:spf.protection.outlook.com  include:spf.predictiveresponse.net include:servers.mcsv.net include:cust-spf.exacttarget.com include:_spf.pewresearch.org -all",
-      "cisco-ci-domain-verification=59488ea3a94920c64294e106be6efcfec41e63d9329d22edb6423a746c309339",
-      "70tqopf58gehn5q0l172ijp4s9",
-      "openai-domain-verification=dv-vkGktfLOtwd6xNFPJ1lL0QTl",
-      "anthropic-domain-verification-27dfqx=89zzqeHhnNFCvRLyUPN6Rrm2S",
-      "ZOOM_verify_JaT9z62TGWk4Xq1EBKbVqZ",
+      "facebook-domain-verification=79sdy6w4z5ih1t1h56pzbtfg98s2b1",
+      "linear-domain-verification=aeaz7jeynne3",
       "asv=93e4c31a4bfea86fd47cf32edc0fef1b",
-      "j8p1v8uvnjiungbkieg6894ctb",
-      "citrix.mobile.ads.otp=kd0jxp1wb9rh0n6flcz64s",
-      "oqubjqei44ol2n7u4raiso8aja",
-      "t35wwdky16ymmmcgvvs20r2bv8zny0j0"
+      "openai-domain-verification=dv-vkGktfLOtwd6xNFPJ1lL0QTl",
+      "oqubjqei44ol2n7u4raiso8aja"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:6183e7d4856a5@ag.dmarcly.com; ruf=mailto:6183e7d4856a5@fo.dmarcly.com;"
@@ -176,7 +211,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
       "pewresearch.org",
       "www.pewresearch.org"
     ],
-    "days_left": 74,
+    "days_left": 73,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -259,8 +294,38 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
       "www.pewresearch.org"
     ]
   },
-  "elapsed_s": 12.4,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "google-site-verification=jwmmtXct21FKveAwprcQKkMrhqVY7ac2TtxUvubWT30",
+    "hcp-domain-verification=a3c6e4dafba5b710eebea68d3af09226b78e92d2c41ac640723ab9c5",
+    "google-site-verification=EuKSpyq2IYv-oJplq6yQlPQKYsV1LWeqwQjs9lu3Z-o",
+    "apple-domain-verification=JyKtturocxJ7e8bI",
+    "workbrew-domain-verification-b91wyv=bPXNAREVhl7vOrFTnQdCJbRFZ"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.3",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true,
+    "robots_disallow": [
+      "/wp-admin/",
+      "/wp-content/plugins/prc-icon-library/",
+      "/wp-content/plugins/prc-icon-library/",
+      "/search/",
+      "/search",
+      "/?s="
+    ]
+  },
+  "elapsed_s": 19.1,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -269,4 +334,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

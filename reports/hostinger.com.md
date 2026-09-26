@@ -7,12 +7,12 @@
 | Target | https://hostinger.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | hostinger.com |
-| Test date | 2026-09-26 16:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,7 +29,12 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 | 11 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 12 | info | H6 | Server technology disclosure | CWE-200 |
 | 13 | info | P8 | Missing security.txt | CWE-1038 |
-| 14 | info | CT1 | 117 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 14 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 19 | info | CT1 | 117 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
 
 ## Detailed findings
 
@@ -42,13 +47,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.19.150.80:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.19.149.80:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.19.150.80:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.19.149.80:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -119,7 +124,37 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 14. [INFO] 117 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 14. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 15. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=XJK8F7iNQk3gsKAzIMisoRaKR1K3wU11K0QCw662ENGLiGUAYN; google-site-verification=RLEBWxPy5k2j9nDF2u1A6hcvktrjchIs_6--G1DmgEQ; mailru-verification: a8a9886e0072b036
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of hostinger.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 475 disallow path(s), e.g. /*?*clid=, /*?*_ga=, /*?e=, /*?j=, /*?b=
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 19. [INFO] 117 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.hostinger.com, cdn.hostinger.com, docs.hostinger.com, help.hostinger.com, mail.hostinger.com, mg.store.hostinger.com, sso.hostinger.com, status.hostinger.com, support.hostinger.com, webmail.hostinger.com
@@ -132,49 +167,49 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
   "domain": "hostinger.com",
   "dns": {
     "a": [
-      "104.19.150.80",
-      "104.19.149.80"
+      "104.19.149.80",
+      "104.19.150.80"
     ],
     "aaaa": [
-      "2606:4700::6813:9550",
-      "2606:4700::6813:9650"
+      "2606:4700::6813:9650",
+      "2606:4700::6813:9550"
     ],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
       "aspmx3.googlemail.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)"
     ],
     "ns": [
-      "dns2.hostinger.com.",
-      "dns1.hostinger.com."
+      "dns1.hostinger.com.",
+      "dns2.hostinger.com."
     ],
     "spf": [
-      "_sslnkubllu80rt3klnta5jj78ohfe31",
-      "9dz88hzqmv6f9qp6h6n81ccknqt5qsj5",
-      "docusign=2992f799-e2b5-4a59-9478-d87ff226e65b",
       "atlassian-domain-verification=XJK8F7iNQk3gsKAzIMisoRaKR1K3wU11K0QCw662ENGLiGUAYNDUNHX/Ol5F4yyK",
-      "anthropic-domain-verification-sbpz2r=8X9I3m1TfwoIB68L9whmSnNoc",
-      "MS=ms37476243",
-      "nordpass-domain-verification=6b627232b00e4e9ea70693c7994f2d50",
-      "figma-domain-verification=bb2a3852187101c21a8a019813cb47acd28c3d9b84f1747c8cbdb7244c36bfda-1737460010",
-      "atlassian-sending-domain-verification=42cc4d24-81df-49d0-9693-a168df8fc223",
-      "apple-domain-verification=IyFbOUpTx9DUOFwL",
-      "google-site-verification=MOjKs17dYrFXyEPndU4bK505my3D0dyC63-c5mvaNGU",
-      "openai-domain-verification=dv-9okZFix3JJIj9RBphlsAvfbi",
+      "docusign=2992f799-e2b5-4a59-9478-d87ff226e65b",
       "google-site-verification=RLEBWxPy5k2j9nDF2u1A6hcvktrjchIs_6--G1DmgEQ",
-      "miro-verification=5d62135ad61fab8158906087fb92a56d0c945430",
-      "notion-domain-verification=BtpwrYPzJa32VMexOuoqItloklD9vb0uNmMu357qaif",
-      "yahoo-verification-key=YU6422jppAaWZKxEmokKU9sZrUatIZbu69iKw6p2zsI=",
-      "cwj6bz8hbrb0362ql3rp9pqlt1wryp6y",
-      "cursor-domain-verification-ed8vgx=HaftGMosCA7Suow43DgMeAz0z",
+      "_sslnkubllu80rt3klnta5jj78ohfe31",
       "mailru-verification: a8a9886e0072b036",
-      "google-site-verification=OVQopdHgqSSImLDPT0sUNZZRdXpLVBwDaSqloVGyK6Q",
-      "v=spf1 include:_spf.google.com include:amazonses.com include:_spf.hostedemail.com include:_spf.psm.knowbe4.com include:_spf.atlassian.net -all",
+      "9dz88hzqmv6f9qp6h6n81ccknqt5qsj5",
+      "cursor-domain-verification-ed8vgx=HaftGMosCA7Suow43DgMeAz0z",
+      "figma-domain-verification=bb2a3852187101c21a8a019813cb47acd28c3d9b84f1747c8cbdb7244c36bfda-1737460010",
+      "h1-domain-verification=47Qxwxj28Ps2M1vAa5opS7wHmEMswKJq2rDjd5tem6ZuN7PB",
       "google-site-verification=4EfGmYRIEIPWA_ACJsA5zFGUzzY1pa8Du2tiHb8EKuI",
-      "h1-domain-verification=47Qxwxj28Ps2M1vAa5opS7wHmEMswKJq2rDjd5tem6ZuN7PB"
+      "nordpass-domain-verification=6b627232b00e4e9ea70693c7994f2d50",
+      "google-site-verification=OVQopdHgqSSImLDPT0sUNZZRdXpLVBwDaSqloVGyK6Q",
+      "MS=ms37476243",
+      "v=spf1 include:_spf.google.com include:amazonses.com include:_spf.hostedemail.com include:_spf.psm.knowbe4.com include:_spf.atlassian.net -all",
+      "apple-domain-verification=IyFbOUpTx9DUOFwL",
+      "anthropic-domain-verification-sbpz2r=8X9I3m1TfwoIB68L9whmSnNoc",
+      "atlassian-sending-domain-verification=42cc4d24-81df-49d0-9693-a168df8fc223",
+      "notion-domain-verification=BtpwrYPzJa32VMexOuoqItloklD9vb0uNmMu357qaif",
+      "google-site-verification=MOjKs17dYrFXyEPndU4bK505my3D0dyC63-c5mvaNGU",
+      "miro-verification=5d62135ad61fab8158906087fb92a56d0c945430",
+      "openai-domain-verification=dv-9okZFix3JJIj9RBphlsAvfbi",
+      "yahoo-verification-key=YU6422jppAaWZKxEmokKU9sZrUatIZbu69iKw6p2zsI=",
+      "cwj6bz8hbrb0362ql3rp9pqlt1wryp6y"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; rua=mailto:1dfdc22fb72e416c8609bbda0450f278@dmarc-reports.cloudflare.net;"
@@ -204,7 +239,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     }
   },
   "ports": {
-    "ip": "104.19.150.80",
+    "ip": "104.19.149.80",
     "open": [
       8080,
       8443
@@ -300,8 +335,46 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "d.account.hostinger.com"
     ]
   },
-  "elapsed_s": 19.3,
-  "rechecked": "2026-09-26 16:42 UTC"
+  "apex_txt": [
+    "atlassian-domain-verification=XJK8F7iNQk3gsKAzIMisoRaKR1K3wU11K0QCw662ENGLiGUAYN",
+    "google-site-verification=RLEBWxPy5k2j9nDF2u1A6hcvktrjchIs_6--G1DmgEQ",
+    "mailru-verification: a8a9886e0072b036",
+    "cursor-domain-verification-ed8vgx=HaftGMosCA7Suow43DgMeAz0z",
+    "figma-domain-verification=bb2a3852187101c21a8a019813cb47acd28c3d9b84f1747c8cbdb7"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/*?*clid=",
+      "/*?*_ga=",
+      "/*?e=",
+      "/*?j=",
+      "/*?b=",
+      "/*?m=",
+      "/*?detail/",
+      "/*?items/",
+      "/*?page_id=",
+      "/*?col=",
+      "/*?id=*&brand=",
+      "/*?_bdsid=",
+      "/*?_bd_prev_page=",
+      "*/_nuxt/*",
+      "*/tag/*"
+    ]
+  },
+  "elapsed_s": 4.5,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -310,4 +383,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.
