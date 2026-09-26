@@ -8,6 +8,7 @@ Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---:|---:|---:|---:|---:|---|
+| dl.dropboxusercontent.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | ja.wikipedia.org | 25 | 1 | 1 | 21 | 2 | top-websites gist (no active program match) |
 | skillshare.com | 3 | 0 | 0 | 3 | 0 | top-websites gist (no active program match) |
 | 1.bp.blogspot.com | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
