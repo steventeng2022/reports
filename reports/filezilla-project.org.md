@@ -5,59 +5,170 @@
 | Item | Value |
 |---|---|
 | Target | https://filezilla-project.org/ |
-| Bug bounty program | [FileZilla](https://hackerone.com/filezilla) |
+| Bug bounty program | FileZilla |
 | Listed scope domain | filezilla-project.org |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 09:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
+Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 2 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 3 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 4 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 5 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 6 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | MIX1 | Mixed content: HTTP resources referenced from HTTPS page | CWE-319 |
+| 3 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 6 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 7 | info | H6 | Server technology disclosure | CWE-200 |
+| 8 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for filezilla-project.org lists 1 name(s) besides the scope host: www.filezilla-project.org
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Missing Referrer-Policy (`H5`)
-
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://filezilla-project.org/; full URL (incl. query strings) is sent as referrer by default.
-
-### 3. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://filezilla-project.org/; browser features (camera, mic, geolocation) unrestricted.
-
-### 4. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+### 2. [LOW] Mixed content: HTTP resources referenced from HTTPS page (`MIX1`)
 
 - **CWE:** CWE-319
-- **Detail:** http://filezilla-project.org/ -> https://filezilla-project.org/ (positive check).
+- **Detail:** References found: href="http://
+- **Recommendation:** Serve assets over HTTPS (or protocol-relative URLs).
 
-### 5. [INFO] robots.txt discloses crawl rules/paths (`R1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt on https://filezilla-project.org/ exposes 4 unique Disallow path(s) (/builds/, /locales/, /nightlies/, /nightlies_server/)
-
-### 6. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 3. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on filezilla-project.org.
+- **Detail:** Detected: Server: Apache
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-## Reproduction notes
+### 4. [INFO] Missing Referrer-Policy (`H5`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://filezilla-project.org/ final status: 200 (final URL https://filezilla-project.org/).
-- http://filezilla-project.org/ initial status: 301.
-- Certificate: Let's Encrypt YR2, valid until 2026-11-15T23:14:51+00:00.
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+
+### 5. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
+
+### 6. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 7. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: Apache
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 8. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "filezilla-project.org",
+  "dns": {
+    "a": [
+      "49.12.121.47"
+    ],
+    "aaaa": [
+      "2a01:4f8:242:52d0::2"
+    ],
+    "cname": null,
+    "mx": [
+      "filezilla-project.org (pref 10)"
+    ],
+    "ns": [
+      "ns2.domaindiscount24.net.",
+      "ns3.domaindiscount24.net.",
+      "ns1.domaindiscount24.net."
+    ],
+    "spf": [
+      "v=spf1 mx ip4:49.12.121.47/32 ip6:2a01:4f8:242:52d0::2/64 -all",
+      "google-site-verification=VMSIrNYAVoMPTFK6VdS6swSnzPeV9u3oDl2KraQnLI8"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject"
+    ],
+    "dnssec_authenticated": false
+  },
+  "elapsed_s": 6.4,
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "rechecked": "2026-09-25 07:46 UTC",
+  "https": {
+    "status": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "title": "FileZilla - The free FTP solution"
+  },
+  "mixed_content": [
+    "href=\"http://"
+  ],
+  "tech": [
+    "Server: Apache"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.filezilla-project.org",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://filezilla-project.org/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 404",
+    "/redirect?next=https://evil-auditor.example/x -> 404",
+    "/go?url=https://evil-auditor.example/x -> 404",
+    "/url?url=https://evil-auditor.example/x -> 404"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 404,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 404,
+    "/.git/HEAD": 404,
+    "/.git/config": 404,
+    "/.env": 404,
+    "/.htaccess": 0,
+    "/wp-login.php": 0,
+    "/phpmyadmin/index.php": 0,
+    "/server-status": 0,
+    "/api/": 0
+  }
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

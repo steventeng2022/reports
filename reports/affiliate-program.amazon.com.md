@@ -5,71 +5,240 @@
 | Item | Value |
 |---|---|
 | Target | https://affiliate-program.amazon.com/ |
-| Bug bounty program | [Amazon](https://hackerone.com/amazonvrp) |
+| Bug bounty program | Amazon |
 | Listed scope domain | affiliate-program.amazon.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 08:18 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 0, Low: 4, Info: 4)
+Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
-| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 7 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 8 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H4 | No clickjacking protection | CWE-1023 |
+| 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 5 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 6 | info | H6 | Server technology disclosure | CWE-200 |
+| 7 | low | CK1 | Cookie set without Secure flag over HTTPS | CWE-614 |
+| 8 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
+| 9 | low | CK1 | Cookie set without Secure flag over HTTPS | CWE-614 |
+| 10 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
+| 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://affiliate-program.amazon.com/ without HttpOnly: i18n-prefs, lc-main, session-id, session-id-time. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without Secure flag (`C2`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: Server
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 3. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+
+### 4. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+
+### 5. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 6. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: Server
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 7. [LOW] Cookie set without Secure flag over HTTPS (`CK1`)
 
 - **CWE:** CWE-614
-- **Detail:** Set on https://affiliate-program.amazon.com/ without Secure: i18n-prefs, lc-main. Will be transmitted over HTTP if the site is reachable cleartext.
+- **Detail:** Cookie 'i18n-prefs' has no Secure attribute on an HTTPS response.
+- **Context:** https response, /
+- **Recommendation:** Set Secure on all cookies over HTTPS.
 
-### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 8. [INFO] Cookie without SameSite attribute (`CK3`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://affiliate-program.amazon.com/ without SameSite=Lax/Strict: i18n-prefs, lc-main, session-id, session-id-time, sp-cdn. Cross-site request cookies.
+- **CWE:** CWE-1275
+- **Detail:** Cookie 'i18n-prefs' has no SameSite attribute.
+- **Context:** https response, /
+- **Recommendation:** Set SameSite=Lax (or Strict) to reduce CSRF surface.
 
-### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 9. [LOW] Cookie set without Secure flag over HTTPS (`CK1`)
 
-- **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://affiliate-program.amazon.com/; page may be rendered in a foreign frame.
+- **CWE:** CWE-614
+- **Detail:** Cookie 'lc-main' has no Secure attribute on an HTTPS response.
+- **Context:** https response, /
+- **Recommendation:** Set Secure on all cookies over HTTPS.
 
-### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 10. [INFO] Cookie without SameSite attribute (`CK3`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for affiliate-program.amazon.com lists 1 name(s) besides the scope host: associates.amazon.com
+- **CWE:** CWE-1275
+- **Detail:** Cookie 'lc-main' has no SameSite attribute.
+- **Context:** https response, /
+- **Recommendation:** Set SameSite=Lax (or Strict) to reduce CSRF surface.
 
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 11. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 12. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://affiliate-program.amazon.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** Notable hostnames: none flagged
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 7. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+## Evidence (raw response observations)
 
-- **CWE:** CWE-319
-- **Detail:** http://affiliate-program.amazon.com/ -> https://affiliate-program.amazon.com/ (positive check).
+```json
+{
+  "domain": "affiliate-program.amazon.com",
+  "dns": {
+    "a": [
+      "3.169.136.137"
+    ],
+    "aaaa": [],
+    "cname": "tp.a0bb234b7-frontier.amazon.com.",
+    "mx": [],
+    "ns": [
+      "ns-776.awsdns-33.net.",
+      "ns-246.awsdns-30.com.",
+      "ns-1802.awsdns-33.co.uk.",
+      "ns-1333.awsdns-38.org."
+    ],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=affiliate-program.amazon.com",
+    "issuer": "countryName=US, organizationName=Amazon, commonName=Amazon RSA 2048 M04",
+    "notBefore": "Jun 14 00:00:00 2026 GMT",
+    "notAfter": "Dec 28 23:59:59 2026 GMT",
+    "san": [
+      "affiliate-program.amazon.com",
+      "associates.amazon.com"
+    ],
+    "days_left": 94,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "3.169.136.137",
+    "open": []
+  },
+  "https": {
+    "status": 200,
+    "content_type": "text/html;charset=UTF-8",
+    "title": "Amazon.com Associates Central"
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: Server"
+  ],
+  "cookies": [
+    {
+      "domain": ".amazon.com"
+    },
+    {
+      "domain": ".amazon.com"
+    },
+    {
+      "domain": ".amazon.com",
+      "samesite": "lax"
+    },
+    {
+      "domain": ".amazon.com"
+    },
+    {
+      "domain": ".amazon.com"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.affiliate-program.amazon.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://affiliate-program.amazon.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 404",
+    "/redirect?next=https://evil-auditor.example/x -> 404",
+    "/go?url=https://evil-auditor.example/x -> 404",
+    "/url?url=https://evil-auditor.example/x -> 404"
+  ],
+  "paths": {
+    "/robots.txt": 404,
+    "/sitemap.xml": 404,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 404,
+    "/.git/HEAD": 404,
+    "/.git/config": 404,
+    "/.env": 404,
+    "/.htaccess": 404,
+    "/wp-login.php": 404,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 404,
+    "/api/": 404
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 1,
+    "notable": [],
+    "sample": [
+      "affiliate-program.amazon.com"
+    ]
+  },
+  "elapsed_s": 159.3,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
 
-### 8. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+## Notes
 
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on affiliate-program.amazon.com.
-
-## Reproduction notes
-
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://affiliate-program.amazon.com/ final status: 200 (final URL https://affiliate-program.amazon.com/).
-- http://affiliate-program.amazon.com/ initial status: 301.
-- Certificate: Amazon Amazon RSA 2048 M04, valid until 2026-12-28T23:59:59+00:00.
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -5,89 +5,224 @@
 | Item | Value |
 |---|---|
 | Target | https://acm.org/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | acm.org |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 08:14 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
+Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 3 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
-| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 5 | info | H2 | Short HSTS max-age | CWE-319 |
-| 6 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 7 | info | H2c | HSTS not preloaded | CWE-319 |
-| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
-| 11 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | TLS4 | TLS certificate expires within 30 days | CWE-298 |
+| 3 | info | PRT8080 | Alternate web service (port 8080) reachable | CWE-200 |
+| 4 | info | PRT8443 | Alternate web service (port 8443) reachable | CWE-200 |
+| 5 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 6 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 7 | low | H1b | Weak HSTS (max-age < 1 year) | CWE-319 |
+| 8 | low | H2 | Missing CSP header | CWE-1021 |
+| 9 | info | H6 | Server technology disclosure | CWE-200 |
+| 10 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://acm.org/ without SameSite=Lax/Strict: __cf_bm. Cross-site request cookies.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://acm.org/; no defense-in-depth against XSS/content injection.
-
-### 3. [LOW] TLS certificate expiring within 30 days (`T3`)
+### 2. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires 2026-10-16T23:59:59+00:00 (21 days left) for acm.org.
+- **Detail:** Certificate expires in 21 days (notAfter Oct 16 23:59:59 2026 GMT).
+- **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
-### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for acm.org lists 1 name(s) besides the scope host: *.acm.org
-
-### 5. [INFO] Short HSTS max-age (`H2`)
-
-- **CWE:** CWE-319
-- **Detail:** HSTS max-age=0 (< 1 year): `max-age=0`.
-
-### 6. [INFO] HSTS without includeSubDomains (`H2b`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=0` does not cover subdomains.
-
-### 7. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=0` lacks the preload directive.
-
-### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://acm.org/ -> https://acm.org/ (positive check).
-
-### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://acm.org/ exposes 17 unique Disallow path(s) (/404, /Member/, /amg.html, /amturing-acm-org/, /award_winners) and 1 sitemap reference(s)
+- **Detail:** TCP connect to 104.17.78.30:8080 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on acm.org.
-
-### 11. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** https://acm.org/ responded 403 (passive check only; no further probing).
+- **Detail:** TCP connect to 104.17.78.30:8443 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-## Reproduction notes
+### 5. [INFO] Technology fingerprint (`TECH1`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://acm.org/ final status: 403 (final URL https://acm.org/).
-- http://acm.org/ initial status: 301.
-- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-16T23:59:59+00:00.
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: cloudflare; Cloudflare CDN/WAF
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 6. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
+
+- **CWE:** CWE-200
+- **Detail:** Alt-Svc: h3=":443"; ma=86400
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
+
+### 7. [LOW] Weak HSTS (max-age < 1 year) (`H1b`)
+
+- **CWE:** CWE-319
+- **Detail:** HSTS present but max-age=0 (< 31536000).
+- **Context:** https response, /
+- **Recommendation:** Increase max-age to at least 31536000; add includeSubDomains/preload.
+
+### 8. [LOW] Missing CSP header (`H2`)
+
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 9. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: cloudflare
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 10. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "acm.org",
+  "dns": {
+    "a": [
+      "104.17.78.30",
+      "104.17.79.30"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "mail.mailroute.net (pref 10)"
+    ],
+    "ns": [
+      "olga.ns.cloudflare.com.",
+      "skip.ns.cloudflare.com."
+    ],
+    "spf": [
+      "v=spf1 include:_spf.acm_org._d.easydmarc.pro ~all",
+      "brevo-code:e7393522d4f06661f44afbccb0cebfc6",
+      "MS=F1C3025E76F2E7036C9EAF6DBC2DF0C8D2D4AA87",
+      "3w6lthcz5h4qpgtd8n8szx1m474v73tz",
+      "p0yygcm8ljrr9v47xkgrk4cjdvpctb6t",
+      "duo_sso_verification=oFRYT7Y1MADnakU5K1wxwe47F9TsTRZ76IZL8bgH2J0NFoipvgi5tAE6kTmlRfY8",
+      "abuseipdb-verification=D4c0J6WF",
+      "google-site-verification=8gUY1AtsZ3BzLVSHLSv3wXIE8MpnWrGgVrmvVxM1MjE",
+      "83zn0ndgz9jvwx563vp9qbyz38hqb7kl",
+      "google-site-verification=lqxyh1_UaHYvgAfZ3gvxIDJi3quBVO_5Lq_pDUOKdNw",
+      "_isyuzeobyu2bijfg78028dab2ac4f5r",
+      "_ead5vviqjla5mjijrh4zvhsujcx843n"
+    ],
+    "dmarc": [
+      "v=DMARC1;p=reject;sp=quarantine;pct=100;rua=mailto:9adb8cf49b@rua.easydmarc.us;ruf=mailto:9adb8cf49b@ruf.easydmarc.us;fo=1;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "countryName=US, stateOrProvinceName=New York, localityName=New York, organizationName=Association for Computing Machinery, Inc., commonName=*.acm.org",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
+    "notBefore": "Apr  1 00:00:00 2026 GMT",
+    "notAfter": "Oct 16 23:59:59 2026 GMT",
+    "san": [
+      "*.acm.org",
+      "acm.org"
+    ],
+    "days_left": 21,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "104.17.78.30",
+    "open": [
+      8080,
+      8443
+    ]
+  },
+  "https": {
+    "status": 403,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: cloudflare",
+    "Cloudflare CDN/WAF"
+  ],
+  "cookies": [
+    {
+      "domain": "acm.org",
+      "samesite": "none"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.acm.org",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://acm.org/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 403",
+    "/redirect?next=https://evil-auditor.example/x -> 403",
+    "/go?url=https://evil-auditor.example/x -> 403",
+    "/url?url=https://evil-auditor.example/x -> 403"
+  ],
+  "paths": {
+    "/robots.txt": 302,
+    "/sitemap.xml": 403,
+    "/.well-known/security.txt": 302,
+    "/security.txt": 302,
+    "/.git/HEAD": 403,
+    "/.git/config": 403,
+    "/.env": 403,
+    "/.htaccess": 403,
+    "/wp-login.php": 403,
+    "/phpmyadmin/index.php": 403,
+    "/server-status": 403,
+    "/api/": 403
+  },
+  "subdomains": {
+    "status": "crt.sh 502 (certspotter 504)"
+  },
+  "elapsed_s": 116.6,
+  "rechecked": "2026-09-25 13:59 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

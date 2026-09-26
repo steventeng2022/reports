@@ -7,69 +7,223 @@
 | Target | https://chris.pirillo.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | chris.pirillo.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 07:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
+Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 3 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 4 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 5 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 6 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 7 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 8 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | PRT8080 | Alternate web service (port 8080) reachable | CWE-200 |
+| 3 | info | PRT8443 | Alternate web service (port 8443) reachable | CWE-200 |
+| 4 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 5 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 6 | low | H2 | Missing CSP header | CWE-1021 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing Content-Security-Policy (`H3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://chris.pirillo.com/; no defense-in-depth against XSS/content injection.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for chris.pirillo.com lists 2 name(s) besides the scope host: *.pirillo.com, pirillo.com
-
-### 3. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://chris.pirillo.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** TCP connect to 172.67.183.97:8080 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 4. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://chris.pirillo.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 5. [INFO] sitemap.xml discloses URL inventory (`M1`)
+### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://chris.pirillo.com/ lists 1 URLs.
+- **Detail:** TCP connect to 172.67.183.97:8443 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 6. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://chris.pirillo.com/ -> https://chris.pirillo.com/ (positive check).
-
-### 7. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 4. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://chris.pirillo.com/ exposes 1 unique Disallow path(s) (/) and 1 sitemap reference(s)
+- **Detail:** Detected: Server: cloudflare; Cloudflare CDN/WAF
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 8. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 5. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on chris.pirillo.com.
+- **Detail:** Alt-Svc: h3=":443"; ma=86400
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
 
-## Reproduction notes
+### 6. [LOW] Missing CSP header (`H2`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://chris.pirillo.com/ final status: 200 (final URL https://chris.pirillo.com/).
-- http://chris.pirillo.com/ initial status: 301.
-- Certificate: Google Trust Services WE1, valid until 2026-12-07T03:15:55+00:00.
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 7. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+
+### 8. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
+
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 10. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: cloudflare
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 11. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 12. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: none flagged
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "chris.pirillo.com",
+  "dns": {
+    "a": [
+      "172.67.183.97",
+      "104.21.18.214"
+    ],
+    "aaaa": [
+      "2606:4700:3033::ac43:b761",
+      "2606:4700:3033::6815:12d6"
+    ],
+    "cname": null,
+    "mx": [],
+    "ns": [],
+    "spf": [
+      "google-site-verification=VaBCwK0BlHcgUaPZBrJ6N1m8VoJMrJh3cLUGSJ6OvAw"
+    ],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=pirillo.com",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE1",
+    "notBefore": "Sep  8 02:16:08 2026 GMT",
+    "notAfter": "Dec  7 03:15:55 2026 GMT",
+    "san": [
+      "pirillo.com",
+      "*.pirillo.com"
+    ],
+    "days_left": 72,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "172.67.183.97",
+    "open": [
+      8080,
+      8443
+    ]
+  },
+  "https": {
+    "status": 200,
+    "content_type": "text/html",
+    "title": "Chris Pirillo | Tech Creator, Free Apps &amp; AI Coding"
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: cloudflare",
+    "Cloudflare CDN/WAF"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.chris.pirillo.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://chris.pirillo.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 404",
+    "/redirect?next=https://evil-auditor.example/x -> 404",
+    "/go?url=https://evil-auditor.example/x -> 404",
+    "/url?url=https://evil-auditor.example/x -> 404"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 200,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 404,
+    "/.git/HEAD": 403,
+    "/.git/config": 403,
+    "/.env": 403,
+    "/.htaccess": 403,
+    "/wp-login.php": 404,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 404,
+    "/api/": 404
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 1,
+    "notable": [],
+    "sample": [
+      "chris.pirillo.com"
+    ]
+  },
+  "elapsed_s": 108.5,
+  "rechecked": "2026-09-25 10:43 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

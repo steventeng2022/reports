@@ -5,137 +5,325 @@
 | Item | Value |
 |---|---|
 | Target | https://salesforce.com/ |
-| Bug bounty program | [Salesforce](https://www.salesforce.com/company/disclosure/) |
+| Bug bounty program | Salesforce |
 | Listed scope domain | salesforce.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:13 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
+Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
-| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 4 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 5 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 6 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 7 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 8 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 9 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 10 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 11 | info | H2 | Short HSTS max-age | CWE-319 |
-| 12 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 13 | info | H2c | HSTS not preloaded | CWE-319 |
-| 14 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 15 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 16 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 17 | info | R1 | robots.txt protected | CWE-200 |
-| 18 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
-| 19 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H2 | Missing CSP header | CWE-1021 |
+| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 5 | low | H4 | No clickjacking protection | CWE-1023 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 9 | info | H6 | Server technology disclosure | CWE-200 |
+| 10 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://salesforce.com/ without HttpOnly: ak_loc. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without Secure flag (`C2`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
-- **CWE:** CWE-614
-- **Detail:** Set on https://salesforce.com/ without Secure: ak_loc. Will be transmitted over HTTP if the site is reachable cleartext.
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: AkamaiGHost
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://salesforce.com/ without SameSite=Lax/Strict: AKA_A2, ak_loc. Cross-site request cookies.
-
-### 4. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://salesforce.com/; no defense-in-depth against XSS/content injection.
-
-### 5. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://salesforce.com/; browsers may MIME-sniff responses.
-
-### 6. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 3. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://salesforce.com/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 7. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 4. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for salesforce.com lists 68 name(s) besides the scope host: agentblazer.com, askmoreof.ai, askmoreofai.com, assistly.com, atonit.com.br, atonit.digital, attic.io, buddymedia.com... (4 no longer resolve)
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 8. [INFO] Possible dangling subdomain (`D2`)
+### 5. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `chatter.salesforce.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 9. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `govforce.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 10. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `sfdcstatic.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 11. [INFO] Short HSTS max-age (`H2`)
-
-- **CWE:** CWE-319
-- **Detail:** HSTS max-age=86400 (< 1 year): `max-age=86400`.
-
-### 12. [INFO] HSTS without includeSubDomains (`H2b`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=86400` does not cover subdomains.
-
-### 13. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=86400` lacks the preload directive.
-
-### 14. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://salesforce.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 15. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://salesforce.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 16. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://salesforce.com/ -> https://salesforce.com/ (positive check).
-
-### 17. [INFO] robots.txt protected (`R1`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /robots.txt returned 403.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 18. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 403 on salesforce.com.
-
-### 19. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** https://salesforce.com/ responded 403 (passive check only; no further probing).
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-## Reproduction notes
+### 9. [INFO] Server technology disclosure (`H6`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://salesforce.com/ final status: 403 (final URL https://www.salesforce.com/).
-- http://salesforce.com/ initial status: 301.
-- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2027-04-09T23:59:59+00:00.
+- **CWE:** CWE-200
+- **Detail:** Header reveals: AkamaiGHost
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 10. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "salesforce.com",
+  "dns": {
+    "a": [
+      "104.109.10.129",
+      "23.1.106.133",
+      "184.31.3.130",
+      "184.25.179.132",
+      "184.31.10.133",
+      "23.1.35.132",
+      "104.109.11.129",
+      "23.1.99.130"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "mxa-00177002.gslb.pphosted.com (pref 10)",
+      "mxb-00177002.gslb.pphosted.com (pref 10)"
+    ],
+    "ns": [
+      "udns3.salesforce.com.",
+      "pch2.salesforce-dns.com.",
+      "udns4.salesforce.com.",
+      "udns2.salesforce.com.",
+      "pch1.salesforce-dns.com.",
+      "udns1.salesforce.com."
+    ],
+    "spf": [
+      "stripe-verification=7a979e02f78e0a07950be0a127275cc4866db0a196913cfceaaa8035b8dbf959",
+      "cloudhealth=7fe179e6-9085-4d4a-b2cd-eeb11f0c2468",
+      "liveramp-site-verification=EIEl6MgS2nOv3dKtxxVir8tWpKE85lmKSh2s7wGwE4w",
+      "google-site-verification=AF6Xx_zcM9CpPWi0iT5dSiHH05tVgT3Gr2ERgAZ0-m0",
+      "atlassian-domain-verification=vTF7JaBo8Jpp/uhUFDPztkIr5aildFzbq9aLIcBbwK5aIdI9s8WQRGPTnKRONIiM",
+      "google-site-verification=YWwSjixMcFJ1lVJe2XyMsPgFOe8E5vaW6xV-pVmxQQs",
+      "remarkable-domain-verification=394b7d94-d630-4c40-ac32-413a38622f73",
+      "pardot220122=922f8d6c355d7ff72ed3e771a2eca71656d0249cfdc70a8cebb481d367d6f006",
+      "1password-site-verification=IIVOBJGQRBCNTB3RNSU7CCAFQY",
+      "00DF0000000gZsuMAE",
+      "vmware-cloud-verification-edb072dd-c0ed-478e-a55f-1aa17364e617",
+      "google-site-verification=OXivRKiSmufeLZHqZHxzvbEU_LFMiy4XwYtJiSS1BhQ",
+      "DirectFedAuthUrl=https://salesforce.okta.com/app/salesforce_pwcidentitypro_1/exk12ojlg6rjhBkTY698/sso/saml",
+      "mixpanel-domain-verify=f2151de7-1e89-41b1-8968-b7cdd8df6740",
+      "tiktok-developers-site-verification=6SG6XJHEtcx9rqix8FICiM4RxxkC4g1L",
+      "google-site-verification=D6BlHxqITDdvcLDrxA3_ltYf9P3rRxm8AKKNT3rk4W8",
+      "sending_domain182062=ecf3eec4d6ebcf61c5f77be11dffd322fd0f57d8d10fc75c7ae07ffc21d427a7",
+      "neat-pulse-domain-verification-zDvG1kM=5074fe39-a4bb-479e-9018-9ef1878fd2f1",
+      "canva-site-verification=_abffN3m74Bc2XZ_68lccw",
+      "stripe-verification=B20840C7B159BD229B805ABB54423AE52404E97B4697AA9C23ECF43BA3E8BC37",
+      "SFMC-cGJQFeEomoQQt-tQ3c_QXefdwzOGuj_Tjl4oWwrW",
+      "jamf-site-verification=6VMo4NqTt2upSV1B7wb8sw",
+      "google-site-verification=h5tEfIPH1oMV9hxvFY7mWCS870JmVhm-bpbKTTg5L4A",
+      "DirectFedAuthUrl=https://salesforce.okta.com/app/salesforce_w19107268_1/exky1kgawwTUSZCb2697/sso/saml",
+      "docker-verification=b238c187-0eb6-4710-ac1f-0d2ed19765b5",
+      "hcp-domain-verification=92c617d35c9102aa0d57a73ea5894ce0a593b2ec34bb05486eeb69f6ef15f7fd",
+      "stripe-verification=9ca4e73f9b5286bdcdbd5b91f97ad519544e5ee56eebb2f2dc6b48dbec579fe0",
+      "00DF0000000gZsumae",
+      "google-site-verification=AgWPJ-RJmfrnOtIUUO5mTFDFVNb5XJPAJAUduwbF9PE",
+      "sending_domain373542=845254d896ac5dfad0d6494e4908a8b6a5e057fdcce30d211eebadeb6b4e87cc",
+      "zoom-domain-verification=ZOOM_verify_d9d75d3013184f4ba571502ca24dfaf6",
+      "hubspot-developer-verification=YjRkOWExNDAtM2JjZS00YWQ0LWExNzItMGVkYzljMDEwM2M3",
+      "5/1ESlGdIH/mwCF+T9SOo3PjURgk0lqakv0VJ8er4Ss=",
+      "zoom-domain-verification=ZOOM_verify_6429ec4f4e4f49e58350c473496f0f18",
+      "notion-domain-verification=Lh3bZWCwAyG9KMR88UmcLLXPlUj4eIud9Gp4gf85VGJ",
+      "v=spf1 include:_spf.google.com include:_spf.salesforce.com exists:%{i}._spf.corp.salesforce.com ~all",
+      "google-site-verification=XHgruaJj29eI7YjqDkEWZivuT0wlakIWgB2N4DRa_QM",
+      "google-site-verification=HV79FO1Y0siBF9WSte-fAOzLI3om9c1V08sBXq2p39M",
+      "stripe-verification=92ed39e34d3d3361667499947254c2fe1e02c212ca373bf11734c1423133dcfe",
+      "pardot1=6eae4d5ab80fc91a64539164ab421392a58d97551b230b12152dffb7553ea905"
+    ],
+    "dmarc": [
+      "v=DMARC1;p=reject;fo=1:d:s;pct=100;rua=mailto:dmarc_agg@vali.email,mailto:0e5a5c34@inbox.ondmarc.com;ruf=mailto:0e5a5c34@inbox.ondmarc.com"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "countryName=US, stateOrProvinceName=California, localityName=San Francisco, organizationName=Salesforce, Inc., commonName=salesforce.com",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
+    "notBefore": "Sep 23 00:00:00 2026 GMT",
+    "notAfter": "Apr  9 23:59:59 2027 GMT",
+    "san": [
+      "salesforce.com",
+      "agentblazer.com",
+      "askmoreof.ai",
+      "askmoreofai.com",
+      "assistly.com",
+      "atonit.com.br",
+      "atonit.digital",
+      "attic.io",
+      "buddymedia.com",
+      "chatter.com",
+      "chatter.salesforce.com",
+      "clicksoftware.com",
+      "cloudconnect.com",
+      "cloudcraze.com",
+      "cotweet.com",
+      "credentialmaster.com",
+      "demandware.com",
+      "desk.com",
+      "documentforce.com",
+      "dreamforce.com",
+      "einstein.com",
+      "force.com",
+      "govforce.com",
+      "gravitytank.com",
+      "griddable.io",
+      "heywire.com",
+      "leveljump.io",
+      "leveljumpsoftware.com",
+      "mapanything.com",
+      "marketingcloud.com",
+      "mobify.com",
+      "pardot.com",
+      "quotable.com",
+      "radian6.com",
+      "salesblazer.com",
+      "salesforce.de",
+      "salesforceconnections.com",
+      "salesforcemarketingcloud.com",
+      "sequence.com",
+      "serviceblazer.com",
+      "sfdcstatic.com",
+      "sforce.com",
+      "site.com",
+      "social.com",
+      "steelbrick.com",
+      "toopher.com",
+      "tractionondemand.com",
+      "trailheadx.com",
+      "twinprime.com",
+      "vaccinecloud.com",
+      "vlocity.app",
+      "vlocity.ch",
+      "vlocity.com",
+      "vlocity.de",
+      "vlocity.fr",
+      "vlocity.in",
+      "vlocity.info",
+      "vlocity.io",
+      "vlocity.it",
+      "vlocity.me",
+      "vlocity.nl",
+      "vlocity.online",
+      "vlocity.pl",
+      "vlocity.software",
+      "vlocity.solutions",
+      "vlocity.tech",
+      "vlocity.technology",
+      "vlocity.us",
+      "weinvoiceit.com"
+    ],
+    "days_left": 196,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "104.109.10.129",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: AkamaiGHost"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.salesforce.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://salesforce.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 43.2,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

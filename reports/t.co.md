@@ -5,83 +5,253 @@
 | Item | Value |
 |---|---|
 | Target | https://t.co/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | t.co |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:22 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
+Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 5 | info | H2c | HSTS not preloaded | CWE-319 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 8 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
-| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | PRT8080 | Alternate web service (port 8080) reachable | CWE-200 |
+| 3 | info | PRT8443 | Alternate web service (port 8443) reachable | CWE-200 |
+| 4 | low | MIX1 | Mixed content: HTTP resources referenced from HTTPS page | CWE-319 |
+| 5 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 6 | low | H2 | Missing CSP header | CWE-1021 |
+| 7 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 8 | low | H4 | No clickjacking protection | CWE-1023 |
+| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 10 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 11 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 12 | info | H6 | Server technology disclosure | CWE-200 |
+| 13 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
+| 14 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://t.co/ without SameSite=Lax/Strict: __cf_bm. Cross-site request cookies.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing Content-Security-Policy (`H3`)
+### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://t.co/; no defense-in-depth against XSS/content injection.
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 162.159.140.229:8080 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
+### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://t.co/; browsers may MIME-sniff responses.
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 162.159.140.229:8443 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 4. [LOW] Mixed content: HTTP resources referenced from HTTPS page (`MIX1`)
+
+- **CWE:** CWE-319
+- **Detail:** References found: href="http://
+- **Recommendation:** Serve assets over HTTPS (or protocol-relative URLs).
+
+### 5. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: cloudflare envoy; Cloudflare CDN/WAF
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 6. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://t.co/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 5. [INFO] HSTS not preloaded (`H2c`)
+### 7. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-319
-- **Detail:** `max-age=631138519; includeSubdomains` lacks the preload directive.
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 8. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://t.co/; full URL (incl. query strings) is sent as referrer by default.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 7. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://t.co/; browser features (camera, mic, geolocation) unrestricted.
-
-### 8. [INFO] Plain HTTP returns non-redirect status (`N3`)
-
-- **CWE:** CWE-319
-- **Detail:** http://t.co/ returns 520 (no redirect to HTTPS).
-
-### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 9. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://t.co/ exposes 3 unique Disallow path(s) (#, /, User-agent:)
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 10. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on t.co.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 11. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://t.co/ final status: 200 (final URL https://t.co/).
-- http://t.co/ initial status: 520.
-- Certificate: Let's Encrypt YE2, valid until 2026-12-05T09:26:38+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 12. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: cloudflare envoy
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 13. [INFO] CORS: subdomain origin origin accepted (no credentials) (`CORS2`)
+
+- **CWE:** CWE-942
+- **Detail:** Origin https://sub.t.co was echoed in Access-Control-Allow-Origin.
+- **Context:** https response, /
+- **Recommendation:** Confirm whether arbitrary origin echoing is intended.
+
+### 14. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "t.co",
+  "dns": {
+    "a": [
+      "162.159.140.229"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [],
+    "ns": [
+      "c.r06.twtrdns.net.",
+      "a.u06.twtrdns.net.",
+      "d.r06.twtrdns.net.",
+      "d.u06.twtrdns.net.",
+      "b.u06.twtrdns.net.",
+      "a.r06.twtrdns.net.",
+      "c.u06.twtrdns.net.",
+      "b.r06.twtrdns.net."
+    ],
+    "spf": [
+      "1nfb08f5jkpy0flhn6lwml2vk7x34hrd",
+      "48qgbs8f2v055y997kpf4cx2302fzfs2",
+      "v=spf1 -all",
+      "1z8q6j6wymwb6bh0t3q28tp7vsbgnh6d"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; adkim=s; aspf=s; rua=mailto:d@rua.agari.com; ruf=mailto:d@ruf.agari.com; fo=1"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=t.co",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YE2",
+    "notBefore": "Sep  6 09:26:39 2026 GMT",
+    "notAfter": "Dec  5 09:26:38 2026 GMT",
+    "san": [
+      "t.co"
+    ],
+    "days_left": 70,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "162.159.140.229",
+    "open": [
+      8080,
+      8443
+    ]
+  },
+  "https": {
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "title": "t.co / X"
+  },
+  "mixed_content": [
+    "href=\"http://",
+    "href=\"http://"
+  ],
+  "tech": [
+    "Server: cloudflare envoy",
+    "Cloudflare CDN/WAF"
+  ],
+  "cookies": [
+    {
+      "domain": "t.co",
+      "samesite": "none"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "https://evil-auditor.example",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.t.co",
+      "acao": "https://sub.t.co",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 520
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 400",
+    "/redirect?next=https://evil-auditor.example/x -> 400",
+    "/go?url=https://evil-auditor.example/x -> 404",
+    "/url?url=https://evil-auditor.example/x -> 404"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 404,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 404,
+    "/.git/HEAD": 404,
+    "/.git/config": 404,
+    "/.env": 404,
+    "/.htaccess": 404,
+    "/wp-login.php": 404,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 404,
+    "/api/": 404
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 50.9,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

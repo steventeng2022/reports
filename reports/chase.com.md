@@ -5,101 +5,276 @@
 | Item | Value |
 |---|---|
 | Target | https://chase.com/ |
-| Bug bounty program | [Chase](https://responsibledisclosure.jpmorganchase.com) |
+| Bug bounty program | Chase |
 | Listed scope domain | chase.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 09:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 6 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 7 | info | H2c | HSTS not preloaded | CWE-319 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 10 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 11 | info | R1 | robots.txt protected | CWE-200 |
-| 12 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
-| 13 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H1 | Missing HSTS header | CWE-319 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | CT1 | 114 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://chase.com/ without SameSite=Lax/Strict: AKA_A2. Cross-site request cookies.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing Content-Security-Policy (`H3`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://chase.com/; no defense-in-depth against XSS/content injection.
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: BigIP
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
+### 3. [LOW] Missing HSTS header (`H1`)
 
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://chase.com/; browsers may MIME-sniff responses.
+- **CWE:** CWE-319
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 4. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://chase.com/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 5. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for chase.com lists 2 name(s) besides the scope host: www-ndc.chase.com, www.chase.com
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 6. [INFO] HSTS without includeSubDomains (`H2b`)
+### 6. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` does not cover subdomains.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 7. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` lacks the preload directive.
-
-### 8. [INFO] Missing Referrer-Policy (`H5`)
-
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://chase.com/; full URL (incl. query strings) is sent as referrer by default.
-
-### 9. [INFO] Missing Permissions-Policy (`H7`)
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://chase.com/; browser features (camera, mic, geolocation) unrestricted.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 10. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://chase.com/ -> https://www.chase.com/ (positive check).
-
-### 11. [INFO] robots.txt protected (`R1`)
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /robots.txt returned 403.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 12. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 403 on chase.com.
-
-### 13. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** https://chase.com/ responded 403 (passive check only; no further probing).
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-## Reproduction notes
+### 10. [INFO] Server technology disclosure (`H6`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://chase.com/ final status: 403 (final URL https://www.chase.com/).
-- http://chase.com/ initial status: 301.
-- Certificate: DigiCert Inc DigiCert EV RSA CA G2, valid until 2027-03-25T23:59:59+00:00.
+- **CWE:** CWE-200
+- **Detail:** Header reveals: BigIP
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 11. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 12. [INFO] 114 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: none flagged
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "chase.com",
+  "dns": {
+    "a": [
+      "146.143.141.57",
+      "146.143.83.57",
+      "146.143.13.57"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "cluster14.us.messagelabs.com (pref 10)",
+      "cluster14.us.messagelabs.com (pref 20)",
+      "cluster14a.us.messagelabs.com (pref 40)",
+      "cluster14.us.messagelabs.com (pref 30)"
+    ],
+    "ns": [
+      "ns2.jpmorganchase.com.",
+      "ns0140.secondary.cloudflare.com.",
+      "ns0119.secondary.cloudflare.com.",
+      "ns1.jpmorganchase.com.",
+      "ns06.jpmorganchase.com.",
+      "ns05.jpmorganchase.com."
+    ],
+    "spf": [
+      "wiz-domain-verification=66aa74155d5e84d10ed4b5a786a66f94063cff3b4c7e11d09fb46f027736dbf0",
+      "wiz-domain-verification=ccd3ec907fff510311f6a14b2a659fcb83adea2818bb6e78503239d2877e8657?",
+      "docusign=b04ddbec-21ac-4d6b-bb8b-3f1a3bca079f",
+      "pendo-domain-verification=1f6e5677-d405-438e-88ba-141766793ce8",
+      "atlassian-domain-verification=Ua2Fovb97Ak39kxh4koulfhVlpieV1PLhaMkdZpzINDMQGlcvLV+ORgL2QmOryw+",
+      "onetrust-domain-verification=ccee45576c1e4fbfaa4014725a73344f",
+      "DirectFedAuthUrl=https://idauatg2.jpmorganchase.com/adfs/ls/",
+      "docusign=500adee6-4cca-451d-bcd8-2813346419c8",
+      "atlassian-domain-verification=wUjrfh2T73RznZOKmEZfc0mRF92bjC7JyjSgRXg9Yt2e9ZMRZwafUO6GPJaecYOh",
+      "atlassian-domain-verification\\u003dpD6ozLCGDinP/R+vd5R9hpoPCSOmTFTHfWPK633PXEtELa5KlVDw4w1Pnn02aTdC",
+      "airtable-verification=1d59ed5062280d21aeef0c14aaf4f950",
+      "google-site-verification=iZwZzo1YPl0G29U136Suzn4c1VptcA_LkvvdWOYC6B0",
+      "google-site-verification=PfSAyrffyVUKXLc1Ew8C2IFPWkjufFSsbboFz_24Qt4",
+      "v=spf1 include:tpo.chase.com exists:%{i}.spf.chase.com exists:%{i}.spf.hc4673-96.iphmx.com exists:%{i}.spf.hc4698-8.iphmx.com -all",
+      "sinch-domain-verification=6848bb42-da6f-49cf-8974-920af9cf1806",
+      "_m47rp0d9u3ci4ycif1echp310q0yy09",
+      "wiz-domain-verification=a0d8d067bcb1cdd44255d0633a31df3ba13c82e30f27c080519b0b85ba734d32",
+      "google-site-verification=w00TwyVREI5RpqAT9hqSLZVvZcZi46578G57D1aMGeE",
+      "atlassian-domain-verification=PZApk1vJjd7scChzBMQy2d4NEwk4Bt26obCVACc7vWiOBVCOxTOV4/EB9LMexMnl",
+      "wiz-domain-verification=68c6d9fa0c4bdd60150d3df50635cd0fcf4af6af079771d90239d10add2c2967",
+      "smartsheet-site-validation=JdBS3Kn_332V6dI9U0iq0TV3RZZXTUhL"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; pct=100; rua=mailto:d@rua.agari.com; ruf=mailto:d@ruf.agari.com;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "jurisdictionCountryName=US, jurisdictionStateOrProvinceName=Delaware, businessCategory=Private Organization, serialNumber=691011, countryName=US, stateOrProvinceName=New York, localityName=New York, organizationName=JPMorgan Chase & Co., commonName=www.chase.com",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert EV RSA CA G2",
+    "notBefore": "Sep  8 00:00:00 2026 GMT",
+    "notAfter": "Mar 25 23:59:59 2027 GMT",
+    "san": [
+      "www.chase.com",
+      "chase.com",
+      "www-ndc.chase.com"
+    ],
+    "days_left": 181,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "146.143.141.57",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: BigIP"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.chase.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://www.chase.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 114,
+    "notable": [],
+    "sample": [
+      "aemutilities-dev-ecs.chase.com",
+      "affluent-jpmpcuat.chase.com",
+      "ai-hub.chase.com",
+      "ai-nexus-uat.chase.com",
+      "ais-jpmc-gateway.chase.com",
+      "ams-utilities-test-ecs.chase.com",
+      "analytics-web.chase.com",
+      "analytics.chase.com",
+      "api-mtls-tgs-ext-notifications.chase.com",
+      "apix-oauth-qa01.chase.com",
+      "apix-oauth-qa02.chase.com",
+      "apix-oauth-qa03.chase.com",
+      "apix-perf01.chase.com",
+      "apix-qa01.chase.com",
+      "apix-qa02.chase.com",
+      "apix-qa03.chase.com",
+      "astonmartinfinancial.chase.com",
+      "authe.chase.com",
+      "auto-marketplace-dev.chase.com",
+      "capture.chase.com"
+    ]
+  },
+  "elapsed_s": 108.5,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

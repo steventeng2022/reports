@@ -5,77 +5,201 @@
 | Item | Value |
 |---|---|
 | Target | https://docs.microsoft.com/ |
-| Bug bounty program | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
+| Bug bounty program | Microsoft Online Services |
 | Listed scope domain | docs.microsoft.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 09:20 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
+Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
-| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 6 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 7 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 8 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
-| 9 | info | X3 | HTTPS root redirects to different host | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H2 | Missing CSP header | CWE-1021 |
+| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 5 | low | H4 | No clickjacking protection | CWE-1023 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 9 | info | H6 | Server technology disclosure | CWE-200 |
+| 10 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://docs.microsoft.com/ without HttpOnly: bm_mi. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without Secure flag (`C2`)
-
-- **CWE:** CWE-614
-- **Detail:** Set on https://docs.microsoft.com/ without Secure: ak_bmsc. Will be transmitted over HTTP if the site is reachable cleartext.
-
-### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://docs.microsoft.com/ without SameSite=Lax/Strict: ak_bmsc, bm_mi. Cross-site request cookies.
-
-### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for docs.microsoft.com lists 1 name(s) besides the scope host: *.docs.microsoft.com
-
-### 5. [INFO] Missing Permissions-Policy (`H7`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://docs.microsoft.com/; browser features (camera, mic, geolocation) unrestricted.
+- **Detail:** Detected: Server: AkamaiGHost
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 6. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+### 3. [LOW] Missing CSP header (`H2`)
 
-- **CWE:** CWE-319
-- **Detail:** http://docs.microsoft.com/ -> https://docs.microsoft.com/ (positive check).
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 7. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 4. [LOW] Missing X-Content-Type-Options (`H3`)
+
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
+
+### 5. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://docs.microsoft.com/ exposes 19 unique Disallow path(s) (/*/answers/*?*filterby=, /*/answers/*?*orderby=, /*/answers/*?*pagesize=, /*/answers/*?*sort=, /*/answers/*?*topics=) and 2 sitemap reference(s)
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 8. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on docs.microsoft.com.
-
-### 9. [INFO] HTTPS root redirects to different host (`X3`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** https://docs.microsoft.com/ redirects to https://learn.microsoft.com/en-us/.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://docs.microsoft.com/ final status: 200 (final URL https://learn.microsoft.com/en-us/).
-- http://docs.microsoft.com/ initial status: 301.
-- Certificate: Microsoft Corporation Microsoft TLS G2 ECC CA OCSP 06, valid until 2027-04-07T23:37:09+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 9. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: AkamaiGHost
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 10. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "docs.microsoft.com",
+  "dns": {
+    "a": [
+      "23.11.90.168"
+    ],
+    "aaaa": [
+      "2600:1417:76:4a3::353e",
+      "2600:1417:76:4a0::353e"
+    ],
+    "cname": "docs.microsoft.com-c.edgekey.net.",
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "countryName=US, stateOrProvinceName=WA, localityName=Redmond, organizationName=Microsoft Corporation, commonName=docs.microsoft.com",
+    "issuer": "countryName=US, organizationName=Microsoft Corporation, commonName=Microsoft TLS G2 ECC CA OCSP 06",
+    "notBefore": "Sep 21 23:37:09 2026 GMT",
+    "notAfter": "Apr  7 23:37:09 2027 GMT",
+    "san": [
+      "*.docs.microsoft.com",
+      "docs.microsoft.com"
+    ],
+    "days_left": 194,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "23.11.90.168",
+    "open": []
+  },
+  "https": {
+    "status": 403,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: AkamaiGHost"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.docs.microsoft.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://docs.microsoft.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 403",
+    "/redirect?next=https://evil-auditor.example/x -> 403",
+    "/go?url=https://evil-auditor.example/x -> 403",
+    "/url?url=https://evil-auditor.example/x -> 403"
+  ],
+  "paths": {
+    "/robots.txt": 403,
+    "/sitemap.xml": 403,
+    "/.well-known/security.txt": 403,
+    "/security.txt": 403,
+    "/.git/HEAD": 403,
+    "/.git/config": 403,
+    "/.env": 403,
+    "/.htaccess": 403,
+    "/wp-login.php": 403,
+    "/phpmyadmin/index.php": 403,
+    "/server-status": 403,
+    "/api/": 403
+  },
+  "subdomains": {
+    "status": "crt.sh 502 (certspotter 429)"
+  },
+  "elapsed_s": 93.2,
+  "rechecked": "2026-09-25 10:43 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

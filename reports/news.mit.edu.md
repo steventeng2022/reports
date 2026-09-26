@@ -5,89 +5,223 @@
 | Item | Value |
 |---|---|
 | Target | https://news.mit.edu/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | news.mit.edu |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:03 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
+Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 3 | info | H2 | Short HSTS max-age | CWE-319 |
-| 4 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 5 | info | H2c | HSTS not preloaded | CWE-319 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | MIX1 | Mixed content: HTTP resources referenced from HTTPS page | CWE-319 |
+| 3 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 4 | low | H1b | Weak HSTS (max-age < 1 year) | CWE-319 |
+| 5 | low | H2 | Missing CSP header | CWE-1021 |
 | 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
 | 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 8 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 9 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 10 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 11 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 9 | info | H6 | Server technology disclosure | CWE-200 |
+| 10 | info | P8 | Missing security.txt | CWE-1038 |
+| 11 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing Content-Security-Policy (`H3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://news.mit.edu/; no defense-in-depth against XSS/content injection.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for news.mit.edu lists 3 name(s) besides the scope host: news-rc.mit.edu, newsoffice.mit.edu, www.newsoffice.mit.edu
-
-### 3. [INFO] Short HSTS max-age (`H2`)
+### 2. [LOW] Mixed content: HTTP resources referenced from HTTPS page (`MIX1`)
 
 - **CWE:** CWE-319
-- **Detail:** HSTS max-age=300 (< 1 year): `max-age=300`.
+- **Detail:** References found: href="http://
+- **Recommendation:** Serve assets over HTTPS (or protocol-relative URLs).
 
-### 4. [INFO] HSTS without includeSubDomains (`H2b`)
+### 3. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: nginx; X-Generator: Drupal 11 (https://www.drupal.org)
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 4. [LOW] Weak HSTS (max-age < 1 year) (`H1b`)
 
 - **CWE:** CWE-319
-- **Detail:** `max-age=300` does not cover subdomains.
+- **Detail:** HSTS present but max-age=300 (< 31536000).
+- **Context:** https response, /
+- **Recommendation:** Increase max-age to at least 31536000; add includeSubDomains/preload.
 
-### 5. [INFO] HSTS not preloaded (`H2c`)
+### 5. [LOW] Missing CSP header (`H2`)
 
-- **CWE:** CWE-319
-- **Detail:** `max-age=300` lacks the preload directive.
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
 ### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://news.mit.edu/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
 ### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://news.mit.edu/; browser features (camera, mic, geolocation) unrestricted.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 8. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://news.mit.edu/ lists 17 URLs.
-
-### 9. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://news.mit.edu/ -> https://news.mit.edu/ (positive check).
-
-### 10. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://news.mit.edu/ exposes 29 unique Disallow path(s) (/README.txt, /admin/, /article-type/, /author/, /comment/reply/)
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 11. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 9. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on news.mit.edu.
+- **Detail:** Header reveals: nginx
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
 
-## Reproduction notes
+### 10. [INFO] Missing security.txt (`P8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://news.mit.edu/ final status: 200 (final URL https://news.mit.edu/).
-- http://news.mit.edu/ initial status: 301.
-- Certificate: Let's Encrypt YR1, valid until 2026-12-16T23:57:23+00:00.
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 11. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: news.mit.edu
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "news.mit.edu",
+  "dns": {
+    "a": [
+      "23.185.0.4"
+    ],
+    "aaaa": [
+      "2620:12a:8000::4",
+      "2620:12a:8001::4"
+    ],
+    "cname": null,
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=news-rc.mit.edu",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YR1",
+    "notBefore": "Sep 17 23:57:24 2026 GMT",
+    "notAfter": "Dec 16 23:57:23 2026 GMT",
+    "san": [
+      "news-rc.mit.edu",
+      "news.mit.edu",
+      "newsoffice.mit.edu",
+      "www.newsoffice.mit.edu"
+    ],
+    "days_left": 82,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "23.185.0.4",
+    "open": []
+  },
+  "https": {
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "title": "MIT News | Massachusetts Institute of Technology"
+  },
+  "mixed_content": [
+    "href=\"http://",
+    "href=\"http://",
+    "href=\"http://",
+    "href=\"http://",
+    "href=\"http://"
+  ],
+  "tech": [
+    "Server: nginx",
+    "X-Generator: Drupal 11 (https://www.drupal.org)"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.news.mit.edu",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://news.mit.edu/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 404",
+    "/redirect?next=https://evil-auditor.example/x -> 404",
+    "/go?url=https://evil-auditor.example/x -> 404",
+    "/url?url=https://evil-auditor.example/x -> 404"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 200,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 404,
+    "/.git/HEAD": 403,
+    "/.git/config": 403,
+    "/.env": 404,
+    "/.htaccess": 404,
+    "/wp-login.php": 404,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 404,
+    "/api/": 404
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 1,
+    "notable": [
+      "news.mit.edu"
+    ],
+    "sample": [
+      "news.mit.edu"
+    ]
+  },
+  "elapsed_s": 25.8,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

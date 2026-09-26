@@ -5,107 +5,426 @@
 | Item | Value |
 |---|---|
 | Target | https://webroot.com/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | webroot.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:27 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
+Total findings: **34** (High: 0, Medium: 6, Low: 6, Info: 22)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
-| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 4 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 5 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
-| 6 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 7 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 8 | info | H2c | HSTS not preloaded | CWE-319 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 11 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 12 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 13 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 14 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | MAIL4 | DMARC policy is p=none (monitor only) | CWE-200 |
+| 3 | low | TLS4 | TLS certificate expires within 30 days | CWE-298 |
+| 4 | medium | PRT21 | FTP service (cleartext) reachable | CWE-319 |
+| 5 | info | PRT25 | SMTP (port 25) reachable | CWE-200 |
+| 6 | info | PRT53 | DNS service reachable | CWE-200 |
+| 7 | info | PRT110 | POP3 (cleartext) reachable | CWE-319 |
+| 8 | info | PRT143 | IMAP (cleartext) reachable | CWE-319 |
+| 9 | info | PRT993 | IMAPS (port 993) reachable | CWE-200 |
+| 10 | info | PRT995 | POP3S (port 995) reachable | CWE-200 |
+| 11 | medium | PRT1433 | MSSQL (port 1433) reachable | CWE-200 |
+| 12 | medium | PRT3306 | MySQL (port 3306) reachable | CWE-200 |
+| 13 | info | PRT3389 | RDP (port 3389) reachable | CWE-200 |
+| 14 | medium | PRT5900 | VNC (port 5900) reachable | CWE-200 |
+| 15 | medium | PRT6379 | Redis (port 6379) reachable | CWE-200 |
+| 16 | info | PRT8000 | Alternate web service (port 8000) reachable | CWE-200 |
+| 17 | info | PRT8080 | Alternate web service (port 8080) reachable | CWE-200 |
+| 18 | info | PRT8443 | Alternate web service (port 8443) reachable | CWE-200 |
+| 19 | info | PRT8888 | Alternate web service (port 8888) reachable | CWE-200 |
+| 20 | info | PRT9090 | Service (port 9090, e.g. Elasticsearch/debug) reachable | CWE-200 |
+| 21 | medium | PRT9200 | Elasticsearch (port 9200) reachable | CWE-200 |
+| 22 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 23 | low | H2 | Missing CSP header | CWE-1021 |
+| 24 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 25 | low | H4 | No clickjacking protection | CWE-1023 |
+| 26 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 27 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 28 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 29 | info | H6 | Server technology disclosure | CWE-200 |
+| 30 | low | CK1 | Cookie set without Secure flag over HTTPS | CWE-614 |
+| 31 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
+| 32 | low | CK1 | Cookie set without Secure flag over HTTPS | CWE-614 |
+| 33 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
+| 34 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://webroot.com/ without HttpOnly: incap_ses_725_3211517. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without Secure flag (`C2`)
+### 2. [INFO] DMARC policy is p=none (monitor only) (`MAIL4`)
 
-- **CWE:** CWE-614
-- **Detail:** Set on https://webroot.com/ without Secure: incap_ses_725_3211517. Will be transmitted over HTTP if the site is reachable cleartext.
+- **CWE:** CWE-200
+- **Detail:** DMARC is published but policy is 'none'; failing mail is not quarantined.
+- **Recommendation:** Move to p=quarantine/reject once monitor reports are clean.
 
-### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://webroot.com/ without SameSite=Lax/Strict: incap_ses_725_3211517. Cross-site request cookies.
-
-### 4. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://webroot.com/; browsers may MIME-sniff responses.
-
-### 5. [LOW] TLS certificate expiring within 30 days (`T3`)
+### 3. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires 2026-10-12T23:59:59+00:00 (17 days left) for webroot.com.
+- **Detail:** Certificate expires in 17 days (notAfter Oct 12 23:59:59 2026 GMT).
+- **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
-### 6. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for webroot.com lists 1 name(s) besides the scope host: *.webroot.com
-
-### 7. [INFO] HSTS without includeSubDomains (`H2b`)
+### 4. [MEDIUM] FTP service (cleartext) reachable (`PRT21`)
 
 - **CWE:** CWE-319
-- **Detail:** `max-age=63072000` does not cover subdomains.
+- **Detail:** TCP connect to 45.60.151.109:21 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 8. [INFO] HSTS not preloaded (`H2c`)
+### 5. [INFO] SMTP (port 25) reachable (`PRT25`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 45.60.151.109:25 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 6. [INFO] DNS service reachable (`PRT53`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 45.60.151.109:53 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 7. [INFO] POP3 (cleartext) reachable (`PRT110`)
 
 - **CWE:** CWE-319
-- **Detail:** `max-age=63072000` lacks the preload directive.
+- **Detail:** TCP connect to 45.60.151.109:110 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 9. [INFO] Missing Referrer-Policy (`H5`)
-
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://webroot.com/; full URL (incl. query strings) is sent as referrer by default.
-
-### 10. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://webroot.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 11. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://webroot.com/ lists 192 URLs.
-
-### 12. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+### 8. [INFO] IMAP (cleartext) reachable (`PRT143`)
 
 - **CWE:** CWE-319
-- **Detail:** http://webroot.com/ -> https://webroot.com/ (positive check).
+- **Detail:** TCP connect to 45.60.151.109:143 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 13. [INFO] robots.txt discloses crawl rules/paths (`R1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt on https://webroot.com/ exposes 23 unique Disallow path(s) (/*?WRSID=*, /*?lang=*, /*?loc=*, /*?trpd=*, /_Incapsula_Resource/*) and 1 sitemap reference(s)
-
-### 14. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 9. [INFO] IMAPS (port 993) reachable (`PRT993`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on webroot.com.
+- **Detail:** TCP connect to 45.60.151.109:993 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-## Reproduction notes
+### 10. [INFO] POP3S (port 995) reachable (`PRT995`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://webroot.com/ final status: 200 (final URL https://www.webroot.com/).
-- http://webroot.com/ initial status: 308.
-- Certificate: Sectigo Limited Sectigo Public Server Authentication CA OV R36, valid until 2026-10-12T23:59:59+00:00.
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 45.60.151.109:995 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 11. [MEDIUM] MSSQL (port 1433) reachable (`PRT1433`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 45.60.151.109:1433 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 12. [MEDIUM] MySQL (port 3306) reachable (`PRT3306`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 45.60.151.109:3306 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 13. [INFO] RDP (port 3389) reachable (`PRT3389`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 45.60.151.109:3389 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 14. [MEDIUM] VNC (port 5900) reachable (`PRT5900`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 45.60.151.109:5900 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 15. [MEDIUM] Redis (port 6379) reachable (`PRT6379`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 45.60.151.109:6379 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 16. [INFO] Alternate web service (port 8000) reachable (`PRT8000`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 45.60.151.109:8000 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 17. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 45.60.151.109:8080 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 18. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 45.60.151.109:8443 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 19. [INFO] Alternate web service (port 8888) reachable (`PRT8888`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 45.60.151.109:8888 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 20. [INFO] Service (port 9090, e.g. Elasticsearch/debug) reachable (`PRT9090`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 45.60.151.109:9090 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 21. [MEDIUM] Elasticsearch (port 9200) reachable (`PRT9200`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 45.60.151.109:9200 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 22. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: Vercel
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 23. [LOW] Missing CSP header (`H2`)
+
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 24. [LOW] Missing X-Content-Type-Options (`H3`)
+
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
+
+### 25. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+
+### 26. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+
+### 27. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
+
+### 28. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 29. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: Vercel
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 30. [LOW] Cookie set without Secure flag over HTTPS (`CK1`)
+
+- **CWE:** CWE-614
+- **Detail:** Cookie 'visid_incap_3211517' has no Secure attribute on an HTTPS response.
+- **Context:** https response, /
+- **Recommendation:** Set Secure on all cookies over HTTPS.
+
+### 31. [INFO] Cookie without SameSite attribute (`CK3`)
+
+- **CWE:** CWE-1275
+- **Detail:** Cookie 'visid_incap_3211517' has no SameSite attribute.
+- **Context:** https response, /
+- **Recommendation:** Set SameSite=Lax (or Strict) to reduce CSRF surface.
+
+### 32. [LOW] Cookie set without Secure flag over HTTPS (`CK1`)
+
+- **CWE:** CWE-614
+- **Detail:** Cookie 'incap_ses_675_3211517' has no Secure attribute on an HTTPS response.
+- **Context:** https response, /
+- **Recommendation:** Set Secure on all cookies over HTTPS.
+
+### 33. [INFO] Cookie without SameSite attribute (`CK3`)
+
+- **CWE:** CWE-1275
+- **Detail:** Cookie 'incap_ses_675_3211517' has no SameSite attribute.
+- **Context:** https response, /
+- **Recommendation:** Set SameSite=Lax (or Strict) to reduce CSRF surface.
+
+### 34. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "webroot.com",
+  "dns": {
+    "a": [
+      "45.60.151.109",
+      "45.60.171.109"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "mxa-00102601.gslb.pphosted.com (pref 1)",
+      "mxb-00102601.gslb.pphosted.com (pref 1)"
+    ],
+    "ns": [
+      "dns1.safenames.com.",
+      "dns2.safenames.net.",
+      "dns3.safenames.org."
+    ],
+    "spf": [
+      "google-site-verification=W342u9ABN8CsWzHJEUTnnprvsso64lGHcBzHIjXtP4A",
+      "MS=ms92726142",
+      "635557aa461593e8536643d878d7c78d698bcbb535e185853f5cfd526cafddfe",
+      "hj-ownership=kbD4%B6@fEzJ",
+      "v=spf1 ip4:66.35.53.240 ip4:66.35.53.180 ip4:208.87.139.150 ip4:66.35.53.248 ip4:208.74.204.0/22 ip4:46.19.168.0/23 ip4:208.87.139.64 ip4:208.87.139.66 include:spf.protection.outlook.com include:spf.messagelabs.com include:mktomail.com include:stspg-custo",
+      "mer.com ip4:52.38.191.241 -all",
+      "status-page-domain-verification=ry2yxtvp8dt4",
+      "status-page-domain-verification=2tbgnrpnfp6b",
+      "F5Bkf8aYNUTZwrEkaw2ss/rMNTWy9wTOKyKrIeQdD5YoMTFkYg9rjW275X1dSx5AWusuVqkf+caFIRtd63kGgw==",
+      "amazonses:DUPTZ+5PC5cywK2wrfzQHVsalso6GCYZmw9b2wSAgMo="
+    ],
+    "dmarc": [
+      "v=DMARC1; p=none; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com;fo=1"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "countryName=CA, stateOrProvinceName=Ontario, organizationName=Open Text Corporation, commonName=*.webroot.com",
+    "issuer": "countryName=GB, organizationName=Sectigo Limited, commonName=Sectigo Public Server Authentication CA OV R36",
+    "notBefore": "Sep 11 00:00:00 2025 GMT",
+    "notAfter": "Oct 12 23:59:59 2026 GMT",
+    "san": [
+      "*.webroot.com",
+      "webroot.com"
+    ],
+    "days_left": 17,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "45.60.151.109",
+    "open": [
+      21,
+      25,
+      53,
+      110,
+      143,
+      993,
+      995,
+      1433,
+      3306,
+      3389,
+      5900,
+      6379,
+      8000,
+      8080,
+      8443,
+      8888,
+      9090,
+      9200
+    ]
+  },
+  "https": {
+    "status": 307,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: Vercel"
+  ],
+  "cookies": [
+    {
+      "domain": ".webroot.com"
+    },
+    {
+      "domain": ".webroot.com"
+    },
+    {
+      "domain": ".webroot.com"
+    },
+    {
+      "domain": ".webroot.com"
+    },
+    {
+      "domain": ".webroot.com"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.webroot.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 308,
+    "location": "https://webroot.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 307",
+    "/redirect?next=https://evil-auditor.example/x -> 307",
+    "/go?url=https://evil-auditor.example/x -> 307",
+    "/url?url=https://evil-auditor.example/x -> 307"
+  ],
+  "paths": {
+    "/robots.txt": 307,
+    "/sitemap.xml": 307,
+    "/.well-known/security.txt": 307,
+    "/security.txt": 307,
+    "/.git/HEAD": 403,
+    "/.git/config": 403,
+    "/.env": 403,
+    "/.htaccess": 403,
+    "/wp-login.php": 307,
+    "/phpmyadmin/index.php": 307,
+    "/server-status": 307,
+    "/api/": 307
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 32.3,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

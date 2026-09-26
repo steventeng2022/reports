@@ -7,48 +7,346 @@
 | Target | https://abc.net.au/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | abc.net.au |
-| Test date | 2026-09-25 16:40 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 23:12 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **5** (High: 0, Medium: 0, Low: 3, Info: 2)
+Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H4 | No clickjacking protection | CWE-1023 |
-| 4 | info | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H1 | Missing HSTS header | CWE-319 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | CT1 | 338 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 12 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security on https://abc.net.au/
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on https://abc.net.au/
-
-### 3. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on https://abc.net.au/
-
-### 4. [INFO] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No X-Content-Type-Options on https://abc.net.au/
-
-### 5. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://abc.net.au/
+- **Detail:** Detected: Server: AkamaiGHost
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-## Reproduction notes
+### 3. [LOW] Missing HSTS header (`H1`)
 
-- Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- **CWE:** CWE-319
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+
+### 4. [LOW] Missing CSP header (`H2`)
+
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 5. [LOW] Missing X-Content-Type-Options (`H3`)
+
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
+
+### 6. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+
+### 7. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+
+### 8. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
+
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 10. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: AkamaiGHost
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 11. [INFO] 338 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: api.abc.net.au, api.iview.abc.net.au, api.rex.abc.net.au, api.seesaw.abc.net.au, app.abc.net.au, apps.abc.net.au, auth.confluence.c2.abc.net.au, beta.abc.net.au, careers.abc.net.au, cdn.audience-mms-processor-nonp.c0.abc.net.au
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+### 12. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+
+- **CWE:** CWE-200
+- **Detail:** Historical subdomains no longer have A/AAAA records: app.abc.net.au; content may still be served via virtual-host fallback.
+- **Recommendation:** Reclaim or delete dangling subdomains to reduce virtual-hosting attack surface.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "abc.net.au",
+  "dns": {
+    "a": [
+      "23.209.216.141"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "mxb-0036d701.gslb.pphosted.com (pref 10)",
+      "mxa-0036d701.gslb.pphosted.com (pref 10)"
+    ],
+    "ns": [
+      "eur3.akam.net.",
+      "ns1-31.akam.net.",
+      "eur2.akam.net.",
+      "ns1-129.akam.net.",
+      "asia1.akam.net.",
+      "eur5.akam.net.",
+      "usw5.akam.net.",
+      "usw1.akam.net."
+    ],
+    "spf": [
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
+      "DS_GUID=1f556b4d-4242-48a2-98ec-8b5389b9768a",
+      "successfactors-site-verification=ZWY4YWNhODM1YTI2Y2FlNzAyMmIzYTRjODcyMWY0MGJjM2ViMzU5OTA0NTdhZGY3MTRjMWM1MWQzMGU5ZmVjOA==",
+      "jamf-site-verification=uatZyaF6YBPkZV-hoGjIDg",
+      "security_policy=https://ab.co/security-guidelines",
+      "MS=F3CCB183E28279EA6BFB729BB36F156C93E1E6FC",
+      "security_contact=https://ab.co/security-contact",
+      "google-site-verification=YODbrd1vAD6Bvvh0nVqJ90UhzAmn9PY1JbZiEFCNnFg",
+      "google-site-verification=Fe7MviHWN97I2rkSkD-uHqnXoRle0l60KrKG_qiu4EQ",
+      "segment-site-verification=CPDEMeOkLajeqEcfuKs0TMeSQM8S4K9u",
+      "hcte5z9aRQBXzsiYoLbb2H6OXB/39P1lZ9FAUWYSjzh/XVWNMZgKjjMw0Qo9CBFGWalVAFV/pTFQRwZXJQmlTw==",
+      "_6zqpkv8jv9wixx2iahc3c9l73xzlcq3",
+      "adobe-idp-site-verification=7c3065b8-a1ac-4df8-8440-8ae4a2b371e1",
+      "openai-domain-verification=dv-A6eDZvBKglVN8S81SVfxEWjh",
+      "atlassian-domain-verification=VqcGTxT7+T2pb61t6YK69euiLYhHFIeqmEZhmZ1kn+Nw9MDeCxVvnthHJaOyuh53",
+      "google-site-verification=7054D-8q7ysCi8XYhwx8gZOjJJoYZpbcN5mSRYsKznA",
+      "Ki*!8fZN^6$3kPjwdj4lGl%d^AJtICghTa$@cDmHSrGPv%JiQfK#bUJ2464UFJEds*RdmDAi%7poA57UwIJH#BI82Tsg@M!KE4I",
+      "_ypyfvza3k9d012wozvcpqr2rl5hgwax",
+      "google-site-verification=hE1kILZtpqkyPs5Szz0KpVbNaTiprJyPVeCfNB1D5-g",
+      "MS=ms97238178",
+      "hpe-greenlake-domain-verification=5a79544f6b576334325571625553586569355537544a69367939324271775968",
+      "logmein-verification-code=2aafe7d0-e0e8-474e-b565-25f09e4b52ef",
+      "anthropic-domain-verification-j2g448=j6ujaV7B2ctVhXdNRWCAbgWQB",
+      "facebook-domain-verification=wetfyk60byzwzxc6af5ct4iidciiz8",
+      "openai-domain-verification=dv-3cs5FvAqthq1oIovgoLAvJpO",
+      "wmwgwl7t2p9c0pyqjtxg21zv07sjkw0z",
+      "docker-verification=2c63eedd-5a73-4165-b8a3-1581ddf10029",
+      "docusign=5193e34f-7907-4a09-8a2c-8e6059238790",
+      "_mpsr69of9h3phkpg1oo4pkg7z9o13u8",
+      "meltwater_sso_20220706_TRITON-9530"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "countryName=AU, stateOrProvinceName=New South Wales, localityName=Ultimo, organizationName=Australian Broadcasting Corporation, commonName=abc.net.au",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G3 TLS ECC SHA384 2020 CA1",
+    "notBefore": "May  7 00:00:00 2026 GMT",
+    "notAfter": "Nov 21 23:59:59 2026 GMT",
+    "san": [
+      "abc.net.au",
+      "*.abc-cdn.net.au",
+      "*.abc-host.net.au",
+      "*.abc-prod.net.au",
+      "*.abc-stage.net.au",
+      "*.abc-test.net.au",
+      "*.abc-uat.net.au",
+      "*.abc.net.au",
+      "*.abcradio.net.au",
+      "*.c0.abc.net.au",
+      "*.c1.abc.net.au",
+      "*.c2.abc.net.au",
+      "*.iview.abc-prod.net.au",
+      "*.iview.abc-stage.net.au",
+      "*.iview.abc-test.net.au",
+      "*.iview.abc-uat.net.au",
+      "*.iview.abc.net.au",
+      "*.test.abc.net.au",
+      "*.wcms-np.abc-cdn.net.au",
+      "*.wcms.abc-cdn.net.au",
+      "abc.au",
+      "abc.gov.au",
+      "abcaustralia.net.au",
+      "api.rex.abc-test.net.au",
+      "api.rex.abc.net.au",
+      "api.seesaw.abc.net.au",
+      "bamboo.ss.c0.abc.net.au",
+      "bitbucket.ss.c0.abc.net.au",
+      "click.mail-list.abc.net.au",
+      "clicks.e.email.abc.net.au",
+      "control-panel.rex.abc-test.net.au",
+      "control-panel.rex.abc.net.au",
+      "developers.digital.abc.net.au",
+      "ios.tviview.abc.net.au",
+      "ios.tviview.iview.abc-prod.net.au",
+      "ios.tviview.iview.abc-stage.net.au",
+      "ios.tviview.iview.abc-test.net.au",
+      "livemusic.triplej.abc-prod.net.au",
+      "livemusic.triplej.abc-test.net.au",
+      "livemusicclearance.triplej.abc-prod.net.au",
+      "livemusicclearance.triplej.abc-test.net.au",
+      "pub.mail-list.abc.net.au",
+      "streaming.c3.abc.net.au",
+      "test.abcaustralia.net.au",
+      "triplejunearthed.com",
+      "www.abcaustralia.net.au",
+      "www.abccommercial.com",
+      "www.cdn.abc.net.au",
+      "www.iviewsupport.abc.net.au",
+      "www.triplejunearthed.com"
+    ],
+    "days_left": 57,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "23.209.216.141",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: AkamaiGHost"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.abc.net.au",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://www.abc.net.au/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 200,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 403,
+    "/.htaccess": 403,
+    "/wp-login.php": 403,
+    "/phpmyadmin/index.php": 403,
+    "/server-status": 403,
+    "/api/": 403
+  },
+  "subdomains": {
+    "source": "crt.sh",
+    "count": 338,
+    "notable": [
+      "api.abc.net.au",
+      "api.iview.abc.net.au",
+      "api.rex.abc.net.au",
+      "api.seesaw.abc.net.au",
+      "app.abc.net.au",
+      "apps.abc.net.au",
+      "auth.confluence.c2.abc.net.au",
+      "beta.abc.net.au",
+      "careers.abc.net.au",
+      "cdn.audience-mms-processor-nonp.c0.abc.net.au",
+      "cdn.audience-mms-processor-prod.c0.abc.net.au",
+      "cdn.iview.abc.net.au",
+      "centres.shop.abc.net.au",
+      "help.abc.net.au",
+      "imanage.apps.abc.net.au"
+    ],
+    "sample": [
+      "abc.net.au",
+      "abc908.aus.aunty.abc.net.au",
+      "abcsccmcmg.abc.net.au",
+      "abcvpn.abc.net.au",
+      "about.abc.net.au",
+      "access.abc.net.au",
+      "accounts-api.abc.net.au",
+      "airflow-nonp.ad-np.c0.abc.net.au",
+      "airflow-prod.ad.c0.abc.net.au",
+      "airflow-v2-nonp.ad-np.c0.abc.net.au",
+      "airflow-v2-prod.ad.c0.abc.net.au",
+      "aisawards.abc.net.au",
+      "amp.abc.net.au",
+      "api-archives-stills.content-np.c0.abc.net.au",
+      "api-archives.content-np.c0.abc.net.au",
+      "api-archives.content-st.c0.abc.net.au",
+      "api-archives.content.c0.abc.net.au",
+      "api-coda.photos-np.c0.abc.net.au",
+      "api-coda.photos-st.c0.abc.net.au",
+      "api-coda.photos.c0.abc.net.au"
+    ],
+    "dangling": [
+      "app.abc.net.au"
+    ]
+  },
+  "elapsed_s": 18.5,
+  "rechecked": "2026-09-25 23:12 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

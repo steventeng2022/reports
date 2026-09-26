@@ -1,292 +1,248 @@
-# Security Audit Report - hbr.org
+# Security Audit Report — hbr.org
 
 ## Scope and authorization
 
 | Item | Value |
 |---|---|
 | Target | https://hbr.org/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | hbr.org |
-| Test date | 2026-09-25 14:53 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-26 01:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
+Total findings: **8** (High: 0, Medium: 0, Low: 3, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | H1b | Weak HSTS (max-age < 1 year) | CWE-319 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | low | H4 | No clickjacking protection | CWE-1023 |
-| 6 | info | A10 | robots.txt discloses sensitive paths | CWE-200 |
-| 7 | info | A4 | Sensitive paths return 200 unauthenticated | CWE-538 |
-| 8 | info | B8i | NoSQL injection candidate (body-length divergence) | CWE-943 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
-| 11 | info | H6 | Server technology disclosure | CWE-200 |
+| 4 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 5 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 6 | info | P8 | Missing security.txt | CWE-1038 |
+| 7 | info | CT1 | 26 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 8 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
+
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
+
+### 2. [LOW] Weak HSTS (max-age < 1 year) (`H1b`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 2. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **Detail:** HSTS present but max-age=7776000 (< 31536000).
+- **Context:** https response, /
+- **Recommendation:** Increase max-age to at least 31536000; add includeSubDomains/preload.
 
 ### 3. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
 - **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
 - **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 5. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 6. [INFO] robots.txt discloses sensitive paths (`A10`)
+### 4. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** Disallowed paths in robots.txt: /login*, /api/recaptcha/enabled.
-- **Recommendation:** Treat robots.txt as discovery, not a control: ensure listed sensitive paths are authenticated or rate-limited.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 7. [INFO] Sensitive paths return 200 unauthenticated (`A4`)
-
-- **CWE:** CWE-538
-- **Detail:** GET /api/v1 returns 200 with no Content-Type and an empty body (0 bytes) on re-test; no data or structure is exposed - treat as an endpoint/health stub rather than a sensitive disclosure.
-- **Recommendation:** Review each exposed path; require authentication for admin/actuator-style endpoints and remove world-readable credential or config files.
-
-### 8. [INFO] NoSQL injection candidate (body-length divergence) (`B8i`)
-
-- **CWE:** CWE-943
-- **Detail:** Param 'ab': $where payload changed response size (20088 -> 20160 bytes).
-- **Recommendation:** Confirm the body-length divergence with further NoSQL operators before treating as exploitable.
-
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 5. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 10. [INFO] Server technology disclosure (`H6`)
+### 6. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 7. [INFO] 26 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: CloudFront
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** Notable hostnames: login.hbr.org, login.qa.hbr.org, store.hbr.org, store.qa.hbr.org
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 11. [INFO] Server technology disclosure (`H6`)
+### 8. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: 
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-## Aggressive probe campaign
-
-**Stage 1 - injection/reflection probes (28 requests):**
-
-- no stage-1 probe hits (all probes negative)
-
-**Stage 2 - aggressive probe suite v2 (99 requests):**
-
-- sweep: {"high":["/api/v1 (200 no-type)"],"protected":[]}
-- robots_disallow: ["/resources/","/fastanswers","/my-library*","/email-colleague/","/add-to-cart/","/login*","/shopping-cart/","/shipping-payment","/review-order","/order/thank-you/","/content/ipad/","/newsletters*","/product/recommended*","/webinar-assessment","/search*","/academic-subscriptions","/alumni-subscriptions","/resources/html/error/404.html","/sponsored/2022/10/disruptors-who-are-changing-their-industries","/api/recaptcha/enabled"]
-
-Stage-2 probe log (observed responses):
-- timing base=866ms id=523 search=235
-- boolean b=404/59912 t1=404/59912 t2=404/59912
-- graphql /graphql -> 404
-- graphql /api/graphql -> 200
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 404
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 404
-- trav2 /%2e%2e%00.html -> 400
-- trav2 /static//../../../../../../etc/passwd -> 404
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 404
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 404
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 404
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 404
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 404
-- apicors /api -> 404
-- apicors /api/v1 -> 200
-- apicors /graphql -> 404
-- apicors /rest -> 404
-- apicors /v1 -> 404
-
-**Stage 3 - live parameter harvest, takeover and injection probes (56 requests):**
-
-- params_harvested: ["ab","trk","hl","movetile_weeklyhotlist","movetile_mtod","sku"]
-
-Stage-3 probe log (observed responses):
-- harvest discovered 6 live query params
-- xss3 /subscriptions?ab -> 404
-- xss3 //www.linkedin.com/company/harvard-business-review?trk -> 404
-- xss3 //www.instagram.com/harvard_business_review/?hl -> 404
-- xss3 /email-newsletters?movetile_weeklyhotlist -> 404
-- xss3 /email-newsletters?movetile_mtod -> 404
-- xss3 https://store.hbr.org/product/how-business-pivots-during-war-lessons-from-ukrainian-companies-responses-to-crisis/BH1263?sku -> err
-- subs no dangling service CNAMEs over 16 subdomains
-
-**Stage 4 - injection/XSS/redirect/endpoint matrix suite v4 (136 requests):**
-
-- v4_params: ["ab@/subscriptions","trk@//www.linkedin.com/company/harvard-business-review","hl@//www.instagram.com/harvard_business_review/","movetile_weeklyhotlist@/email-newsletters","movetile_mtod@/email-newsletters","sku@https://store.hbr.org/product/how-business-pivots-during-war-lessons-from-ukrainian-companies-responses-to-crisis/BH1263"]
-
-Stage-4 probe log (observed responses):
-- harvest discovered 6 live query params
+- **Detail:** Historical subdomains no longer have A/AAAA records: login.hbr.org; content may still be served via virtual-host fallback.
+- **Recommendation:** Reclaim or delete dangling subdomains to reduce virtual-hosting attack surface.
 
 ## Evidence (raw response observations)
 
 ```json
 {
-  "http_status": 301,
-  "http_redirect_to": "https://hbr.org/",
-  "https_status": 200,
-  "content_type": "text/html; charset=utf-8",
-  "title": "Harvard Business Review - Ideas and Advice for Leaders",
-  "path_gitconfig": 404,
-  "path_envfile": 404,
-  "path_securitytxt": 403,
-  "path_robots": 200,
-  "robots_found": true,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 404",
-    "sqli /?id=1%27+OR+1=1-- -> 404",
-    "sqli /?q=%27 -> 404",
-    "sqli /products?filter=%27 -> 404",
-    "sqli /?p=1;-- -> 404",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 404",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 404",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 404",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 404",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 404",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 404",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 400",
-    "trav /static/../../../../../../../../etc/passwd -> 404",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 404",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 404",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 404",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 404",
-    "host no reflection -> err",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 200",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404"
-  ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=866ms id=523 search=235",
-    "boolean b=404/59912 t1=404/59912 t2=404/59912",
-    "graphql /graphql -> 404",
-    "graphql /api/graphql -> 200",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 404",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 404",
-    "trav2 /%2e%2e%00.html -> 400",
-    "trav2 /static//../../../../../../etc/passwd -> 404",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 404",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 404",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 404",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 404",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 404",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 404",
-    "apicors /api/v1 -> 200",
-    "apicors /graphql -> 404",
-    "apicors /rest -> 404",
-    "apicors /v1 -> 404"
-  ],
-  "sweep": {
-    "high": [
-      "/api/v1 (200 no-type)"
+  "domain": "hbr.org",
+  "dns": {
+    "a": [
+      "65.9.180.29",
+      "65.9.180.70",
+      "65.9.180.27",
+      "65.9.180.80"
     ],
-    "protected": []
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "usb-smtp-inbound-2.mimecast.com (pref 10)",
+      "usb-smtp-inbound-1.mimecast.com (pref 10)"
+    ],
+    "ns": [
+      "ns-469.awsdns-58.com.",
+      "ns-1877.awsdns-42.co.uk.",
+      "ns-604.awsdns-11.net.",
+      "ns-1175.awsdns-18.org."
+    ],
+    "spf": [
+      "webexdomainverification.4C675B8B1892B136E053AB06FC0A3F65=7b2ac320-8920-4cf1-826d-975f96f199cb",
+      "MS=ms51679339",
+      "google-site-verification=ikLo_eYH7jY56yB4qtVoDTxY9WUWl7NkUEsM-UB6DT0",
+      "_1nl5kysnqxswpmo75e1u1fdcbs0fptr",
+      "google-site-verification=P1JGD_hnkAqlxSPmsFW_M2nifpmJC2iBjnfmKi1uJCc",
+      "knowbe4-site-verification=f00a4d6e618b4a00b6f39e0b4c9e093f",
+      "docusign=59df337d-04fe-422f-bd8e-438fc3e80d21",
+      "Wo71J1PNbWKkAikjb4WeqxCjBcNQwf6hcll0LJM6s9peRMF1ImcaCENQfddffLROaJY6wZHW2jrUsDNXC38vjg==",
+      "v=spf1 ip4:167.89.5.215 include:hbsp.harvard.edu include:amazonses.com include:u12602457.wl208.sendgrid.net include:aspmx.sailthru.com include:_spf.bigcommerce.com ~all",
+      "onetrust-domain-verification=0df7d79642a64b338bb91818045b158d",
+      "smartsheet-site-validation=76f6Fdn8EnnOgbwX-KcCnJ5Nj66wRUeo",
+      "atlassian-domain-verification=5VnB9cXf8cZ+rqMksjlq1KyEzUSjGsBJ5irmtvOZtpwtq6AsKSs+jGHcKUhotODA",
+      "openai-domain-verification=dv-yzIW4FvevpXrgKYrQ9Ndlm4V",
+      "ciscocidomainverification=3a5e2e428cc891b6aef0b7598537338dd5c2bf8fe96326d58d87f62324dd9733",
+      "lyncdiscover = seh3q1rpvadu98fpk213q7htq2",
+      "extensis-domain-verification=3decd987-0352-469b-8111-a273b429588a",
+      "sip=m699vbpan7kdoitobogsq38e1k",
+      "google-site-verification=0fyEgLpijqbt_OMG0ncBIK4G153eKqHF7UeGfTZgZk0",
+      "facebook-domain-verification=hvrm85rd5hvr18o50vzpd1lprkjg76",
+      "google-site-verification=o-E502ZnlfSSAM2JRb0RUfIxROmYDcYVOZnzlVRknS0"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; pct=100; rua=mailto:ufwln6jz@ag.dmarcian.com; ruf=mailto:ufwln6jz@fr.dmarcian.com"
+    ],
+    "dnssec_authenticated": false
   },
-  "robots_disallow": [
-    "/resources/",
-    "/fastanswers",
-    "/my-library*",
-    "/email-colleague/",
-    "/add-to-cart/",
-    "/login*",
-    "/shopping-cart/",
-    "/shipping-payment",
-    "/review-order",
-    "/order/thank-you/",
-    "/content/ipad/",
-    "/newsletters*",
-    "/product/recommended*",
-    "/webinar-assessment",
-    "/search*",
-    "/academic-subscriptions",
-    "/alumni-subscriptions",
-    "/resources/html/error/404.html",
-    "/sponsored/2022/10/disruptors-who-are-changing-their-industries",
-    "/api/recaptcha/enabled"
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=*.hbr.org",
+    "issuer": "countryName=US, organizationName=Amazon, commonName=Amazon RSA 2048 M04",
+    "notBefore": "Sep 15 00:00:00 2026 GMT",
+    "notAfter": "Mar 31 23:59:59 2027 GMT",
+    "san": [
+      "*.hbr.org",
+      "hbr.org"
+    ],
+    "days_left": 186,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "65.9.180.29",
+    "open": []
+  },
+  "https": {
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "title": "Harvard Business Review - Ideas and Advice for Leaders"
+  },
+  "mixed_content": [],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.hbr.org",
+      "acao": "",
+      "acac": ""
+    }
   ],
-  "v3_probe_count": 56,
-  "v3_log": [
-    "harvest discovered 6 live query params",
-    "xss3 /subscriptions?ab -> 404",
-    "xss3 //www.linkedin.com/company/harvard-business-review?trk -> 404",
-    "xss3 //www.instagram.com/harvard_business_review/?hl -> 404",
-    "xss3 /email-newsletters?movetile_weeklyhotlist -> 404",
-    "xss3 /email-newsletters?movetile_mtod -> 404",
-    "xss3 https://store.hbr.org/product/how-business-pivots-during-war-lessons-from-ukrainian-companies-responses-to-crisis/BH1263?sku -> err",
-    "subs no dangling service CNAMEs over 16 subdomains",
-    "cache X-Forwarded-Host not reflected -> 200"
+  "http": {
+    "status": 301,
+    "location": "https://hbr.org/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 404",
+    "/redirect?next=https://evil-auditor.example/x -> 404",
+    "/go?url=https://evil-auditor.example/x -> 404",
+    "/url?url=https://evil-auditor.example/x -> 404"
   ],
-  "params_harvested": [
-    "ab",
-    "trk",
-    "hl",
-    "movetile_weeklyhotlist",
-    "movetile_mtod",
-    "sku"
-  ],
-  "v4_probe_count": 136,
-  "v4_log": [
-    "harvest discovered 6 live query params",
-    "sweep4 all swept paths 404/403"
-  ],
-  "v4_params": [
-    "ab@/subscriptions",
-    "trk@//www.linkedin.com/company/harvard-business-review",
-    "hl@//www.instagram.com/harvard_business_review/",
-    "movetile_weeklyhotlist@/email-newsletters",
-    "movetile_mtod@/email-newsletters",
-    "sku@https://store.hbr.org/product/how-business-pivots-during-war-lessons-from-ukrainian-companies-responses-to-crisis/BH1263"
-  ]
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 403,
+    "/security.txt": 404,
+    "/.git/HEAD": 404,
+    "/.git/config": 404,
+    "/.env": 404,
+    "/.htaccess": 404,
+    "/wp-login.php": 404,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 404,
+    "/api/": 301
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 26,
+    "notable": [
+      "login.hbr.org",
+      "login.qa.hbr.org",
+      "store.hbr.org",
+      "store.qa.hbr.org"
+    ],
+    "sample": [
+      "advisorycouncil.hbr.org",
+      "assessments.hbr.org",
+      "audio.hbr.org",
+      "coveo-analytics-qa.hbr.org",
+      "coveo-analytics.hbr.org",
+      "coveo-search-qa.hbr.org",
+      "coveo-search.hbr.org",
+      "execstrategy-dev.hbr.org",
+      "execstrategy-sand.hbr.org",
+      "execstrategy-stage.hbr.org",
+      "execstrategy.hbr.org",
+      "hbr.org",
+      "lab.hbr.org",
+      "link.emails.hbr.org",
+      "link.hbr.org",
+      "link.qa.hbr.org",
+      "login.hbr.org",
+      "login.qa.hbr.org",
+      "qa.hbr.org",
+      "research.hbr.org"
+    ],
+    "dangling": [
+      "login.hbr.org"
+    ]
+  },
+  "elapsed_s": 16.2,
+  "rechecked": "2026-09-26 04:00 UTC"
 }
 ```
 
 ## Notes
 
-- All tests used a standard browser User-Agent; each site was probed with a four-stage aggressive GET-only suite: passive/header checks, stage-1/2 injection/XSS/traversal/CORS/redirect probes, a stage-3 live-parameter-harvest campaign (per-parameter XSS/SQLi/LFI/SSTI/redirect, JSONP, command injection, NoSQL, subdomain-takeover CNAME checks via DNS-over-HTTPS, forwarded-host cache poisoning), and a stage-4 matrix suite (multi-context XSS with CSP awareness, SSTI, error-based SQLi + WAF fingerprint, command injection, deep LFI, open-redirect bypass encodings, CRLF, HPP, NoSQL, sensitive-endpoint sweep, GraphQL introspection, verbose-500 stack disclosure, llms.txt, JSONP-XSS; up to ~300 requests per site).
-- No credentials were used; no state was modified on the target.
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

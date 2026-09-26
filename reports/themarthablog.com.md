@@ -1,277 +1,245 @@
-# Security Audit Report - themarthablog.com
+# Security Audit Report — themarthablog.com
 
 ## Scope and authorization
 
 | Item | Value |
 |---|---|
 | Target | https://themarthablog.com/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | themarthablog.com |
-| Test date | 2026-09-25 14:54 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-26 01:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 1, Low: 6, Info: 9)
+Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | R1 | HTTP redirect to HTTP | CWE-319 |
-| 2 | low | C1 | Cookie without Secure flag | CWE-614 |
-| 3 | low | C16 | llms.txt / LLM context file exposed (v4) | CWE-538 |
-| 4 | low | H1 | Missing HSTS header | CWE-319 |
-| 5 | low | H1 | Missing HSTS header | CWE-319 |
-| 6 | low | H2 | Missing CSP header | CWE-1021 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | PRT8080 | Alternate web service (port 8080) reachable | CWE-200 |
+| 3 | info | PRT8443 | Alternate web service (port 8443) reachable | CWE-200 |
+| 4 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 5 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 6 | low | H1 | Missing HSTS header | CWE-319 |
 | 7 | low | H2 | Missing CSP header | CWE-1021 |
-| 8 | info | A10b | Sitemap enumerates URLs | CWE-200 |
-| 9 | info | A4i | Sensitive paths exist (protected or app shells) | CWE-538 |
-| 10 | info | C12i | Additional responsive paths (v4 sweep) | CWE-538 |
-| 11 | info | C15 | WAF / edge fingerprint (v4) | CWE-200 |
-| 12 | info | H6 | Server technology disclosure | CWE-200 |
-| 13 | info | H6 | Server technology disclosure | CWE-200 |
-| 14 | info | H7 | X-Powered-By disclosure | CWE-200 |
-| 15 | info | H7 | X-Powered-By disclosure | CWE-200 |
-| 16 | info | P3 | Missing security.txt | CWE-1038 |
+| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 9 | info | H6 | Server technology disclosure | CWE-200 |
+| 10 | low | RED1 | HTTP redirect points to another host over plain HTTP | CWE-319 |
+| 11 | info | P11 | WordPress login page exposed | CWE-200 |
+| 12 | info | P8 | Missing security.txt | CWE-1038 |
+| 13 | info | CT1 | 3 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [MEDIUM] HTTP redirect to HTTP (`R1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-319
-- **Detail:** http://themarthablog.com redirects to http://www.themarthablog.com/ (not HTTPS).
-- **Recommendation:** Redirect http:// to https://.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookie without Secure flag (`C1`)
+### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
-- **CWE:** CWE-614
-- **Detail:** Cookie __cf_bm lacks Secure attribute; transmitted over HTTP.
-- **Context:** http response
-- **Recommendation:** Add the Secure attribute to the cookie.
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 141.193.213.20:8080 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 3. [LOW] llms.txt / LLM context file exposed (v4) (`C16`)
+### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
-- **CWE:** CWE-538
-- **Detail:** GET https://themarthablog.com/llms.txt returned 450897 bytes of text/plain content; the AI-oriented index describes site structure/data for LLM consumers.
-- **Recommendation:** Decide whether the llms.txt file should be public; redact internal structure, endpoints, and data descriptions if not intended for LLM consumers.
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 141.193.213.20:8443 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 4. [LOW] Missing HSTS header (`H1`)
+### 4. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: cloudflare; X-Powered-By: WP Engine; Cloudflare CDN/WAF
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 5. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
+
+- **CWE:** CWE-200
+- **Detail:** Alt-Svc: h3=":443"; ma=86400
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
+
+### 6. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
 - **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
+- **Context:** https response, /
 - **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 5. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 6. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
 ### 7. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
 - **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
 - **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 8. [INFO] Sitemap enumerates URLs (`A10b`)
+### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** /sitemap.xml lists 0 URLs; sensitive-looking entries: none.
-- **Recommendation:** Remove or protect internal/sensitive URLs from the public sitemap.
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 9. [INFO] Sensitive paths exist (protected or app shells) (`A4i`)
-
-- **CWE:** CWE-538
-- **Detail:** Paths answering 401/403 or HTML shells: /.svn/entries (403 protected), /wp-login.php (HTML shell), /phpmyadmin (403 protected).
-- **Recommendation:** No immediate action if the paths are genuinely protected; otherwise return a real 404 to unauthenticated probes for paths that should not exist.
-
-### 10. [INFO] Additional responsive paths (v4 sweep) (`C12i`)
-
-- **CWE:** CWE-538
-- **Detail:** Answered without 404: /wp-login.php -> 200; /sitemap.xml -> 200.
-- **Recommendation:** Return a real 404 for paths that should not exist; review the listed responsive paths for sensitive content.
-
-### 11. [INFO] WAF / edge fingerprint (v4) (`C15`)
+### 9. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** Fingerprinted during probing: Cloudflare (matched on response body/server header across injection probes).
-- **Recommendation:** No direct fix; use the fingerprint to tune WAF rules and re-test with encoded variants.
-
-### 12. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Context:** http response
+- **Detail:** Header reveals: cloudflare
+- **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
-### 13. [INFO] Server technology disclosure (`H6`)
+### 10. [LOW] HTTP redirect points to another host over plain HTTP (`RED1`)
+
+- **CWE:** CWE-319
+- **Detail:** Location: http://www.themarthablog.com/
+- **Context:** https response, /
+- **Recommendation:** Redirect to the same host over HTTPS.
+
+### 11. [INFO] WordPress login page exposed (`P11`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: cloudflare
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** /wp-login.php returns 200.
+- **Recommendation:** Restrict or rate-limit the WordPress login endpoint.
 
-### 14. [INFO] X-Powered-By disclosure (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** X-Powered-By: WP Engine
-- **Context:** http response
-- **Recommendation:** Remove the X-Powered-By header.
-
-### 15. [INFO] X-Powered-By disclosure (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** X-Powered-By: WP Engine
-- **Recommendation:** Remove the X-Powered-By header.
-
-### 16. [INFO] Missing security.txt (`P3`)
+### 12. [INFO] Missing security.txt (`P8`)
 
 - **CWE:** CWE-1038
 - **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-## Aggressive probe campaign
+### 13. [INFO] 3 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
-**Stage 1 - injection/reflection probes (28 requests):**
-
-- no stage-1 probe hits (all probes negative)
-
-**Stage 2 - aggressive probe suite v2 (99 requests):**
-
-- sweep: {"high":[],"protected":["/.svn/entries (403 protected)","/wp-login.php (HTML shell)","/phpmyadmin (403 protected)"]}
-- sitemap: {"total":0,"sensitive":[]}
-
-Stage-2 probe log (observed responses):
-- timing base=411ms id=71 search=40
-- boolean b=301/0 t1=403/5824 t2=403/5824
-- graphql /graphql -> 301
-- graphql /api/graphql -> 301
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 403
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 403
-- trav2 /%2e%2e%00.html -> 400
-- trav2 /static//../../../../../../etc/passwd -> 301
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 403
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 403
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403
-- apicors /api -> 301
-- apicors /api/v1 -> 301
-- apicors /graphql -> 301
-- apicors /rest -> 301
-- apicors /v1 -> 301
-
-**Stage 3 - live parameter harvest, takeover and injection probes (8 requests):**
-
-- no stage-3 probe hits (all probes negative)
-
-Stage-3 probe log (observed responses):
-- harvest no query params discovered on sampled pages
-- subs no dangling service CNAMEs over 16 subdomains
-
-**Stage 4 - injection/XSS/redirect/endpoint matrix suite v4 (62 requests):**
-
-- no stage-4 probe hits (all probes negative)
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: static.themarthablog.com
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
 ## Evidence (raw response observations)
 
 ```json
 {
-  "http_status": 301,
-  "http_redirect_to": "http://www.themarthablog.com/",
-  "https_status": 301,
-  "content_type": "text/html; charset=UTF-8",
-  "title": "",
-  "path_gitconfig": 403,
-  "path_envfile": 403,
-  "path_securitytxt": 404,
-  "path_robots": 301,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 403",
-    "sqli /?id=1%27+OR+1=1-- -> 403",
-    "sqli /?q=%27 -> 301",
-    "sqli /products?filter=%27 -> 301",
-    "sqli /?p=1;-- -> 301",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 403",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 403",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 400",
-    "trav /static/../../../../../../../../etc/passwd -> 301",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 301",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 403",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 301",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 301",
-    "host no reflection -> err",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 301",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 301"
-  ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=411ms id=71 search=40",
-    "boolean b=301/0 t1=403/5824 t2=403/5824",
-    "graphql /graphql -> 301",
-    "graphql /api/graphql -> 301",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 403",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 403",
-    "trav2 /%2e%2e%00.html -> 400",
-    "trav2 /static//../../../../../../etc/passwd -> 301",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 403",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 403",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 301",
-    "apicors /api/v1 -> 301",
-    "apicors /graphql -> 301",
-    "apicors /rest -> 301",
-    "apicors /v1 -> 301"
-  ],
-  "sweep": {
-    "high": [],
-    "protected": [
-      "/.svn/entries (403 protected)",
-      "/wp-login.php (HTML shell)",
-      "/phpmyadmin (403 protected)"
+  "domain": "themarthablog.com",
+  "dns": {
+    "a": [
+      "141.193.213.20",
+      "141.193.213.21"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [],
+    "ns": [
+      "ns-497.awsdns-62.com.",
+      "ns-2031.awsdns-61.co.uk.",
+      "ns-710.awsdns-24.net.",
+      "ns-1377.awsdns-44.org."
+    ],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=themarthablog.com",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE1",
+    "notBefore": "Sep 14 17:56:25 2026 GMT",
+    "notAfter": "Dec 13 18:56:22 2026 GMT",
+    "san": [
+      "themarthablog.com"
+    ],
+    "days_left": 78,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "141.193.213.20",
+    "open": [
+      8080,
+      8443
     ]
   },
-  "sitemap": {
-    "total": 0,
-    "sensitive": []
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
   },
-  "v3_probe_count": 8,
-  "v3_log": [
-    "harvest no query params discovered on sampled pages",
-    "subs no dangling service CNAMEs over 16 subdomains",
-    "cache X-Forwarded-Host not reflected -> 301"
+  "mixed_content": [],
+  "tech": [
+    "Server: cloudflare",
+    "X-Powered-By: WP Engine",
+    "Cloudflare CDN/WAF"
   ],
-  "v4_probe_count": 62,
-  "v4_log": [
-    "harvest no query params discovered"
-  ]
+  "cookies": [
+    {
+      "domain": "themarthablog.com",
+      "samesite": "none"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.themarthablog.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "http://www.themarthablog.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 200,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 404,
+    "/.git/HEAD": 403,
+    "/.git/config": 403,
+    "/.env": 403,
+    "/.htaccess": 403,
+    "/wp-login.php": 200,
+    "/phpmyadmin/index.php": 403,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 3,
+    "notable": [
+      "static.themarthablog.com"
+    ],
+    "sample": [
+      "static.themarthablog.com",
+      "themarthablog.com",
+      "www.themarthablog.com"
+    ]
+  },
+  "elapsed_s": 9.5,
+  "rechecked": "2026-09-26 05:00 UTC"
 }
 ```
 
 ## Notes
 
-- All tests used a standard browser User-Agent; each site was probed with a four-stage aggressive GET-only suite: passive/header checks, stage-1/2 injection/XSS/traversal/CORS/redirect probes, a stage-3 live-parameter-harvest campaign (per-parameter XSS/SQLi/LFI/SSTI/redirect, JSONP, command injection, NoSQL, subdomain-takeover CNAME checks via DNS-over-HTTPS, forwarded-host cache poisoning), and a stage-4 matrix suite (multi-context XSS with CSP awareness, SSTI, error-based SQLi + WAF fingerprint, command injection, deep LFI, open-redirect bypass encodings, CRLF, HPP, NoSQL, sensitive-endpoint sweep, GraphQL introspection, verbose-500 stack disclosure, llms.txt, JSONP-XSS; up to ~300 requests per site).
-- No credentials were used; no state was modified on the target.
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

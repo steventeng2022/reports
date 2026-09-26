@@ -1,242 +1,261 @@
-# Security Audit Report - justgiving.com
+# Security Audit Report — justgiving.com
 
 ## Scope and authorization
 
 | Item | Value |
 |---|---|
 | Target | https://justgiving.com/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | justgiving.com |
-| Test date | 2026-09-25 14:55 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-26 01:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 0, Low: 4, Info: 4)
+Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C16 | llms.txt / LLM context file exposed (v4) | CWE-538 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | MAIL4 | DMARC policy is p=none (monitor only) | CWE-200 |
+| 3 | info | TECH1 | Technology fingerprint | CWE-200 |
 | 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | info | A10 | robots.txt discloses sensitive paths | CWE-200 |
-| 6 | info | C12i | Additional responsive paths (v4 sweep) | CWE-538 |
+| 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 6 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 7 | info | H6 | Server technology disclosure | CWE-200 |
-| 8 | info | H6 | Server technology disclosure | CWE-200 |
+| 8 | info | CT1 | 38 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] llms.txt / LLM context file exposed (v4) (`C16`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-538
-- **Detail:** GET https://justgiving.com/llms.txt returned 1358 bytes of text/plain content; the AI-oriented index describes site structure/data for LLM consumers.
-- **Recommendation:** Decide whether the llms.txt file should be public; redact internal structure, endpoints, and data descriptions if not intended for LLM consumers.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 2. [INFO] DMARC policy is p=none (monitor only) (`MAIL4`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **CWE:** CWE-200
+- **Detail:** DMARC is published but policy is 'none'; failing mail is not quarantined.
+- **Recommendation:** Move to p=quarantine/reject once monitor reports are clean.
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 3. [INFO] Technology fingerprint (`TECH1`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: AmazonS3
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
 ### 4. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
 - **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
 - **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 5. [INFO] robots.txt discloses sensitive paths (`A10`)
+### 5. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** Disallowed paths in robots.txt: /charities/beta/account/login, /charities/beta/account/login, /charities/beta/account/login, /charities/beta/account/login, /charities/beta/account/login, /charities/beta/account/login, /charities/beta/account/login.
-- **Recommendation:** Treat robots.txt as discovery, not a control: ensure listed sensitive paths are authenticated or rate-limited.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 6. [INFO] Additional responsive paths (v4 sweep) (`C12i`)
+### 6. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- **CWE:** CWE-538
-- **Detail:** Answered without 404: /elmah.axd -> 200; /elmah.axd/list -> 200.
-- **Recommendation:** Return a real 404 for paths that should not exist; review the listed responsive paths for sensitive content.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
 ### 7. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: CloudFront
-- **Context:** http response
+- **Detail:** Header reveals: AmazonS3
+- **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
-### 8. [INFO] Server technology disclosure (`H6`)
+### 8. [INFO] 38 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: AmazonS3
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-## Aggressive probe campaign
-
-**Stage 1 - injection/reflection probes (28 requests):**
-
-- no stage-1 probe hits (all probes negative)
-
-**Stage 2 - aggressive probe suite v2 (99 requests):**
-
-- robots_disallow: ["/","/","/user-account/","/charity/search","/fundraiser/search","/charities/beta/account/login","/share-success/","/user-account/","/charity/search","/fundraiser/search","/charities/beta/account/login","/share-success/","/user-account/","/charity/search","/fundraiser/search","/charities/beta/account/login","/share-success/","/user-account/","/charity/search","/fundraiser/search"]
-
-Stage-2 probe log (observed responses):
-- timing base=677ms id=14 search=679
-- boolean b=200/5280 t1=200/5280 t2=200/5280
-- graphql /graphql -> 302
-- graphql /api/graphql -> 404
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 406
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 406
-- trav2 /%2e%2e%00.html -> 400
-- trav2 /static//../../../../../../etc/passwd -> 406
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 406
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 200
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 200
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 200
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 200
-- apicors /api -> 301
-- apicors /api/v1 -> 404
-- apicors /graphql -> 302
-- apicors /rest -> 302
-- apicors /v1 -> 302
-
-**Stage 3 - live parameter harvest, takeover and injection probes (15 requests):**
-
-- params_harvested: ["id"]
-
-Stage-3 probe log (observed responses):
-- harvest discovered 1 live query params
-- xss3 https://www.googletagmanager.com/ns.html?id -> err
-- subs no dangling service CNAMEs over 16 subdomains
-
-**Stage 4 - injection/XSS/redirect/endpoint matrix suite v4 (93 requests):**
-
-- v4_params: ["id@https://www.googletagmanager.com/ns.html"]
-
-Stage-4 probe log (observed responses):
-- harvest discovered 1 live query params
+- **Detail:** Notable hostnames: app.justgiving.com, blog.justgiving.com, csp-report.staging.justgiving.com, fitness.staging.justgiving.com, graphql.staging.justgiving.com, help.justgiving.com, id.staging.justgiving.com, internal.staging.justgiving.com, media.justgiving.com, pagesettings.staging.justgiving.com
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
 ## Evidence (raw response observations)
 
 ```json
 {
-  "http_status": 301,
-  "http_redirect_to": "https://justgiving.com/",
-  "https_status": 200,
-  "content_type": "text/html; charset=utf-8",
-  "title": "Online fundraising donations and ideas - JustGiving",
-  "path_gitconfig": 404,
-  "path_envfile": 404,
-  "path_securitytxt": 200,
-  "security_txt_found": true,
-  "path_robots": 200,
-  "robots_found": true,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 200",
-    "sqli /?id=1%27+OR+1=1-- -> 200",
-    "sqli /?q=%27 -> 200",
-    "sqli /products?filter=%27 -> 302",
-    "sqli /?p=1;-- -> 200",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 200",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 200",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 200",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 200",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 200",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 200",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 400",
-    "trav /static/../../../../../../../../etc/passwd -> 406",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 406",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 406",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 200",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 200",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 200",
-    "host no reflection -> err",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302"
+  "domain": "justgiving.com",
+  "dns": {
+    "a": [
+      "3.169.55.116",
+      "3.169.55.28",
+      "3.169.55.52",
+      "3.169.55.71"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "mx2.blackbaud.iphmx.com (pref 5)",
+      "mx1.blackbaud.iphmx.com (pref 1)"
+    ],
+    "ns": [
+      "ns-1865.awsdns-41.co.uk.",
+      "ns-493.awsdns-61.com.",
+      "ns-959.awsdns-55.net.",
+      "ns-1506.awsdns-60.org."
+    ],
+    "spf": [
+      "docker-verification=eb8aed88-9460-4fab-9ef2-5ce59854ecc7",
+      "00D200000000iaP=1TBN2000000015l",
+      "smartsheet-site-validation=-ukamuNj8Xn3s0SyCGx2Xe5Vt2oDQ46I",
+      "google-site-verification=9Ie7V9M2YudzHmywa873FdLnRJKZY57zwKHzQLgj_Kw",
+      "0TPSldHHJ3AnIIANqD3HTiUcd/40SZ097zvG7L1hCQsTA5IkkNpnVNZhBPjaoZJjwCPHtr8iDe8kdsvHGi9xSA==",
+      "miro-verification=0a2e1dbb2412c140c5fd914272eb7e9480bf1d6e",
+      "CKO=cli_nsgsiliz6ygezevfc2osdkvtju",
+      "MS=ms30587875",
+      "MS=ms21109735",
+      "google-site-verification=a4kUdVdhuRGENeMFXISY5ile-NsMNYxcyAsHknjaeSs",
+      "figma-domain-verification=8a13494f101d6ca661f43b722f9d090d5a2a2ac65283628d50cfea15ce7e3076-1723691631",
+      "google-site-verification=2l0z9VQCacbAFBgCmfbC47bnTeHQcq4LWOHoIzYG72Q",
+      "lucid-verification=fcj@cjz6eat.zgj9WMQ",
+      "atlassian-domain-verification=S8uXCQd2FYeOlTqNnRo41gCwYfu8sO1gASeWx63dP5j6Yh0iNdqHotTlne8l2f50",
+      "mixpanel-domain-verify=5386caff-2971-4e94-aee0-4d3b5ab42b90",
+      "MS=ms82130383",
+      "MS=ms63724168",
+      "CKO=cli_r5yskqycwsle3mrla2l4xig4pa",
+      "_ziryvqp598rhu877n5y4wj0shxxojdp",
+      "adobe-sign-verification=e1e4662cb4cb8921b04ff65aacba0578",
+      "anthropic-domain-verification-bkk0a0=vsXwOsqFiYmbQeQS4m4KiVc0Y",
+      "v=spf1 mx a include:cust-spf.exacttarget.com include:mktomail.com include:spf.protection.outlook.com include:mail.zendesk.com include:spf.mandrillapp.com -all",
+      "stripe-verification=3c386b3bd938d27ee26d142e2d3201f0d49dfd68edc01090aeb71a5d542819aa"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=none; pct=100; rua=mailto:re+gbzuz3j7wtb@dmarc.postmarkapp.com,mailto:re+or5o1vetcy9@dmarc.postmarkapp.com; sp=none; aspf=r;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=*.justgiving.com",
+    "issuer": "countryName=US, organizationName=Amazon, commonName=Amazon RSA 2048 M01",
+    "notBefore": "Nov  3 00:00:00 2025 GMT",
+    "notAfter": "Dec  1 23:59:59 2026 GMT",
+    "san": [
+      "*.justgiving.com",
+      "justgiving.com"
+    ],
+    "days_left": 66,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "3.169.55.116",
+    "open": []
+  },
+  "https": {
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "title": "Online fundraising donations and ideas - JustGiving"
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: AmazonS3"
   ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=677ms id=14 search=679",
-    "boolean b=200/5280 t1=200/5280 t2=200/5280",
-    "graphql /graphql -> 302",
-    "graphql /api/graphql -> 404",
-    "sweep no hits over 26 paths",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 406",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 406",
-    "trav2 /%2e%2e%00.html -> 400",
-    "trav2 /static//../../../../../../etc/passwd -> 406",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 406",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 200",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 200",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 200",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 200",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 301",
-    "apicors /api/v1 -> 404",
-    "apicors /graphql -> 302",
-    "apicors /rest -> 302",
-    "apicors /v1 -> 302"
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.justgiving.com",
+      "acao": "",
+      "acac": ""
+    }
   ],
-  "robots_disallow": [
-    "/",
-    "/",
-    "/user-account/",
-    "/charity/search",
-    "/fundraiser/search",
-    "/charities/beta/account/login",
-    "/share-success/",
-    "/user-account/",
-    "/charity/search",
-    "/fundraiser/search",
-    "/charities/beta/account/login",
-    "/share-success/",
-    "/user-account/",
-    "/charity/search",
-    "/fundraiser/search",
-    "/charities/beta/account/login",
-    "/share-success/",
-    "/user-account/",
-    "/charity/search",
-    "/fundraiser/search"
+  "http": {
+    "status": 301,
+    "location": "https://justgiving.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 302",
+    "/redirect?next=https://evil-auditor.example/x -> 302",
+    "/go?url=https://evil-auditor.example/x -> 302",
+    "/url?url=https://evil-auditor.example/x -> 302"
   ],
-  "v3_probe_count": 15,
-  "v3_log": [
-    "harvest discovered 1 live query params",
-    "xss3 https://www.googletagmanager.com/ns.html?id -> err",
-    "subs no dangling service CNAMEs over 16 subdomains",
-    "cache X-Forwarded-Host not reflected -> 200"
-  ],
-  "params_harvested": [
-    "id"
-  ],
-  "v4_probe_count": 93,
-  "v4_log": [
-    "harvest discovered 1 live query params"
-  ],
-  "v4_params": [
-    "id@https://www.googletagmanager.com/ns.html"
-  ]
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 404,
+    "/.well-known/security.txt": 200,
+    "/security.txt": 301,
+    "/.git/HEAD": 404,
+    "/.git/config": 404,
+    "/.env": 404,
+    "/.htaccess": 404,
+    "/wp-login.php": 404,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 302,
+    "/api/": 302
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 38,
+    "notable": [
+      "app.justgiving.com",
+      "blog.justgiving.com",
+      "csp-report.staging.justgiving.com",
+      "fitness.staging.justgiving.com",
+      "graphql.staging.justgiving.com",
+      "help.justgiving.com",
+      "id.staging.justgiving.com",
+      "internal.staging.justgiving.com",
+      "media.justgiving.com",
+      "pagesettings.staging.justgiving.com",
+      "receipts.staging.justgiving.com",
+      "staging.justgiving.com",
+      "static.justgiving.com",
+      "static.staging.justgiving.com",
+      "tags-fitness.staging.justgiving.com"
+    ],
+    "sample": [
+      "app.justgiving.com",
+      "bbid.justgiving.com",
+      "blog.justgiving.com",
+      "click.contact.justgiving.com",
+      "csp-report.justgiving.com",
+      "csp-report.staging.justgiving.com",
+      "developer.justgiving.com",
+      "fitness.justgiving.com",
+      "fitness.staging.justgiving.com",
+      "graphql.justgiving.com",
+      "graphql.staging.justgiving.com",
+      "help.justgiving.com",
+      "id.justgiving.com",
+      "id.staging.justgiving.com",
+      "image.contact.justgiving.com",
+      "info.justgiving.com",
+      "internal.staging.justgiving.com",
+      "justgiving.com",
+      "media.justgiving.com",
+      "mi.justgiving.com"
+    ]
+  },
+  "elapsed_s": 10.9,
+  "rechecked": "2026-09-26 04:00 UTC"
 }
 ```
 
 ## Notes
 
-- All tests used a standard browser User-Agent; each site was probed with a four-stage aggressive GET-only suite: passive/header checks, stage-1/2 injection/XSS/traversal/CORS/redirect probes, a stage-3 live-parameter-harvest campaign (per-parameter XSS/SQLi/LFI/SSTI/redirect, JSONP, command injection, NoSQL, subdomain-takeover CNAME checks via DNS-over-HTTPS, forwarded-host cache poisoning), and a stage-4 matrix suite (multi-context XSS with CSP awareness, SSTI, error-based SQLi + WAF fingerprint, command injection, deep LFI, open-redirect bypass encodings, CRLF, HPP, NoSQL, sensitive-endpoint sweep, GraphQL introspection, verbose-500 stack disclosure, llms.txt, JSONP-XSS; up to ~300 requests per site).
-- No credentials were used; no state was modified on the target.
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

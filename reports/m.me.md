@@ -1,224 +1,198 @@
-# Security Audit Report - m.me
+# Security Audit Report — m.me
 
 ## Scope and authorization
 
 | Item | Value |
 |---|---|
 | Target | https://m.me/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | m.me |
-| Test date | 2026-09-25 14:54 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-26 01:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 5, Info: 5)
+Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C12b | Ancillary file exposure (v4 sweep) | CWE-538 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | low | H4 | No clickjacking protection | CWE-1023 |
-| 6 | info | C12i | Additional responsive paths (v4 sweep) | CWE-538 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H6 | Server technology disclosure | CWE-200 |
-| 10 | info | P3 | Missing security.txt | CWE-1038 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | MAIL4 | DMARC policy is p=none (monitor only) | CWE-200 |
+| 3 | low | TLS4 | TLS certificate expires within 30 days | CWE-298 |
+| 4 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 7 | info | P8 | Missing security.txt | CWE-1038 |
+| 8 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Ancillary file exposure (v4 sweep) (`C12b`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-538
-- **Detail:** Exposed: /crossdomain.xml -> 400 (soft-200 html); /.DS_Store -> 400 (soft-200 html); /backup.zip -> 400 (soft-200 html); /db.sqlite3 -> 400 (soft-200 html); /config.php.bak -> 400 (soft-200 html); /CNAME -> 400 (soft-200 html).
-- **Recommendation:** Remove or protect backup/metadata files (.DS_Store, .svn, *.bak, sqlite, crossdomain.xml) from public access.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 2. [INFO] DMARC policy is p=none (monitor only) (`MAIL4`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **CWE:** CWE-200
+- **Detail:** DMARC is published but policy is 'none'; failing mail is not quarantined.
+- **Recommendation:** Move to p=quarantine/reject once monitor reports are clean.
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 3. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-298
+- **Detail:** Certificate expires in 7 days (notAfter Oct  3 23:59:59 2026 GMT).
+- **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
+### 4. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
+- **CWE:** CWE-200
+- **Detail:** Alt-Svc: h3=":443"; ma=86400
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
 
-### 5. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 6. [INFO] Additional responsive paths (v4 sweep) (`C12i`)
-
-- **CWE:** CWE-538
-- **Detail:** Answered without 404: /elmah.axd -> 400 (soft-200 html); /trace.axd -> 400 (soft-200 html); /api-docs -> 400 (soft-200 html); /swagger.json -> 400 (soft-200 html); /swagger-ui.html -> 400 (soft-200 html); /openapi.json -> 400 (soft-200 html); /graphql -> 400; /debug -> 400 (soft-200 html); /phpinfo.php -> 400 (soft-200 html); /server-status -> 400 (soft-200 html); /metrics -> 400; /actuator -> 400 (soft-200 html) (+others).
-- **Recommendation:** Return a real 404 for paths that should not exist; review the listed responsive paths for sensitive content.
-
-### 7. [INFO] Missing Referrer-Policy (`H5`)
+### 5. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
+- **Context:** https response, /
 - **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 9. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: proxygen-bolt
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 10. [INFO] Missing security.txt (`P3`)
+### 7. [INFO] Missing security.txt (`P8`)
 
 - **CWE:** CWE-1038
 - **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-## Aggressive probe campaign
+### 8. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
-**Stage 1 - injection/reflection probes (28 requests):**
-
-- no stage-1 probe hits (all probes negative)
-
-**Stage 2 - aggressive probe suite v2 (99 requests):**
-
-- no stage-2 probe hits (all probes negative)
-
-Stage-2 probe log (observed responses):
-- timing base=145ms id=139 search=134
-- boolean b=400/1542 t1=400/1542 t2=400/1542
-- graphql /graphql -> 400
-- graphql /api/graphql -> 404
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 404
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 404
-- trav2 /%2e%2e%00.html -> 400
-- trav2 /static//../../../../../../etc/passwd -> 404
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 404
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 400
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 400
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 400
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 400
-- apicors /api -> 400
-- apicors /api/v1 -> 404
-- apicors /graphql -> 400
-- apicors /rest -> 400
-- apicors /v1 -> 400
-
-**Stage 3 - live parameter harvest, takeover and injection probes (23 requests):**
-
-- no stage-3 probe hits (all probes negative)
-
-Stage-3 probe log (observed responses):
-- harvest no query params discovered on sampled pages
-- subs no dangling service CNAMEs over 16 subdomains
-
-**Stage 4 - injection/XSS/redirect/endpoint matrix suite v4 (63 requests):**
-
-- no stage-4 probe hits (all probes negative)
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: m.me
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
 ## Evidence (raw response observations)
 
 ```json
 {
-  "http_status": 301,
-  "http_redirect_to": "https://m.me/",
-  "https_status": 302,
-  "content_type": "text/html; charset=\"utf-8\"",
-  "title": "",
-  "path_gitconfig": 404,
-  "path_envfile": 302,
-  "path_securitytxt": 404,
-  "path_robots": 302,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 302",
-    "sqli /?id=1%27+OR+1=1-- -> 302",
-    "sqli /?q=%27 -> 302",
-    "sqli /products?filter=%27 -> 302",
-    "sqli /?p=1;-- -> 302",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 302",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 302",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 302",
-    "trav /static/../../../../../../../../etc/passwd -> 404",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 404",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 302",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 302",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 302",
-    "host no reflection -> 400",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302"
+  "domain": "m.me",
+  "dns": {
+    "a": [
+      "57.144.92.141"
+    ],
+    "aaaa": [
+      "2a03:2880:f325:8d:face:b00c:0:2"
+    ],
+    "cname": null,
+    "mx": [],
+    "ns": [
+      "b.ns.facebook.com.",
+      "d.ns.facebook.com.",
+      "a.ns.facebook.com.",
+      "c.ns.facebook.com."
+    ],
+    "spf": [
+      "v=spf1 a ~all"
+    ],
+    "dmarc": [
+      "v=spf1 a ~all"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_CHACHA20_POLY1305_SHA256",
+    "subject": "countryName=US, stateOrProvinceName=California, localityName=Menlo Park, organizationName=Meta Platforms, Inc., commonName=*.m.me",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
+    "notBefore": "Jul  5 00:00:00 2026 GMT",
+    "notAfter": "Oct  3 23:59:59 2026 GMT",
+    "san": [
+      "*.m.me",
+      "m.me"
+    ],
+    "days_left": 7,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "57.144.92.141",
+    "open": []
+  },
+  "https": {
+    "status": 400,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.m.me",
+      "acao": "",
+      "acac": ""
+    }
   ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=145ms id=139 search=134",
-    "boolean b=400/1542 t1=400/1542 t2=400/1542",
-    "graphql /graphql -> 400",
-    "graphql /api/graphql -> 404",
-    "sweep no hits over 26 paths",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 404",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 404",
-    "trav2 /%2e%2e%00.html -> 400",
-    "trav2 /static//../../../../../../etc/passwd -> 404",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 404",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 400",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 400",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 400",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 400",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 400",
-    "apicors /api/v1 -> 404",
-    "apicors /graphql -> 400",
-    "apicors /rest -> 400",
-    "apicors /v1 -> 400"
+  "http": {
+    "status": 301,
+    "location": "https://m.me/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 400",
+    "/redirect?next=https://evil-auditor.example/x -> 400",
+    "/go?url=https://evil-auditor.example/x -> 400",
+    "/url?url=https://evil-auditor.example/x -> 400"
   ],
-  "v3_probe_count": 23,
-  "v3_log": [
-    "harvest no query params discovered on sampled pages",
-    "subs no dangling service CNAMEs over 16 subdomains",
-    "cache X-Forwarded-Host not reflected -> 400"
-  ],
-  "v4_probe_count": 63,
-  "v4_log": [
-    "harvest no query params discovered"
-  ]
+  "paths": {
+    "/robots.txt": 400,
+    "/sitemap.xml": 400,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 400,
+    "/.git/HEAD": 404,
+    "/.git/config": 404,
+    "/.env": 400,
+    "/.htaccess": 400,
+    "/wp-login.php": 400,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 400,
+    "/api/": 400
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 1,
+    "notable": [
+      "m.me"
+    ],
+    "sample": [
+      "m.me"
+    ]
+  },
+  "elapsed_s": 8.9,
+  "rechecked": "2026-09-26 01:45 UTC"
 }
 ```
 
 ## Notes
 
-- All tests used a standard browser User-Agent; each site was probed with a four-stage aggressive GET-only suite: passive/header checks, stage-1/2 injection/XSS/traversal/CORS/redirect probes, a stage-3 live-parameter-harvest campaign (per-parameter XSS/SQLi/LFI/SSTI/redirect, JSONP, command injection, NoSQL, subdomain-takeover CNAME checks via DNS-over-HTTPS, forwarded-host cache poisoning), and a stage-4 matrix suite (multi-context XSS with CSP awareness, SSTI, error-based SQLi + WAF fingerprint, command injection, deep LFI, open-redirect bypass encodings, CRLF, HPP, NoSQL, sensitive-endpoint sweep, GraphQL introspection, verbose-500 stack disclosure, llms.txt, JSONP-XSS; up to ~300 requests per site).
-- No credentials were used; no state was modified on the target.
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

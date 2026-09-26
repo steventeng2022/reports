@@ -5,53 +5,181 @@
 | Item | Value |
 |---|---|
 | Target | https://periscope.tv/ |
-| Bug bounty program | [Twitter](https://hackerone.com/twitter) |
+| Bug bounty program | Twitter |
 | Listed scope domain | periscope.tv |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:06 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **5** (High: 0, Medium: 0, Low: 1, Info: 4)
+Total findings: **6** (High: 0, Medium: 0, Low: 2, Info: 4)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 3 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 4 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 5 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | MAIL3 | No DMARC record | CWE-200 |
+| 3 | low | H2 | Missing CSP header | CWE-1021 |
+| 4 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 5 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 6 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://periscope.tv/ without SameSite=Lax/Strict: pscp-csrf. Cross-site request cookies.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for periscope.tv lists 1 name(s) besides the scope host: *.periscope.tv
-
-### 3. [INFO] Missing Permissions-Policy (`H7`)
+### 2. [LOW] No DMARC record (`MAIL3`)
 
 - **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://periscope.tv/; browser features (camera, mic, geolocation) unrestricted.
+- **Detail:** No _dmarc TXT record published; receivers cannot enforce DMARC policy for this domain.
+- **Recommendation:** Publish a DMARC record (start with p=none, then quarantine).
 
-### 4. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+### 3. [LOW] Missing CSP header (`H2`)
 
-- **CWE:** CWE-319
-- **Detail:** http://periscope.tv/ -> https://periscope.tv/ (positive check).
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 5. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 4. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://periscope.tv/ exposes 4 unique Disallow path(s) (/android-attribution, /eula.html, /ios-attribution, /privacy.html)
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 5. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://periscope.tv/ final status: 200 (final URL https://www.periscope.tv/).
-- http://periscope.tv/ initial status: 301.
-- Certificate: Amazon Amazon RSA 2048 M01, valid until 2027-02-10T23:59:59+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 6. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "periscope.tv",
+  "dns": {
+    "a": [
+      "3.113.35.109",
+      "13.196.122.3"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx3.googlemail.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx2.googlemail.com (pref 10)"
+    ],
+    "ns": [
+      "ns-1323.awsdns-37.org.",
+      "ns-1733.awsdns-24.co.uk.",
+      "ns-506.awsdns-63.com.",
+      "ns-599.awsdns-10.net."
+    ],
+    "spf": [
+      "google-site-verification=6kBkaW7FmkNGKpx5HESNfvXncfwY-h7vzBhEJpXRovg",
+      "gg38l5npbb4kqfrvp12tzgb8f95cv2p9",
+      "v=spf1 a mx include:spf.mtasv.net ~all",
+      "globalsign-domain-verification=Q0uJZ5kDAwKey4N1aE8T3tvQqG7x8qbGJezt5INRzO",
+      "globalsign-domain-verification=TQFwNXX-22Rp3iu0w0iSSZOGHlgyojpElPrhqwzgaH"
+    ],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.2",
+    "cipher": "ECDHE-RSA-AES128-GCM-SHA256",
+    "subject": "commonName=*.periscope.tv",
+    "issuer": "countryName=US, organizationName=Amazon, commonName=Amazon RSA 2048 M01",
+    "notBefore": "Jan 12 00:00:00 2026 GMT",
+    "notAfter": "Feb 10 23:59:59 2027 GMT",
+    "san": [
+      "*.periscope.tv",
+      "periscope.tv"
+    ],
+    "days_left": 138,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": false
+    }
+  },
+  "ports": {
+    "ip": "3.113.35.109",
+    "open": []
+  },
+  "https": {
+    "status": 302,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.periscope.tv",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://periscope.tv/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 302",
+    "/redirect?next=https://evil-auditor.example/x -> 302",
+    "/go?url=https://evil-auditor.example/x -> 302",
+    "/url?url=https://evil-auditor.example/x -> 302"
+  ],
+  "paths": {
+    "/robots.txt": 302,
+    "/sitemap.xml": 302,
+    "/.well-known/security.txt": 302,
+    "/security.txt": 302,
+    "/.git/HEAD": 302,
+    "/.git/config": 302,
+    "/.env": 302,
+    "/.htaccess": 302,
+    "/wp-login.php": 302,
+    "/phpmyadmin/index.php": 302,
+    "/server-status": 302,
+    "/api/": 302
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 31.4,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

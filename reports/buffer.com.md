@@ -5,113 +5,310 @@
 | Item | Value |
 |---|---|
 | Target | https://buffer.com/ |
-| Bug bounty program | [Buffer](https://buffer.com/legal#security) |
+| Bug bounty program | Buffer |
 | Listed scope domain | buffer.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 08:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
-| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 4 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 7 | info | H2 | Short HSTS max-age | CWE-319 |
-| 8 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 9 | info | H2c | HSTS not preloaded | CWE-319 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 12 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 13 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 14 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 15 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | PRT8080 | Alternate web service (port 8080) reachable | CWE-200 |
+| 3 | info | PRT8443 | Alternate web service (port 8443) reachable | CWE-200 |
+| 4 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 5 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 6 | low | H1b | Weak HSTS (max-age < 1 year) | CWE-319 |
+| 7 | low | H2 | Missing CSP header | CWE-1021 |
+| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 11 | info | H6 | Server technology disclosure | CWE-200 |
+| 12 | low | CK1 | Cookie set without Secure flag over HTTPS | CWE-614 |
+| 13 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
+| 14 | low | CK1 | Cookie set without Secure flag over HTTPS | CWE-614 |
+| 15 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
+| 16 | low | CK1 | Cookie set without Secure flag over HTTPS | CWE-614 |
+| 17 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
+| 18 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://buffer.com/ without HttpOnly: AWSALBTG, AWSALBTGCORS. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without Secure flag (`C2`)
+### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 104.18.99.118:8080 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 104.18.99.118:8443 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 4. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: cloudflare; X-Powered-By: Next.js; Cloudflare CDN/WAF
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 5. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
+
+- **CWE:** CWE-200
+- **Detail:** Alt-Svc: h3=":443"; ma=86400
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
+
+### 6. [LOW] Weak HSTS (max-age < 1 year) (`H1b`)
+
+- **CWE:** CWE-319
+- **Detail:** HSTS present but max-age=15552000 (< 31536000).
+- **Context:** https response, /
+- **Recommendation:** Increase max-age to at least 31536000; add includeSubDomains/preload.
+
+### 7. [LOW] Missing CSP header (`H2`)
+
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 8. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+
+### 9. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
+
+### 10. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 11. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: cloudflare
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 12. [LOW] Cookie set without Secure flag over HTTPS (`CK1`)
 
 - **CWE:** CWE-614
-- **Detail:** Set on https://buffer.com/ without Secure: AWSALBTG, buffer-marketing. Will be transmitted over HTTP if the site is reachable cleartext.
+- **Detail:** Cookie 'AWSALBTG' has no Secure attribute on an HTTPS response.
+- **Context:** https response, /
+- **Recommendation:** Set Secure on all cookies over HTTPS.
 
-### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 13. [INFO] Cookie without SameSite attribute (`CK3`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://buffer.com/ without SameSite=Lax/Strict: AWSALBTG, AWSALBTGCORS, buffer-marketing. Cross-site request cookies.
+- **CWE:** CWE-1275
+- **Detail:** Cookie 'AWSALBTG' has no SameSite attribute.
+- **Context:** https response, /
+- **Recommendation:** Set SameSite=Lax (or Strict) to reduce CSRF surface.
 
-### 4. [LOW] Missing Content-Security-Policy (`H3`)
+### 14. [LOW] Cookie set without Secure flag over HTTPS (`CK1`)
 
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://buffer.com/; no defense-in-depth against XSS/content injection.
+- **CWE:** CWE-614
+- **Detail:** Cookie 'buffer-marketing' has no Secure attribute on an HTTPS response.
+- **Context:** https response, /
+- **Recommendation:** Set Secure on all cookies over HTTPS.
 
-### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 15. [INFO] Cookie without SameSite attribute (`CK3`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for buffer.com lists 1 name(s) besides the scope host: debugger.buffer.com (1 no longer resolve)
+- **CWE:** CWE-1275
+- **Detail:** Cookie 'buffer-marketing' has no SameSite attribute.
+- **Context:** https response, /
+- **Recommendation:** Set SameSite=Lax (or Strict) to reduce CSRF surface.
 
-### 6. [INFO] Possible dangling subdomain (`D2`)
+### 16. [LOW] Cookie set without Secure flag over HTTPS (`CK1`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `debugger.buffer.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+- **CWE:** CWE-614
+- **Detail:** Cookie 'buffer-marketing.sig' has no Secure attribute on an HTTPS response.
+- **Context:** https response, /
+- **Recommendation:** Set Secure on all cookies over HTTPS.
 
-### 7. [INFO] Short HSTS max-age (`H2`)
+### 17. [INFO] Cookie without SameSite attribute (`CK3`)
 
-- **CWE:** CWE-319
-- **Detail:** HSTS max-age=15552000 (< 1 year): `max-age=15552000`.
+- **CWE:** CWE-1275
+- **Detail:** Cookie 'buffer-marketing.sig' has no SameSite attribute.
+- **Context:** https response, /
+- **Recommendation:** Set SameSite=Lax (or Strict) to reduce CSRF surface.
 
-### 8. [INFO] HSTS without includeSubDomains (`H2b`)
+### 18. [INFO] Missing security.txt (`P8`)
 
-- **CWE:** CWE-319
-- **Detail:** `max-age=15552000` does not cover subdomains.
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 9. [INFO] HSTS not preloaded (`H2c`)
+## Evidence (raw response observations)
 
-- **CWE:** CWE-319
-- **Detail:** `max-age=15552000` lacks the preload directive.
+```json
+{
+  "domain": "buffer.com",
+  "dns": {
+    "a": [
+      "104.18.99.118",
+      "104.18.98.118"
+    ],
+    "aaaa": [
+      "2606:4700::6812:6276",
+      "2606:4700::6812:6376"
+    ],
+    "cname": null,
+    "mx": [
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
+      "alt3.aspmx.l.google.com (pref 10)"
+    ],
+    "ns": [
+      "dom.ns.cloudflare.com.",
+      "tess.ns.cloudflare.com."
+    ],
+    "spf": [
+      "google-site-verification=Y09tg5UAyuUXsF8PZ-W92iDQaq9DVNJpuwwGiAZ4Sug",
+      "google-site-verification=x9nCBH6uz8yQAOEqpV3TqMnL9gI9nj1Iqz5OTJCi8Xg",
+      "1password-site-verification=HD5MBSOQ2ZAYLC55FI3SHX7IP4",
+      "B37AB95EC3",
+      "hj=232078-02102021",
+      "segment-site-verification=e7Zo5L9jKVjVcKRFi1acX9nyEQOnl6z3",
+      "facebook-domain-verification=7cr8hfn0y878zjxzgt4hbknwhxuk5y",
+      "plain-domain-verification-60n9xv=CBUGsWquVTelyl6FeO4WdfFRf",
+      "google-site-verification=jpDzphFKQHfOP1m86Lu3xA2lyx4wZwx2DILni2KvWFc",
+      "google-site-verification=3aAc3sRkZQKuVjCNI_RbHVKkmv-r4lhLXRlvHMR4_l8",
+      "183374251-11850589",
+      "google-site-verification=LLI4gMxLVK41gPBfxcDZqgyaUxFSMhsDE70-r-pXzso",
+      "google-site-verification=hD-bBRWeNejlB37u_tZThoEBoyq3JcLLqog3Rl5Eqs8",
+      "stripe-verification=436470f5c9a974d3045706507ca0deef5fc07b3d82d6456180bce09ef19e13b6",
+      "google-site-verification=gET2bT39fxReuQ0vLGbVvA9TyxZOmEbpePtAX7xY6oA",
+      "v=spf1 include:helpscoutemail.com include:_spf.google.com include:mail.zendesk.com ~all",
+      "google-site-verification=2cyRtTXa49V-EbiOs0W-MqSfKfp_smVNFF76A9YguLQ",
+      "google-site-verification=142Thz3s7mzQJSHORKyyk0QndKtfKg9DakzAiCX6mDA",
+      "prtoolkit-verification=03646c6d6d2ac0f380012c074391bce38a2a9608fac40fa63b65013268e60491"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; pct=100; rua=mailto:re+expge6woxi3@dmarc.postmarkapp.com;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=buffer.com",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YE2",
+    "notBefore": "Aug 30 18:46:28 2026 GMT",
+    "notAfter": "Nov 28 18:46:27 2026 GMT",
+    "san": [
+      "buffer.com",
+      "debugger.buffer.com"
+    ],
+    "days_left": 64,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "104.18.99.118",
+    "open": [
+      8080,
+      8443
+    ]
+  },
+  "https": {
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "title": "Buffer: Social media management for everyone"
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: cloudflare",
+    "X-Powered-By: Next.js",
+    "Cloudflare CDN/WAF"
+  ],
+  "cookies": [
+    {},
+    {
+      "samesite": "none"
+    },
+    {
+      "domain": ".buffer.com"
+    },
+    {
+      "domain": ".buffer.com"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.buffer.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://buffer.com:443/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 404",
+    "/redirect?next=https://evil-auditor.example/x -> 404",
+    "/go?url=https://evil-auditor.example/x -> 404",
+    "/url?url=https://evil-auditor.example/x -> 404"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 200,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 404,
+    "/.git/HEAD": 403,
+    "/.git/config": 403,
+    "/.env": 403,
+    "/.htaccess": 403,
+    "/wp-login.php": 404,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 404,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "crt.sh 502 (certspotter 429)"
+  },
+  "elapsed_s": 122.0,
+  "rechecked": "2026-09-25 13:59 UTC"
+}
+```
 
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+## Notes
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://buffer.com/; full URL (incl. query strings) is sent as referrer by default.
-
-### 11. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://buffer.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 12. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://buffer.com/ lists 225 URLs.
-
-### 13. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://buffer.com/ -> https://buffer.com:443/ (positive check).
-
-### 14. [INFO] robots.txt discloses crawl rules/paths (`R1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt on https://buffer.com/ exposes 8 unique Disallow path(s) (/, /add, /ajax, /button, /docs-custom-code.js) and 8 sitemap reference(s)
-
-### 15. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on buffer.com.
-
-## Reproduction notes
-
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://buffer.com/ final status: 200 (final URL https://buffer.com/).
-- http://buffer.com/ initial status: 301.
-- Certificate: Let's Encrypt YE2, valid until 2026-11-28T18:46:27+00:00.
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

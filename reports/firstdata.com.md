@@ -7,117 +7,290 @@
 | Target | https://firstdata.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | firstdata.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 07:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 7, Info: 9)
+Total findings: **7** (High: 0, Medium: 0, Low: 1, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
-| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 4 | low | H1 | Missing HSTS header | CWE-319 |
-| 5 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 6 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 7 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 8 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 9 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 10 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 11 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 12 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 13 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 14 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 15 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
-| 16 | info | X3 | HTTPS root redirects to different host | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 3 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 4 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 5 | info | P8 | Missing security.txt | CWE-1038 |
+| 6 | info | CT1 | 149 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 7 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://firstdata.com/ without HttpOnly: PHPSESSID, __uzma, __uzmb, __uzmc, __uzmd. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without Secure flag (`C2`)
-
-- **CWE:** CWE-614
-- **Detail:** Set on https://firstdata.com/ without Secure: __uzma, __uzmb, __uzmc, __uzmd. Will be transmitted over HTTP if the site is reachable cleartext.
-
-### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://firstdata.com/ without SameSite=Lax/Strict: PHPSESSID, __uzma, __uzmb, __uzmc, __uzmd. Cross-site request cookies.
-
-### 4. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header on https://firstdata.com/. Clients may connect over plain HTTP on first visit.
-
-### 5. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://firstdata.com/; no defense-in-depth against XSS/content injection.
-
-### 6. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://firstdata.com/; browsers may MIME-sniff responses.
-
-### 7. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
-
-- **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://firstdata.com/; page may be rendered in a foreign frame.
-
-### 8. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for firstdata.com lists 20 name(s) besides the scope host: GetAssistance.Telecheck.com, Ignitepayments.ca, TRSRecoveryServices.com, carat.fiserv.com, franchise.fiserv.com, ignitepayments.com, merchants.fiserv.com, mex.clover.com... (3 no longer resolve)
-
-### 9. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `talent.clover.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 10. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `www.cditechnology.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 11. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `www.ignitepayments.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 12. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://firstdata.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 13. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://firstdata.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 14. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://firstdata.com/ -> https://firstdata.com/ (positive check).
-
-### 15. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 3. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on firstdata.com.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 16. [INFO] HTTPS root redirects to different host (`X3`)
+### 4. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** https://firstdata.com/ redirects to https://validate.perfdrive.com/64b926de080836ab9a2812de3f961c22/?ssa=76a131fe-fa01-49dc-9cd9-462bb753f3c8&ssb=83496297884&ssc=https%3A%2F%2Fmerchants.fiserv.com%2F&ssi=d59cc4f8-cskb-425f-b253-e9cc28e61872&ssk=botmanager_support@radware.com&ssm=87180341707991098106143663910860&ssn=b85f8b678cf1a8886d1610f95eb250d7fcb8d01a5817-2517-41ad-bab3b3&sso=1d9c762c-10f3fbd5ea05d575ebd60485e4ca892d61d508479a1156a5&ssp=14509491991790389747179031576641622&ssq=29997375111364446569251113035650749870402&ssr=MTE4LjE1MC4xMDguMjIx&sst=Mozilla/5.0%20(Windows%20NT%2010.0;%20Win64;%20x64)%20AppleWebKit/537.36%20(KHTML,%20like%20Gecko)%20Chrome/126.0.0.0%20Safari/537.36&ssu=&ssv=&ssw=&ssx=eyJfX3V6bWYiOiI3ZjkwMDBkMDFhNTgxNy0yNTE3LTQxYWQtYjYyYy0xMGYzZmJkNWVhMDUxLTE3OTAzNTExMTM4NzAwLTAwNTczYmUwMzkzN2I3OWE1MTAxMCJ9.
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-## Reproduction notes
+### 5. [INFO] Missing security.txt (`P8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://firstdata.com/ final status: 200 (final URL https://validate.perfdrive.com/64b926de080836ab9a2812de3f961c22/?ssa=76a131fe-fa01-49dc-9cd9-462bb753f3c8&ssb=83496297884&ssc=https%3A%2F%2Fmerchants.fiserv.com%2F&ssi=d59cc4f8-cskb-425f-b253-e9cc28e61872&ssk=botmanager_support@radware.com&ssm=87180341707991098106143663910860&ssn=b85f8b678cf1a8886d1610f95eb250d7fcb8d01a5817-2517-41ad-bab3b3&sso=1d9c762c-10f3fbd5ea05d575ebd60485e4ca892d61d508479a1156a5&ssp=14509491991790389747179031576641622&ssq=29997375111364446569251113035650749870402&ssr=MTE4LjE1MC4xMDguMjIx&sst=Mozilla/5.0%20(Windows%20NT%2010.0;%20Win64;%20x64)%20AppleWebKit/537.36%20(KHTML,%20like%20Gecko)%20Chrome/126.0.0.0%20Safari/537.36&ssu=&ssv=&ssw=&ssx=eyJfX3V6bWYiOiI3ZjkwMDBkMDFhNTgxNy0yNTE3LTQxYWQtYjYyYy0xMGYzZmJkNWVhMDUxLTE3OTAzNTExMTM4NzAwLTAwNTczYmUwMzkzN2I3OWE1MTAxMCJ9).
-- http://firstdata.com/ initial status: 301.
-- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2027-01-20T23:59:59+00:00.
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 6. [INFO] 149 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: cat-ause1.api.firstdata.com, cat.api.firstdata.com, cert-asns1.api.firstdata.com, cert-ause1.api.firstdata.com, cert-euw1.api.firstdata.com, cert-euw3.api.firstdata.com, cert-usc1.api.firstdata.com, cert-use4.api.firstdata.com, cert.api.firstdata.com, int-ause1.api.firstdata.com
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+### 7. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+
+- **CWE:** CWE-200
+- **Detail:** Historical subdomains no longer have A/AAAA records: cat-ause1.api.firstdata.com, cert-asns1.api.firstdata.com, cert-ause1.api.firstdata.com, cert-euw1.api.firstdata.com; content may still be served via virtual-host fallback.
+- **Recommendation:** Reclaim or delete dangling subdomains to reduce virtual-hosting attack surface.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "firstdata.com",
+  "dns": {
+    "a": [
+      "151.101.195.10",
+      "151.101.3.10",
+      "151.101.67.10",
+      "151.101.131.10"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "mxb-00265f01.gslb.pphosted.com (pref 10)",
+      "mxa-00265f01.gslb.pphosted.com (pref 10)"
+    ],
+    "ns": [
+      "ns2.p201.dns.oraclecloud.net.",
+      "ns1.p201.dns.oraclecloud.net.",
+      "dns2.p07.nsone.net.",
+      "dns4.p07.nsone.net."
+    ],
+    "spf": [
+      "VISA=BB846B1356DBAEC50AABC2EAC27251C4",
+      "VISA=B42E0A2235D43D9F1A30FCF136EFBBE1",
+      "VISA= 8B44CCB91191FE803D19007A17C3D271",
+      "_k7wm3b9cqot77wpu829xdomkm0s1gbz",
+      "VISA=32A1FA0269CCD3FEB9497B54209C50ED",
+      "VISA= 45376BBCD9B74696522F84B27AD772AA",
+      "citrix-verification-code=b49394b7-fec3-45b1-9598-81f10a16746d",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
+      "VISA=875D6E9B71BCD2951AAAED28DEE8B317",
+      "VISA= F09D890A2DAB504AAE78586229A231BB",
+      "VISA=50A1277B5BDE5E4EFB009D04C1270052",
+      "citrix.mobile.ads.otp=5iepmqqj2gwg4fki3uxoh81",
+      "flexera-domain-verification-fddzqvzijueazdba",
+      "atlassian-domain-verification=UUQbbVvMvjF4/Haa4wZPYq9FxrYqfMLH3E6gI2ri2gGiM1YehJSYASzKT5Kfz2hn",
+      "VISA= 2E83EF65759F5F147DBDFC1C423F1CF1",
+      "VISA=BBA97F5F900D99EE7A70768DC4E6302B",
+      "_tmhwbqqay6pmvj46jbz8ygq4v1qdnbd",
+      "VISA= 3AE81DAB19A78A9EF5F7BB7E5538ADA3",
+      "_gtyampd6jk2kk0vasl1zp2t4zwtc66i",
+      "MS=ms12481784",
+      "VISA= QOHYOGX571VGUJW8RSJUP39HTRRTZITN",
+      "VISA=2A880877BD3A4783B5D65152D0479BEA",
+      "MS=ms52820778",
+      "status-page-domain-verification=qhcz5lpgpkhm",
+      "VISA= 971F17AC7C2EA9F76D1B4399ACDD8AF8",
+      "0PvnqG+rTIOOb7OBR8TRrF3sAejgz0OAbJ9ijKq3T7BQ9Cp0OTN+U7Lov+lrTt/L8Kv/xiMPuV9vZwuOFwT3GA==",
+      "google-site-verification=26Qcgnci2XPHOXsfUzhn4urYuxuzAZoiD_V9JmsbwbA",
+      "MS=ABB1BE2F85FB33A30DEC1C7264489333E3C1200F",
+      "VISA=6647EA50224BACA094BAB45F9A1DD003",
+      "VISA = E086293AA5EBACE091D6F079311621E3",
+      "00DA0000000Yhcv=1TBUJ0000000Fez",
+      "00DRL00000GkGyg=1TBRL0000000YOH",
+      "_2ronacfit0dlj82vq1smryoviyg476a",
+      "hcp-domain-verification=d7eeb26b7066067aabfb44e977a62f8629c2c4003e4b5ff27e8296a60e74b8d2",
+      "VISA=E8C6EF412551A5ED20EFB7D270035456",
+      "VISA=58B7F8092117EFC2B048E1D063C7381B",
+      "docusign=5335d3f2-83aa-4ed0-91a8-716365eb0641",
+      "_bqjvwc1revtk7b6umibs4dk66005gcc",
+      "atlassian-domain-verification=bwfGSdfnH94uNI9lzvKPvl6Xx6BGuAMdPRwDp6G9XAfFReRFHBj398p8n4tJRp1u",
+      "google-site-verification=N6XdNnf_haEL8arPehDiAPoYLKH5SPbLr-_6-EGFvA8",
+      "VISA=0DF7ED8CA76B25E8E433992B7F0AEEA8"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; fo=0; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "countryName=US, stateOrProvinceName=Wisconsin, localityName=Brookfield, organizationName=Fiserv, Inc., commonName=merchants.fiserv.com",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
+    "notBefore": "Jan 14 00:00:00 2026 GMT",
+    "notAfter": "Jan 20 23:59:59 2027 GMT",
+    "san": [
+      "merchants.fiserv.com",
+      "www.firstdata.com",
+      "firstdata.com",
+      "GetAssistance.Telecheck.com",
+      "TRSRecoveryServices.com",
+      "www.TRSRecoveryServices.com",
+      "Ignitepayments.ca",
+      "www.Ignitepayments.ca",
+      "www.telecheck.com",
+      "telecheck.com",
+      "carat.fiserv.com",
+      "talent.clover.com",
+      "www.ignitepayments.com",
+      "ignitepayments.com",
+      "talent.fiserv.com",
+      "www.carat.fiserv.com",
+      "franchise.fiserv.com",
+      "www.cloverconnect.com",
+      "www.cditechnology.com",
+      "mex.clover.com",
+      "www.mex.clover.com"
+    ],
+    "days_left": 117,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "151.101.195.10",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "cookies": [
+    {}
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.firstdata.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://firstdata.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 406,
+    "/.git/config": 406,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 403,
+    "/api/": 301
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 149,
+    "notable": [
+      "cat-ause1.api.firstdata.com",
+      "cat.api.firstdata.com",
+      "cert-asns1.api.firstdata.com",
+      "cert-ause1.api.firstdata.com",
+      "cert-euw1.api.firstdata.com",
+      "cert-euw3.api.firstdata.com",
+      "cert-usc1.api.firstdata.com",
+      "cert-use4.api.firstdata.com",
+      "cert.api.firstdata.com",
+      "int-ause1.api.firstdata.com",
+      "int-sae1.api.firstdata.com",
+      "int.api.firstdata.com",
+      "prod-asns1.api.firstdata.com",
+      "prod-ause1.api.firstdata.com",
+      "prod-euw1.api.firstdata.com"
+    ],
+    "sample": [
+      "accounts.firstdata.com",
+      "addiko-pindelivery-uat.firstdata.com",
+      "addiko-pindelivery.firstdata.com",
+      "addiko-pinnow-uat.firstdata.com",
+      "addiko-pinnow.firstdata.com",
+      "adetrb240dc.firstdata.com",
+      "afs2.firstdata.com",
+      "atsapi.firstdata.com",
+      "atsmobileapi.firstdata.com",
+      "automateddetrustbank1900240.firstdata.com",
+      "br1-cognos-br-vip.firstdata.com",
+      "br2-cognos-br-vip.firstdata.com",
+      "cat-afs2.firstdata.com",
+      "cat-ause1.api.firstdata.com",
+      "cat-b2s.firstdata.com",
+      "cat-plp-pl.firstdata.com",
+      "cat-plp.firstdata.com",
+      "cat.api.firstdata.com",
+      "cert-asns1.api.firstdata.com",
+      "cert-ause1.api.firstdata.com"
+    ],
+    "dangling": [
+      "cat-ause1.api.firstdata.com",
+      "cert-asns1.api.firstdata.com",
+      "cert-ause1.api.firstdata.com",
+      "cert-euw1.api.firstdata.com"
+    ]
+  },
+  "elapsed_s": 117.6,
+  "rechecked": "2026-09-25 10:43 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

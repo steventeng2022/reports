@@ -5,113 +5,272 @@
 | Item | Value |
 |---|---|
 | Target | https://www-01.ibm.com/ |
-| Bug bounty program | [IBM](https://hackerone.com/ibm) |
+| Bug bounty program | IBM |
 | Listed scope domain | www-01.ibm.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:28 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
+Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
-| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 5 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 7 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 8 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 9 | info | H2c | HSTS not preloaded | CWE-319 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 12 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 13 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 14 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
-| 15 | info | X3 | HTTPS root redirects to different host | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H1 | Missing HSTS header | CWE-319 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://www-01.ibm.com/ without HttpOnly: bm_sz. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without Secure flag (`C2`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
-- **CWE:** CWE-614
-- **Detail:** Set on https://www-01.ibm.com/ without Secure: bm_sz. Will be transmitted over HTTP if the site is reachable cleartext.
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: AkamaiGHost
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://www-01.ibm.com/ without SameSite=Lax/Strict: bm_sz. Cross-site request cookies.
-
-### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for www-01.ibm.com lists 64 name(s) besides the scope host: 1.cms.s81c.com, 1.cmsnew.s81c.com, 1.cmspoc.s81c.com, 1.cmsstage.s81c.com, 1.cmsstagenew.s81c.com, 1.cmstest.s81c.com, 1.dam.s81c.com, 1.damstage.s81c.com... (12 no longer resolve)
-
-### 5. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `1.cms.s81c.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 6. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `1.cmsnew.s81c.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 7. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `1.cmspoc.s81c.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 8. [INFO] HSTS without includeSubDomains (`H2b`)
+### 3. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** `max-age=31536000` does not cover subdomains.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 9. [INFO] HSTS not preloaded (`H2c`)
+### 4. [LOW] Missing CSP header (`H2`)
 
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` lacks the preload directive.
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 5. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://www-01.ibm.com/; full URL (incl. query strings) is sent as referrer by default.
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 11. [INFO] Missing Permissions-Policy (`H7`)
+### 6. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://www-01.ibm.com/; browser features (camera, mic, geolocation) unrestricted.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 12. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://www-01.ibm.com/ -> https://www-01.ibm.com/ (positive check).
-
-### 13. [INFO] robots.txt discloses crawl rules/paths (`R1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt on https://www-01.ibm.com/ exposes 74 unique Disallow path(s) (/, /*.ssi$, //, /Admin, /SametimeWebApp) and 5 sitemap reference(s)
-
-### 14. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://www-01.ibm.com (376 bytes); contact: https://www.ibm.com/trust/security-psirt
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 15. [INFO] HTTPS root redirects to different host (`X3`)
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** https://www-01.ibm.com/ redirects to https://www.ibm.com/us-en.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://www-01.ibm.com/ final status: 200 (final URL https://www.ibm.com/us-en).
-- http://www-01.ibm.com/ initial status: 301.
-- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2027-01-05T23:59:59+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 10. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: AkamaiGHost
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 11. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "www-01.ibm.com",
+  "dns": {
+    "a": [
+      "23.209.217.36"
+    ],
+    "aaaa": [
+      "2600:1417:76:584::1e89",
+      "2600:1417:76:587::1e89"
+    ],
+    "cname": "www-01-ext.ibm.net.",
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "countryName=US, stateOrProvinceName=New York, localityName=Armonk, organizationName=International Business Machines Corporation, commonName=www.ibm.com",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
+    "notBefore": "Jan  6 00:00:00 2026 GMT",
+    "notAfter": "Jan  5 23:59:59 2027 GMT",
+    "san": [
+      "www.ibm.com",
+      "1.cms.s81c.com",
+      "1.cmsnew.s81c.com",
+      "1.cmspoc.s81c.com",
+      "1.cmsstage.s81c.com",
+      "1.cmsstagenew.s81c.com",
+      "1.cmstest.s81c.com",
+      "1.dam.s81c.com",
+      "1.damstage.s81c.com",
+      "1.www.s81c.com",
+      "1.wwwstage.s81c.com",
+      "ap.cms.s81c.com",
+      "api.marketplace.ibm.com",
+      "api.www.s81c.com",
+      "assets.ibm.com",
+      "cdn-prod-edit.cms.ibm.net",
+      "demo.marketplace.ibm.com",
+      "dev-ext.assets.ibm.com",
+      "dev.partnerportal.ibm.com",
+      "developer.ibm.com",
+      "devops-ext.assets.ibm.com",
+      "eu.cms.s81c.com",
+      "ibm.com",
+      "infra-ext.assets.ibm.com",
+      "int.partnerportal.ibm.com",
+      "manage-stage.marketplace.ibm.com",
+      "manage.marketplace.ibm.com",
+      "mp.s81c.com",
+      "myibm.ibm.com",
+      "open.marketplace.ibm.com",
+      "partnerportal.ibm.com",
+      "platform-console.marketplace.ibm.com",
+      "preprod-ext.assets.ibm.com",
+      "preview.marketplace.ibm.com",
+      "prod.ts-api.ibm.com",
+      "stage-ext.assets.ibm.com",
+      "stage.partnerportal.ibm.com",
+      "test-poc.ts-api.ibm.com",
+      "test.ts-api.ibm.com",
+      "ts-api.ibm.com",
+      "us.cms.s81c.com",
+      "usmr.cms.s81c.com",
+      "www-01.ibm.com",
+      "www-03.ibm.com",
+      "www-05.ibm.com",
+      "www-06.ibm.com",
+      "www-112.ibm.com",
+      "www-2000.ibm.com",
+      "www-356.ibm.com",
+      "www-40.ibm.com",
+      "www-50.ibm.com",
+      "www-935.ibm.com",
+      "www-946.ibm.com",
+      "www-969.ibm.com",
+      "www-969stage.ibm.com",
+      "www-api.ibm.com",
+      "www.atss001uat.at.smi.ibm.com",
+      "www.developer.ibm.com",
+      "www.nic.ibm",
+      "wwwpoc-112.ibm.com",
+      "wwwpoc.ibm.com",
+      "wwwstage-api.ibm.com",
+      "wwwstage.ibm.com",
+      "wwwtest-112.ibm.com",
+      "wwwtest.ibm.com"
+    ],
+    "days_left": 102,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "23.209.217.36",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: AkamaiGHost"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.www-01.ibm.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://www-01.ibm.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 42.5,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

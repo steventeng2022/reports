@@ -5,77 +5,301 @@
 | Item | Value |
 |---|---|
 | Target | https://bluehost.com/ |
-| Bug bounty program | [Bluehost](https://bugcrowd.com/newfold-bluehostindia-vdp) |
+| Bug bounty program | Bluehost |
 | Listed scope domain | bluehost.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 08:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
+Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 5 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 6 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
-| 7 | info | R1 | robots.txt protected | CWE-200 |
-| 8 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
-| 9 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | MAIL4 | DMARC policy is p=none (monitor only) | CWE-200 |
+| 3 | info | PRT8080 | Alternate web service (port 8080) reachable | CWE-200 |
+| 4 | info | PRT8443 | Alternate web service (port 8443) reachable | CWE-200 |
+| 5 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 6 | low | H1 | Missing HSTS header | CWE-319 |
+| 7 | low | H2 | Missing CSP header | CWE-1021 |
+| 8 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 9 | low | H4 | No clickjacking protection | CWE-1023 |
+| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 11 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 12 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 13 | info | H6 | Server technology disclosure | CWE-200 |
+| 14 | info | P8 | Missing security.txt | CWE-1038 |
+| 15 | info | CT1 | 74 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://bluehost.com/ without SameSite=Lax/Strict: __cf_bm. Cross-site request cookies.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 2. [INFO] DMARC policy is p=none (monitor only) (`MAIL4`)
+
+- **CWE:** CWE-200
+- **Detail:** DMARC is published but policy is 'none'; failing mail is not quarantined.
+- **Recommendation:** Move to p=quarantine/reject once monitor reports are clean.
+
+### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 172.64.146.48:8080 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 172.64.146.48:8443 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 5. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: cloudflare; Cloudflare CDN/WAF
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 6. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header on https://bluehost.com/. Clients may connect over plain HTTP on first visit.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 3. [LOW] Missing Content-Security-Policy (`H3`)
+### 7. [LOW] Missing CSP header (`H2`)
 
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://bluehost.com/; no defense-in-depth against XSS/content injection.
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 8. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for bluehost.com lists 2 name(s) besides the scope host: *.auth.bluehost.com, auth.bluehost.com (1 no longer resolve)
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 5. [INFO] Possible dangling subdomain (`D2`)
+### 9. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `auth.bluehost.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 6. [INFO] Plain HTTP returns non-redirect status (`N3`)
-
-- **CWE:** CWE-319
-- **Detail:** http://bluehost.com/ returns 403 (no redirect to HTTPS).
-
-### 7. [INFO] robots.txt protected (`R1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /robots.txt returned 403.
-
-### 8. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 10. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 403 on bluehost.com.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 9. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+### 11. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** https://bluehost.com/ responded 403 (passive check only; no further probing).
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 12. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://bluehost.com/ final status: 403 (final URL https://www.bluehost.com/).
-- http://bluehost.com/ initial status: 403.
-- Certificate: Google Trust Services WE1, valid until 2026-12-22T05:11:52+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 13. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: cloudflare
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 14. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 15. [INFO] 74 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: amusebouche.dev.cap.bluehost.com, app.bluehost.com, app.builder-svcs.bluehost.com, beta.bluehost.com, dev.cap.bluehost.com, dev.content.bluehost.com, dev.registration.bluehost.com, dev.sr.cap.bluehost.com, lw-qa.login.bluehost.com, mx.bluehost.com
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "bluehost.com",
+  "dns": {
+    "a": [
+      "172.64.146.48",
+      "104.18.41.208"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "bluehost-com.mail.eo.outlook.com (pref 0)"
+    ],
+    "ns": [
+      "cody.ns.cloudflare.com.",
+      "erin.ns.cloudflare.com."
+    ],
+    "spf": [
+      "v=spf1 ip4:209.17.115.0/24 ip4:64.69.218.0/24 include:spf2.bluehost.com include:_spf.qualtrics.com include:_spf.salesforce.com include:sparkpostmail.com include:spf.mailjet.com include:spf.protection.outlook.com include:_spf.myorderbox.com include:eig.spf",
+      ".a.cloudfilter.net include:spf.websitewelcome.com -all",
+      "knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77",
+      "google-site-verification=U4hJ1v_Tet3cc77Sr3dv-Ev6J4mfMB1Gt8RX125PkcM",
+      "google-site-verification=-LZzunGOfIDaGqxvWFtIFoN8PuA8VvjkP81XZZzEcJQ",
+      "google-site-verification=66tEZdAQlA9BLDQd3QylvqYIhriJr5gGoA9cQbIOTp4",
+      "google-site-verification=Te366sWRx0P9u95lb_Rfj5YyalbHdb20J8t6ESOx1vc",
+      "google-site-verification=_6nbuoY72FRe_b9BN_gDw9Jkfcod1HYfWMzd9X4VwEg",
+      "onetrust-domain-verification=945145d8f9504c238ba20ad58be4ca9d",
+      "google-site-verification=Ps-PuyL1E7WcWPrX6y78aC4P2RfLoGvwpsl4-xwJPVw",
+      "google-site-verification=DRKzLI6tQYu_YO6K5pGg0wOuuLxVcDhWpThjGgHA-cE",
+      "google-site-verification=pFgmIQ6qK3YjcRAAhsKiPzmEiOVcynQslFMEba5lXvs",
+      "MS=ms67698328",
+      "google-site-verification=DzOfkbFR16zGttaTzbxkajZdHmTa66FrjVWwY5gThCE"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=none; pct=100; rua=mailto:re+r0nph73obnf@dmarc.postmarkapp.com; sp=none; aspf=r;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=bluehost.com",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE1",
+    "notBefore": "Sep 23 04:12:04 2026 GMT",
+    "notAfter": "Dec 22 05:11:52 2026 GMT",
+    "san": [
+      "bluehost.com",
+      "*.auth.bluehost.com",
+      "auth.bluehost.com"
+    ],
+    "days_left": 87,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "172.64.146.48",
+    "open": [
+      8080,
+      8443
+    ]
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: cloudflare",
+    "Cloudflare CDN/WAF"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.bluehost.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 403
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 74,
+    "notable": [
+      "amusebouche.dev.cap.bluehost.com",
+      "app.bluehost.com",
+      "app.builder-svcs.bluehost.com",
+      "beta.bluehost.com",
+      "dev.cap.bluehost.com",
+      "dev.content.bluehost.com",
+      "dev.registration.bluehost.com",
+      "dev.sr.cap.bluehost.com",
+      "lw-qa.login.bluehost.com",
+      "mx.bluehost.com",
+      "my.bluehost.com",
+      "re-api.dev.builder-svcs.bluehost.com",
+      "registration.stage.bluehost.com",
+      "smart-blog.dev.builder-svcs.bluehost.com",
+      "stage.cap.bluehost.com"
+    ],
+    "sample": [
+      "abc.bluehost.com",
+      "alpha.bluehost.com",
+      "amusebouche.dev.cap.bluehost.com",
+      "amusebouche.qa.cap.bluehost.com",
+      "app-gateway.builder-svcs.bluehost.com",
+      "app-gateway.qa.builder-svcs.bluehost.com",
+      "app.bluehost.com",
+      "app.builder-svcs.bluehost.com",
+      "argocd.cloudworkspace.bluehost.com",
+      "beta.bluehost.com",
+      "bh-llm-proxy-v2.uat.bluehost.com",
+      "bhts-240.cws.bluehost.com",
+      "blog-api.qa.builder-svcs.bluehost.com",
+      "bluehost.com",
+      "box2426.bluehost.com",
+      "box2468.bluehost.com",
+      "box5678.bluehost.com",
+      "box5786.bluehost.com",
+      "br.bluehost.com",
+      "builder-svcs.bluehost.com"
+    ]
+  },
+  "elapsed_s": 139.5,
+  "rechecked": "2026-09-25 13:59 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

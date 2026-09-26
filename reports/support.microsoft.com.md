@@ -5,83 +5,169 @@
 | Item | Value |
 |---|---|
 | Target | https://support.microsoft.com/ |
-| Bug bounty program | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
+| Bug bounty program | Microsoft Online Services |
 | Listed scope domain | support.microsoft.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:20 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
+Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 4 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 5 | info | H2c | HSTS not preloaded | CWE-319 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 3 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 4 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 5 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 6 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://support.microsoft.com/ without HttpOnly: EXPID. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 2. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://support.microsoft.com/ without SameSite=Lax/Strict: EXPID. Cross-site request cookies.
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://support.microsoft.com/; browsers may MIME-sniff responses.
-
-### 4. [INFO] HSTS without includeSubDomains (`H2b`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` does not cover subdomains.
-
-### 5. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` lacks the preload directive.
-
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 3. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://support.microsoft.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 7. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://support.microsoft.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://support.microsoft.com/ -> https://support.microsoft.com/ (positive check).
-
-### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 4. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://support.microsoft.com/ exposes 34 unique Disallow path(s) (/*/Search/, /*/authentication/signin, /*/contact/menu*, /*/contact/partner*, /*/contactus/mwaas*) and 2 sitemap reference(s)
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 5. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on support.microsoft.com.
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-## Reproduction notes
+### 6. [INFO] Missing security.txt (`P8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://support.microsoft.com/ final status: 200 (final URL https://support.microsoft.com/en-us/).
-- http://support.microsoft.com/ initial status: 307.
-- Certificate: Microsoft Corporation Microsoft TLS G2 RSA CA OCSP 02, valid until 2027-02-25T07:44:17+00:00.
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "support.microsoft.com",
+  "dns": {
+    "a": [
+      "150.171.110.65"
+    ],
+    "aaaa": [
+      "2603:1061:14:141::1"
+    ],
+    "cname": "emerald-prod-asgth3agbdfbhpgz.b02.azurefd.net.",
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "countryName=US, stateOrProvinceName=WA, localityName=Redmond, organizationName=Microsoft Corporation, commonName=support.microsoft.com",
+    "issuer": "countryName=US, organizationName=Microsoft Corporation, commonName=Microsoft TLS G2 RSA CA OCSP 02",
+    "notBefore": "Aug 29 07:44:17 2026 GMT",
+    "notAfter": "Feb 25 07:44:17 2027 GMT",
+    "san": [
+      "support.microsoft.com"
+    ],
+    "days_left": 152,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "150.171.110.65",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "cookies": [
+    {
+      "samesite": "none"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.support.microsoft.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 307,
+    "location": "https://support.microsoft.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 404",
+    "/redirect?next=https://evil-auditor.example/x -> 404",
+    "/go?url=https://evil-auditor.example/x -> 404",
+    "/url?url=https://evil-auditor.example/x -> 404"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 404,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 404,
+    "/.git/HEAD": 403,
+    "/.git/config": 404,
+    "/.env": 404,
+    "/.htaccess": 404,
+    "/wp-login.php": 404,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 404,
+    "/api/": 404
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 28.9,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

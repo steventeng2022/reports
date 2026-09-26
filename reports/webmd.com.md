@@ -7,349 +7,315 @@
 | Target | https://webmd.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | webmd.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 17:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
+Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
-| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 4 | low | H1 | Missing HSTS header | CWE-319 |
-| 5 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 6 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 7 | info | C4 | Cookies scoped to parent/wildcard domain | CWE-200 |
-| 8 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 9 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 10 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 11 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 12 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 13 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 14 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 15 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 16 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H1 | Missing HSTS header | CWE-319 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://webmd.com/ without HttpOnly: VisitorId, ab, gtinfo, lrt_wrk. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without Secure flag (`C2`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
-- **CWE:** CWE-614
-- **Detail:** Set on https://webmd.com/ without Secure: VisitorId, ab, gtinfo, lrt_wrk. Will be transmitted over HTTP if the site is reachable cleartext.
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: Apache
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://webmd.com/ without SameSite=Lax/Strict: VisitorId, __cf_bm, ab, gtinfo, lrt_wrk. Cross-site request cookies.
-
-### 4. [LOW] Missing HSTS header (`H1`)
+### 3. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header on https://webmd.com/. Clients may connect over plain HTTP on first visit.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 5. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://webmd.com/; browsers may MIME-sniff responses.
-
-### 6. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 4. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://webmd.com/; page may be rendered in a foreign frame.
-
-### 7. [INFO] Cookies scoped to parent/wildcard domain (`C4`)
-
-- **CWE:** CWE-200
-- **Detail:** Cookies set with domain beyond webmd.com: www.webmd.com.
-
-### 8. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for webmd.com lists 84 name(s) besides the scope host: *.derigo.us, *.framesdata.com, *.krames.com, *.kramesondemand.com, *.kramesonline.com, *.kramesstaywell.com, *.kramesvideo.com, *.la1.webmd.com... (4 no longer resolve)
-
-### 9. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `images.onhealth.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 10. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `le.prod.webmd.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 11. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `staywellsolutionsonline.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 12. [INFO] Missing Referrer-Policy (`H5`)
-
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://webmd.com/; full URL (incl. query strings) is sent as referrer by default.
-
-### 13. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://webmd.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 14. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://webmd.com/ -> https://www.webmd.com/ (positive check).
-
-### 15. [INFO] robots.txt discloses crawl rules/paths (`R1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt on https://webmd.com/ exposes 23 unique Disallow path(s) (*/search/search_results/, /, /500, /Share.aspx*, /aim/)
-
-### 16. [INFO] security.txt exposed (public disclosure policy) (`S2`)
-
-- **CWE:** CWE-200
-- **Detail:** security.txt present on https://webmd.com (110 bytes); contact: https://bugcrowd.com/internetbrands-public
-
-## Reproduction notes
-
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://webmd.com/ final status: 200 (final URL https://www.webmd.com/).
-- http://webmd.com/ initial status: 301.
-- Certificate: Let's Encrypt YR1, valid until 2026-12-01T00:10:03+00:00.
-
-## Active agent cross-check (wave 7-9 aggressive scan on main - webmd.com)
-
-Total findings: **36** - latest aggressive-method scan (main branch). Full detailed findings remain in the main-branch version of this file; passive re-audit above is the non-injection view.
-Total findings: **36** (High: 0, Medium: 0, Low: 5, Info: 31)
-
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 2 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 3 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 4 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 5 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 6 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 7 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 8 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 9 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 10 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 11 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 12 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 13 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 14 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 15 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 16 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 17 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 18 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 19 | info | I1 | Reflected XSS in JavaScript context - REFUTED (verified 2026-09-26) | CWE-79 |
-| 20 | low | H1 | Missing HSTS header | CWE-319 |
-| 21 | low | H4 | No clickjacking protection | CWE-1023 |
-| 22 | low | C1 | Cookies without Secure flag | CWE-614 |
-| 23 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
-| 24 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-| 25 | info | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 26 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 27 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/ | CWE-942 |
-| 28 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/ | CWE-942 |
-| 29 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/ | CWE-942 |
-| 30 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/api | CWE-942 |
-| 31 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/api | CWE-942 |
-| 32 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/api | CWE-942 |
-| 33 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/graphql | CWE-942 |
-| 34 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/graphql | CWE-942 |
-| 35 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/graphql | CWE-942 |
-| 36 | info | I26 | security.txt exposed (public vulnerability disclosure policy) | CWE-200 |
-
-## Detailed findings
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://www.webmd.com/s reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://www.webmd.com/results reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://www.webmd.com/redirect reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://www.webmd.com/go reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter redirect on https://www.webmd.com/go reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://www.webmd.com/r reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://www.webmd.com/s reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://www.webmd.com/results reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://www.webmd.com/redirect reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://www.webmd.com/go reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter redirect on https://www.webmd.com/go reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://www.webmd.com/r reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter to on https://www.webmd.com/r reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://www.webmd.com/link reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://www.webmd.com/out reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://www.webmd.com/u reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://www.webmd.com/share reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://www.webmd.com/view reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-### N. [INFO] Reflected XSS in JavaScript context - REFUTED (`I1`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter to on https://www.webmd.com/forward reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
-
-- **Verification (2026-09-26, rule 4):** All I1 entries above are REFUTED. Re-requested with unique token ZZQwebmd7x2w9: /s?q=, /results?q=, /redirect?url=, /go?url=, /search?q= all return the identical 200 / 425,914-byte page for every path and payload, and the token is not reflected anywhere in the body - the engine "inside <script>" flag was a static-content heuristic on a generic page.
-
-### 20. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security on https://www.webmd.com/
-
-### 21. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on https://www.webmd.com/
-
-### 22. [LOW] Cookies without Secure flag (`C1`)
-
-- **CWE:** CWE-614
-- **Detail:** lrt_wrk, gtinfo, VisitorId, ab set without Secure on https://www.webmd.com/
-
-### 23. [LOW] Cookies without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** lrt_wrk, gtinfo, VisitorId, ab set without HttpOnly on https://www.webmd.com/
-
-### 24. [LOW] Host header alters response (vhost behavior) (`I12`)
-
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: webmd.com + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
-
-### 25. [INFO] Missing X-Content-Type-Options (`H3`)
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 5. [LOW] Missing X-Content-Type-Options (`H3`)
 
 - **CWE:** CWE-1194
-- **Detail:** No X-Content-Type-Options on https://www.webmd.com/
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 26. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://www.webmd.com/
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 27. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/ (`I19`)
-
-- **CWE:** CWE-942
-- **Detail:** GET https://www.webmd.com/ responds with Access-Control-Allow-Origin: * (Content-Type: text/html). Any site can read responses cross-origin.
-
-### 28. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/ (`I19`)
-
-- **CWE:** CWE-942
-- **Detail:** GET https://www.webmd.com/ responds with Access-Control-Allow-Origin: * (Content-Type: text/plain). Any site can read responses cross-origin.
-
-### 29. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/ (`I19`)
-
-- **CWE:** CWE-942
-- **Detail:** GET https://www.webmd.com/ responds with Access-Control-Allow-Origin: * (Content-Type: text/html). Any site can read responses cross-origin.
-
-### 30. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/api (`I19`)
-
-- **CWE:** CWE-942
-- **Detail:** GET https://www.webmd.com/api responds with Access-Control-Allow-Origin: * (Content-Type: text/html). Any site can read responses cross-origin.
-
-### 31. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/api (`I19`)
-
-- **CWE:** CWE-942
-- **Detail:** GET https://www.webmd.com/api responds with Access-Control-Allow-Origin: * (Content-Type: text/plain). Any site can read responses cross-origin.
-
-### 32. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/api (`I19`)
-
-- **CWE:** CWE-942
-- **Detail:** GET https://www.webmd.com/api responds with Access-Control-Allow-Origin: * (Content-Type: text/html). Any site can read responses cross-origin.
-
-### 33. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/graphql (`I19`)
-
-- **CWE:** CWE-942
-- **Detail:** GET https://www.webmd.com/graphql responds with Access-Control-Allow-Origin: * (Content-Type: text/html). Any site can read responses cross-origin.
-
-### 34. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/graphql (`I19`)
-
-- **CWE:** CWE-942
-- **Detail:** GET https://www.webmd.com/graphql responds with Access-Control-Allow-Origin: * (Content-Type: text/plain). Any site can read responses cross-origin.
-
-### 35. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.webmd.com/graphql (`I19`)
-
-- **CWE:** CWE-942
-- **Detail:** GET https://www.webmd.com/graphql responds with Access-Control-Allow-Origin: * (Content-Type: text/html). Any site can read responses cross-origin.
-
-### 36. [INFO] security.txt exposed (public vulnerability disclosure policy) (`I26`)
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** GET https://www.webmd.com/.well-known/security.txt returned 200 (110 bytes) with a matching signature.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-## Reproduction notes
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
-- Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
+
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 10. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: Apache
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "webmd.com",
+  "dns": {
+    "a": [
+      "207.231.204.56"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
+      "alt1.aspmx.l.google.com (pref 5)"
+    ],
+    "ns": [
+      "amir.ns.cloudflare.com.",
+      "vita.ns.cloudflare.com."
+    ],
+    "spf": [
+      "a65ccd5662904680b467ccd142e9670b",
+      "google-site-verification=8ndI6dMiz3lrBkg2YbMR_RMa3lihncz9VgamtujOXQo",
+      "google-site-verification=XIEa3Mj4EhHxjtJ0RrN1tSfKYwyPFKyhoKFKZrfTn3Y",
+      "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAglkiu3gC0LOVJ8uWLfw8Ykk9tEFFL/EdXmMFBDUZSHMtPKRG0LBUBsmV/piNw1xsjg+nR3zpqqu68DeV/2GnFTvcKu02YJS7B6T7ibL/One14BoZW5Hpdp2LEnQxmrMxGjlzZHvwI9+3w9qgpo1jCe34jKW2pr6ext5cX7SxyNO41c5l4QgI4oJu3GGq2l6CM",
+      "N+OJAc54GU4ofetwS+L8gcWK86+ebMilGq3OgpowJZATl27ii7KiIHxZXixNLB5nDVPKrmuN4jcYEYGPEVELK4X/NxZWGTiZoFRXxwTDZYaBrDyxvOoFbQqwwOHfrMHHwTSTSRH5eLp2CGmMQtutwIDAQAB",
+      "v=spf1 include:spf.zohomail360.com include:mail.zendesk.com include:spf.protection.outlook.com include:_spf.google.com include:spf.mandrillapp.com ip4:207.138.251.0/25 ip4:104.47.37.127 ip4:12.237.176.1/24 ip4:13.108.238.128/27 ip4:13.108.254.128/27 ip4:1",
+      "36.146.208.16/28 ip4:136.146.210.16/28 ip4:136.147.46.176/28 ip4:136.147.46.224/26 ip4:136.147.62.176/28 ip4:136.147.62.224/26 ip4:204.14.232.64/28 ip4:204.14.234.64/28 ip4:206.155.74.1/24 ip4:207.231.200.0/21 ip4:213.199.154.0/17 ip4:216.32.180.0/23 ip4:",
+      "23.253.183.0/24 ip4:63.150.153.0/28 ip4:63.236.105.192/28 ip4:63.236.106.128/27 ip4:63.236.109.192/28 ip4:63.236.97.64/27 ip4:64.113.28.0/22 ip4:65.121.87.1/24 ip4:65.55.88.0/24 ip4:66.179.21.130 ip4:67.130.38.1/24 ip4:68.177.111.128/26 ip4:96.43.144.64/2",
+      "8 ip4:96.43.147.64/28 ip4:96.43.148.64/28 ip4:96.43.151.64/28 ip4:208.185.229.0/24 ip4:208.185.235.0/24 ip4:148.59.108.0/24 ip4:148.59.106.0/24 ip4:40.71.34.249 ip4:98.158.192.0/20 ~all",
+      "facebook-domain-verification=w0zj3kf18imt845aplzy38efaox23t",
+      "globalsign-domain-verification=-8kpivpbgMACeanB8hk0ansSLujEnFA_i1ukkwKY1Y",
+      "v=DKIM1; k=rsa; p=MIIBIjANB\" \"gkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAglkiu3gC0LOVJ8uWLfw8Ykk9tEFFL/EdXmMFBDUZSHMtPKRG0LBUBsmV/piNw1xsjg+nR3zpqqu68DeV/2GnFTvcKu02YJS7B6T7ibL/One14BoZW5Hpdp2LEnQxmrMxGjlzZHvwI9+3w9qgpo1jCe34jKW2pr6ext5cX7SxyNO41c5l4QgI4oJu3GGq2l",
+      "6CMN+OJAc54GU4ofetwS+L8gcWK86\" \"+ebMilGq3OgpowJZATl27ii7KiIHxZXixNLB5nDVPKrmuN4jcYEYGPEVELK4X/NxZWGTiZoFRXxwTDZYaBrDyxvOoFbQqwwOHfrMHHwTSTSRH5eLp2CGmMQtutwIDAQAB",
+      "google-site-verification=WUMAoNjAhtgdb0eWxrQUo1aE3Rvz4ApU-CRm0Dtw1-A",
+      "_7ef7fpwy2w82xju83yg53s3475e2qvn",
+      "e0cfe10a46f74485a608c50a63f263f9",
+      "SFMC-OzW5wNjIBpdXFIg-AnBOn39Kj0umwTThgg5Yfwm7",
+      "google-site-verification=tbLtuRpVup8Z965hPBFprdgjOoJw4VJqv1mkzJl84VE",
+      "s6fk0y05g78y03fjjkwynkb69sf9ggbb",
+      "adobe-idp-site-verification=273cee5ce44db359754043668120f4ccf0076e55a5fe663ce1bced543f24d765",
+      "google-site-verification=BR_G5pH8GUkbNgoC1nOdBpj3UZINgHU5Q9KltDsEGBM",
+      "wrike-verification=MTkwMjI3MDo2ZmJlNDE2N2FiMzllNjE0MDdiYjJjN2NmOWE2ZDA5YTA4YzliZjM5MThiNmQ3MWI5YTk4YmI4OTk5Y2QyMWZm"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; rua=mailto:1dda25c86b124ea4bf939c3c9714ee43@dmarc-reports.cloudflare.net,mailto:dmarcreport@webmd.com; fo=1; pct=100"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.2",
+    "cipher": "ECDHE-RSA-AES128-GCM-SHA256",
+    "subject": "commonName=le.prod.webmd.com",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YR1",
+    "notBefore": "Sep  2 00:10:04 2026 GMT",
+    "notAfter": "Dec  1 00:10:03 2026 GMT",
+    "san": [
+      "*.derigo.us",
+      "*.framesdata.com",
+      "*.krames.com",
+      "*.kramesondemand.com",
+      "*.kramesonline.com",
+      "*.kramesstaywell.com",
+      "*.kramesvideo.com",
+      "*.la1.webmd.com",
+      "*.m.webmd.com",
+      "*.ma1.krames.com",
+      "*.ma1.kramesondemand.com",
+      "*.ma1.kramesonline.com",
+      "*.ma1.kramesstaywell.com",
+      "*.ma1.kramesvideo.com",
+      "*.ma1.medicinenet.com",
+      "*.ma1.staywellhealthlibrary.com",
+      "*.ma1.staywellknowledgebase.com",
+      "*.ma1.staywellsolutionsonline.com",
+      "*.ma1.webmd.com",
+      "*.medicinenet.com",
+      "*.mediquality.net",
+      "*.medscape.com",
+      "*.medscape.org",
+      "*.medscapestatic.com",
+      "*.mngh.co",
+      "*.myframegallery.com",
+      "*.preview.m.webmd.com",
+      "*.preview.webmd.com",
+      "*.proddev.medscape.com",
+      "*.proddev.medscape.org",
+      "*.proddev.medscapestatic.com",
+      "*.staging.krames.com",
+      "*.staging.kramesondemand.com",
+      "*.staging.kramesonline.com",
+      "*.staging.kramesstaywell.com",
+      "*.staging.kramesvideo.com",
+      "*.staging.m.webmd.com",
+      "*.staging.medscape.com",
+      "*.staging.medscape.org",
+      "*.staging.medscapestatic.com",
+      "*.staging.staywellhealthlibrary.com",
+      "*.staging.staywellknowledgebase.com",
+      "*.staging.staywellsolutionsonline.com",
+      "*.staging.webmd.com",
+      "*.staywellhealthlibrary.com",
+      "*.staywellknowledgebase.com",
+      "*.staywellsolutionsonline.com",
+      "*.stg-ma1.kramesondemand.com",
+      "*.stg-ma1.kramesonline.com",
+      "*.stg-ma1.kramesstaywell.com",
+      "*.stg-ma1.kramesvideo.com",
+      "*.stg-ma1.staywellhealthlibrary.com",
+      "*.stg-ma1.staywellknowledgebase.com",
+      "*.stg-ma1.staywellsolutionsonline.com",
+      "*.stprod.webmd.com",
+      "*.webmd.com",
+      "derigo.us",
+      "fdb.rxlist.com",
+      "framesdata.com",
+      "images.emedicinehealth.com",
+      "images.onhealth.com",
+      "images.rxlist.com",
+      "img.medscape.fr",
+      "img.medscapemedizin.de",
+      "kramesondemand.com",
+      "kramesonline.com",
+      "kramesvideo.com",
+      "le.prod.webmd.com",
+      "medicinenet.com",
+      "medscape.com",
+      "medscape.org",
+      "mngh.co",
+      "mobilebeta.webmdpartner.net",
+      "sf2aim.webmd.net",
+      "staging.mobileconnections.webmd.com",
+      "staging.patientjourneys.webmd.com",
+      "staywellknowledgebase.com",
+      "staywellsolutionsonline.com",
+      "webmd.com",
+      "www.doctor.webmd.com",
+      "www.emedicinehealth.com",
+      "www.onhealth.com",
+      "www.rxlist.com",
+      "www.sponsorcontent.webmd.com",
+      "www.symptomchecker.webmd.com"
+    ],
+    "days_left": 66,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": false
+    }
+  },
+  "ports": {
+    "ip": "207.231.204.56",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: Apache"
+  ],
+  "cookies": [
+    {}
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.webmd.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://www.webmd.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 200,
+    "/security.txt": 301,
+    "/.git/HEAD": 403,
+    "/.git/config": 403,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "crt.sh ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='crt.sh', port=443): Read (certspotter 429)"
+  },
+  "elapsed_s": 43.9,
+  "rechecked": "2026-09-25 17:50 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

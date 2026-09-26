@@ -1,316 +1,288 @@
-# Security Audit Report - sxsw.com
+# Security Audit Report — sxsw.com
 
 ## Scope and authorization
 
 | Item | Value |
 |---|---|
 | Target | https://sxsw.com/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | sxsw.com |
-| Test date | 2026-09-25 14:52 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-26 01:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 8, Info: 8)
+Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | MAIL4 | DMARC policy is p=none (monitor only) | CWE-200 |
+| 3 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 4 | low | H1 | Missing HSTS header | CWE-319 |
+| 5 | low | H2 | Missing CSP header | CWE-1021 |
 | 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
 | 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | low | H4 | No clickjacking protection | CWE-1023 |
-| 9 | info | A4i | Sensitive paths exist (protected or app shells) | CWE-538 |
-| 10 | info | C12i | Additional responsive paths (v4 sweep) | CWE-538 |
-| 11 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 12 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 13 | info | H6 | Server technology disclosure | CWE-200 |
-| 14 | info | H6 | Server technology disclosure | CWE-200 |
-| 15 | info | H7 | X-Powered-By disclosure | CWE-200 |
-| 16 | info | P3 | Missing security.txt | CWE-1038 |
+| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 11 | info | H6 | Server technology disclosure | CWE-200 |
+| 12 | info | P11 | WordPress login page exposed | CWE-200 |
+| 13 | info | P8 | Missing security.txt | CWE-1038 |
+| 14 | info | CT1 | 33 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 15 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
+
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
+
+### 2. [INFO] DMARC policy is p=none (monitor only) (`MAIL4`)
+
+- **CWE:** CWE-200
+- **Detail:** DMARC is published but policy is 'none'; failing mail is not quarantined.
+- **Recommendation:** Move to p=quarantine/reject once monitor reports are clean.
+
+### 3. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: nginx; X-Powered-By: WordPress VIP <https://wpvip.com>
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 4. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
 - **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
+- **Context:** https response, /
 - **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 2. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 3. [LOW] Missing CSP header (`H2`)
+### 5. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
 - **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
+- **Context:** https response, /
 - **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 4. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
 ### 6. [LOW] Missing X-Content-Type-Options (`H3`)
 
 - **CWE:** CWE-1194
 - **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
 - **Recommendation:** Set X-Content-Type-Options: nosniff.
 
 ### 7. [LOW] No clickjacking protection (`H4`)
 
 - **CWE:** CWE-1023
 - **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
+- **Context:** https response, /
 - **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 8. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 9. [INFO] Sensitive paths exist (protected or app shells) (`A4i`)
-
-- **CWE:** CWE-538
-- **Detail:** Paths answering 401/403 or HTML shells: /.svn/entries (403 protected), /wp-login.php (HTML shell).
-- **Recommendation:** No immediate action if the paths are genuinely protected; otherwise return a real 404 to unauthenticated probes for paths that should not exist.
-
-### 10. [INFO] Additional responsive paths (v4 sweep) (`C12i`)
-
-- **CWE:** CWE-538
-- **Detail:** Answered without 404: /wp-login.php -> 200; /xmlrpc.php -> 405.
-- **Recommendation:** Return a real 404 for paths that should not exist; review the listed responsive paths for sensitive content.
-
-### 11. [INFO] Missing Referrer-Policy (`H5`)
+### 8. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
+- **Context:** https response, /
 - **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 12. [INFO] Missing Referrer-Policy (`H5`)
+### 9. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 13. [INFO] Server technology disclosure (`H6`)
+### 10. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: nginx
-- **Context:** http response
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 11. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: nginx
+- **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
-### 14. [INFO] Server technology disclosure (`H6`)
+### 12. [INFO] WordPress login page exposed (`P11`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: nginx
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** /wp-login.php returns 200.
+- **Recommendation:** Restrict or rate-limit the WordPress login endpoint.
 
-### 15. [INFO] X-Powered-By disclosure (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** X-Powered-By: WordPress VIP <https://wpvip.com>
-- **Recommendation:** Remove the X-Powered-By header.
-
-### 16. [INFO] Missing security.txt (`P3`)
+### 13. [INFO] Missing security.txt (`P8`)
 
 - **CWE:** CWE-1038
 - **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-## Aggressive probe campaign
+### 14. [INFO] 33 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
-**Stage 1 - injection/reflection probes (28 requests):**
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: staging.image-manager.sxsw.com, staging.sxsw.com, support.sxsw.com, www.staging.sxsw.com
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-- no stage-1 probe hits (all probes negative)
+### 15. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
-**Stage 2 - aggressive probe suite v2 (99 requests):**
-
-- sweep: {"high":[],"protected":["/.svn/entries (403 protected)","/wp-login.php (HTML shell)"]}
-- robots_disallow: ["Sitemap:"]
-
-Stage-2 probe log (observed responses):
-- timing base=774ms id=543 search=808
-- boolean b=200/255477 t1=301/0 t2=301/0
-- graphql /graphql -> 404
-- graphql /api/graphql -> 404
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 406
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 406
-- trav2 /%2e%2e%00.html -> 400
-- trav2 /static//../../../../../../etc/passwd -> 404
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 406
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 404
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 301
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301
-- apicors /api -> 404
-- apicors /api/v1 -> 404
-- apicors /graphql -> 404
-- apicors /rest -> 404
-- apicors /v1 -> 404
-
-**Stage 3 - live parameter harvest, takeover and injection probes (54 requests):**
-
-- params_harvested: ["url","rsd","ver","quality","id","integration","m","minify"]
-
-Stage-3 probe log (observed responses):
-- harvest discovered 8 live query params
-- xss3 https://sxsw.com/wp-json/oembed/1.0/embed?url -> err
-- xss3 https://sxsw.com/xmlrpc.php?rsd -> err
-- xss3 https://sxsw.com/wp-content/themes/sxswfse-2026/build/blocks/reg-rate-banner/view.js?ver -> err
-- xss3 https://sxsw.com/wp-content/uploads/sites/2/2026/07/cropped-Path.png?quality -> err
-- xss3 https://www.googletagmanager.com/ns.html?id -> err
-- xss3 https://js.hs-scripts.com/558236.js?integration -> err
-- xss3 https://sxsw.com/wp-includes/js/dist/hooks.min.js?m -> err
-- xss3 https://sxsw.com/wp-content/mu-plugins/jetpack-16.2/jetpack_vendor/automattic/jetpack-assets/build/i18n-loader.js?minify -> err
-- subs no dangling service CNAMEs over 16 subdomains
-
-**Stage 4 - injection/XSS/redirect/endpoint matrix suite v4 (143 requests):**
-
-- v4_params: ["url@https://sxsw.com/wp-json/oembed/1.0/embed","rsd@https://sxsw.com/xmlrpc.php","ver@https://sxsw.com/wp-content/themes/sxswfse-2026/build/blocks/reg-rate-banner/view.js","quality@https://sxsw.com/wp-content/uploads/sites/2/2026/07/cropped-Path.png","id@https://www.googletagmanager.com/ns.html","integration@https://js.hs-scripts.com/558236.js","m@https://sxsw.com/wp-includes/js/dist/hooks.min.js","minify@https://sxsw.com/wp-content/mu-plugins/jetpack-16.2/jetpack_vendor/automattic/jetpack-assets/build/i18n-loader.js"]
-
-Stage-4 probe log (observed responses):
-- harvest discovered 8 live query params
+- **CWE:** CWE-200
+- **Detail:** Historical subdomains no longer have A/AAAA records: staging.image-manager.sxsw.com; content may still be served via virtual-host fallback.
+- **Recommendation:** Reclaim or delete dangling subdomains to reduce virtual-hosting attack surface.
 
 ## Evidence (raw response observations)
 
 ```json
 {
-  "http_status": 301,
-  "http_redirect_to": "https://sxsw.com/",
-  "https_status": 200,
-  "content_type": "text/html; charset=UTF-8",
-  "title": "Homepage - SXSW",
-  "path_gitconfig": 403,
-  "path_envfile": 403,
-  "path_securitytxt": 404,
-  "path_robots": 200,
-  "robots_found": true,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 404",
-    "sqli /?id=1%27+OR+1=1-- -> 301",
-    "sqli /?q=%27 -> 200",
-    "sqli /products?filter=%27 -> 404",
-    "sqli /?p=1;-- -> 404",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 404",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 404",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 404",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 301",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 404",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 400",
-    "trav /static/../../../../../../../../etc/passwd -> 404",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 404",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 406",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 200",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 301",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 404",
-    "host no reflection -> 404",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 404",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 404"
+  "domain": "sxsw.com",
+  "dns": {
+    "a": [
+      "192.0.66.144"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "smtp.google.com (pref 1)"
+    ],
+    "ns": [
+      "ns-1002.awsdns-61.net.",
+      "ns-205.awsdns-25.com.",
+      "ns-1453.awsdns-53.org.",
+      "ns-1565.awsdns-03.co.uk."
+    ],
+    "spf": [
+      "ZOOM_verify_a9DO-VMYQS64sNgz2Xh-5w",
+      "facebook-domain-verification=olbote15pv5pj5ognkycofy34mjlmz",
+      "v=DMARC1; p=reject; rua=mailto:dmarc-aggregate@; pct=100",
+      "apple-domain-verification=zeJgTan8Yy8t07ga",
+      "v=spf1 ip4:66.219.52.0/24 ip4:134.128.92.11 include:_spf.google.com include:_festivalprospf.sxsw.com include:_spf.createsend.com include:mail.zendesk.com include:558236.spf02.hubspotemail.net include:spf.mandrillapp.com include:amazonses.com ~all",
+      "adobe-idp-site-verification=5f299ac5ccddedab8418f37aad62a1ff499e5979c3b247bd4229ca57071848e8",
+      "google-site-verification=dNdE3qz7sSGrLbC12g8ccReAFtC3Gx5dy1q9dgE_I1g"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=none; rua=mailto:dmarc_admin@sxsw.com"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=sxsw.com",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YE1",
+    "notBefore": "Sep 23 09:42:07 2026 GMT",
+    "notAfter": "Dec 22 09:42:06 2026 GMT",
+    "san": [
+      "sxsw.com",
+      "www.sxsw.com"
+    ],
+    "days_left": 87,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "192.0.66.144",
+    "open": []
+  },
+  "https": {
+    "status": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "title": "Homepage - SXSW"
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: nginx",
+    "X-Powered-By: WordPress VIP <https://wpvip.com>"
   ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=774ms id=543 search=808",
-    "boolean b=200/255477 t1=301/0 t2=301/0",
-    "graphql /graphql -> 404",
-    "graphql /api/graphql -> 404",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 406",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 406",
-    "trav2 /%2e%2e%00.html -> 400",
-    "trav2 /static//../../../../../../etc/passwd -> 404",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 406",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 301",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 404",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 301",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 301",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 404",
-    "apicors /api/v1 -> 404",
-    "apicors /graphql -> 404",
-    "apicors /rest -> 404",
-    "apicors /v1 -> 404"
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.sxsw.com",
+      "acao": "",
+      "acac": ""
+    }
   ],
-  "sweep": {
-    "high": [],
-    "protected": [
-      "/.svn/entries (403 protected)",
-      "/wp-login.php (HTML shell)"
+  "http": {
+    "status": 301,
+    "location": "https://sxsw.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 404",
+    "/redirect?next=https://evil-auditor.example/x -> 404",
+    "/go?url=https://evil-auditor.example/x -> 404",
+    "/url?url=https://evil-auditor.example/x -> 404"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 404,
+    "/.git/HEAD": 403,
+    "/.git/config": 403,
+    "/.env": 403,
+    "/.htaccess": 403,
+    "/wp-login.php": 200,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 404,
+    "/api/": 404
+  },
+  "subdomains": {
+    "source": "crt.sh",
+    "count": 33,
+    "notable": [
+      "staging.image-manager.sxsw.com",
+      "staging.sxsw.com",
+      "support.sxsw.com",
+      "www.staging.sxsw.com"
+    ],
+    "sample": [
+      "airwatch.sxsw.com",
+      "books.sxsw.com",
+      "email.expomail.sxsw.com",
+      "event-svc-pvt.sxsw.com",
+      "explore.sxsw.com",
+      "expo.sxsw.com",
+      "expos.sxsw.com",
+      "filmlibrary.sxsw.com",
+      "gamingblog.sxsw.com",
+      "gamingexplore.sxsw.com",
+      "hub.sxsw.com",
+      "id.sxsw.com",
+      "image-manager.sxsw.com",
+      "kylo.sxsw.com",
+      "leads.sxsw.com",
+      "links.sxsw.com",
+      "mentors.sxsw.com",
+      "merch.sxsw.com",
+      "online.sxsw.com",
+      "participate.sxsw.com"
+    ],
+    "dangling": [
+      "staging.image-manager.sxsw.com"
     ]
   },
-  "robots_disallow": [
-    "Sitemap:"
-  ],
-  "v3_probe_count": 54,
-  "v3_log": [
-    "harvest discovered 8 live query params",
-    "xss3 https://sxsw.com/wp-json/oembed/1.0/embed?url -> err",
-    "xss3 https://sxsw.com/xmlrpc.php?rsd -> err",
-    "xss3 https://sxsw.com/wp-content/themes/sxswfse-2026/build/blocks/reg-rate-banner/view.js?ver -> err",
-    "xss3 https://sxsw.com/wp-content/uploads/sites/2/2026/07/cropped-Path.png?quality -> err",
-    "xss3 https://www.googletagmanager.com/ns.html?id -> err",
-    "xss3 https://js.hs-scripts.com/558236.js?integration -> err",
-    "xss3 https://sxsw.com/wp-includes/js/dist/hooks.min.js?m -> err",
-    "xss3 https://sxsw.com/wp-content/mu-plugins/jetpack-16.2/jetpack_vendor/automattic/jetpack-assets/build/i18n-loader.js?minify -> err",
-    "subs no dangling service CNAMEs over 16 subdomains",
-    "cache X-Forwarded-Host not reflected -> 200"
-  ],
-  "params_harvested": [
-    "url",
-    "rsd",
-    "ver",
-    "quality",
-    "id",
-    "integration",
-    "m",
-    "minify"
-  ],
-  "v4_probe_count": 143,
-  "v4_log": [
-    "harvest discovered 8 live query params"
-  ],
-  "v4_params": [
-    "url@https://sxsw.com/wp-json/oembed/1.0/embed",
-    "rsd@https://sxsw.com/xmlrpc.php",
-    "ver@https://sxsw.com/wp-content/themes/sxswfse-2026/build/blocks/reg-rate-banner/view.js",
-    "quality@https://sxsw.com/wp-content/uploads/sites/2/2026/07/cropped-Path.png",
-    "id@https://www.googletagmanager.com/ns.html",
-    "integration@https://js.hs-scripts.com/558236.js",
-    "m@https://sxsw.com/wp-includes/js/dist/hooks.min.js",
-    "minify@https://sxsw.com/wp-content/mu-plugins/jetpack-16.2/jetpack_vendor/automattic/jetpack-assets/build/i18n-loader.js"
-  ]
+  "elapsed_s": 43.3,
+  "rechecked": "2026-09-26 01:45 UTC"
 }
 ```
 
 ## Notes
 
-- All tests used a standard browser User-Agent; each site was probed with a four-stage aggressive GET-only suite: passive/header checks, stage-1/2 injection/XSS/traversal/CORS/redirect probes, a stage-3 live-parameter-harvest campaign (per-parameter XSS/SQLi/LFI/SSTI/redirect, JSONP, command injection, NoSQL, subdomain-takeover CNAME checks via DNS-over-HTTPS, forwarded-host cache poisoning), and a stage-4 matrix suite (multi-context XSS with CSP awareness, SSTI, error-based SQLi + WAF fingerprint, command injection, deep LFI, open-redirect bypass encodings, CRLF, HPP, NoSQL, sensitive-endpoint sweep, GraphQL introspection, verbose-500 stack disclosure, llms.txt, JSONP-XSS; up to ~300 requests per site).
-- No credentials were used; no state was modified on the target.
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

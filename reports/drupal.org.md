@@ -5,319 +5,237 @@
 | Item | Value |
 |---|---|
 | Target | https://drupal.org/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | drupal.org |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 17:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
+Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C2 | Cookies set without Secure flag | CWE-614 |
-| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 3 | info | H2 | Short HSTS max-age | CWE-319 |
-| 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 5 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 6 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 7 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 8 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | MAIL4 | DMARC policy is p=none (monitor only) | CWE-200 |
+| 3 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 4 | low | H1 | Missing HSTS header | CWE-319 |
+| 5 | low | H2 | Missing CSP header | CWE-1021 |
+| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 7 | low | H4 | No clickjacking protection | CWE-1023 |
+| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 11 | info | H6 | Server technology disclosure | CWE-200 |
+| 12 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without Secure flag (`C2`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-614
-- **Detail:** Set on https://drupal.org/ without Secure: _fs_ch_st_FSBmUei20MqUiJb9. Will be transmitted over HTTP if the site is reachable cleartext.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://drupal.org/ without SameSite=Lax/Strict: _fs_ch_st_FSBmUei20MqUiJb9. Cross-site request cookies.
-
-### 3. [INFO] Short HSTS max-age (`H2`)
-
-- **CWE:** CWE-319
-- **Detail:** HSTS max-age=15552000 (< 1 year): `max-age=15552000; includeSubDomains; preload`.
-
-### 4. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] DMARC policy is p=none (monitor only) (`MAIL4`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://drupal.org/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** DMARC is published but policy is 'none'; failing mail is not quarantined.
+- **Recommendation:** Move to p=quarantine/reject once monitor reports are clean.
 
-### 5. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://drupal.org/ lists 0 URLs.
-
-### 6. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://drupal.org/ -> https://drupal.org/ (positive check).
-
-### 7. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 3. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://drupal.org/ exposes 0 unique Disallow path(s)
+- **Detail:** Detected: Server: Varnish
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 8. [INFO] security.txt exposed (public disclosure policy) (`S2`)
-
-- **CWE:** CWE-200
-- **Detail:** security.txt present on https://drupal.org (3036 bytes)
-
-## Reproduction notes
-
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://drupal.org/ final status: 200 (final URL https://www.drupal.org/).
-- http://drupal.org/ initial status: 301.
-- Certificate: GlobalSign nv-sa GlobalSign Atlas R3 DV TLS CA 2025 Q4, valid until 2027-01-09T20:00:17+00:00.
-
-## Active agent cross-check (latest pre-merge `main` snapshot)
-
-The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before the latest passive re-audit was merged is preserved below for comparison and to avoid losing later verification work.
-
-<details>
-<summary>Expand active-scan snapshot — 13 findings: 0 high, 0 medium, 8 low, 5 info</summary>
-
-### Security Audit Report - drupal.org
-
-#### Scope and authorization
-
-| Item | Value |
-|---|---|
-| Target | https://drupal.org/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
-| Listed scope domain | drupal.org |
-| Test date | 2026-09-25 00:39 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
-
-#### Summary
-
-Total findings: **13** (High: 0, Medium: 0, Low: 8, Info: 5)
-
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | low | H4 | No clickjacking protection | CWE-1023 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H6 | Server technology disclosure | CWE-200 |
-| 12 | info | H6 | Server technology disclosure | CWE-200 |
-| 13 | info | H7 | Site-wide JS client challenge on www (bot-challenge catch-all; ELMAH/console 200s refuted) | CWE-693 |
-
-#### Detailed findings
-
-##### 1. [LOW] Missing HSTS header (`H1`)
+### 4. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
 - **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
+- **Context:** https response, /
 - **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-##### 2. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-##### 3. [LOW] Missing CSP header (`H2`)
+### 5. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
 - **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
+- **Context:** https response, /
 - **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-##### 4. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
-
-##### 5. [LOW] Missing X-Content-Type-Options (`H3`)
+### 6. [LOW] Missing X-Content-Type-Options (`H3`)
 
 - **CWE:** CWE-1194
 - **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
+- **Context:** https response, /
 - **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-##### 6. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-##### 7. [LOW] No clickjacking protection (`H4`)
+### 7. [LOW] No clickjacking protection (`H4`)
 
 - **CWE:** CWE-1023
 - **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
+- **Context:** https response, /
 - **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-##### 8. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-##### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 8. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
+- **Context:** https response, /
 - **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-##### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 9. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-##### 11. [INFO] Server technology disclosure (`H6`)
+### 10. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: Varnish
-- **Context:** http response
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 11. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: Varnish
+- **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
-##### 12. [INFO] Server technology disclosure (`H6`)
+### 12. [INFO] Missing security.txt (`P8`)
 
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: Varnish
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-##### 13. [INFO] Site-wide JS client challenge on www.drupal.org (bot-challenge catch-all) (`H7`)
-
-- **CWE:** CWE-693
-- **Detail:** During testing on 2026-09-25 ~09:00 UTC, every request to www.drupal.org returned the identical 3038-byte "Client Challenge" page (md5 ef34477109bd), including `/`, `/elmah.axd`, `/console`, `/robots.txt`, `/trace.axd` and random 404 paths, regardless of User-Agent (browser, Googlebot, curl, Drupal). The challenge page is a JavaScript-gated page with assets under `/_fs-ch-1T1wmsGaOgGaSxcX/` and a strict inline CSP. Apex drupal.org still 302-redirects via Varnish.
-- **Context:** All non-JS clients (crawlers, RSS readers, API consumers) receive the challenge page instead of content for the duration of the challenge. An external ELMAH `/elmah.axd` 200 + `/console` 200 lead from a parallel sweep was verified against this catch-all and REFUTED: byte-identical page on all paths, no actual ELMAH handler present.
-- **Recommendation:** If the challenge is site-wide at test time, confirm non-JS clients (crawlers, robots.txt consumers) are not degraded; expose real /robots.txt to crawlers or allowlist bot IPs. If transient, note as a site-wide challenge incident.
-
-#### Aggressive probe campaign
-
-**Stage 1 - injection/reflection probes (28 requests):**
-
-- no stage-1 probe hits (all probes negative)
-
-**Stage 2 - aggressive probe suite v2 (99 requests):**
-
-- no stage-2 probe hits (all probes negative)
-
-Stage-2 probe log (observed responses):
-- timing base=527ms id=115 search=540
-- boolean b=302/0 t1=302/0 t2=302/0
-- graphql /graphql -> 302
-- graphql /api/graphql -> 302
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 302
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 302
-- trav2 /%2e%2e%00.html -> 302
-- trav2 /static//../../../../../../etc/passwd -> 302
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 302
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 302
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302
-- apicors /api -> 302
-- apicors /api/v1 -> 302
-- apicors /graphql -> 302
-- apicors /rest -> 302
-- apicors /v1 -> 302
-
-**Stage 3 - live parameter harvest, takeover and injection probes (23 requests):**
-
-- no stage-3 probe hits (all probes negative)
-
-Stage-3 probe log (observed responses):
-- harvest no query params discovered on sampled pages
-- subs no dangling service CNAMEs over 16 subdomains
-
-#### Evidence (raw response observations)
+## Evidence (raw response observations)
 
 ```json
 {
-  "http_status": 301,
-  "http_redirect_to": "https://drupal.org/",
-  "https_status": 302,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 302,
-  "path_envfile": 302,
-  "path_securitytxt": 302,
-  "path_robots": 302,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 302",
-    "sqli /?id=1%27+OR+1=1-- -> 302",
-    "sqli /?q=%27 -> 302",
-    "sqli /products?filter=%27 -> 302",
-    "sqli /?p=1;-- -> 302",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 302",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 302",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 302",
-    "trav /static/../../../../../../../../etc/passwd -> 302",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 302",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 302",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 302",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 302",
-    "host no reflection -> 421",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302"
+  "domain": "drupal.org",
+  "dns": {
+    "a": [
+      "151.101.130.217",
+      "151.101.2.217",
+      "151.101.66.217",
+      "151.101.194.217"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "smtp3.osuosl.org (pref 5)",
+      "smtp1.osuosl.org (pref 5)",
+      "smtp2.osuosl.org (pref 5)",
+      "smtp4.osuosl.org (pref 5)"
+    ],
+    "ns": [
+      "ns4.dnsmadeeasy.com.",
+      "ns1.dnsmadeeasy.com.",
+      "ns3.dnsmadeeasy.com.",
+      "ns2.dnsmadeeasy.com.",
+      "ns0.dnsmadeeasy.com."
+    ],
+    "spf": [
+      "google-site-verification=oA6bw_SaWeTbyrjWNmQG7adq0075ki6d4pKaNZ4aui0",
+      "libera-MuhFCh9oKFAX8JRaWuLfdx9f",
+      "brave-ledger-verification=39d2f4e207f7abc8b6f064d91672f3908d99079a2c03e6cbd60ef6d7daefa520",
+      "globalsign-domain-verification=wvdz6fqNpGYoUxoyCbEUOYrkz-Z8Nh2zXAoS8lsLRh",
+      "atlassian-domain-verification=ZePKtfBRwyzfk4yeRCOiU1xgjIPOxn9JC3ioSM/K/SIYzHxrw6mfbg39K7xejmhA",
+      "google-site-verification=Qd0lcd0D9W_oK9TbiAFqQ7PDpBsCyChyHvQnKn0CGgM",
+      "_globalsign-domain-verification=ckxXdoIq27XGYE4ATbBYQOBeV7PTJWRxYe-PXDyzMX",
+      "v=spf1 mx include:amazonses.com include:servers.mcsv.net -all"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=none; pct=100; rua=mailto:re+myecnlkddmo@dmarc.postmarkapp.com; sp=none; aspf=r;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.2",
+    "cipher": "ECDHE-RSA-AES128-GCM-SHA256",
+    "subject": "commonName=drupal.org",
+    "issuer": "countryName=BE, organizationName=GlobalSign nv-sa, commonName=GlobalSign Atlas R3 DV TLS CA 2025 Q4",
+    "notBefore": "Dec  8 20:00:18 2025 GMT",
+    "notAfter": "Jan  9 20:00:17 2027 GMT",
+    "san": [
+      "drupal.org"
+    ],
+    "days_left": 106,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": false
+    }
+  },
+  "ports": {
+    "ip": "151.101.130.217",
+    "open": []
+  },
+  "https": {
+    "status": 302,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: Varnish"
   ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=527ms id=115 search=540",
-    "boolean b=302/0 t1=302/0 t2=302/0",
-    "graphql /graphql -> 302",
-    "graphql /api/graphql -> 302",
-    "sweep no hits over 26 paths",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 302",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 302",
-    "trav2 /%2e%2e%00.html -> 302",
-    "trav2 /static//../../../../../../etc/passwd -> 302",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 302",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 302",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 302",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 302",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 302",
-    "apicors /api/v1 -> 302",
-    "apicors /graphql -> 302",
-    "apicors /rest -> 302",
-    "apicors /v1 -> 302"
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.drupal.org",
+      "acao": "",
+      "acac": ""
+    }
   ],
-  "v3_probe_count": 23,
-  "v3_log": [
-    "harvest no query params discovered on sampled pages",
-    "subs no dangling service CNAMEs over 16 subdomains",
-    "cache X-Forwarded-Host not reflected -> 302"
-  ]
+  "http": {
+    "status": 301,
+    "location": "https://drupal.org/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 302",
+    "/redirect?next=https://evil-auditor.example/x -> 302",
+    "/go?url=https://evil-auditor.example/x -> 302",
+    "/url?url=https://evil-auditor.example/x -> 302"
+  ],
+  "paths": {
+    "/robots.txt": 302,
+    "/sitemap.xml": 302,
+    "/.well-known/security.txt": 302,
+    "/security.txt": 302,
+    "/.git/HEAD": 302,
+    "/.git/config": 302,
+    "/.env": 302,
+    "/.htaccess": 302,
+    "/wp-login.php": 302,
+    "/phpmyadmin/index.php": 302,
+    "/server-status": 302,
+    "/api/": 302
+  },
+  "subdomains": {
+    "status": "crt.sh ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='crt.sh', port=443): Read (certspotter 429)"
+  },
+  "elapsed_s": 31.3,
+  "rechecked": "2026-09-25 17:50 UTC"
 }
 ```
 
-#### Notes
+## Notes
 
-- All tests used a standard browser User-Agent; each site was probed with a three-stage aggressive GET-only suite (passive/header checks plus stage-1 and stage-2 injection/XSS/traversal/CORS/redirect probes and a stage-3 live-parameter-harvest campaign: per-parameter XSS/SQLi/LFI/SSTI/redirect injection, JSONP callback injection, command injection, NoSQL candidates, subdomain-takeover CNAME checks via DNS-over-HTTPS, and forwarded-host cache-poisoning probes; up to ~200 requests per site).
-- No credentials were used; no state was modified on the target.
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - Findings are reported against the public program scope; submission through the program tracker is pending.
-
-</details>

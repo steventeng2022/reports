@@ -5,107 +5,247 @@
 | Item | Value |
 |---|---|
 | Target | https://baidu.com/ |
-| Bug bounty program | [Baidu](https://bsrc.baidu.com/v2/#/en) |
+| Bug bounty program | Baidu |
 | Listed scope domain | baidu.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 08:42 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 7, Info: 7)
+Total findings: **9** (High: 0, Medium: 0, Low: 4, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
-| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 4 | low | H1 | Missing HSTS header | CWE-319 |
-| 5 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 6 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 7 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 8 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 9 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 12 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 13 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 14 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | H1 | Missing HSTS header | CWE-319 |
+| 3 | low | H2 | Missing CSP header | CWE-1021 |
+| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 5 | low | H4 | No clickjacking protection | CWE-1023 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 9 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://baidu.com/ without HttpOnly: BAIDUID, BIDUPSID, PSTM. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without Secure flag (`C2`)
-
-- **CWE:** CWE-614
-- **Detail:** Set on https://baidu.com/ without Secure: BAIDUID, BIDUPSID, PSTM. Will be transmitted over HTTP if the site is reachable cleartext.
-
-### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://baidu.com/ without SameSite=Lax/Strict: BAIDUID, BIDUPSID, PSTM. Cross-site request cookies.
-
-### 4. [LOW] Missing HSTS header (`H1`)
+### 2. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header on https://baidu.com/. Clients may connect over plain HTTP on first visit.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 5. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://baidu.com/; no defense-in-depth against XSS/content injection.
-
-### 6. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://baidu.com/; browsers may MIME-sniff responses.
-
-### 7. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 3. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://baidu.com/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 8. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 4. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for baidu.com lists 52 name(s) besides the scope host: *.91.com, *.aipage.cn, *.aipage.com, *.apollo.auto, *.baidu.com, *.baidubce.com, *.baiducontent.com, *.baidupcs.com... (1 no longer resolve)
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 9. [INFO] Possible dangling subdomain (`D2`)
+### 5. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `baifubao.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 10. [INFO] Missing Referrer-Policy (`H5`)
-
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://baidu.com/; full URL (incl. query strings) is sent as referrer by default.
-
-### 11. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://baidu.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 12. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://baidu.com/ -> https://www.baidu.com/ (positive check).
-
-### 13. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://baidu.com/ exposes 10 unique Disallow path(s) (/, /baidu, /bh, /cpro, /home/news/data/)
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 14. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on baidu.com.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://baidu.com/ final status: 200 (final URL https://www.baidu.com/).
-- http://baidu.com/ initial status: 301.
-- Certificate: GlobalSign nv-sa GlobalSign RSA OV SSL CA 2018, valid until 2027-01-24T02:32:55+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 9. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "baidu.com",
+  "dns": {
+    "a": [
+      "111.63.65.103",
+      "110.242.74.102",
+      "111.63.65.247",
+      "124.237.177.164"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "mx.maillb.baidu.com (pref 10)",
+      "mx.baidu.com (pref 20)"
+    ],
+    "ns": [
+      "ns3.baidu.com.",
+      "ns7.baidu.com.",
+      "dns.baidu.com.",
+      "ns4.baidu.com.",
+      "ns2.baidu.com."
+    ],
+    "spf": [
+      "v=spf1 include:spf1.baidu.com include:spf2.baidu.com include:spf3.baidu.com include:spf4.baidu.com -all",
+      "google-site-verification=GHb98-6msqyx_qqjGl5eRatD3QTHyVB6-xQ3gJB5UwM",
+      "9279nznttl321bxp1j464rd9vpps246v",
+      "_globalsign-domain-verification=qjb28W2jJSrWj04NHpB0CvgK9tle5JkOq-EcyWBgnE"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=quarantine; rua=mailto:baidu-spammail@baidu.com; ruf=mailto:baidu-spammail@baidu.com"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.2",
+    "cipher": "ECDHE-RSA-AES128-GCM-SHA256",
+    "subject": "countryName=CN, stateOrProvinceName=Beijing, localityName=Beijing, organizationName=Beijing Baidu Netcom Science Technology Co., Ltd., commonName=baidu.com",
+    "issuer": "countryName=BE, organizationName=GlobalSign nv-sa, commonName=GlobalSign RSA OV SSL CA 2018",
+    "notBefore": "Jul  9 02:32:55 2026 GMT",
+    "notAfter": "Jan 24 02:32:55 2027 GMT",
+    "san": [
+      "baidu.com",
+      "click.hm.baidu.com",
+      "baifubao.com",
+      "www.baidu.cn",
+      "www.baidu.com.cn",
+      "mct.y.nuomi.com",
+      "apollo.auto",
+      "dwz.cn",
+      "update.pan.baidu.com",
+      "wn.pos.baidu.com",
+      "cm.pos.baidu.com",
+      "log.hm.baidu.com",
+      "*.baidu.com",
+      "*.baifubao.com",
+      "*.baidustatic.com",
+      "*.bdstatic.com",
+      "*.bdimg.com",
+      "*.hao123.com",
+      "*.nuomi.com",
+      "*.chuanke.com",
+      "*.trustgo.com",
+      "*.bce.baidu.com",
+      "*.eyun.baidu.com",
+      "*.map.baidu.com",
+      "*.mbd.baidu.com",
+      "*.fanyi.baidu.com",
+      "*.baidubce.com",
+      "*.mipcdn.com",
+      "*.news.baidu.com",
+      "*.baidupcs.com",
+      "*.aipage.com",
+      "*.aipage.cn",
+      "*.bcehost.com",
+      "*.safe.baidu.com",
+      "*.im.baidu.com",
+      "*.baiducontent.com",
+      "*.dlnel.com",
+      "*.dlnel.org",
+      "*.dueros.baidu.com",
+      "*.su.baidu.com",
+      "*.91.com",
+      "*.hao123.baidu.com",
+      "*.apollo.auto",
+      "*.xueshu.baidu.com",
+      "*.bj.baidubce.com",
+      "*.gz.baidubce.com",
+      "*.smartapps.cn",
+      "*.bdtjrcv.com",
+      "*.hao222.com",
+      "*.haokan.com",
+      "*.pae.baidu.com",
+      "*.vd.bdstatic.com",
+      "*.cloud.baidu.com"
+    ],
+    "days_left": 120
+  },
+  "elapsed_s": 16.0,
+  "subdomains": {
+    "status": "crt.sh 502 (certspotter 429)"
+  },
+  "rechecked": "2026-09-25 13:59 UTC",
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.baidu.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://www.baidu.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  }
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

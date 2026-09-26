@@ -5,95 +5,281 @@
 | Item | Value |
 |---|---|
 | Target | https://thinkwithgoogle.com/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | thinkwithgoogle.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:21 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
+Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 3 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 4 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 5 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 6 | info | H2c | HSTS not preloaded | CWE-319 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 4 | low | H1 | Missing HSTS header | CWE-319 |
+| 5 | low | H2 | Missing CSP header | CWE-1021 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
 | 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 9 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 10 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 11 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
-| 12 | info | X3 | HTTPS root redirects to different host | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://thinkwithgoogle.com/ without SameSite=Lax/Strict: NID. Cross-site request cookies.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for thinkwithgoogle.com lists 45 name(s) besides the scope host: *.an.r.appspot.com, *.app.google, *.appspot.com, *.as.r.appspot.com, *.de.r.appspot.com, *.df.r.appspot.com, *.dt.r.appspot.com, *.du.r.appspot.com... (2 no longer resolve)
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: sffe
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 3. [INFO] Possible dangling subdomain (`D2`)
+### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `app.google` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+- **CWE:** CWE-200
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
 
-### 4. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `thinkwithgoogle.goog` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 5. [INFO] HSTS without includeSubDomains (`H2b`)
+### 4. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** `max-age=31536000` does not cover subdomains.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 6. [INFO] HSTS not preloaded (`H2c`)
+### 5. [LOW] Missing CSP header (`H2`)
 
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` lacks the preload directive.
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 6. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
 ### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://thinkwithgoogle.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 8. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://thinkwithgoogle.com/ lists 84 URLs.
-
-### 9. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://thinkwithgoogle.com/ -> https://www.thinkwithgoogle.com/ (positive check).
-
-### 10. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://thinkwithgoogle.com/ exposes 1 unique Disallow path(s) (/*?query=) and 1 sitemap reference(s)
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 11. [INFO] security.txt exposed (public disclosure policy) (`S2`)
-
-- **CWE:** CWE-200
-- **Detail:** security.txt present on https://thinkwithgoogle.com (270630 bytes)
-
-### 12. [INFO] HTTPS root redirects to different host (`X3`)
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** https://thinkwithgoogle.com/ redirects to https://business.google.com/en-all/think/.
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-## Reproduction notes
+### 10. [INFO] Server technology disclosure (`H6`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://thinkwithgoogle.com/ final status: 200 (final URL https://business.google.com/en-all/think/).
-- http://thinkwithgoogle.com/ initial status: 301.
-- Certificate: Google Trust Services WE2, valid until 2026-12-03T19:21:46+00:00.
+- **CWE:** CWE-200
+- **Detail:** Header reveals: sffe
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 11. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 12. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: none flagged
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "thinkwithgoogle.com",
+  "dns": {
+    "a": [
+      "74.125.204.101",
+      "74.125.204.113",
+      "74.125.204.139",
+      "74.125.204.100",
+      "74.125.204.138",
+      "74.125.204.102"
+    ],
+    "aaaa": [
+      "2404:6800:4008:c04::8b",
+      "2404:6800:4008:c04::8a",
+      "2404:6800:4008:c04::64",
+      "2404:6800:4008:c04::65"
+    ],
+    "cname": null,
+    "mx": [],
+    "ns": [
+      "ns3.google.com.",
+      "ns4.google.com.",
+      "ns1.google.com.",
+      "ns2.google.com."
+    ],
+    "spf": [
+      "v=spf1 -all",
+      "facebook-domain-verification=sbvz693hyqny6ag4fjqyse15bm6uz0"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; rua=mailto:mailauth-reports@google.com"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=*.appspot.com",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
+    "notBefore": "Sep 10 19:21:47 2026 GMT",
+    "notAfter": "Dec  3 19:21:46 2026 GMT",
+    "san": [
+      "*.appspot.com",
+      "appspot.com",
+      "*.de.r.appspot.com",
+      "*.df.r.appspot.com",
+      "*.an.r.appspot.com",
+      "*.dt.r.appspot.com",
+      "*.du.r.appspot.com",
+      "*.el.r.appspot.com",
+      "*.as.r.appspot.com",
+      "*.et.r.appspot.com",
+      "*.ts.r.appspot.com",
+      "*.lz.r.appspot.com",
+      "*.ew.r.appspot.com",
+      "*.nw.r.appspot.com",
+      "*.ey.r.appspot.com",
+      "*.ez.r.appspot.com",
+      "*.nz.r.appspot.com",
+      "*.oa.r.appspot.com",
+      "*.nn.r.appspot.com",
+      "*.rj.r.appspot.com",
+      "*.uc.r.appspot.com",
+      "*.tz.r.appspot.com",
+      "*.ue.r.appspot.com",
+      "*.uk.r.appspot.com",
+      "*.un.r.appspot.com",
+      "*.uw.r.appspot.com",
+      "*.wl.r.appspot.com",
+      "*.wm.r.appspot.com",
+      "*.wn.r.appspot.com",
+      "*.lm.r.appspot.com",
+      "*.em.r.appspot.com",
+      "*.km.r.appspot.com",
+      "*.pd.r.appspot.com",
+      "*.ui.r.appspot.com",
+      "*.oj.r.appspot.com",
+      "thinkwithgoogle.com",
+      "*.thinkwithgoogle.com",
+      "thinkwithgoogle.goog",
+      "*.thinkwithgoogle.goog",
+      "withgoogle.com",
+      "*.withgoogle.com",
+      "api.projectshield.withgoogle.com",
+      "withyoutube.com",
+      "*.withyoutube.com",
+      "app.google",
+      "*.app.google"
+    ],
+    "days_left": 69,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "74.125.204.101",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: sffe"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.thinkwithgoogle.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://www.thinkwithgoogle.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 1,
+    "notable": [],
+    "sample": [
+      "thinkwithgoogle.com"
+    ]
+  },
+  "elapsed_s": 36.1,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

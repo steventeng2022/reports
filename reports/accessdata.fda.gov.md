@@ -1,136 +1,131 @@
-# Security Audit Report - accessdata.fda.gov
+# Security Audit Report — accessdata.fda.gov
 
 ## Scope and authorization
 
 | Item | Value |
 |---|---|
 | Target | https://accessdata.fda.gov/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | accessdata.fda.gov |
-| Test date | 2026-09-25 14:50 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-26 01:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 1, Low: 4, Info: 2)
+Total findings: **4** (High: 0, Medium: 1, Low: 0, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | R2 | No HTTP->HTTPS redirect | CWE-319 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | low | H4 | No clickjacking protection | CWE-1023 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 7 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | medium | TLS1 | TLS certificate chain not trusted | CWE-298 |
+| 3 | info | TLS9 | Neither TLS 1.2 nor 1.3 handshake succeeded | CWE-327 |
+| 4 | info | CT1 | 5 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [MEDIUM] No HTTP->HTTPS redirect (`R2`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-319
-- **Detail:** http://accessdata.fda.gov returns 400 without redirecting to HTTPS.
-- **Recommendation:** Add an HTTP->HTTPS redirect (currently returns an error code on port 80).
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 2. [MEDIUM] TLS certificate chain not trusted (`TLS1`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **CWE:** CWE-298
+- **Detail:** TLS verification failed: [WinError 10054] 遠端主機已強制關閉一個現存的連線。
+- **Recommendation:** Fix the certificate chain (missing intermediate / issuer).
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 3. [INFO] Neither TLS 1.2 nor 1.3 handshake succeeded (`TLS9`)
 
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
-- **Context:** http response
-- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+- **CWE:** CWE-327
+- **Detail:** Only legacy protocols (if any) could complete a handshake.
+- **Recommendation:** Upgrade TLS configuration.
 
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
-- **Context:** http response
-- **Recommendation:** Set X-Content-Type-Options: nosniff.
-
-### 5. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
-- **Context:** http response
-- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
-
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 4. [INFO] 5 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Context:** http response
-- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
-
-### 7. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Server header reveals: AkamaiGHost
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-## Aggressive probe campaign
-
-**Stage 1 - injection/reflection probes (28 requests):**
-
-- no stage-1 probe hits (all probes negative)
-
-**Stage 2 - aggressive probe suite v2 (99 requests):**
-
-- no stage-2 probe hits (all probes negative)
-
-Stage-2 probe log (observed responses):
-- timing base=errms id=err search=err
-
-**Stage 3 - live parameter harvest, takeover and injection probes (8 requests):**
-
-- no stage-3 probe hits (all probes negative)
-
-Stage-3 probe log (observed responses):
-- harvest no query params discovered on sampled pages
-- subs no dangling service CNAMEs over 16 subdomains
-
-**Stage 4 - injection/XSS/redirect/endpoint matrix suite v4 (63 requests):**
-
-- no stage-4 probe hits (all probes negative)
+- **Detail:** Notable hostnames: none flagged
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
 ## Evidence (raw response observations)
 
 ```json
 {
-  "http_status": 400,
-  "https_error": "read ECONNRESET",
-  "probe_count": 28,
-  "probe_log": [
-    "sqli-reflect /search?q=%27+OR+1=1-- -> err",
-    "host no reflection -> err"
-  ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=errms id=err search=err",
-    "sweep no hits over 26 paths",
-    "redir2 no hits over 49 requests"
-  ],
-  "v3_probe_count": 8,
-  "v3_log": [
-    "harvest no query params discovered on sampled pages",
-    "subs no dangling service CNAMEs over 16 subdomains"
-  ],
-  "v4_probe_count": 63,
-  "v4_log": [
-    "harvest no query params discovered",
-    "sweep4 all swept paths 404/403"
-  ]
+  "domain": "accessdata.fda.gov",
+  "dns": {
+    "a": [
+      "23.11.91.198"
+    ],
+    "aaaa": [
+      "2600:1417:76:480::308a",
+      "2600:1417:76:4a1::308a"
+    ],
+    "cname": "resolver.fda.gov.akadns.net.",
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [
+      "v=DMARC1; p=reject; fo=1; ri=3600; rua=mailto:rua.dmarc@fda.hhs.gov,mailto:reports@dmarc.cyber.dhs.gov,mailto:8idhoybh@ag.us.dmarcian.com; ruf=mailto:ruf.dmarc@fda.hhs.gov;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "untrusted",
+    "version": null,
+    "cipher": null,
+    "subject": null,
+    "issuer": null,
+    "notBefore": null,
+    "notAfter": null,
+    "san": null,
+    "error": "[WinError 10054] 遠端主機已強制關閉一個現存的連線。",
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": false,
+      "TLS1.3": false
+    }
+  },
+  "ports": {
+    "ip": "23.11.91.198",
+    "open": []
+  },
+  "https": {
+    "status": 0,
+    "content_type": "",
+    "title": "",
+    "error": "https connect failed"
+  },
+  "mixed_content": [],
+  "cookies": [],
+  "cors": [],
+  "http": {
+    "status": 400
+  },
+  "redir_probes": [],
+  "paths": {},
+  "subdomains": {
+    "source": "certspotter",
+    "count": 5,
+    "notable": [],
+    "sample": [
+      "cacmap.accessdata.fda.gov",
+      "origin-aws.www.accessdata.fda.gov",
+      "origin-em.www.accessdata.fda.gov",
+      "www.accessdata.fda.gov",
+      "www.origin-aws.www.accessdata.fda.gov"
+    ]
+  },
+  "elapsed_s": 3.6,
+  "rechecked": "2026-09-26 01:45 UTC"
 }
 ```
 
 ## Notes
 
-- All tests used a standard browser User-Agent; each site was probed with a four-stage aggressive GET-only suite: passive/header checks, stage-1/2 injection/XSS/traversal/CORS/redirect probes, a stage-3 live-parameter-harvest campaign (per-parameter XSS/SQLi/LFI/SSTI/redirect, JSONP, command injection, NoSQL, subdomain-takeover CNAME checks via DNS-over-HTTPS, forwarded-host cache poisoning), and a stage-4 matrix suite (multi-context XSS with CSP awareness, SSTI, error-based SQLi + WAF fingerprint, command injection, deep LFI, open-redirect bypass encodings, CRLF, HPP, NoSQL, sensitive-endpoint sweep, GraphQL introspection, verbose-500 stack disclosure, llms.txt, JSONP-XSS; up to ~300 requests per site).
-- No credentials were used; no state was modified on the target.
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

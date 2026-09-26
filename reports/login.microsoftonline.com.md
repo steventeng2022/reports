@@ -5,89 +5,209 @@
 | Item | Value |
 |---|---|
 | Target | https://login.microsoftonline.com/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | login.microsoftonline.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 09:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
+Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 3 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 5 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 7 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 8 | info | H2c | HSTS not preloaded | CWE-319 |
-| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 10 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 11 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | H2 | Missing CSP header | CWE-1021 |
+| 3 | low | H4 | No clickjacking protection | CWE-1023 |
+| 4 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 5 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 6 | info | RED2 | Soft redirect (302/303) for HTTP to HTTPS | CWE-319 |
+| 7 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://login.microsoftonline.com/ without SameSite=Lax/Strict: esctx-MsmKU2NszdY, fpc, x-ms-gateway-slice. Cross-site request cookies.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://login.microsoftonline.com/; no defense-in-depth against XSS/content injection.
-
-### 3. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 2. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://login.microsoftonline.com/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 3. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for login.microsoftonline.com lists 8 name(s) besides the scope host: login.microsoftonline-int.com, login.microsoftonline-p.com, login2.microsoftonline-int.com, login2.microsoftonline.com, loginex.microsoftonline-int.com, loginex.microsoftonline.com, stamp2.login.microsoftonline-int.com, stamp2.login.microsoftonline.com (5 no longer resolve)
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 5. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `login2.microsoftonline-int.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 6. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `login2.microsoftonline.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 7. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `loginex.microsoftonline-int.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 8. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000; includeSubDomains` lacks the preload directive.
-
-### 9. [INFO] Missing Permissions-Policy (`H7`)
+### 4. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://login.microsoftonline.com/; browser features (camera, mic, geolocation) unrestricted.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 10. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://login.microsoftonline.com/ -> https://login.microsoftonline.com:443/ (positive check).
-
-### 11. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 5. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on login.microsoftonline.com.
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-## Reproduction notes
+### 6. [INFO] Soft redirect (302/303) for HTTP to HTTPS (`RED2`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://login.microsoftonline.com/ final status: 200 (final URL https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&redirect_uri=https%3A%2F%2Fwww.office.com%2Flandingv2&response_type=code%20id_token&scope=openid%20profile%20https%3A%2F%2Fwww.office.com%2Fv2%2FOfficeHome.All&response_mode=form_post&nonce=639259479451523042.NGJmNWQxYmYtNDY4YS00MDYwLWI2ZWYtYjM0MTM2MzhkNzk4YTJiN2U2MzAtNTYyNy00YTk0LWEzZDEtNTdmNzE5ZDkyOGQz&ui_locales=en-US&mkt=en-US&client-request-id=c9e74ac6-707b-471c-9aab-3c694725141b&siwa=1&siwg=1&state=brUibsWlHuFLgq-oklyOHMePEhTogmgZHlc6xFHZW24ewy3q2zUxTliv1IeOCrHQZ0mqOQkvpVkg0iBRT5V1mJxZQk_qkOz4f__934SQiCgTgCdK2fGxwv0a9meY0rY5pJHSUpXQGewDJlEIfD82o5otrvWWyg4dJ0qsVEFQoQ5UiTFwIDkPpRam8GX_ydf1lChp4dxogDDuG-xjEvkidWTMbtajLnv660YX3uCPr9hS3jFdzUyggl8Bx1orqW6zM72yNYWzRcmdEv5toHf3Odl0AGWTDhHxqFW-xLfNZ5m9jct5pqFU69cvVpsIBLxvf9l5UjQTLo1uWMs9tGw41dKInDVqBPKxiuRuLvzJutUa2w05qh--XqdJiymac-Rub7lL00m7odkpnvcPBLsfFAtErhpHKITAQtH3NQcjrKgbm-rD70yrpdxtC7llcko6&x-client-SKU=ID_NET8_0&x-client-ver=8.16.0.0).
-- http://login.microsoftonline.com/ initial status: 302.
-- Certificate: Microsoft Corporation Microsoft TLS G2 RSA CA OCSP 04, valid until 2026-12-17T15:12:54+00:00.
+- **CWE:** CWE-319
+- **Detail:** http:// root answered 302 -> https://login.microsoftonline.com:443/.
+- **Context:** https response, /
+- **Recommendation:** Use 301/308 for permanent scheme upgrades.
+
+### 7. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "login.microsoftonline.com",
+  "dns": {
+    "a": [
+      "20.190.141.38",
+      "20.190.141.35",
+      "20.190.141.37",
+      "20.190.141.33",
+      "40.126.13.8",
+      "40.126.13.9",
+      "20.190.141.36",
+      "20.190.141.32"
+    ],
+    "aaaa": [
+      "2603:1046:2000:148::2",
+      "2603:1047:1:150::2",
+      "2603:1047:1:150::1",
+      "2603:1046:2000:148::5",
+      "2603:1046:2000:158::5",
+      "2603:1046:2000:158::3",
+      "2603:1046:2000:148::3",
+      "2603:1046:2000:158::4"
+    ],
+    "cname": "login.mso.msidentity.com.",
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "countryName=US, stateOrProvinceName=WA, localityName=Redmond, organizationName=Microsoft Corporation, commonName=stamp2.login.microsoftonline.com",
+    "issuer": "countryName=US, organizationName=Microsoft Corporation, commonName=Microsoft TLS G2 RSA CA OCSP 04",
+    "notBefore": "Aug 13 01:37:12 2026 GMT",
+    "notAfter": "Nov 21 00:37:12 2026 GMT",
+    "san": [
+      "login.microsoftonline-int.com",
+      "login.microsoftonline-p.com",
+      "login.microsoftonline.com",
+      "login2.microsoftonline-int.com",
+      "login2.microsoftonline.com",
+      "loginex.microsoftonline-int.com",
+      "loginex.microsoftonline.com",
+      "stamp2.login.microsoftonline-int.com",
+      "stamp2.login.microsoftonline.com"
+    ],
+    "days_left": 56,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "20.190.141.38",
+    "open": []
+  },
+  "https": {
+    "status": 302,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "cookies": [
+    {
+      "samesite": "none"
+    },
+    {
+      "domain": ".login.microsoftonline.com",
+      "samesite": "none"
+    },
+    {
+      "samesite": "none"
+    },
+    {
+      "samesite": "none"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.login.microsoftonline.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 302,
+    "location": "https://login.microsoftonline.com:443/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 404",
+    "/redirect?next=https://evil-auditor.example/x -> 404",
+    "/go?url=https://evil-auditor.example/x -> 404",
+    "/url?url=https://evil-auditor.example/x -> 404"
+  ],
+  "paths": {
+    "/robots.txt": 404,
+    "/sitemap.xml": 404,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 404,
+    "/.git/HEAD": 404,
+    "/.git/config": 404,
+    "/.env": 404,
+    "/.htaccess": 404,
+    "/wp-login.php": 404,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 404,
+    "/api/": 404
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 28.4,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

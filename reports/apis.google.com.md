@@ -5,65 +5,231 @@
 | Item | Value |
 |---|---|
 | Target | https://apis.google.com/ |
-| Bug bounty program | [Google](https://www.google.com/about/appsecurity/reward-program/) |
+| Bug bounty program | Google |
 | Listed scope domain | apis.google.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 08:34 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
+Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 2 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 3 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 4 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 5 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 6 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
-| 7 | info | X3 | HTTPS root redirects to different host | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 4 | low | H1 | Missing HSTS header | CWE-319 |
+| 5 | low | H2 | Missing CSP header | CWE-1021 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | low | RED1 | HTTP redirect points to another host over plain HTTP | CWE-319 |
+| 12 | low | RED7 | HTTPS root redirects to plain HTTP | CWE-319 |
+| 13 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for apis.google.com lists 1 name(s) besides the scope host: *.apis.google.com
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Missing Referrer-Policy (`H5`)
-
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://apis.google.com/; full URL (incl. query strings) is sent as referrer by default.
-
-### 3. [INFO] Missing Permissions-Policy (`H7`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://apis.google.com/; browser features (camera, mic, geolocation) unrestricted.
+- **Detail:** Detected: Server: sffe
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 4. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://apis.google.com/ lists 0 URLs.
-
-### 5. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://apis.google.com/ exposes 0 unique Disallow path(s)
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
 
-### 6. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+### 4. [LOW] Missing HSTS header (`H1`)
+
+- **CWE:** CWE-319
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+
+### 5. [LOW] Missing CSP header (`H2`)
+
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 6. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://apis.google.com (144622 bytes); contact: https://www.googleapis.com/auth/developerprofiles
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 7. [INFO] HTTPS root redirects to different host (`X3`)
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** https://apis.google.com/ redirects to https://developers.google.com/.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://apis.google.com/ final status: 200 (final URL https://developers.google.com/).
-- http://apis.google.com/ initial status: 301.
-- Certificate: Google Trust Services WR2, valid until 2026-12-03T19:24:10+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 10. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: sffe
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 11. [LOW] HTTP redirect points to another host over plain HTTP (`RED1`)
+
+- **CWE:** CWE-319
+- **Detail:** Location: http://developers.google.com/
+- **Context:** https response, /
+- **Recommendation:** Redirect to the same host over HTTPS.
+
+### 12. [LOW] HTTPS root redirects to plain HTTP (`RED7`)
+
+- **CWE:** CWE-319
+- **Detail:** Location: http://developers.google.com/
+- **Context:** https response, /
+- **Recommendation:** Redirect to an https:// target.
+
+### 13. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "apis.google.com",
+  "dns": {
+    "a": [
+      "142.250.157.102",
+      "142.250.157.100",
+      "142.250.157.139",
+      "142.250.157.101",
+      "142.250.157.113",
+      "142.250.157.138"
+    ],
+    "aaaa": [
+      "2404:6800:4008:c13::65",
+      "2404:6800:4008:c13::64",
+      "2404:6800:4008:c13::66",
+      "2404:6800:4008:c13::71"
+    ],
+    "cname": "plus.l.google.com.",
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=*.apis.google.com",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
+    "notBefore": "Sep 10 19:24:17 2026 GMT",
+    "notAfter": "Dec  3 19:24:16 2026 GMT",
+    "san": [
+      "*.apis.google.com",
+      "apis.google.com"
+    ],
+    "days_left": 69,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "142.250.157.102",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: sffe"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.apis.google.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "http://developers.google.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "crt.sh 502 (certspotter 429)"
+  },
+  "elapsed_s": 190.5,
+  "rechecked": "2026-09-25 13:59 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

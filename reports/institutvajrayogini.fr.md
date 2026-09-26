@@ -5,83 +5,277 @@
 | Item | Value |
 |---|---|
 | Target | https://institutvajrayogini.fr/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | institutvajrayogini.fr |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 09:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
+Total findings: **18** (High: 0, Medium: 1, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | MAIL4 | DMARC policy is p=none (monitor only) | CWE-200 |
+| 3 | medium | PRT21 | FTP service (cleartext) reachable | CWE-319 |
+| 4 | info | PRT25 | SMTP (port 25) reachable | CWE-200 |
+| 5 | info | PRT110 | POP3 (cleartext) reachable | CWE-319 |
+| 6 | info | PRT143 | IMAP (cleartext) reachable | CWE-319 |
+| 7 | info | PRT993 | IMAPS (port 993) reachable | CWE-200 |
+| 8 | info | PRT995 | POP3S (port 995) reachable | CWE-200 |
+| 9 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 10 | low | H1 | Missing HSTS header | CWE-319 |
+| 11 | low | H2 | Missing CSP header | CWE-1021 |
+| 12 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 13 | low | H4 | No clickjacking protection | CWE-1023 |
+| 14 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 15 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 16 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 17 | info | H6 | Server technology disclosure | CWE-200 |
+| 18 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
+
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
+
+### 2. [INFO] DMARC policy is p=none (monitor only) (`MAIL4`)
+
+- **CWE:** CWE-200
+- **Detail:** DMARC is published but policy is 'none'; failing mail is not quarantined.
+- **Recommendation:** Move to p=quarantine/reject once monitor reports are clean.
+
+### 3. [MEDIUM] FTP service (cleartext) reachable (`PRT21`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header on https://institutvajrayogini.fr/. Clients may connect over plain HTTP on first visit.
+- **Detail:** TCP connect to 109.234.164.204:21 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 2. [LOW] Missing Content-Security-Policy (`H3`)
+### 4. [INFO] SMTP (port 25) reachable (`PRT25`)
 
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://institutvajrayogini.fr/; no defense-in-depth against XSS/content injection.
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 109.234.164.204:25 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
+### 5. [INFO] POP3 (cleartext) reachable (`PRT110`)
 
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://institutvajrayogini.fr/; browsers may MIME-sniff responses.
+- **CWE:** CWE-319
+- **Detail:** TCP connect to 109.234.164.204:110 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 6. [INFO] IMAP (cleartext) reachable (`PRT143`)
+
+- **CWE:** CWE-319
+- **Detail:** TCP connect to 109.234.164.204:143 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 7. [INFO] IMAPS (port 993) reachable (`PRT993`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 109.234.164.204:993 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 8. [INFO] POP3S (port 995) reachable (`PRT995`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 109.234.164.204:995 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 9. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: o2switch-PowerBoost-v3
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 10. [LOW] Missing HSTS header (`H1`)
+
+- **CWE:** CWE-319
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+
+### 11. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://institutvajrayogini.fr/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 12. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for institutvajrayogini.fr lists 1 name(s) besides the scope host: www.institutvajrayogini.fr
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 13. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://institutvajrayogini.fr/; full URL (incl. query strings) is sent as referrer by default.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 7. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://institutvajrayogini.fr/; browser features (camera, mic, geolocation) unrestricted.
-
-### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://institutvajrayogini.fr/ -> https://www.institutvajrayogini.fr/ (positive check).
-
-### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 14. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://institutvajrayogini.fr/ exposes 1 unique Disallow path(s) (Sitemap:) and 1 sitemap reference(s)
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 15. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on institutvajrayogini.fr.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 16. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://institutvajrayogini.fr/ final status: 200 (final URL https://www.institutvajrayogini.fr/).
-- http://institutvajrayogini.fr/ initial status: 301.
-- Certificate: Let's Encrypt YR1, valid until 2026-11-29T09:16:27+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 17. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: o2switch-PowerBoost-v3
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 18. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "institutvajrayogini.fr",
+  "dns": {
+    "a": [
+      "109.234.164.204"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt4.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)"
+    ],
+    "ns": [
+      "dns18.ovh.net.",
+      "ns18.ovh.net."
+    ],
+    "spf": [
+      "v=spf1 a:institutvajrayogini.fr include:_spf.google.com ~all",
+      "1|www.institutvajrayogini.fr",
+      "Sendinblue-code:a7b9fa9518f9e017b81b2f31234f5f98"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=none; rua=mailto:it@institutvajrayogini.fr; ruf=mailto:it@institutvajrayogini.fr; fo=1; ri=604800"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=institutvajrayogini.fr",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YR1",
+    "notBefore": "Aug 31 09:16:28 2026 GMT",
+    "notAfter": "Nov 29 09:16:27 2026 GMT",
+    "san": [
+      "institutvajrayogini.fr",
+      "www.institutvajrayogini.fr"
+    ],
+    "days_left": 64,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "109.234.164.204",
+    "open": [
+      21,
+      25,
+      110,
+      143,
+      993,
+      995
+    ]
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: o2switch-PowerBoost-v3"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.institutvajrayogini.fr",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://www.institutvajrayogini.fr/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 404,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 403,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 59.1,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

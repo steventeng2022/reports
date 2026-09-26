@@ -5,101 +5,344 @@
 | Item | Value |
 |---|---|
 | Target | https://amazon.co.jp/ |
-| Bug bounty program | [Amazon](https://hackerone.com/amazonvrp) |
+| Bug bounty program | Amazon |
 | Listed scope domain | amazon.co.jp |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 08:24 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 7 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 8 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 11 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 12 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 13 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H1 | Missing HSTS header | CWE-319 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | CT1 | 125 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 13 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
+
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
+
+### 2. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: Server
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 3. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header on https://amazon.co.jp/. Clients may connect over plain HTTP on first visit.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 2. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://amazon.co.jp/; no defense-in-depth against XSS/content injection.
-
-### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://amazon.co.jp/; browsers may MIME-sniff responses.
-
-### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 4. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://amazon.co.jp/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 5. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for amazon.co.jp lists 46 name(s) besides the scope host: *.aa.peg.a2z.com, *.ab.peg.a2z.com, *.ac.peg.a2z.com, *.bz.peg.a2z.com, *.peg.a2z.com, amazon.co.uk, amazon.com, amazon.com.au... (4 no longer resolve)
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 6. [INFO] Possible dangling subdomain (`D2`)
+### 6. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `buckeye-retail-website.amazon.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 7. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `shop.business.amazon.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 8. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `uedata.amazon.co.uk` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://amazon.co.jp/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 10. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://amazon.co.jp/; browser features (camera, mic, geolocation) unrestricted.
-
-### 11. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://amazon.co.jp/ -> https://amazon.co.jp/ (positive check).
-
-### 12. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://amazon.co.jp/ exposes 101 unique Disallow path(s) (/, /-/, /ap/signin, /dp/e-mail-friend/, /dp/product-availability/)
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 13. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://amazon.co.jp (283 bytes); contact: https://hackerone.com/amazonvrp/reports/new
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-## Reproduction notes
+### 10. [INFO] Server technology disclosure (`H6`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://amazon.co.jp/ final status: 202 (final URL https://www.amazon.co.jp/).
-- http://amazon.co.jp/ initial status: 301.
-- Certificate: DigiCert Inc GeoTrust TLS RSA CA G1, valid until 2027-04-05T23:59:59+00:00.
+- **CWE:** CWE-200
+- **Detail:** Header reveals: Server
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 11. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 12. [INFO] 125 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: api.sandbox.amazon.co.jp, files.amazon.co.jp, help.amazon.co.jp, pay.amazon.co.jp, support.amazon.co.jp
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+### 13. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+
+- **CWE:** CWE-200
+- **Detail:** Historical subdomains no longer have A/AAAA records: files.amazon.co.jp; content may still be served via virtual-host fallback.
+- **Recommendation:** Reclaim or delete dangling subdomains to reduce virtual-hosting attack surface.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "amazon.co.jp",
+  "dns": {
+    "a": [
+      "18.246.99.104",
+      "18.246.95.183",
+      "18.246.98.187"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "amazon-smtp.amazon.com (pref 10)"
+    ],
+    "ns": [
+      "ns-1736.awsdns-25.co.uk.",
+      "ns-1527.awsdns-62.org.",
+      "ns-587.awsdns-09.net.",
+      "ns-177.awsdns-22.com."
+    ],
+    "spf": [
+      "wrike-verification=MzI3NzM2ODo2NDk5MjE4NjQ2MWJmOTEwMGMxM2MzNzJmNWJlY2U5ZDU4MmVlNzQ2NWU4MTY5OWJjMjlmYjQ4Mjc5M2JiMzky",
+      "docker-verification=06bc28d2-bb7d-46f8-8788-b0fe306af0e1",
+      "google-site-verification=4co3PF8vuUVE6aPUXlE8XDJgihi5vzb9SXFdnyGrGSI",
+      "bluebeam-verification=fs3mpshnh21px44nq53xj0z3tj6ly6",
+      "google-site-verification=dYnsx1NbvPPP-pOh2ahq-5Mke8grHPEQg7MtBcugwWQ",
+      "v=spf1 include:amazon.com include:spf-bma.mpme.jp -all",
+      "MS=ms91867689",
+      "google-site-verification=6COB0DTBjZ-FYdl2H-ypIXMjf5631sEYVeEhTUkb4cU",
+      "autodesk-domain-verification=nT3SNNqpmwBfAkjiIy0S",
+      "sending_domain1003771=9260d9210bf7f24d01e19fdd01c532869e915954bede5057cd3d7e1b46df352f",
+      "sending_domain229492=ab2381d1cadbdb0ca117c94ff7ef507185694417c3cc252cdcb3146840bd798f",
+      "canva-site-verification=46MrwqUDYU-KF1ZLxnrm5g",
+      "box-domain-verification=ffea95cd0e0d61c302198367155b07e74fd534fa1d867662dc9bf9969b6f535d",
+      "facebook-domain-verification=q0vtskklb65bdw766sy92dffo95y08",
+      "cisco-ci-domain-verification=175519cd5d9f724ae360327570d03e520231c232f77bc6ef59aa1317a9ab27f5",
+      "ZOOM_verify_lnnruOzf0XRC57uVT7umvK",
+      "google-gws-recovery-domain-verification=70440261",
+      "kahoot-domain-verification=05f08b60093b698395d238068d3bd84e7b0ae240df10947ddee72326c75856ed",
+      "google-gws-recovery-domain-verification=68063601",
+      "MS=ms86838901",
+      "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814",
+      "spf2.0/pra include:amazon.com include:spf-bma.mpme.jp -all",
+      "sending_domain608861=c27592c67e261103651362999201d708cfcdf4705a1d80672d7b0d8324aed1aa",
+      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
+      "google-gws-recovery-domain-verification=69412678",
+      "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
+      "sending_domain1003771=974fbdaf1c222454080d32f138639599954ab43e3ad744f585238bf139c223d1",
+      "sending_domain229492=e7b03d2b7d1dcf19baad718bb0df19efe8dee7f648c953a5185f25f39d5f0a8f",
+      "cisco-ci-domain-verification=685cb2edc64df221f293cac7a545b2af41f5a0323021c164409272a0a1e544b6",
+      "sending_domain608861=911f4b33f6b6d011b0ceaaaf87cd07371cdc116d80d3a4f710f95bea9c19e084"
+    ],
+    "dmarc": [
+      "v=DMARC1;",
+      "p=quarantine;",
+      "pct=100;",
+      "rua=mailto:report@dmarc.amazon.com;",
+      "ruf=mailto:report@dmarc.amazon.com"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=*.peg.a2z.com",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, organizationalUnitName=www.digicert.com, commonName=GeoTrust TLS RSA CA G1",
+    "notBefore": "Sep 20 00:00:00 2026 GMT",
+    "notAfter": "Apr  5 23:59:59 2027 GMT",
+    "san": [
+      "amazon.co.uk",
+      "uedata.amazon.co.uk",
+      "www.amazon.co.uk",
+      "origin-www.amazon.co.uk",
+      "*.peg.a2z.com",
+      "amazon.com",
+      "amzn.com",
+      "uedata.amazon.com",
+      "us.amazon.com",
+      "www.amazon.com",
+      "www.amzn.com",
+      "corporate.amazon.com",
+      "buybox.amazon.com",
+      "iphone.amazon.com",
+      "yp.amazon.com",
+      "home.amazon.com",
+      "origin-www.amazon.com",
+      "origin2-www.amazon.com",
+      "buckeye-retail-website.amazon.com",
+      "huddles.amazon.com",
+      "amazon.de",
+      "www.amazon.de",
+      "origin-www.amazon.de",
+      "amazon.co.jp",
+      "amazon.jp",
+      "www.amazon.jp",
+      "www.amazon.co.jp",
+      "origin-www.amazon.co.jp",
+      "*.aa.peg.a2z.com",
+      "*.ab.peg.a2z.com",
+      "*.ac.peg.a2z.com",
+      "origin-www.amazon.com.au",
+      "www.amazon.com.au",
+      "*.bz.peg.a2z.com",
+      "amazon.com.au",
+      "origin2-www.amazon.co.jp",
+      "edgeflow.aero.4d5ad1d2b-frontier.amazon.co.jp",
+      "edgeflow.aero.04f01a85e-frontier.amazon.com.au",
+      "edgeflow.aero.47cf2c8c9-frontier.amazon.com",
+      "edgeflow.aero.abe2c2f23-frontier.amazon.de",
+      "edgeflow.aero.bfbdc3ca1-frontier.amazon.co.uk",
+      "edgeflow-dp.aero.4d5ad1d2b-frontier.amazon.co.jp",
+      "edgeflow-dp.aero.04f01a85e-frontier.amazon.com.au",
+      "edgeflow-dp.aero.47cf2c8c9-frontier.amazon.com",
+      "edgeflow-dp.aero.bfbdc3ca1-frontier.amazon.co.uk",
+      "edgeflow-dp.aero.abe2c2f23-frontier.amazon.de",
+      "shop.business.amazon.com"
+    ],
+    "days_left": 192,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "18.246.99.104",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: Server"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.amazon.co.jp",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://amazon.co.jp/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 125,
+    "notable": [
+      "api.sandbox.amazon.co.jp",
+      "files.amazon.co.jp",
+      "help.amazon.co.jp",
+      "pay.amazon.co.jp",
+      "support.amazon.co.jp"
+    ],
+    "sample": [
+      "a9g-api.amazon.co.jp",
+      "aax-fe.amazon.co.jp",
+      "ab-stage.amazon.co.jp",
+      "account-status.amazon.co.jp",
+      "account-vdp.amazon.co.jp",
+      "account.kdp.amazon.co.jp",
+      "account.kep.amazon.co.jp",
+      "account.videocentral.amazon.co.jp",
+      "account.videodirect.amazon.co.jp",
+      "advantage.amazon.co.jp",
+      "aeswidget.amazon.co.jp",
+      "affiliate.amazon.co.jp",
+      "alexa-skills-beta-eu.amazon.co.jp",
+      "alexa-skills-na.amazon.co.jp",
+      "amazon.co.jp",
+      "amg.amazon.co.jp",
+      "amh.amazon.co.jp",
+      "api-amazondevices.amazon.co.jp",
+      "api-key.amazon.co.jp",
+      "api-sandbox.amazon.co.jp"
+    ],
+    "dangling": [
+      "files.amazon.co.jp"
+    ]
+  },
+  "elapsed_s": 143.2,
+  "rechecked": "2026-09-25 13:59 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

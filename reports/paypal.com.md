@@ -5,83 +5,331 @@
 | Item | Value |
 |---|---|
 | Target | https://paypal.com/ |
-| Bug bounty program | [PayPal](https://hackerone.com/paypal) |
+| Bug bounty program | PayPal |
 | Listed scope domain | paypal.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:05 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
+Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 3 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 4 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 5 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H1b | Weak HSTS (max-age < 1 year) | CWE-319 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
 | 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 10 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://paypal.com/ without HttpOnly: enforce_policy, ts_c. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://paypal.com/ without SameSite=Lax/Strict: LANG, enforce_policy, ts, ts_c, tsrce, x-pp-s. Cross-site request cookies.
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: Varnish
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 3. [LOW] Weak HSTS (max-age < 1 year) (`H1b`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for paypal.com lists 101 name(s) besides the scope host: PAYPAL-DEUTSCHLAND.DE, PAYPAL-MARKETING.PL, PAYPAL.CO, PAYPAL.COM.MY, braintreepayments.com, buyindiaonline.com, cash2india.com, curv.cc... (5 no longer resolve)
+- **CWE:** CWE-319
+- **Detail:** HSTS present but max-age=300 (< 31536000).
+- **Context:** https response, /
+- **Recommendation:** Increase max-age to at least 31536000; add includeSubDomains/preload.
 
-### 4. [INFO] Possible dangling subdomain (`D2`)
+### 4. [LOW] Missing CSP header (`H2`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `paypal-corp.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 5. [INFO] Possible dangling subdomain (`D2`)
+### 5. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `paypal-experience.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 6. [INFO] Possible dangling subdomain (`D2`)
+### 6. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `paypal-knowledge-test.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
 ### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://paypal.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://paypal.com/ -> https://www.paypal.com/ (positive check).
-
-### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://paypal.com/ exposes 89 unique Disallow path(s) (/*?*cgi-bin=*, /*?*guestLogin=*, /*?*onboardData=*, /*?*payRequest=*, /*?*requestmoney=*) and 1 sitemap reference(s)
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 10. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://paypal.com (351 bytes); contact: https://hackerone.com/paypal
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-## Reproduction notes
+### 10. [INFO] Server technology disclosure (`H6`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://paypal.com/ final status: 200 (final URL https://www.paypal.com/tw/home).
-- http://paypal.com/ initial status: 301.
-- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-11-25T23:59:59+00:00.
+- **CWE:** CWE-200
+- **Detail:** Header reveals: Varnish
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 11. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "paypal.com",
+  "dns": {
+    "a": [
+      "151.101.195.1",
+      "151.101.3.1",
+      "162.159.141.96"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "mx1.paypalcorp.com (pref 10)",
+      "mx2.paypalcorp.com (pref 10)"
+    ],
+    "ns": [
+      "pdns100.ultradns.com.",
+      "pdns100.ultradns.net.",
+      "ns1-pchnet.paypal.com.",
+      "ns2-pchnet.paypal.com."
+    ],
+    "spf": [
+      "adobe-idp-site-verification=11600efbec96c0e73dd8820cd33ca906ec4302aea4487d208a42a2b01806144c",
+      "globalsign-domain-verification=KXa3jn_dNODlTVQ4eg1Wx3vA-RrHZ2K7iLQN0vdJBx",
+      "mgf84gx1cv1c759pmjqx0wnths9ss9f6",
+      "stripe-verification=549bef27619f14f935a84c6a23492e80f49ff57a341d9ddc74d8486881cd0d8c",
+      "docker-verification=2deb3c1f-56d2-4fe4-8a09-d48b7bf8a918",
+      "workplace-domain-verification=F7ezsH9uapvYDGd2VtPARy1qq9ymN6",
+      "mgverify=e00c4bf7480ee22be851faa9acd20e41b8fd0f7b75b434bbe38aa257e5aae3a0",
+      "v=spf1 include:pp._spf.paypal.com include:3ph1._spf.paypal.com include:3ph2._spf.paypal.com include:3ph3._spf.paypal.com include:3ph4._spf.paypal.com include:sendgrid.net include:aspmx.pardot.com ~all",
+      "Notion_verify_uVqjH2PpjVthR9xxfR5BZGsuYGtqb6Za4uDHPaA917v5Cg5J0rRwiATz84PWHZh8Px7vFK",
+      "atlassian-domain-verification=Q8BdHlO6NYSN5njfC2rlbPQxksVfADlcxarxq4fesYJErtGKylvfcfyfwrPD/wnv",
+      "intersight=6d86ec09a7c6926c6f9b8eff8ef0ef06679d84aab4999756a0920a8d430ed8ae",
+      "MS=ms95960309"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; rua=mailto:d@rua.agari.com,mailto:dmarc_agg@vali.email; ruf=mailto:d@ruf.agari.com,mailto:MTc4Mzcw@ruf.vali.email"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "countryName=US, stateOrProvinceName=California, localityName=San Jose, organizationName=PayPal, Inc., commonName=paypal.com",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
+    "notBefore": "May 11 00:00:00 2026 GMT",
+    "notAfter": "Nov 25 23:59:59 2026 GMT",
+    "san": [
+      "paypal.com",
+      "braintreepayments.com",
+      "buyindiaonline.com",
+      "cash2india.com",
+      "curv.cc",
+      "curv.co",
+      "fastlane.paypal.com",
+      "paypal-australia.com.au",
+      "paypal-business.co.uk",
+      "paypal-business.com.au",
+      "paypal-businesscenter.com",
+      "paypal-communications.com",
+      "paypal-corp.com",
+      "paypal-danmark.dk",
+      "PAYPAL-DEUTSCHLAND.DE",
+      "paypal-donations.co.uk",
+      "paypal-donations.com",
+      "paypal-experience.com",
+      "paypal-gifts.com",
+      "paypal-globalshops.com",
+      "paypal-information.com",
+      "paypal-knowledge-test.com",
+      "paypal-knowledge.com",
+      "paypal-latam.com",
+      "paypal-marketing.ca",
+      "paypal-marketing.co.uk",
+      "PAYPAL-MARKETING.PL",
+      "paypal-media.com",
+      "paypal-mena.com",
+      "paypal-mktg.com",
+      "paypal-nakit.com",
+      "paypal-norge.no",
+      "paypal-optimizer.com",
+      "paypal-partners.com",
+      "paypal-passport.com",
+      "paypal-prepagata.com",
+      "paypal-promo.es",
+      "paypal-support.com",
+      "paypal-sverige.se",
+      "paypal-turkiye.com",
+      "paypal-workplace.com",
+      "paypal.ai",
+      "paypal.at",
+      "paypal.be",
+      "paypal.biz",
+      "paypal.ca",
+      "paypal.ch",
+      "paypal.cl",
+      "PAYPAL.CO",
+      "paypal.co.id",
+      "paypal.co.il",
+      "paypal.co.in",
+      "paypal.co.nz",
+      "paypal.co.th",
+      "paypal.co.uk",
+      "paypal.co.za",
+      "paypal.com.ar",
+      "paypal.com.au",
+      "paypal.com.br",
+      "paypal.com.cn",
+      "paypal.com.hk",
+      "paypal.com.mx",
+      "PAYPAL.COM.MY",
+      "paypal.com.pe",
+      "paypal.com.sa",
+      "paypal.com.sg",
+      "paypal.com.tr",
+      "paypal.com.tw",
+      "paypal.com.ve",
+      "paypal.de",
+      "paypal.dk",
+      "paypal.es",
+      "paypal.eu",
+      "paypal.fi",
+      "paypal.fr",
+      "paypal.ie",
+      "paypal.in",
+      "paypal.it",
+      "paypal.jp",
+      "paypal.lu",
+      "paypal.me",
+      "paypal.nl",
+      "paypal.no",
+      "paypal.ph",
+      "paypal.pl",
+      "paypal.pt",
+      "paypal.se",
+      "paypal.vn",
+      "paypalbenefits.com",
+      "paypalgivingfund.org",
+      "paypalobjects.com",
+      "pypl.com",
+      "sandbox.paypal.com",
+      "simility.com",
+      "thepaypalblog.com",
+      "www.curv.cc",
+      "www.curv.co",
+      "www.paypal.ai",
+      "www.paypal.biz",
+      "www.paypal.com",
+      "www.simility.com",
+      "xoom.com"
+    ],
+    "days_left": 61,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "151.101.195.1",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: Varnish"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.paypal.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://paypal.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 25.3,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -5,83 +5,233 @@
 | Item | Value |
 |---|---|
 | Target | https://reddit.com/ |
-| Bug bounty program | [Reddit](https://hackerone.com/reddit) |
+| Bug bounty program | Reddit |
 | Listed scope domain | reddit.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:12 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
+Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 3 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 4 | info | H2c | HSTS not preloaded | CWE-319 |
-| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 7 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 10 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H2 | Missing CSP header | CWE-1021 |
+| 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 6 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 7 | info | H6 | Server technology disclosure | CWE-200 |
+| 8 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://reddit.com/ without HttpOnly: edgebucket. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://reddit.com/ without SameSite=Lax/Strict: edgebucket. Cross-site request cookies.
-
-### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for reddit.com lists 1 name(s) besides the scope host: *.reddit.com
-
-### 4. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000; includeSubdomains` lacks the preload directive.
-
-### 5. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://reddit.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** Detected: Server: snooserv
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 6. [INFO] Missing Permissions-Policy (`H7`)
+### 3. [LOW] Missing CSP header (`H2`)
 
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://reddit.com/; browser features (camera, mic, geolocation) unrestricted.
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 7. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://reddit.com/ lists 0 URLs.
-
-### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://reddit.com/ -> https://reddit.com/ (positive check).
-
-### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 4. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://reddit.com/ exposes 1 unique Disallow path(s) (/)
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 10. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+### 5. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://reddit.com (1278 bytes); contact: mailto:whitehats@reddit.com
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 6. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://reddit.com/ final status: 200 (final URL https://www.reddit.com/).
-- http://reddit.com/ initial status: 301.
-- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2027-02-16T23:59:59+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 7. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: snooserv
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 8. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "reddit.com",
+  "dns": {
+    "a": [
+      "151.101.1.140",
+      "151.101.193.140",
+      "151.101.65.140",
+      "151.101.129.140"
+    ],
+    "aaaa": [
+      "2a04:4e42:600::396",
+      "2a04:4e42::396",
+      "2a04:4e42:200::396",
+      "2a04:4e42:400::396"
+    ],
+    "cname": null,
+    "mx": [
+      "aspmx.l.google.com (pref 1)",
+      "aspmx3.googlemail.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx2.googlemail.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)"
+    ],
+    "ns": [
+      "ns-378.awsdns-47.com.",
+      "ns-1887.awsdns-43.co.uk.",
+      "ns-557.awsdns-05.net.",
+      "ns-1029.awsdns-00.org."
+    ],
+    "spf": [
+      "atlassian-domain-verification=aGWDxGvt+oY3p7qTWt5v2uJDVJkoJAeHxwGqKmGQLMEsUXUJJe/Pm/k+GGNPpn6M",
+      "google-site-verification=QO4VY1PRzsG-MxiQn3j0kxd_ZaFjcTk6MWBfKru0_5I",
+      "google-site-verification=0uv13-wxlHK8FFKaUpgzyrVmL1YdNYW6v3PupLdw3JI",
+      "cursor-domain-verification-f9fw38=WVB8yAMGTZXO7Je9DLuj1DIZB",
+      "protonmail-verification=24cb91442caf54c8b820f4a0347292f143531210",
+      "onetrust-domain-verification=6b98ba3dd087405399bbf45b6cbdcd37",
+      "a5897185-49e1-4181-9065-51bd24737466",
+      "twilio-domain-verification=5e37855d7c9445e967b31c5e0371ebb5",
+      "00Do0000000I6Pa=1TBcv0000000HQh",
+      "postman-domain-verification=ad4c89daaf83d06f70cb6e8737cb323b039aeaae9e0e288c75081b0a715812a2d30e7c31402da867c70287ad8216da42074ffe7b4fcfcbf86f9316301329308f",
+      "yahoo-verification-key=I0We5FayJi0Q8XdjDgE5oN0ujM08heSVe46o/FvsMkk=",
+      "atlassian-domain-verification=vBaV6PXyyu4OAPLiQFbxFMCboSTjoR/qxKJ2OlpI46ZEpZL/FVTIfMlgoM5Hy9eY",
+      "jamf-site-verification=EGK11tNR4hezQg0jZaIDpA",
+      "google-site-verification=zZHozYbAJmSLOMG4OjQFoHiVqkxtdgvyBzsE7wUGFiw",
+      "00Dbf000005OCTN=1TBbf0000000Mer",
+      "liveramp-site-verification=hNZ5ZAy1ufTpXrpCELrrtSzTlb4KU4h7UtDPpZdj9XA",
+      "stripe-verification=9bd70dd1884421b47f596fea301e14838c9825cdba5b209990968fdc6f8010c7",
+      "00DV90000052YKT=1TBV90000000AsD",
+      "stripe-verification=80aa7e2c9775fee2653f61b04b46da6fd227b56fecd9499e5f63cd0dcf563984",
+      "jetbrains-domain-verification=bjn7o9fxbduga0omhaepeewtx",
+      "00Dbf000005OCRl=1TBbf0000000MJt",
+      "614ac4be-8664-4cea-8e29-f84d08ad875c",
+      "docusign=6ba0c5a9-5a5e-41f8-a7c8-8b4c6e35c10c",
+      "apple-domain-verification=qC3rSSKrh10DoMI7",
+      "google-site-verification=oh_YJE560y0e6FHP1RT7NIjyTlBhACNMvD2EgSss0sc",
+      "MS=ms71041902",
+      "v=spf1 include:spf0.reddit.com -all",
+      "box-domain-verification=95c33f4ee4b11d8827190dbc5371ca7df25b961019116e5565ce4aa36de9be3a",
+      "google-site-verification=5Qzlkl8HJJSBKnMI7rQGDr9Sgiir4Ey6klx1rWQCJ2M"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; fo=1; ruf=mailto:reddit@us.cp-dmarc.com; rua=mailto:reddit@us.cp-dmarc.com"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "countryName=US, stateOrProvinceName=California, localityName=San Francisco, organizationName=Reddit, Inc., commonName=*.reddit.com",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
+    "notBefore": "Aug 21 00:00:00 2026 GMT",
+    "notAfter": "Feb 16 23:59:59 2027 GMT",
+    "san": [
+      "*.reddit.com",
+      "reddit.com"
+    ],
+    "days_left": 144,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "151.101.1.140",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: snooserv"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.reddit.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://reddit.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 27.2,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -5,95 +5,258 @@
 | Item | Value |
 |---|---|
 | Target | https://amazon.it/ |
-| Bug bounty program | [Amazon](https://hackerone.com/amazonvrp) |
+| Bug bounty program | Amazon |
 | Listed scope domain | amazon.it |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 08:32 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 6, Info: 6)
+Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C2 | Cookies set without Secure flag | CWE-614 |
-| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
 | 3 | low | H1 | Missing HSTS header | CWE-319 |
-| 4 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 5 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 6 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 7 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 10 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 11 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 12 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without Secure flag (`C2`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-614
-- **Detail:** Set on https://amazon.it/ without Secure: ak_bmsc. Will be transmitted over HTTP if the site is reachable cleartext.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://amazon.it/ without SameSite=Lax/Strict: ak_bmsc. Cross-site request cookies.
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: Server
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
 ### 3. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header on https://amazon.it/. Clients may connect over plain HTTP on first visit.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 4. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://amazon.it/; no defense-in-depth against XSS/content injection.
-
-### 5. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://amazon.it/; browsers may MIME-sniff responses.
-
-### 6. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 4. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://amazon.it/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 7. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 5. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for amazon.it lists 8 name(s) besides the scope host: *.cw.peg.a2z.com, edgeflow-dp.aero.6ca7af544-frontier.amazon.it, edgeflow.aero.6ca7af544-frontier.amazon.it, origin-www.amazon.it, p-nt-www-amazon-it-kalias.amazon.it, p-y3-www-amazon-it-kalias.amazon.it, p-yo-www-amazon-it-kalias.amazon.it, www.amazon.it
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://amazon.it/; full URL (incl. query strings) is sent as referrer by default.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 9. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://amazon.it/; browser features (camera, mic, geolocation) unrestricted.
-
-### 10. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://amazon.it/ -> https://amazon.it/ (positive check).
-
-### 11. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://amazon.it/ exposes 99 unique Disallow path(s) (*/s?k=*&rh=n*p_*p_*p_, /, /-/, /ap/signin, /dp/e-mail-friend/)
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 12. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on amazon.it.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://amazon.it/ final status: 200 (final URL https://www.amazon.it/).
-- http://amazon.it/ initial status: 301.
-- Certificate: Amazon Amazon RSA 2048 M01, valid until 2027-02-22T23:59:59+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 10. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: Server
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 11. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "amazon.it",
+  "dns": {
+    "a": [
+      "3.253.168.26",
+      "3.253.168.74",
+      "3.253.170.137"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "amazon-smtp.amazon.com (pref 10)"
+    ],
+    "ns": [
+      "ns2.amzndns.com.",
+      "ns2.amzndns.net.",
+      "ns2.amzndns.org.",
+      "ns2.amzndns.co.uk."
+    ],
+    "spf": [
+      "google-site-verification=EAue0f6D-B6SRexlTvlXOLQmyUisWC6erRZcz9PzCxU",
+      "facebook-domain-verification=y6vg4mpjcry0iwvtyvsgi97pmmhgu9",
+      "google-site-verification=gSzwNH1ysDvam__XXTSyD7tRg77gcKvjZdcAWWPx7Yk",
+      "sending_domain229492=773318fa1b5a7192d6972d94e73086484013af73e1fedb4a97c271d8c249de23",
+      "v=spf1 include:amazon.com -all",
+      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
+      "TS1760027",
+      "sending_domain608861=f5058b910003ca4502b4614ae3d28c6a6d27ee085235ed0153ff24721fd96b2c",
+      "google-site-verification=Jr6NOP2z_M0VuzOjZ3JQA-odL34DY95dL0NL-R8JY1s",
+      "MS=ms46535533",
+      "stripe-verification=8E217BE0FF12B50596BD78EEA3F81E62C6C7A2AC78FBD46DAD95B7D21BA2F8BF",
+      "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
+      "sending_domain608861=5681d4120436c25f201e7d33a99f548f84376ffbb0925dca0aee11e02986afd4",
+      "docker-verification=8a768a1f-5700-4c2e-a231-7ed92e3f54b0",
+      "box-domain-verification=ffea95cd0e0d61c302198367155b07e74fd534fa1d867662dc9bf9969b6f535d",
+      "autodesk-domain-verification=pGlBduQGBF3kHlLs6Zpw",
+      "sending_domain1003771=8bc848545d7604d033f93cce2a469b0ad06838e3988942c5fc49bfb3b76034a8",
+      "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814",
+      "google-gws-recovery-domain-verification=69891840",
+      "canva-site-verification=yTqsBFJlSq5ffci9yBLAOQ",
+      "MS=ms49381604",
+      "cisco-ci-domain-verification=645d5ac7db684898baae8490f752160375fd2ec85fc7554f5b42709d2ec6cfc9",
+      "spf2.0/pra include:amazon.com -all",
+      "cisco-ci-domain-verification=59a6c2ade22e603cac8d853f80e7f0be82789e89cbb24b41629ae41b3aebd9e9",
+      "bluebeam-verification=j8cz0fqcibcu2o5ifp92okt75zq1qy",
+      "sending_domain1003771=b2348ea31ce95947027cc796d3e0f4e42aeb38824709846b24c77bd6960b5516",
+      "google-site-verification=KvROSuvY2SUsytarO3DcfIyxVhaxKvpet9PWY7ffrqI",
+      "sending_domain229492=2e0c5055ba36638c1cd1353ccbc8078198131db60d2df6e2cbdeaf1d539504a5",
+      "kahoot-domain-verification=22ee64d0aec326366c08cdfa7197de5c3886fe27cceb8640d7d5588625c9f0b4"
+    ],
+    "dmarc": [
+      "v=DMARC1;",
+      "p=quarantine;",
+      "pct=100;",
+      "rua=mailto:report@dmarc.amazon.com;",
+      "ruf=mailto:report@dmarc.amazon.com"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=*.cw.peg.a2z.com",
+    "issuer": "countryName=US, organizationName=Amazon, commonName=Amazon RSA 2048 M01",
+    "notBefore": "Aug  9 00:00:00 2026 GMT",
+    "notAfter": "Feb 22 23:59:59 2027 GMT",
+    "san": [
+      "*.cw.peg.a2z.com",
+      "origin-www.amazon.it",
+      "edgeflow.aero.6ca7af544-frontier.amazon.it",
+      "www.amazon.it",
+      "edgeflow-dp.aero.6ca7af544-frontier.amazon.it",
+      "p-yo-www-amazon-it-kalias.amazon.it",
+      "amazon.it",
+      "p-y3-www-amazon-it-kalias.amazon.it",
+      "p-nt-www-amazon-it-kalias.amazon.it"
+    ],
+    "days_left": 150,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "3.253.168.26",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: Server"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.amazon.it",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://amazon.it/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "crt.sh 502 (certspotter 429)"
+  },
+  "elapsed_s": 126.1,
+  "rechecked": "2026-09-25 13:59 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

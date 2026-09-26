@@ -1,184 +1,178 @@
-# Security Audit Report - blogs.scientificamerican.com
+# Security Audit Report — blogs.scientificamerican.com
 
 ## Scope and authorization
 
 | Item | Value |
 |---|---|
 | Target | https://blogs.scientificamerican.com/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | blogs.scientificamerican.com |
-| Test date | 2026-09-25 14:50 UTC |
-| Method | Non-destructive passive/active probing (GET requests only, no forms submitted, no auth) |
+| Test date | 2026-09-26 01:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **4** (High: 0, Medium: 0, Low: 1, Info: 3)
+Total findings: **5** (High: 0, Medium: 0, Low: 0, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | info | A4i | Sensitive paths exist (protected or app shells) | CWE-538 |
-| 3 | info | H6 | Server technology disclosure | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
 | 4 | info | H6 | Server technology disclosure | CWE-200 |
+| 5 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Sensitive paths exist (protected or app shells) (`A4i`)
-
-- **CWE:** CWE-538
-- **Detail:** Paths answering 401/403 or HTML shells: /.aws/credentials (403 protected).
-- **Recommendation:** No immediate action if the paths are genuinely protected; otherwise return a real 404 to unauthenticated probes for paths that should not exist.
-
-### 3. [INFO] Server technology disclosure (`H6`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: CloudFront
-- **Context:** http response
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Detail:** Detected: Server: CloudFront
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
+
+- **CWE:** CWE-200
+- **Detail:** Alt-Svc: h3=":443"; ma=86400
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
 
 ### 4. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header reveals: CloudFront
+- **Detail:** Header reveals: CloudFront
+- **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
-## Aggressive probe campaign
+### 5. [INFO] Missing security.txt (`P8`)
 
-**Stage 1 - injection/reflection probes (28 requests):**
-
-- no stage-1 probe hits (all probes negative)
-
-**Stage 2 - aggressive probe suite v2 (99 requests):**
-
-- sweep: {"high":[],"protected":["/.aws/credentials (403 protected)"]}
-
-Stage-2 probe log (observed responses):
-- timing base=19ms id=17 search=7
-- boolean b=302/0 t1=403/919 t2=403/919
-- graphql /graphql -> 302
-- graphql /api/graphql -> 302
-- trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 403
-- trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 403
-- trav2 /%2e%2e%00.html -> 400
-- trav2 /static//../../../../../../etc/passwd -> 302
-- trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 302
-- hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403
-- hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403
-- xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 403
-- xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403
-- apicors /api -> 302
-- apicors /api/v1 -> 302
-- apicors /graphql -> 302
-- apicors /rest -> 302
-- apicors /v1 -> 302
-
-**Stage 3 - live parameter harvest, takeover and injection probes (7 requests):**
-
-- no stage-3 probe hits (all probes negative)
-
-Stage-3 probe log (observed responses):
-- harvest no query params discovered on sampled pages
-- subs no dangling service CNAMEs over 16 subdomains
-
-**Stage 4 - injection/XSS/redirect/endpoint matrix suite v4 (63 requests):**
-
-- no stage-4 probe hits (all probes negative)
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
 ## Evidence (raw response observations)
 
 ```json
 {
-  "http_status": 301,
-  "http_redirect_to": "https://blogs.scientificamerican.com/",
-  "https_status": 302,
-  "content_type": "",
-  "title": "",
-  "path_gitconfig": 302,
-  "path_envfile": 403,
-  "path_securitytxt": 302,
-  "path_robots": 302,
-  "probe_count": 28,
-  "probe_log": [
-    "sqli /search?q=1%27+OR+1=1-- -> 403",
-    "sqli /?id=1%27+OR+1=1-- -> 403",
-    "sqli /?q=%27 -> 302",
-    "sqli /products?filter=%27 -> 302",
-    "sqli /?p=1;-- -> 302",
-    "sqli-reflect /search?q=%27+OR+1=1-- -> 403",
-    "xss /?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "xss /search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "xss /search?query=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403",
-    "xss /?id=%3Csvg%20onload%3Dalert(1)%3E -> 403",
-    "xss /search?term=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "trav /..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> 400",
-    "trav /static/../../../../../../../../etc/passwd -> 302",
-    "trav /%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd -> 302",
-    "trav /..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini -> 403",
-    "redir /redirect?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /redirect?next=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /?next=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /go?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /url?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "redir /out?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "crlf /?q=a%0d%0aX-Inj:%201 -> 302",
-    "crlf /search?q=a%0d%0aX-Inj:%201 -> 302",
-    "host no reflection -> err",
-    "ssrf /api/preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "ssrf /preview?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "ssrf /proxy?u=https%3A%2F%2Fevil-cors.example%2Fx -> 302",
-    "ssrf /fetch?url=https%3A%2F%2Fevil-cors.example%2Fx -> 302"
-  ],
-  "v2_probe_count": 99,
-  "v2_log": [
-    "timing base=19ms id=17 search=7",
-    "boolean b=302/0 t1=403/919 t2=403/919",
-    "graphql /graphql -> 302",
-    "graphql /api/graphql -> 302",
-    "trav2 /%252e%252e/%252e%252e/%252e%252e/%252e% -> 403",
-    "trav2 /..%255c..%255c..%255c..%255c..%255c..%2 -> 403",
-    "trav2 /%2e%2e%00.html -> 400",
-    "trav2 /static//../../../../../../etc/passwd -> 302",
-    "trav2 /..%c0%af..%c0%af..%c0%af..%c0%af/etc/pa -> 302",
-    "hpp /?q=1&q=%3Cscript%3Ealert(1)%3C%2Fscript%3E -> 403",
-    "hpp /search?q=1&q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403",
-    "xss2 /?q=%22%3E%3Csvg%2Fonload%3Dalert(1)%3E -> 403",
-    "xss2 /?q=%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E -> 403",
-    "redir2 no hits over 49 requests",
-    "apicors /api -> 302",
-    "apicors /api/v1 -> 302",
-    "apicors /graphql -> 302",
-    "apicors /rest -> 302",
-    "apicors /v1 -> 302"
-  ],
-  "sweep": {
-    "high": [],
-    "protected": [
-      "/.aws/credentials (403 protected)"
-    ]
+  "domain": "blogs.scientificamerican.com",
+  "dns": {
+    "a": [
+      "65.9.180.86",
+      "65.9.180.96",
+      "65.9.180.98",
+      "65.9.180.72"
+    ],
+    "aaaa": [
+      "2600:9000:202b:1200:12:7409:4340:93a1",
+      "2600:9000:202b:d600:12:7409:4340:93a1",
+      "2600:9000:202b:2600:12:7409:4340:93a1",
+      "2600:9000:202b:8000:12:7409:4340:93a1",
+      "2600:9000:202b:1c00:12:7409:4340:93a1",
+      "2600:9000:202b:7000:12:7409:4340:93a1",
+      "2600:9000:202b:ec00:12:7409:4340:93a1",
+      "2600:9000:202b:3200:12:7409:4340:93a1"
+    ],
+    "cname": null,
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
   },
-  "v3_probe_count": 7,
-  "v3_log": [
-    "harvest no query params discovered on sampled pages",
-    "subs no dangling service CNAMEs over 16 subdomains",
-    "cache X-Forwarded-Host not reflected -> 302"
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=scientificamerican.com",
+    "issuer": "countryName=US, organizationName=Amazon, commonName=Amazon RSA 2048 M01",
+    "notBefore": "May 26 00:00:00 2026 GMT",
+    "notAfter": "Dec  9 23:59:59 2026 GMT",
+    "san": [
+      "scientificamerican.com",
+      "*.sciam.com",
+      "sciam.com",
+      "*.scientificamerican.com"
+    ],
+    "days_left": 74,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "65.9.180.86",
+    "open": []
+  },
+  "https": {
+    "status": 302,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: CloudFront"
   ],
-  "v4_probe_count": 63,
-  "v4_log": [
-    "harvest no query params discovered",
-    "sweep4 all swept paths 404/403"
-  ]
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.blogs.scientificamerican.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://blogs.scientificamerican.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 302",
+    "/redirect?next=https://evil-auditor.example/x -> 302",
+    "/go?url=https://evil-auditor.example/x -> 302",
+    "/url?url=https://evil-auditor.example/x -> 302"
+  ],
+  "paths": {
+    "/robots.txt": 302,
+    "/sitemap.xml": 302,
+    "/.well-known/security.txt": 302,
+    "/security.txt": 302,
+    "/.git/HEAD": 302,
+    "/.git/config": 302,
+    "/.env": 403,
+    "/.htaccess": 302,
+    "/wp-login.php": 302,
+    "/phpmyadmin/index.php": 302,
+    "/server-status": 302,
+    "/api/": 302
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 0,
+    "notable": [],
+    "sample": []
+  },
+  "elapsed_s": 3.9,
+  "rechecked": "2026-09-26 01:45 UTC"
 }
 ```
 
 ## Notes
 
-- All tests used a standard browser User-Agent; each site was probed with a four-stage aggressive GET-only suite: passive/header checks, stage-1/2 injection/XSS/traversal/CORS/redirect probes, a stage-3 live-parameter-harvest campaign (per-parameter XSS/SQLi/LFI/SSTI/redirect, JSONP, command injection, NoSQL, subdomain-takeover CNAME checks via DNS-over-HTTPS, forwarded-host cache poisoning), and a stage-4 matrix suite (multi-context XSS with CSP awareness, SSTI, error-based SQLi + WAF fingerprint, command injection, deep LFI, open-redirect bypass encodings, CRLF, HPP, NoSQL, sensitive-endpoint sweep, GraphQL introspection, verbose-500 stack disclosure, llms.txt, JSONP-XSS; up to ~300 requests per site).
-- No credentials were used; no state was modified on the target.
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

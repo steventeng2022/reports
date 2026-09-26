@@ -5,95 +5,220 @@
 | Item | Value |
 |---|---|
 | Target | https://i.redd.it/ |
-| Bug bounty program | [Reddit](https://hackerone.com/reddit) |
+| Bug bounty program | Reddit |
 | Listed scope domain | i.redd.it |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 09:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
+Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 3 | info | C4 | Cookies scoped to parent/wildcard domain | CWE-200 |
-| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 5 | info | H2c | HSTS not preloaded | CWE-319 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 8 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 9 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 10 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 11 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
-| 12 | info | X3 | HTTPS root redirects to different host | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 4 | low | H1 | Missing HSTS header | CWE-319 |
+| 5 | low | H2 | Missing CSP header | CWE-1021 |
+| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 7 | low | H4 | No clickjacking protection | CWE-1023 |
+| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 11 | info | H6 | Server technology disclosure | CWE-200 |
+| 12 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://i.redd.it/ without HttpOnly: edgebucket. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://i.redd.it/ without SameSite=Lax/Strict: edgebucket. Cross-site request cookies.
-
-### 3. [INFO] Cookies scoped to parent/wildcard domain (`C4`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** Cookies set with domain beyond i.redd.it: reddit.com.
+- **Detail:** Detected: Server: snooserv
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for i.redd.it lists 2 name(s) besides the scope host: *.redd.it, redd.it
+- **CWE:** CWE-200
+- **Detail:** Alt-Svc: h3=":443";ma=2592000;persist=1,h3-29=":443";ma=2592000;persist=1,h3-27=":443";ma=2592000;persist=1
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
 
-### 5. [INFO] HSTS not preloaded (`H2c`)
+### 4. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** `max-age=31536000; includeSubdomains` lacks the preload directive.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 5. [LOW] Missing CSP header (`H2`)
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://i.redd.it/; full URL (incl. query strings) is sent as referrer by default.
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 7. [INFO] Missing Permissions-Policy (`H7`)
+### 6. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://i.redd.it/; browser features (camera, mic, geolocation) unrestricted.
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 8. [INFO] sitemap.xml discloses URL inventory (`M1`)
+### 7. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://i.redd.it/ lists 0 URLs.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 9. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://i.redd.it/ -> https://www.reddit.com/media?url=https%3A%2F%2Fi.redd.it%2F (positive check).
-
-### 10. [INFO] robots.txt discloses crawl rules/paths (`R1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt on https://i.redd.it/ exposes 2 unique Disallow path(s) (/h3-opt-in, /h3-opt-out)
-
-### 11. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+### 8. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://i.redd.it (8402 bytes)
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 12. [INFO] HTTPS root redirects to different host (`X3`)
+### 9. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** https://i.redd.it/ redirects to https://www.reddit.com/media?url=https%3A%2F%2Fi.redd.it%2F.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 10. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://i.redd.it/ final status: 200 (final URL https://www.reddit.com/media?url=https%3A%2F%2Fi.redd.it%2F).
-- http://i.redd.it/ initial status: 307.
-- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2027-02-17T23:59:59+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 11. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: snooserv
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 12. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "i.redd.it",
+  "dns": {
+    "a": [
+      "151.101.1.140",
+      "151.101.129.140",
+      "151.101.193.140",
+      "151.101.65.140"
+    ],
+    "aaaa": [
+      "2a04:4e42:200::396",
+      "2a04:4e42::396",
+      "2a04:4e42:400::396",
+      "2a04:4e42:600::396"
+    ],
+    "cname": "dualstack.reddit.map.fastly.net.",
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "countryName=US, stateOrProvinceName=California, localityName=San Francisco, organizationName=Reddit, Inc., commonName=*.redd.it",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
+    "notBefore": "Aug 22 00:00:00 2026 GMT",
+    "notAfter": "Feb 17 23:59:59 2027 GMT",
+    "san": [
+      "*.redd.it",
+      "redd.it"
+    ],
+    "days_left": 145,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "151.101.1.140",
+    "open": []
+  },
+  "https": {
+    "status": 404,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: snooserv"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.i.redd.it",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 404
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 404",
+    "/redirect?next=https://evil-auditor.example/x -> 404",
+    "/go?url=https://evil-auditor.example/x -> 404",
+    "/url?url=https://evil-auditor.example/x -> 404"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 404,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 404,
+    "/.git/HEAD": 404,
+    "/.git/config": 404,
+    "/.env": 404,
+    "/.htaccess": 404,
+    "/wp-login.php": 403,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 404,
+    "/api/": 404
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 33.7,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

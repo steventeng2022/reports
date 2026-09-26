@@ -5,101 +5,234 @@
 | Item | Value |
 |---|---|
 | Target | https://walmart.com/ |
-| Bug bounty program | [Walmart Corporation](https://corporate.walmart.com/article/responsible-disclosure-policy) |
+| Bug bounty program | Walmart Corporation |
 | Listed scope domain | walmart.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:27 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
-| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 4 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 5 | info | C4 | Cookies scoped to parent/wildcard domain | CWE-200 |
-| 6 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 7 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 8 | info | H2c | HSTS not preloaded | CWE-319 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 11 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 12 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 13 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H2 | Missing CSP header | CWE-1021 |
+| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 5 | low | H4 | No clickjacking protection | CWE-1023 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 8 | info | H6 | Server technology disclosure | CWE-200 |
+| 9 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://walmart.com/ without HttpOnly: isoLoc. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without Secure flag (`C2`)
-
-- **CWE:** CWE-614
-- **Detail:** Set on https://walmart.com/ without Secure: isoLoc. Will be transmitted over HTTP if the site is reachable cleartext.
-
-### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://walmart.com/ without SameSite=Lax/Strict: akavpau_p2, isoLoc. Cross-site request cookies.
-
-### 4. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://walmart.com/; browsers may MIME-sniff responses.
-
-### 5. [INFO] Cookies scoped to parent/wildcard domain (`C4`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** Cookies set with domain beyond walmart.com: .www.walmart.com.
+- **Detail:** Detected: Server: AkamaiGHost
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 6. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 3. [LOW] Missing CSP header (`H2`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for walmart.com lists 6 name(s) besides the scope host: beta.walmart.com, grocery.walmart.com, walmart.pharmacy, walmartspecialty.pharmacy, www.wal-mart.com, www.walmart.com
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 7. [INFO] HSTS without includeSubDomains (`H2b`)
+### 4. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` does not cover subdomains.
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 8. [INFO] HSTS not preloaded (`H2c`)
+### 5. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` lacks the preload directive.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 9. [INFO] Missing Referrer-Policy (`H5`)
-
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://walmart.com/; full URL (incl. query strings) is sent as referrer by default.
-
-### 10. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://walmart.com/ lists 0 URLs.
-
-### 11. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://walmart.com/ -> https://www.walmart.com/ (positive check).
-
-### 12. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://walmart.com/ exposes 57 unique Disallow path(s) (*/api/wpa, */midas/*, */undefined/*, /0/, /55875582/walmart-us/catalog/) and 34 sitemap reference(s)
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 13. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+### 7. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://walmart.com (247 bytes); contact: https://corporate.walmart.com/article/responsible-disclosure-policy
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-## Reproduction notes
+### 8. [INFO] Server technology disclosure (`H6`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://walmart.com/ final status: 200 (final URL https://www.walmart.com/).
-- http://walmart.com/ initial status: 301.
-- Certificate: GlobalSign nv-sa GlobalSign GCC E46 OV TLS CA 2025, valid until 2027-02-11T09:58:01+00:00.
+- **CWE:** CWE-200
+- **Detail:** Header reveals: AkamaiGHost
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 9. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "walmart.com",
+  "dns": {
+    "a": [
+      "23.209.216.193"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "mxa-000c7201.gslb.pphosted.com (pref 10)",
+      "mxb-000c7201.gslb.pphosted.com (pref 10)"
+    ],
+    "ns": [
+      "pdnswm6.ultradns.co.uk.",
+      "a10-66.akam.net.",
+      "pdnswm1.ultradns.net.",
+      "pdnswm5.ultradns.info.",
+      "a22-67.akam.net.",
+      "pdnswm4.ultradns.org.",
+      "pdnswm2.ultradns.net.",
+      "a3-64.akam.net.",
+      "a1-185.akam.net.",
+      "a5-65.akam.net.",
+      "a8-66.akam.net.",
+      "pdnswm3.ultradns.org."
+    ],
+    "spf": [
+      "globalsign-domain-verification=2AD27E3A206DB3231BAD817BD5A21F7A",
+      "infoblox-domain-mastery=cbdbcb7b4ccda409b4d353af156079955dc262a3bd4566aae2a9afba1d3d43e5c2",
+      "openai-domain-verification=dv-IDGFBjh74ycOf2e4vrXwBZtv",
+      "_globalsign-domain-verification=AXcfQAoG3in-mjLnMOJPhp1CNvUTsRkCaLo60rR5hG",
+      "globalsign-domain-verification=290297CC7AD18787782E80BFF88B354B",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com include:_netblocks.walmart.com include:_vspf1.walmart.com include:_vspf2.walmart.com include:_vspf3.walmart.com ip4:161.170.248.0/24 ip4:161.170.244.0/24 ip4:161.170.241.16/30 ip4:161.170.245.0/24 ip4:16",
+      "1.170.249.0/24 ~all",
+      "+wnQWce020VDWuXiDkLvV2jJXOlN5tNAzGyHFjMbBg0=",
+      "slack-domain-verification=Ic5IE8asOH1Bg6b1To8CGfWytCkVfywFsAJRZvUm",
+      "_globalsign-domain-verification=0UV9-mABi984W6oReb-NIqLZE4wxFn0Z_HZqReFlfx",
+      "_globalsign-domain-verification=9-Ef1Ps_FbIDDK9OPPGU3ju471Ap4_xAPV4pacA3ht",
+      "_globalsign-domain-verification=tYy2ZDIHUuR-3NGTeWDgC5Bs1vAYAyL7kZK8HpVwNg",
+      "twilio-domain-verification=19bf2f50450a9dec2b6ea8d18ab9114f",
+      "_globalsign-domain-verification=E0XnB_4FxsbzvD6MDzvAQoSFChcy4XTb2vlMqtUc5k",
+      "canva-site-verification=jcrBOlbl254ia6gsPJNFCg",
+      "anthropic-domain-verification-5vz2bt=GhKF4NMESyKswHJGVanZVBEtB"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "countryName=US, stateOrProvinceName=Arkansas, localityName=Bentonville, organizationName=Walmart Inc., commonName=www.walmart.com",
+    "issuer": "countryName=BE, organizationName=GlobalSign nv-sa, commonName=GlobalSign GCC E46 OV TLS CA 2025",
+    "notBefore": "Jul 27 09:58:01 2026 GMT",
+    "notAfter": "Feb 11 09:58:01 2027 GMT",
+    "san": [
+      "www.walmart.com",
+      "beta.walmart.com",
+      "grocery.walmart.com",
+      "walmart.pharmacy",
+      "walmartspecialty.pharmacy",
+      "www.wal-mart.com",
+      "walmart.com"
+    ],
+    "days_left": 138,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "23.209.216.193",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: AkamaiGHost"
+  ],
+  "cookies": [
+    {
+      "samesite": "none"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.walmart.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://www.walmart.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 22.7,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

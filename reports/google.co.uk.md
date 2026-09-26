@@ -7,96 +7,222 @@
 | Target | https://google.co.uk/ |
 | Bug bounty program | Google |
 | Listed scope domain | google.co.uk |
-| Test date | 2026-09-25 16:40 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 23:12 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 1, Low: 8, Info: 4)
+Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | low | T3 | HTTP redirect does not go to HTTPS | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 7 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 8 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 9 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 10 | info | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 11 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 12 | info | I26 | humans.txt exposed (team/contact enumeration) | CWE-200 |
-| 13 | info | I26 | security.txt exposed (public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 4 | low | H1 | Missing HSTS header | CWE-319 |
+| 5 | low | H2 | Missing CSP header | CWE-1021 |
+| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H6 | Server technology disclosure | CWE-200 |
+| 9 | low | RED1 | HTTP redirect points to another host over plain HTTP | CWE-319 |
+| 10 | info | P8 | Missing security.txt | CWE-1038 |
+| 11 | info | CT1 | 3 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-538
-- **Detail:** robots.txt disallows /index.html? which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] HTTP redirect does not go to HTTPS (`T3`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: gws
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
+
+- **CWE:** CWE-200
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
+
+### 4. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** GET http://google.co.uk/ redirected to http://www.google.co.uk/ (not an HTTPS URL).
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 5. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on https://www.google.co.uk/
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 4. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://www.google.co.uk/search reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 5. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter query on https://www.google.co.uk/search reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 6. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://www.google.co.uk/ reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 7. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://www.google.co.uk/search reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 8. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter query on https://www.google.co.uk/search reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 9. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://www.google.co.uk/ reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 10. [INFO] Missing X-Content-Type-Options (`H3`)
+### 6. [LOW] Missing X-Content-Type-Options (`H3`)
 
 - **CWE:** CWE-1194
-- **Detail:** No X-Content-Type-Options on https://www.google.co.uk/
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 11. [INFO] Missing Referrer-Policy (`H5`)
-
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://www.google.co.uk/
-
-### 12. [INFO] humans.txt exposed (team/contact enumeration) (`I26`)
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** GET https://www.google.co.uk/humans.txt returned 200 (286 bytes) with a matching signature.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 13. [INFO] security.txt exposed (public vulnerability disclosure policy) (`I26`)
+### 8. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** GET https://www.google.co.uk/.well-known/security.txt returned 200 (275 bytes) with a matching signature.
+- **Detail:** Header reveals: gws
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
 
-## Reproduction notes
+### 9. [LOW] HTTP redirect points to another host over plain HTTP (`RED1`)
 
-- Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- **CWE:** CWE-319
+- **Detail:** Location: http://www.google.co.uk/
+- **Context:** https response, /
+- **Recommendation:** Redirect to the same host over HTTPS.
+
+### 10. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 11. [INFO] 3 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: none flagged
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "google.co.uk",
+  "dns": {
+    "a": [
+      "142.250.204.35"
+    ],
+    "aaaa": [
+      "2404:6800:4012:9::2003"
+    ],
+    "cname": null,
+    "mx": [
+      "smtp.google.com (pref 0)"
+    ],
+    "ns": [
+      "ns2.google.com.",
+      "ns1.google.com.",
+      "ns3.google.com.",
+      "ns4.google.com."
+    ],
+    "spf": [
+      "v=spf1 -all"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; rua=mailto:mailauth-reports@google.com"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=*.google.co.uk",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
+    "notBefore": "Sep 10 19:24:28 2026 GMT",
+    "notAfter": "Dec  3 19:24:27 2026 GMT",
+    "san": [
+      "*.google.co.uk",
+      "google.co.uk"
+    ],
+    "days_left": 68,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "142.250.204.35",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: gws"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.google.co.uk",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "http://www.google.co.uk/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 404",
+    "/redirect?next=https://evil-auditor.example/x -> 404",
+    "/go?url=https://evil-auditor.example/x -> 404",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 404,
+    "/.git/HEAD": 404,
+    "/.git/config": 404,
+    "/.env": 404,
+    "/.htaccess": 404,
+    "/wp-login.php": 404,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 404,
+    "/api/": 404
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 3,
+    "notable": [],
+    "sample": [
+      "adwords.google.co.uk",
+      "google.co.uk",
+      "www.google.co.uk"
+    ]
+  },
+  "elapsed_s": 8.0,
+  "rechecked": "2026-09-25 23:12 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

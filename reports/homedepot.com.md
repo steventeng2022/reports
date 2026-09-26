@@ -7,7 +7,7 @@
 | Target | https://homedepot.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | homedepot.com |
-| Test date | 2026-09-25 15:44 UTC |
+| Test date | 2026-09-26 01:40 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -66,7 +66,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 7, Info: 7)
 ### 7. [LOW] TLS certificate expiring within 30 days (`T3`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires 2026-10-18T23:59:59+00:00 (23 days left) for homedepot.com.
+- **Detail:** Certificate expires 2026-10-18T23:59:59+00:00 (22 days left) for homedepot.com.
 
 ### 8. [INFO] Cookies scoped to parent/wildcard domain (`C4`)
 
@@ -105,7 +105,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 7, Info: 7)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://homedepot.com/ final status: 403 (final URL https://www.homedepot.com/).
 - http://homedepot.com/ initial status: 301.
 - Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-18T23:59:59+00:00.

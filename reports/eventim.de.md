@@ -5,89 +5,284 @@
 | Item | Value |
 |---|---|
 | Target | https://eventim.de/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | eventim.de |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 09:39 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
+Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 8 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
-| 9 | info | R1 | robots.txt protected | CWE-200 |
-| 10 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
-| 11 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H1 | Missing HSTS header | CWE-319 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
+
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
+
+### 2. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: AkamaiGHost
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 3. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header on https://eventim.de/. Clients may connect over plain HTTP on first visit.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 2. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://eventim.de/; no defense-in-depth against XSS/content injection.
-
-### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://eventim.de/; browsers may MIME-sniff responses.
-
-### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 4. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://eventim.de/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 5. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for eventim.de lists 44 name(s) besides the scope host: billetlugen.dk, cts.eventim.bg, cts.eventim.hr, cts.eventim.hu, cts.eventim.ro, cts.eventim.si, entradas.com, eventim.ca...
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://eventim.de/; full URL (incl. query strings) is sent as referrer by default.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 7. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://eventim.de/; browser features (camera, mic, geolocation) unrestricted.
-
-### 8. [INFO] Plain HTTP returns non-redirect status (`N3`)
-
-- **CWE:** CWE-319
-- **Detail:** http://eventim.de/ returns 403 (no redirect to HTTPS).
-
-### 9. [INFO] robots.txt protected (`R1`)
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /robots.txt returned 403.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 10. [INFO] security.txt exposed (public disclosure policy) (`S2`)
-
-- **CWE:** CWE-200
-- **Detail:** security.txt present on https://eventim.de (140 bytes); contact: mailto:itsecurity@eventim.de
-
-### 11. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** https://eventim.de/ responded 403 (passive check only; no further probing).
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://eventim.de/ final status: 403 (final URL https://eventim.de/).
-- http://eventim.de/ initial status: 403.
-- Certificate: Let's Encrypt YR1, valid until 2026-12-15T11:37:01+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 10. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: AkamaiGHost
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "eventim.de",
+  "dns": {
+    "a": [
+      "23.210.215.208",
+      "23.210.215.203"
+    ],
+    "aaaa": [
+      "2600:1417:76::17d2:d7cb",
+      "2600:1417:76::17d2:d7d0"
+    ],
+    "cname": null,
+    "mx": [
+      "mxb-0072c901.gslb.pphosted.com (pref 10)",
+      "mxa-0072c901.gslb.pphosted.com (pref 10)"
+    ],
+    "ns": [
+      "a12-66.akam.net.",
+      "a13-67.akam.net.",
+      "a10-65.akam.net.",
+      "a1-222.akam.net.",
+      "a3-64.akam.net.",
+      "a6-65.akam.net."
+    ],
+    "spf": [
+      "openai-domain-verification=dv-LWOQZyUBe4v4LUx1ryWVZhwi",
+      "_zcu8mukkq7g0jjxpsz7ciwpnrsh11ed",
+      "sending_domain1071343=7651b6fc060ab34ceea035d6cd9b65c21bc0e6c6ced9cdb9734e5b6fd53cd125",
+      "dell-technologies-domain-verification=eventim.de_0294e23e-488b-47ff-a6f7-d1fe73b1524c_1756375967",
+      "bw=Y2eRcRZKeuigrljql8ybFRciwBnMGGAfYm9hXTK35nip",
+      "1password-site-verification=LFNAA7NAAZFULMFWJPXE5Q5JEQ",
+      "shopify-verification-code=lq13eQZumd4BKaWYIyggeIVKHPtwvs",
+      "teamviewer-sso-verification=0775685533454aaf911ae2316becb5e1",
+      "1password-site-verification=ZI4O7DDYBRHUVMKUSTM6RJ7RN4",
+      "jamf-site-verification=1mGbPXJW8-h7z9OTyuY-fg",
+      "google-site-verification=s_J1gtfGgebN6_0ZHBAGpeuFpD3Jz9qK7wjc8wTeC6k",
+      "atlassian-domain-verification=sRxNCVi7vbQFvIQOy3yD5wRhIsBfb/nlTssiVfRTkqhr2bN35VWGJsPaLo/7hvER",
+      "_x0m99eexri0eo0jy3oqceax1lsautou",
+      "google-site-verification=F_ofMVEQrI9dLToCH3W8TD_pw5_J6-c8SzSxA8cC80Q",
+      "_an4lngigs1w4891di1fcerxtiwz8kld",
+      "mandrill_verify.RGbU4FqxJLlLqTEzZtTrXA",
+      "/dEZPSK+nF6rq7laQtMlbSXm01b+++Hl68NWiIIHiPIqS6GcjfZ+UaCfY1NgsYFDwHRno0/1a6DF6lfHx+idXw==",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
+      "mixpanel-domain-verify=cafd88b1-917f-4159-bc47-b1c7052ff275",
+      "apple-domain-verification=GOce9gVZOyTRkab6",
+      "stripe-verification=AF5DD7294082E8A97C22C5A02EB429FA306374CFA56E6B747A47A6F83525EF4A",
+      "1password-site-verification=5EMB7KTOU5E5LF4C27XXNT4JRM",
+      "miro-verification=2ae9c59047c26ca58554168f7baccaf715e607b4",
+      "facebook-domain-verification=gor6r8bwyofwjen3uatmmco60ne6cf",
+      "onetrust-domain-verification=f6f96e3b0d334cc78bb3372701e00911",
+      "MS=ms55918227",
+      "_zyobswc54veb1thhshrfrn0eyyjrziu"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com,mailto:dmarc@eventim.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com,mailto:dmarc@eventim.com; pct=100;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=eventim.de",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YR1",
+    "notBefore": "Sep 16 11:37:02 2026 GMT",
+    "notAfter": "Dec 15 11:37:01 2026 GMT",
+    "san": [
+      "billetlugen.dk",
+      "cts.eventim.bg",
+      "cts.eventim.hr",
+      "cts.eventim.hu",
+      "cts.eventim.ro",
+      "cts.eventim.si",
+      "entradas.com",
+      "eventim.ca",
+      "eventim.co.il",
+      "eventim.co.uk",
+      "eventim.com",
+      "eventim.com.ar",
+      "eventim.com.br",
+      "eventim.cz",
+      "eventim.de",
+      "eventim.fi",
+      "eventim.fr",
+      "eventim.hr",
+      "eventim.nl",
+      "eventim.no",
+      "eventim.pl",
+      "eventim.pt",
+      "eventim.ro",
+      "eventim.se",
+      "eventim.si",
+      "eventim.sk",
+      "eventimsports.com",
+      "eventimsports.de",
+      "fansale.ch",
+      "fansale.co.uk",
+      "fansale.de",
+      "fansale.dk",
+      "fansale.fi",
+      "fansale.no",
+      "fansale.se",
+      "getgo.de",
+      "lippu.fi",
+      "paytoll.eu",
+      "ticket-shop.de",
+      "ticketcorner.ch",
+      "ticketone.it",
+      "ticketonline.de",
+      "tickets.bimot.co.il",
+      "ticketshop.de",
+      "www.eventim.fi"
+    ],
+    "days_left": 81,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "23.210.215.208",
+    "open": []
+  },
+  "https": {
+    "status": 403,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: AkamaiGHost"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.eventim.de",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 403
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 403",
+    "/redirect?next=https://evil-auditor.example/x -> 403",
+    "/go?url=https://evil-auditor.example/x -> 403",
+    "/url?url=https://evil-auditor.example/x -> 403"
+  ],
+  "paths": {
+    "/robots.txt": 403,
+    "/sitemap.xml": 403,
+    "/.well-known/security.txt": 200,
+    "/security.txt": 403,
+    "/.git/HEAD": 403,
+    "/.git/config": 403,
+    "/.env": 403,
+    "/.htaccess": 403,
+    "/wp-login.php": 403,
+    "/phpmyadmin/index.php": 403,
+    "/server-status": 403,
+    "/api/": 403
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 117.2,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

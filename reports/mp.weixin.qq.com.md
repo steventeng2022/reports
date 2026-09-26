@@ -5,101 +5,226 @@
 | Item | Value |
 |---|---|
 | Target | https://mp.weixin.qq.com/ |
-| Bug bounty program | [Tencent](https://en.security.tencent.com) |
+| Bug bounty program | Tencent |
 | Listed scope domain | mp.weixin.qq.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:02 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 6 | info | H2 | Short HSTS max-age | CWE-319 |
-| 7 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 8 | info | H2c | HSTS not preloaded | CWE-319 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 11 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 12 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 13 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | MIX1 | Mixed content: HTTP resources referenced from HTTPS page | CWE-319 |
+| 3 | low | H1b | Weak HSTS (max-age < 1 year) | CWE-319 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | RED2 | Soft redirect (302/303) for HTTP to HTTPS | CWE-319 |
+| 11 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://mp.weixin.qq.com/ without SameSite=Lax/Strict: fake_id, login_certificate, login_sid_ticket, ticket_certificate, ticket_uin, ua_id. Cross-site request cookies.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing Content-Security-Policy (`H3`)
+### 2. [LOW] Mixed content: HTTP resources referenced from HTTPS page (`MIX1`)
 
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://mp.weixin.qq.com/; no defense-in-depth against XSS/content injection.
+- **CWE:** CWE-319
+- **Detail:** References found: href="http://
+- **Recommendation:** Serve assets over HTTPS (or protocol-relative URLs).
 
-### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
+### 3. [LOW] Weak HSTS (max-age < 1 year) (`H1b`)
 
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://mp.weixin.qq.com/; browsers may MIME-sniff responses.
+- **CWE:** CWE-319
+- **Detail:** HSTS present but max-age=15552000 (< 31536000).
+- **Context:** https response, /
+- **Recommendation:** Increase max-age to at least 31536000; add includeSubDomains/preload.
 
-### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 4. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://mp.weixin.qq.com/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 5. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for mp.weixin.qq.com lists 9 name(s) besides the scope host: *.api.weixin.qq.com, *.mp.weixin.qq.com, *.open.weixin.qq.com, *.weixin.qq.com, admin.wechat.com, api.wechat.com, mp.weixinbridge.com, open.wechat.com...
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 6. [INFO] Short HSTS max-age (`H2`)
+### 6. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-319
-- **Detail:** HSTS max-age=15552000 (< 1 year): `max-age=15552000`.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 7. [INFO] HSTS without includeSubDomains (`H2b`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=15552000` does not cover subdomains.
-
-### 8. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=15552000` lacks the preload directive.
-
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://mp.weixin.qq.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 10. [INFO] Missing Permissions-Policy (`H7`)
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://mp.weixin.qq.com/; browser features (camera, mic, geolocation) unrestricted.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 11. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 10. [INFO] Soft redirect (302/303) for HTTP to HTTPS (`RED2`)
 
 - **CWE:** CWE-319
-- **Detail:** http://mp.weixin.qq.com/ -> https://mp.weixin.qq.com/ (positive check).
+- **Detail:** http:// root answered 302 -> https://mp.weixin.qq.com/.
+- **Context:** https response, /
+- **Recommendation:** Use 301/308 for permanent scheme upgrades.
 
-### 12. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 11. [INFO] Missing security.txt (`P8`)
 
-- **CWE:** CWE-200
-- **Detail:** robots.txt on https://mp.weixin.qq.com/ exposes 1 unique Disallow path(s) (/) and 1 sitemap reference(s)
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 13. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+## Evidence (raw response observations)
 
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on mp.weixin.qq.com.
+```json
+{
+  "domain": "mp.weixin.qq.com",
+  "dns": {
+    "a": [
+      "203.205.232.110",
+      "203.205.239.154"
+    ],
+    "aaaa": [
+      "240d:c040:1:40::11d",
+      "240d:c040:0:40::116"
+    ],
+    "cname": "mpv6.weixin.qq.com.",
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "countryName=CN, stateOrProvinceName=Guangdong Province, localityName=Shenzhen, organizationName=Tencent Technology (Shenzhen) Company Limited, commonName=mp.weixin.qq.com",
+    "issuer": "countryName=US, organizationName=DigiCert, Inc., commonName=DigiCert Secure Site OV G2 TLS CN RSA4096 SHA256 2022 CA1",
+    "notBefore": "Oct 23 00:00:00 2025 GMT",
+    "notAfter": "Nov 23 23:59:59 2026 GMT",
+    "san": [
+      "mp.weixin.qq.com",
+      "*.api.weixin.qq.com",
+      "*.mp.weixin.qq.com",
+      "*.open.weixin.qq.com",
+      "*.weixin.qq.com",
+      "admin.wechat.com",
+      "api.wechat.com",
+      "mp.weixinbridge.com",
+      "open.wechat.com",
+      "rd.wechat.com"
+    ],
+    "days_left": 59,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "203.205.232.110",
+    "open": []
+  },
+  "https": {
+    "status": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "title": "微信公众平台"
+  },
+  "mixed_content": [
+    "href=\"http://",
+    "href=\"http://",
+    "href=\"http://"
+  ],
+  "cookies": [
+    {},
+    {},
+    {},
+    {},
+    {},
+    {}
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.mp.weixin.qq.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 302,
+    "location": "https://mp.weixin.qq.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 404",
+    "/redirect?next=https://evil-auditor.example/x -> 404",
+    "/go?url=https://evil-auditor.example/x -> 404",
+    "/url?url=https://evil-auditor.example/x -> 404"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 404,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 404,
+    "/.git/HEAD": 501,
+    "/.git/config": 501,
+    "/.env": 501,
+    "/.htaccess": 501,
+    "/wp-login.php": 404,
+    "/phpmyadmin/index.php": 501,
+    "/server-status": 404,
+    "/api/": 404
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 28.2,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
 
-## Reproduction notes
+## Notes
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://mp.weixin.qq.com/ final status: 200 (final URL https://mp.weixin.qq.com/).
-- http://mp.weixin.qq.com/ initial status: 302.
-- Certificate: DigiCert, Inc. DigiCert Secure Site OV G2 TLS CN RSA4096 SHA256 2022 CA1, valid until 2026-11-23T23:59:59+00:00.
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

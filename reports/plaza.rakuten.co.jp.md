@@ -7,75 +7,197 @@
 | Target | https://plaza.rakuten.co.jp/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | plaza.rakuten.co.jp |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 17:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
+Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H1 | Missing HSTS header | CWE-319 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
 | 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
 | 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 7 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 8 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 9 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 7 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 8 | info | H6 | Server technology disclosure | CWE-200 |
+| 9 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://plaza.rakuten.co.jp/ without SameSite=Lax/Strict: cuid, hamo. Cross-site request cookies.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: Apache
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 3. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header on https://plaza.rakuten.co.jp/. Clients may connect over plain HTTP on first visit.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 3. [LOW] Missing Content-Security-Policy (`H3`)
+### 4. [LOW] Missing CSP header (`H2`)
 
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://plaza.rakuten.co.jp/; no defense-in-depth against XSS/content injection.
-
-### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for plaza.rakuten.co.jp lists 2 name(s) besides the scope host: *.rakuten.co.jp, rakuten.co.jp
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
 ### 5. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://plaza.rakuten.co.jp/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
 ### 6. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://plaza.rakuten.co.jp/; browser features (camera, mic, geolocation) unrestricted.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 7. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://plaza.rakuten.co.jp/ -> https://plaza.rakuten.co.jp/ (positive check).
-
-### 8. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 7. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://plaza.rakuten.co.jp/ exposes 1 unique Disallow path(s) (/*comment)
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 9. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 8. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on plaza.rakuten.co.jp.
+- **Detail:** Header reveals: Apache
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
 
-## Reproduction notes
+### 9. [INFO] Missing security.txt (`P8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://plaza.rakuten.co.jp/ final status: 200 (final URL https://plaza.rakuten.co.jp/).
-- http://plaza.rakuten.co.jp/ initial status: 301.
-- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2027-04-04T23:59:59+00:00.
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "plaza.rakuten.co.jp",
+  "dns": {
+    "a": [
+      "133.237.157.30"
+    ],
+    "aaaa": [],
+    "cname": "plaza-rakuten-co-jp.gslb.rdcnw.net.",
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [
+      "v=DMARC1; p=reject; rua=mailto:dmarc-report-a@rx.rakuten.co.jp"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.2",
+    "cipher": "ECDHE-RSA-AES256-GCM-SHA384",
+    "subject": "countryName=JP, stateOrProvinceName=Tokyo, localityName=Setagaya-ku, organizationName=Rakuten Group, Inc., commonName=*.rakuten.co.jp",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
+    "notBefore": "Sep 18 00:00:00 2026 GMT",
+    "notAfter": "Apr  4 23:59:59 2027 GMT",
+    "san": [
+      "*.rakuten.co.jp",
+      "rakuten.co.jp"
+    ],
+    "days_left": 191,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": false
+    }
+  },
+  "ports": {
+    "ip": "133.237.157.30",
+    "open": []
+  },
+  "https": {
+    "status": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "title": "楽天ブログ - パソコン・モバイルから無料で簡単にブログを楽しもう"
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: Apache"
+  ],
+  "cookies": [
+    {
+      "domain": ".plaza.rakuten.co.jp"
+    },
+    {
+      "domain": ".plaza.rakuten.co.jp"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.plaza.rakuten.co.jp",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://plaza.rakuten.co.jp/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 404",
+    "/url?url=https://evil-auditor.example/x -> 404"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 301,
+    "/.git/HEAD": 404,
+    "/.git/config": 404,
+    "/.env": 404,
+    "/.htaccess": 403,
+    "/wp-login.php": 404,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 301,
+    "/api/": 404
+  },
+  "subdomains": {
+    "status": "crt.sh ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='crt.sh', port=443): Read (certspotter 429)"
+  },
+  "elapsed_s": 28.5,
+  "rechecked": "2026-09-25 17:50 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

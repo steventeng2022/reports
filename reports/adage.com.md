@@ -5,101 +5,314 @@
 | Item | Value |
 |---|---|
 | Target | https://adage.com/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | adage.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 08:16 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 7 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 10 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
-| 11 | info | R1 | robots.txt protected | CWE-200 |
-| 12 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
-| 13 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | MAIL4 | DMARC policy is p=none (monitor only) | CWE-200 |
+| 3 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 4 | low | H1 | Missing HSTS header | CWE-319 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://adage.com/ without SameSite=Lax/Strict: AKA_A2. Cross-site request cookies.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 2. [INFO] DMARC policy is p=none (monitor only) (`MAIL4`)
+
+- **CWE:** CWE-200
+- **Detail:** DMARC is published but policy is 'none'; failing mail is not quarantined.
+- **Recommendation:** Move to p=quarantine/reject once monitor reports are clean.
+
+### 3. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: AkamaiGHost
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 4. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header on https://adage.com/. Clients may connect over plain HTTP on first visit.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
+### 5. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://adage.com/; browsers may MIME-sniff responses.
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 6. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://adage.com/; page may be rendered in a foreign frame.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for adage.com lists 91 name(s) besides the scope host: arcxp-dev.adage.com, arcxp-dev.automobilwoche.de, arcxp-dev.autonews.com, arcxp-dev.chicagobusiness.com, arcxp-dev.craincurrency.com, arcxp-dev.crainscleveland.com, arcxp-dev.crainsdetroit.com, arcxp-dev.crainsgrandrapids.com... (2 no longer resolve)
-
-### 6. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `arcxp-prod.craincurrency.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 7. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `arcxp-prod.genomeweb.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 8. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://adage.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 9. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://adage.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 10. [INFO] Plain HTTP returns non-redirect status (`N3`)
-
-- **CWE:** CWE-319
-- **Detail:** http://adage.com/ returns 403 (no redirect to HTTPS).
-
-### 11. [INFO] robots.txt protected (`R1`)
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /robots.txt returned 403.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 12. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 403 on adage.com.
-
-### 13. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** https://adage.com/ responded 403 (passive check only; no further probing).
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-## Reproduction notes
+### 10. [INFO] Server technology disclosure (`H6`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://adage.com/ final status: 403 (final URL https://adage.com/).
-- http://adage.com/ initial status: 403.
-- Certificate: Let's Encrypt YR2, valid until 2026-11-19T13:48:18+00:00.
+- **CWE:** CWE-200
+- **Detail:** Header reveals: AkamaiGHost
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 11. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "adage.com",
+  "dns": {
+    "a": [
+      "210.71.227.72",
+      "210.71.227.56"
+    ],
+    "aaaa": [
+      "2001:b034:1c:200::d247:e348",
+      "2001:b034:1c:200::d247:e338"
+    ],
+    "cname": null,
+    "mx": [
+      "usb-smtp-inbound-2.mimecast.com (pref 60)",
+      "usb-smtp-inbound-1.mimecast.com (pref 10)"
+    ],
+    "ns": [
+      "connie.ns.cloudflare.com.",
+      "kurt.ns.cloudflare.com."
+    ],
+    "spf": [
+      "anthropic-domain-verification-pg50pw=UwO6bTKI23RICT2yieNZizAJB",
+      "v=spf1 include:spf.crain.com include:_spf.clickshare.com include:aspmx.pardot.com include:usb._netblocks.mimecast.com ~all",
+      "bw=A0toi1iKzrmRS2jxukTxOo6KI3d7V7eoIzDw5G7ubw5s",
+      "google-site-verification=uWzYibDTuhjliXGRiMnMEthKIS6O5mnJViVhGIOvK28",
+      "MS=ms52345011",
+      "lucidlink-verification=J1CHE4K03BM1Q64NFPMW63KC24",
+      "google-site-verification=69bymnCN1yRQSpHf-DQz5sLMlqQ0GuCspakaXRLBVZg"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=none;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=crain.web.arc-cdn.net",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YR2",
+    "notBefore": "Aug 21 13:48:19 2026 GMT",
+    "notAfter": "Nov 19 13:48:18 2026 GMT",
+    "san": [
+      "adage.com",
+      "arcxp-dev.adage.com",
+      "arcxp-dev.automobilwoche.de",
+      "arcxp-dev.autonews.com",
+      "arcxp-dev.chicagobusiness.com",
+      "arcxp-dev.craincurrency.com",
+      "arcxp-dev.crainscleveland.com",
+      "arcxp-dev.crainsdetroit.com",
+      "arcxp-dev.crainsgrandrapids.com",
+      "arcxp-dev.crainsnewyork.com",
+      "arcxp-dev.genomeweb.com",
+      "arcxp-dev.hartenergy.com",
+      "arcxp-dev.modernhealthcare.com",
+      "arcxp-dev.pionline.com",
+      "arcxp-dev.plasticsnews.com",
+      "arcxp-dev.rubbernews.com",
+      "arcxp-dev.tirebusiness.com",
+      "arcxp-dev.utech-polyurethane.com",
+      "arcxp-prod.automobilwoche.de",
+      "arcxp-prod.craincurrency.com",
+      "arcxp-prod.crainsgrandrapids.com",
+      "arcxp-prod.genomeweb.com",
+      "arcxp-prod.hartenergy.com",
+      "arcxp-prod.modernhealthcare.com",
+      "arcxp-prod.pionline.com",
+      "arcxp-sandbox.adage.com",
+      "arcxp-sandbox.automobilwoche.de",
+      "arcxp-sandbox.autonews.com",
+      "arcxp-sandbox.chicagobusiness.com",
+      "arcxp-sandbox.craincurrency.com",
+      "arcxp-sandbox.crainscleveland.com",
+      "arcxp-sandbox.crainsdetroit.com",
+      "arcxp-sandbox.crainsgrandrapids.com",
+      "arcxp-sandbox.crainsnewyork.com",
+      "arcxp-sandbox.genomeweb.com",
+      "arcxp-sandbox.hartenergy.com",
+      "arcxp-sandbox.modernhealthcare.com",
+      "arcxp-sandbox.pionline.com",
+      "arcxp-sandbox.plasticsnews.com",
+      "arcxp-sandbox.rubbernews.com",
+      "arcxp-sandbox.tirebusiness.com",
+      "arcxp-sandbox.utech-polyurethane.com",
+      "arcxp-stage.adage.com",
+      "arcxp-stage.automobilwoche.de",
+      "arcxp-stage.autonews.com",
+      "arcxp-stage.chicagobusiness.com",
+      "arcxp-stage.craincurrency.com",
+      "arcxp-stage.crainscleveland.com",
+      "arcxp-stage.crainsdetroit.com",
+      "arcxp-stage.crainsgrandrapids.com",
+      "arcxp-stage.crainsnewyork.com",
+      "arcxp-stage.genomeweb.com",
+      "arcxp-stage.hartenergy.com",
+      "arcxp-stage.modernhealthcare.com",
+      "arcxp-stage.pionline.com",
+      "arcxp-stage.plasticsnews.com",
+      "arcxp-stage.rubbernews.com",
+      "arcxp-stage.tirebusiness.com",
+      "arcxp-stage.utech-polyurethane.com",
+      "crain-adage-dev.web.arc-cdn.net",
+      "crain-adage-prod.web.arc-cdn.net",
+      "crain-adage-sandbox.web.arc-cdn.net",
+      "crain-adage-staging.web.arc-cdn.net",
+      "crain-automobilwoche-sandbox.web.arc-cdn.net",
+      "crain-automobilwoche-staging.web.arc-cdn.net",
+      "crain-automotivenews-dev.web.arc-cdn.net",
+      "crain-automotivenews-prod.web.arc-cdn.net",
+      "crain-automotivenews-sandbox.web.arc-cdn.net",
+      "crain-automotivenews-staging.web.arc-cdn.net",
+      "crain-crain-dev.web.arc-cdn.net",
+      "crain-crain-prod.web.arc-cdn.net",
+      "crain-crain-sandbox.web.arc-cdn.net",
+      "crain-crain-staging.web.arc-cdn.net",
+      "crain.web.arc-cdn.net",
+      "www.adage.com",
+      "www.automobilwoche.de",
+      "www.autonews.com",
+      "www.chicagobusiness.com",
+      "www.craincurrency.com",
+      "www.crainscleveland.com",
+      "www.crainsdetroit.com",
+      "www.crainsgrandrapids.com",
+      "www.crainsnewyork.com",
+      "www.genomeweb.com",
+      "www.hartenergy.com",
+      "www.modernhealthcare.com",
+      "www.pionline.com",
+      "www.plasticsnews.com",
+      "www.rubbernews.com",
+      "www.sustainableplastics.com",
+      "www.tirebusiness.com",
+      "www.utech-polyurethane.com"
+    ],
+    "days_left": 55,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "210.71.227.72",
+    "open": []
+  },
+  "https": {
+    "status": 403,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: AkamaiGHost"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.adage.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 403
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 403",
+    "/redirect?next=https://evil-auditor.example/x -> 403",
+    "/go?url=https://evil-auditor.example/x -> 403",
+    "/url?url=https://evil-auditor.example/x -> 403"
+  ],
+  "paths": {
+    "/robots.txt": 403,
+    "/sitemap.xml": 403,
+    "/.well-known/security.txt": 403,
+    "/security.txt": 403,
+    "/.git/HEAD": 403,
+    "/.git/config": 403,
+    "/.env": 403,
+    "/.htaccess": 403,
+    "/wp-login.php": 403,
+    "/phpmyadmin/index.php": 403,
+    "/server-status": 403,
+    "/api/": 403
+  },
+  "subdomains": {
+    "status": "crt.sh 502 (certspotter 429)"
+  },
+  "elapsed_s": 90.5,
+  "rechecked": "2026-09-25 13:59 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

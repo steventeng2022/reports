@@ -5,113 +5,441 @@
 | Item | Value |
 |---|---|
 | Target | https://zoom.us/ |
-| Bug bounty program | [Zoom](https://explore.zoom.us/docs/ent/h1.html) |
+| Bug bounty program | Zoom |
 | Listed scope domain | zoom.us |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:30 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
+Total findings: **33** (High: 0, Medium: 9, Low: 4, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 5 | info | C4 | Cookies scoped to parent/wildcard domain | CWE-200 |
-| 6 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 7 | info | H2 | Short HSTS max-age | CWE-319 |
-| 8 | info | H2c | HSTS not preloaded | CWE-319 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 11 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 12 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 13 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 14 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
-| 15 | info | X3 | HTTPS root redirects to different host | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | medium | PRT21 | FTP service (cleartext) reachable | CWE-319 |
+| 3 | info | PRT22 | SSH reachable | CWE-200 |
+| 4 | medium | PRT23 | Telnet service (cleartext) reachable | CWE-319 |
+| 5 | info | PRT25 | SMTP (port 25) reachable | CWE-200 |
+| 6 | info | PRT53 | DNS service reachable | CWE-200 |
+| 7 | info | PRT110 | POP3 (cleartext) reachable | CWE-319 |
+| 8 | info | PRT143 | IMAP (cleartext) reachable | CWE-319 |
+| 9 | info | PRT993 | IMAPS (port 993) reachable | CWE-200 |
+| 10 | info | PRT995 | POP3S (port 995) reachable | CWE-200 |
+| 11 | medium | PRT1433 | MSSQL (port 1433) reachable | CWE-200 |
+| 12 | medium | PRT3306 | MySQL (port 3306) reachable | CWE-200 |
+| 13 | info | PRT3389 | RDP (port 3389) reachable | CWE-200 |
+| 14 | medium | PRT5432 | PostgreSQL (port 5432) reachable | CWE-200 |
+| 15 | medium | PRT5900 | VNC (port 5900) reachable | CWE-200 |
+| 16 | medium | PRT6379 | Redis (port 6379) reachable | CWE-200 |
+| 17 | info | PRT8000 | Alternate web service (port 8000) reachable | CWE-200 |
+| 18 | info | PRT8080 | Alternate web service (port 8080) reachable | CWE-200 |
+| 19 | info | PRT8443 | Alternate web service (port 8443) reachable | CWE-200 |
+| 20 | info | PRT8888 | Alternate web service (port 8888) reachable | CWE-200 |
+| 21 | info | PRT9090 | Service (port 9090, e.g. Elasticsearch/debug) reachable | CWE-200 |
+| 22 | medium | PRT9200 | Elasticsearch (port 9200) reachable | CWE-200 |
+| 23 | medium | PRT27017 | MongoDB (port 27017) reachable | CWE-200 |
+| 24 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 25 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 26 | low | H1 | Missing HSTS header | CWE-319 |
+| 27 | low | H2 | Missing CSP header | CWE-1021 |
+| 28 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 29 | low | H4 | No clickjacking protection | CWE-1023 |
+| 30 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 31 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 32 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 33 | info | H6 | Server technology disclosure | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://zoom.us/ without SameSite=Lax/Strict: __cf_bm. Cross-site request cookies.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing Content-Security-Policy (`H3`)
+### 2. [MEDIUM] FTP service (cleartext) reachable (`PRT21`)
 
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://zoom.us/; no defense-in-depth against XSS/content injection.
+- **CWE:** CWE-319
+- **Detail:** TCP connect to 170.114.52.2:21 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
+### 3. [INFO] SSH reachable (`PRT22`)
 
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://zoom.us/; browsers may MIME-sniff responses.
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:22 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 4. [MEDIUM] Telnet service (cleartext) reachable (`PRT23`)
+
+- **CWE:** CWE-319
+- **Detail:** TCP connect to 170.114.52.2:23 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 5. [INFO] SMTP (port 25) reachable (`PRT25`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:25 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 6. [INFO] DNS service reachable (`PRT53`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:53 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 7. [INFO] POP3 (cleartext) reachable (`PRT110`)
+
+- **CWE:** CWE-319
+- **Detail:** TCP connect to 170.114.52.2:110 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 8. [INFO] IMAP (cleartext) reachable (`PRT143`)
+
+- **CWE:** CWE-319
+- **Detail:** TCP connect to 170.114.52.2:143 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 9. [INFO] IMAPS (port 993) reachable (`PRT993`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:993 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 10. [INFO] POP3S (port 995) reachable (`PRT995`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:995 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 11. [MEDIUM] MSSQL (port 1433) reachable (`PRT1433`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:1433 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 12. [MEDIUM] MySQL (port 3306) reachable (`PRT3306`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:3306 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 13. [INFO] RDP (port 3389) reachable (`PRT3389`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:3389 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 14. [MEDIUM] PostgreSQL (port 5432) reachable (`PRT5432`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:5432 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 15. [MEDIUM] VNC (port 5900) reachable (`PRT5900`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:5900 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 16. [MEDIUM] Redis (port 6379) reachable (`PRT6379`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:6379 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 17. [INFO] Alternate web service (port 8000) reachable (`PRT8000`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:8000 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 18. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:8080 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 19. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:8443 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 20. [INFO] Alternate web service (port 8888) reachable (`PRT8888`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:8888 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 21. [INFO] Service (port 9090, e.g. Elasticsearch/debug) reachable (`PRT9090`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:9090 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 22. [MEDIUM] Elasticsearch (port 9200) reachable (`PRT9200`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:9200 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 23. [MEDIUM] MongoDB (port 27017) reachable (`PRT27017`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 170.114.52.2:27017 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 24. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: cloudflare; Cloudflare CDN/WAF
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 25. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
+
+- **CWE:** CWE-200
+- **Detail:** Alt-Svc: h3=":443"; ma=86400
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
+
+### 26. [LOW] Missing HSTS header (`H1`)
+
+- **CWE:** CWE-319
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+
+### 27. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://zoom.us/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 5. [INFO] Cookies scoped to parent/wildcard domain (`C4`)
+### 28. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-200
-- **Detail:** Cookies set with domain beyond zoom.us: .zoom.com.
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 6. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 29. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for zoom.us lists 1 name(s) besides the scope host: *.zoom.us
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 7. [INFO] Short HSTS max-age (`H2`)
-
-- **CWE:** CWE-319
-- **Detail:** HSTS max-age=15552000 (< 1 year): `max-age=15552000; includeSubDomains`.
-
-### 8. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=15552000; includeSubDomains` lacks the preload directive.
-
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 30. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://zoom.us/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 10. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://zoom.us/; browser features (camera, mic, geolocation) unrestricted.
-
-### 11. [INFO] sitemap.xml discloses URL inventory (`M1`)
+### 31. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://zoom.us/ lists 3850 URLs.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 12. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://zoom.us/ -> https://www.zoom.com (positive check).
-
-### 13. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 32. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://zoom.us/ exposes 28 unique Disallow path(s) (/*?, /*oauth_signin, /account*, /docs/doc/2-Page-All-Products.pdf, /docs/doc/zoom-apps-data-management.pdf) and 1 sitemap reference(s)
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 14. [INFO] security.txt exposed (public disclosure policy) (`S2`)
-
-- **CWE:** CWE-200
-- **Detail:** security.txt present on https://zoom.us (562 bytes); contact: https://www.zoom.com/en/trust/vulnerability-disclosure/submit-vulnerability-report
-
-### 15. [INFO] HTTPS root redirects to different host (`X3`)
+### 33. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** https://zoom.us/ redirects to https://www.zoom.com.
+- **Detail:** Header reveals: cloudflare
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
 
-## Reproduction notes
+## Evidence (raw response observations)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://zoom.us/ final status: 200 (final URL https://www.zoom.com).
-- http://zoom.us/ initial status: 301.
-- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-12-29T23:59:59+00:00.
+```json
+{
+  "domain": "zoom.us",
+  "dns": {
+    "a": [
+      "170.114.52.2"
+    ],
+    "aaaa": [
+      "2407:30c0:182::aa72:3402"
+    ],
+    "cname": null,
+    "mx": [
+      "mxa-00569201.gslb.pphosted.com (pref 10)",
+      "mxb-00569201.gslb.pphosted.com (pref 10)"
+    ],
+    "ns": [
+      "ns-1137.awsdns-14.org.",
+      "ns-1772.awsdns-29.co.uk.",
+      "ns-888.awsdns-47.net.",
+      "ns-387.awsdns-48.com."
+    ],
+    "spf": [
+      "spycloud-domain-verification=889b71d1-9e56-48da-a7cc-f3bc6497ca2f",
+      "ljtjrbvpt98v132shnhkm0thlt",
+      "stripe-verification=933cf52c0e93778a0f3fbdc96954c1f6bd9813b6356cdc71667df03b44336c1e",
+      "mongodb-site-verification=LuLsVGWKjIwOk54WdscqbRmXgqU2kGIc",
+      "google-site-verification=kzxH5gxEvbMw9EUX-uQNCNxzoHNk7eksOJdaOLt-WYA",
+      "stripe-verification=0628546b6023b9d18ecddf4eec9658f8513bb619d4ae413b1143f81b31ee7018",
+      "cui69v35i9t5lj9360gajgt1tc",
+      "stripe-verification=64a9e3b2f28cc3bb2182307c5c2ea98aa78bfe6a36ed5f22bd3d0bc9667a2510",
+      "status-page-domain-verification=pc76p1k8712r",
+      "autodesk-domain-verification=oPP5RpbpIX2AL7W7H2p2",
+      "google-site-verification=r5_uj4r2YuGNrhng2dLo4xfDAvaYGhNuqv6icJiQdxA",
+      "v=DMARC1; p=reject; ri=3600; rua=mailto:sesbounce@zoom.us,mailto:dmarc_rua@emaildefense.proofpoint.com",
+      "google-site-verification=JvBsPulrJw4xeN9DV9oeGqFDDUlAsJv-vLu1PriMw1g",
+      "stripe-verification=29700ec8c3d8a93a634139f4dfe8a23a87f6b97829d3e6ea123d07f7e58504d0",
+      "SFMC-FEDGKE8lGkIFM2TngfZtUoES_Ep-nR1DSOvRZFxz",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com include:_spf.google.com include:amazonses.com ip4:52.38.191.241 include:servers.mcsv.net include:_spf.salesforce.com ip4:13.110.78.0/24 ~all",
+      "apple-domain-verification=CbBNkhNvbPFzgvvv",
+      "docusign=b21dec83-4d62-479c-b2aa-43a0cd4c125a",
+      "teamviewer-sso-verification=4f42e066d37d4305b4091646efd91add",
+      "dropbox-domain-verification=3s15m13l23wp",
+      "v=zoomadn us.zoom.idp.commercial=zoom.okta.com",
+      "facebook-domain-verification=r9u6lu6z5wy3yokf7yd52l6k08xqsx",
+      "paloaltonetworks-site-verification=ab6a946a97f44c0b83b5cc59ba90e5f0c768666814ce8347703af032dbeff05c",
+      "stripe-verification=56bc5cf2da44b2033da49b45ed3789209db29432268975666693a750ecfde757",
+      "atlassian-domain-verification=o4YG+mXlOE6uTJb7uGimcl9DJZnVg4aimBCf/4UrplRJvMk84JnXh2zF8jZz21Fx",
+      "google-site-verification=yofTND47qXdSBHRBZSkPUrP0QQ-WF76h-K-F05IHmj0",
+      "adobe-idp-site-verification=7116ab50a89b2c2402382aea3362209410eac90f2a590f358ce1189d0ca1a8c4",
+      "canva-site-verification=Fxuo9x2-ohLElGZ9w9XYHw",
+      "h1-domain-verification=5yw85Ewx1obuckMSkZQokfDYewnzdBw9JqKmZWMXqFs2F3cq",
+      "anthropic-domain-verification-8fadf7=uwajz3dDn6eAq3Yl6LtArZNBA",
+      "stripe-verification=68b6edce67880909a44aad0af814c3afe0bf8e053e70f81c70264bf9156c4861",
+      "HaFoSdUeCSdJo9U8lG@NWZ6vnoRltUteEAl&yuY$$eE25sKJguFH58Lss%9@e73OK#XigH^i3mCDjax&gfZq*90lw4k4Vi3UMpC",
+      "slack-domain-verification=DPFh88HZR7KVwJkwlh98Y0PgSABl6BKgY1hVlwhC",
+      "vmware-cloud-verification-4d68d199-43dd-455f-ad71-18141d5d09c8",
+      "nintex.5e7289cea709bf0d10e77561",
+      "pardot_84442_*=f0bf83bf261ad77163f6e86fc94ae06036d153cc65df5531309b396933da9591",
+      "google-site-verification=G6mELnMFHZrRpJ_rAqHPDP2voFX3_g-lN78U-eJ7xJY",
+      "google-site-verification=RA1o2A5KlW67SrvzJ4JovDWlkMzOtxJnS6Lq4MWso1Q",
+      "docker-verification=e55e0281-9c6f-4cba-8788-e50c50899b3f",
+      "stripe-verification=c9c277e76c265ef8b27ee1fb8b7f6e6240daacf25d36f96d586c05301b0306eb",
+      "atlassian-domain-verification=4y6yoGrdYbj4zq5bMXvpGI1KFVEzSVuWMYG4/Gv4BuFjIthTVBWnV8qf47TYfL5Q",
+      "oo414pse7fk8ntk80qoms9poc1",
+      "knowbe4-site-verification=c3a762336824e50b8902fc5d47a79dd9",
+      "smartsheet-site-validation=DYfGXuyJc7oq-_D05ZZyl6QGXpRWSWpR",
+      "stripe-verification=f613690c5cef6193bdc4638549691d7c4b80994cd6b47c182d9ce9afa560b964"
+    ],
+    "dmarc": [
+      "v=DMARC1;p=reject;ri=3600;rua=mailto:sesbounce@zoom.us,mailto:dmarc_rua@emaildefense.proofpoint.com;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "countryName=US, stateOrProvinceName=California, localityName=San Jose, organizationName=Zoom Communications, Inc., commonName=*.zoom.us",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
+    "notBefore": "Dec 29 00:00:00 2025 GMT",
+    "notAfter": "Dec 29 23:59:59 2026 GMT",
+    "san": [
+      "*.zoom.us",
+      "zoom.us"
+    ],
+    "days_left": 95,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "170.114.52.2",
+    "open": [
+      21,
+      22,
+      23,
+      25,
+      53,
+      110,
+      143,
+      993,
+      995,
+      1433,
+      3306,
+      3389,
+      5432,
+      5900,
+      6379,
+      8000,
+      8080,
+      8443,
+      8888,
+      9090,
+      9200,
+      27017
+    ]
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: cloudflare",
+    "Cloudflare CDN/WAF"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.zoom.us",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://www.zoom.com"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 404",
+    "/redirect?next=https://evil-auditor.example/x -> 404",
+    "/go?url=https://evil-auditor.example/x -> 200",
+    "/url?url=https://evil-auditor.example/x -> 404"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 200,
+    "/.well-known/security.txt": 200,
+    "/security.txt": 404,
+    "/.git/HEAD": 403,
+    "/.git/config": 403,
+    "/.env": 403,
+    "/.htaccess": 403,
+    "/wp-login.php": 403,
+    "/phpmyadmin/index.php": 403,
+    "/server-status": 404,
+    "/api/": 404
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 24.4,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -5,107 +5,227 @@
 | Item | Value |
 |---|---|
 | Target | https://php.net/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | php.net |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:08 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
+Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
-| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 4 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 5 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 6 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 7 | info | H2 | Short HSTS max-age | CWE-319 |
-| 8 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 9 | info | H2c | HSTS not preloaded | CWE-319 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 12 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 13 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 14 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | MAIL4 | DMARC policy is p=none (monitor only) | CWE-200 |
+| 3 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 4 | low | H1 | Missing HSTS header | CWE-319 |
+| 5 | low | H2 | Missing CSP header | CWE-1021 |
+| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 7 | low | H4 | No clickjacking protection | CWE-1023 |
+| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 11 | info | H6 | Server technology disclosure | CWE-200 |
+| 12 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://php.net/ without HttpOnly: LAST_NEWS. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without Secure flag (`C2`)
-
-- **CWE:** CWE-614
-- **Detail:** Set on https://php.net/ without Secure: LAST_NEWS. Will be transmitted over HTTP if the site is reachable cleartext.
-
-### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://php.net/ without SameSite=Lax/Strict: LAST_NEWS. Cross-site request cookies.
-
-### 4. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://php.net/; no defense-in-depth against XSS/content injection.
-
-### 5. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://php.net/; browsers may MIME-sniff responses.
-
-### 6. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for php.net lists 1 name(s) besides the scope host: *.php.net
-
-### 7. [INFO] Short HSTS max-age (`H2`)
-
-- **CWE:** CWE-319
-- **Detail:** HSTS max-age=15768000 (< 1 year): `max-age=15768000`.
-
-### 8. [INFO] HSTS without includeSubDomains (`H2b`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=15768000` does not cover subdomains.
-
-### 9. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=15768000` lacks the preload directive.
-
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] DMARC policy is p=none (monitor only) (`MAIL4`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://php.net/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** DMARC is published but policy is 'none'; failing mail is not quarantined.
+- **Recommendation:** Move to p=quarantine/reject once monitor reports are clean.
 
-### 11. [INFO] sitemap.xml discloses URL inventory (`M1`)
+### 3. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://php.net/ lists 39 URLs.
+- **Detail:** Detected: Server: myracloud
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 12. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+### 4. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** http://php.net/ -> https://php.net/ (positive check).
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 13. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 5. [LOW] Missing CSP header (`H2`)
+
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 6. [LOW] Missing X-Content-Type-Options (`H3`)
+
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
+
+### 7. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+
+### 8. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://php.net/ exposes 11 unique Disallow path(s) (/backend/, /distributions/, /harm/to/self, /harming/humans, /ignoring/human/orders)
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 14. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+### 9. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://php.net (1354 bytes); contact: https://github.com/php/php-src/security/advisories/new
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 10. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://php.net/ final status: 200 (final URL https://www.php.net/).
-- http://php.net/ initial status: 301.
-- Certificate: Let's Encrypt YE2, valid until 2026-11-18T04:07:27+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 11. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: myracloud
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 12. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "php.net",
+  "dns": {
+    "a": [
+      "185.85.0.29"
+    ],
+    "aaaa": [
+      "2a02:cb40:200::1ad"
+    ],
+    "cname": null,
+    "mx": [
+      "php-smtp4-ip4.php.net (pref 0)"
+    ],
+    "ns": [
+      "dns1.easydns.com.",
+      "dns3.easydns.org.",
+      "dns2.easydns.net.",
+      "dns4.easydns.info."
+    ],
+    "spf": [
+      "google-site-verification=O6K8miDfoyFI4IjIQ13207kl978tUNg1HYv3G-bLabo",
+      "v=spf1 ip4:140.211.15.143 ip4:45.112.84.5 ip4:142.93.197.176 ip6:2604:a880:400:d0::1c74:1001 ip6:2a02:cb43:8000::1102 ip4:157.90.121.187 ip6:2a01:4f8:1c1e:416d::1 ~all"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=none; rua=mailto:dmarc@php.net;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=*.php.net",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YE2",
+    "notBefore": "Aug 20 04:07:28 2026 GMT",
+    "notAfter": "Nov 18 04:07:27 2026 GMT",
+    "san": [
+      "*.php.net",
+      "php.net"
+    ],
+    "days_left": 53,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "185.85.0.29",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: myracloud"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.php.net",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://php.net/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 44.0,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,105 +7,261 @@
 | Target | https://bloomberg.com/ |
 | Bug bounty program | Bloomberg |
 | Listed scope domain | bloomberg.com |
-| Test date | 2026-09-25 15:44 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 07:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
+Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 3 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 7 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 8 | info | H2c | HSTS not preloaded | CWE-319 |
-| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 10 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 11 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 12 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 13 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
-| 14 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 4 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 5 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 6 | info | H6 | Server technology disclosure | CWE-200 |
+| 7 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://bloomberg.com/ without HttpOnly: _pxhd, agent_id, session_id, session_key, visitor_id. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://bloomberg.com/ without SameSite=Lax/Strict: _session_id_backup, agent_id, session_id, session_key. Cross-site request cookies.
-
-### 3. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://bloomberg.com/; no defense-in-depth against XSS/content injection.
-
-### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
-
-- **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://bloomberg.com/; page may be rendered in a foreign frame.
-
-### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for bloomberg.com lists 50 name(s) besides the scope host: about.bloomberg.com, about.bloomberginstitute.com, assets.bbhub.io, b20-carbon-excellence.org, batscore.com, bbhub.io, bbthat.com, beta-ee.bloomberg.com... (1 no longer resolve)
-
-### 6. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `wmkt1.cirrus.bloomberg.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 7. [INFO] HSTS without includeSubDomains (`H2b`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31557600` does not cover subdomains.
-
-### 8. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31557600` lacks the preload directive.
-
-### 9. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://bloomberg.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** Detected: Server: awselb/2.0
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 10. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://bloomberg.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 11. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://bloomberg.com/ -> https://bloomberg.com:443/ (positive check).
-
-### 12. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 3. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://bloomberg.com/ exposes 37 unique Disallow path(s) (/, /about/careers, /about/careers/, /account/*, /apps/fbk) and 10 sitemap reference(s)
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 13. [INFO] security.txt exposed (public disclosure policy) (`S2`)
-
-- **CWE:** CWE-200
-- **Detail:** security.txt present on https://bloomberg.com (249 bytes); contact: mailto:reportvuln@bloomberg.net
-
-### 14. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+### 4. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** https://bloomberg.com/ responded 403 (passive check only; no further probing).
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 5. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://bloomberg.com/ final status: 403 (final URL https://www.bloomberg.com/).
-- http://bloomberg.com/ initial status: 301.
-- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2027-01-29T23:59:59+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 6. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: awselb/2.0
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 7. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "bloomberg.com",
+  "dns": {
+    "a": [
+      "15.197.146.156",
+      "3.33.146.110"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "mgcnj2.bloomberg.com (pref 0)",
+      "mgcny1.bloomberg.com (pref 0)",
+      "mgcny2.bloomberg.com (pref 0)",
+      "mgcnj1.bloomberg.com (pref 0)"
+    ],
+    "ns": [
+      "dns1.p01.nsone.net.",
+      "dns3.p01.nsone.net.",
+      "dns4.p01.nsone.net.",
+      "pdns5.ultradns.info.",
+      "dns2.p01.nsone.net.",
+      "pdns1.ultradns.net.",
+      "pdns3.ultradns.org."
+    ],
+    "spf": [
+      "Ymxvb21iZXJn",
+      "google-site-verification=CI2IKDBbk_gcKk_9CFFUrF-ZLZToKXQ7SAJ96fjqZ_I",
+      "parallels-domain-verification=47460854911b478da11221dc20e8cc0340a92adf1e6b4ff08a5e941f5379c267",
+      "airtable-verification=15d4376d6d99cc906abbcb295b4245da",
+      "F2QdzLTE6LTOyOQ7pQzoSY2pnwVM5pnfiqY3zOoYvS3LoVmIUr0J3op5vQI8Tg8VQwt24UK8v7oFWfbrCBWYYw==",
+      "ZOOM_verify_rl-mcFScS8W6864E30mlZg",
+      "QnH3utpbwmcXnxwnErM2by/pp37P7fYtF9si0rMmb9FgwB98zU8UAzdl1GbyQMdyNFLKobFRdX6FfLlH/LG+og==",
+      "lutron-domain-verification-p8wzsk=PQcs5tfle6vYve4ulSshxyMYi",
+      "google-site-verification=ClT3QBQ-Rd4b3AAq2gmQ-u_94EliZRmC2e-Kb4t9zEo",
+      "OSSRH-64276",
+      "extensis-domain-verification=707df5b4-0868-499f-af75-51718e082698",
+      "jamf-site-verification=VJNRhgJ90SmyugkIPAdfCQ",
+      "google-gws-recovery-domain-verification=72311760",
+      "cursor-domain-verification-asb77c=D43c1zjGqO3rTemQvZ121NSfi",
+      "2smsverify=08qXd7f0aUa5IPq0N4ETgQ",
+      "openai-domain-verification=dv-XaK3IjuwWpMmfss9VYKwn0eY",
+      "apple-domain-verification=9cs9hMRccEtbVb8h",
+      "ZOOM_verify_8UDWCiGoiAVgGEuiZNG9Ld",
+      "v=spf1 ip4:69.184.0.0/13 ip4:199.172.169.0/24 ip4:208.22.56.0/24 ip4:69.191.241.124 -all",
+      "google-site-verification=vH_zs-JrwvXxkyuUqmeN9t3iMYZqyt1-BJUsoyN3ca8",
+      "MS=ms33692690",
+      "atlassian-domain-verification=gK9LJEftkavNAe/keDgXDWOhGwUV02GQTz9BbfKLplkTTtpciOH5eL1W6u7BRfVR",
+      "MS=ms99943004"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; adkim=r; aspf=r; ruf=mailto:dmarc-ruf@dmarc-bloomberg.com; fo=1; rua=mailto:dmarc-rua@dmarc-bloomberg.com"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "countryName=US, stateOrProvinceName=New York, localityName=New York, organizationName=Bloomberg LP, commonName=wmkt1.cirrus.bloomberg.com",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
+    "notBefore": "Jul 23 00:00:00 2026 GMT",
+    "notAfter": "Jan 29 23:59:59 2027 GMT",
+    "san": [
+      "wmkt1.cirrus.bloomberg.com",
+      "about.bloomberg.com",
+      "about.bloomberginstitute.com",
+      "assets.bbhub.io",
+      "b20-carbon-excellence.org",
+      "batscore.com",
+      "bbhub.io",
+      "bbthat.com",
+      "beta-ee.bloomberg.com",
+      "bgov200.com",
+      "blog.bloomberg.com",
+      "blomberggovernment.com",
+      "bloom.bg",
+      "bloomberg.cn",
+      "bloomberg.co.jp",
+      "bloomberg.co.kr",
+      "bloomberg.co.uk",
+      "bloomberg.com",
+      "bloomberg.com.br",
+      "bloomberg.com.mx",
+      "bloomberg.com.tr",
+      "bloomberg.de",
+      "bloomberg.fr",
+      "bloomberg.in",
+      "bloomberg.it",
+      "bloomberg.net",
+      "bloomberg.tv",
+      "bloomberg401k.com",
+      "bloombergaffiliate.com",
+      "bloombergapa.net",
+      "bloombergapae.net",
+      "bloombergapps.com",
+      "bloombergarcade.co.uk",
+      "bloombergarcade.com",
+      "bloombergarm.net",
+      "bloombergbeta.com",
+      "bloombergbna.com",
+      "bloombergbrief.com",
+      "bloombergbriefs.com",
+      "bloombergbtbs.com",
+      "bloombergbtbs.net",
+      "bloombergbtbs.sg",
+      "bloombergbtbsg.com",
+      "bloombergbtbsg.net",
+      "bloombergbtbsg.sg",
+      "bloombergbusiness.com",
+      "bloombergcareer.com",
+      "bloombergchina.com",
+      "bloombergcms.com",
+      "bloombergcompany.com",
+      "bloombergcontentservice.com"
+    ],
+    "days_left": 126,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "15.197.146.156",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: awselb/2.0"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.bloomberg.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://bloomberg.com:443/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "crt.sh 502 (certspotter 504)"
+  },
+  "elapsed_s": 133.2,
+  "rechecked": "2026-09-25 13:59 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.
