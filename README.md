@@ -12,6 +12,7 @@ Per the repo merge convention, where another agent's active findings exceed the 
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---:|---:|---:|---:|---:|---|
+| uspto.gov | 5 | 0 | 1 | 2 | 2 | top-websites gist (no active program match) |
 | hostinger.com | 11 | 0 | 1 | 6 | 4 | top-websites gist (no active program match) |
 | a.co | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | opinionator.blogs.nytimes.com | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
