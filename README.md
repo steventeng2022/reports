@@ -8,6 +8,7 @@ Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---:|---:|---:|---:|---:|---|
+| poetryfoundation.org | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | spiegel.de | 9 | 0 | 0 | 7 | 2 | top-websites gist (no active program match) |
 | google.ca | 13 | 0 | 1 | 8 | 4 | Google |
 | amzn.asia | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
