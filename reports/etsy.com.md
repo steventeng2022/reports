@@ -7,8 +7,8 @@
 | Target | https://etsy.com/ |
 | Bug bounty program | Etsy |
 | Listed scope domain | etsy.com |
-| Test date | 2026-09-26 22:04 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:25 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -135,13 +135,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
 ### 15. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (e0nc0a89k8nel4.etsy.com and 9vsdph7llejaek.etsy.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (35ipp1aykhnkkz.etsy.com and h383ka54ox7w42.etsy.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=qgAwoHpdlhEv-3QiQ3G11S5xHj60JbTSzecxszntlvo; atlassian-domain-verification=cMcfcaBm3JNaxKiO2fok5oOn20qbqxLmjQdFrsLV25SQj8l5hT; google-site-verification=mpVLpWjH_tjbc5eK6pmVTZjq4xmHhzoE3crE0rKFULs
+- **Detail:** Apex TXT records with verification/token content: stripe-verification=5e8773ee85575b784fc2a6868da2b17b165e2e59f62d067f77bfd40c0ad5; adobe-idp-site-verification=1858581c5ab657f77e067d14de03dd297c85f0b6b2916dbe0ade; stripe-verification=fe491048e654bcc35d8f194964540604a3a4108e3191ffd27a9ea4c232d5
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -175,57 +175,57 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
   "domain": "etsy.com",
   "dns": {
     "a": [
+      "151.101.65.224",
       "151.101.1.224",
       "151.101.193.224",
-      "151.101.65.224",
       "151.101.129.224"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx2.googlemail.com (pref 40)",
       "alt2.aspmx.l.google.com (pref 30)",
       "aspmx3.googlemail.com (pref 50)",
-      "aspmx2.googlemail.com (pref 40)",
-      "alt1.aspmx.l.google.com (pref 20)"
+      "aspmx.l.google.com (pref 10)"
     ],
     "ns": [
       "ns-1264.awsdns-30.org.",
+      "dns1.p03.nsone.net.",
       "dns3.p03.nsone.net.",
-      "ns-162.awsdns-20.com.",
-      "dns1.p03.nsone.net."
+      "ns-162.awsdns-20.com."
     ],
     "caa": [],
     "spf": [
-      "apple-domain-verification=qgAwoHpdlhEv-3QiQ3G11S5xHj60JbTSzecxszntlvo",
+      "stripe-verification=5e8773ee85575b784fc2a6868da2b17b165e2e59f62d067f77bfd40c0ad5cdc5",
+      "adobe-idp-site-verification=1858581c5ab657f77e067d14de03dd297c85f0b6b2916dbe0adeca4fac539e6b",
+      "stripe-verification=fe491048e654bcc35d8f194964540604a3a4108e3191ffd27a9ea4c232d5bcf1",
+      "MS=ms91667443",
+      "anthropic-domain-verification-nehbw6=4taelnzAjM6NVkhm1rylyYZ8r",
+      "onetrust-domain-verification=9f4716cb45f046429764b34174392ce2",
+      "pinterest-site-verification=b92965d84ebb1103548fbd23e39baf66",
+      "_globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0",
+      "facebook-domain-verification=j81l6m6391dika9nlbuh2c8ji9nhye",
       "docusign=9866d46c-c0b0-47c6-a98e-c6381eb4ccc6",
-      "atlassian-domain-verification=cMcfcaBm3JNaxKiO2fok5oOn20qbqxLmjQdFrsLV25SQj8l5hTkX/pb21NqLPLP0",
+      "lucidlink-verification=HYZGQ2NMESYDAVG1GR5EJX21Z0",
+      "miro-verification=31250d3fe2c000cf1f892588d27dcf9eeb6afdd8",
       "fastly-domain-delegation-svi5ebiqbg4tbn-20251029",
-      "google-site-verification=mpVLpWjH_tjbc5eK6pmVTZjq4xmHhzoE3crE0rKFULs",
+      "datadome-domain-verify=BNtk7vonAvB8fhBLjp0E2orOzns71WB1",
+      "wrike-verification=NDMwNDc4NDo3YzVlMGVmM2RhZGU0NjRkZTIxZTBjYmU5Mjc2NGZmODRmNzVhMDc2NjRmMTI0NThhYzlhZTdhMzhkNzkyY2Uw",
+      "jamf-site-verification=lUaUDNLb-GDzmbIbaCg_lg",
+      "segment-site-verification=qK8Hs2slX9yMAAiKpgMoNP6bJCKq0cqQ",
+      "MS=61C0D53B132406B96613AF941D1FFB83A6CFCD73",
+      "stripe-verification=660c4cdde58756c254bc46c26b92b6232ebc140156e6d2ba74cbb988b283b5ae",
+      "cursor-domain-verification-vyqnwm=JyRGj2Bcnbk8QqNAclaAE8mHY",
+      "apple-domain-verification=qgAwoHpdlhEv-3QiQ3G11S5xHj60JbTSzecxszntlvo",
       "v=spf1 ip4:66.3.159.0/24 ip4:192.147.0.0/24 ip4:173.46.67.72/29 ip4:192.147.1.0/24 ip4:38.106.64.0/24 ip4:38.76.1.0/24 ip4:38.76.2.0/24 ip4:162.220.28.32/27 ip4:162.220.28.64/28 ip4:208.74.204.0/22 ip4:46.19.168.0/23 include:servers.mcsv.net include:mail.",
       "zendesk.com include:amazonses.com include:_netblocks.google.com include:_netblocks2.google.com include:_netblocks3.google.com a:web.q4press.com include:cvent-planner.com include:mail.clinchtalent.com include:spf.redpoints.com -all",
-      "facebook-domain-verification=j81l6m6391dika9nlbuh2c8ji9nhye",
-      "_globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0",
-      "wrike-verification=NDMwNDc4NDo3YzVlMGVmM2RhZGU0NjRkZTIxZTBjYmU5Mjc2NGZmODRmNzVhMDc2NjRmMTI0NThhYzlhZTdhMzhkNzkyY2Uw",
-      "stripe-verification=5e8773ee85575b784fc2a6868da2b17b165e2e59f62d067f77bfd40c0ad5cdc5",
-      "MS=61C0D53B132406B96613AF941D1FFB83A6CFCD73",
-      "docker-verification=40052c18-7a84-4d01-a294-9fed0866066e",
-      "datadome-domain-verify=BNtk7vonAvB8fhBLjp0E2orOzns71WB1",
-      "stripe-verification=fe491048e654bcc35d8f194964540604a3a4108e3191ffd27a9ea4c232d5bcf1",
-      "lucidlink-verification=HYZGQ2NMESYDAVG1GR5EJX21Z0",
-      "pinterest-site-verification=b92965d84ebb1103548fbd23e39baf66",
-      "monday-com-verification=bG-_DMl97UjUXdEr36_aoOlymHnNMGiZ9z_UM8h7t20",
-      "adobe-idp-site-verification=1858581c5ab657f77e067d14de03dd297c85f0b6b2916dbe0adeca4fac539e6b",
-      "onetrust-domain-verification=9f4716cb45f046429764b34174392ce2",
-      "openai-domain-verification=dv-kBkaf6OFwgohxPZc4YIjOD6t",
-      "segment-site-verification=qK8Hs2slX9yMAAiKpgMoNP6bJCKq0cqQ",
-      "miro-verification=31250d3fe2c000cf1f892588d27dcf9eeb6afdd8",
-      "jamf-site-verification=lUaUDNLb-GDzmbIbaCg_lg",
-      "MS=ms91667443",
+      "google-site-verification=mpVLpWjH_tjbc5eK6pmVTZjq4xmHhzoE3crE0rKFULs",
       "bugcrowd-verification=460ceee75155fa4965c62123bc9cd182",
-      "cursor-domain-verification-vyqnwm=JyRGj2Bcnbk8QqNAclaAE8mHY",
-      "stripe-verification=660c4cdde58756c254bc46c26b92b6232ebc140156e6d2ba74cbb988b283b5ae",
-      "anthropic-domain-verification-nehbw6=4taelnzAjM6NVkhm1rylyYZ8r"
+      "openai-domain-verification=dv-kBkaf6OFwgohxPZc4YIjOD6t",
+      "atlassian-domain-verification=cMcfcaBm3JNaxKiO2fok5oOn20qbqxLmjQdFrsLV25SQj8l5hTkX/pb21NqLPLP0",
+      "docker-verification=40052c18-7a84-4d01-a294-9fed0866066e",
+      "monday-com-verification=bG-_DMl97UjUXdEr36_aoOlymHnNMGiZ9z_UM8h7t20"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc@etsy.com; ruf=mailto:dmarc@etsy.com"
@@ -261,7 +261,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
     }
   },
   "ports": {
-    "ip": "151.101.1.224",
+    "ip": "151.101.65.224",
     "open": []
   },
   "https": {
@@ -315,11 +315,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "apple-domain-verification=qgAwoHpdlhEv-3QiQ3G11S5xHj60JbTSzecxszntlvo",
-    "atlassian-domain-verification=cMcfcaBm3JNaxKiO2fok5oOn20qbqxLmjQdFrsLV25SQj8l5hT",
-    "google-site-verification=mpVLpWjH_tjbc5eK6pmVTZjq4xmHhzoE3crE0rKFULs",
-    "facebook-domain-verification=j81l6m6391dika9nlbuh2c8ji9nhye",
-    "_globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0"
+    "stripe-verification=5e8773ee85575b784fc2a6868da2b17b165e2e59f62d067f77bfd40c0ad5",
+    "adobe-idp-site-verification=1858581c5ab657f77e067d14de03dd297c85f0b6b2916dbe0ade",
+    "stripe-verification=fe491048e654bcc35d8f194964540604a3a4108e3191ffd27a9ea4c232d5",
+    "anthropic-domain-verification-nehbw6=4taelnzAjM6NVkhm1rylyYZ8r",
+    "onetrust-domain-verification=9f4716cb45f046429764b34174392ce2"
   ],
   "tls2": {
     "alpn": "",
@@ -331,6 +331,15 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2025q4",
+      "serial": 1565224459863225002521978909495044232,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.globalsign.com/ca/gsatlasr3dvtlsca2025q4.crl"
+      ],
+      "subject_dn": "3119301706035504030c102a2e657473797374617469632e636f6d",
+      "issuer_dn": "310b300906035504061302424531193017060355040a1310476c6f62616c5369676e206e762d7361312e302c06035504031325476c6f62616c5369676e2041746c617320523320445620544c532043412032303235205134",
       "not_before": "20251103150945",
       "not_after": "20261205150944"
     },
@@ -370,8 +379,15 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 25.1,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "crl": {
+      "url": "http://crl.globalsign.com/ca/gsatlasr3dvtlsca2025q4.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 27.4,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -382,4 +398,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

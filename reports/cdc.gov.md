@@ -7,8 +7,8 @@
 | Target | https://cdc.gov/ |
 | Bug bounty program | U.S. Dept of Health & Human Services (HHS) |
 | Listed scope domain | cdc.gov |
-| Test date | 2026-09-26 22:00 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:21 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -125,19 +125,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=GkbnFA_aF3RXaZOC3deEsrGqs0fmTXyys2hbIn1nVcM; dtm-domain-verification=KQ1rIgUP8GpiV9mSmysS40YKtHjVrI0VF938cuCAWXQ; atlassian-sending-domain-verification=977cbfcd-c314-42dc-9d86-32e2abca00ac
+- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=4089552e88740d878b0400d184ab01c0b7391e6dc85796732000; google-gws-recovery-domain-verification=42225222; google-site-verification=nZIK8Rc0sw4MxlgnsYseSBTdcyDXeLFR6P5FIAbgSEM
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 23.210.215.218 carries PTR a23-210-215-218.deploy.static.akamaitechnologies.com. for cdc.gov.
+- **Detail:** 23.210.215.203 carries PTR a23-210-215-203.deploy.static.akamaitechnologies.com. for cdc.gov.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 16. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkp4tcohfcjmww.html -> 403; error page/headers match: Akamai.
+- **Detail:** GET /xk9smxxaua2v8c.html -> 403; error page/headers match: Akamai.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -153,57 +153,57 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "cdc.gov",
   "dns": {
     "a": [
-      "23.210.215.218",
-      "23.210.215.203"
+      "23.210.215.203",
+      "23.210.215.218"
     ],
     "aaaa": [
-      "2600:1417:76::17d2:d7cb",
-      "2600:1417:76::17d2:d7da"
+      "2600:1417:76::17d2:d7da",
+      "2600:1417:76::17d2:d7cb"
     ],
     "cname": null,
     "mx": [
-      "alt2.us.etp.fireeyegov.com (pref 30)",
-      "primary.us.etp.fireeyegov.com (pref 10)",
       "alt1.us.etp.fireeyegov.com (pref 20)",
-      "alt3.us.etp.fireeyegov.com (pref 40)"
+      "alt2.us.etp.fireeyegov.com (pref 30)",
+      "alt3.us.etp.fireeyegov.com (pref 40)",
+      "primary.us.etp.fireeyegov.com (pref 10)"
     ],
     "ns": [
       "a5-66.akam.net.",
       "a8-67.akam.net.",
-      "a1-43.akam.net.",
-      "a28-65.akam.net.",
       "a9-64.akam.net.",
-      "a2-64.akam.net."
+      "a2-64.akam.net.",
+      "a1-43.akam.net.",
+      "a28-65.akam.net."
     ],
     "caa": [],
     "spf": [
-      "_bthbaxy8p6mr5c0o5r7pit3d25lgztb",
-      "google-site-verification=GkbnFA_aF3RXaZOC3deEsrGqs0fmTXyys2hbIn1nVcM",
-      "dtm-domain-verification=KQ1rIgUP8GpiV9mSmysS40YKtHjVrI0VF938cuCAWXQ",
-      "identrust_validate=B/Pm/IvNx8tLDDFRsJXBs+oweQGmx08QZ6xK0IvBQn3R",
-      "atlassian-sending-domain-verification=977cbfcd-c314-42dc-9d86-32e2abca00ac",
-      "google-gws-recovery-domain-verification=42225222",
-      "_v0e31vq52ru6qgumyh95pylxoe5kmby",
-      "MS=ms84056562",
-      "apple-domain-verification=VOKePKhT9MhX9zmq",
-      "v4ixju/hXVFXszYswwinkbStpHoDb361lQekI6rkjQ2DV4HHKdN/FJPvMAO88x1rTaRwf29UYwPAq6LqldNWZQ==",
-      "atlassian-domain-verification=i5oCgfh8OkdKw7Yv2CCKvAdKMW8kYpNVO1A7fcUkBdAy7IzdP/M8D9NoirnaVqZC",
-      "268BC041572123F15C5566E5F3D88675FABCC028427B501AE228CA9BB31630D5",
-      "ZOOM_verify_yEK5MgTwT72nP5URz-eoaA",
-      "google-site-verification=nZIK8Rc0sw4MxlgnsYseSBTdcyDXeLFR6P5FIAbgSEM",
-      "openai-domain-verification=dv-hbgCCuVm9CpZSVXjvFPfivD5",
-      "google-site-verification=qZbBdujV5kZQv_pCqV2wpfSU25odH35HQukm5ACyLNs",
-      "_ddb344bjip99et71u5cidtx1t53ezdl",
-      "atlassian-sending-domain-verification=a39e7003-10de-46b1-8afb-86ef7509f246",
-      "geneious.com:domain-verification=DP8tae0qCr-FH6KGRvMwWA",
       "adobe-idp-site-verification=4089552e88740d878b0400d184ab01c0b7391e6dc85796732000450e3476fc93",
-      "amazonses:OhxI8Nxovqf1xBmhK5S9kNk7vo9XV4GmGe6LVc+ji80=",
+      "identrust_validate=B/Pm/IvNx8tLDDFRsJXBs+oweQGmx08QZ6xK0IvBQn3R",
+      "v4ixju/hXVFXszYswwinkbStpHoDb361lQekI6rkjQ2DV4HHKdN/FJPvMAO88x1rTaRwf29UYwPAq6LqldNWZQ==",
+      "google-gws-recovery-domain-verification=42225222",
+      "google-site-verification=nZIK8Rc0sw4MxlgnsYseSBTdcyDXeLFR6P5FIAbgSEM",
+      "google-site-verification=qZbBdujV5kZQv_pCqV2wpfSU25odH35HQukm5ACyLNs",
+      "dtm-domain-verification=KQ1rIgUP8GpiV9mSmysS40YKtHjVrI0VF938cuCAWXQ",
+      "ZOOM_verify_yEK5MgTwT72nP5URz-eoaA",
+      "google-site-verification=GkbnFA_aF3RXaZOC3deEsrGqs0fmTXyys2hbIn1nVcM",
+      "geneious.com:domain-verification=DP8tae0qCr-FH6KGRvMwWA",
       "v=spf1 ip4:51.5.72.0/24 ip4:172.81.81.38 ip4:51.4.72.0/24 ip4:51.5.80.0/27 ip4:51.4.80.0/27 ip4:172.81.81.50 ip4:172.81.82.50 ip4:63.123.152.4 ip4:40.92.0.0/15 ip4:172.81.82.79 ip4:172.81.80.64 ip4:172.81.81.39 ip4:172.81.82.87 ip4:172.81.82.88 ip4:155.95",
       ".96.50 ip4:155.95.86.50 ip4:23.90.98.102 ip4:124.17.27.36 ip4:149.72.0.0/16 ip4:198.21.0.0/21 ip4:50.31.32.0/19 ip4:167.89.0.0/17 ip4:68.232.140.57 ip4:68.232.140.79 include:_s0.cdc.gov -all",
-      "atlassian-domain-verification=qjHCJ33pyZHmggxdcFDtGiegrc/iLSyVUIG0LAu1g7XW1JnMdaY8G8pbMUY1Z4hm",
+      "268BC041572123F15C5566E5F3D88675FABCC028427B501AE228CA9BB31630D5",
+      "atlassian-sending-domain-verification=a39e7003-10de-46b1-8afb-86ef7509f246",
       "atlassian-sending-domain-verification=f2ef9649-6a78-47f6-9990-44a295ae5b5a",
-      "4FF7-1931-E8C2-912B-94CF-BCB0-806A-7442",
-      "_mhpeli9n9zj3rasw6wfiuch30t2sjlw"
+      "atlassian-sending-domain-verification=977cbfcd-c314-42dc-9d86-32e2abca00ac",
+      "atlassian-domain-verification=qjHCJ33pyZHmggxdcFDtGiegrc/iLSyVUIG0LAu1g7XW1JnMdaY8G8pbMUY1Z4hm",
+      "openai-domain-verification=dv-hbgCCuVm9CpZSVXjvFPfivD5",
+      "_mhpeli9n9zj3rasw6wfiuch30t2sjlw",
+      "atlassian-domain-verification=i5oCgfh8OkdKw7Yv2CCKvAdKMW8kYpNVO1A7fcUkBdAy7IzdP/M8D9NoirnaVqZC",
+      "apple-domain-verification=VOKePKhT9MhX9zmq",
+      "_ddb344bjip99et71u5cidtx1t53ezdl",
+      "_v0e31vq52ru6qgumyh95pylxoe5kmby",
+      "_bthbaxy8p6mr5c0o5r7pit3d25lgztb",
+      "amazonses:OhxI8Nxovqf1xBmhK5S9kNk7vo9XV4GmGe6LVc+ji80=",
+      "MS=ms84056562",
+      "4FF7-1931-E8C2-912B-94CF-BCB0-806A-7442"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; ri=3600; rua=mailto:8idhoybh@ag.us.dmarcian.com,mailto:reports@dmarc.cyber.dhs.gov; ruf=mailto:8idhoybh@fr.us.dmarcian.com;"
@@ -233,7 +233,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "23.210.215.218",
+    "ip": "23.210.215.203",
     "open": []
   },
   "https": {
@@ -294,11 +294,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=GkbnFA_aF3RXaZOC3deEsrGqs0fmTXyys2hbIn1nVcM",
-    "dtm-domain-verification=KQ1rIgUP8GpiV9mSmysS40YKtHjVrI0VF938cuCAWXQ",
-    "atlassian-sending-domain-verification=977cbfcd-c314-42dc-9d86-32e2abca00ac",
+    "adobe-idp-site-verification=4089552e88740d878b0400d184ab01c0b7391e6dc85796732000",
     "google-gws-recovery-domain-verification=42225222",
-    "apple-domain-verification=VOKePKhT9MhX9zmq"
+    "google-site-verification=nZIK8Rc0sw4MxlgnsYseSBTdcyDXeLFR6P5FIAbgSEM",
+    "google-site-verification=qZbBdujV5kZQv_pCqV2wpfSU25odH35HQukm5ACyLNs",
+    "dtm-domain-verification=KQ1rIgUP8GpiV9mSmysS40YKtHjVrI0VF938cuCAWXQ"
   ],
   "tls2": {
     "alpn": "",
@@ -310,6 +310,16 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": "http://ocsp.digicert.com",
+      "serial": 20843956097622511362052088289839180715,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl3.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl",
+        "http://crl4.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl"
+      ],
+      "subject_dn": "310b30090603550406130255533110300e0603550408130747656f726769613110300e0603550407130741746c616e746131333031060355040a132a43656e7465727320666f72204469736561736520436f6e74726f6c20616e642050726576656e74696f6e3112301006035504030c092a2e6364632e676f76",
+      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473320544c532045434320534841333834203230323020434131",
       "not_before": "20260902000000",
       "not_after": "20270319235959"
     },
@@ -321,7 +331,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "x12": {
     "status": 403,
     "ptr": [
-      "a23-210-215-218.deploy.static.akamaitechnologies.com."
+      "a23-210-215-203.deploy.static.akamaitechnologies.com."
     ]
   },
   "x13": {
@@ -335,8 +345,16 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 4.2,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 403,
+    "hsts": "max-age=31536000 ; includeSubDomains ; preload",
+    "crl": {
+      "url": "http://crl3.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 5.0,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -347,4 +365,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://indiewire.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | indiewire.com |
-| Test date | 2026-09-26 22:08 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:30 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 19 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 20 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 
 ## Detailed findings
 
@@ -120,13 +122,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (k3s5hvz9xhade8.indiewire.com and 586oj5xx8i0940.indiewire.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (v37gem7hk3crkl.indiewire.com and w1ucymqvm2og7j.indiewire.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=djqre622ebz2cxze8oo9bjau7k0hls; _globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0; _globalsign-domain-verification=-dLoamn_W8k1SJs3XuoC2JQZYSqmsrjSq07J0B0nq9
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=nprFKP7f9bTtDxCbcLk3c0Ag6DYYRzhq/pIp/XJkAvuuP9aQ2b; _globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0; google-site-verification=8sD-MmpsXYb6gPK8rRJWUO72s2gvtr52gjvP5LGDfRA
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -153,6 +155,18 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **Detail:** No CAA record found for indiewire.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
+### 19. [LOW] HSTS does not cover subdomains (`H21`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security on indiewire.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of indiewire.com.
+- **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
+
+### 20. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on indiewire.com lists 596 <loc> URL(s) across 597 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -169,26 +183,26 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     ],
     "ns": [
       "ns-1920.awsdns-48.co.uk.",
-      "ns-1227.awsdns-25.org.",
+      "ns-474.awsdns-59.com.",
       "ns-772.awsdns-32.net.",
-      "ns-474.awsdns-59.com."
+      "ns-1227.awsdns-25.org."
     ],
     "caa": [],
     "spf": [
-      "facebook-domain-verification=djqre622ebz2cxze8oo9bjau7k0hls",
-      "_globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0",
-      "v=spf1 include:spf.protection.outlook.com ~all",
-      "_globalsign-domain-verification=-dLoamn_W8k1SJs3XuoC2JQZYSqmsrjSq07J0B0nq9",
-      "google-site-verification=c4llyUIufdlEQ0etHFqmwo_ZhjRlUzYk0Has-1oWkvI",
       "fastly-domain-delegation-0921110196-212101-2020-02-06",
-      "spf2.0/pra include:spf.protection.outlook.com ~all",
-      "MS=ms85960270",
-      "google-site-verification=W1En6n_PulGSkVU4HgXmvfYxM74cY5j_LZPYJxqUdqY",
-      "_globalsign-domain-verification=wK5OaJLRBlfjH5kAcbmp8K56NCtstth4bjNiNCo2j2",
-      "adobe-idp-site-verification=5f299ac5ccddedab8418f37aad62a1ff499e5979c3b247bd4229ca57071848e8",
+      "atlassian-domain-verification=nprFKP7f9bTtDxCbcLk3c0Ag6DYYRzhq/pIp/XJkAvuuP9aQ2b6LA84i7QeoUxAt",
+      "_globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0",
       "google-site-verification=8sD-MmpsXYb6gPK8rRJWUO72s2gvtr52gjvP5LGDfRA",
+      "google-site-verification=W1En6n_PulGSkVU4HgXmvfYxM74cY5j_LZPYJxqUdqY",
+      "MS=ms85960270",
+      "adobe-idp-site-verification=5f299ac5ccddedab8418f37aad62a1ff499e5979c3b247bd4229ca57071848e8",
+      "_globalsign-domain-verification=wK5OaJLRBlfjH5kAcbmp8K56NCtstth4bjNiNCo2j2",
+      "_globalsign-domain-verification=-dLoamn_W8k1SJs3XuoC2JQZYSqmsrjSq07J0B0nq9",
+      "v=spf1 include:spf.protection.outlook.com ~all",
+      "spf2.0/pra include:spf.protection.outlook.com ~all",
       "tollbit-domain-verification=2bf983cad01adc204c9f8842d71138ebce16e853d4d282afe13f7fea844cc7cd",
-      "atlassian-domain-verification=nprFKP7f9bTtDxCbcLk3c0Ag6DYYRzhq/pIp/XJkAvuuP9aQ2b6LA84i7QeoUxAt"
+      "facebook-domain-verification=djqre622ebz2cxze8oo9bjau7k0hls",
+      "google-site-verification=c4llyUIufdlEQ0etHFqmwo_ZhjRlUzYk0Has-1oWkvI"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:q4BQvTOlLL@dmarc.inboxmonster.com;"
@@ -272,11 +286,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "facebook-domain-verification=djqre622ebz2cxze8oo9bjau7k0hls",
+    "atlassian-domain-verification=nprFKP7f9bTtDxCbcLk3c0Ag6DYYRzhq/pIp/XJkAvuuP9aQ2b",
     "_globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0",
-    "_globalsign-domain-verification=-dLoamn_W8k1SJs3XuoC2JQZYSqmsrjSq07J0B0nq9",
-    "google-site-verification=c4llyUIufdlEQ0etHFqmwo_ZhjRlUzYk0Has-1oWkvI",
-    "google-site-verification=W1En6n_PulGSkVU4HgXmvfYxM74cY5j_LZPYJxqUdqY"
+    "google-site-verification=8sD-MmpsXYb6gPK8rRJWUO72s2gvtr52gjvP5LGDfRA",
+    "google-site-verification=W1En6n_PulGSkVU4HgXmvfYxM74cY5j_LZPYJxqUdqY",
+    "adobe-idp-site-verification=5f299ac5ccddedab8418f37aad62a1ff499e5979c3b247bd4229"
   ],
   "tls2": {
     "alpn": "",
@@ -288,6 +302,15 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
+      "serial": 561075357218867119062382242540539487657930,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://ye2.c.lencr.org/75.crl"
+      ],
+      "subject_dn": "311630140603550403130d696e646965776972652e636f6d",
+      "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303594532",
       "not_before": "20260818144910",
       "not_after": "20261116144909"
     }
@@ -325,8 +348,20 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 21.5,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "hsts": "max-age=31536000",
+    "sitemap": {
+      "urls": 596,
+      "indexes": 597
+    },
+    "crl": {
+      "url": "http://ye2.c.lencr.org/75.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 23.3,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -337,4 +372,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

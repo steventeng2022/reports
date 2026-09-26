@@ -7,12 +7,12 @@
 | Target | https://yandex.com/ |
 | Bug bounty program | Yandex |
 | Listed scope domain | yandex.com |
-| Test date | 2026-09-26 22:18 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:41 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 16 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 17 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 18 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
 
 ## Detailed findings
 
@@ -91,13 +92,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 9. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (kokzpqmhg7v5ij.yandex.com and uo076k2dgzs5zw.yandex.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (ggphrrpcupl1ld.yandex.com and ftj8lnuqlxx358.yandex.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=gy3xj2e9mxu0vtcdgqcznoaxoaiv63; _globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l; google-site-verification=FVk3gum7zZLdkqi96ypScROFMew0wMetq1Gpu4rkzPI
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=gy3xj2e9mxu0vtcdgqcznoaxoaiv63; google-site-verification=FVk3gum7zZLdkqi96ypScROFMew0wMetq1Gpu4rkzPI; _globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -127,7 +128,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 5.255.255.77 carries PTR yandex.ru. for yandex.com.
+- **Detail:** 77.88.44.55 carries PTR yandex.ru. for yandex.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 16. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -142,6 +143,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - **Detail:** The yandex.com certificate lists an AIA OCSP responder (http://ocsp.globalsign.com/gseccovsslca2018) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
+### 18. [INFO] security.txt published with a contact address (`SEC1`)
+
+- **CWE:** CWE-1038
+- **Detail:** /.well-known/security.txt on yandex.com is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
+- **Recommendation:** Confirm the published contact is current and monitored (RFC 9116).
+
 ## Evidence (raw response observations)
 
 ```json
@@ -149,9 +156,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "domain": "yandex.com",
   "dns": {
     "a": [
+      "77.88.44.55",
       "5.255.255.77",
-      "77.88.55.88",
-      "77.88.44.55"
+      "77.88.55.88"
     ],
     "aaaa": [
       "2a02:6b8:a::a"
@@ -161,20 +168,20 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "mx.yandex.ru (pref 10)"
     ],
     "ns": [
-      "ns1.yandex.net.",
-      "ns2.yandex.net."
+      "ns2.yandex.net.",
+      "ns1.yandex.net."
     ],
     "caa": [
-      "0 issue \"globalsign.com\"",
-      "0 issuewild \"globalsign.com\""
+      "0 issuewild \"globalsign.com\"",
+      "0 issue \"globalsign.com\""
     ],
     "spf": [
       "facebook-domain-verification=gy3xj2e9mxu0vtcdgqcznoaxoaiv63",
-      "5849d1f0fc8a9e73d82dfed9f2c33931",
-      "_globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l",
+      "v=spf1 redirect=_spf.yandex.ru",
       "google-site-verification=FVk3gum7zZLdkqi96ypScROFMew0wMetq1Gpu4rkzPI",
+      "_globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l",
       "facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a",
-      "v=spf1 redirect=_spf.yandex.ru"
+      "5849d1f0fc8a9e73d82dfed9f2c33931"
     ],
     "dmarc": [
       "v=DMARC1; p=none; fo=1; rua=mailto:dmarc_agg@auth.returnpath.net,mailto:dmarc-rua@yandex.ru; ruf=mailto:dmarc_afrf@auth.returnpath.net"
@@ -254,7 +261,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     }
   },
   "ports": {
-    "ip": "5.255.255.77",
+    "ip": "77.88.44.55",
     "open": []
   },
   "https": {
@@ -351,8 +358,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "wildcard_dns": true,
   "apex_txt": [
     "facebook-domain-verification=gy3xj2e9mxu0vtcdgqcznoaxoaiv63",
-    "_globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l",
     "google-site-verification=FVk3gum7zZLdkqi96ypScROFMew0wMetq1Gpu4rkzPI",
+    "_globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l",
     "facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a"
   ],
   "tls2": {
@@ -365,6 +372,15 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": "http://ocsp.globalsign.com/gseccovsslca2018",
+      "serial": 8844451156571877789673272355,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.globalsign.com/gseccovsslca2018.crl"
+      ],
+      "subject_dn": "310b3009060355040613025255310f300d060355040813064d6f73636f77310f300d060355040713064d6f73636f7731133011060355040a130a59414e444558204c4c433114301206035504030c0b2a2e79616e6465782e7472",
+      "issuer_dn": "310b300906035504061302424531193017060355040a1310476c6f62616c5369676e206e762d7361312630240603550403131d476c6f62616c5369676e20454343204f562053534c2043412032303138",
       "not_before": "20260701145410",
       "not_after": "20261229205959"
     },
@@ -410,8 +426,17 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 50.3,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "hsts": "max-age=31536000; includeSubDomains",
+    "security_txt": "/.well-known/security.txt",
+    "crl": {
+      "url": "http://crl.globalsign.com/gseccovsslca2018.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 53.1,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -422,4 +447,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

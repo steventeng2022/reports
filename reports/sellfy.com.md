@@ -7,12 +7,12 @@
 | Target | https://sellfy.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | sellfy.com |
-| Test date | 2026-09-26 22:15 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:37 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
+Total findings: **27** (High: 0, Medium: 0, Low: 5, Info: 22)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -38,8 +38,11 @@ Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
 | 20 | low | CK8 | Session-like cookie with >=30-day lifetime | CWE-613 |
 | 21 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 22 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 23 | info | CT1 | 38 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 24 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 23 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
+| 24 | info | HTML3 | Third-party <iframe> embedded in root document | CWE-643 |
+| 25 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 26 | info | CT1 | 38 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 27 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -138,7 +141,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: ahrefs-site-verification_fa14fdfac7d1156d8a1e0e663bc7a8a0848638879cf0a667418f172; google-site-verification=ZJw64F0rZxNTUajWkexgLICKwT80PoLkOyWv19c4gco; 1password-site-verification=4CBCWU2SDVBF7IZSRABLDVIZEM
+- **Detail:** Apex TXT records with verification/token content: ahrefs-site-verification_fa14fdfac7d1156d8a1e0e663bc7a8a0848638879cf0a667418f172; 1password-site-verification=4CBCWU2SDVBF7IZSRABLDVIZEM; google-site-verification=ZJw64F0rZxNTUajWkexgLICKwT80PoLkOyWv19c4gco
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -183,13 +186,31 @@ Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
 - **Detail:** No CAA record found for sellfy.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 23. [INFO] 38 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 23. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+
+- **CWE:** CWE-345
+- **Detail:** Root document of sellfy.com loads 4 cross-origin script(s) without an integrity attribute, e.g. https://d369wu82uo9y4b.cloudfront.net/_astro/ClientRouter.astro_astro_type_script_index_0_lang.CAqDO0tx.js, https://d369wu82uo9y4b.cloudfront.net/_astro/SwiperSlider.astro_astro_type_script_index_0_lang.DyiTYbeA.js, https://d369wu82uo9y4b.cloudfront.net/_astro/MerchSlider.astro_astro_type_script_index_0_lang.B-f_XOYy.js; a compromise of any such third-party host can inject code.
+- **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
+
+### 24. [INFO] Third-party <iframe> embedded in root document (`HTML3`)
+
+- **CWE:** CWE-643
+- **Detail:** Root document of sellfy.com embeds 1 cross-origin iframe(s), e.g. https://www.googletagmanager.com/ns.html?id=GTM-567GJD8; embedded origins are framed inside the page with its trust context.
+- **Recommendation:** Review embedded origins and consider sandbox attributes.
+
+### 25. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on sellfy.com lists 692 <loc> URL(s); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
+### 26. [INFO] 38 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: app.sellfy.com, assets.sellfy.com, blog.sellfy.com, cdn.blog.sellfy.com, demo.sellfy.com, dev.emails.sellfy.com, docs.sellfy.com, domains.demo.sellfy.com, jobs.sellfy.com, media.sellfy.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 24. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 27. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: cdn.blog.sellfy.com, demo.sellfy.com; content may still be served via virtual-host fallback.
@@ -206,26 +227,26 @@ Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
       "172.66.168.248"
     ],
     "aaaa": [
-      "2606:4700:10::6814:19fd",
-      "2606:4700:10::ac42:a8f8"
+      "2606:4700:10::ac42:a8f8",
+      "2606:4700:10::6814:19fd"
     ],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
-      "alt4.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "kara.ns.cloudflare.com.",
-      "will.ns.cloudflare.com."
+      "will.ns.cloudflare.com.",
+      "kara.ns.cloudflare.com."
     ],
     "caa": [],
     "spf": [
       "ahrefs-site-verification_fa14fdfac7d1156d8a1e0e663bc7a8a0848638879cf0a667418f172e3bd78402",
-      "google-site-verification=ZJw64F0rZxNTUajWkexgLICKwT80PoLkOyWv19c4gco",
       "1password-site-verification=4CBCWU2SDVBF7IZSRABLDVIZEM",
+      "google-site-verification=ZJw64F0rZxNTUajWkexgLICKwT80PoLkOyWv19c4gco",
       "v=spf1 include:helpscoutemail.com include:emsd1.com include:amazonses.com include:_spf.google.com include:mailgun.org -all"
     ],
     "dmarc": [
@@ -362,8 +383,8 @@ Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
   },
   "apex_txt": [
     "ahrefs-site-verification_fa14fdfac7d1156d8a1e0e663bc7a8a0848638879cf0a667418f172",
-    "google-site-verification=ZJw64F0rZxNTUajWkexgLICKwT80PoLkOyWv19c4gco",
-    "1password-site-verification=4CBCWU2SDVBF7IZSRABLDVIZEM"
+    "1password-site-verification=4CBCWU2SDVBF7IZSRABLDVIZEM",
+    "google-site-verification=ZJw64F0rZxNTUajWkexgLICKwT80PoLkOyWv19c4gco"
   ],
   "tls2": {
     "alpn": "",
@@ -375,6 +396,15 @@ Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
+      "serial": 52689193621246941215424455542832335713,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://c.pki.goog/we1/BX7jaHAMPC8.crl"
+      ],
+      "subject_dn": "311330110603550403130a73656c6c66792e636f6d",
+      "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
       "not_before": "20260814131422",
       "not_after": "20261112141418"
     }
@@ -414,8 +444,20 @@ Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 14.6,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "hsts": "max-age=15552000; includeSubDomains",
+    "sitemap": {
+      "urls": 692,
+      "indexes": 0
+    },
+    "crl": {
+      "url": "http://c.pki.goog/we1/BX7jaHAMPC8.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 15.2,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -426,4 +468,5 @@ Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

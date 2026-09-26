@@ -7,12 +7,12 @@
 | Target | https://heise.de/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | heise.de |
-| Test date | 2026-09-26 22:07 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:29 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
+Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,6 +36,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 | 18 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 20 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 21 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 
 ## Detailed findings
 
@@ -141,7 +142,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=m53iQZB4O1uMxDGR; google-site-verification=7CvE9FRS3zv0wnl8KzLmVw0TSlQay6qOX_zGFm2wzWw; google-site-verification=8kcKAZp-IbbJG7FQzRxIaUXv9Ku4qX0wgMrm_hx_L2s
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=m53iQZB4O1uMxDGR; google-site-verification=7CvE9FRS3zv0wnl8KzLmVw0TSlQay6qOX_zGFm2wzWw; miro-verification=601d1e3e9623fe2102de9d6d215a2380ae5c69bd
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -168,6 +169,12 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - **Detail:** Live JSON at /.well-known/assetlinks.json on heise.de; a mobile app or web-bridge is tied to this domain and its association configuration is public.
 - **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
+### 21. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on heise.de lists 2336 <loc> URL(s); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -182,38 +189,38 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     ],
     "cname": null,
     "mx": [
-      "mx02.hornetsecurity.com (pref 20)",
-      "mx01.hornetsecurity.com (pref 10)",
+      "mx04.hornetsecurity.com (pref 40)",
       "mx03.hornetsecurity.com (pref 30)",
-      "mx04.hornetsecurity.com (pref 40)"
+      "mx01.hornetsecurity.com (pref 10)",
+      "mx02.hornetsecurity.com (pref 20)"
     ],
     "ns": [
+      "ns2.pop-hannover.net.",
+      "ns.s.plusline.de.",
       "ns.heise.de.",
       "ns.pop-hannover.de.",
-      "ns.s.plusline.de.",
-      "ns.plusline.de.",
-      "ns2.pop-hannover.net."
+      "ns.plusline.de."
     ],
     "caa": [
-      "0 issue \"digicert.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"sectigo.com\"",
       "0 issue \"amazon.com\"",
       "0 iodef \"mailto:hostmaster@heise.de\"",
-      "0 issue \"sectigo.com\"",
-      "0 issue \"letsencrypt.org\"",
+      "0 issue \"digicert.com\"",
       "0 issuewild \"sectigo.com\""
     ],
     "spf": [
       "docusign=b14b0107-39e4-44c2-b48f-944859786474",
       "apple-domain-verification=m53iQZB4O1uMxDGR",
-      "google-site-verification=7CvE9FRS3zv0wnl8KzLmVw0TSlQay6qOX_zGFm2wzWw",
-      "v=spf1 ip4:193.99.144.0/24 ip4:193.99.145.0/24 ip6:2a02:2e0:3fe:1001::/64 ip6:2a00:e68:14:800::/64 ip4:193.100.232.56 ip6:2a00:e68:14:801:bad::beef include:_spfdiv.heise.de include:spf.dsb.net include:spf.hornetsecurity.com ~all",
-      "google-site-verification=8kcKAZp-IbbJG7FQzRxIaUXv9Ku4qX0wgMrm_hx_L2s",
-      "wUIdRqARf1uNkZkPoWGdYvEmK408vvKC3HKme1h/rnswYDphj9Ytgwt6K1Df1PQnW64Oi3t9c9uKoo989wv8xw==",
-      "brevo-code:e09d9e43d8e705fdcf03fb07346ec6f5",
-      "miro-verification=601d1e3e9623fe2102de9d6d215a2380ae5c69bd",
       "kT2+bTXGMSIudHQATflucV7vjLhdq9Y18pKTKJxs0O2IebE8seBu4vCAe9MBHYehuRJWwKKt1klytxF4vyuSpA==",
+      "google-site-verification=7CvE9FRS3zv0wnl8KzLmVw0TSlQay6qOX_zGFm2wzWw",
+      "wUIdRqARf1uNkZkPoWGdYvEmK408vvKC3HKme1h/rnswYDphj9Ytgwt6K1Df1PQnW64Oi3t9c9uKoo989wv8xw==",
+      "miro-verification=601d1e3e9623fe2102de9d6d215a2380ae5c69bd",
+      "c3ViZG9tYWlu",
+      "google-site-verification=8kcKAZp-IbbJG7FQzRxIaUXv9Ku4qX0wgMrm_hx_L2s",
+      "brevo-code:e09d9e43d8e705fdcf03fb07346ec6f5",
       "tollbit-domain-verification=6fd594c990db1742b6cb34f3699d3944885e664c32333cf8cb176da9aac3ab71",
-      "c3ViZG9tYWlu"
+      "v=spf1 ip4:193.99.144.0/24 ip4:193.99.145.0/24 ip6:2a02:2e0:3fe:1001::/64 ip6:2a00:e68:14:800::/64 ip4:193.100.232.56 ip6:2a00:e68:14:801:bad::beef include:_spfdiv.heise.de include:spf.dsb.net include:spf.hornetsecurity.com ~all"
     ],
     "dmarc": [
       "v=DMARC1; p=none; sp=none; rua=mailto:dmarc.report@heise.de"
@@ -232,7 +239,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     "san": [
       "heise.de"
     ],
-    "days_left": 66,
+    "days_left": 65,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -297,8 +304,8 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   "apex_txt": [
     "apple-domain-verification=m53iQZB4O1uMxDGR",
     "google-site-verification=7CvE9FRS3zv0wnl8KzLmVw0TSlQay6qOX_zGFm2wzWw",
-    "google-site-verification=8kcKAZp-IbbJG7FQzRxIaUXv9Ku4qX0wgMrm_hx_L2s",
     "miro-verification=601d1e3e9623fe2102de9d6d215a2380ae5c69bd",
+    "google-site-verification=8kcKAZp-IbbJG7FQzRxIaUXv9Ku4qX0wgMrm_hx_L2s",
     "tollbit-domain-verification=6fd594c990db1742b6cb34f3699d3944885e664c32333cf8cb17"
   ],
   "tls2": {
@@ -311,6 +318,15 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": null,
+      "serial": 450423045636335917287838906773873386601554,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://yr1.c.lencr.org/83.crl"
+      ],
+      "subject_dn": "3111300f0603550403130868656973652e6465",
+      "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303595231",
       "not_before": "20260902222304",
       "not_after": "20261201222303"
     }
@@ -335,8 +351,20 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 35.7,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "hsts": "max-age=604800",
+    "sitemap": {
+      "urls": 2336,
+      "indexes": 0
+    },
+    "crl": {
+      "url": "http://yr1.c.lencr.org/83.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 41.1,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -347,4 +375,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

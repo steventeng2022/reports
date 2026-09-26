@@ -7,12 +7,12 @@
 | Target | https://slideshare.net/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | slideshare.net |
-| Test date | 2026-09-26 22:15 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:38 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
+Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 | 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 18 | info | SEC2 | security.txt published without a contact address | CWE-1038 |
+| 19 | info | HTML1 | Security policy set via <meta http-equiv> | CWE-1021 |
 
 ## Detailed findings
 
@@ -134,7 +135,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 ### 15. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (fuh6dpguobsd78.slideshare.net and axmtuo0eiyux3y.slideshare.net) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (dalxh0oz1jr0hz.slideshare.net and jx82vjlmi07a8h.slideshare.net) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
@@ -155,6 +156,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 - **Detail:** /.well-known/security.txt returns 200 but contains no mailto:/URL contact.
 - **Recommendation:** Add a Contact: field per RFC 9116.
 
+### 19. [INFO] Security policy set via <meta http-equiv> (`HTML1`)
+
+- **CWE:** CWE-1021
+- **Detail:** HTML root of slideshare.net declares via meta tags: content-security-policy; meta-set policies have limited browser support and are easier to override than response headers.
+- **Recommendation:** Prefer response headers and keep any meta declarations consistent with them.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -163,8 +170,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
   "dns": {
     "a": [
       "151.101.194.152",
-      "151.101.2.152",
       "151.101.66.152",
+      "151.101.2.152",
       "151.101.130.152"
     ],
     "aaaa": [],
@@ -173,24 +180,24 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
       "smtp.google.com (pref 1)"
     ],
     "ns": [
+      "ns-1650.awsdns-14.co.uk.",
       "ns-178.awsdns-22.com.",
       "ns-1225.awsdns-25.org.",
-      "ns-802.awsdns-36.net.",
-      "ns-1650.awsdns-14.co.uk."
+      "ns-802.awsdns-36.net."
     ],
     "caa": [
+      "0 issuewild \"amazon.com\"",
       "0 issue \"amazon.com\"",
       "0 issuewild \"letsencrypt.org\"",
-      "0 issue \"letsencrypt.org\"",
-      "0 issuewild \"amazon.com\""
+      "0 issue \"letsencrypt.org\""
     ],
     "spf": [
       "google-site-verification=GMw4f3bXpsJI74PMG4IBfWz1w3_DUsvriSlEjKbXyKo",
-      "google-site-verification=Q5_zzFNm5OGFcyL3lnV44cVoJjo6KbEH3PeIKcg9mGU",
-      "google-site-verification=z0MToYwj_eTkwEHlRGUDGpmnY2kWd92EL11Wn8bw2t0",
+      "533115289-1138720",
       "0b2ca37a856d424fa0188c4908cacf6c",
+      "google-site-verification=Q5_zzFNm5OGFcyL3lnV44cVoJjo6KbEH3PeIKcg9mGU",
       "v=spf1 ip4:34.216.216.60 ip4:34.216.216.61 ip4:52.39.56.161 ip4:52.43.64.76  ip4:192.174.84.0/28 ip4:147.253.223.25 ip4:147.253.223.26 ~all",
-      "533115289-1138720"
+      "google-site-verification=z0MToYwj_eTkwEHlRGUDGpmnY2kWd92EL11Wn8bw2t0"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc@slideshare.com; ruf=mailto:dmarc@slideshare.com"
@@ -290,6 +297,15 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": null,
+      "serial": 465362394339643195162269948224477228621459,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://yr2.c.lencr.org/20.crl"
+      ],
+      "subject_dn": "3119301706035504030c102a2e736c69646573686172652e6e6574",
+      "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303595232",
       "not_before": "20260907135812",
       "not_after": "20261206135811"
     }
@@ -310,8 +326,17 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 15.1,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "hsts": "max-age=63072000; includeSubDomains; preload",
+    "security_txt": "/.well-known/security.txt",
+    "crl": {
+      "url": "http://yr2.c.lencr.org/20.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 14.1,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -322,4 +347,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

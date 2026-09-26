@@ -7,8 +7,8 @@
 | Target | https://washingtonpost.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | washingtonpost.com |
-| Test date | 2026-09-26 22:17 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:40 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -125,7 +125,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=6Bi3yUCN2g3lzvqapLfrbgkQxob5YCjmZidGa2qiM4g; rovag_verification_token=C2158E1BE1D041B78CC57ED72101FF6C; google-site-verification=Xq6gcVYYZJtb2DQN6h2bo-hkrdmZpcdAKO8CeYl8290
+- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=R1bvWDvJUF1gpXlmc7Q3deFwpZciil5dpJR4t-a8XM; rovag_verification_token=C2158E1BE1D041B78CC57ED72101FF6C; _globalsign-domain-verification=SQONiBgTxRVzPPtIHjei_IUGCiAa0KxoVWFw1QfVes
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -137,7 +137,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 65.9.180.56 carries PTR server-65-9-180-56.tpe53.r.cloudfront.net. for washingtonpost.com.
+- **Detail:** 65.9.180.24 carries PTR server-65-9-180-24.tpe53.r.cloudfront.net. for washingtonpost.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
@@ -147,10 +147,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "domain": "washingtonpost.com",
   "dns": {
     "a": [
+      "65.9.180.24",
       "65.9.180.56",
       "65.9.180.26",
-      "65.9.180.120",
-      "65.9.180.24"
+      "65.9.180.120"
     ],
     "aaaa": [],
     "cname": null,
@@ -159,44 +159,44 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "mxb-001a3c01.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
+      "ns-404.awsdns-50.com.",
+      "sdns34.ultradns.org.",
+      "sdns34.ultradns.com.",
       "ns-666.awsdns-19.net.",
-      "sdns34.ultradns.biz.",
       "ns-1027.awsdns-00.org.",
       "ns-1840.awsdns-38.co.uk.",
-      "ns-404.awsdns-50.com.",
       "sdns34.ultradns.net.",
-      "sdns34.ultradns.org.",
-      "sdns34.ultradns.com."
+      "sdns34.ultradns.biz."
     ],
     "caa": [
-      "0 issue \"amazon.com\"",
-      "0 issue \"entrust.net\"",
-      "0 issue \"pki.goog\"",
+      "0 issue \"awstrust.com\"",
       "0 issue \"amazontrust.com\"",
       "0 issue \"amazonaws.com\"",
-      "0 issue \"awstrust.com\""
+      "0 issue \"pki.goog\"",
+      "0 issue \"amazon.com\"",
+      "0 issue \"entrust.net\""
     ],
     "spf": [
-      "google-site-verification=6Bi3yUCN2g3lzvqapLfrbgkQxob5YCjmZidGa2qiM4g",
-      "_zj8o0fyk0qj8jy5pt1zr1543e97ew7c",
-      "rovag_verification_token=C2158E1BE1D041B78CC57ED72101FF6C",
-      "google-site-verification=Xq6gcVYYZJtb2DQN6h2bo-hkrdmZpcdAKO8CeYl8290",
-      "v=spf1 ip4:198.72.14.0/23 ip4:192.72.255.0/24 ip4:54.156.98.51 ip4:54.210.51.17 include:spf.protection.outlook.com include:madgexjb.com include:spf-001a3c01.pphosted.com include:amazonses.com -all",
-      "_dhwsbe1t7yht6p4dsc72mcajq9aaum9",
-      "f3de1c77b72748ff92a68f88f4d93dfd",
-      "brave-ledger-verification=28c1597498b6eafc29aac1f3a42f31559dfe03a832058ead6f684a518f180d62",
-      "google-site-verification=xLI97dy4D9FGihhl23twW5HHhVSmpnr2nWComZhpQVo",
-      "google-site-verification=MFW4gdPYqGnhzWA4FutyUzH4M-jIpbyJ3ml-l2UNyM4",
-      "knowbe4-site-verification=e04590e121eee5fbc18ada6449219119",
-      "_globalsign-domain-verification=SQONiBgTxRVzPPtIHjei_IUGCiAa0KxoVWFw1QfVes",
-      "_40ij1ve2dtneubti00ikilfe0zlr0kz",
-      "globalsign-domain-verification=8frsHcE2ag-0ccaaP5BTpPmUJC8ob8pdjDQchfAWzD",
-      "mBd2513ESDgG6ZfaSrFYw4WaOC2b0M21Ehl8KWI3GmgTDpfYKwGuBum8ivsayoYLzVCetyXDieRUdW4qdQe+hw==",
-      "google-site-verification=qcYuOKvxobypPYmqzzrcw5KiwtpfLgdEEt-HwMfLwvo",
-      "_rm8r4wsr378iet73p2f9j7oecnksay1",
       "_globalsign-domain-verification=R1bvWDvJUF1gpXlmc7Q3deFwpZciil5dpJR4t-a8XM",
+      "rovag_verification_token=C2158E1BE1D041B78CC57ED72101FF6C",
+      "_globalsign-domain-verification=SQONiBgTxRVzPPtIHjei_IUGCiAa0KxoVWFw1QfVes",
+      "google-site-verification=Xq6gcVYYZJtb2DQN6h2bo-hkrdmZpcdAKO8CeYl8290",
+      "_40ij1ve2dtneubti00ikilfe0zlr0kz",
+      "_zj8o0fyk0qj8jy5pt1zr1543e97ew7c",
+      "google-site-verification=qcYuOKvxobypPYmqzzrcw5KiwtpfLgdEEt-HwMfLwvo",
+      "knowbe4-site-verification=e04590e121eee5fbc18ada6449219119",
+      "brave-ledger-verification=28c1597498b6eafc29aac1f3a42f31559dfe03a832058ead6f684a518f180d62",
+      "google-site-verification=MFW4gdPYqGnhzWA4FutyUzH4M-jIpbyJ3ml-l2UNyM4",
+      "google-site-verification=xLI97dy4D9FGihhl23twW5HHhVSmpnr2nWComZhpQVo",
+      "_rm8r4wsr378iet73p2f9j7oecnksay1",
+      "globalsign-domain-verification=8frsHcE2ag-0ccaaP5BTpPmUJC8ob8pdjDQchfAWzD",
+      "_dhwsbe1t7yht6p4dsc72mcajq9aaum9",
+      "google-site-verification=6Bi3yUCN2g3lzvqapLfrbgkQxob5YCjmZidGa2qiM4g",
+      "MS=ms58521745",
       "slack-domain-verification=YsnaUOhPU4Y6dCz5a3TqBIs4DxEXrVFbuKbGFRyS",
-      "MS=ms58521745"
+      "v=spf1 ip4:198.72.14.0/23 ip4:192.72.255.0/24 ip4:54.156.98.51 ip4:54.210.51.17 include:spf.protection.outlook.com include:madgexjb.com include:spf-001a3c01.pphosted.com include:amazonses.com -all",
+      "f3de1c77b72748ff92a68f88f4d93dfd",
+      "mBd2513ESDgG6ZfaSrFYw4WaOC2b0M21Ehl8KWI3GmgTDpfYKwGuBum8ivsayoYLzVCetyXDieRUdW4qdQe+hw=="
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; fo=1; rua=mailto:dmarc_rua@washingtonpost.com,mailto:mylza-8368@rua.dmarc.emailanalyst.com; ruf=mailto:dmarc_ruf@washingtonpost.com,mailto:mylza-8368@ruf.dmarc.emailanalyst.com"
@@ -225,7 +225,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     }
   },
   "ports": {
-    "ip": "65.9.180.56",
+    "ip": "65.9.180.24",
     "open": []
   },
   "https": {
@@ -278,11 +278,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=6Bi3yUCN2g3lzvqapLfrbgkQxob5YCjmZidGa2qiM4g",
+    "_globalsign-domain-verification=R1bvWDvJUF1gpXlmc7Q3deFwpZciil5dpJR4t-a8XM",
     "rovag_verification_token=C2158E1BE1D041B78CC57ED72101FF6C",
+    "_globalsign-domain-verification=SQONiBgTxRVzPPtIHjei_IUGCiAa0KxoVWFw1QfVes",
     "google-site-verification=Xq6gcVYYZJtb2DQN6h2bo-hkrdmZpcdAKO8CeYl8290",
-    "brave-ledger-verification=28c1597498b6eafc29aac1f3a42f31559dfe03a832058ead6f684a",
-    "google-site-verification=xLI97dy4D9FGihhl23twW5HHhVSmpnr2nWComZhpQVo"
+    "google-site-verification=qcYuOKvxobypPYmqzzrcw5KiwtpfLgdEEt-HwMfLwvo"
   ],
   "tls2": {
     "alpn": "",
@@ -294,6 +294,15 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
+      "serial": 17967428625790412119778158957463772372,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.r2m04.amazontrust.com/r2m04.crl"
+      ],
+      "subject_dn": "311b30190603550403131277617368696e67746f6e706f73742e636f6d",
+      "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3034",
       "not_before": "20260913000000",
       "not_after": "20270329235959"
     },
@@ -302,7 +311,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "x12": {
     "status": 301,
     "ptr": [
-      "server-65-9-180-56.tpe53.r.cloudfront.net."
+      "server-65-9-180-24.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -317,8 +326,15 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 11.4,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "crl": {
+      "url": "http://crl.r2m04.amazontrust.com/r2m04.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 11.9,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -329,4 +345,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

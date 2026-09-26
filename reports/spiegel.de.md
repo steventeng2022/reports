@@ -7,12 +7,12 @@
 | Target | https://spiegel.de/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | spiegel.de |
-| Test date | 2026-09-26 22:15 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:38 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,7 +31,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 | 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 15 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 16 | info | CT1 | 129 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 16 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 17 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 18 | info | CT1 | 129 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -111,7 +113,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-199cnz=roKzFqEYT6AZRSPy7A7lASgkj; apple-domain-verification=ABQrqpdvNdt43ZXd; google-site-verification=d2wrdnHq-bRRkqVOBRvGWuxjCYVnXIiaoOp6U79jKag
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=MPW2epf3b4liwmBTYP8FJEH80rywYRbvVjEeZmcZX_0; atlassian-domain-verification=qkv0u2nj3emGh9UVqNl/2AOp/BxahFJ7m2Bbv8bUPlGhytfsEA; atlassian-domain-verification=rnDZY6SZaJnSOpSEvPr0kzhgihiqUPn3g8W0pFQfopQhaMO4jk
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -132,7 +134,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - **Detail:** No CAA record found for spiegel.de, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 16. [INFO] 129 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [LOW] HSTS does not cover subdomains (`H21`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security on spiegel.de has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of spiegel.de.
+- **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
+
+### 17. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on spiegel.de lists 4219 <loc> URL(s) across 4220 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
+### 18. [INFO] 129 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.dev.backoffice.spiegel.de, assets.spiegel.de, cdn.data-interactive.spiegel.de, cdn.qs.resources.spiegel.de, cloud.angebote.spiegel.de, dev.airflow.calypso.spiegel.de, dev.amendo.spiegel.de, dev.assets-api.spiegel.de, dev.assets.spiegel.de, dev.backoffice.spiegel.de
@@ -153,26 +167,26 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "spiegel-de.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "pns102.cloudns.net.",
-      "pns104.cloudns.net.",
       "pns103.cloudns.net.",
-      "pns101.cloudns.net."
+      "pns101.cloudns.net.",
+      "pns104.cloudns.net.",
+      "pns102.cloudns.net."
     ],
     "caa": [],
     "spf": [
-      "anthropic-domain-verification-199cnz=roKzFqEYT6AZRSPy7A7lASgkj",
-      "apple-domain-verification=ABQrqpdvNdt43ZXd",
-      "google-site-verification=d2wrdnHq-bRRkqVOBRvGWuxjCYVnXIiaoOp6U79jKag",
       "google-site-verification=MPW2epf3b4liwmBTYP8FJEH80rywYRbvVjEeZmcZX_0",
+      "00DD0000000mZzl=1TBVl00000000Pp",
+      "v=spf1 ip4:18.196.136.27 ip4:185.45.16.170 ip4:185.45.16.70 include:spf.protection.outlook.com include:amazonses.com include:_spf.salesforce.com -all",
+      "atlassian-domain-verification=qkv0u2nj3emGh9UVqNl/2AOp/BxahFJ7m2Bbv8bUPlGhytfsEAB3Zyd8AvXOEHVW",
+      "atlassian-domain-verification=rnDZY6SZaJnSOpSEvPr0kzhgihiqUPn3g8W0pFQfopQhaMO4jkTWsvLmIj5TeGNB",
+      "jamf-site-verification=mDxSkZxQSP3_MF8_pHR9BA",
+      "anthropic-domain-verification-199cnz=roKzFqEYT6AZRSPy7A7lASgkj",
+      "google-site-verification=d2wrdnHq-bRRkqVOBRvGWuxjCYVnXIiaoOp6U79jKag",
+      "adobe-idp-site-verification=1ab58e56a7c5cfcf85df9cf0e34dc26505b7982a08fd338b70244c5611b99242",
       "mgverify=ae2a244a3a76e9bcdbe6865e4b169acb67d1168d1ab6518bcfcc3eb11e394afc",
       "01119681",
-      "00DD0000000mZzl=1TBVl00000000Pp",
-      "atlassian-domain-verification=qkv0u2nj3emGh9UVqNl/2AOp/BxahFJ7m2Bbv8bUPlGhytfsEAB3Zyd8AvXOEHVW",
-      "jamf-site-verification=mDxSkZxQSP3_MF8_pHR9BA",
       "MS=ms15909706",
-      "atlassian-domain-verification=rnDZY6SZaJnSOpSEvPr0kzhgihiqUPn3g8W0pFQfopQhaMO4jkTWsvLmIj5TeGNB",
-      "v=spf1 ip4:18.196.136.27 ip4:185.45.16.170 ip4:185.45.16.70 include:spf.protection.outlook.com include:amazonses.com include:_spf.salesforce.com -all",
-      "adobe-idp-site-verification=1ab58e56a7c5cfcf85df9cf0e34dc26505b7982a08fd338b70244c5611b99242"
+      "apple-domain-verification=ABQrqpdvNdt43ZXd"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:report.dmarc@spiegel.de; ruf=mailto:report.dmarc@spiegel.de; sp=reject; fo=1"
@@ -293,11 +307,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     ]
   },
   "apex_txt": [
-    "anthropic-domain-verification-199cnz=roKzFqEYT6AZRSPy7A7lASgkj",
-    "apple-domain-verification=ABQrqpdvNdt43ZXd",
-    "google-site-verification=d2wrdnHq-bRRkqVOBRvGWuxjCYVnXIiaoOp6U79jKag",
     "google-site-verification=MPW2epf3b4liwmBTYP8FJEH80rywYRbvVjEeZmcZX_0",
-    "atlassian-domain-verification=qkv0u2nj3emGh9UVqNl/2AOp/BxahFJ7m2Bbv8bUPlGhytfsEA"
+    "atlassian-domain-verification=qkv0u2nj3emGh9UVqNl/2AOp/BxahFJ7m2Bbv8bUPlGhytfsEA",
+    "atlassian-domain-verification=rnDZY6SZaJnSOpSEvPr0kzhgihiqUPn3g8W0pFQfopQhaMO4jk",
+    "jamf-site-verification=mDxSkZxQSP3_MF8_pHR9BA",
+    "anthropic-domain-verification-199cnz=roKzFqEYT6AZRSPy7A7lASgkj"
   ],
   "tls2": {
     "alpn": "",
@@ -309,6 +323,15 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://status.geotrust.com",
+      "serial": 7393694005620797097937893695380263105,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://cdp.geotrust.com/GeoTrustTLSRSACAG1.crl"
+      ],
+      "subject_dn": "311730150603550403130e7777772e7370696567656c2e6465",
+      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e6331193017060355040b13107777772e64696769636572742e636f6d311f301d0603550403131647656f547275737420544c5320525341204341204731",
       "not_before": "20251205000000",
       "not_after": "20261204235959"
     },
@@ -348,8 +371,20 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 23.2,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "hsts": "max-age=31536000;",
+    "sitemap": {
+      "urls": 4219,
+      "indexes": 4220
+    },
+    "crl": {
+      "url": "http://cdp.geotrust.com/GeoTrustTLSRSACAG1.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 26.0,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -360,4 +395,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

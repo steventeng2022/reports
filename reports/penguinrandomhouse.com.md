@@ -7,8 +7,8 @@
 | Target | https://penguinrandomhouse.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | penguinrandomhouse.com |
-| Test date | 2026-09-26 22:12 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:35 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -110,7 +110,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=Kl3ByU1tsfV9fKiC7TDDZYz1uCeTeUo0SSEh5SitZ9q99Ua74O; anthropic-domain-verification-p3yxqz=0oTx7Z8mJYN8MCnVfLRuy7xrz; miro-verification=20deb2e76b80e8360f078ce72b4c1b020ccbe7e1
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=Kl3ByU1tsfV9fKiC7TDDZYz1uCeTeUo0SSEh5SitZ9q99Ua74O; twilio-domain-verification=fc6fe5f3866856223b427fe22f87cacc; airtable-verification=07656b9d1c59ef275dc5cf2cc40f902f
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -137,34 +137,34 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "us-smtp-inbound-1.mimecast.com (pref 10)",
-      "us-smtp-inbound-2.mimecast.com (pref 10)"
+      "us-smtp-inbound-2.mimecast.com (pref 10)",
+      "us-smtp-inbound-1.mimecast.com (pref 10)"
     ],
     "ns": [
       "ns-1709.awsdns-21.co.uk.",
-      "ns-643.awsdns-16.net.",
+      "ns-362.awsdns-45.com.",
       "ns-1259.awsdns-29.org.",
-      "ns-362.awsdns-45.com."
+      "ns-643.awsdns-16.net."
     ],
     "caa": [],
     "spf": [
-      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
       "atlassian-domain-verification=Kl3ByU1tsfV9fKiC7TDDZYz1uCeTeUo0SSEh5SitZ9q99Ua74O571fgiIg//j5Hn",
-      "anthropic-domain-verification-p3yxqz=0oTx7Z8mJYN8MCnVfLRuy7xrz",
-      "d240bb6782951c680216e3b2c275a67a287ab413a4dbc83ff6",
-      "miro-verification=20deb2e76b80e8360f078ce72b4c1b020ccbe7e1",
-      "asv=300738b15ca5d787a896887a6179da76",
-      "apple-domain-verification=fSsk2qTskZIXUkhu",
-      "openai-domain-verification=dv-Rhm7Hg5yRtoNsmysb1sZR4hb",
-      "applause-verification:e7f9bc17-1978-415a-83ab-955ebc93e7eb",
-      "airtable-verification=07656b9d1c59ef275dc5cf2cc40f902f",
       "twilio-domain-verification=fc6fe5f3866856223b427fe22f87cacc",
-      "monday-com-verification=TT0Hb7qY-id2x_o-2OkWXSSLVpTxTADfmHwVAOcLHIk",
-      "canva-site-verification=qrGQ4gxWAdHknibYOR88zw",
-      "sophos-domain-verification=30c16c4ad4dd85043d6766d195b3be1bf04c9425e55a4a79745bd7a135474f3b",
+      "airtable-verification=07656b9d1c59ef275dc5cf2cc40f902f",
       "HmQrtF+YeGABOOs4sUIGNzx5oH/hxa/uuKITM72aP2D3Mmo45+IYTHRRNErkCFI5FluDKT7Og9fYZwF4n3wWlw==",
+      "apple-domain-verification=fSsk2qTskZIXUkhu",
+      "miro-verification=20deb2e76b80e8360f078ce72b4c1b020ccbe7e1",
+      "applause-verification:e7f9bc17-1978-415a-83ab-955ebc93e7eb",
+      "sophos-domain-verification=30c16c4ad4dd85043d6766d195b3be1bf04c9425e55a4a79745bd7a135474f3b",
+      "monday-com-verification=TT0Hb7qY-id2x_o-2OkWXSSLVpTxTADfmHwVAOcLHIk",
+      "anthropic-domain-verification-p3yxqz=0oTx7Z8mJYN8MCnVfLRuy7xrz",
+      "canva-site-verification=qrGQ4gxWAdHknibYOR88zw",
+      "asv=300738b15ca5d787a896887a6179da76",
+      "openai-domain-verification=dv-Rhm7Hg5yRtoNsmysb1sZR4hb",
+      "smartsheet-site-validation=cVJvac04NWxSPbNbKVyoQXTc977egjBr",
       "p^80Ofvy%178DnED&JH$OktbSDSDHdBu8r5TXqXJUzrLTNplO6PB1VAb%#xV06wEKl7lOoFd2erdL@$w0BThd9#s6rEd%9C%tPu",
-      "smartsheet-site-validation=cVJvac04NWxSPbNbKVyoQXTc977egjBr"
+      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
+      "d240bb6782951c680216e3b2c275a67a287ab413a4dbc83ff6"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; adkim=r; aspf=r; rua=mailto:dmarc_agg@vali.email,mailto:4065f1db5e3e741@rep.dmarcanalyzer.com,mailto:bb918c48@inbox.ondmarc.com; ruf=mailto:4065f1db5e3e741@for.dmarcanalyzer.com,mailto:bb918c48@inbox.ondmarc.com; fo=1; ri=",
@@ -246,10 +246,10 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
   },
   "apex_txt": [
     "atlassian-domain-verification=Kl3ByU1tsfV9fKiC7TDDZYz1uCeTeUo0SSEh5SitZ9q99Ua74O",
-    "anthropic-domain-verification-p3yxqz=0oTx7Z8mJYN8MCnVfLRuy7xrz",
-    "miro-verification=20deb2e76b80e8360f078ce72b4c1b020ccbe7e1",
+    "twilio-domain-verification=fc6fe5f3866856223b427fe22f87cacc",
+    "airtable-verification=07656b9d1c59ef275dc5cf2cc40f902f",
     "apple-domain-verification=fSsk2qTskZIXUkhu",
-    "openai-domain-verification=dv-Rhm7Hg5yRtoNsmysb1sZR4hb"
+    "miro-verification=20deb2e76b80e8360f078ce72b4c1b020ccbe7e1"
   ],
   "tls2": {
     "alpn": "",
@@ -261,6 +261,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.sectigo.com",
+      "serial": 101095644975794264158935073122076658020,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": null,
+      "subject_dn": "3121301f06035504030c182a2e70656e6775696e72616e646f6d686f7573652e636f6d",
+      "issuer_dn": "310b300906035504061302474231183016060355040a130f5365637469676f204c696d69746564313730350603550403132e5365637469676f205075626c6963205365727665722041757468656e7469636174696f6e20434120445620523336",
       "not_before": "20251216000000",
       "not_after": "20270109235959"
     },
@@ -281,8 +288,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 46.1,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301
+  },
+  "elapsed_s": 50.8,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -293,4 +303,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

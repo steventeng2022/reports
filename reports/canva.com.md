@@ -7,8 +7,8 @@
 | Target | https://canva.com/ |
 | Bug bounty program | Canva |
 | Listed scope domain | canva.com |
-| Test date | 2026-09-26 22:00 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:21 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -129,7 +129,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: stripe-verification=bbf18c986f16d71344fe2d0a77ef8b893ad8083e09a53e5fb59a864553c4; have-i-been-pwned-verification=b633a4fdd0ff3575f1580524a28c9c7d; bugcrowd-verification=400b9a149f7cdd8664c2e7e502482536
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=MJYHtvI-o93g5yti0Uey9u-hglJQ6UnPfV0djrxlT9M; neat-pulse-domain-verification-KX9q8nX=db71101a-781f-4da4-86ad-2fe12ade2c34; google-site-verification=MfIUBrtfhRkfARKs7m47C8eRPrJet6cRCq8M18-bHLo
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -176,107 +176,107 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   "dns": {
     "a": [
       "3.169.137.43",
-      "3.169.137.126",
+      "3.169.137.19",
       "3.169.137.106",
-      "3.169.137.19"
+      "3.169.137.126"
     ],
     "aaaa": [
-      "2600:9000:284f:200:b:add6:7500:93a1",
-      "2600:9000:284f:d800:b:add6:7500:93a1",
-      "2600:9000:284f:5c00:b:add6:7500:93a1",
-      "2600:9000:284f:9400:b:add6:7500:93a1",
-      "2600:9000:284f:3800:b:add6:7500:93a1",
-      "2600:9000:284f:fe00:b:add6:7500:93a1",
-      "2600:9000:284f:f000:b:add6:7500:93a1",
-      "2600:9000:284f:b600:b:add6:7500:93a1"
+      "2600:9000:284f:400:b:add6:7500:93a1",
+      "2600:9000:284f:2000:b:add6:7500:93a1",
+      "2600:9000:284f:e800:b:add6:7500:93a1",
+      "2600:9000:284f:bc00:b:add6:7500:93a1",
+      "2600:9000:284f:4000:b:add6:7500:93a1",
+      "2600:9000:284f:9000:b:add6:7500:93a1",
+      "2600:9000:284f:6000:b:add6:7500:93a1",
+      "2600:9000:284f:f600:b:add6:7500:93a1"
     ],
     "cname": null,
     "mx": [
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-730.awsdns-27.net.",
-      "ns-253.awsdns-31.com.",
       "ns-1421.awsdns-49.org.",
+      "ns-253.awsdns-31.com.",
+      "ns-730.awsdns-27.net.",
       "ns-1851.awsdns-39.co.uk."
     ],
     "caa": [],
     "spf": [
-      "stripe-verification=bbf18c986f16d71344fe2d0a77ef8b893ad8083e09a53e5fb59a864553c49921",
-      "have-i-been-pwned-verification=b633a4fdd0ff3575f1580524a28c9c7d",
-      "bugcrowd-verification=400b9a149f7cdd8664c2e7e502482536",
-      "google-site-verification=a9fY2y2BlMyyaiLXgGNEIwYe80ZXchnC3Fib7-7CN30",
-      "yahoo-verification-key=fksNKRwkSoLGj4TIoVX0Iybviy7x0xpgDkRv/8s9Vw4=",
-      "gauntlet-domain-verification=H9sUOdHq/SMDoMyBvXJiKkoNcY9g+3uSQ17NNxJ/kY37wSJe8i7D9x50SuXPMSV0T8mxcFjDlUX+EVhpt+99Gg==",
-      "mgverify=34d839e7ad9cdafaaccc77da386dcff2c46e4a628449d8e434cd13b032c82201",
-      "airtable-verification=a351d73cf64b3a7900588fe07af4eca6",
-      "google-site-verification=1uigN3ZKYSw5lr4ZdVugeteeJpy31qMbRecLJ_1ZVJU",
-      "apple-domain-verification=AAz7BIDOOK5bj9VF",
-      "stripe-verification=ec89fd8a56a7c9b8a0271fb890adecdfe20b8c157ade22d326b0ab9389b43f9b",
-      "MS=ms92090372",
-      "lucidlink-verification=Q8D0J05EK61V0PE82T654XJBMC",
-      "google-site-verification=OORAEPphyRjSBXDWDBGtbZo0oElHFsUfxPQBesBvU6s",
-      "google-site-verification=vGYy48g7sb4flIluKql8BFp3_6lKKjbQEUGHUDSxCdA",
-      "docker-verification=5298cfeb-b2af-4973-a4ae-72cfba77efa8",
-      "facebook-domain-verification=05c971f78w3exkut5f717mw8obqmf3",
-      "google-site-verification=hZFAMgOOsawLXNZFTJ5XAsml2KJc5leHofbwIiLCl00",
-      "google-site-verification=bn-oB_Sgkg-cPqCil91EY6tVtaRlq2x68HktpHFloeM",
-      "google-site-verification=eAc0jqdGQQKV0P-Rce35fFYWbiRi-Ic4QZocWJC45OE",
-      "detectify-verification=79cd57657f82d1fbb417ce3beec7cbe6",
-      "google-site-verification=ZZHXa27FmPeiiZ1sM6N3i3widAseyqpbpp5mfW18q5A",
-      "v=spf1 include:_spf1.canva.com include:_spf2.canva.com include:_spf3.canva.com include:_spf4.canva.com include:_spf5.canva.com include:_spf6.canva.com include:_spf7.canva.com include:_spf8.canva.com include:_spf9.canva.com -all",
-      "google-site-verification=2dvQv03NLacULRWLTE7UGnoYc0P18AKoAAg91FRtOTo",
-      "twilio-domain-verification=f221ae68020aa3916d82bef6ca2fcbc0",
-      "google-site-verification=Y907KhOV3MD6WEXxbbTsYtSj1k5r3lDAVtM7bT8Tw58",
-      "airtable-verification=e13696d96fe5c6f38c47676debdd401e",
-      "adobe-idp-site-verification=2be841675181663752bc242d59d2428df60b607824db83ed808c220becc78765",
-      "cursor-domain-verification-eb1g1h=nven1Rl68xcItm0SV3eqGeGaU",
-      "onetrust-domain-verification=857af271813b4850b88f8e48bc2b2e78",
-      "google-site-verification=DW2cTgo6bXtus9wdZWW_20IB3HhMUoH2dLyitWm5VZU",
-      "neat-pulse-domain-verification-KX9q8nX=db71101a-781f-4da4-86ad-2fe12ade2c34",
-      "google-site-verification=TwtsJNfrmc2RPw6q28QiKM-wnDaowIdVWWX7VhmTDvA",
-      "postman-domain-verification=de148d23ecf7857ca6894818bd6b04d811b8e7bebcd91e5060df8aee3824726c7cdc06b72d0197a2826fd99d08a687f4cd739c2af0b7894e81bffeaf880b818c",
-      "google-site-verification=0UOVvHC1k0nMb_2YKhFkMRkp4yRlqN-9Va_WB8b1qV0",
-      "liveramp-site-verification=7cfkiVRS0afhs5IQ7o96bHcblYCH-SI_0G-eu7r9LsM",
-      "mongodb-site-verification=wUQ4V3GaUzBwppXzin6kKc9AybLlHJ14",
-      "status-page-domain-verification=fgb6hyksgk8x",
-      "parallels-domain-verification=f1c1fd03c9524b068006530a9bb9e5c99bb75ed2d50b4249aa50d897b66cc8d8",
       "google-site-verification=MJYHtvI-o93g5yti0Uey9u-hglJQ6UnPfV0djrxlT9M",
-      "shopify-verification-code=VFL6jPSmWRU2VUyhiN8qIQTeSnfgpA",
-      "cdc0ecd8-b767-4b2a-961d-056ff91c50cf",
-      "openai-domain-verification=dv-X62J0FmW8lDn4eDouDTtdvnm",
-      "stripe-verification=f4e689eb94442db29e022a6d99d0d5225c45eb72488d9fdf1510b94fe6e85694",
-      "monday-com-verification=LnZZjRw2c6n_jXge5OWXu9GWtGGjlxNtMteJuNqM0bQ",
-      "1password-site-verification=CEUWLSG27ZBI3NCDNFPDQXMJBY",
-      "google-site-verification=JqtkyfjBz-Uq1Xqk7REatNCxZnlo4gYFis8EdI_gVQ0",
-      "hubspot-domain-verification=ZGM1Zjc3YzktNjdmZC00N2JlLThiOTQtY2ViZjI2NTA2OTQw",
-      "wiz-domain-verification=7fe44deeceff62c6c3011ccf4b4ddae2fd6e94b39ec8cb2cb7e3343dc624d9c3",
-      "google-site-verification=xDNuQ7HHiwzDPok6K8T5BcxOhJ5fB0IL9vf2xLc0YAs",
-      "stripe-verification=15ef6563e51240246ef5c70232027055e35f306d5a68e239ba4d60b65b5e8f46",
-      "onetrust-domain-verification=155ccaa6043f43439fb8fdbd4b1be792",
-      "pinterest-site-verification=b91a2bb89d0241853d81d959d5a78f07",
-      "atlassian-domain-verification=rie8jGbQjxwFnUfEJ5DhYCdtEResa9Vg773/vaE2DtJwnEbS2txPvtfkuKhhLPTI",
-      "google-site-verification=bQC1cPBMACHUOt271BPTfL6k2qsoXlrHkNNTW0bVGKg",
-      "hubspot-developer-verification=NDU5MWU5ODItY2E1Zi00YTY0LWEwNGEtNWU5M2EzOGIwZDll",
-      "mongodb-site-verification=stxOuL7yJeLEHCRwM4KlS0w3Qn5QDXkt",
-      "hubspot-developer-verification=ZWRmOWRlMjEtZGU1Zi00MTJiLWE4YjktNWQ3NmIyNDA5NDhm",
-      "ahrefs-site-verification_801b8774fd779b395b1c81e48f7900e305369a5ed19eb3201a3dbc918465f5de",
+      "neat-pulse-domain-verification-KX9q8nX=db71101a-781f-4da4-86ad-2fe12ade2c34",
       "google-site-verification=MfIUBrtfhRkfARKs7m47C8eRPrJet6cRCq8M18-bHLo",
-      "drift-domain-verification=9cea5d6a9cc67d7d8195abc4b7afefed111d50ad43225041c8d5f7fb7c2f6775",
-      "zoom-domain-verification=ZOOM_verify_108a73b936394b4d83555479d9dab5f2",
-      "elevenlabs=P6f8fr3lI9xEMWdES8L3qlVe_hOiMQs7DN9MRcIhYx4",
-      "google-site-verification=YGcdBuAhkMJMRa5khtl9hTKLAHlayiapf0pxJph2ZcU",
+      "pinterest-site-verification=b91a2bb89d0241853d81d959d5a78f07",
+      "stripe-verification=bbf18c986f16d71344fe2d0a77ef8b893ad8083e09a53e5fb59a864553c49921",
       "docusign=4c293e32-cbde-4ddf-bec8-79108891d648",
-      "stripe-verification=5d4f5c71179a849cf68764a56809bfaada60fd51ca9a6c5b881b7477dbe92f70",
+      "status-page-domain-verification=fgb6hyksgk8x",
+      "detectify-verification=79cd57657f82d1fbb417ce3beec7cbe6",
       "tiktok-developers-site-verification=bTjMTogvil8AGPOJ6A2pysQYv811Q0ie",
-      "google-site-verification=CVeAVsJ3_hxhfhDQTbtvIbpzUIIvUZ03vQCSCx7fCZk",
-      "https://issues.sonatype.org/browse/OSSRH-53881",
+      "parallels-domain-verification=f1c1fd03c9524b068006530a9bb9e5c99bb75ed2d50b4249aa50d897b66cc8d8",
+      "onetrust-domain-verification=857af271813b4850b88f8e48bc2b2e78",
+      "airtable-verification=a351d73cf64b3a7900588fe07af4eca6",
+      "apple-domain-verification=AAz7BIDOOK5bj9VF",
+      "1password-site-verification=CEUWLSG27ZBI3NCDNFPDQXMJBY",
+      "docker-verification=5298cfeb-b2af-4973-a4ae-72cfba77efa8",
+      "google-site-verification=bn-oB_Sgkg-cPqCil91EY6tVtaRlq2x68HktpHFloeM",
+      "google-site-verification=Y907KhOV3MD6WEXxbbTsYtSj1k5r3lDAVtM7bT8Tw58",
+      "bugcrowd-verification=400b9a149f7cdd8664c2e7e502482536",
+      "mongodb-site-verification=wUQ4V3GaUzBwppXzin6kKc9AybLlHJ14",
+      "google-site-verification=ZZHXa27FmPeiiZ1sM6N3i3widAseyqpbpp5mfW18q5A",
+      "google-site-verification=vGYy48g7sb4flIluKql8BFp3_6lKKjbQEUGHUDSxCdA",
+      "google-site-verification=bQC1cPBMACHUOt271BPTfL6k2qsoXlrHkNNTW0bVGKg",
+      "google-site-verification=a9fY2y2BlMyyaiLXgGNEIwYe80ZXchnC3Fib7-7CN30",
+      "mgverify=34d839e7ad9cdafaaccc77da386dcff2c46e4a628449d8e434cd13b032c82201",
+      "facebook-domain-verification=05c971f78w3exkut5f717mw8obqmf3",
+      "twilio-domain-verification=f221ae68020aa3916d82bef6ca2fcbc0",
       "browserstack-domain-verification=24f3b7bc-a461-4340-aa4b-dbf671f16381",
-      "google-site-verification=Nj3tLWEXpg6645jNi89eJ4d-f3EKhg0mywGniT6cnP0"
+      "google-site-verification=xDNuQ7HHiwzDPok6K8T5BcxOhJ5fB0IL9vf2xLc0YAs",
+      "lucidlink-verification=Q8D0J05EK61V0PE82T654XJBMC",
+      "google-site-verification=TwtsJNfrmc2RPw6q28QiKM-wnDaowIdVWWX7VhmTDvA",
+      "hubspot-developer-verification=ZWRmOWRlMjEtZGU1Zi00MTJiLWE4YjktNWQ3NmIyNDA5NDhm",
+      "cdc0ecd8-b767-4b2a-961d-056ff91c50cf",
+      "onetrust-domain-verification=155ccaa6043f43439fb8fdbd4b1be792",
+      "stripe-verification=f4e689eb94442db29e022a6d99d0d5225c45eb72488d9fdf1510b94fe6e85694",
+      "drift-domain-verification=9cea5d6a9cc67d7d8195abc4b7afefed111d50ad43225041c8d5f7fb7c2f6775",
+      "google-site-verification=eAc0jqdGQQKV0P-Rce35fFYWbiRi-Ic4QZocWJC45OE",
+      "https://issues.sonatype.org/browse/OSSRH-53881",
+      "airtable-verification=e13696d96fe5c6f38c47676debdd401e",
+      "have-i-been-pwned-verification=b633a4fdd0ff3575f1580524a28c9c7d",
+      "adobe-idp-site-verification=2be841675181663752bc242d59d2428df60b607824db83ed808c220becc78765",
+      "atlassian-domain-verification=rie8jGbQjxwFnUfEJ5DhYCdtEResa9Vg773/vaE2DtJwnEbS2txPvtfkuKhhLPTI",
+      "liveramp-site-verification=7cfkiVRS0afhs5IQ7o96bHcblYCH-SI_0G-eu7r9LsM",
+      "postman-domain-verification=de148d23ecf7857ca6894818bd6b04d811b8e7bebcd91e5060df8aee3824726c7cdc06b72d0197a2826fd99d08a687f4cd739c2af0b7894e81bffeaf880b818c",
+      "wiz-domain-verification=7fe44deeceff62c6c3011ccf4b4ddae2fd6e94b39ec8cb2cb7e3343dc624d9c3",
+      "stripe-verification=15ef6563e51240246ef5c70232027055e35f306d5a68e239ba4d60b65b5e8f46",
+      "ahrefs-site-verification_801b8774fd779b395b1c81e48f7900e305369a5ed19eb3201a3dbc918465f5de",
+      "zoom-domain-verification=ZOOM_verify_108a73b936394b4d83555479d9dab5f2",
+      "google-site-verification=0UOVvHC1k0nMb_2YKhFkMRkp4yRlqN-9Va_WB8b1qV0",
+      "google-site-verification=CVeAVsJ3_hxhfhDQTbtvIbpzUIIvUZ03vQCSCx7fCZk",
+      "google-site-verification=OORAEPphyRjSBXDWDBGtbZo0oElHFsUfxPQBesBvU6s",
+      "mongodb-site-verification=stxOuL7yJeLEHCRwM4KlS0w3Qn5QDXkt",
+      "google-site-verification=1uigN3ZKYSw5lr4ZdVugeteeJpy31qMbRecLJ_1ZVJU",
+      "gauntlet-domain-verification=H9sUOdHq/SMDoMyBvXJiKkoNcY9g+3uSQ17NNxJ/kY37wSJe8i7D9x50SuXPMSV0T8mxcFjDlUX+EVhpt+99Gg==",
+      "v=spf1 include:_spf1.canva.com include:_spf2.canva.com include:_spf3.canva.com include:_spf4.canva.com include:_spf5.canva.com include:_spf6.canva.com include:_spf7.canva.com include:_spf8.canva.com include:_spf9.canva.com -all",
+      "yahoo-verification-key=fksNKRwkSoLGj4TIoVX0Iybviy7x0xpgDkRv/8s9Vw4=",
+      "monday-com-verification=LnZZjRw2c6n_jXge5OWXu9GWtGGjlxNtMteJuNqM0bQ",
+      "shopify-verification-code=VFL6jPSmWRU2VUyhiN8qIQTeSnfgpA",
+      "google-site-verification=DW2cTgo6bXtus9wdZWW_20IB3HhMUoH2dLyitWm5VZU",
+      "stripe-verification=ec89fd8a56a7c9b8a0271fb890adecdfe20b8c157ade22d326b0ab9389b43f9b",
+      "google-site-verification=2dvQv03NLacULRWLTE7UGnoYc0P18AKoAAg91FRtOTo",
+      "google-site-verification=Nj3tLWEXpg6645jNi89eJ4d-f3EKhg0mywGniT6cnP0",
+      "hubspot-developer-verification=NDU5MWU5ODItY2E1Zi00YTY0LWEwNGEtNWU5M2EzOGIwZDll",
+      "cursor-domain-verification-eb1g1h=nven1Rl68xcItm0SV3eqGeGaU",
+      "google-site-verification=JqtkyfjBz-Uq1Xqk7REatNCxZnlo4gYFis8EdI_gVQ0",
+      "google-site-verification=YGcdBuAhkMJMRa5khtl9hTKLAHlayiapf0pxJph2ZcU",
+      "elevenlabs=P6f8fr3lI9xEMWdES8L3qlVe_hOiMQs7DN9MRcIhYx4",
+      "MS=ms92090372",
+      "stripe-verification=5d4f5c71179a849cf68764a56809bfaada60fd51ca9a6c5b881b7477dbe92f70",
+      "hubspot-domain-verification=ZGM1Zjc3YzktNjdmZC00N2JlLThiOTQtY2ViZjI2NTA2OTQw",
+      "google-site-verification=hZFAMgOOsawLXNZFTJ5XAsml2KJc5leHofbwIiLCl00",
+      "openai-domain-verification=dv-X62J0FmW8lDn4eDouDTtdvnm"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-reports@canva.com; ruf=mailto:dmarc-reports+forensics@canva.com; fo=1"
@@ -391,11 +391,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     ]
   },
   "apex_txt": [
-    "stripe-verification=bbf18c986f16d71344fe2d0a77ef8b893ad8083e09a53e5fb59a864553c4",
-    "have-i-been-pwned-verification=b633a4fdd0ff3575f1580524a28c9c7d",
-    "bugcrowd-verification=400b9a149f7cdd8664c2e7e502482536",
-    "google-site-verification=a9fY2y2BlMyyaiLXgGNEIwYe80ZXchnC3Fib7-7CN30",
-    "yahoo-verification-key=fksNKRwkSoLGj4TIoVX0Iybviy7x0xpgDkRv/8s9Vw4="
+    "google-site-verification=MJYHtvI-o93g5yti0Uey9u-hglJQ6UnPfV0djrxlT9M",
+    "neat-pulse-domain-verification-KX9q8nX=db71101a-781f-4da4-86ad-2fe12ade2c34",
+    "google-site-verification=MfIUBrtfhRkfARKs7m47C8eRPrJet6cRCq8M18-bHLo",
+    "pinterest-site-verification=b91a2bb89d0241853d81d959d5a78f07",
+    "stripe-verification=bbf18c986f16d71344fe2d0a77ef8b893ad8083e09a53e5fb59a864553c4"
   ],
   "tls2": {
     "alpn": "",
@@ -407,6 +407,15 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
+      "serial": 10995900519342731596246826860888089454,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.r2m04.amazontrust.com/r2m04.crl"
+      ],
+      "subject_dn": "311230100603550403130963616e76612e636f6d",
+      "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3034",
       "not_before": "20251118000000",
       "not_after": "20261217235959"
     },
@@ -449,8 +458,15 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 4.2,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "crl": {
+      "url": "http://crl.r2m04.amazontrust.com/r2m04.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 4.4,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -461,4 +477,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

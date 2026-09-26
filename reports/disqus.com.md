@@ -7,12 +7,12 @@
 | Target | https://disqus.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | disqus.com |
-| Test date | 2026-09-26 22:03 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:24 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
+Total findings: **26** (High: 0, Medium: 0, Low: 5, Info: 21)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -38,7 +38,10 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 | 20 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 21 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 22 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 23 | info | CT1 | 25 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 23 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
+| 24 | info | HTML3 | Third-party <iframe> embedded in root document | CWE-643 |
+| 25 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 26 | info | CT1 | 25 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -143,13 +146,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 ### 16. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (frgp7y2rgck8s0.disqus.com and 0e4rlxkb0o7ew3.disqus.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (22ekm8apvp9u8z.disqus.com and d9l5vhvoi4ag4h.disqus.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=VWUavCxXQBdA22BdIz4KQDlSXFLiCdhywIZhyapNcSNjMvIyTd; tipalti-domain-verification=9dffb2af-8871-f111-8391-02501973a9c1; _globalsign-domain-verification=_XCFILJ7eSiRq9rSWcB9wqJjbgKsGbvW2wQ9FztWPW
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=bNxtittci6R0vzV6tO1HsHyQrydEZNZ5y1RgGoTEsHk; tipalti-domain-verification=9dffb2af-8871-f111-8391-02501973a9c1; atlassian-domain-verification=VWUavCxXQBdA22BdIz4KQDlSXFLiCdhywIZhyapNcSNjMvIyTd
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -167,7 +170,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 ### 20. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkhlqkdwrewqpn.html -> 404; error page/headers match: Nginx.
+- **Detail:** GET /xkmnszkb3cel2d.html -> 404; error page/headers match: Nginx.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 21. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -182,7 +185,25 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 - **Detail:** No CAA record found for disqus.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 23. [INFO] 25 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 23. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+
+- **CWE:** CWE-345
+- **Detail:** Root document of disqus.com loads 2 cross-origin script(s) without an integrity attribute, e.g. https://cmp.osano.com/AzqNQLSp9XcSy1Nx4/3863bb16-7170-4494-8eab-2f8e7a8ef10b/osano.js, https://c.disquscdn.com/next/current/marketing/js/entry.js; a compromise of any such third-party host can inject code.
+- **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
+
+### 24. [INFO] Third-party <iframe> embedded in root document (`HTML3`)
+
+- **CWE:** CWE-643
+- **Detail:** Root document of disqus.com embeds 1 cross-origin iframe(s), e.g. //p.rfihub.com/ca.html?rb=46934&ca=&_o=46934&_t=&ra=; embedded origins are framed inside the page with its trust context.
+- **Recommendation:** Review embedded origins and consider sandbox attributes.
+
+### 25. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on disqus.com lists 11 <loc> URL(s); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
+### 26. [INFO] 25 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: blog.disqus.com, help.disqus.com, media.disqus.com, status.disqus.com, www.help.disqus.com
@@ -195,8 +216,8 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
   "domain": "disqus.com",
   "dns": {
     "a": [
-      "151.101.0.134",
       "151.101.64.134",
+      "151.101.0.134",
       "151.101.128.134",
       "151.101.192.134"
     ],
@@ -206,19 +227,19 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
       "disqus-com.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "ns-1148.awsdns-15.org.",
       "ns-1870.awsdns-41.co.uk.",
-      "ns-179.awsdns-22.com.",
-      "ns-620.awsdns-13.net."
+      "ns-1148.awsdns-15.org.",
+      "ns-620.awsdns-13.net.",
+      "ns-179.awsdns-22.com."
     ],
     "caa": [],
     "spf": [
-      "atlassian-domain-verification=VWUavCxXQBdA22BdIz4KQDlSXFLiCdhywIZhyapNcSNjMvIyTdUSTxsaS5KsQEXy",
-      "tipalti-domain-verification=9dffb2af-8871-f111-8391-02501973a9c1",
-      "_globalsign-domain-verification=_XCFILJ7eSiRq9rSWcB9wqJjbgKsGbvW2wQ9FztWPW",
       "google-site-verification=bNxtittci6R0vzV6tO1HsHyQrydEZNZ5y1RgGoTEsHk",
+      "tipalti-domain-verification=9dffb2af-8871-f111-8391-02501973a9c1",
+      "atlassian-domain-verification=VWUavCxXQBdA22BdIz4KQDlSXFLiCdhywIZhyapNcSNjMvIyTdUSTxsaS5KsQEXy",
+      "v=spf1 include:servers.mcsv.net include:429754.spf04.hubspotemail.net include:spf.protection.outlook.com include:spfa.cpmails.com include:amazonses.com -all",
       "dropbox-domain-verification=xgxriaywlrcv",
-      "v=spf1 include:servers.mcsv.net include:429754.spf04.hubspotemail.net include:spf.protection.outlook.com include:spfa.cpmails.com include:amazonses.com -all"
+      "_globalsign-domain-verification=_XCFILJ7eSiRq9rSWcB9wqJjbgKsGbvW2wQ9FztWPW"
     ],
     "dmarc": [
       "v=DMARC1; p=none; pct=100; rua=mailto:re+xcmmepsx0yx@dmarc.postmarkapp.com; sp=none; aspf=r;"
@@ -248,7 +269,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
     }
   },
   "ports": {
-    "ip": "151.101.0.134",
+    "ip": "151.101.64.134",
     "open": []
   },
   "https": {
@@ -332,11 +353,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "atlassian-domain-verification=VWUavCxXQBdA22BdIz4KQDlSXFLiCdhywIZhyapNcSNjMvIyTd",
-    "tipalti-domain-verification=9dffb2af-8871-f111-8391-02501973a9c1",
-    "_globalsign-domain-verification=_XCFILJ7eSiRq9rSWcB9wqJjbgKsGbvW2wQ9FztWPW",
     "google-site-verification=bNxtittci6R0vzV6tO1HsHyQrydEZNZ5y1RgGoTEsHk",
-    "dropbox-domain-verification=xgxriaywlrcv"
+    "tipalti-domain-verification=9dffb2af-8871-f111-8391-02501973a9c1",
+    "atlassian-domain-verification=VWUavCxXQBdA22BdIz4KQDlSXFLiCdhywIZhyapNcSNjMvIyTd",
+    "dropbox-domain-verification=xgxriaywlrcv",
+    "_globalsign-domain-verification=_XCFILJ7eSiRq9rSWcB9wqJjbgKsGbvW2wQ9FztWPW"
   ],
   "tls2": {
     "alpn": "",
@@ -348,6 +369,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.sectigo.com",
+      "serial": 41431973523392895586585432879415162628,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": null,
+      "subject_dn": "3115301306035504030c0c2a2e6469737175732e636f6d",
+      "issuer_dn": "310b300906035504061302474231183016060355040a130f5365637469676f204c696d69746564313730350603550403132e5365637469676f205075626c6963205365727665722041757468656e7469636174696f6e20434120445620523336",
       "not_before": "20260401000000",
       "not_after": "20261016235959"
     },
@@ -376,8 +404,16 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 17.1,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "hsts": "max-age=300; includeSubdomains",
+    "sitemap": {
+      "urls": 11,
+      "indexes": 0
+    }
+  },
+  "elapsed_s": 17.6,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -388,4 +424,5 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://developer.apple.com/ |
 | Bug bounty program | Apple |
 | Listed scope domain | developer.apple.com |
-| Test date | 2026-09-26 22:02 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:23 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
+Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,7 +30,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 | 12 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 14 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
-| 15 | info | CT1 | 14 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 15 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
+| 16 | info | CT1 | 14 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -114,7 +115,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 ### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 17.253.117.132 carries PTR twtpe2-vip-fx-101.b.aaplimg.com. for developer.apple.com.
+- **Detail:** 17.253.117.131 carries PTR twtpe2-vip-fx-101.a.aaplimg.com. for developer.apple.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 14. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -123,7 +124,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 - **Detail:** Live JSON at /.well-known/apple-app-site-association on developer.apple.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
 - **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
-### 15. [INFO] 14 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 15. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+
+- **CWE:** CWE-345
+- **Detail:** Root document of developer.apple.com loads 1 cross-origin script(s) without an integrity attribute, e.g. https://sfss.cdn-apple.com/2.0.0-beta.2/sf-symbol.js?44232622269; a compromise of any such third-party host can inject code.
+- **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
+
+### 16. [INFO] 14 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.developer.apple.com, api.enterprise.developer.apple.com, docs.developer.apple.com, download.developer.apple.com
@@ -136,8 +143,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
   "domain": "developer.apple.com",
   "dns": {
     "a": [
-      "17.253.117.132",
-      "17.253.117.133"
+      "17.253.117.131",
+      "17.253.117.132"
     ],
     "aaaa": [
       "2403:300:a30:f000::134",
@@ -176,7 +183,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
     }
   },
   "ports": {
-    "ip": "17.253.117.132",
+    "ip": "17.253.117.131",
     "open": []
   },
   "https": {
@@ -265,6 +272,15 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": "http://ocsp.apple.com/ocsp03-apevsecc1g101",
+      "serial": 32095278265036373982618565907920756506,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.apple.com/apevsecc1g1.crl"
+      ],
+      "subject_dn": "311d301b060355040f0c1450726976617465204f7267616e697a6174696f6e31133011060b2b0601040182373c02010313025553311b3019060b2b0601040182373c0201020c0a43616c69666f726e69613111300f060355040513084330383036353932310b30090603550406130255533113301106035504080c0a43616c69666f726e69613112301006035504070c09437570657274696e6f31133011060355040a0c0a4170706c6520496e632e311c301a06035504030c13646576656c6f7065722e6170706c652e636f6d",
+      "issuer_dn": "310b300906035504061302555331133011060355040a130a4170706c6520496e632e312d302b060355040313244170706c65205075626c696320455620536572766572204543432043412031202d204731",
       "not_before": "20260921171456",
       "not_after": "20261217180735"
     },
@@ -290,7 +306,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
   "x12": {
     "status": 200,
     "ptr": [
-      "twtpe2-vip-fx-101.b.aaplimg.com."
+      "twtpe2-vip-fx-101.a.aaplimg.com."
     ]
   },
   "x13": {
@@ -307,8 +323,16 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 15.1,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "hsts": "max-age=31536000; includeSubDomains, max-age=31536000",
+    "crl": {
+      "url": "http://crl.apple.com/apevsecc1g1.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 16.2,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -319,4 +343,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://flic.kr/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | flic.kr |
-| Test date | 2026-09-26 22:05 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:27 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
+Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,8 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 | 9 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 10 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 11 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 12 | info | HTML1 | Security policy set via <meta http-equiv> | CWE-1021 |
+| 13 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
 
 ## Detailed findings
 
@@ -93,7 +95,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 ### 10. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 54.192.248.84 carries PTR server-54-192-248-84.tpe53.r.cloudfront.net. for flic.kr.
+- **Detail:** 54.192.248.76 carries PTR server-54-192-248-76.tpe53.r.cloudfront.net. for flic.kr.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 11. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -102,6 +104,18 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 - **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on flic.kr; a mobile app or web-bridge is tied to this domain and its association configuration is public.
 - **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
+### 12. [INFO] Security policy set via <meta http-equiv> (`HTML1`)
+
+- **CWE:** CWE-1021
+- **Detail:** HTML root of flic.kr declares via meta tags: content-security-policy; meta-set policies have limited browser support and are easier to override than response headers.
+- **Recommendation:** Prefer response headers and keep any meta declarations consistent with them.
+
+### 13. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+
+- **CWE:** CWE-345
+- **Detail:** Root document of flic.kr loads 4 cross-origin script(s) without an integrity attribute, e.g. https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js, https://cmp.osano.com/7gziei6ofI/24d43a7f-6295-487a-a771-0ce1dfba4dcf/osano.js, https://cdn.weglot.com/weglot.min.js; a compromise of any such third-party host can inject code.
+- **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -109,25 +123,25 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
   "domain": "flic.kr",
   "dns": {
     "a": [
+      "54.192.248.76",
       "54.192.248.84",
       "54.192.248.15",
-      "54.192.248.76",
       "54.192.248.3"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [],
     "ns": [
-      "ns-252.awsdns-31.com.",
+      "ns-739.awsdns-28.net.",
       "ns-1394.awsdns-46.org.",
-      "ns-1832.awsdns-37.co.uk.",
-      "ns-739.awsdns-28.net."
+      "ns-252.awsdns-31.com.",
+      "ns-1832.awsdns-37.co.uk."
     ],
     "caa": [
-      "0 issue \"globalsign.com\"",
-      "0 iodef \"mailto:hostmaster@smugmug.com\"",
       "0 issue \"amazon.com\"",
-      "0 issue \"digicert.com\""
+      "0 issue \"digicert.com\"",
+      "0 issue \"globalsign.com\"",
+      "0 iodef \"mailto:hostmaster@smugmug.com\""
     ],
     "spf": [],
     "dmarc": [
@@ -159,7 +173,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
     }
   },
   "ports": {
-    "ip": "54.192.248.84",
+    "ip": "54.192.248.76",
     "open": []
   },
   "https": {
@@ -218,6 +232,15 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
+      "serial": 8017516746366424300557813534414482550,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.r2m01.amazontrust.com/r2m01.crl"
+      ],
+      "subject_dn": "311330110603550403130a666c69636b722e636f6d",
+      "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3031",
       "not_before": "20251205000000",
       "not_after": "20270102235959"
     },
@@ -231,7 +254,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
   "x12": {
     "status": 200,
     "ptr": [
-      "server-54-192-248-84.tpe53.r.cloudfront.net."
+      "server-54-192-248-76.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -249,8 +272,15 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 23.7,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "crl": {
+      "url": "http://crl.r2m01.amazontrust.com/r2m01.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 15.4,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -261,4 +291,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

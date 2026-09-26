@@ -7,12 +7,12 @@
 | Target | https://copyright.gov/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | copyright.gov |
-| Test date | 2026-09-26 22:01 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:22 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 1, Info: 18)
+Total findings: **21** (High: 0, Medium: 0, Low: 1, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 1, Info: 18)
 | 17 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 18 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 20 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
+| 21 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 
 ## Detailed findings
 
@@ -53,13 +55,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 1, Info: 18)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.226.115:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.227.115:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.226.115:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.227.115:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -149,7 +151,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 1, Info: 18)
 ### 18. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xki1y6qr2lic7r.html -> 404; error page/headers match: Cloudflare.
+- **Detail:** GET /xk1o90bz68gnfy.html -> 404; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -158,6 +160,18 @@ Total findings: **19** (High: 0, Medium: 0, Low: 1, Info: 18)
 - **Detail:** No CAA record found for copyright.gov, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
+### 20. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+
+- **CWE:** CWE-345
+- **Detail:** Root document of copyright.gov loads 3 cross-origin script(s) without an integrity attribute, e.g. https://cdn.loc.gov/loader/player/media.js, https://ask.loc.gov/load_chat.php?hash=c1af688afd26011810630e572cfbd547, https://assets.adobedtm.com/f94f5647937d/7b4a1bfefdc2/launch-b8f26e4510d8.min.js; a compromise of any such third-party host can inject code.
+- **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
+
+### 21. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on copyright.gov lists 1 <loc> URL(s); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -165,30 +179,30 @@ Total findings: **19** (High: 0, Medium: 0, Low: 1, Info: 18)
   "domain": "copyright.gov",
   "dns": {
     "a": [
-      "104.16.226.115",
-      "104.16.227.115"
+      "104.16.227.115",
+      "104.16.226.115"
     ],
     "aaaa": [
-      "2606:4700::6810:e273",
-      "2606:4700::6810:e373"
+      "2606:4700::6810:e373",
+      "2606:4700::6810:e273"
     ],
     "cname": null,
     "mx": [
-      "mxa-00026101.gslb.gpphosted.com (pref 10)",
-      "mxb-00026101.gslb.gpphosted.com (pref 10)"
+      "mxb-00026101.gslb.gpphosted.com (pref 10)",
+      "mxa-00026101.gslb.gpphosted.com (pref 10)"
     ],
     "ns": [
-      "kevin.ns.cloudflare.com.",
-      "alice.ns.cloudflare.com."
+      "alice.ns.cloudflare.com.",
+      "kevin.ns.cloudflare.com."
     ],
     "caa": [],
     "spf": [
-      "TEJjxf+vyMTm1H3VKL5ipuZYSAY2V3nlBXCcF4ir3h05VeJjDqUS3cOoj6nCmKzzpwauTGx4OO1cszjOJIouCw==",
-      "v=spf1 include:spf1.loc.gov include:spf2.loc.gov include:spf1.copyright.gov include:spf2.copyright.gov include:amazonses.com include:spf-00026101.gpphosted.com mx -all",
       "google-site-verification=Ip3EEa7FthdrMW7LmkVYNoD6bcfi39uiG05RzDkHT4A",
-      "knowbe4-site-verification=9319099d4dd661d9f8e5e808389487f6",
+      "TEJjxf+vyMTm1H3VKL5ipuZYSAY2V3nlBXCcF4ir3h05VeJjDqUS3cOoj6nCmKzzpwauTGx4OO1cszjOJIouCw==",
       "MS=ms27223468",
-      "webexdomainverification.NQCL=77a00094-cd91-4c22-8613-aa03e3ad3c50"
+      "knowbe4-site-verification=9319099d4dd661d9f8e5e808389487f6",
+      "webexdomainverification.NQCL=77a00094-cd91-4c22-8613-aa03e3ad3c50",
+      "v=spf1 include:spf1.loc.gov include:spf2.loc.gov include:spf1.copyright.gov include:spf2.copyright.gov include:amazonses.com include:spf-00026101.gpphosted.com mx -all"
     ],
     "dmarc": [
       "v=DMARC1;p=none;sp=none;fo=1;rua=mailto:copyrightdmarc_reports@copyright.gov;ruf=mailto:copyrightdmarc_ruf@copyright.gov;rf=afrf;pct=100"
@@ -219,7 +233,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 1, Info: 18)
     }
   },
   "ports": {
-    "ip": "104.16.226.115",
+    "ip": "104.16.227.115",
     "open": [
       8080,
       8443
@@ -268,8 +282,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 1, Info: 18)
     "/.env": 403,
     "/.htaccess": 403,
     "/wp-login.php": 404,
-    "/phpmyadmin/index.php": 0,
-    "/server-status": 404,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 0,
     "/api/": 404
   },
   "subdomains": {
@@ -290,6 +304,15 @@ Total findings: **19** (High: 0, Medium: 0, Low: 1, Info: 18)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
+      "serial": 135895562600856771311177263106534041524,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://c.pki.goog/we1/FmKtCJpdSLA.crl"
+      ],
+      "subject_dn": "311630140603550403130d636f707972696768742e676f76",
+      "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
       "not_before": "20260921042719",
       "not_after": "20261220052715"
     }
@@ -310,8 +333,20 @@ Total findings: **19** (High: 0, Medium: 0, Low: 1, Info: 18)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 47.7,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "hsts": "max-age=31536000; includeSubDomains; preload",
+    "sitemap": {
+      "urls": 1,
+      "indexes": 0
+    },
+    "crl": {
+      "url": "http://c.pki.goog/we1/FmKtCJpdSLA.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 67.7,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -322,4 +357,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 1, Info: 18)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

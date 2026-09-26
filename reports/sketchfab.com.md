@@ -7,8 +7,8 @@
 | Target | https://sketchfab.com/ |
 | Bug bounty program | Epic Games |
 | Listed scope domain | sketchfab.com |
-| Test date | 2026-09-26 22:15 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:38 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -125,7 +125,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: miro-verification=66a6d0d4ec91315544e1c0ab5e73b7a2a174f6f4; domain-verification=a1005fb6436172b4589d82ac0aebeb7836b99d474365b7fde9850ef1f83c; _proofpoint-verification=5c42dd9b-ce3b-48c3-954c-37bec7da586f
+- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=8a5be962006abb6a54a07ecebc48df8733bcccf0a5c6b8bcb66f; openai-domain-verification=dv-WwDzb0UffYovHWmc8ILUiSsC; google-site-verification=CkzXPYnKKBciPYalhXoO-ZqsXvZFrUJyh651HowaeH4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -137,7 +137,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 54.192.248.119 carries PTR server-54-192-248-119.tpe53.r.cloudfront.net. for sketchfab.com.
+- **Detail:** 54.192.248.90 carries PTR server-54-192-248-90.tpe53.r.cloudfront.net. for sketchfab.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
@@ -147,24 +147,24 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "domain": "sketchfab.com",
   "dns": {
     "a": [
-      "54.192.248.119",
-      "54.192.248.123",
       "54.192.248.90",
-      "54.192.248.88"
+      "54.192.248.88",
+      "54.192.248.123",
+      "54.192.248.119"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt4.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
+      "ns-15.awsdns-01.com.",
       "ns-1283.awsdns-32.org.",
       "ns-1005.awsdns-61.net.",
-      "ns-15.awsdns-01.com.",
       "ns-1716.awsdns-22.co.uk."
     ],
     "caa": [
@@ -173,26 +173,26 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "0 issue \"amazon.com\""
     ],
     "spf": [
-      "miro-verification=66a6d0d4ec91315544e1c0ab5e73b7a2a174f6f4",
-      "domain-verification=a1005fb6436172b4589d82ac0aebeb7836b99d474365b7fde9850ef1f83cf9bd",
-      "_proofpoint-verification=5c42dd9b-ce3b-48c3-954c-37bec7da586f",
-      "dropbox-domain-verification=hdzg4gv89jax",
-      "openai-domain-verification=dv-WwDzb0UffYovHWmc8ILUiSsC",
-      "cursor-domain-verification-bfcs5x=3og16N1cvdpYQTiEbkW8l3SAy",
-      "figma-domain-verification=ffa6044ba8b42d9296b3ff1607f226aecde09d2ef5e0141135265e1251ec1506-1718206799",
-      "box-domain-verification=90c68eb309746ce326626165eadc4785e6094731b6e841ac85dab1c1d08a071c",
-      "atlassian-domain-verification=SoJZyndmWCSCCPEyKf0gxRibYYQGlSvtWMEwAI5JRm0LU2g7e7xW4T2WRM0iahex",
       "adobe-idp-site-verification=8a5be962006abb6a54a07ecebc48df8733bcccf0a5c6b8bcb66f58ad5e8dd604",
-      "smartsheet-site-validation=UKQ9vunDy5i2LXlAqwfMpCBLYvg1TNd9",
+      "openai-domain-verification=dv-WwDzb0UffYovHWmc8ILUiSsC",
       "google-site-verification=CkzXPYnKKBciPYalhXoO-ZqsXvZFrUJyh651HowaeH4",
-      "google-site-verification=1D22clCUDVDvqHEntN2eD6uGI68BZM_zn1Q68W3H4Z4",
-      "anthropic-domain-verification-pkgrxp=9SX6zKkJLDT6sYYBe3jSwNzDA",
-      "facebook-domain-verification=abkh6sdfak0gjfk06lp9yy63v86yd0",
-      "notion-domain-verification=xXMBP2X1o1sdyWYbFPT8WxMFmH6AeVwrpRpcdXK9uZ0",
-      "docusign=cc2bea62-2607-4969-b594-291f05fe9a18",
+      "box-domain-verification=90c68eb309746ce326626165eadc4785e6094731b6e841ac85dab1c1d08a071c",
       "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
+      "smartsheet-site-validation=UKQ9vunDy5i2LXlAqwfMpCBLYvg1TNd9",
+      "Sendinblue-code:893b13ba16ab42c906f31ddb4d6c0972",
+      "google-site-verification=1D22clCUDVDvqHEntN2eD6uGI68BZM_zn1Q68W3H4Z4",
+      "dropbox-domain-verification=hdzg4gv89jax",
+      "anthropic-domain-verification-pkgrxp=9SX6zKkJLDT6sYYBe3jSwNzDA",
+      "docusign=cc2bea62-2607-4969-b594-291f05fe9a18",
+      "cursor-domain-verification-bfcs5x=3og16N1cvdpYQTiEbkW8l3SAy",
+      "_proofpoint-verification=5c42dd9b-ce3b-48c3-954c-37bec7da586f",
+      "notion-domain-verification=xXMBP2X1o1sdyWYbFPT8WxMFmH6AeVwrpRpcdXK9uZ0",
+      "facebook-domain-verification=abkh6sdfak0gjfk06lp9yy63v86yd0",
+      "domain-verification=a1005fb6436172b4589d82ac0aebeb7836b99d474365b7fde9850ef1f83cf9bd",
+      "atlassian-domain-verification=SoJZyndmWCSCCPEyKf0gxRibYYQGlSvtWMEwAI5JRm0LU2g7e7xW4T2WRM0iahex",
+      "figma-domain-verification=ffa6044ba8b42d9296b3ff1607f226aecde09d2ef5e0141135265e1251ec1506-1718206799",
       "google-site-verification=LrK1Vp3WgG36TFqPMA1zxPstliUIGZJAhtU3i-slqHQ",
-      "Sendinblue-code:893b13ba16ab42c906f31ddb4d6c0972"
+      "miro-verification=66a6d0d4ec91315544e1c0ab5e73b7a2a174f6f4"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=reject; pct=100; adkim=r; aspf=r; rua=mailto:dmarc_agg@vali.email,mailto:dmarc@mailinblue.com,mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc@mailinblue.com,mailto:dmarc_ruf@emaildefense.proofpoint.com,mailto:epic",
@@ -230,7 +230,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     }
   },
   "ports": {
-    "ip": "54.192.248.119",
+    "ip": "54.192.248.90",
     "open": []
   },
   "https": {
@@ -256,11 +256,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     }
   ],
   "http": {
-    "status": 202
+    "status": 301,
+    "location": "https://sketchfab.com:443/"
   },
   "redir_probes": [
     "/redirect?url=https://evil-auditor.example/x -> 202",
-    "/redirect?next=https://evil-auditor.example/x -> 202",
+    "/redirect?next=https://evil-auditor.example/x -> 302",
     "/go?url=https://evil-auditor.example/x -> 202",
     "/url?url=https://evil-auditor.example/x -> 202"
   ],
@@ -282,11 +283,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "miro-verification=66a6d0d4ec91315544e1c0ab5e73b7a2a174f6f4",
-    "domain-verification=a1005fb6436172b4589d82ac0aebeb7836b99d474365b7fde9850ef1f83c",
-    "_proofpoint-verification=5c42dd9b-ce3b-48c3-954c-37bec7da586f",
-    "dropbox-domain-verification=hdzg4gv89jax",
-    "openai-domain-verification=dv-WwDzb0UffYovHWmc8ILUiSsC"
+    "adobe-idp-site-verification=8a5be962006abb6a54a07ecebc48df8733bcccf0a5c6b8bcb66f",
+    "openai-domain-verification=dv-WwDzb0UffYovHWmc8ILUiSsC",
+    "google-site-verification=CkzXPYnKKBciPYalhXoO-ZqsXvZFrUJyh651HowaeH4",
+    "box-domain-verification=90c68eb309746ce326626165eadc4785e6094731b6e841ac85dab1c1",
+    "google-site-verification=1D22clCUDVDvqHEntN2eD6uGI68BZM_zn1Q68W3H4Z4"
   ],
   "tls2": {
     "alpn": "",
@@ -298,6 +299,15 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
+      "serial": 4668690091836610622412946246206374285,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.r2m04.amazontrust.com/r2m04.crl"
+      ],
+      "subject_dn": "311630140603550403130d736b657463686661622e636f6d",
+      "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3034",
       "not_before": "20251217000000",
       "not_after": "20270115235959"
     },
@@ -306,7 +316,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "x12": {
     "status": 202,
     "ptr": [
-      "server-54-192-248-119.tpe53.r.cloudfront.net."
+      "server-54-192-248-90.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -320,8 +330,15 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 9.1,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 202,
+    "crl": {
+      "url": "http://crl.r2m04.amazontrust.com/r2m04.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 9.2,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -332,4 +349,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

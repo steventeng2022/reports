@@ -7,8 +7,8 @@
 | Target | https://ibm.com/ |
 | Bug bounty program | IBM |
 | Listed scope domain | ibm.com |
-| Test date | 2026-09-26 22:08 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:30 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -135,7 +135,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: mongodb-site-verification=3d0wR0KvanH3yTbll0sXEJ0QGBQffOkv; atlassian-domain-verification=WAjTH82C5Zx475WLKAA2nrdlsoA/kN0ej9igrLrED4h15KMHPO; ms-domain-verification=bedcd06e-7e1c-4906-9b6a-b4a1095fa4ed
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-ym2t7s=RPDdVAMpzgbooX0kxhqstuM2D; ms-domain-verification=1adbc779-89ce-47cf-8167-c4e4a3b4a6aa; google-site-verification=I-empodMpM7n5Px1doUgIaOKHKeIMXXf6k8Ea5ENyO4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -178,8 +178,8 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "184.84.207.120"
     ],
     "aaaa": [
-      "2600:140b:1c00:1b83::3831",
-      "2600:140b:1c00:1b8d::3831"
+      "2600:1417:8400:1782::3831",
+      "2600:1417:8400:17b9::3831"
     ],
     "cname": null,
     "mx": [
@@ -187,61 +187,61 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "mx0b-001b2d05.pphosted.com (pref 5)"
     ],
     "ns": [
-      "dns4.p05.nsone.net.",
       "dns2.p05.nsone.net.",
+      "dns3.p05.nsone.net.",
       "dns1.p05.nsone.net.",
-      "dns3.p05.nsone.net."
+      "dns4.p05.nsone.net."
     ],
     "caa": [],
     "spf": [
-      "00D10000000biEb=1TBQ80000000b2n",
-      "smartsheet-site-validation=TaCpXPZ-qFfOgfHXuMrfF8_d6GZjICNl",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
-      "mongodb-site-verification=3d0wR0KvanH3yTbll0sXEJ0QGBQffOkv",
-      "atlassian-domain-verification=WAjTH82C5Zx475WLKAA2nrdlsoA/kN0ej9igrLrED4h15KMHPOm+A5H3GndKAxDC",
-      "_github-challenge-ibm.ibm.com=2613e984bc",
-      "MS=ms61389031",
-      "ms-domain-verification=bedcd06e-7e1c-4906-9b6a-b4a1095fa4ed",
-      "figma-domain-verification=6db9259c4472f3e5ba44c7ae284b4f4b8aa0268c0797659a5e1a28ccfe912ddf-1741206863",
-      "mongodb-site-verification=Gcqpap80hVonXfV2VnYC6AlEr2Z9vvf3",
-      "yandex-verification: 5f458b477256c50c",
-      "atlassian-sending-domain-verification=79afa9af-6e0f-47e6-b636-2786f8772f66",
-      "anthropic-domain-verification-ym2t7s=RPDdVAMpzgbooX0kxhqstuM2D",
-      "DomainVerification=CYICZMSWT62KDTQWZ1YCKKU763NN36BQJ4TD5BV606K3FLDUR3UOJE58E30FTIVL",
-      "Dynatrace-site-verification=76b6b299-fe43-4f31-889b-a8a467193478__8q74sg9dg5udjppn95utrb8bct",
-      "00df40000004784eaa",
-      "00d50000000c9mweay",
-      "intersight=cfe6f48b59e7428442b9aab04765ca0953e01c480a685ca5cf6939ef9e505532",
-      "google-gws-recovery-domain-verification=48225137",
-      "ms-domain-verification=1adbc779-89ce-47cf-8167-c4e4a3b4a6aa",
-      "00d00000000hedieay",
-      "coursera-domain-verification=To0Ej5CrewXrC0FcCjVxXG1lTcLLJQjvrW2gdUt8rCxFxTGMdA0vA54nUlgLfbyO",
-      "figma-domain-verification=b8b3862b529816383e0e7ec9ad2757f8f7b4a0f4da290136796f1aa36d558841-1785230801",
-      "h1-domain-verification=m9jGKLYa5hDdU5AHUfK9jrBmWVhx3h9t9ztfDFMaxZfgChvk",
-      "atlassian-domain-verification=79ZnqmRPyDwm6b99GAF3ymzBmjtRZU9oCfgMwVMAUGlrPPenDc6esgO62jafAXUI",
-      "apple-domain-verification=M3o953J0rN1B0P2a",
-      "asv=e8bb80eeac60e62a4dd07f03d1d36829",
-      "40a21f5affe343c6b37e0a5af80dcd93",
-      "mongodb-site-verification=gEevYaKFpagtLmrYxomtpE2QmYwnd29i",
-      "wework-site-verification=hhWLSbG4qiaKhsXU",
-      "google-site-verification=aH5jG_abrxRKeKZKOrX9CuXlXdFSCQxVkmAVoYwzNcc",
-      "google-site-verification=I-empodMpM7n5Px1doUgIaOKHKeIMXXf6k8Ea5ENyO4",
-      "adobe-idp-site-verification=5f8adca7-512f-44e1-a5b2-b62c5e3763f2",
-      "google-site-verification=ewe2QcP5aMj3DKuSfxscZME5wip4EpoTxCXPNvr0-J0",
-      "docker-verification=846278f4-7e2c-4586-ae26-e1a9f0f0aecd",
-      "docker-verification=7c4d4e40-e7ee-4183-94c2-db97d0873269",
-      "facebook-domain-verification=7w4exj2revwpv5u708s6bji5j6tswy",
-      "intersight=1439768961d2f6d736c38b947d235947681cd817abea13eab3daee9ecbdc6c3d",
-      "smartsheet-site-validation=I-lI3gCPdvKbKQ6KTki96Ream6Yjs1gU",
-      "jamf-site-verification=CN4bHigc1ZnD6ZQX_2c6XQ",
-      "google-gws-recovery-domain-verification=42135076",
-      "00D3h000004YkeYEAS",
-      "atlassian-domain-verification=a32Aj0uoXQRh6QseDFFrlufYlkbeSdok7az3sY0DQNVXpW1Iqj8zlsuXFZgHMojH",
       "_analyst_ng_validation=f6702989-83f3-42b8-be39-19cf8f1c33f5",
-      "google-site-verification=Jck8mLbYYfCnrmi_nRy4MG2fbUN3UGhC29KdspGLd9Y",
+      "00D10000000biEb=1TBQ80000000b2n",
+      "anthropic-domain-verification-ym2t7s=RPDdVAMpzgbooX0kxhqstuM2D",
+      "ms-domain-verification=1adbc779-89ce-47cf-8167-c4e4a3b4a6aa",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
+      "google-site-verification=I-empodMpM7n5Px1doUgIaOKHKeIMXXf6k8Ea5ENyO4",
+      "google-gws-recovery-domain-verification=42135076",
+      "jamf-site-verification=CN4bHigc1ZnD6ZQX_2c6XQ",
+      "atlassian-domain-verification=WAjTH82C5Zx475WLKAA2nrdlsoA/kN0ej9igrLrED4h15KMHPOm+A5H3GndKAxDC",
+      "00df40000004784eaa",
+      "amazonses:79ShwQazteb+WkCt8e297sAC2mwZVRditsrzaoxiHjU=",
       "onetrust-domain-verification=e7e09cedfb9b4ff386f1274e4c214d55",
+      "facebook-domain-verification=7w4exj2revwpv5u708s6bji5j6tswy",
+      "smartsheet-site-validation=TaCpXPZ-qFfOgfHXuMrfF8_d6GZjICNl",
+      "adobe-idp-site-verification=5f8adca7-512f-44e1-a5b2-b62c5e3763f2",
+      "mongodb-site-verification=gEevYaKFpagtLmrYxomtpE2QmYwnd29i",
+      "yandex-verification: 5f458b477256c50c",
+      "intersight=cfe6f48b59e7428442b9aab04765ca0953e01c480a685ca5cf6939ef9e505532",
+      "smartsheet-site-validation=I-lI3gCPdvKbKQ6KTki96Ream6Yjs1gU",
+      "wework-site-verification=hhWLSbG4qiaKhsXU",
+      "_github-challenge-ibm.ibm.com=2613e984bc",
+      "h1-domain-verification=m9jGKLYa5hDdU5AHUfK9jrBmWVhx3h9t9ztfDFMaxZfgChvk",
+      "Dynatrace-site-verification=76b6b299-fe43-4f31-889b-a8a467193478__8q74sg9dg5udjppn95utrb8bct",
       "google-site-verification=tzdngH5fWH-k8uQoDVovOFJQZTwaGtDOP6S2cQlOvCs",
-      "amazonses:79ShwQazteb+WkCt8e297sAC2mwZVRditsrzaoxiHjU="
+      "intersight=1439768961d2f6d736c38b947d235947681cd817abea13eab3daee9ecbdc6c3d",
+      "apple-domain-verification=M3o953J0rN1B0P2a",
+      "mongodb-site-verification=Gcqpap80hVonXfV2VnYC6AlEr2Z9vvf3",
+      "google-site-verification=Jck8mLbYYfCnrmi_nRy4MG2fbUN3UGhC29KdspGLd9Y",
+      "docker-verification=846278f4-7e2c-4586-ae26-e1a9f0f0aecd",
+      "40a21f5affe343c6b37e0a5af80dcd93",
+      "atlassian-sending-domain-verification=79afa9af-6e0f-47e6-b636-2786f8772f66",
+      "asv=e8bb80eeac60e62a4dd07f03d1d36829",
+      "atlassian-domain-verification=a32Aj0uoXQRh6QseDFFrlufYlkbeSdok7az3sY0DQNVXpW1Iqj8zlsuXFZgHMojH",
+      "ms-domain-verification=bedcd06e-7e1c-4906-9b6a-b4a1095fa4ed",
+      "00d00000000hedieay",
+      "atlassian-domain-verification=79ZnqmRPyDwm6b99GAF3ymzBmjtRZU9oCfgMwVMAUGlrPPenDc6esgO62jafAXUI",
+      "figma-domain-verification=6db9259c4472f3e5ba44c7ae284b4f4b8aa0268c0797659a5e1a28ccfe912ddf-1741206863",
+      "coursera-domain-verification=To0Ej5CrewXrC0FcCjVxXG1lTcLLJQjvrW2gdUt8rCxFxTGMdA0vA54nUlgLfbyO",
+      "google-site-verification=ewe2QcP5aMj3DKuSfxscZME5wip4EpoTxCXPNvr0-J0",
+      "DomainVerification=CYICZMSWT62KDTQWZ1YCKKU763NN36BQJ4TD5BV606K3FLDUR3UOJE58E30FTIVL",
+      "google-site-verification=aH5jG_abrxRKeKZKOrX9CuXlXdFSCQxVkmAVoYwzNcc",
+      "00D3h000004YkeYEAS",
+      "MS=ms61389031",
+      "figma-domain-verification=b8b3862b529816383e0e7ec9ad2757f8f7b4a0f4da290136796f1aa36d558841-1785230801",
+      "00d50000000c9mweay",
+      "docker-verification=7c4d4e40-e7ee-4183-94c2-db97d0873269",
+      "google-gws-recovery-domain-verification=48225137",
+      "mongodb-site-verification=3d0wR0KvanH3yTbll0sXEJ0QGBQffOkv"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=none; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -346,11 +346,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "mongodb-site-verification=3d0wR0KvanH3yTbll0sXEJ0QGBQffOkv",
-    "atlassian-domain-verification=WAjTH82C5Zx475WLKAA2nrdlsoA/kN0ej9igrLrED4h15KMHPO",
-    "ms-domain-verification=bedcd06e-7e1c-4906-9b6a-b4a1095fa4ed",
-    "figma-domain-verification=6db9259c4472f3e5ba44c7ae284b4f4b8aa0268c0797659a5e1a28",
-    "mongodb-site-verification=Gcqpap80hVonXfV2VnYC6AlEr2Z9vvf3"
+    "anthropic-domain-verification-ym2t7s=RPDdVAMpzgbooX0kxhqstuM2D",
+    "ms-domain-verification=1adbc779-89ce-47cf-8167-c4e4a3b4a6aa",
+    "google-site-verification=I-empodMpM7n5Px1doUgIaOKHKeIMXXf6k8Ea5ENyO4",
+    "google-gws-recovery-domain-verification=42135076",
+    "jamf-site-verification=CN4bHigc1ZnD6ZQX_2c6XQ"
   ],
   "tls2": {
     "alpn": "",
@@ -362,6 +362,16 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": "http://ocsp.digicert.com",
+      "serial": 13152435256831142421648033345563166620,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl3.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl",
+        "http://crl4.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl"
+      ],
+      "subject_dn": "310b30090603550406130255533111300f060355040813084e657720596f726b310f300d0603550407130641726d6f6e6b31343032060355040a132b496e7465726e6174696f6e616c20427573696e657373204d616368696e657320436f72706f726174696f6e3110300e0603550403130769626d2e636f6d",
+      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473320544c532045434320534841333834203230323020434131",
       "not_before": "20251017000000",
       "not_after": "20261017235959"
     },
@@ -404,8 +414,16 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 9.9,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "hsts": "max-age=3600",
+    "crl": {
+      "url": "http://crl3.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 10.1,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -416,4 +434,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

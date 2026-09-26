@@ -7,8 +7,8 @@
 | Target | https://greenpeace.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | greenpeace.org |
-| Test date | 2026-09-26 22:07 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:29 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -104,7 +104,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: hubspot-domain-verification=ZjlkY2RjMTYtNjQxMy00NWY1LWE2NjAtNGQ4MzNhNDMxYTMx; hubspot-domain-verification=MzUyNzQwMTUtOWM0Yi00ODAzLThjNDMtYTgyZmIxMGQ1MzYy; hubspot-domain-verification=NDkwZTAyNjctYjBmZS00MzYwLThiY2QtMGExZDYxYjQ2MTMz
+- **Detail:** Apex TXT records with verification/token content: atlassian-sending-domain-verification=8d3a2412-a678-4ddb-87b5-855d492868ba; anthropic-domain-verification-d2gnan=P2eHpvCqnCaszHVvpeSbguOuA; atlassian-domain-verification=KByIuBBRnIkRV94u5cBWdoNJayjIyC1hoMA5JdtgzsGCVlF79O
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -143,11 +143,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx3.googlemail.com (pref 10)",
-      "aspmx.l.google.com (pref 1)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx2.googlemail.com (pref 10)"
+      "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx2.googlemail.com (pref 10)",
+      "aspmx3.googlemail.com (pref 10)",
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
       "dns200.anycast.me.",
@@ -155,32 +155,28 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
     ],
     "caa": [],
     "spf": [
-      "hubspot-domain-verification=ZjlkY2RjMTYtNjQxMy00NWY1LWE2NjAtNGQ4MzNhNDMxYTMx",
-      "langdock-verify=16mjZC5NFZba6udsMuM_svXXjMnz7TJZwChc5A_daWs",
-      "hubspot-domain-verification=MzUyNzQwMTUtOWM0Yi00ODAzLThjNDMtYTgyZmIxMGQ1MzYy",
-      "hubspot-domain-verification=NDkwZTAyNjctYjBmZS00MzYwLThiY2QtMGExZDYxYjQ2MTMz",
-      "atlassian-domain-verification=KByIuBBRnIkRV94u5cBWdoNJayjIyC1hoMA5JdtgzsGCVlF79OYxZa93smtaVu8B",
-      "hubspot-domain-verification=NmM5ZmZlMTMtOWE1NS00ZWE2LWI2OTMtZGI0NGNlN2U5ZWI1",
-      "hubspot-domain-verification=MGQ0MzhmNDEtZmJiMC00MzkzLWI3NzktZjVhNTY2M2Q0MjZi",
-      "hubspot-domain-verification=OTY4NDFiN2ItN2VjZi00MGExLThlZDQtZDkzMmQyNjlkOTI0",
-      "hubspot-domain-verification=M2MzZmRkZGEtYWE2OS00ZWQyLTg2ZDQtODkwZWM3NWM1MDY4",
-      "amazonses:U0TjwasGtQ7BX+vOwNfZMqOvXCTkrDvAMeoQ2vAkDsE=",
-      "hubspot-domain-verification=M2U3OTFmYWYtNTZmZS00MGMxLWI2YjgtYmU0M2IyMzRhN2Rj",
       "atlassian-sending-domain-verification=8d3a2412-a678-4ddb-87b5-855d492868ba",
       "anthropic-domain-verification-d2gnan=P2eHpvCqnCaszHVvpeSbguOuA",
-      "hubspot-domain-verification=NzYzYWIyYTUtZDMzNy00MWIzLTk5ZDEtZWM3OTEzNTNjZjZi",
-      "hubspot-domain-verification=YzRjMzc2Y2UtN2U2Yi00ZjYwLWI4NzItYzQ4ZGQ3NmE1ZGY3",
-      "mixpanel-domain-verify=2e95c43d-2182-4022-842b-483081b3d9f9",
-      "hubspot-domain-verification=ZGMwMjZlM2ItNTE5YS00OGNiLWEyYmEtYjJhOTZjZjVkOTA5",
-      "hubspot-domain-verification=ZGY3NTFmZDYtYWU3Yi00MWY5LWIxNzUtZTMyY2MyNGE0N2E1",
-      "hubspot-domain-verification=ZGY3Nzk4MWItMGFhMS00ZjExLTlhODgtZjgyNDMyMjA4ZWZm",
+      "atlassian-domain-verification=KByIuBBRnIkRV94u5cBWdoNJayjIyC1hoMA5JdtgzsGCVlF79OYxZa93smtaVu8B",
+      "langdock-verify=16mjZC5NFZba6udsMuM_svXXjMnz7TJZwChc5A_daWs",
       "google-site-verification=cabk3280FRUiQMgdVbPPPTdbytCnXe1LFEpYWIW5TMY",
-      "a1379742935a9b4fe5220281db19c39a111b927ac4e7b6dd9772463d7f2ad5a1",
-      "hubspot-domain-verification=OTNlMzAyZGEtZTIxOC00YmI5LThjZGItMzgwMzJhN2FkZTAz",
-      "hubspot-domain-verification=MjgwOTA5MjctYTVjMi00OWM5LWI0YTMtMzFlNWNjMTc1Njg3",
       "hubspot-domain-verification=NDBjZjYxZDAtY2RiYS00NTMwLWJmYzMtZDNhNWY5NjYwZmY4",
-      "atlassian-domain-verification=HbwL1jmfLZJuo8K6HDVKoCkZSfgraX61OKTyE5SsvfK44k4qKWNBSWijsnAScInm",
+      "hubspot-domain-verification=NDkwZTAyNjctYjBmZS00MzYwLThiY2QtMGExZDYxYjQ2MTMz",
+      "mixpanel-domain-verify=2e95c43d-2182-4022-842b-483081b3d9f9",
+      "hubspot-domain-verification=M2MzZmRkZGEtYWE2OS00ZWQyLTg2ZDQtODkwZWM3NWM1MDY4",
+      "atlassian-domain-verification=5V9f1pwvULZYq1iMya6QtJWUwPi3jfiRXPrshFO5owbQi8Nhj4J4bk4R8gzG5Fvi",
+      "hubspot-domain-verification=ZGY3Nzk4MWItMGFhMS00ZjExLTlhODgtZjgyNDMyMjA4ZWZm",
+      "hubspot-domain-verification=NzYzYWIyYTUtZDMzNy00MWIzLTk5ZDEtZWM3OTEzNTNjZjZi",
+      "hubspot-domain-verification=M2U3OTFmYWYtNTZmZS00MGMxLWI2YjgtYmU0M2IyMzRhN2Rj",
+      "hubspot-domain-verification=ZGY3NTFmZDYtYWU3Yi00MWY5LWIxNzUtZTMyY2MyNGE0N2E1",
       "stripe-verification=301f6dc48b524378870b3f10b245b8233f95a3b71318492c17d046d3dd8da6a5",
+      "hubspot-domain-verification=MjgwOTA5MjctYTVjMi00OWM5LWI0YTMtMzFlNWNjMTc1Njg3",
+      "atlassian-domain-verification=HbwL1jmfLZJuo8K6HDVKoCkZSfgraX61OKTyE5SsvfK44k4qKWNBSWijsnAScInm",
+      "hubspot-domain-verification=ZGMwMjZlM2ItNTE5YS00OGNiLWEyYmEtYjJhOTZjZjVkOTA5",
+      "hubspot-domain-verification=MGQ0MzhmNDEtZmJiMC00MzkzLWI3NzktZjVhNTY2M2Q0MjZi",
+      "hubspot-domain-verification=MzUyNzQwMTUtOWM0Yi00ODAzLThjNDMtYTgyZmIxMGQ1MzYy",
+      "hubspot-domain-verification=NmM5ZmZlMTMtOWE1NS00ZWE2LWI2OTMtZGI0NGNlN2U5ZWI1",
+      "hubspot-domain-verification=ZjlkY2RjMTYtNjQxMy00NWY1LWE2NjAtNGQ4MzNhNDMxYTMx",
       "v=spf1 ip4:103.151.192.0/23 ip4:108.179.144.0/20 ip4:134.128.64.0/18 ip4:139.162.181.157 ip4:139.180.17.0/24 ip4:141.193.184.128/25 ip4:141.193.184.32/27 ip4:141.193.184.64/26 ip4:141.193.185.128/25 ip4:141.193.185.32/27 ip4:141.193.185.64/26",
       " ip4:141.94.7.160/28 ip4:141.94.7.30 ip4:141.94.7.31 ip4:141.94.7.32/27 ip4:143.244.80.0/20 ip4:148.105.0.0/16 ip4:149.72.0.0/16 ip4:158.247.16.0/20 ip4:159.183.0.0/16 ip4:159.26.176.0/20 ip4:167.89.0.0/17 ip4:168.245.0.0/17 ip4:172.104.151.106",
       " ip4:172.104.151.138 ip4:18.208.124.128/25 ip4:185.12.80.0/22 ip4:185.189.236.0/22 ip4:185.211.120.0/22 ip4:185.250.236.0/22 ip4:185.46.182.1 ip4:185.46.182.200/29 ip4:185.46.182.208/31 ip4:188.172.128.0/20 ip4:192.161.144.0/20 ip4:192.254.112.0/20",
@@ -191,8 +187,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       " ip4:66.187.204.0/23 ip4:69.169.224.0/20 ip4:74.125.0.0/16 ip4:76.223.128.0/19 ip4:76.223.176.0/20 ip4:77.74.54.216/32 ip4:77.74.54.242 ip4:77.74.54.75 ip4:87.253.232.0/21 ip4:88.191.140.49 ip4:88.191.149.244 ip4:91.204.117.0/26 ip4:91.204.117.10",
       " ip4:91.204.117.11 ip4:91.204.117.12 ip4:91.204.117.13 ip4:91.204.117.4 ip4:91.204.117.80/28 ip4:98.77.0.0/16 ip6:2001:4860:4864::/56 ip6:2404:6800:4864::/56 ip6:2607:f8b0:4864::/56 ip6:2800:3f0:4864::/56 ip6:2a00:1450:4864::/56",
       " ip6:2a01:310:8312:1035::75:0 ip6:2c0f:fb50:4864::/56 exists:%{i}._spf.mta.salesforce.com -all",
-      "hubspot-domain-verification=ODVhNTkyNGQtOTljYy00ZWE4LTljNjItNjFiMDExNTYxNGEx",
-      "atlassian-domain-verification=5V9f1pwvULZYq1iMya6QtJWUwPi3jfiRXPrshFO5owbQi8Nhj4J4bk4R8gzG5Fvi"
+      "hubspot-domain-verification=OTNlMzAyZGEtZTIxOC00YmI5LThjZGItMzgwMzJhN2FkZTAz",
+      "a1379742935a9b4fe5220281db19c39a111b927ac4e7b6dd9772463d7f2ad5a1",
+      "amazonses:U0TjwasGtQ7BX+vOwNfZMqOvXCTkrDvAMeoQ2vAkDsE=",
+      "hubspot-domain-verification=YzRjMzc2Y2UtN2U2Yi00ZjYwLWI4NzItYzQ4ZGQ3NmE1ZGY3",
+      "hubspot-domain-verification=OTY4NDFiN2ItN2VjZi00MGExLThlZDQtZDkzMmQyNjlkOTI0",
+      "hubspot-domain-verification=ODVhNTkyNGQtOTljYy00ZWE4LTljNjItNjFiMDExNTYxNGEx"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; aspf=r; adkim=r; pct=100; rua=mailto:infra-mail-reports-group@greenpeace.org,mailto:fb08c529499e4c218be6a8b94c687513@dmarc-reports.cloudflare.net; fo=1:d:s"
@@ -271,11 +271,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "hubspot-domain-verification=ZjlkY2RjMTYtNjQxMy00NWY1LWE2NjAtNGQ4MzNhNDMxYTMx",
-    "hubspot-domain-verification=MzUyNzQwMTUtOWM0Yi00ODAzLThjNDMtYTgyZmIxMGQ1MzYy",
-    "hubspot-domain-verification=NDkwZTAyNjctYjBmZS00MzYwLThiY2QtMGExZDYxYjQ2MTMz",
+    "atlassian-sending-domain-verification=8d3a2412-a678-4ddb-87b5-855d492868ba",
+    "anthropic-domain-verification-d2gnan=P2eHpvCqnCaszHVvpeSbguOuA",
     "atlassian-domain-verification=KByIuBBRnIkRV94u5cBWdoNJayjIyC1hoMA5JdtgzsGCVlF79O",
-    "hubspot-domain-verification=NmM5ZmZlMTMtOWE1NS00ZWE2LWI2OTMtZGI0NGNlN2U5ZWI1"
+    "google-site-verification=cabk3280FRUiQMgdVbPPPTdbytCnXe1LFEpYWIW5TMY",
+    "hubspot-domain-verification=NDBjZjYxZDAtY2RiYS00NTMwLWJmYzMtZDNhNWY5NjYwZmY4"
   ],
   "tls2": {
     "alpn": "",
@@ -287,6 +287,15 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": null,
+      "serial": 596578262681134307749915405842821803348164,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://yr2.c.lencr.org/69.crl"
+      ],
+      "subject_dn": "311730150603550403130e677265656e70656163652e6f7267",
+      "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303595232",
       "not_before": "20260904024317",
       "not_after": "20261203024316"
     }
@@ -308,8 +317,16 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 23.9,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "hsts": "max-age=31536000; includeSubDomains",
+    "crl": {
+      "url": "http://yr2.c.lencr.org/69.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 25.9,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -320,4 +337,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

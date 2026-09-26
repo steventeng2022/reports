@@ -7,12 +7,12 @@
 | Target | https://t.ly/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | t.ly |
-| Test date | 2026-09-26 22:16 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:39 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
+Total findings: **22** (High: 0, Medium: 0, Low: 2, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,7 +34,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 18 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
-| 19 | info | CT1 | 4 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 19 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
+| 20 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
+| 21 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 22 | info | CT1 | 4 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -125,7 +128,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=mBi24EbWStadX31zb-0MRYyAHCvogI_TdLFHFh4ULSk; ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e1; google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg; google-site-verification=mBi24EbWStadX31zb-0MRYyAHCvogI_TdLFHFh4ULSk; ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e1
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -149,10 +152,28 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 ### 18. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkkr7m7bgr96cx.html -> 404; error page/headers match: Cloudflare.
+- **Detail:** GET /xk9c3wlguh2cap.html -> 404; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
-### 19. [INFO] 4 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 19. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+
+- **CWE:** CWE-345
+- **Detail:** Root document of t.ly loads 3 cross-origin script(s) without an integrity attribute, e.g. https://www.googletagmanager.com/gtag/js?id=AW-10875945736, https://r.wdfl.co/rw.js, https://www.googletagmanager.com/gtag/js?id=UA-89207177-8; a compromise of any such third-party host can inject code.
+- **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
+
+### 20. [INFO] security.txt published with a contact address (`SEC1`)
+
+- **CWE:** CWE-1038
+- **Detail:** /.well-known/security.txt on t.ly is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
+- **Recommendation:** Confirm the published contact is current and monitored (RFC 9116).
+
+### 21. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on t.ly lists 692 <loc> URL(s); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
+### 22. [INFO] 4 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.t.ly
@@ -175,33 +196,33 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
     "cname": null,
     "mx": [
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt4.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
       "s76xmsvkv53zk4mecsx6vhsxovktess7wypymzdgrh3ajpxofa4a.mx-verification.google.com (pref 15)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "aspmx.l.google.com (pref 1)",
+      "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "vida.ns.cloudflare.com.",
-      "ivan.ns.cloudflare.com."
+      "ivan.ns.cloudflare.com.",
+      "vida.ns.cloudflare.com."
     ],
     "caa": [
-      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
-      "0 issue \"ssl.com\"",
-      "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
       "0 issuewild \"ssl.com\"",
+      "0 issuewild \"pki.goog; cansignhttpexchanges=yes\"",
       "0 issue \"letsencrypt.org\"",
       "0 issuewild \"comodoca.com\"",
+      "0 issue \"ssl.com\"",
       "0 issue \"comodoca.com\"",
-      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
       "0 issuewild \"letsencrypt.org\"",
-      "0 issuewild \"pki.goog; cansignhttpexchanges=yes\""
+      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issue \"pki.goog; cansignhttpexchanges=yes\""
     ],
     "spf": [
-      "google-site-verification=mBi24EbWStadX31zb-0MRYyAHCvogI_TdLFHFh4ULSk",
+      "google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg",
       "v=spf1 include:_spf.google.com ~all",
-      "ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e18f2077315",
-      "google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg"
+      "google-site-verification=mBi24EbWStadX31zb-0MRYyAHCvogI_TdLFHFh4ULSk",
+      "ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e18f2077315"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; rua=mailto:postmaster@t.ly"
@@ -298,9 +319,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
     ]
   },
   "apex_txt": [
+    "google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg",
     "google-site-verification=mBi24EbWStadX31zb-0MRYyAHCvogI_TdLFHFh4ULSk",
-    "ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e1",
-    "google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg"
+    "ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e1"
   ],
   "tls2": {
     "alpn": "",
@@ -312,6 +333,15 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
+      "serial": 212649695611629157105004380140493245846,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://c.pki.goog/we1/A0Gs5BNOLOI.crl"
+      ],
+      "subject_dn": "310d300b06035504031304742e6c79",
+      "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
       "not_before": "20260911170340",
       "not_after": "20261210180334"
     }
@@ -334,8 +364,21 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 13.6,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "hsts": "max-age=15552000; includeSubDomains; preload",
+    "security_txt": "/.well-known/security.txt",
+    "sitemap": {
+      "urls": 692,
+      "indexes": 0
+    },
+    "crl": {
+      "url": "http://c.pki.goog/we1/A0Gs5BNOLOI.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 14.4,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -346,4 +389,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,8 +7,8 @@
 | Target | https://freelancer.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | freelancer.com |
-| Test date | 2026-09-26 22:06 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:27 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -123,13 +123,13 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (j49kcj62fvdu15.freelancer.com and 4bezm53t0zivzj.freelancer.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (op9j1w5yxmxqua.freelancer.com and wfcxs3xilzl636.freelancer.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=WkLv9MyE6hoZ2g9h5eP3fBXm0FAfqv5X8L-J8iPmGe; openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK; twilio-domain-verification=e6bbec233a8c9e43fe0548ee6c530dfe
+- **Detail:** Apex TXT records with verification/token content: cursor-domain-verification-1c4pg9=RSGYjeGSZhXVJg4djpmBMSxjy; ahrefs-site-verification_d3c10f66e1e45dd0ba44ea9e87972068ada4cc55399000cd0bf2dd6; globalsign-domain-verification=WkLv9MyE6hoZ2g9h5eP3fBXm0FAfqv5X8L-J8iPmGe
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -182,37 +182,37 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
   "dns": {
     "a": [
       "54.221.62.44",
-      "52.86.196.209",
-      "34.197.165.66"
+      "34.197.165.66",
+      "52.86.196.209"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx5.googlemail.com (pref 30)",
       "aspmx3.googlemail.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)",
       "aspmx2.googlemail.com (pref 30)",
       "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 20)",
-      "aspmx4.googlemail.com (pref 30)"
+      "aspmx5.googlemail.com (pref 30)",
+      "aspmx4.googlemail.com (pref 30)",
+      "aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-549.awsdns-04.net.",
-      "ns-1780.awsdns-30.co.uk.",
       "ns-1363.awsdns-42.org.",
-      "ns-470.awsdns-58.com."
+      "ns-1780.awsdns-30.co.uk.",
+      "ns-470.awsdns-58.com.",
+      "ns-549.awsdns-04.net."
     ],
     "caa": [],
     "spf": [
-      "ZOOM_verify_MucGMGVCBb0sY18bpTcobR",
-      "v=spf1 include:_spf1.freelancer.com include:_spf2.freelancer.com include:_spf.google.com -all",
-      "globalsign-domain-verification=WkLv9MyE6hoZ2g9h5eP3fBXm0FAfqv5X8L-J8iPmGe",
-      "openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK",
       "MS=ms24738001",
-      "twilio-domain-verification=e6bbec233a8c9e43fe0548ee6c530dfe",
+      "cursor-domain-verification-1c4pg9=RSGYjeGSZhXVJg4djpmBMSxjy",
       "ahrefs-site-verification_d3c10f66e1e45dd0ba44ea9e87972068ada4cc55399000cd0bf2dd68a7338a46",
-      "anthropic-domain-verification-zmrkrz=BWcvNIhdz7pRP5S3gNSKur2wW",
-      "cursor-domain-verification-1c4pg9=RSGYjeGSZhXVJg4djpmBMSxjy"
+      "globalsign-domain-verification=WkLv9MyE6hoZ2g9h5eP3fBXm0FAfqv5X8L-J8iPmGe",
+      "ZOOM_verify_MucGMGVCBb0sY18bpTcobR",
+      "openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK",
+      "twilio-domain-verification=e6bbec233a8c9e43fe0548ee6c530dfe",
+      "v=spf1 include:_spf1.freelancer.com include:_spf2.freelancer.com include:_spf.google.com -all",
+      "anthropic-domain-verification-zmrkrz=BWcvNIhdz7pRP5S3gNSKur2wW"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; rua=mailto:y4fb8gcr@ag.au.dmarcian.com,mailto:61597d2f@mxtoolbox.dmarc-report.com,mailto:a68db7279cf8db37fa9c3e812a3543a8-t@dmarc.report-uri.com,mailto:dmarc+rua@freelancer.com;"
@@ -325,11 +325,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
   },
   "wildcard_dns": true,
   "apex_txt": [
+    "cursor-domain-verification-1c4pg9=RSGYjeGSZhXVJg4djpmBMSxjy",
+    "ahrefs-site-verification_d3c10f66e1e45dd0ba44ea9e87972068ada4cc55399000cd0bf2dd6",
     "globalsign-domain-verification=WkLv9MyE6hoZ2g9h5eP3fBXm0FAfqv5X8L-J8iPmGe",
     "openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK",
-    "twilio-domain-verification=e6bbec233a8c9e43fe0548ee6c530dfe",
-    "ahrefs-site-verification_d3c10f66e1e45dd0ba44ea9e87972068ada4cc55399000cd0bf2dd6",
-    "anthropic-domain-verification-zmrkrz=BWcvNIhdz7pRP5S3gNSKur2wW"
+    "twilio-domain-verification=e6bbec233a8c9e43fe0548ee6c530dfe"
   ],
   "tls2": {
     "alpn": "",
@@ -341,6 +341,15 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
+      "serial": 19979168843911046305470777395134173750,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.r2m01.amazontrust.com/r2m01.crl"
+      ],
+      "subject_dn": "311730150603550403130e667265656c616e6365722e636f6d",
+      "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3031",
       "not_before": "20260829000000",
       "not_after": "20270314235959"
     },
@@ -383,8 +392,16 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 36.7,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "hsts": "max-age=2592000",
+    "crl": {
+      "url": "http://crl.r2m01.amazontrust.com/r2m01.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 40.1,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -395,4 +412,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

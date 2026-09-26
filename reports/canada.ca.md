@@ -7,12 +7,12 @@
 | Target | https://canada.ca/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | canada.ca |
-| Test date | 2026-09-26 22:00 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:21 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
+Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,6 +36,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 | 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 20 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 21 | low | H21 | HSTS does not cover subdomains | CWE-319 |
 
 ## Detailed findings
 
@@ -141,7 +142,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: cisco-ci-domain-verification=4bda055da9fd2766af026fa3999b5dffb95a030ad1f968d1398; adobe-idp-site-verification=e4e5afcb1d9f55e0154efc626d8606ca67791a17c6ba4fc42d4a; linkedin-site-verification=330073d3-1782-412f-ac4f-7d523abea5a1
+- **Detail:** Apex TXT records with verification/token content: cisco-ci-domain-verification=4bda055da9fd2766af026fa3999b5dffb95a030ad1f968d1398; linkedin-site-verification=330073d3-1782-412f-ac4f-7d523abea5a1; google-site-verification=ifyhz_UIquElR0JcOEU4rudrSxSf4CWp_rUQ6yY2Z4g
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -153,7 +154,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 160.106.123.29 carries PTR DC01DC007-008-DEVTEST-VIP-123-29.dev.global.gc.ca. for canada.ca.
+- **Detail:** 205.193.215.159 carries PTR parked-redirect.gc.ca. for canada.ca.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -168,6 +169,12 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - **Detail:** The canada.ca certificate lists an AIA OCSP responder (http://ocsp.sectigo.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
+### 21. [LOW] HSTS does not cover subdomains (`H21`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security on canada.ca has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of canada.ca.
+- **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
+
 ## Evidence (raw response observations)
 
 ```json
@@ -175,10 +182,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   "domain": "canada.ca",
   "dns": {
     "a": [
-      "160.106.123.29",
       "205.193.215.159",
-      "167.40.79.24",
-      "205.193.117.159"
+      "205.193.117.159",
+      "160.106.123.29",
+      "167.40.79.24"
     ],
     "aaaa": [],
     "cname": null,
@@ -188,25 +195,25 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     "ns": [
       "ns2.d-zone.ca.",
       "ns41.ent.global.gc.ca.",
-      "ns40.ent.global.gc.ca.",
       "ns10.ent.global.gc.ca.",
       "ns11.ent.global.gc.ca.",
+      "ns40.ent.global.gc.ca.",
       "ns1.d-zone.ca."
     ],
     "caa": [],
     "spf": [
-      "cisco-ci-domain-verification=4bda055da9fd2766af026fa3999b5dffb95a030ad1f968d1398e30252b4788df",
-      "TrustedForDomainSharing=163gc.onmicrosoft.com",
-      "adobe-idp-site-verification=e4e5afcb1d9f55e0154efc626d8606ca67791a17c6ba4fc42d4a1053cd387efc",
-      "MS=ms50475705",
-      "linkedin-site-verification=330073d3-1782-412f-ac4f-7d523abea5a1",
-      "MS=EA8C6DD155E90A72E7E2579A022AA9E9737B8521",
       "w2gqtzjhky14qb8q476v1l5q5kzl79dg",
+      "cisco-ci-domain-verification=4bda055da9fd2766af026fa3999b5dffb95a030ad1f968d1398e30252b4788df",
+      "linkedin-site-verification=330073d3-1782-412f-ac4f-7d523abea5a1",
+      "v=spf1 include:emrs._spf.ssc-spc.gc.ca include:spf.protection.outlook.com include:slms._spf.ssc-spc.gc.ca -all",
       "google-site-verification=ifyhz_UIquElR0JcOEU4rudrSxSf4CWp_rUQ6yY2Z4g",
       "v=DMARC1; p=none; rua=mailto:SSC.SecurityOperations-Operationsdelasecurite.SPC@canada.ca; ruf=mailto:SSC.SecurityOperations-Operationsdelasecurite.SPC@canada.ca",
-      "v=spf1 include:emrs._spf.ssc-spc.gc.ca include:spf.protection.outlook.com include:slms._spf.ssc-spc.gc.ca -all",
-      "MS=ms59231125",
-      "linkedin-site-verification=12f98736-76a7-4053-83b1-d539d1283367"
+      "TrustedForDomainSharing=163gc.onmicrosoft.com",
+      "adobe-idp-site-verification=e4e5afcb1d9f55e0154efc626d8606ca67791a17c6ba4fc42d4a1053cd387efc",
+      "linkedin-site-verification=12f98736-76a7-4053-83b1-d539d1283367",
+      "MS=ms50475705",
+      "MS=EA8C6DD155E90A72E7E2579A022AA9E9737B8521",
+      "MS=ms59231125"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:ssc.dmarc.spc@canada.ca,mailto:dmarc@cyber.gc.ca; adkim=s; aspf=s"
@@ -244,7 +251,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     }
   },
   "ports": {
-    "ip": "160.106.123.29",
+    "ip": "205.193.215.159",
     "open": []
   },
   "https": {
@@ -298,9 +305,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   },
   "apex_txt": [
     "cisco-ci-domain-verification=4bda055da9fd2766af026fa3999b5dffb95a030ad1f968d1398",
-    "adobe-idp-site-verification=e4e5afcb1d9f55e0154efc626d8606ca67791a17c6ba4fc42d4a",
     "linkedin-site-verification=330073d3-1782-412f-ac4f-7d523abea5a1",
     "google-site-verification=ifyhz_UIquElR0JcOEU4rudrSxSf4CWp_rUQ6yY2Z4g",
+    "adobe-idp-site-verification=e4e5afcb1d9f55e0154efc626d8606ca67791a17c6ba4fc42d4a",
     "linkedin-site-verification=12f98736-76a7-4053-83b1-d539d1283367"
   ],
   "tls2": {
@@ -313,6 +320,15 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.sectigo.com",
+      "serial": 144780607588763297763452177145841608869,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.sectigo.com/EntrustOVTLSIssuingRSACA2.crl"
+      ],
+      "subject_dn": "310b30090603550406130243413110300e060355040813074f6e746172696f311f301d060355040a13165368617265642053657276696365732043616e616461311730150603550403130e777777312e63616e6164612e6361",
+      "issuer_dn": "310b300906035504061302434131183016060355040a130f456e7472757374204c696d69746564312830260603550403131f456e7472757374204f5620544c532049737375696e67205253412043412032",
       "not_before": "20260114000000",
       "not_after": "20270214235959"
     },
@@ -321,7 +337,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   "x12": {
     "status": 302,
     "ptr": [
-      "DC01DC007-008-DEVTEST-VIP-123-29.dev.global.gc.ca."
+      "parked-redirect.gc.ca."
     ]
   },
   "x13": {
@@ -336,8 +352,16 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 46.1,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 302,
+    "hsts": "max-age=31536000",
+    "crl": {
+      "url": "http://crl.sectigo.com/EntrustOVTLSIssuingRSACA2.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 46.6,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -348,4 +372,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

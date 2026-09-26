@@ -7,12 +7,12 @@
 | Target | https://webroot.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | webroot.com |
-| Test date | 2026-09-26 22:17 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:41 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **44** (High: 0, Medium: 6, Low: 11, Info: 27)
+Total findings: **47** (High: 0, Medium: 6, Low: 12, Info: 29)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -60,6 +60,9 @@ Total findings: **44** (High: 0, Medium: 6, Low: 11, Info: 27)
 | 42 | low | CK6 | Session-like cookie lacks both Secure and SameSite | CWE-614 |
 | 43 | low | CK8 | Session-like cookie with >=30-day lifetime | CWE-613 |
 | 44 | low | CK8 | Session-like cookie with >=30-day lifetime | CWE-613 |
+| 45 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 46 | info | CK11 | Session-like cookie value has low entropy | CWE-340 |
+| 47 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 
 ## Detailed findings
 
@@ -84,109 +87,109 @@ Total findings: **44** (High: 0, Medium: 6, Low: 11, Info: 27)
 ### 4. [MEDIUM] FTP service (cleartext) reachable (`PRT21`)
 
 - **CWE:** CWE-319
-- **Detail:** TCP connect to 45.60.171.109:21 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:21 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] SMTP (port 25) reachable (`PRT25`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 45.60.171.109:25 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:25 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 6. [INFO] DNS service reachable (`PRT53`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 45.60.171.109:53 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:53 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 7. [INFO] POP3 (cleartext) reachable (`PRT110`)
 
 - **CWE:** CWE-319
-- **Detail:** TCP connect to 45.60.171.109:110 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:110 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 8. [INFO] IMAP (cleartext) reachable (`PRT143`)
 
 - **CWE:** CWE-319
-- **Detail:** TCP connect to 45.60.171.109:143 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:143 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 9. [INFO] IMAPS (port 993) reachable (`PRT993`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 45.60.171.109:993 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:993 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 10. [INFO] POP3S (port 995) reachable (`PRT995`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 45.60.171.109:995 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:995 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 11. [MEDIUM] MSSQL (port 1433) reachable (`PRT1433`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 45.60.171.109:1433 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:1433 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 12. [MEDIUM] MySQL (port 3306) reachable (`PRT3306`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 45.60.171.109:3306 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:3306 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 13. [INFO] RDP (port 3389) reachable (`PRT3389`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 45.60.171.109:3389 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:3389 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 14. [MEDIUM] VNC (port 5900) reachable (`PRT5900`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 45.60.171.109:5900 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:5900 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 15. [MEDIUM] Redis (port 6379) reachable (`PRT6379`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 45.60.171.109:6379 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:6379 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 16. [INFO] Alternate web service (port 8000) reachable (`PRT8000`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 45.60.171.109:8000 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:8000 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 17. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 45.60.171.109:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 18. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 45.60.171.109:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 19. [INFO] Alternate web service (port 8888) reachable (`PRT8888`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 45.60.171.109:8888 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:8888 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 20. [INFO] Service (port 9090, e.g. Elasticsearch/debug) reachable (`PRT9090`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 45.60.171.109:9090 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:9090 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 21. [MEDIUM] Elasticsearch (port 9200) reachable (`PRT9200`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 45.60.171.109:9200 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 45.60.151.109:9200 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 22. [INFO] Technology fingerprint (`TECH1`)
@@ -261,14 +264,14 @@ Total findings: **44** (High: 0, Medium: 6, Low: 11, Info: 27)
 ### 32. [LOW] Cookie set without Secure flag over HTTPS (`CK1`)
 
 - **CWE:** CWE-614
-- **Detail:** Cookie 'incap_ses_675_3211517' has no Secure attribute on an HTTPS response.
+- **Detail:** Cookie 'incap_ses_176_3211517' has no Secure attribute on an HTTPS response.
 - **Context:** https response, /
 - **Recommendation:** Set Secure on all cookies over HTTPS.
 
 ### 33. [INFO] Cookie without SameSite attribute (`CK3`)
 
 - **CWE:** CWE-1275
-- **Detail:** Cookie 'incap_ses_675_3211517' has no SameSite attribute.
+- **Detail:** Cookie 'incap_ses_176_3211517' has no SameSite attribute.
 - **Context:** https response, /
 - **Recommendation:** Set SameSite=Lax (or Strict) to reduce CSRF surface.
 
@@ -306,7 +309,7 @@ Total findings: **44** (High: 0, Medium: 6, Low: 11, Info: 27)
 ### 39. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=W342u9ABN8CsWzHJEUTnnprvsso64lGHcBzHIjXtP4A; status-page-domain-verification=2tbgnrpnfp6b; status-page-domain-verification=ry2yxtvp8dt4
+- **Detail:** Apex TXT records with verification/token content: status-page-domain-verification=2tbgnrpnfp6b; status-page-domain-verification=ry2yxtvp8dt4; google-site-verification=W342u9ABN8CsWzHJEUTnnprvsso64lGHcBzHIjXtP4A
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 40. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -339,6 +342,24 @@ Total findings: **44** (High: 0, Medium: 6, Low: 11, Info: 27)
 - **Detail:** Cookie 'visid_incap_3211517' on webroot.com is session-like but carries a Max-Age/Expires lifetime of 30 days or more; a stolen cookie stays valid for a long window.
 - **Recommendation:** Shorten session-cookie lifetime and/or require re-authentication for sensitive actions.
 
+### 45. [LOW] HSTS does not cover subdomains (`H21`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security on webroot.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of webroot.com.
+- **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
+
+### 46. [INFO] Session-like cookie value has low entropy (`CK11`)
+
+- **CWE:** CWE-340
+- **Detail:** Cookie 'SSID' on webroot.com is 54 chars with ~3.48 bits/char of entropy; low-entropy tokens are easier to guess.
+- **Recommendation:** Generate session identifiers from a CSPRNG with sufficient entropy.
+
+### 47. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on webroot.com lists 192 <loc> URL(s); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -346,46 +367,46 @@ Total findings: **44** (High: 0, Medium: 6, Low: 11, Info: 27)
   "domain": "webroot.com",
   "dns": {
     "a": [
-      "45.60.171.109",
-      "45.60.151.109"
+      "45.60.151.109",
+      "45.60.171.109"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxa-00102601.gslb.pphosted.com (pref 1)",
-      "mxb-00102601.gslb.pphosted.com (pref 1)"
+      "mxb-00102601.gslb.pphosted.com (pref 1)",
+      "mxa-00102601.gslb.pphosted.com (pref 1)"
     ],
     "ns": [
-      "dns2.safenames.net.",
       "dns1.safenames.com.",
+      "dns2.safenames.net.",
       "dns3.safenames.org."
     ],
     "caa": [
-      "0 issue \"amazon.com\"",
-      "0 issue \"amazonaws.com\"",
-      "0 issue \"awstrust.com\"",
-      "0 issuewild \"amazonaws.com\"",
-      "0 issue \"digicert.com\"",
-      "0 issuewild \"letsencrypt.org\"",
       "0 issue \"letsencrypt.org\"",
-      "0 issuewild \"awstrust.com\"",
-      "0 issuewild \"digicert.com\"",
-      "0 issuewild \"amazon.com\"",
       "0 issuewild \"sectigo.com\"",
+      "0 issuewild \"awstrust.com\"",
       "0 issue \"sectigo.com\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issuewild \"amazonaws.com\"",
+      "0 issuewild \"digicert.com\"",
+      "0 issue \"digicert.com\"",
+      "0 issuewild \"amazon.com\"",
+      "0 issue \"awstrust.com\"",
+      "0 issue \"amazontrust.com\"",
+      "0 issue \"amazonaws.com\"",
       "0 issuewild \"amazontrust.com\"",
-      "0 issue \"amazontrust.com\""
+      "0 issue \"amazon.com\""
     ],
     "spf": [
-      "635557aa461593e8536643d878d7c78d698bcbb535e185853f5cfd526cafddfe",
-      "hj-ownership=kbD4%B6@fEzJ",
-      "google-site-verification=W342u9ABN8CsWzHJEUTnnprvsso64lGHcBzHIjXtP4A",
+      "status-page-domain-verification=2tbgnrpnfp6b",
+      "F5Bkf8aYNUTZwrEkaw2ss/rMNTWy9wTOKyKrIeQdD5YoMTFkYg9rjW275X1dSx5AWusuVqkf+caFIRtd63kGgw==",
       "MS=ms92726142",
       "v=spf1 ip4:66.35.53.240 ip4:66.35.53.180 ip4:208.87.139.150 ip4:66.35.53.248 ip4:208.74.204.0/22 ip4:46.19.168.0/23 ip4:208.87.139.64 ip4:208.87.139.66 include:spf.protection.outlook.com include:spf.messagelabs.com include:mktomail.com include:stspg-custo",
       "mer.com ip4:52.38.191.241 -all",
-      "status-page-domain-verification=2tbgnrpnfp6b",
+      "635557aa461593e8536643d878d7c78d698bcbb535e185853f5cfd526cafddfe",
+      "hj-ownership=kbD4%B6@fEzJ",
       "status-page-domain-verification=ry2yxtvp8dt4",
-      "F5Bkf8aYNUTZwrEkaw2ss/rMNTWy9wTOKyKrIeQdD5YoMTFkYg9rjW275X1dSx5AWusuVqkf+caFIRtd63kGgw==",
+      "google-site-verification=W342u9ABN8CsWzHJEUTnnprvsso64lGHcBzHIjXtP4A",
       "amazonses:DUPTZ+5PC5cywK2wrfzQHVsalso6GCYZmw9b2wSAgMo="
     ],
     "dmarc": [
@@ -416,7 +437,7 @@ Total findings: **44** (High: 0, Medium: 6, Low: 11, Info: 27)
     }
   },
   "ports": {
-    "ip": "45.60.171.109",
+    "ip": "45.60.151.109",
     "open": [
       21,
       25,
@@ -504,9 +525,9 @@ Total findings: **44** (High: 0, Medium: 6, Low: 11, Info: 27)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=W342u9ABN8CsWzHJEUTnnprvsso64lGHcBzHIjXtP4A",
     "status-page-domain-verification=2tbgnrpnfp6b",
-    "status-page-domain-verification=ry2yxtvp8dt4"
+    "status-page-domain-verification=ry2yxtvp8dt4",
+    "google-site-verification=W342u9ABN8CsWzHJEUTnnprvsso64lGHcBzHIjXtP4A"
   ],
   "tls2": {
     "alpn": "",
@@ -518,6 +539,15 @@ Total findings: **44** (High: 0, Medium: 6, Low: 11, Info: 27)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.sectigo.com",
+      "serial": 108557608789439541882417040425056681099,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.sectigo.com/SectigoPublicServerAuthenticationCAOVR36.crl"
+      ],
+      "subject_dn": "310b30090603550406130243413110300e060355040813074f6e746172696f311e301c060355040a13154f70656e205465787420436f72706f726174696f6e3116301406035504030c0d2a2e776562726f6f742e636f6d",
+      "issuer_dn": "310b300906035504061302474231183016060355040a130f5365637469676f204c696d69746564313730350603550403132e5365637469676f205075626c6963205365727665722041757468656e7469636174696f6e204341204f5620523336",
       "not_before": "20250911000000",
       "not_after": "20261012235959"
     },
@@ -557,8 +587,20 @@ Total findings: **44** (High: 0, Medium: 6, Low: 11, Info: 27)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 34.0,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 307,
+    "hsts": "max-age=63072000",
+    "sitemap": {
+      "urls": 192,
+      "indexes": 0
+    },
+    "crl": {
+      "url": "http://crl.sectigo.com/SectigoPublicServerAuthenticationCAOVR36.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 47.4,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -569,4 +611,5 @@ Total findings: **44** (High: 0, Medium: 6, Low: 11, Info: 27)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

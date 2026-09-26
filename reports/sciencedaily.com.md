@@ -7,12 +7,12 @@
 | Target | https://sciencedaily.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | sciencedaily.com |
-| Test date | 2026-09-26 22:14 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:37 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
+Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,7 +37,8 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
 | 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 20 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 21 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 22 | info | CT1 | 4 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 22 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
+| 23 | info | CT1 | 4 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -149,7 +150,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=WM-ZBKOaI9fmMYiqOsm8UuIlbUdNfbiii4HFgt-XxZc; facebook-domain-verification=5oq14nyaskwhbumbv9ciq9u6673us5; globalsign-domain-verification=QNggA5G6QQDkhq8HwwSkk3Pq-pS-ocYFv594GxNfmw
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=VTa387KessSeUKIk82l7wxHCJBfSkQSXbazhfOPXc_c; google-site-verification=WM-ZBKOaI9fmMYiqOsm8UuIlbUdNfbiii4HFgt-XxZc; globalsign-domain-verification=QNggA5G6QQDkhq8HwwSkk3Pq-pS-ocYFv594GxNfmw
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -167,7 +168,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
 ### 20. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xk66bstfkq4m1t.html -> 404; error page/headers match: Cloudflare.
+- **Detail:** GET /xk654u1rr5n8a0.html -> 404; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 21. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -176,7 +177,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
 - **Detail:** No CAA record found for sciencedaily.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 22. [INFO] 4 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 22. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+
+- **CWE:** CWE-345
+- **Detail:** Root document of sciencedaily.com loads 1 cross-origin script(s) without an integrity attribute, e.g. https://www.googletagmanager.com/gtag/js?id=G-GT6V1PPT8H; a compromise of any such third-party host can inject code.
+- **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
+
+### 23. [INFO] 4 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -195,30 +202,30 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
     ],
     "aaaa": [
       "2606:4700:20::ac43:4ba6",
-      "2606:4700:20::681a:50f",
-      "2606:4700:20::681a:40f"
+      "2606:4700:20::681a:40f",
+      "2606:4700:20::681a:50f"
     ],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx3.googlemail.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "noah.ns.cloudflare.com.",
-      "beth.ns.cloudflare.com."
+      "beth.ns.cloudflare.com.",
+      "noah.ns.cloudflare.com."
     ],
     "caa": [],
     "spf": [
-      "irjlmconcnkfmetvds6djpfhga",
+      "google-site-verification=VTa387KessSeUKIk82l7wxHCJBfSkQSXbazhfOPXc_c",
       "google-site-verification=WM-ZBKOaI9fmMYiqOsm8UuIlbUdNfbiii4HFgt-XxZc",
       "58piam3mhj3hac4u0msb49h9jo",
-      "facebook-domain-verification=5oq14nyaskwhbumbv9ciq9u6673us5",
       "globalsign-domain-verification=QNggA5G6QQDkhq8HwwSkk3Pq-pS-ocYFv594GxNfmw",
+      "facebook-domain-verification=5oq14nyaskwhbumbv9ciq9u6673us5",
       "v=spf1 include:_spf.google.com -all",
-      "google-site-verification=VTa387KessSeUKIk82l7wxHCJBfSkQSXbazhfOPXc_c"
+      "irjlmconcnkfmetvds6djpfhga"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; adkim=s; aspf=s"
@@ -312,10 +319,10 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
     ]
   },
   "apex_txt": [
+    "google-site-verification=VTa387KessSeUKIk82l7wxHCJBfSkQSXbazhfOPXc_c",
     "google-site-verification=WM-ZBKOaI9fmMYiqOsm8UuIlbUdNfbiii4HFgt-XxZc",
-    "facebook-domain-verification=5oq14nyaskwhbumbv9ciq9u6673us5",
     "globalsign-domain-verification=QNggA5G6QQDkhq8HwwSkk3Pq-pS-ocYFv594GxNfmw",
-    "google-site-verification=VTa387KessSeUKIk82l7wxHCJBfSkQSXbazhfOPXc_c"
+    "facebook-domain-verification=5oq14nyaskwhbumbv9ciq9u6673us5"
   ],
   "tls2": {
     "alpn": "",
@@ -327,6 +334,15 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
+      "serial": 64696418394981666708873989952722569453,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://c.pki.goog/we1/5gfQt1Epx4c.crl"
+      ],
+      "subject_dn": "3119301706035504031310736369656e63656461696c792e636f6d",
+      "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
       "not_before": "20260919173448",
       "not_after": "20261218183444"
     }
@@ -349,8 +365,15 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 41.9,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "crl": {
+      "url": "http://c.pki.goog/we1/5gfQt1Epx4c.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 45.4,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -361,4 +384,5 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

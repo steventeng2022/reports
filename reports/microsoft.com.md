@@ -7,12 +7,12 @@
 | Target | https://microsoft.com/ |
 | Bug bounty program | Microsoft Online Services |
 | Listed scope domain | microsoft.com |
-| Test date | 2026-09-26 22:10 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:33 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,7 +28,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 | 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 11 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 13 | info | CT1 | 123 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 13 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 14 | info | CT1 | 123 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -96,7 +97,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-phksss=GZrrKDUR4klRLFCvxyOvqcNGE; ms-domain-verification=d6545068-89f7-4432-b947-0b137e8a9fe3; d365mktkey=SxDf1EZxLvMwx6eEZUxzjFFgHoapF8DvtWEUjwq7ZTwx
+- **Detail:** Apex TXT records with verification/token content: d365mktkey=j2qHWq9BHdaa3ZXZH8x64daJZxEWsFa0dxDeilxDoYYx; anthropic-domain-verification-phksss=GZrrKDUR4klRLFCvxyOvqcNGE; sitecore-domain-verification=1d46cb5467624e33a408d14324874088
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -111,7 +112,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - **Detail:** Strict-Transport-Security is served but microsoft.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 13. [INFO] 123 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 13. [LOW] HSTS does not cover subdomains (`H21`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security on microsoft.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of microsoft.com.
+- **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
+
+### 14. [INFO] 123 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: apply.careers.microsoft.com, careers.microsoft.com, cdn.storeedgefd.dsx.mp.microsoft.com, dgps.support.microsoft.com, distribution.ams.infra.gcc.teams.microsoft.com, emails.infra.gcc.teams.microsoft.com, livesite-rdp-temp.webhook.infra.gcc.teams.microsoft.com, login.clouddamppe.microsoft.com, pti-int.store.microsoft.com, pti.store.microsoft.com
@@ -124,83 +131,83 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   "domain": "microsoft.com",
   "dns": {
     "a": [
-      "150.171.110.65"
+      "150.171.110.135"
     ],
     "aaaa": [
-      "2603:1061:14:16b::1"
+      "2603:1061:14:143::1"
     ],
     "cname": null,
     "mx": [
       "microsoft-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns3-39.azure-dns.org.",
+      "ns2-39.azure-dns.net.",
       "ns1-39.azure-dns.com.",
-      "ns4-39.azure-dns.info.",
-      "ns2-39.azure-dns.net."
+      "ns3-39.azure-dns.org.",
+      "ns4-39.azure-dns.info."
     ],
     "caa": [
       "0 contactemail \"caarecordaware@microsoft.com\""
     ],
     "spf": [
-      "v=MCPv1; k=ecdsap384; p=AoHTKEi2W8L2P8cf9CoDicIxYiuttTkwtIeFOqYCewBGoRZiiF+9/92saUkIDERGAA==",
-      "anthropic-domain-verification-phksss=GZrrKDUR4klRLFCvxyOvqcNGE",
-      "mixpanel-domain-verify=5803bc4c-5bb6-4ce1-8076-753800097373",
-      "ms-domain-verification=d6545068-89f7-4432-b947-0b137e8a9fe3",
-      "d365mktkey=SxDf1EZxLvMwx6eEZUxzjFFgHoapF8DvtWEUjwq7ZTwx",
-      "docusign=d5a3737c-c23c-4bd0-9095-d2ff621f2840",
-      "hpe-greenlake-domain-verification=495143304a3330533363357a57684f6335556f316f55654675523541464d3954",
-      "v=MCPv1; k=ecdsap384; p=A5JeyhIFWFj4/epHJwt29GRUSrFwGSwXhrhDMAUSklMhfXjI7gi/ekY/fQSWToZdCw==",
-      "d365mktkey=8fEQahTresJms7tZGxGFr94T1zDz36oCbUt1LJc99mox",
-      "v=MCPv1; k=ecdsap384; p=Asc8WWov6gsmCCzn4CSrwRuJIh5SqvaitKz/LlTW+SD54lLC52wzcnWhlTI416p2vw==",
-      "d365mktkey=3l6dste9txazu0Qd2zu4135PUB4E35txLxyzJxjkPbsx",
-      "_zx2p8gpzv720db2aqmozy4jhwk2nl43",
-      "ms-domain-verification=65f91178-9dfb-41cd-929d-08d1a38ed607",
-      "fg2t0gov9424p2tdcuo94goe9j",
-      "facebook-domain-verification=fwzwhbbzwmg5fzgotc2go51olc3566",
-      "v=MCPv1; k=ecdsap384; p=A8qndBCDJGtFF2+3v/IPIMmM0SaVcrJBoSue7rKob6sUeK7QGeFuWkrtvze3AiqUDA==",
-      "sitecore-domain-verification=1d46cb5467624e33a408d14324874088",
-      "ms-domain-verification=25524f4b-1476-489c-a086-30f4c5016ecc",
-      "d365mktkey=PNcDqkW71x8VOUhcE96aGM4l5PYX1gnlRl6ieXUl5eMx",
-      "d365mktkey=QDa792dLCZhvaAOOCe2Hz6WTzmTssOp1snABhxWibhMx",
-      "ms-domain-verification=561512fc-b4ba-4ac7-a946-e464c8f49f1b",
-      "d365mktkey=Fu49WtSTeClkHtK7S14227RIVpGwwGrzEsO6RVs1I2Ax",
-      "openai-domain-verification=dv-sFtCvKOlWoe31gpoSvs7cqsP",
-      "workplace-domain-verification=lK0QDLk73xymCYMKUXNpfKAT8TY5Mx",
-      "v=MCPv1; k=ecdsap384; p=A/78JIxAOlNwq8f0T/l50w7zhwQFpEuB8/Jz9CafdXNX7ewOluYpS/EEcSmLgxsHXg==",
-      "d365mktkey=6358r1b7e13hox60tl1uagv14",
-      "v=MCPv1; k=ecdsap384; p=Azw9+u4M8RoH+bxJidKAZzGDmsPkzY1N4cO7rB/uC5x1RBoNfMyBlH/ott0lpo4pOQ==",
-      "d365mktkey=ZGFU0tlXPekPusNHPo5QQQWpVf0gic0xpuKroNy3NQEx",
-      "google-site-verification=GfDnTUdATPsK1230J0mXbfsYw-3A9BVMVaKSd4DcKgI",
-      "google-site-verification=mEAmcTy1e8jIB9W6ENPk2GDg9hjuNytQQRGlK0hPm0c",
-      "d365mktkey=heYmJ57sWrwMjCgIG1xRwTREJrQokUIDtBcNfGuxoWQx",
-      "MS=ms79629062",
-      "dobtdihqagnr18hea8uv1h1mvq",
-      "v=MCPv1; k=ecdsap384; p=As/XxnDWZFxFwHvRZj+HbG5/ImtAeabLkiOWu1h7wCJQFAR216E9HoYQ5Hy6o7StoQ==",
-      "zoom-domain-verification=ZOOM_verify_e97a3d385acb4c47b9b924609a280524",
-      "v=MCPv1; k=ecdsap384; p=AqXeTHJ/1FCYeuvJ8dc1B+X3uHaa7m2W0s31vzL4opnrJlSaBdtbWTY8Ti5WiZnu9Q==",
-      "atlassian-domain-verification=Sn5AwyIdVgkaRaJA/IKj7ZFMnWeCBnppa9bXGLuJvsakRHH4lYoBxS8g7GVlud9M",
-      "google-site-verification=M--CVfn_YwsV-2FGbCp_HFaEj23BmT0cTF4l8hXgpvM",
       "d365mktkey=j2qHWq9BHdaa3ZXZH8x64daJZxEWsFa0dxDeilxDoYYx",
-      "hcp-domain-verification=3ce174a8b9fba88909633ab13eb1d81ce0123454745d66e500052ed84b7248a1",
-      "atlassian-domain-verification=xvoaqRfxSg3PnlVnR4xCSOlKyw1Aln0MMxRiKXnwWroFG7vI76TUC8xYb03MwMXv",
-      "d365mktkey=JlXV17lfZjyvWxNje1qiP390ACSKzTxo5mGqZ3V2BmYx",
-      "t7sebee51jrj7vm932k531hipa",
-      "v=MCPv1; k=ecdsap384; p=An4mJIFLRys9h1EvjX18SJs5p1uEF5MHcs2JJLYPrI48C5Qt9FpaZEM0sQTV4JvNYw==",
-      "d365mktkey=3uc1cf82cpv750lzk70v9bvf2",
-      "v=spf1 include:_spf-a.microsoft.com include:_spf-b.microsoft.com include:_spf-c.microsoft.com include:_spf-ssg-a.msft.net include:_spf1-meo.microsoft.com -all",
-      "liveramp-site-verification=kxcV8fDH_FUNUZQEcAO6lwgim47f_hNLgMP4VG0PF_Q",
-      "ms-domain-verification=478640ad-6524-43d5-86c4-a914804b9e93",
-      "v=MCPv1; k=ecdsap384; p=A/Mf6IKdZzcHfBvpiVz9rkdPTIcCP5IbRDdEkeP3PgXEXF3mNjorahOwaYlMINBF5A==",
-      "1password-site-verification=35ZTURTFFFDC5BW7GFQKRJ77QM",
-      "hubspot-developer-verification=OTQ5NGIwYWEtODNmZi00YWE1LTkyNmQtNDhjMDMxY2JjNDAx",
-      "airtable-verification=79a09e4a8013ff5737798ffb4ea88eee",
-      "d365mktkey=wbU64GRacxVEQxwcLSQnx0zisXLYzgUbfvsufIqO9ZUx",
+      "mixpanel-domain-verify=5803bc4c-5bb6-4ce1-8076-753800097373",
+      "anthropic-domain-verification-phksss=GZrrKDUR4klRLFCvxyOvqcNGE",
+      "sitecore-domain-verification=1d46cb5467624e33a408d14324874088",
+      "zoom-domain-verification=ZOOM_verify_e97a3d385acb4c47b9b924609a280524",
+      "v=MCPv1; k=ecdsap384; p=AoHTKEi2W8L2P8cf9CoDicIxYiuttTkwtIeFOqYCewBGoRZiiF+9/92saUkIDERGAA==",
+      "workplace-domain-verification=lK0QDLk73xymCYMKUXNpfKAT8TY5Mx",
+      "facebook-domain-verification=fwzwhbbzwmg5fzgotc2go51olc3566",
+      "v=MCPv1; k=ecdsap384; p=A5JeyhIFWFj4/epHJwt29GRUSrFwGSwXhrhDMAUSklMhfXjI7gi/ekY/fQSWToZdCw==",
       "ms-domain-verification=1c4e4677-e58f-4117-8d61-e5b2810388c2",
-      "google-site-verification=pjPOauSPcrfXOZS9jnPPa5axowcHGCDAl1_86dCqFpk",
-      "google-site-verification=uFg3wr5PWsK8lV029RoXXBBUW0_E6qf1WEWVHhetkOY",
+      "ms-domain-verification=478640ad-6524-43d5-86c4-a914804b9e93",
+      "d365mktkey=3l6dste9txazu0Qd2zu4135PUB4E35txLxyzJxjkPbsx",
+      "ms-domain-verification=d6545068-89f7-4432-b947-0b137e8a9fe3",
+      "t7sebee51jrj7vm932k531hipa",
+      "hcp-domain-verification=3ce174a8b9fba88909633ab13eb1d81ce0123454745d66e500052ed84b7248a1",
       "google-site-verification=uhh5_jbxpcQgnb-A7gDIjlrr5Ef34lA2t2_BAveYpnk",
-      "linear-domain-verification=iuq6saifcnbe"
+      "1password-site-verification=35ZTURTFFFDC5BW7GFQKRJ77QM",
+      "d365mktkey=3uc1cf82cpv750lzk70v9bvf2",
+      "d365mktkey=PNcDqkW71x8VOUhcE96aGM4l5PYX1gnlRl6ieXUl5eMx",
+      "v=MCPv1; k=ecdsap384; p=As/XxnDWZFxFwHvRZj+HbG5/ImtAeabLkiOWu1h7wCJQFAR216E9HoYQ5Hy6o7StoQ==",
+      "v=MCPv1; k=ecdsap384; p=A8qndBCDJGtFF2+3v/IPIMmM0SaVcrJBoSue7rKob6sUeK7QGeFuWkrtvze3AiqUDA==",
+      "d365mktkey=8fEQahTresJms7tZGxGFr94T1zDz36oCbUt1LJc99mox",
+      "google-site-verification=mEAmcTy1e8jIB9W6ENPk2GDg9hjuNytQQRGlK0hPm0c",
+      "linear-domain-verification=iuq6saifcnbe",
+      "d365mktkey=heYmJ57sWrwMjCgIG1xRwTREJrQokUIDtBcNfGuxoWQx",
+      "d365mktkey=QDa792dLCZhvaAOOCe2Hz6WTzmTssOp1snABhxWibhMx",
+      "v=MCPv1; k=ecdsap384; p=Asc8WWov6gsmCCzn4CSrwRuJIh5SqvaitKz/LlTW+SD54lLC52wzcnWhlTI416p2vw==",
+      "v=MCPv1; k=ecdsap384; p=A/78JIxAOlNwq8f0T/l50w7zhwQFpEuB8/Jz9CafdXNX7ewOluYpS/EEcSmLgxsHXg==",
+      "hubspot-developer-verification=OTQ5NGIwYWEtODNmZi00YWE1LTkyNmQtNDhjMDMxY2JjNDAx",
+      "v=MCPv1; k=ecdsap384; p=An4mJIFLRys9h1EvjX18SJs5p1uEF5MHcs2JJLYPrI48C5Qt9FpaZEM0sQTV4JvNYw==",
+      "atlassian-domain-verification=Sn5AwyIdVgkaRaJA/IKj7ZFMnWeCBnppa9bXGLuJvsakRHH4lYoBxS8g7GVlud9M",
+      "google-site-verification=pjPOauSPcrfXOZS9jnPPa5axowcHGCDAl1_86dCqFpk",
+      "d365mktkey=Fu49WtSTeClkHtK7S14227RIVpGwwGrzEsO6RVs1I2Ax",
+      "_zx2p8gpzv720db2aqmozy4jhwk2nl43",
+      "d365mktkey=ZGFU0tlXPekPusNHPo5QQQWpVf0gic0xpuKroNy3NQEx",
+      "google-site-verification=uFg3wr5PWsK8lV029RoXXBBUW0_E6qf1WEWVHhetkOY",
+      "ms-domain-verification=25524f4b-1476-489c-a086-30f4c5016ecc",
+      "v=MCPv1; k=ecdsap384; p=A/Mf6IKdZzcHfBvpiVz9rkdPTIcCP5IbRDdEkeP3PgXEXF3mNjorahOwaYlMINBF5A==",
+      "ms-domain-verification=65f91178-9dfb-41cd-929d-08d1a38ed607",
+      "v=spf1 include:_spf-a.microsoft.com include:_spf-b.microsoft.com include:_spf-c.microsoft.com include:_spf-ssg-a.msft.net include:_spf1-meo.microsoft.com -all",
+      "d365mktkey=SxDf1EZxLvMwx6eEZUxzjFFgHoapF8DvtWEUjwq7ZTwx",
+      "MS=ms79629062",
+      "google-site-verification=GfDnTUdATPsK1230J0mXbfsYw-3A9BVMVaKSd4DcKgI",
+      "docusign=d5a3737c-c23c-4bd0-9095-d2ff621f2840",
+      "d365mktkey=6358r1b7e13hox60tl1uagv14",
+      "hpe-greenlake-domain-verification=495143304a3330533363357a57684f6335556f316f55654675523541464d3954",
+      "google-site-verification=M--CVfn_YwsV-2FGbCp_HFaEj23BmT0cTF4l8hXgpvM",
+      "d365mktkey=wbU64GRacxVEQxwcLSQnx0zisXLYzgUbfvsufIqO9ZUx",
+      "v=MCPv1; k=ecdsap384; p=Azw9+u4M8RoH+bxJidKAZzGDmsPkzY1N4cO7rB/uC5x1RBoNfMyBlH/ott0lpo4pOQ==",
+      "dobtdihqagnr18hea8uv1h1mvq",
+      "airtable-verification=79a09e4a8013ff5737798ffb4ea88eee",
+      "atlassian-domain-verification=xvoaqRfxSg3PnlVnR4xCSOlKyw1Aln0MMxRiKXnwWroFG7vI76TUC8xYb03MwMXv",
+      "ms-domain-verification=561512fc-b4ba-4ac7-a946-e464c8f49f1b",
+      "v=MCPv1; k=ecdsap384; p=AqXeTHJ/1FCYeuvJ8dc1B+X3uHaa7m2W0s31vzL4opnrJlSaBdtbWTY8Ti5WiZnu9Q==",
+      "fg2t0gov9424p2tdcuo94goe9j",
+      "d365mktkey=JlXV17lfZjyvWxNje1qiP390ACSKzTxo5mGqZ3V2BmYx",
+      "openai-domain-verification=dv-sFtCvKOlWoe31gpoSvs7cqsP",
+      "liveramp-site-verification=kxcV8fDH_FUNUZQEcAO6lwgim47f_hNLgMP4VG0PF_Q"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:itex-rua@microsoft.com; ruf=mailto:itex-ruf@microsoft.com; fo=1"
@@ -391,7 +398,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     }
   },
   "ports": {
-    "ip": "150.171.110.65",
+    "ip": "150.171.110.135",
     "open": []
   },
   "https": {
@@ -481,11 +488,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     ]
   },
   "apex_txt": [
+    "d365mktkey=j2qHWq9BHdaa3ZXZH8x64daJZxEWsFa0dxDeilxDoYYx",
     "anthropic-domain-verification-phksss=GZrrKDUR4klRLFCvxyOvqcNGE",
-    "ms-domain-verification=d6545068-89f7-4432-b947-0b137e8a9fe3",
-    "d365mktkey=SxDf1EZxLvMwx6eEZUxzjFFgHoapF8DvtWEUjwq7ZTwx",
-    "hpe-greenlake-domain-verification=495143304a3330533363357a57684f6335556f316f5565",
-    "d365mktkey=8fEQahTresJms7tZGxGFr94T1zDz36oCbUt1LJc99mox"
+    "sitecore-domain-verification=1d46cb5467624e33a408d14324874088",
+    "zoom-domain-verification=ZOOM_verify_e97a3d385acb4c47b9b924609a280524",
+    "workplace-domain-verification=lK0QDLk73xymCYMKUXNpfKAT8TY5Mx"
   ],
   "tls2": {
     "alpn": "",
@@ -497,6 +504,16 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://oneocsp.microsoft.com/ocsp",
+      "serial": 1494185073477467730131572356474851318374549578,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://www.microsoft.com/pkiops/crl/partition/Microsoft%20TLS%20G2%20RSA%20CA%20OCSP%2004_Partition00001.crl",
+        "http://crl2.microsoft.com/pkiops/crl/partition/Microsoft%20TLS%20G2%20RSA%20CA%20OCSP%2004_Partition00001.crl"
+      ],
+      "subject_dn": "310b3009060355040613025553310b30090603550408130257413110300e060355040713075265646d6f6e64311e301c060355040a13154d6963726f736f667420436f72706f726174696f6e311630140603550403130d6d6963726f736f66742e636f6d",
+      "issuer_dn": "310b3009060355040613025553311e301c060355040a13154d6963726f736f667420436f72706f726174696f6e312830260603550403131f4d6963726f736f667420544c5320473220525341204341204f435350203034",
       "not_before": "20260623090417",
       "not_after": "20261220090417"
     },
@@ -517,8 +534,16 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 11.6,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "hsts": "max-age=31536000",
+    "crl": {
+      "url": "http://www.microsoft.com/pkiops/crl/partition/Microsoft%20TLS%20G2%20RSA%20CA%20OCSP%2004_Partition00001.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 11.8,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -529,4 +554,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

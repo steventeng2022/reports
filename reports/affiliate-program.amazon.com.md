@@ -7,12 +7,12 @@
 | Target | https://affiliate-program.amazon.com/ |
 | Bug bounty program | Amazon |
 | Listed scope domain | affiliate-program.amazon.com |
-| Test date | 2026-09-26 21:57 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
+Total findings: **25** (High: 0, Medium: 0, Low: 7, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -39,7 +39,8 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
 | 21 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 22 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 23 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 24 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 24 | info | CK11 | Session-like cookie value has low entropy | CWE-340 |
+| 25 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -175,7 +176,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
 ### 21. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkpn7oruks3elc.html -> 404; error page/headers match: CloudFront.
+- **Detail:** GET /xkisja4jv70bab.html -> 404; error page/headers match: CloudFront.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 22. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -190,7 +191,13 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
 - **Detail:** No CAA record found for affiliate-program.amazon.com; apex amazon.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 24. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 24. [INFO] Session-like cookie value has low entropy (`CK11`)
+
+- **CWE:** CWE-340
+- **Detail:** Cookie 'session-id' on affiliate-program.amazon.com is 19 chars with ~3.07 bits/char of entropy; low-entropy tokens are easier to guess.
+- **Recommendation:** Generate session identifiers from a CSPRNG with sufficient entropy.
+
+### 25. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -209,10 +216,10 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
     "cname": "tp.a0bb234b7-frontier.amazon.com.",
     "mx": [],
     "ns": [
-      "ns-1333.awsdns-38.org.",
-      "ns-1802.awsdns-33.co.uk.",
       "ns-246.awsdns-30.com.",
-      "ns-776.awsdns-33.net."
+      "ns-776.awsdns-33.net.",
+      "ns-1802.awsdns-33.co.uk.",
+      "ns-1333.awsdns-38.org."
     ],
     "caa": [],
     "spf": [],
@@ -330,6 +337,15 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
+      "serial": 10130637642120278490790335901636505673,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.r2m04.amazontrust.com/r2m04.crl"
+      ],
+      "subject_dn": "312530230603550403131c616666696c696174652d70726f6772616d2e616d617a6f6e2e636f6d",
+      "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3034",
       "not_before": "20260614000000",
       "not_after": "20261228235959"
     },
@@ -356,8 +372,16 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 14.5,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "hsts": "max-age=47474747; includeSubDomains; preload",
+    "crl": {
+      "url": "http://crl.r2m04.amazontrust.com/r2m04.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 15.5,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -368,4 +392,5 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

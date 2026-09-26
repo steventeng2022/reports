@@ -7,12 +7,12 @@
 | Target | https://acm.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | acm.org |
-| Test date | 2026-09-26 21:56 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,13 +28,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
 | 11 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 13 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
-| 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 16 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
-| 17 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
-| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 19 | info | CT1 | 196 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 16 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 18 | info | CT1 | 196 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -111,46 +110,40 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: abuseipdb-verification=D4c0J6WF; google-site-verification=lqxyh1_UaHYvgAfZ3gvxIDJi3quBVO_5Lq_pDUOKdNw; google-site-verification=8gUY1AtsZ3BzLVSHLSv3wXIE8MpnWrGgVrmvVxM1MjE
+- **Detail:** Apex TXT records with verification/token content: abuseipdb-verification=D4c0J6WF; google-site-verification=lqxyh1_UaHYvgAfZ3gvxIDJi3quBVO_5Lq_pDUOKdNw; duo_sso_verification=oFRYT7Y1MADnakU5K1wxwe47F9TsTRZ76IZL8bgH2J0NFoipvgi5tAE6kTm
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 13. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
-
-- **CWE:** CWE-603
-- **Detail:** OCSP check via http://ocsp.digicert.com -> http-200
-- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
-
-### 14. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 13. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but acm.org is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 18 disallow path(s), e.g. /live-search, /404, /landing-page-documents/, /referenced-ctalist/, /Member/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 16. [INFO] Framework/stack inferred from cookie name (`CK9`)
+### 15. [INFO] Framework/stack inferred from cookie name (`CK9`)
 
 - **CWE:** CWE-200
 - **Detail:** Cookie '__cf_bm' set on acm.org indicates Cloudflare bot-management cookie.
 - **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
 
-### 17. [INFO] Error-page technology fingerprint (`ERR1`)
+### 16. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xk5potuhsmo670.html -> 403; error page/headers match: Cloudflare.
+- **Detail:** GET /xkk2m9yg7zdonf.html -> 403; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
-### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for acm.org, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 19. [INFO] 196 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] 196 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: idp.acm.org, mail.arg.hosting2.acm.org, mail.nsuacmsc.hosting.acm.org, mail.nsusc.hosting.acm.org, mail.selects.acm.org, staging.ubicomp.hosting.acm.org, webmail.arg.hosting2.acm.org, webmail.nsusc.hosting.acm.org, webmail.selects.acm.org, www.staging.gmritchapter.hosting.acm.org
@@ -172,23 +165,23 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "mail.mailroute.net (pref 10)"
     ],
     "ns": [
-      "skip.ns.cloudflare.com.",
-      "olga.ns.cloudflare.com."
+      "olga.ns.cloudflare.com.",
+      "skip.ns.cloudflare.com."
     ],
     "caa": [],
     "spf": [
       "abuseipdb-verification=D4c0J6WF",
-      "google-site-verification=lqxyh1_UaHYvgAfZ3gvxIDJi3quBVO_5Lq_pDUOKdNw",
+      "p0yygcm8ljrr9v47xkgrk4cjdvpctb6t",
+      "83zn0ndgz9jvwx563vp9qbyz38hqb7kl",
+      "v=spf1 include:_spf.acm_org._d.easydmarc.pro ~all",
       "brevo-code:e7393522d4f06661f44afbccb0cebfc6",
+      "MS=F1C3025E76F2E7036C9EAF6DBC2DF0C8D2D4AA87",
       "_ead5vviqjla5mjijrh4zvhsujcx843n",
       "_isyuzeobyu2bijfg78028dab2ac4f5r",
-      "3w6lthcz5h4qpgtd8n8szx1m474v73tz",
-      "MS=F1C3025E76F2E7036C9EAF6DBC2DF0C8D2D4AA87",
-      "v=spf1 include:_spf.acm_org._d.easydmarc.pro ~all",
-      "p0yygcm8ljrr9v47xkgrk4cjdvpctb6t",
+      "google-site-verification=lqxyh1_UaHYvgAfZ3gvxIDJi3quBVO_5Lq_pDUOKdNw",
+      "duo_sso_verification=oFRYT7Y1MADnakU5K1wxwe47F9TsTRZ76IZL8bgH2J0NFoipvgi5tAE6kTmlRfY8",
       "google-site-verification=8gUY1AtsZ3BzLVSHLSv3wXIE8MpnWrGgVrmvVxM1MjE",
-      "83zn0ndgz9jvwx563vp9qbyz38hqb7kl",
-      "duo_sso_verification=oFRYT7Y1MADnakU5K1wxwe47F9TsTRZ76IZL8bgH2J0NFoipvgi5tAE6kTmlRfY8"
+      "3w6lthcz5h4qpgtd8n8szx1m474v73tz"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;sp=quarantine;pct=100;rua=mailto:9adb8cf49b@rua.easydmarc.us;ruf=mailto:9adb8cf49b@ruf.easydmarc.us;fo=1;"
@@ -321,8 +314,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "apex_txt": [
     "abuseipdb-verification=D4c0J6WF",
     "google-site-verification=lqxyh1_UaHYvgAfZ3gvxIDJi3quBVO_5Lq_pDUOKdNw",
-    "google-site-verification=8gUY1AtsZ3BzLVSHLSv3wXIE8MpnWrGgVrmvVxM1MjE",
-    "duo_sso_verification=oFRYT7Y1MADnakU5K1wxwe47F9TsTRZ76IZL8bgH2J0NFoipvgi5tAE6kTm"
+    "duo_sso_verification=oFRYT7Y1MADnakU5K1wxwe47F9TsTRZ76IZL8bgH2J0NFoipvgi5tAE6kTm",
+    "google-site-verification=8gUY1AtsZ3BzLVSHLSv3wXIE8MpnWrGgVrmvVxM1MjE"
   ],
   "tls2": {
     "alpn": "",
@@ -334,10 +327,20 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.digicert.com",
+      "serial": 8585147015611556010611612945268820675,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
+        "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
+      ],
+      "subject_dn": "310b30090603550406130255533111300f060355040813084e657720596f726b3111300f060355040713084e657720596f726b31323030060355040a13294173736f63696174696f6e20666f7220436f6d707574696e67204d616368696e6572792c20496e632e3112301006035504030c092a2e61636d2e6f7267",
+      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
       "not_before": "20260401000000",
       "not_after": "20261016235959"
     },
-    "ocsp": "http-200"
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -372,8 +375,16 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 7.9,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 403,
+    "hsts": "max-age=0",
+    "crl": {
+      "url": "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 7.0,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -384,4 +395,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

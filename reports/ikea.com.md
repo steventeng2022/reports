@@ -7,8 +7,8 @@
 | Target | https://ikea.com/ |
 | Bug bounty program | IKEA |
 | Listed scope domain | ikea.com |
-| Test date | 2026-09-26 22:08 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:30 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -134,7 +134,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: ecostruxure-it-verification=aed1c019-11ed-4ef4-985a-9d57e6880300; google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY; pendo-domain-verification=kNv_0V-tt2G-fFDGQQ35qbcUUIk
+- **Detail:** Apex TXT records with verification/token content: pendo-domain-verification=kNv_0V-tt2G-fFDGQQ35qbcUUIk; apple-domain-verification=lcR3r6mOMUXCfIBeISYyewJZUPc9Z7njjsCWH3wMJTU; airtable-verification=1a7ed489e90d747183dc48f953dc38e2
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -184,57 +184,57 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "udns2.cscdns.uk."
     ],
     "caa": [
-      "0 issue \"amazontrust.com\"",
       "0 issue \"pki.goog\"",
-      "0 issue \"digicert.com\"",
-      "0 issuewild \"letsencrypt.org\"",
-      "0 issuewild \"amazonaws.com\"",
-      "0 issuewild \"globalsign.com\"",
-      "0 issue \"sectigo.com\"",
-      "0 issuewild \"sectigo.com\"",
-      "0 issuewild \"amazon.com\"",
-      "0 issue \"letsencrypt.org\"",
-      "0 issuewild \"awstrust.com\"",
-      "0 issue \"amazon.com\"",
-      "0 issuewild \"amazontrust.com\"",
-      "0 issue \"globalsign.com\"",
-      "0 issue \"awstrust.com\"",
-      "0 iodef \"mailto:caa@inter.IKEA.com\"",
-      "0 issuewild \"pki.goog\"",
       "0 issuewild \"digicert.com\"",
+      "0 issuewild \"sectigo.com\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issuewild \"globalsign.com\"",
+      "0 iodef \"mailto:caa@inter.IKEA.com\"",
+      "0 issue \"globalsign.com\"",
+      "0 issue \"sectigo.com\"",
+      "0 issuewild \"amazontrust.com\"",
+      "0 issuewild \"amazon.com\"",
+      "0 issuewild \"amazonaws.com\"",
+      "0 issue \"awstrust.com\"",
+      "0 issuewild \"awstrust.com\"",
+      "0 issue \"digicert.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"amazontrust.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issuewild \"pki.goog\"",
       "0 issue \"amazonaws.com\""
     ],
     "spf": [
-      "ecostruxure-it-verification=aed1c019-11ed-4ef4-985a-9d57e6880300",
+      "pendo-domain-verification=kNv_0V-tt2G-fFDGQQ35qbcUUIk",
+      "c7w8ywlzkqtsjrj37zwx3rls92xtg2v2",
+      "apple-domain-verification=lcR3r6mOMUXCfIBeISYyewJZUPc9Z7njjsCWH3wMJTU",
+      "airtable-verification=1a7ed489e90d747183dc48f953dc38e2",
+      "ibmid= 402dfd6a-c923-4b4b-8b0b-d48321ad0c03",
       "google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY",
       "c1uaul3js4qk63pu2rlbbipukl",
-      "bc3r1bhgiiv5glji4a4e5q7feq",
-      "1gsbjx5k4dg72szsrycjtvbjdxnz7f9w",
-      "yf27ml09h67l135bgfj8r7k8l06ct0b0",
-      "pendo-domain-verification=kNv_0V-tt2G-fFDGQQ35qbcUUIk",
-      "ipimblog.azurewebsites.net",
-      "verification=4b7a9cf113659b548dd81c74867cc6e8cdb666dcdedd89006a4b6df841436db9",
-      "adobe-sign-verification=cedca323afb86422862e301984996075",
-      "v=spf1 include:_spf.ikea.com include:spf.protection.outlook.com -all",
-      "r9l0gn0j4tfvikcnfsoabna4he",
-      "openai-domain-verification=dv-NuhNTz6e8ZuA6QC8JPuNWQVI",
-      "schrgk1ftng0xtbk5hzdm37z1qm50c5x",
-      "apple-domain-verification=z2IPRZRTU1JvIXzc",
-      "9gk35lcm87nrdcur8l5jc95ffg",
-      "google-site-verification=6HRUbiMS72DqS9m1xZA7e2lERsd76qlRP3wjZdbrrr4",
-      "_0ydey5x097gtj2z92fc6xf342jhw8bm",
-      "airtable-verification=1a7ed489e90d747183dc48f953dc38e2",
-      "google-site-verification=eJkdNhxbvSwwMjpJCul26vIgWgojR_DQtUXD9CZMXZY",
-      "google-site-verification=5BcCWPMkzRJlhB6Kj1oxpQD-XIiBf1I4axz_YKZhPt8",
       "vuc9hf2qrdsa1rht6jbsvlmm63",
-      "c7w8ywlzkqtsjrj37zwx3rls92xtg2v2",
-      "ad44n1huq06eqo04mlhp525gs8",
-      "google-site-verification=E6gWPPnFbnlfZhWvziCK1jbFr7ovdO740_nfJIsM26g",
-      "_0f5qdsfyf94runrfkk8kj91gwjunhv1",
-      "ibmid= 402dfd6a-c923-4b4b-8b0b-d48321ad0c03",
+      "ipimblog.azurewebsites.net",
       "pwr1x9yqrt58dp5q97xdqc2tjvbfdpfv",
-      "apple-domain-verification=lcR3r6mOMUXCfIBeISYyewJZUPc9Z7njjsCWH3wMJTU",
-      "openai-domain-verification=dv-ruk8aBZomN7tKPUudFE6f4xB"
+      "openai-domain-verification=dv-ruk8aBZomN7tKPUudFE6f4xB",
+      "yf27ml09h67l135bgfj8r7k8l06ct0b0",
+      "v=spf1 include:_spf.ikea.com include:spf.protection.outlook.com -all",
+      "ecostruxure-it-verification=aed1c019-11ed-4ef4-985a-9d57e6880300",
+      "openai-domain-verification=dv-NuhNTz6e8ZuA6QC8JPuNWQVI",
+      "bc3r1bhgiiv5glji4a4e5q7feq",
+      "r9l0gn0j4tfvikcnfsoabna4he",
+      "google-site-verification=eJkdNhxbvSwwMjpJCul26vIgWgojR_DQtUXD9CZMXZY",
+      "adobe-sign-verification=cedca323afb86422862e301984996075",
+      "google-site-verification=6HRUbiMS72DqS9m1xZA7e2lERsd76qlRP3wjZdbrrr4",
+      "verification=4b7a9cf113659b548dd81c74867cc6e8cdb666dcdedd89006a4b6df841436db9",
+      "9gk35lcm87nrdcur8l5jc95ffg",
+      "1gsbjx5k4dg72szsrycjtvbjdxnz7f9w",
+      "apple-domain-verification=z2IPRZRTU1JvIXzc",
+      "google-site-verification=E6gWPPnFbnlfZhWvziCK1jbFr7ovdO740_nfJIsM26g",
+      "ad44n1huq06eqo04mlhp525gs8",
+      "_0f5qdsfyf94runrfkk8kj91gwjunhv1",
+      "google-site-verification=5BcCWPMkzRJlhB6Kj1oxpQD-XIiBf1I4axz_YKZhPt8",
+      "_0ydey5x097gtj2z92fc6xf342jhw8bm",
+      "schrgk1ftng0xtbk5hzdm37z1qm50c5x"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@ikea.com; ruf=mailto:dmarc_ruf@ikea.com"
@@ -363,11 +363,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     ]
   },
   "apex_txt": [
-    "ecostruxure-it-verification=aed1c019-11ed-4ef4-985a-9d57e6880300",
-    "google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY",
     "pendo-domain-verification=kNv_0V-tt2G-fFDGQQ35qbcUUIk",
-    "verification=4b7a9cf113659b548dd81c74867cc6e8cdb666dcdedd89006a4b6df841436db9",
-    "adobe-sign-verification=cedca323afb86422862e301984996075"
+    "apple-domain-verification=lcR3r6mOMUXCfIBeISYyewJZUPc9Z7njjsCWH3wMJTU",
+    "airtable-verification=1a7ed489e90d747183dc48f953dc38e2",
+    "google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY",
+    "openai-domain-verification=dv-ruk8aBZomN7tKPUudFE6f4xB"
   ],
   "tls2": {
     "alpn": "",
@@ -379,6 +379,15 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
+      "serial": 171538633335696715440132310361679054425,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://c.pki.goog/we1/uKC-4RekmUY.crl"
+      ],
+      "subject_dn": "3111300f06035504031308696b65612e636f6d",
+      "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
       "not_before": "20260923003012",
       "not_after": "20261222013011"
     }
@@ -416,8 +425,15 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 6.4,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "crl": {
+      "url": "http://c.pki.goog/we1/uKC-4RekmUY.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 6.9,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -428,4 +444,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

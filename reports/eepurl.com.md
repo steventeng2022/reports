@@ -7,8 +7,8 @@
 | Target | https://eepurl.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | eepurl.com |
-| Test date | 2026-09-26 22:04 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:25 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -138,7 +138,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 16. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xk5bluj180akyg.html -> 403; error page/headers match: Akamai.
+- **Detail:** GET /xkxexz9vynk3gw.html -> 403; error page/headers match: Akamai.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -161,21 +161,21 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "mx": [],
     "ns": [
       "a6-66.akam.net.",
-      "a14-66.akam.net.",
-      "a5-65.akam.net.",
-      "a1-205.akam.net.",
       "a7-66.akam.net.",
-      "a4-65.akam.net."
+      "a5-65.akam.net.",
+      "a14-66.akam.net.",
+      "a4-65.akam.net.",
+      "a1-205.akam.net."
     ],
     "caa": [],
     "spf": [
       "spycloud-domain-verification=2127e2b7-da8a-44df-95f5-c77882a949b1",
       "524t8ygzcd8l07x0v7bhq882qj55dgsw",
-      "_72ru7fr8c0ncfmjg71hyedfisw40m4h",
-      "_8hkh7i00e0luex039dp6fsfjhs4bk8u",
       "_lgool0gg7wzos9kz40nbb40e86izja0",
       "95hl48p0xjbqydr7xyzz8ptmksl1334w",
-      "_z0wc6vmvjbvcm5fp3gts295gq1nqf8d"
+      "_z0wc6vmvjbvcm5fp3gts295gq1nqf8d",
+      "_72ru7fr8c0ncfmjg71hyedfisw40m4h",
+      "_8hkh7i00e0luex039dp6fsfjhs4bk8u"
     ],
     "dmarc": [
       "v=DMARC1; p=reject;"
@@ -298,6 +298,16 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": "http://ocsp.digicert.com",
+      "serial": 8163147909647922359275308723821479562,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl3.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl",
+        "http://crl4.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl"
+      ],
+      "subject_dn": "310b3009060355040613025553311330110603550408130a43616c69666f726e6961311230100603550407130953616e20446965676f31143012060355040a130b496e7475697420496e632e312330210603550403131a77696c646361726473616e322e6d61696c6368696d702e636f6d",
+      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473320544c532045434320534841333834203230323020434131",
       "not_before": "20260416000000",
       "not_after": "20261031235959"
     },
@@ -320,8 +330,15 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 7.6,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 403,
+    "crl": {
+      "url": "http://crl3.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 8.3,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -332,4 +349,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

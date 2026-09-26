@@ -7,8 +7,8 @@
 | Target | https://europarl.europa.eu/ |
 | Bug bounty program | European Central Bank |
 | Listed scope domain | europarl.europa.eu |
-| Test date | 2026-09-26 22:04 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:25 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -127,7 +127,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: flexera-domain-verification-zqsztipmwceljguc; apple-domain-verification=qKbdxzkhADwOAk4X; webexdomainverification.=b646d9da-b47b-4aab-bef6-239fa2ea87d5
+- **Detail:** Apex TXT records with verification/token content: webexdomainverification.=b646d9da-b47b-4aab-bef6-239fa2ea87d5; cisco-ci-domain-verification=18335c80bc24811455d7efc1f94edae0da5e8d126b83f5b3a41; flexera-domain-verification-dwtjdzijulkjpxak
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -145,7 +145,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 136.173.69.97 carries PTR audiovisual.europarl.europa.eu., sciencemediahub.eu. for europarl.europa.eu.
+- **Detail:** 136.173.69.97 carries PTR sciencemediahub.eu., audiovisual.europarl.europa.eu. for europarl.europa.eu.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -172,34 +172,34 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "ucsgusrbp003.ep.europa.eu (pref 100)",
-      "ucsgusrbp001.ep.europa.eu (pref 100)",
       "ucsgusrlp002.ep.europa.eu (pref 100)",
       "ucsgusrlp003.ep.europa.eu (pref 100)",
+      "ucsgusrbp001.ep.europa.eu (pref 100)",
       "ucsgusrlp001.ep.europa.eu (pref 100)",
+      "ucsgusrbp003.ep.europa.eu (pref 100)",
+      "ucsgusrbp002.ep.europa.eu (pref 100)",
       "ucsgusrbp004.ep.europa.eu (pref 100)",
-      "ucsgusrlp004.ep.europa.eu (pref 100)",
-      "ucsgusrbp002.ep.europa.eu (pref 100)"
+      "ucsgusrlp004.ep.europa.eu (pref 100)"
     ],
     "ns": [
-      "ans1.cw.net.",
-      "itecbruadnsout.europarl.europa.eu.",
+      "ans2.cw.net.",
       "itecluxadnsout.europarl.europa.eu.",
-      "ans2.cw.net."
+      "ans1.cw.net.",
+      "itecbruadnsout.europarl.europa.eu."
     ],
     "caa": [],
     "spf": [
-      "flexera-domain-verification-zqsztipmwceljguc",
-      "apple-domain-verification=qKbdxzkhADwOAk4X",
       "MS=ms56498925",
       "webexdomainverification.=b646d9da-b47b-4aab-bef6-239fa2ea87d5",
-      "globalsign-domain-verification=288574904BAFBDAD213CEFABB639A762",
-      "flexera-domain-verification-dwtjdzijulkjpxak",
-      "globalsign-domain-verification=BD0D62B15C7A7E05066B725206878608",
-      "flexera-domain-verification-lpktsstialtzvdbc",
       "cisco-ci-domain-verification=18335c80bc24811455d7efc1f94edae0da5e8d126b83f5b3a4124f0e6437f9",
-      "v=spf1 redirect=_spf.ep.europa.eu",
-      "flexera-domain-verification-nwvxicwkiqqnfbfq"
+      "flexera-domain-verification-dwtjdzijulkjpxak",
+      "flexera-domain-verification-nwvxicwkiqqnfbfq",
+      "globalsign-domain-verification=288574904BAFBDAD213CEFABB639A762",
+      "flexera-domain-verification-lpktsstialtzvdbc",
+      "apple-domain-verification=qKbdxzkhADwOAk4X",
+      "flexera-domain-verification-zqsztipmwceljguc",
+      "globalsign-domain-verification=BD0D62B15C7A7E05066B725206878608",
+      "v=spf1 redirect=_spf.ep.europa.eu"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:abuse@europarl.europa.eu"
@@ -282,11 +282,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "flexera-domain-verification-zqsztipmwceljguc",
-    "apple-domain-verification=qKbdxzkhADwOAk4X",
     "webexdomainverification.=b646d9da-b47b-4aab-bef6-239fa2ea87d5",
-    "globalsign-domain-verification=288574904BAFBDAD213CEFABB639A762",
-    "flexera-domain-verification-dwtjdzijulkjpxak"
+    "cisco-ci-domain-verification=18335c80bc24811455d7efc1f94edae0da5e8d126b83f5b3a41",
+    "flexera-domain-verification-dwtjdzijulkjpxak",
+    "flexera-domain-verification-nwvxicwkiqqnfbfq",
+    "globalsign-domain-verification=288574904BAFBDAD213CEFABB639A762"
   ],
   "tls2": {
     "alpn": "",
@@ -298,6 +298,15 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.globalsign.com/ca/gsatlasr3ovtlsca2026q2",
+      "serial": 2085172264563212650795519769860937744,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.globalsign.com/ca/gsatlasr3ovtlsca2026q2.crl"
+      ],
+      "subject_dn": "310b3009060355040613024c553113301106035504080c0a4c7578656d626f7572673113301106035504070c0a4c7578656d626f757267311c301a060355040a0c134575726f7065616e205061726c69616d656e74311d301b06035504030c142a2e6575726f7061726c2e6575726f70612e6575",
+      "issuer_dn": "310b300906035504061302424531193017060355040a1310476c6f62616c5369676e206e762d7361312e302c06035504031325476c6f62616c5369676e2041746c6173205233204f5620544c532043412032303236205132",
       "not_before": "20260526073642",
       "not_after": "20261210073712"
     },
@@ -325,8 +334,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "x12": {
     "status": 301,
     "ptr": [
-      "audiovisual.europarl.europa.eu.",
-      "sciencemediahub.eu."
+      "sciencemediahub.eu.",
+      "audiovisual.europarl.europa.eu."
     ]
   },
   "x13": {
@@ -341,8 +350,15 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 41.5,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "crl": {
+      "url": "http://crl.globalsign.com/ca/gsatlasr3ovtlsca2026q2.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 46.2,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -353,4 +369,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

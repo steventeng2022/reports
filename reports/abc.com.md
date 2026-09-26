@@ -7,12 +7,12 @@
 | Target | https://abc.com/ |
 | Bug bounty program | The Walt Disney Company |
 | Listed scope domain | abc.com |
-| Test date | 2026-09-26 21:56 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
+Total findings: **23** (High: 0, Medium: 0, Low: 3, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,7 +37,8 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
 | 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 20 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 21 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 22 | info | CT1 | 43 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 22 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
+| 23 | info | CT1 | 43 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -137,7 +138,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=pSxAase3tgjHfXBE; Dynatrace-site-verification=f8c987df-9919-467d-80cf-05c74781a94e__j7ut0lc17ppaoq; extensis-domain-verification=4dec3be6-1ab2-4cd3-b508-5a61c50ac453
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=9KrlZfA2rYO7_JUgB6G6PzmIzp5C0aMcAgiODVFOXL4; google-site-verification=RcEUU_s2q7QWyysoeXd4Y0W3IE3QSpeu2lh2OFGRiJA; Dynatrace-site-verification=f8c987df-9919-467d-80cf-05c74781a94e__j7ut0lc17ppaoq
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -155,19 +156,19 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
 ### 18. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
 
 - **CWE:** CWE-922
-- **Detail:** Response for https://abc.com/ carries Cache-Control: max-age=254, s-maxage=600, stale-if-error=86400 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Detail:** Response for https://abc.com/ carries Cache-Control: max-age=273, s-maxage=600, stale-if-error=86400 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
 ### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 3.169.121.125 carries PTR server-3-169-121-125.tpe53.r.cloudfront.net. for abc.com.
+- **Detail:** 3.169.121.28 carries PTR server-3-169-121-28.tpe53.r.cloudfront.net. for abc.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 20. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xk0ki1kxmay56r.html -> 404; error page/headers match: CloudFront.
+- **Detail:** GET /xkje3ny1hy70h7.html -> 404; error page/headers match: CloudFront.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 21. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -176,7 +177,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
 - **Detail:** No CAA record found for abc.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 22. [INFO] 43 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 22. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+
+- **CWE:** CWE-345
+- **Detail:** Root document of abc.com loads 4 cross-origin script(s) without an integrity attribute, e.g. https://dcf.espn.com/TWDC-DTCI/prod/Bootstrap.js, https://scripts.webcontentassessor.com/scripts/1f5fa1e7d876602567cfe4227c2593d06bc9849751039e12ea07e3637bf163e8, https://securepubads.g.doubleclick.net/tag/js/gpt.js; a compromise of any such third-party host can inject code.
+- **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
+
+### 23. [INFO] 43 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.abc.com, api.partners.abc.com, cdn.mktg.abc.com, cdn.video.abc.com, dev.cd.abc.com, dev.galaxy.abc.com, fcast.cdn.abc.com, fcast.qa.cdn.abc.com, help.abc.com, ll.media.abc.com
@@ -189,10 +196,10 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
   "domain": "abc.com",
   "dns": {
     "a": [
-      "3.169.121.125",
       "3.169.121.28",
-      "3.169.121.54",
-      "3.169.121.22"
+      "3.169.121.125",
+      "3.169.121.22",
+      "3.169.121.54"
     ],
     "aaaa": [],
     "cname": null,
@@ -200,33 +207,33 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
       "abc-com.mail.protection.outlook.com (pref 5)"
     ],
     "ns": [
-      "ns-736.awsdns-28.net.",
-      "ns-318.awsdns-39.com.",
+      "ns-1869.awsdns-41.co.uk.",
       "ns-1368.awsdns-43.org.",
-      "ns-1869.awsdns-41.co.uk."
+      "ns-736.awsdns-28.net.",
+      "ns-318.awsdns-39.com."
     ],
     "caa": [],
     "spf": [
-      "docusign=53e074c1-b80d-41a1-be73-d444698c3a91",
+      "intersight=e61370b3eacaf63c12b058d9c7b287aa1a9fdbc17d6958aaf1036e5c54f90502",
+      "docusign=12a35007-299f-4d83-bd45-4f1963b4e234",
+      "google-site-verification=9KrlZfA2rYO7_JUgB6G6PzmIzp5C0aMcAgiODVFOXL4",
       "smartsheet-site-validation=o821NYtWlw35E2By_1h2gMDN-nAgTRqB",
-      "apple-domain-verification=pSxAase3tgjHfXBE",
       "jumpdesktop=12d076284350363e1df1806a94f0096dc18aed9d3a58a4e35376c09ce886",
+      "google-site-verification=RcEUU_s2q7QWyysoeXd4Y0W3IE3QSpeu2lh2OFGRiJA",
       "MS=ms24761496",
       "Dynatrace-site-verification=f8c987df-9919-467d-80cf-05c74781a94e__j7ut0lc17ppaoqaqo4hm9dbq23",
-      "ECZjYXSxe4CRnyGjS8E1nRw2keq1hV77Z66acQb6JhwQk14sk4ZGwLt61w4aZhtOdmqIJUj1fNCxo6721F0pfg==",
-      "extensis-domain-verification=4dec3be6-1ab2-4cd3-b508-5a61c50ac453",
-      "nintex.5f22e1f0a5ad340038cdb208",
-      "docusign=12a35007-299f-4d83-bd45-4f1963b4e234",
       "42357818",
+      "apple-domain-verification=pSxAase3tgjHfXBE",
+      "canva-site-verification=mQci1SnoC4Y-iJQpirTu6Q",
+      "atlassian-domain-verification=5lqJwtfJPMHqC/aGvT/7s2BR53IHCs9P6vFjCQYA5nkQ4mvoHKTqNTW7gucscGW7",
+      "cisco-ci-domain-verification=4b0af123fd61d9b672e3d23654d753d00150aec9b4c32ff0673f0f1b7801edab",
+      "extensis-domain-verification=4dec3be6-1ab2-4cd3-b508-5a61c50ac453",
+      "docusign=53e074c1-b80d-41a1-be73-d444698c3a91",
+      "adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e02bd5d0dc3916",
+      "nintex.5f22e1f0a5ad340038cdb208",
       "v=spf1 include:spf.disney.com -all",
       "anthropic-domain-verification-dfbjfj=cItiODp4D19q3YKkyJLoZsKXZ",
-      "atlassian-domain-verification=5lqJwtfJPMHqC/aGvT/7s2BR53IHCs9P6vFjCQYA5nkQ4mvoHKTqNTW7gucscGW7",
-      "google-site-verification=RcEUU_s2q7QWyysoeXd4Y0W3IE3QSpeu2lh2OFGRiJA",
-      "google-site-verification=9KrlZfA2rYO7_JUgB6G6PzmIzp5C0aMcAgiODVFOXL4",
-      "adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e02bd5d0dc3916",
-      "intersight=e61370b3eacaf63c12b058d9c7b287aa1a9fdbc17d6958aaf1036e5c54f90502",
-      "cisco-ci-domain-verification=4b0af123fd61d9b672e3d23654d753d00150aec9b4c32ff0673f0f1b7801edab",
-      "canva-site-verification=mQci1SnoC4Y-iJQpirTu6Q"
+      "ECZjYXSxe4CRnyGjS8E1nRw2keq1hV77Z66acQb6JhwQk14sk4ZGwLt61w4aZhtOdmqIJUj1fNCxo6721F0pfg=="
     ],
     "dmarc": [
       "v=DMARC1;p=none;fo=1;rua=mailto:Corp.Dmarc_RUA@disney.com;ruf=mailto:Corp.Dmarc_RUF@disney.com"
@@ -293,7 +300,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
     }
   },
   "ports": {
-    "ip": "3.169.121.125",
+    "ip": "3.169.121.28",
     "open": []
   },
   "https": {
@@ -385,11 +392,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
     ]
   },
   "apex_txt": [
-    "apple-domain-verification=pSxAase3tgjHfXBE",
+    "google-site-verification=9KrlZfA2rYO7_JUgB6G6PzmIzp5C0aMcAgiODVFOXL4",
+    "google-site-verification=RcEUU_s2q7QWyysoeXd4Y0W3IE3QSpeu2lh2OFGRiJA",
     "Dynatrace-site-verification=f8c987df-9919-467d-80cf-05c74781a94e__j7ut0lc17ppaoq",
-    "extensis-domain-verification=4dec3be6-1ab2-4cd3-b508-5a61c50ac453",
-    "anthropic-domain-verification-dfbjfj=cItiODp4D19q3YKkyJLoZsKXZ",
-    "atlassian-domain-verification=5lqJwtfJPMHqC/aGvT/7s2BR53IHCs9P6vFjCQYA5nkQ4mvoHK"
+    "apple-domain-verification=pSxAase3tgjHfXBE",
+    "canva-site-verification=mQci1SnoC4Y-iJQpirTu6Q"
   ],
   "tls2": {
     "alpn": "",
@@ -401,6 +408,15 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
+      "serial": 19663354460563915666638403594712407170,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.r2m04.amazontrust.com/r2m04.crl"
+      ],
+      "subject_dn": "311a30180603550403131177617463686469736e657966652e636f6d",
+      "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3034",
       "not_before": "20260921000000",
       "not_after": "20270406235959"
     },
@@ -428,7 +444,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
   "x12": {
     "status": 200,
     "ptr": [
-      "server-3-169-121-125.tpe53.r.cloudfront.net."
+      "server-3-169-121-28.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -442,8 +458,15 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 16.2,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "crl": {
+      "url": "http://crl.r2m04.amazontrust.com/r2m04.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 13.8,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -454,4 +477,5 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

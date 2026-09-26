@@ -7,12 +7,12 @@
 | Target | https://adobe.ly/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | adobe.ly |
-| Test date | 2026-09-26 21:57 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
+Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,13 +31,14 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 | 13 | low | RED1 | HTTP redirect points to another host over plain HTTP | CWE-319 |
 | 14 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
-| 16 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
-| 17 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 18 | low | RED10 | Host header reflected into redirect Location | CWE-601 |
-| 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 20 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
-| 21 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 22 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 17 | low | RED10 | Host header reflected into redirect Location | CWE-601 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 19 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 21 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 22 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
+| 23 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -56,7 +57,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 ### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
 - **CWE:** CWE-200
-- **Detail:** Alt-Svc: h3=":443"; ma=2592000
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
 - **Recommendation:** Verify the advertised protocol endpoints are configured.
 
 ### 4. [LOW] Weak HSTS (max-age < 1 year) (`H1b`)
@@ -141,47 +142,53 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 - **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
 - **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
 
-### 16. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
-
-- **CWE:** CWE-603
-- **Detail:** OCSP check via http://ocsp.digicert.com -> http-200
-- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
-
-### 17. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but adobe.ly is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 18. [LOW] Host header reflected into redirect Location (`RED10`)
+### 17. [LOW] Host header reflected into redirect Location (`RED10`)
 
 - **CWE:** CWE-601
 - **Detail:** GET with Host: evil-auditor.example -> Location: https://bitly.com/pages/landing/branded-short-domains-powered-by-bitly?bsd=evil-auditor.example
 - **Recommendation:** Validate redirect targets against the expected host.
 
-### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 67.199.248.13 carries PTR cname.bitly.com. for adobe.ly.
+- **Detail:** 67.199.248.12 carries PTR cname.bitly.com. for adobe.ly.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 20. [INFO] App-association / digital-asset-links surface published (`WK1`)
+### 19. [INFO] App-association / digital-asset-links surface published (`WK1`)
 
 - **CWE:** CWE-200
 - **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on adobe.ly; a mobile app or web-bridge is tied to this domain and its association configuration is public.
 - **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
-### 21. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for adobe.ly, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 22. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+### 21. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
 
 - **CWE:** CWE-298
 - **Detail:** The adobe.ly certificate lists an AIA OCSP responder (http://ocsp.digicert.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
+### 22. [INFO] security.txt published with a contact address (`SEC1`)
+
+- **CWE:** CWE-1038
+- **Detail:** /security.txt on adobe.ly is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
+- **Recommendation:** Confirm the published contact is current and monitored (RFC 9116).
+
+### 23. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: none flagged
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
 ## Evidence (raw response observations)
 
@@ -190,22 +197,22 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
   "domain": "adobe.ly",
   "dns": {
     "a": [
-      "67.199.248.13",
-      "67.199.248.12"
+      "67.199.248.12",
+      "67.199.248.13"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "inbound-smtp-1.adobe.com (pref 100)",
-      "inbound-smtp-2.adobe.com (pref 100)",
+      "adobe.com.mail6.psmtp.com (pref 2)",
       "adobe.com.mail8.psmtp.com (pref 4)",
-      "adobe.com.mail7.psmtp.com (pref 3)",
       "adobe.com.mail5.psmtp.com (pref 1)",
-      "adobe.com.mail6.psmtp.com (pref 2)"
+      "inbound-smtp-2.adobe.com (pref 100)",
+      "adobe.com.mail7.psmtp.com (pref 3)",
+      "inbound-smtp-1.adobe.com (pref 100)"
     ],
     "ns": [
-      "a10-64.akam.net.",
       "a7-64.akam.net.",
+      "a10-64.akam.net.",
       "a1-217.akam.net."
     ],
     "caa": [],
@@ -242,7 +249,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
     }
   },
   "ports": {
-    "ip": "67.199.248.13",
+    "ip": "67.199.248.12",
     "open": []
   },
   "https": {
@@ -292,7 +299,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
     "/api/": 301
   },
   "subdomains": {
-    "status": "ct-pending"
+    "source": "certspotter",
+    "count": 2,
+    "notable": [],
+    "sample": [
+      "adobe.ly",
+      "analytics.adobe.ly"
+    ]
   },
   "tls2": {
     "alpn": "",
@@ -304,10 +317,20 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.digicert.com",
+      "serial": 9727953675955211810231315293194466690,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
+        "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
+      ],
+      "subject_dn": "310b3009060355040613025553311330110603550408130a43616c69666f726e69613111300f0603550407130853616e204a6f736531133011060355040a130a41646f626520496e632e3111300f0603550403130861646f62652e6c79",
+      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
       "not_before": "20251029000000",
       "not_after": "20261129235959"
     },
-    "ocsp": "http-200"
+    "ocsp": "explicit-status"
   },
   "x12": {
     "status": 301,
@@ -331,8 +354,17 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 46.1,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "hsts": "max-age=1209600",
+    "security_txt": "/security.txt",
+    "crl": {
+      "url": "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 61.8,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -343,4 +375,5 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

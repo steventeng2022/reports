@@ -7,8 +7,8 @@
 | Target | https://rottentomatoes.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | rottentomatoes.com |
-| Test date | 2026-09-26 22:14 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:37 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -102,7 +102,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe985; google-site-verification=zJOWtCsOIqoH7c20uzDEK2ZbjELwSglEmrNiPMdJxdQ; airtable-verification=a25c5929bf27eceab120aa631f5b34cb
+- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe985; dropbox-domain-verification=qwg79uqdchth; google-site-verification=zJOWtCsOIqoH7c20uzDEK2ZbjELwSglEmrNiPMdJxdQ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -136,47 +136,47 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mx0a-00a17301.pphosted.com (pref 20)",
-      "mxb-00a17301.gslb.pphosted.com (pref 10)",
       "mxa-00a17301.gslb.pphosted.com (pref 10)",
-      "mx0b-00a17301.pphosted.com (pref 20)"
+      "mx0a-00a17301.pphosted.com (pref 20)",
+      "mx0b-00a17301.pphosted.com (pref 20)",
+      "mxb-00a17301.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
       "udns2.ultradns.net.",
-      "udns1.ultradns.net.",
-      "a1-42.akam.net.",
+      "a13-65.akam.net.",
+      "a5-66.akam.net.",
       "a22-67.akam.net.",
+      "udns1.ultradns.net.",
       "a4-66.akam.net.",
       "a2-65.akam.net.",
-      "a5-66.akam.net.",
-      "a13-65.akam.net."
+      "a1-42.akam.net."
     ],
     "caa": [
-      "0 issue \"digicert.com\"",
-      "0 issue \"amazon.com\"",
-      "0 issuewild \"digicert.com\"",
-      "0 issue \"sectigo.com\"",
-      "0 issuewild \"pki.goog\"",
-      "0 issue \"amazonaws.com\"",
+      "0 issue \"letsencrypt.org\"",
       "0 issue \"awstrust.com\"",
+      "0 issuewild \"pki.goog\"",
+      "0 issue \"sectigo.com\"",
+      "0 issue \"amazon.com\"",
       "0 issue \"amazontrust.com\"",
       "0 issue \"pki.goog\"",
-      "0 issue \"letsencrypt.org\""
+      "0 issue \"digicert.com\"",
+      "0 issuewild \"digicert.com\"",
+      "0 issue \"amazonaws.com\""
     ],
     "spf": [
       "adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe98526fe9bcd1502",
-      "google-site-verification=zJOWtCsOIqoH7c20uzDEK2ZbjELwSglEmrNiPMdJxdQ",
-      "MS=ms76165705",
-      "airtable-verification=a25c5929bf27eceab120aa631f5b34cb",
-      "google-site-verification=SOiuNurCT5KQ4utFqj2pH9D2Oww8G4r1K_Gnt27e-hQ",
-      "airtable-verification=1ee1c3d067dcf9300bc65f995e7c794b",
-      "smartsheet-site-validation=EeqHILQCPlyqRLZalbWSAPzmPdLJqa5q",
       "dropbox-domain-verification=qwg79uqdchth",
-      "yahoo-verification-key=viW+9OzMd5GimBzrAwyj8fCdyyRNhzqHo0Z7SrHM2ec=",
+      "smartsheet-site-validation=EeqHILQCPlyqRLZalbWSAPzmPdLJqa5q",
+      "ZOOM_verify_rdYl4DWQCzWA3NSpJbBCXa",
       "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
-      "spf2.0/pra mx include:spf.mandrillapp.com -all",
+      "google-site-verification=zJOWtCsOIqoH7c20uzDEK2ZbjELwSglEmrNiPMdJxdQ",
+      "google-site-verification=SOiuNurCT5KQ4utFqj2pH9D2Oww8G4r1K_Gnt27e-hQ",
+      "airtable-verification=a25c5929bf27eceab120aa631f5b34cb",
       "ZOOM_verify_oGsblYdrOBX5vRITDGidMv",
-      "ZOOM_verify_rdYl4DWQCzWA3NSpJbBCXa"
+      "yahoo-verification-key=viW+9OzMd5GimBzrAwyj8fCdyyRNhzqHo0Z7SrHM2ec=",
+      "MS=ms76165705",
+      "spf2.0/pra mx include:spf.mandrillapp.com -all",
+      "airtable-verification=1ee1c3d067dcf9300bc65f995e7c794b"
     ],
     "dmarc": [
       "v=DMARC1; p=none; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -263,10 +263,10 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
   },
   "apex_txt": [
     "adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe985",
+    "dropbox-domain-verification=qwg79uqdchth",
     "google-site-verification=zJOWtCsOIqoH7c20uzDEK2ZbjELwSglEmrNiPMdJxdQ",
-    "airtable-verification=a25c5929bf27eceab120aa631f5b34cb",
     "google-site-verification=SOiuNurCT5KQ4utFqj2pH9D2Oww8G4r1K_Gnt27e-hQ",
-    "airtable-verification=1ee1c3d067dcf9300bc65f995e7c794b"
+    "airtable-verification=a25c5929bf27eceab120aa631f5b34cb"
   ],
   "tls2": {
     "alpn": "",
@@ -278,6 +278,16 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": "http://ocsp.digicert.com",
+      "serial": 15274943022601285548340962243228980157,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl3.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl",
+        "http://crl4.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl"
+      ],
+      "subject_dn": "310b3009060355040613025553311330110603550408130a43616c69666f726e6961311630140603550407130d42657665726c792048696c6c73311c301a060355040a131346616e64616e676f204d656469612c204c4c43311d301b06035504030c142a2e726f7474656e746f6d61746f65732e636f6d",
+      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473320544c532045434320534841333834203230323020434131",
       "not_before": "20260822000000",
       "not_after": "20270308235959"
     },
@@ -300,8 +310,16 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 5.1,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 403,
+    "hsts": "max-age=31536000 ; includeSubDomains",
+    "crl": {
+      "url": "http://crl3.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 8.5,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -312,4 +330,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

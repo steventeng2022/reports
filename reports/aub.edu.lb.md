@@ -7,12 +7,12 @@
 | Target | https://aub.edu.lb/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | aub.edu.lb |
-| Test date | 2026-09-26 21:58 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:19 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
+Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,8 +34,12 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 17 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 19 | info | CT1 | 299 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 20 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 19 | info | SRV1 | Server header discloses a product version | CWE-200 |
+| 20 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
+| 21 | info | HTML3 | Third-party <iframe> embedded in root document | CWE-643 |
+| 22 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 23 | info | CT1 | 299 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 24 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -126,7 +130,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=6gAxqrh5UO8G0TgM; google-site-verification=NIoCNLajkOt8Tm9mZfAcX2oYc9oWtCG3yxwLDiJXmeU; google-site-verification=9MsV81Hg7gw2Sgc4tNSXaQktR2FWaGTUeYxZtLBb3Lk
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=fwk46Yls3T43Nu3xZ677JWvPpfeSfaYF_cesWhonw-Y; openai-domain-verification=dv-DWZ0HxSw0kUap6jjuTBsOiGk; google-site-verification=9MsV81Hg7gw2Sgc4tNSXaQktR2FWaGTUeYxZtLBb3Lk
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -153,13 +157,37 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - **Detail:** No CAA record found for aub.edu.lb; apex edu.lb, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 19. [INFO] 299 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 19. [INFO] Server header discloses a product version (`SRV1`)
+
+- **CWE:** CWE-200
+- **Detail:** Server header on aub.edu.lb is 'Microsoft-IIS/8.5' and includes a version number, which narrows targeted vulnerability research.
+- **Recommendation:** Serve a generic Server value without the version.
+
+### 20. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+
+- **CWE:** CWE-345
+- **Detail:** Root document of aub.edu.lb loads 11 cross-origin script(s) without an integrity attribute, e.g. https://www.googletagmanager.com/gtag/js?id=G-SWFTK13CJR, https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js, https://aubcdn.azureedge.net/aubwebsite/AUB/js/jquery.actual.min.js; a compromise of any such third-party host can inject code.
+- **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
+
+### 21. [INFO] Third-party <iframe> embedded in root document (`HTML3`)
+
+- **CWE:** CWE-643
+- **Detail:** Root document of aub.edu.lb embeds 2 cross-origin iframe(s), e.g. https://www.googletagmanager.com/ns.html?id=GTM-KZDZDJJ, https://www.youtube.com/embed/ja33j9rQ2so?rel=0&enablejsapi=1; embedded origins are framed inside the page with its trust context.
+- **Recommendation:** Review embedded origins and consider sandbox attributes.
+
+### 22. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on aub.edu.lb lists 14 <loc> URL(s) across 15 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
+### 23. [INFO] 299 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: ngoi-isplatform.test.ghi.aub.edu.lb, test.aub.edu.lb, vpn.aub.edu.lb
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 20. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 24. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: test.aub.edu.lb; content may still be served via virtual-host fallback.
@@ -180,27 +208,27 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "aub-edu-lb.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "zeina.aub.edu.lb.",
-      "magma.aub.edu.lb.",
       "ash.northeurope.cloudapp.azure.com.",
-      "lava.aub.edu.lb.",
-      "rose.aub.edu.lb."
+      "magma.aub.edu.lb.",
+      "rose.aub.edu.lb.",
+      "zeina.aub.edu.lb.",
+      "lava.aub.edu.lb."
     ],
     "caa": [],
     "spf": [
-      "apple-domain-verification=6gAxqrh5UO8G0TgM",
-      "HARICA-Jck6FQFsbhgljuf8FV3",
-      "google-site-verification=NIoCNLajkOt8Tm9mZfAcX2oYc9oWtCG3yxwLDiJXmeU",
-      "google-site-verification=9MsV81Hg7gw2Sgc4tNSXaQktR2FWaGTUeYxZtLBb3Lk",
-      "openai-domain-verification=dv-DWZ0HxSw0kUap6jjuTBsOiGk",
       "google-site-verification=fwk46Yls3T43Nu3xZ677JWvPpfeSfaYF_cesWhonw-Y",
+      "openai-domain-verification=dv-DWZ0HxSw0kUap6jjuTBsOiGk",
       "mentimeter-7517212d-53b0-454a-a51a-58de590aaad4",
+      "google-site-verification=9MsV81Hg7gw2Sgc4tNSXaQktR2FWaGTUeYxZtLBb3Lk",
+      "apple-domain-verification=6gAxqrh5UO8G0TgM",
       "ciscocidomainverification=421e71e3fc1322e159b9b2f1506ee2b6e8d9e3b38b975a6c68409d591b5f4c0f",
+      "HARICA-Jck6FQFsbhgljuf8FV3",
       "v=spf1 +ip4:193.188.128.10/32 +ip4:193.188.128.39/32 ",
       "+ip4:193.188.128.41/32 +ip4:193.188.128.50/32 ",
       "+ip4:54.240.35.57/32 +ip4:193.188.129.5/32 ",
       "+ip4:193.188.128.69/32 ip4:193.188.128.16/32 ",
-      "include:zeptomail.net include:_spf.salesforce.com +include:spf.protection.outlook.com include:spf.symplicity.com ~all"
+      "include:zeptomail.net include:_spf.salesforce.com +include:spf.protection.outlook.com include:spf.symplicity.com ~all",
+      "google-site-verification=NIoCNLajkOt8Tm9mZfAcX2oYc9oWtCG3yxwLDiJXmeU"
     ],
     "dmarc": [
       "v=DMARC1; p=none; pct=100; rua=mailto:dmarc@aub.edu.lb,mailto:dmarc-reports@aub.edu.lb; fo=1"
@@ -327,11 +355,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     ]
   },
   "apex_txt": [
-    "apple-domain-verification=6gAxqrh5UO8G0TgM",
-    "google-site-verification=NIoCNLajkOt8Tm9mZfAcX2oYc9oWtCG3yxwLDiJXmeU",
-    "google-site-verification=9MsV81Hg7gw2Sgc4tNSXaQktR2FWaGTUeYxZtLBb3Lk",
+    "google-site-verification=fwk46Yls3T43Nu3xZ677JWvPpfeSfaYF_cesWhonw-Y",
     "openai-domain-verification=dv-DWZ0HxSw0kUap6jjuTBsOiGk",
-    "google-site-verification=fwk46Yls3T43Nu3xZ677JWvPpfeSfaYF_cesWhonw-Y"
+    "google-site-verification=9MsV81Hg7gw2Sgc4tNSXaQktR2FWaGTUeYxZtLBb3Lk",
+    "apple-domain-verification=6gAxqrh5UO8G0TgM",
+    "ciscocidomainverification=421e71e3fc1322e159b9b2f1506ee2b6e8d9e3b38b975a6c68409d"
   ],
   "tls2": {
     "alpn": "",
@@ -343,6 +371,15 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "key_bits": 4096,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": null,
+      "serial": 146672127896156680581472603476293248293,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.harica.gr/HARICA-GEANT-TLS-R1.crl"
+      ],
+      "subject_dn": "3115301306035504030c0c2a2e6175622e6564752e6c62",
+      "issuer_dn": "310b300906035504061302475231373035060355040a0c2e48656c6c656e69632041636164656d696320616e6420526573656172636820496e737469747574696f6e732043413118301606035504030c0f4745414e5420544c53205253412031",
       "not_before": "20260722233943",
       "not_after": "20270206233942"
     }
@@ -369,8 +406,19 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 45.3,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "sitemap": {
+      "urls": 14,
+      "indexes": 15
+    },
+    "crl": {
+      "url": "http://crl.harica.gr/HARICA-GEANT-TLS-R1.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 52.6,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -381,4 +429,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.
