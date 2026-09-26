@@ -7,12 +7,12 @@
 | Target | https://idealo.de/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | idealo.de |
-| Test date | 2026-09-26 18:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:08 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
+Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,7 +29,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
 | 12 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 14 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
+| 15 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -117,14 +118,20 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-gm4n1q=mbgtscKppFSQPa94iEKut1DCu; google-site-verification=vnKFVNK2CNvD26H6RgVwBzA3kl8EnMW1xc4DIYfZqr0; apple-domain-verification=KCTdqG3zCfRDNB57
+- **Detail:** Apex TXT records with verification/token content: cursor-domain-verification-987qxp=NzVU3KiAhhQpAYRf9gWgmwH2M; atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXlTSpjt; google-site-verification=vnKFVNK2CNvD26H6RgVwBzA3kl8EnMW1xc4DIYfZqr0
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 14. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of idealo.de has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m04.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
+
+### 15. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The idealo.de certificate lists an AIA OCSP responder (http://ocsp.r2m04.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -133,8 +140,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
   "domain": "idealo.de",
   "dns": {
     "a": [
-      "45.89.130.29",
       "45.89.129.173",
+      "45.89.130.29",
       "45.89.129.108"
     ],
     "aaaa": [
@@ -147,27 +154,34 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
       "idealo-de.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "ns-1201.awsdns-22.org.",
       "ns-53.awsdns-06.com.",
       "ns-527.awsdns-01.net.",
+      "ns-1201.awsdns-22.org.",
       "ns-1734.awsdns-24.co.uk."
     ],
+    "caa": [
+      "0 issue \"amazon.com\"",
+      "0 issue \"thawte.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 iodef \"mailto:domains@idealo.de\"",
+      "0 issue \"geotrust.com\""
+    ],
     "spf": [
-      "anthropic-domain-verification-gm4n1q=mbgtscKppFSQPa94iEKut1DCu",
+      "cursor-domain-verification-987qxp=NzVU3KiAhhQpAYRf9gWgmwH2M",
+      "atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXlTSpjtg1iNnMasAJ3GsD",
       "google-site-verification=vnKFVNK2CNvD26H6RgVwBzA3kl8EnMW1xc4DIYfZqr0",
+      "wiz-domain-verification=106d737f255f6040e903621fcc553ce41977b40940acfab67d828304fbe01399",
+      "astro-domain-verification=cmfl404981ir001ri7eudlvbp",
+      "anthropic-domain-verification-gm4n1q=mbgtscKppFSQPa94iEKut1DCu",
       "apple-domain-verification=KCTdqG3zCfRDNB57",
-      "v=spf1 include:spf.asv.de include:_spf.google.com include:spf.protection.outlook.com include:_spf.salesforce.com ~all",
+      "facebook-domain-verification=xj7sye2iiecu2xm4coraz2sghglxyg",
+      "MS=ms59853604",
+      "mongodb-site-verification=PWvAUTuE0LHic9S4sUMdPfiKHH9Vhj55",
+      "jamf-site-verification=cgA87WElNjz-TqQEDiiQAg",
+      "mgverify=cca526e60761a60ac07b6a052965659d6c3c76ff8a4958a398cb1071007da7ca",
       "google-site-verification=rU54pg91seSvEOguy4FYBoAz_-1kbL9JtzckNRoKI-8",
       "1password-site-verification=NPLE72RPPJCD5MQWHCH2LBWOSA",
-      "mgverify=cca526e60761a60ac07b6a052965659d6c3c76ff8a4958a398cb1071007da7ca",
-      "astro-domain-verification=cmfl404981ir001ri7eudlvbp",
-      "MS=ms59853604",
-      "facebook-domain-verification=xj7sye2iiecu2xm4coraz2sghglxyg",
-      "atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXlTSpjtg1iNnMasAJ3GsD",
-      "mongodb-site-verification=PWvAUTuE0LHic9S4sUMdPfiKHH9Vhj55",
-      "wiz-domain-verification=106d737f255f6040e903621fcc553ce41977b40940acfab67d828304fbe01399",
-      "jamf-site-verification=cgA87WElNjz-TqQEDiiQAg",
-      "cursor-domain-verification-987qxp=NzVU3KiAhhQpAYRf9gWgmwH2M"
+      "v=spf1 include:spf.asv.de include:_spf.google.com include:spf.protection.outlook.com include:_spf.salesforce.com ~all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=0; rua=mailto:dmarc-aggregation@idealo.de,mailto:idealo@rua.netcraft.com; ruf=mailto:dmarc-forensic@idealo.de,mailto:idealo@ruf.netcraft.com;"
@@ -196,7 +210,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
     }
   },
   "ports": {
-    "ip": "45.89.130.29",
+    "ip": "45.89.129.173",
     "open": []
   },
   "https": {
@@ -249,11 +263,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "anthropic-domain-verification-gm4n1q=mbgtscKppFSQPa94iEKut1DCu",
+    "cursor-domain-verification-987qxp=NzVU3KiAhhQpAYRf9gWgmwH2M",
+    "atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXlTSpjt",
     "google-site-verification=vnKFVNK2CNvD26H6RgVwBzA3kl8EnMW1xc4DIYfZqr0",
-    "apple-domain-verification=KCTdqG3zCfRDNB57",
-    "google-site-verification=rU54pg91seSvEOguy4FYBoAz_-1kbL9JtzckNRoKI-8",
-    "1password-site-verification=NPLE72RPPJCD5MQWHCH2LBWOSA"
+    "wiz-domain-verification=106d737f255f6040e903621fcc553ce41977b40940acfab67d828304",
+    "astro-domain-verification=cmfl404981ir001ri7eudlvbp"
   ],
   "tls2": {
     "alpn": "",
@@ -264,16 +278,29 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
       "not_before": "20260517000000",
       "not_after": "20261130235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "x12": {
     "status": 301
   },
-  "elapsed_s": 25.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.idealo.de:443/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 33.5,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -283,4 +310,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

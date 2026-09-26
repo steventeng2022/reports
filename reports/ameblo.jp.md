@@ -7,12 +7,12 @@
 | Target | https://ameblo.jp/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ameblo.jp |
-| Test date | 2026-09-26 18:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,9 +26,10 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 | 8 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
 | 9 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 13 | info | CT1 | 17 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 11 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 12 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 13 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 14 | info | CT1 | 17 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -88,28 +89,34 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 ### 9. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (b33oycuvtpzkba.ameblo.jp and if6ye62c3nrwzb.ameblo.jp) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (msrzfasl86wj46.ameblo.jp and 2kt9535431tiwv.ameblo.jp) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=26Ps67bWgQGjeNkTT6hV9VEgczhnzjN78yCdM33v-eo; google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8; tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa97
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=26Ps67bWgQGjeNkTT6hV9VEgczhnzjN78yCdM33v-eo; tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa97; google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of ameblo.jp has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 11. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 46 disallow path(s), e.g. /*/page-*.html, /*/amemberentrylist.html, /*/amemberentrylist-*.html, /*/amemberentry-*.html, /*/archivetop.html
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 13. [INFO] 17 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 12. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/assetlinks.json on ameblo.jp; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 13. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The ameblo.jp certificate lists an AIA OCSP responder (http://status.geotrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
+### 14. [INFO] 17 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: dev.ameblo.jp, image.portal.ameblo.jp
@@ -131,22 +138,31 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "mail.ameblo.jp (pref 10)"
     ],
     "ns": [
-      "ns-863.awsdns-43.net.",
+      "ns-2038.awsdns-62.co.uk.",
       "ns-124.awsdns-15.com.",
-      "ns-1218.awsdns-24.org.",
-      "ns-2038.awsdns-62.co.uk."
+      "ns-863.awsdns-43.net.",
+      "ns-1218.awsdns-24.org."
+    ],
+    "caa": [
+      "0 issue \"globalsign.com\"",
+      "0 issue \"amazon.com\"",
+      "0 iodef \"mailto:ameba_tools+crt@cyberagent.co.jp\"",
+      "0 issue \"cybertrust.ne.jp\"",
+      "0 issue \"certainly.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"digicert.com; cansignhttpexchanges=yes\""
     ],
     "spf": [
       "fastly-domain-delegation-nfkcslan-542735-2022-10-31",
-      "_mnobpm3nakzeekpqy6i72p451qgv326",
-      "google-site-verification=26Ps67bWgQGjeNkTT6hV9VEgczhnzjN78yCdM33v-eo",
-      "google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8",
-      "_gmqf0w3hsh1pqlogfw1gkg05zhs88zx",
-      "cPu1ZpFdt7xvQjanmhmE12k4AmF0MH",
-      "v=spf1 ip4:216.255.232.136/32 include:spf-a.ameba.jp include:spf.repica.jp -all",
-      "tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa9778f5ed1c8d42",
       "UHgEILc96z9sKmvYTwgZYiwusQbyqI",
-      "fastly-domain-delegation-@X7yV19EoO6Y-2023-06-30"
+      "google-site-verification=26Ps67bWgQGjeNkTT6hV9VEgczhnzjN78yCdM33v-eo",
+      "fastly-domain-delegation-@X7yV19EoO6Y-2023-06-30",
+      "_mnobpm3nakzeekpqy6i72p451qgv326",
+      "v=spf1 ip4:216.255.232.136/32 include:spf-a.ameba.jp include:spf.repica.jp -all",
+      "_gmqf0w3hsh1pqlogfw1gkg05zhs88zx",
+      "tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa9778f5ed1c8d42",
+      "cPu1ZpFdt7xvQjanmhmE12k4AmF0MH",
+      "google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8"
     ],
     "dmarc": [
       "v=DMARC1; p=none"
@@ -252,8 +268,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   "wildcard_dns": true,
   "apex_txt": [
     "google-site-verification=26Ps67bWgQGjeNkTT6hV9VEgczhnzjN78yCdM33v-eo",
-    "google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8",
-    "tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa97"
+    "tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa97",
+    "google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8"
   ],
   "tls2": {
     "alpn": "",
@@ -264,10 +280,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://status.geotrust.com",
       "not_before": "20260803000000",
       "not_after": "20270216235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -291,8 +308,22 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 26.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 37.2,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -302,4 +333,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

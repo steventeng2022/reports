@@ -7,12 +7,12 @@
 | Target | https://sellfy.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | sellfy.com |
-| Test date | 2026-09-26 18:58 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:15 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
+Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,8 +35,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 | 17 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 19 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
-| 20 | info | CT1 | 38 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 21 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 20 | low | CK8 | Session-like cookie with >=30-day lifetime | CWE-613 |
+| 21 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 22 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 23 | info | CT1 | 38 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 24 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -135,7 +138,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: 1password-site-verification=4CBCWU2SDVBF7IZSRABLDVIZEM; google-site-verification=ZJw64F0rZxNTUajWkexgLICKwT80PoLkOyWv19c4gco; ahrefs-site-verification_fa14fdfac7d1156d8a1e0e663bc7a8a0848638879cf0a667418f172
+- **Detail:** Apex TXT records with verification/token content: ahrefs-site-verification_fa14fdfac7d1156d8a1e0e663bc7a8a0848638879cf0a667418f172; google-site-verification=ZJw64F0rZxNTUajWkexgLICKwT80PoLkOyWv19c4gco; 1password-site-verification=4CBCWU2SDVBF7IZSRABLDVIZEM
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -162,13 +165,31 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - **Detail:** Response for https://sellfy.com/ carries Cache-Control: public, max-age=0, must-revalidate; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
-### 20. [INFO] 38 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 20. [LOW] Session-like cookie with >=30-day lifetime (`CK8`)
+
+- **CWE:** CWE-613
+- **Detail:** Cookie 'astro_session' on sellfy.com is session-like but carries a Max-Age/Expires lifetime of 30 days or more; a stolen cookie stays valid for a long window.
+- **Recommendation:** Shorten session-cookie lifetime and/or require re-authentication for sensitive actions.
+
+### 21. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association on sellfy.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 22. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for sellfy.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 23. [INFO] 38 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: app.sellfy.com, assets.sellfy.com, blog.sellfy.com, cdn.blog.sellfy.com, demo.sellfy.com, dev.emails.sellfy.com, docs.sellfy.com, domains.demo.sellfy.com, jobs.sellfy.com, media.sellfy.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 21. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 24. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: cdn.blog.sellfy.com, demo.sellfy.com; content may still be served via virtual-host fallback.
@@ -185,25 +206,26 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "172.66.168.248"
     ],
     "aaaa": [
-      "2606:4700:10::ac42:a8f8",
-      "2606:4700:10::6814:19fd"
+      "2606:4700:10::6814:19fd",
+      "2606:4700:10::ac42:a8f8"
     ],
     "cname": null,
     "mx": [
-      "alt3.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "alt4.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "will.ns.cloudflare.com.",
-      "kara.ns.cloudflare.com."
+      "kara.ns.cloudflare.com.",
+      "will.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
-      "1password-site-verification=4CBCWU2SDVBF7IZSRABLDVIZEM",
-      "google-site-verification=ZJw64F0rZxNTUajWkexgLICKwT80PoLkOyWv19c4gco",
       "ahrefs-site-verification_fa14fdfac7d1156d8a1e0e663bc7a8a0848638879cf0a667418f172e3bd78402",
+      "google-site-verification=ZJw64F0rZxNTUajWkexgLICKwT80PoLkOyWv19c4gco",
+      "1password-site-verification=4CBCWU2SDVBF7IZSRABLDVIZEM",
       "v=spf1 include:helpscoutemail.com include:emsd1.com include:amazonses.com include:_spf.google.com include:mailgun.org -all"
     ],
     "dmarc": [
@@ -339,9 +361,9 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     ]
   },
   "apex_txt": [
-    "1password-site-verification=4CBCWU2SDVBF7IZSRABLDVIZEM",
+    "ahrefs-site-verification_fa14fdfac7d1156d8a1e0e663bc7a8a0848638879cf0a667418f172",
     "google-site-verification=ZJw64F0rZxNTUajWkexgLICKwT80PoLkOyWv19c4gco",
-    "ahrefs-site-verification_fa14fdfac7d1156d8a1e0e663bc7a8a0848638879cf0a667418f172"
+    "1password-site-verification=4CBCWU2SDVBF7IZSRABLDVIZEM"
   ],
   "tls2": {
     "alpn": "",
@@ -379,8 +401,21 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 12.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 308,
+    "wellknown": [
+      "/.well-known/apple-app-site-association"
+    ],
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 14.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -390,4 +425,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

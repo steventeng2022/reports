@@ -7,12 +7,12 @@
 | Target | https://bbb.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | bbb.org |
-| Test date | 2026-09-26 18:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
+Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,7 +33,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 18 | info | CT1 | 44 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 19 | info | CT1 | 44 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -131,7 +132,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: airtable-verification=c6510236934b04ad8e279c50f5ba261d; google-site-verification=vbCoHJ2AdOVcONDq3HpldnSUFPqkLqLsGqepsvIG3W8; anthropic-domain-verification-1pw1ts=9bt3Q0epDBUzD0U2d9u38ULex
+- **Detail:** Apex TXT records with verification/token content: linkedin-site-verification=7e3a9aa5-56d0-408f-875b-2f90a2949a8d; atlassian-domain-verification=mir0Y7FBh7vWasF7DQkZu7/P04Fj6MOtgGOTB8pGdjcBZmExhP; google-site-verification=vbCoHJ2AdOVcONDq3HpldnSUFPqkLqLsGqepsvIG3W8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -146,7 +147,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 - **Detail:** Strict-Transport-Security is served but bbb.org is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 18. [INFO] 44 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for bbb.org, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 19. [INFO] 44 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api-gateway.dev.bbb.org, api-gateway.stage.bbb.org, api-legacy.stage.bbb.org, ask-bbb.dev.bbb.org, ask-bbb.stage.bbb.org, bbb-web.dev.bbb.org, bbb-web.stage.bbb.org, corecms.dev.bbb.org, corecms.stage.bbb.org, header-footer.dev.bbb.org
@@ -163,41 +170,42 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "104.18.12.85"
     ],
     "aaaa": [
-      "2606:4700::6812:d55",
-      "2606:4700::6812:c55"
+      "2606:4700::6812:c55",
+      "2606:4700::6812:d55"
     ],
     "cname": null,
     "mx": [
-      "bbb-org.mail.protection.outlook.com (pref 0)",
-      "usb-smtp-inbound-2.mimecast.com (pref 10)"
+      "usb-smtp-inbound-2.mimecast.com (pref 10)",
+      "bbb-org.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
       "sky.ns.cloudflare.com.",
       "ben.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
-      "airtable-verification=c6510236934b04ad8e279c50f5ba261d",
-      "MS=ms51510006",
-      "MS=ms70871153",
-      "google-site-verification=vbCoHJ2AdOVcONDq3HpldnSUFPqkLqLsGqepsvIG3W8",
-      "anthropic-domain-verification-1pw1ts=9bt3Q0epDBUzD0U2d9u38ULex",
-      "TS-GateMark-XerusPlaty-BishopCastor-MuleArctic",
-      "TAILSCALE-v5jb4LWi9twmrM7F2iv1",
-      "canva-site-verification=17rTdC3iGSynnfP0MM3AxA",
-      "atlassian-sending-domain-verification=3439449f-9f47-43a0-b8d4-5547eb95d654",
-      "google-gws-recovery-domain-verification=69716138",
-      "google-site-verification=sqG5mY8Hhz4UmPAIpQFTicF7UYQNiU_soZvbYouBOcc",
-      "brevo-code:0e7907f04aee89146d8699fe9b1e761e",
-      "linkedin-site-verification=f1538191-6fff-4d9f-b874-131440fe2859",
-      "MS=ms42622636",
-      "v=spf1 include:_spf.psm.knowbe4.com include:simplelists.com include:docebosaas.com include:spfbbb.bluebbb.org include:stspg-customer.com include:sendgrid.net -all",
-      "linkedin-site-verification=01c52a57-4144-410e-9dd7-cdad211a2499",
       "linkedin-site-verification=7e3a9aa5-56d0-408f-875b-2f90a2949a8d",
       "_mp71k0i4mlicenedphurdghi22bzipz",
-      "google-site-verification=z0BQYT93-PT2Fu2bTuVIpYMJo9lEtQJCPRdJsfzMgYo",
       "atlassian-domain-verification=mir0Y7FBh7vWasF7DQkZu7/P04Fj6MOtgGOTB8pGdjcBZmExhPHag3je/Kgoc54b",
       "Target: 0ed1fe018a8dab4f1075c24ce291b3534d6253b1c7",
-      "status-page-domain-verification=qg8m0xbmfqv7"
+      "google-site-verification=vbCoHJ2AdOVcONDq3HpldnSUFPqkLqLsGqepsvIG3W8",
+      "TS-GateMark-XerusPlaty-BishopCastor-MuleArctic",
+      "google-site-verification=sqG5mY8Hhz4UmPAIpQFTicF7UYQNiU_soZvbYouBOcc",
+      "google-site-verification=z0BQYT93-PT2Fu2bTuVIpYMJo9lEtQJCPRdJsfzMgYo",
+      "brevo-code:0e7907f04aee89146d8699fe9b1e761e",
+      "airtable-verification=c6510236934b04ad8e279c50f5ba261d",
+      "linkedin-site-verification=f1538191-6fff-4d9f-b874-131440fe2859",
+      "anthropic-domain-verification-1pw1ts=9bt3Q0epDBUzD0U2d9u38ULex",
+      "linkedin-site-verification=01c52a57-4144-410e-9dd7-cdad211a2499",
+      "status-page-domain-verification=qg8m0xbmfqv7",
+      "v=spf1 include:_spf.psm.knowbe4.com include:simplelists.com include:docebosaas.com include:spfbbb.bluebbb.org include:stspg-customer.com include:sendgrid.net -all",
+      "MS=ms70871153",
+      "atlassian-sending-domain-verification=3439449f-9f47-43a0-b8d4-5547eb95d654",
+      "MS=ms42622636",
+      "google-gws-recovery-domain-verification=69716138",
+      "canva-site-verification=17rTdC3iGSynnfP0MM3AxA",
+      "MS=ms51510006",
+      "TAILSCALE-v5jb4LWi9twmrM7F2iv1"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:39a3b8628f3f867@rep.dmarcanalyzer.com; ruf=mailto:39a3b8628f3f867@for.dmarcanalyzer.com; fo=1;"
@@ -217,7 +225,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "bbb.org",
       "www.stage.bbb.org"
     ],
-    "days_left": 85,
+    "days_left": 84,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -324,11 +332,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     ]
   },
   "apex_txt": [
-    "airtable-verification=c6510236934b04ad8e279c50f5ba261d",
+    "linkedin-site-verification=7e3a9aa5-56d0-408f-875b-2f90a2949a8d",
+    "atlassian-domain-verification=mir0Y7FBh7vWasF7DQkZu7/P04Fj6MOtgGOTB8pGdjcBZmExhP",
     "google-site-verification=vbCoHJ2AdOVcONDq3HpldnSUFPqkLqLsGqepsvIG3W8",
-    "anthropic-domain-verification-1pw1ts=9bt3Q0epDBUzD0U2d9u38ULex",
-    "canva-site-verification=17rTdC3iGSynnfP0MM3AxA",
-    "atlassian-sending-domain-verification=3439449f-9f47-43a0-b8d4-5547eb95d654"
+    "google-site-verification=sqG5mY8Hhz4UmPAIpQFTicF7UYQNiU_soZvbYouBOcc",
+    "google-site-verification=z0BQYT93-PT2Fu2bTuVIpYMJo9lEtQJCPRdJsfzMgYo"
   ],
   "tls2": {
     "alpn": "",
@@ -347,8 +355,19 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 5.4,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.bbb.org/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 5.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -358,4 +377,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

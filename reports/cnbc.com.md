@@ -7,12 +7,12 @@
 | Target | https://cnbc.com/ |
 | Bug bounty program | Nasdaq |
 | Listed scope domain | cnbc.com |
-| Test date | 2026-09-26 18:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
+Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,8 +30,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 18 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 20 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -126,20 +130,44 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=sgPd3o6avBeNjQQHck1SdY9T9tCIpY7uuTEKgrjSUzI; google-site-verification=5L_AJnC2bIXTvxGA7YN8mWF736oIS25va0YgjoMMl8o; Verification Token=056br29gq2n3bxrrgnycn5gl5t7x84gv
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=6CESE_rGuHHElgUcDrWhTikFRYmAa9UxkS8l-7DHXp8; google-site-verification=5L_AJnC2bIXTvxGA7YN8mWF736oIS25va0YgjoMMl8o; google-site-verification=9cB8liQRQb28dQBqxzTce9QxKrQ-i49TaUC1gb9hDZE
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of cnbc.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m01.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 35.174.251.224 carries PTR ec2-35-174-251-224.compute-1.amazonaws.com. for cnbc.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 17. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie 'AWSALB' set on cnbc.com indicates AWS Application Load Balancer stickiness.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 18. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on cnbc.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for cnbc.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 20. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The cnbc.com certificate lists an AIA OCSP responder (http://ocsp.r2m01.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -149,44 +177,45 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
   "dns": {
     "a": [
       "35.174.251.224",
-      "34.202.51.101",
-      "3.231.36.148"
+      "3.231.36.148",
+      "34.202.51.101"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mx0b-00a17301.pphosted.com (pref 20)",
       "mx0a-00a17301.pphosted.com (pref 20)",
-      "mxb-00a17301.gslb.pphosted.com (pref 10)",
-      "mxa-00a17301.gslb.pphosted.com (pref 10)"
+      "mx0b-00a17301.pphosted.com (pref 20)",
+      "mxa-00a17301.gslb.pphosted.com (pref 10)",
+      "mxb-00a17301.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "dns2.p05.nsone.net.",
       "dns3.p05.nsone.net.",
+      "dns4.p05.nsone.net.",
       "dns1.p05.nsone.net.",
-      "dns4.p05.nsone.net."
+      "dns2.p05.nsone.net."
     ],
+    "caa": [],
     "spf": [
-      "google-site-verification=sgPd3o6avBeNjQQHck1SdY9T9tCIpY7uuTEKgrjSUzI",
-      "MS=ms58192621",
+      "google-site-verification=6CESE_rGuHHElgUcDrWhTikFRYmAa9UxkS8l-7DHXp8",
       "google-site-verification=5L_AJnC2bIXTvxGA7YN8mWF736oIS25va0YgjoMMl8o",
+      "_lq9l7q95inxvwkxmxp9tm04ee47nw3u",
+      "google-site-verification=9cB8liQRQb28dQBqxzTce9QxKrQ-i49TaUC1gb9hDZE",
+      "cursor-domain-verification-3smzbv=BtSKIbSN5gsLoFMzwFlfLmHxz",
+      "_1h4qah587e8c66rkz1bw624l2gu9nn1",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com include:amazonses.com ~all",
+      "dropbox-domain-verification=201yvjsfrkv5",
+      "inbound",
+      "ZOOM_verify_xWhArnaoktgfC9TPnJyepZ",
+      "yahoo-verification-key=ASAGciLz+ZkbF3NlmI5cq6bGG3Dke7+mxOSR9CmHTus=",
       "_7zwim549e9t4hdm5b38khfp9ua3ar2b",
+      "adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe98526fe9bcd1502",
+      "MS=ms58192621",
+      "facebook-domain-verification=wuce6e5xzen63kvin0wnezovdrsx64",
+      "google-site-verification=sgPd3o6avBeNjQQHck1SdY9T9tCIpY7uuTEKgrjSUzI",
       "Verification Token=056br29gq2n3bxrrgnycn5gl5t7x84gv",
       "google-site-verification=MwlAu7EQcQ0wfEXmAg1AQ7jPjZA-obI23zD_6t70cOA",
       "_00z279402xehowo4mbv2r2qi42l9tyg",
-      "google-site-verification=6CESE_rGuHHElgUcDrWhTikFRYmAa9UxkS8l-7DHXp8",
-      "_1h4qah587e8c66rkz1bw624l2gu9nn1",
-      "facebook-domain-verification=wuce6e5xzen63kvin0wnezovdrsx64",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com include:amazonses.com ~all",
-      "_lq9l7q95inxvwkxmxp9tm04ee47nw3u",
-      "yahoo-verification-key=ASAGciLz+ZkbF3NlmI5cq6bGG3Dke7+mxOSR9CmHTus=",
-      "adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe98526fe9bcd1502",
-      "inbound",
-      "cursor-domain-verification-3smzbv=BtSKIbSN5gsLoFMzwFlfLmHxz",
-      "ZOOM_verify_xWhArnaoktgfC9TPnJyepZ",
-      "smartsheet-site-validation=oMy2hiSOxZp9S8vm9DKkUPKNqqB0ufdZ",
-      "dropbox-domain-verification=201yvjsfrkv5",
-      "google-site-verification=9cB8liQRQb28dQBqxzTce9QxKrQ-i49TaUC1gb9hDZE"
+      "smartsheet-site-validation=oMy2hiSOxZp9S8vm9DKkUPKNqqB0ufdZ"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -271,11 +300,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=sgPd3o6avBeNjQQHck1SdY9T9tCIpY7uuTEKgrjSUzI",
+    "google-site-verification=6CESE_rGuHHElgUcDrWhTikFRYmAa9UxkS8l-7DHXp8",
     "google-site-verification=5L_AJnC2bIXTvxGA7YN8mWF736oIS25va0YgjoMMl8o",
-    "Verification Token=056br29gq2n3bxrrgnycn5gl5t7x84gv",
-    "google-site-verification=MwlAu7EQcQ0wfEXmAg1AQ7jPjZA-obI23zD_6t70cOA",
-    "google-site-verification=6CESE_rGuHHElgUcDrWhTikFRYmAa9UxkS8l-7DHXp8"
+    "google-site-verification=9cB8liQRQb28dQBqxzTce9QxKrQ-i49TaUC1gb9hDZE",
+    "cursor-domain-verification-3smzbv=BtSKIbSN5gsLoFMzwFlfLmHxz",
+    "dropbox-domain-verification=201yvjsfrkv5"
   ],
   "tls2": {
     "alpn": "",
@@ -286,10 +315,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
       "not_before": "20260728000000",
       "not_after": "20270210235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "x12": {
     "status": 301,
@@ -297,8 +327,24 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "ec2-35-174-251-224.compute-1.amazonaws.com."
     ]
   },
-  "elapsed_s": 25.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.cnbc.com",
+    "http_status": 301,
+    "p404_status": 301,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 33.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -308,4 +354,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

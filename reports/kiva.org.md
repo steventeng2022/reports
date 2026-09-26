@@ -7,12 +7,12 @@
 | Target | https://kiva.org/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | kiva.org |
-| Test date | 2026-09-26 18:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:09 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
+Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,8 +34,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 | 16 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 17 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 18 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 19 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 19 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 20 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 21 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 22 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -147,26 +149,38 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 ### 17. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (lkh1foya9hdv3b.kiva.org and ghv8afl5yh6lvu.kiva.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (j40bt53pge86u0.kiva.org and u9qe9rwu8ec9ye.kiva.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 18. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=aNSEEHIDfPXNUeb67q8FOy1leF8IHP3my5W5P-K3Ras; google-site-verification=K6pOshF2tXM_Od3Aox6x0D5NCifEGgjeoKpEgm_0FnA; have-i-been-pwned-verification=db1636b384f9357d05e558bf19131b1c
+- **Detail:** Apex TXT records with verification/token content: have-i-been-pwned-verification=db1636b384f9357d05e558bf19131b1c; google-site-verification=K6pOshF2tXM_Od3Aox6x0D5NCifEGgjeoKpEgm_0FnA; openai-domain-verification=dv-yC2ze882C9VikO8gNy93jlRg
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 19. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 19. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of kiva.org has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m04.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 20. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 35.84.123.227 carries PTR ec2-35-84-123-227.us-west-2.compute.amazonaws.com. for kiva.org.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 21. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for kiva.org, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 22. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The kiva.org certificate lists an AIA OCSP responder (http://ocsp.r2m04.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -176,48 +190,49 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
   "dns": {
     "a": [
       "35.84.123.227",
-      "184.32.154.120",
-      "52.38.210.220"
+      "52.38.210.220",
+      "184.32.154.120"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 30)",
-      "aspmx.l.google.com (pref 10)",
+      "aspmx2.googlemail.com (pref 30)",
       "alt1.aspmx.l.google.com (pref 20)",
       "alt2.aspmx.l.google.com (pref 20)",
-      "aspmx2.googlemail.com (pref 30)"
+      "aspmx3.googlemail.com (pref 30)",
+      "aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-823.awsdns-38.net.",
       "ns-467.awsdns-58.com.",
-      "ns-1401.awsdns-47.org.",
-      "ns-1628.awsdns-11.co.uk."
+      "ns-823.awsdns-38.net.",
+      "ns-1628.awsdns-11.co.uk.",
+      "ns-1401.awsdns-47.org."
     ],
+    "caa": [],
     "spf": [
-      "google-site-verification=aNSEEHIDfPXNUeb67q8FOy1leF8IHP3my5W5P-K3Ras",
-      "v=spf1 ip4:50.31.62.59 ip4:149.72.59.130 ip4:44.231.14.47 ip4:44.228.3.254 ip4:98.124.155.57 ip4:167.89.73.35 +ip4:63.146.102.40 +ip4:159.242.240.114 +ip4:159.242.241.114 +ip4:184.105.251.240 +ip4:205.219.64.40 +ip4:209.117.187.240",
-      " include:sendgrid.net include:_spf.salesforce.com include:_spf.google.com include:spf1.formassembly.com include:mg-spf.greenhouse.io ~all",
-      "google-site-verification=K6pOshF2tXM_Od3Aox6x0D5NCifEGgjeoKpEgm_0FnA",
       "have-i-been-pwned-verification=db1636b384f9357d05e558bf19131b1c",
+      "google-site-verification=K6pOshF2tXM_Od3Aox6x0D5NCifEGgjeoKpEgm_0FnA",
+      "openai-domain-verification=dv-yC2ze882C9VikO8gNy93jlRg",
+      "apple-domain-verification=aMzQxkiCFjcw6qs2",
+      "google-site-verification=R376pH2Qg1DF_VAUNVoD9UdHnYQZgJc58a0RuOZBRJo",
+      "google-site-verification=1fC3FgT5ECns8re10uYmOP6ti515lHow0590LexLpZI",
+      "atlassian-domain-verification=OVxK2M7RNrqHbkHkbj5fgLMB7PskfmIGG/vuJOF56EfSoZwcEOEH+1K83N1x8Io3",
       "google-site-verification=dw2XUoLh5GVnlVttqOWbFXhrDjOlJBhhPZ2eYZmoUPY",
       "MS=ms86669204",
-      "google-site-verification=_Xv5McueunM-dPmSF1ge6wsY8FVJq0aPt_pcDKaeBm4",
-      "google-site-verification=5jYUB2vDYFFMq4m_24JfhaRstDUUtCWM-YDQmyeNudE",
-      "onetrust-domain-verification=7d515025ceee4735a290af3918d6eab1",
       "facebook-domain-verification=6k9ebdtev0wfu1xrh5uuy0a898natq",
-      "google-site-verification=1fC3FgT5ECns8re10uYmOP6ti515lHow0590LexLpZI",
-      "apple-domain-verification=aMzQxkiCFjcw6qs2",
-      "pinterest-site-verification=5d85d0a1883817322133a4b593943825",
-      "anthropic-domain-verification-dpkt2p=m5p14kRrmTYLhAsidkSy7A3no",
-      "ZOOM_verify_EG8dulX8TLC_IA_EcCClOw",
-      "google-site-verification=p8xG9TMPbQbi9nZd95YSxllHvJAD67-tqmHpAhXImIk",
+      "google-site-verification=5jYUB2vDYFFMq4m_24JfhaRstDUUtCWM-YDQmyeNudE",
       "google-site-verification=OC0AuKwkDfkZPB9fFbcQic9Sy0BEzHiJ_oiOtUH13lE",
-      "adobe-idp-site-verification=6fe80722ea29c9a5df78b8cc8395beef437166b62246b1ae0f966dc9518e0be7",
-      "atlassian-domain-verification=OVxK2M7RNrqHbkHkbj5fgLMB7PskfmIGG/vuJOF56EfSoZwcEOEH+1K83N1x8Io3",
-      "openai-domain-verification=dv-yC2ze882C9VikO8gNy93jlRg",
+      "onetrust-domain-verification=7d515025ceee4735a290af3918d6eab1",
+      "pinterest-site-verification=5d85d0a1883817322133a4b593943825",
+      "ZOOM_verify_EG8dulX8TLC_IA_EcCClOw",
       "6v2dgkhyvf59rskdrvnftbk323znlwlh",
-      "google-site-verification=R376pH2Qg1DF_VAUNVoD9UdHnYQZgJc58a0RuOZBRJo"
+      "v=spf1 ip4:50.31.62.59 ip4:149.72.59.130 ip4:44.231.14.47 ip4:44.228.3.254 ip4:98.124.155.57 ip4:167.89.73.35 +ip4:63.146.102.40 +ip4:159.242.240.114 +ip4:159.242.241.114 +ip4:184.105.251.240 +ip4:205.219.64.40 +ip4:209.117.187.240",
+      " include:sendgrid.net include:_spf.salesforce.com include:_spf.google.com include:spf1.formassembly.com include:mg-spf.greenhouse.io ~all",
+      "google-site-verification=aNSEEHIDfPXNUeb67q8FOy1leF8IHP3my5W5P-K3Ras",
+      "adobe-idp-site-verification=6fe80722ea29c9a5df78b8cc8395beef437166b62246b1ae0f966dc9518e0be7",
+      "google-site-verification=p8xG9TMPbQbi9nZd95YSxllHvJAD67-tqmHpAhXImIk",
+      "anthropic-domain-verification-dpkt2p=m5p14kRrmTYLhAsidkSy7A3no",
+      "google-site-verification=_Xv5McueunM-dPmSF1ge6wsY8FVJq0aPt_pcDKaeBm4"
     ],
     "dmarc": [
       "v=DMARC1; p=none; sp=none; rua=mailto:dmarc@kiva.org, mailto:dmarc_agg@vali.email; ruf=mailto:dmarc@kiva.org; rf=afrf; pct=100; ri=86400"
@@ -301,11 +316,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=aNSEEHIDfPXNUeb67q8FOy1leF8IHP3my5W5P-K3Ras",
-    "google-site-verification=K6pOshF2tXM_Od3Aox6x0D5NCifEGgjeoKpEgm_0FnA",
     "have-i-been-pwned-verification=db1636b384f9357d05e558bf19131b1c",
-    "google-site-verification=dw2XUoLh5GVnlVttqOWbFXhrDjOlJBhhPZ2eYZmoUPY",
-    "google-site-verification=_Xv5McueunM-dPmSF1ge6wsY8FVJq0aPt_pcDKaeBm4"
+    "google-site-verification=K6pOshF2tXM_Od3Aox6x0D5NCifEGgjeoKpEgm_0FnA",
+    "openai-domain-verification=dv-yC2ze882C9VikO8gNy93jlRg",
+    "apple-domain-verification=aMzQxkiCFjcw6qs2",
+    "google-site-verification=R376pH2Qg1DF_VAUNVoD9UdHnYQZgJc58a0RuOZBRJo"
   ],
   "tls2": {
     "alpn": "",
@@ -316,10 +331,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
       "not_before": "20251211000000",
       "not_after": "20270109235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "x12": {
     "status": 301,
@@ -327,8 +343,20 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "ec2-35-84-123-227.us-west-2.compute.amazonaws.com."
     ]
   },
-  "elapsed_s": 27.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.kiva.org:443/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 35.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -338,4 +366,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

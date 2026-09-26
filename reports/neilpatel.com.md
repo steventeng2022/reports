@@ -7,12 +7,12 @@
 | Target | https://neilpatel.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | neilpatel.com |
-| Test date | 2026-09-26 18:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:11 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
+Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 19 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 
 ## Detailed findings
 
@@ -46,13 +47,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.66.158.241:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.20.39.45:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.66.158.241:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.20.39.45:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -131,7 +132,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=ysxmqVCxrn2N29tyJtIhAq_3NNSZuZOdy_Ue2Od471g; google-site-verification=DFmjfROYsh4y06UZEacP-UrNM2zGUw6eNDumC2f4WPs; google-site-verification=pkvlExz1OTIjM2MCDq_1_ojXUvAmQQ5x1c_lSuYE_Ws
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=pkvlExz1OTIjM2MCDq_1_ojXUvAmQQ5x1c_lSuYE_Ws; google-site-verification=69oeSF2ynTPY0E5pqUZs-yxPJ-MGACV-Stxi6MJfrC0; google-site-verification=DFmjfROYsh4y06UZEacP-UrNM2zGUw6eNDumC2f4WPs
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -152,6 +153,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 - **Detail:** Response for https://neilpatel.com/ carries Cache-Control: max-age=600, must-revalidate (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
+### 19. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xk16ne25c68i2n.html -> 404; error page/headers match: WordPress, Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -159,35 +166,52 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
   "domain": "neilpatel.com",
   "dns": {
     "a": [
-      "172.66.158.241",
-      "104.20.39.45"
+      "104.20.39.45",
+      "172.66.158.241"
     ],
     "aaaa": [
-      "2606:4700:10::ac42:9ef1",
-      "2606:4700:10::6814:272d"
+      "2606:4700:10::6814:272d",
+      "2606:4700:10::ac42:9ef1"
     ],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx2.googlemail.com (pref 10)",
       "aspmx3.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx2.googlemail.com (pref 10)",
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
       "jamie.ns.cloudflare.com.",
       "guss.ns.cloudflare.com."
     ],
+    "caa": [
+      "0 issuewild \"awstrust.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issue \"ssl.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issuewild \"amazontrust.com\"",
+      "0 issuewild \"ssl.com\"",
+      "0 issue \"comodoca.com\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issuewild \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issuewild \"comodoca.com\"",
+      "0 issuewild \"amazon.com\"",
+      "0 issuewild \"amazonaws.com\"",
+      "0 issue \"digicert.com; cansignhttpexchanges=yes\""
+    ],
     "spf": [
-      "pardot932143=ab2991169fadcd8b17f47c2cf2be367899e347f60309b20698a506e65539d5df",
-      "MS=ms35402416",
-      "google-site-verification=ysxmqVCxrn2N29tyJtIhAq_3NNSZuZOdy_Ue2Od471g",
-      "google-site-verification=DFmjfROYsh4y06UZEacP-UrNM2zGUw6eNDumC2f4WPs",
-      "v=spf1 include:_u.neilpatel.com._spf.dmarcla.com include:mail.zendesk.com -all",
       "google-site-verification=pkvlExz1OTIjM2MCDq_1_ojXUvAmQQ5x1c_lSuYE_Ws",
+      "google-site-verification=69oeSF2ynTPY0E5pqUZs-yxPJ-MGACV-Stxi6MJfrC0",
+      "MS=ms35402416",
+      "pardot932143=ab2991169fadcd8b17f47c2cf2be367899e347f60309b20698a506e65539d5df",
+      "v=spf1 include:_u.neilpatel.com._spf.dmarcla.com include:mail.zendesk.com -all",
+      "google-site-verification=DFmjfROYsh4y06UZEacP-UrNM2zGUw6eNDumC2f4WPs",
       "google-site-verification=BGqGskkKsGMr0MD39uTedHJVLjanxfypOYRrc-0IJkk",
-      "google-site-verification=WQg-6qBd_DxoZRDt7E-PjZCAxpObkGECPOQVcV6Vai0",
-      "google-site-verification=69oeSF2ynTPY0E5pqUZs-yxPJ-MGACV-Stxi6MJfrC0"
+      "google-site-verification=ysxmqVCxrn2N29tyJtIhAq_3NNSZuZOdy_Ue2Od471g",
+      "google-site-verification=WQg-6qBd_DxoZRDt7E-PjZCAxpObkGECPOQVcV6Vai0"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:610d622002350@ag.dmarcly.com; ruf=mailto:610d622002350@fo.dmarcly.com; sp=quarantine; fo=0;"
@@ -217,7 +241,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
     }
   },
   "ports": {
-    "ip": "172.66.158.241",
+    "ip": "104.20.39.45",
     "open": [
       8080,
       8443
@@ -275,11 +299,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=ysxmqVCxrn2N29tyJtIhAq_3NNSZuZOdy_Ue2Od471g",
-    "google-site-verification=DFmjfROYsh4y06UZEacP-UrNM2zGUw6eNDumC2f4WPs",
     "google-site-verification=pkvlExz1OTIjM2MCDq_1_ojXUvAmQQ5x1c_lSuYE_Ws",
+    "google-site-verification=69oeSF2ynTPY0E5pqUZs-yxPJ-MGACV-Stxi6MJfrC0",
+    "google-site-verification=DFmjfROYsh4y06UZEacP-UrNM2zGUw6eNDumC2f4WPs",
     "google-site-verification=BGqGskkKsGMr0MD39uTedHJVLjanxfypOYRrc-0IJkk",
-    "google-site-verification=WQg-6qBd_DxoZRDt7E-PjZCAxpObkGECPOQVcV6Vai0"
+    "google-site-verification=ysxmqVCxrn2N29tyJtIhAq_3NNSZuZOdy_Ue2Od471g"
   ],
   "tls2": {
     "alpn": "",
@@ -318,8 +342,18 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 7.3,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 8.8,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -329,4 +363,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

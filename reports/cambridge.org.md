@@ -7,12 +7,12 @@
 | Target | https://cambridge.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | cambridge.org |
-| Test date | 2026-09-26 18:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:00 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
+Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,8 +36,10 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 | 18 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 19 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 20 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 21 | info | CT1 | 75 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 22 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 21 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 22 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 23 | info | CT1 | 75 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 24 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -56,13 +58,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.17.111.190:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.17.110.190:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.17.111.190:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.17.110.190:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -155,7 +157,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 ### 18. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-sending-domain-verification=681c02b7-bef7-4652-a1c3-b5999a7056c2; facebook-domain-verification=nkrm6s56pcmfep9h0lgko47xsxxml5; apple-domain-verification=dJCKMZtNMZrBxvyv
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=N5etRfpe1AcCZMdSJz5sVicQHzzIr9RbU9cQTjQ94vE; parkable-domain-verification=tfyMMTd19z2TedD63DPVMyjFILPMgwM4IP7J2elpykE=; figma-domain-verification=82306f7d5e6d9b44f70bf7e951c99627e467dcb0111c988d3ae206
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 19. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -170,13 +172,25 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 - **Detail:** robots.txt lists 70 disallow path(s), e.g. /, /, /, /aca/authorinformation/, /blocks
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 21. [INFO] 75 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 21. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on cambridge.org indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 22. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for cambridge.org, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 23. [INFO] 75 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: admin.entries.cambridge.org, api.internal.aggregation.cambridge.org, cdn.authorservices.cambridge.org, dev.flowsource.cambridge.org, diff.api.internal.aggregation.cambridge.org, gitlab.aop.cambridge.org, gitlab.services.aop.cambridge.org, live.login.cambridge.org, login.authorhub-main-priv.uat.adnc.cambridge.org, login.authorhub-uat.adnc.cambridge.org
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 22. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 24. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: dev.flowsource.cambridge.org; content may still be served via virtual-host fallback.
@@ -189,66 +203,67 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
   "domain": "cambridge.org",
   "dns": {
     "a": [
-      "104.17.111.190",
-      "104.17.110.190"
+      "104.17.110.190",
+      "104.17.111.190"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "eu-smtp-inbound-1.mimecast.com (pref 4)",
-      "eu-smtp-inbound-2.mimecast.com (pref 4)"
+      "eu-smtp-inbound-2.mimecast.com (pref 4)",
+      "eu-smtp-inbound-1.mimecast.com (pref 4)"
     ],
     "ns": [
       "nucum.ns.cloudflare.com.",
       "lex.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
-      "atlassian-sending-domain-verification=681c02b7-bef7-4652-a1c3-b5999a7056c2",
-      "08261f74-adda-45ae-bab0-9b7e8919b7c7",
-      "facebook-domain-verification=nkrm6s56pcmfep9h0lgko47xsxxml5",
-      "MS=ms61882158",
-      "apple-domain-verification=dJCKMZtNMZrBxvyv",
-      "6mhwwb8qmrthfb7qmpjlkhr6w30yrqk7",
+      "56l0x50ygt1fkr23c9npqsrmwqr2cvhb",
+      "Z8kBemfkazJ2i4ysd4p6BpfEKVVRKFT0hQCLeyk8itVhI7FgQo/fof5BCS1pgLO13FaYp+KaVmX2pPT7/mtD+Q==",
+      "krp4xlxh54n2p0jgnklc2sy826wnbqfd",
+      "google-site-verification=N5etRfpe1AcCZMdSJz5sVicQHzzIr9RbU9cQTjQ94vE",
       "xwwmlgcbfg256thhdv0150228ks7rkzb",
-      "confluent-verification=5cd8b60d-2121-4b7a-8dc9-6c3fb6a7bc43",
-      "formstack-domain-verification=bc1d27a650a1f333058871330e43d4c1",
+      "amazonses:Hk45M0qWK+GZ2iX9XJ0TVVq2mc+DayOePbXsYVp/abQ=",
+      "parkable-domain-verification=tfyMMTd19z2TedD63DPVMyjFILPMgwM4IP7J2elpykE=",
+      "6mhwwb8qmrthfb7qmpjlkhr6w30yrqk7",
+      "figma-domain-verification=82306f7d5e6d9b44f70bf7e951c99627e467dcb0111c988d3ae2066031b18983-1755005759",
+      "zoho-verification=zb43177975.zmverify.zoho.com",
+      "SFMC-XCiRpahbO1482ub4X4SdBpTNt9_QuR4k5vr-azmb",
       "anthropic-domain-verification-mae9zt=OrJVGKqpLLCr3R2xm97n1UkaA",
       "apple-domain-verification=0z9Q3j82qURKE0jE",
-      "onetrust-domain-verification=67ea4d2fa6f84245aa04d058118d26ad",
-      "google-site-verification=N5etRfpe1AcCZMdSJz5sVicQHzzIr9RbU9cQTjQ94vE",
-      "amazonses:ivqwfLhOGGWGY27uhxdFOA4LwWOJLR+4cr1nUQ4Guh4=",
-      "adobe-idp-site-verification=7d354030906008d5dcab28dc74cff0b4c3f868aa68415212c70801597f944dc8",
-      "figma-domain-verification=82306f7d5e6d9b44f70bf7e951c99627e467dcb0111c988d3ae2066031b18983-1755005759",
-      "77b755eb-0c8f-462f-9071-e147b4823dba",
-      "amazonses:Hk45M0qWK+GZ2iX9XJ0TVVq2mc+DayOePbXsYVp/abQ=",
-      "google-site-verification=RHYH2O4q7639HXg9OOtkhwU1GoSz2yrwFQ95dmHzArI",
-      "have-i-been-pwned-verification=361b42c0181f1c91867b0c7731657e90",
-      "_qzf1ow8akt4j08t4s2mpxnfm03j00ap",
-      "google-site-verification=-houjDGhv3j4boUHMyT2w-kmHVFMJBopLlqOV9CRtXE",
-      "SFMC-XCiRpahbO1482ub4X4SdBpTNt9_QuR4k5vr-azmb",
-      "parkable-domain-verification=tfyMMTd19z2TedD63DPVMyjFILPMgwM4IP7J2elpykE=",
-      "0c333ae6-6e62-4dd3-bd75-bbbe8c00a9e3",
-      "krp4xlxh54n2p0jgnklc2sy826wnbqfd",
-      "docusign=8f67c3ac-0e31-428a-b89b-d6c05efbcc57",
-      "Z8kBemfkazJ2i4ysd4p6BpfEKVVRKFT0hQCLeyk8itVhI7FgQo/fof5BCS1pgLO13FaYp+KaVmX2pPT7/mtD+Q==",
-      "miro-verification=e0eb88c47512f1b3e347014c28cd69d732b8cc38",
-      "knowbe4-site-verification=6f2a12971b44215b655214e401300716",
-      "00D8d0000059NJR=1TBSq00000004jZ",
-      "atlassian-domain-verification=7S7bsIrOwlHLdBG0OLNWITmcgqmnW8uaUKxRjA4McIJx1ThN46eQh2TaacXbCKhR",
+      "apple-domain-verification=dJCKMZtNMZrBxvyv",
       "_7medm2uqul87tj3d47vgw0kjs7tvycm",
-      "amazonses:ULRvjmdH/bCZZFgF/xINBm531pRwaQntnQRX/m4r5Zc=",
-      "google-site-verification=G2cATcZ2EVrpsOVGGF5MmI4kHQzXzEWHQ3MLXp2AmjI",
-      "amazonses:q6HVI+PeonYnqfC7kDzNqCrUyIXQnena/tC1RgTQZ/s=",
-      "onetrust-domain-verification=e66d1551d1154391a5e51733b7fc58a8",
-      "_9acsisu491ieex01chikb1wu70u61ev",
-      "google-site-verification=iDXI17Esaf_WqUOMbG7t1tkZ3cD3I2B81texGDyCmLE",
+      "apple-domain-verification=DhDDkLn3rLrZDuNx",
+      "atlassian-domain-verification=7S7bsIrOwlHLdBG0OLNWITmcgqmnW8uaUKxRjA4McIJx1ThN46eQh2TaacXbCKhR",
       "_6rpwlgh7ul5lr5zxzlmlb7hpr2ejnqe",
-      "zoho-verification=zb43177975.zmverify.zoho.com",
+      "google-site-verification=-houjDGhv3j4boUHMyT2w-kmHVFMJBopLlqOV9CRtXE",
+      "amazonses:ULRvjmdH/bCZZFgF/xINBm531pRwaQntnQRX/m4r5Zc=",
+      "knowbe4-site-verification=6f2a12971b44215b655214e401300716",
       "00D2000000000hs=1TBQt00000001Vd",
-      "56l0x50ygt1fkr23c9npqsrmwqr2cvhb",
-      "v=spf1 redirect=390fwuvj._spf._d.mim.ec",
+      "google-site-verification=iDXI17Esaf_WqUOMbG7t1tkZ3cD3I2B81texGDyCmLE",
+      "miro-verification=e0eb88c47512f1b3e347014c28cd69d732b8cc38",
+      "_qzf1ow8akt4j08t4s2mpxnfm03j00ap",
+      "confluent-verification=5cd8b60d-2121-4b7a-8dc9-6c3fb6a7bc43",
+      "adobe-idp-site-verification=7d354030906008d5dcab28dc74cff0b4c3f868aa68415212c70801597f944dc8",
+      "onetrust-domain-verification=e66d1551d1154391a5e51733b7fc58a8",
+      "amazonses:ivqwfLhOGGWGY27uhxdFOA4LwWOJLR+4cr1nUQ4Guh4=",
+      "have-i-been-pwned-verification=361b42c0181f1c91867b0c7731657e90",
+      "facebook-domain-verification=nkrm6s56pcmfep9h0lgko47xsxxml5",
+      "formstack-domain-verification=bc1d27a650a1f333058871330e43d4c1",
       "teamviewer-sso-verification=db65502554224be3a892d0a1d7d23ac7",
-      "apple-domain-verification=DhDDkLn3rLrZDuNx"
+      "0c333ae6-6e62-4dd3-bd75-bbbe8c00a9e3",
+      "MS=ms61882158",
+      "amazonses:q6HVI+PeonYnqfC7kDzNqCrUyIXQnena/tC1RgTQZ/s=",
+      "77b755eb-0c8f-462f-9071-e147b4823dba",
+      "v=spf1 redirect=390fwuvj._spf._d.mim.ec",
+      "google-site-verification=G2cATcZ2EVrpsOVGGF5MmI4kHQzXzEWHQ3MLXp2AmjI",
+      "onetrust-domain-verification=67ea4d2fa6f84245aa04d058118d26ad",
+      "atlassian-sending-domain-verification=681c02b7-bef7-4652-a1c3-b5999a7056c2",
+      "google-site-verification=RHYH2O4q7639HXg9OOtkhwU1GoSz2yrwFQ95dmHzArI",
+      "_9acsisu491ieex01chikb1wu70u61ev",
+      "00D8d0000059NJR=1TBSq00000004jZ",
+      "docusign=8f67c3ac-0e31-428a-b89b-d6c05efbcc57",
+      "08261f74-adda-45ae-bab0-9b7e8919b7c7"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:047acbdc29a7625@rep.dmarcanalyzer.com,mailto:dmarc-admin@cambridge.org; ruf=mailto:047acbdc29a7625@rep.dmarcanalyzer.com,mailto:dmarc-admin@cambridge.org; fo=1;"
@@ -278,7 +293,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
     }
   },
   "ports": {
-    "ip": "104.17.111.190",
+    "ip": "104.17.110.190",
     "open": [
       8080,
       8443
@@ -383,11 +398,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
     ]
   },
   "apex_txt": [
-    "atlassian-sending-domain-verification=681c02b7-bef7-4652-a1c3-b5999a7056c2",
-    "facebook-domain-verification=nkrm6s56pcmfep9h0lgko47xsxxml5",
-    "apple-domain-verification=dJCKMZtNMZrBxvyv",
-    "confluent-verification=5cd8b60d-2121-4b7a-8dc9-6c3fb6a7bc43",
-    "formstack-domain-verification=bc1d27a650a1f333058871330e43d4c1"
+    "google-site-verification=N5etRfpe1AcCZMdSJz5sVicQHzzIr9RbU9cQTjQ94vE",
+    "parkable-domain-verification=tfyMMTd19z2TedD63DPVMyjFILPMgwM4IP7J2elpykE=",
+    "figma-domain-verification=82306f7d5e6d9b44f70bf7e951c99627e467dcb0111c988d3ae206",
+    "zoho-verification=zb43177975.zmverify.zoho.com",
+    "anthropic-domain-verification-mae9zt=OrJVGKqpLLCr3R2xm97n1UkaA"
   ],
   "tls2": {
     "alpn": "",
@@ -425,8 +440,17 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 208.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.cambridge.org",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 268.5,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -436,4 +460,5 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

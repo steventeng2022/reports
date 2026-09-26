@@ -7,12 +7,12 @@
 | Target | https://eventim.de/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | eventim.de |
-| Test date | 2026-09-26 18:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:05 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 16 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -117,7 +119,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: jamf-site-verification=1mGbPXJW8-h7z9OTyuY-fg; stripe-verification=AF5DD7294082E8A97C22C5A02EB429FA306374CFA56E6B747A47A6F83525; openai-domain-verification=dv-LWOQZyUBe4v4LUx1ryWVZhwi
+- **Detail:** Apex TXT records with verification/token content: stripe-verification=AF5DD7294082E8A97C22C5A02EB429FA306374CFA56E6B747A47A6F83525; apple-domain-verification=GOce9gVZOyTRkab6; 1password-site-verification=ZI4O7DDYBRHUVMKUSTM6RJ7RN4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -131,6 +133,18 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - **CWE:** CWE-200
 - **Detail:** 23.210.215.208 carries PTR a23-210-215-208.deploy.static.akamaitechnologies.com. for eventim.de.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 16. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkws2ifb3xd1wo.html -> 403; error page/headers match: Akamai.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for eventim.de, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
 ## Evidence (raw response observations)
 
@@ -152,41 +166,42 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "mxa-0072c901.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "a12-66.akam.net.",
-      "a1-222.akam.net.",
-      "a6-65.akam.net.",
+      "a13-67.akam.net.",
       "a3-64.akam.net.",
+      "a12-66.akam.net.",
+      "a6-65.akam.net.",
       "a10-65.akam.net.",
-      "a13-67.akam.net."
+      "a1-222.akam.net."
     ],
+    "caa": [],
     "spf": [
+      "stripe-verification=AF5DD7294082E8A97C22C5A02EB429FA306374CFA56E6B747A47A6F83525EF4A",
+      "apple-domain-verification=GOce9gVZOyTRkab6",
+      "1password-site-verification=ZI4O7DDYBRHUVMKUSTM6RJ7RN4",
+      "dell-technologies-domain-verification=eventim.de_0294e23e-488b-47ff-a6f7-d1fe73b1524c_1756375967",
       "_zcu8mukkq7g0jjxpsz7ciwpnrsh11ed",
+      "_x0m99eexri0eo0jy3oqceax1lsautou",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
+      "jamf-site-verification=1mGbPXJW8-h7z9OTyuY-fg",
+      "1password-site-verification=LFNAA7NAAZFULMFWJPXE5Q5JEQ",
+      "google-site-verification=F_ofMVEQrI9dLToCH3W8TD_pw5_J6-c8SzSxA8cC80Q",
+      "_an4lngigs1w4891di1fcerxtiwz8kld",
+      "_zyobswc54veb1thhshrfrn0eyyjrziu",
+      "miro-verification=2ae9c59047c26ca58554168f7baccaf715e607b4",
+      "shopify-verification-code=lq13eQZumd4BKaWYIyggeIVKHPtwvs",
+      "/dEZPSK+nF6rq7laQtMlbSXm01b+++Hl68NWiIIHiPIqS6GcjfZ+UaCfY1NgsYFDwHRno0/1a6DF6lfHx+idXw==",
+      "onetrust-domain-verification=f6f96e3b0d334cc78bb3372701e00911",
+      "1password-site-verification=5EMB7KTOU5E5LF4C27XXNT4JRM",
+      "openai-domain-verification=dv-LWOQZyUBe4v4LUx1ryWVZhwi",
+      "teamviewer-sso-verification=0775685533454aaf911ae2316becb5e1",
+      "mixpanel-domain-verify=cafd88b1-917f-4159-bc47-b1c7052ff275",
+      "bw=Y2eRcRZKeuigrljql8ybFRciwBnMGGAfYm9hXTK35nip",
       "MS=ms55918227",
       "sending_domain1071343=7651b6fc060ab34ceea035d6cd9b65c21bc0e6c6ced9cdb9734e5b6fd53cd125",
-      "jamf-site-verification=1mGbPXJW8-h7z9OTyuY-fg",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
-      "mixpanel-domain-verify=cafd88b1-917f-4159-bc47-b1c7052ff275",
-      "_an4lngigs1w4891di1fcerxtiwz8kld",
-      "stripe-verification=AF5DD7294082E8A97C22C5A02EB429FA306374CFA56E6B747A47A6F83525EF4A",
-      "openai-domain-verification=dv-LWOQZyUBe4v4LUx1ryWVZhwi",
-      "onetrust-domain-verification=f6f96e3b0d334cc78bb3372701e00911",
-      "_x0m99eexri0eo0jy3oqceax1lsautou",
-      "1password-site-verification=5EMB7KTOU5E5LF4C27XXNT4JRM",
-      "atlassian-domain-verification=sRxNCVi7vbQFvIQOy3yD5wRhIsBfb/nlTssiVfRTkqhr2bN35VWGJsPaLo/7hvER",
-      "1password-site-verification=LFNAA7NAAZFULMFWJPXE5Q5JEQ",
-      "google-site-verification=s_J1gtfGgebN6_0ZHBAGpeuFpD3Jz9qK7wjc8wTeC6k",
-      "mandrill_verify.RGbU4FqxJLlLqTEzZtTrXA",
-      "apple-domain-verification=GOce9gVZOyTRkab6",
-      "dell-technologies-domain-verification=eventim.de_0294e23e-488b-47ff-a6f7-d1fe73b1524c_1756375967",
-      "bw=Y2eRcRZKeuigrljql8ybFRciwBnMGGAfYm9hXTK35nip",
-      "/dEZPSK+nF6rq7laQtMlbSXm01b+++Hl68NWiIIHiPIqS6GcjfZ+UaCfY1NgsYFDwHRno0/1a6DF6lfHx+idXw==",
-      "_zyobswc54veb1thhshrfrn0eyyjrziu",
-      "google-site-verification=F_ofMVEQrI9dLToCH3W8TD_pw5_J6-c8SzSxA8cC80Q",
-      "1password-site-verification=ZI4O7DDYBRHUVMKUSTM6RJ7RN4",
-      "miro-verification=2ae9c59047c26ca58554168f7baccaf715e607b4",
-      "teamviewer-sso-verification=0775685533454aaf911ae2316becb5e1",
       "facebook-domain-verification=gor6r8bwyofwjen3uatmmco60ne6cf",
-      "shopify-verification-code=lq13eQZumd4BKaWYIyggeIVKHPtwvs"
+      "atlassian-domain-verification=sRxNCVi7vbQFvIQOy3yD5wRhIsBfb/nlTssiVfRTkqhr2bN35VWGJsPaLo/7hvER",
+      "google-site-verification=s_J1gtfGgebN6_0ZHBAGpeuFpD3Jz9qK7wjc8wTeC6k",
+      "mandrill_verify.RGbU4FqxJLlLqTEzZtTrXA"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com,mailto:dmarc@eventim.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com,mailto:dmarc@eventim.com; pct=100;"
@@ -311,11 +326,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "jamf-site-verification=1mGbPXJW8-h7z9OTyuY-fg",
     "stripe-verification=AF5DD7294082E8A97C22C5A02EB429FA306374CFA56E6B747A47A6F83525",
-    "openai-domain-verification=dv-LWOQZyUBe4v4LUx1ryWVZhwi",
-    "onetrust-domain-verification=f6f96e3b0d334cc78bb3372701e00911",
-    "1password-site-verification=5EMB7KTOU5E5LF4C27XXNT4JRM"
+    "apple-domain-verification=GOce9gVZOyTRkab6",
+    "1password-site-verification=ZI4O7DDYBRHUVMKUSTM6RJ7RN4",
+    "dell-technologies-domain-verification=eventim.de_0294e23e-488b-47ff-a6f7-d1fe73b",
+    "jamf-site-verification=1mGbPXJW8-h7z9OTyuY-fg"
   ],
   "tls2": {
     "alpn": "",
@@ -337,8 +352,18 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "a23-210-215-208.deploy.static.akamaitechnologies.com."
     ]
   },
-  "elapsed_s": 4.9,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 403,
+    "http_status": 403,
+    "p404_status": 403,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 8.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -348,4 +373,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

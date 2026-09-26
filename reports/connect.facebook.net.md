@@ -7,12 +7,12 @@
 | Target | https://connect.facebook.net/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | connect.facebook.net |
-| Test date | 2026-09-26 18:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
+Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,8 +26,8 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 | 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
-| 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 12 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 11 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 12 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
 
 ## Detailed findings
 
@@ -98,17 +98,17 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of connect.facebook.net has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 12. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 11. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 57.144.92.128 carries PTR xx-fbcdn-shv-01-tpe5.fbcdn.net. for connect.facebook.net.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 12. [LOW] HTTPS root redirects to a different domain (`RD2`)
+
+- **CWE:** CWE-200
+- **Detail:** https://connect.facebook.net/ answered 302 with Location: https://www.facebook.com/ (cross-domain handoff at the entry point).
+- **Recommendation:** Review the cross-domain redirect; it discloses the real entry point and can be abused in open-redirect-style flows.
 
 ## Evidence (raw response observations)
 
@@ -125,6 +125,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
     "cname": "scontent.xx.fbcdn.net.",
     "mx": [],
     "ns": [],
+    "caa": [],
     "spf": [
       "v=spf1 a ~all"
     ],
@@ -227,10 +228,11 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.digicert.com",
       "not_before": "20260706000000",
       "not_after": "20261004235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "hsts_preloaded": true
@@ -241,8 +243,20 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "xx-fbcdn-shv-01-tpe5.fbcdn.net."
     ]
   },
-  "elapsed_s": 6.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 302,
+    "root_location": "https://www.facebook.com/",
+    "http_status": 301,
+    "p404_status": 404,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 7.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -252,4 +266,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

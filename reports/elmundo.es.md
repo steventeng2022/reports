@@ -7,12 +7,12 @@
 | Target | https://elmundo.es/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | elmundo.es |
-| Test date | 2026-09-26 18:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:04 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
+Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,9 +33,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 | 15 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 16 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 20 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 21 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -148,26 +149,32 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=7bjinxNsR4XyhujN4NAlLtHAWyALVtjJgzNZciDdZ-; atlassian-domain-verification=T5fbuvw/H/J2eZWKPjYsqChbdQg/OqHtq4MQ1Ak76LJubHwebj; adobe-idp-site-verification=5d984b54fc7397d92bb1b96a40c532b3ad090875dedb22c00a14
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=V40iSs6vN6O1kFq-Egky0AmbTyIly-EukOcOWjuyT30; google-site-verification=5DcZ3fJzOj0f4QBZPhxEO6lT09vXcIu-hy35RDXHkc4; atlassian-domain-verification=T5fbuvw/H/J2eZWKPjYsqChbdQg/OqHtq4MQ1Ak76LJubHwebj
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of elmundo.es has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 19. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 130 disallow path(s), e.g. /1998/, /2002/, /s/, /cgi-bin/, /perl/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 20. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 34.90.247.117 carries PTR 117.247.90.34.bc.googleusercontent.com. for elmundo.es.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for elmundo.es, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 21. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The elmundo.es certificate lists an AIA OCSP responder (http://ocsp.sectigo.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -186,22 +193,23 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "elmundo-es.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
+      "ns3-02.azure-dns.org.",
       "ns4-02.azure-dns.info.",
       "ns1-02.azure-dns.com.",
-      "ns2-02.azure-dns.net.",
-      "ns3-02.azure-dns.org."
+      "ns2-02.azure-dns.net."
     ],
+    "caa": [],
     "spf": [
-      "globalsign-domain-verification=7bjinxNsR4XyhujN4NAlLtHAWyALVtjJgzNZciDdZ-",
-      "atlassian-domain-verification=T5fbuvw/H/J2eZWKPjYsqChbdQg/OqHtq4MQ1Ak76LJubHwebjnJx2DWy5zGgbDr",
       "v=spf1 mx ip4:212.80.144.25 a:mailing.unidadeditorial.es ip4:193.110.128.182 ip4:93.90.16.107 ip4:212.80.144.192 include:t.contactlab.it include:amazonses.com include:spf.protection.outlook.com include:spf.mail.netclient.no ip4:13.81.124.182 -all",
-      "cMMfg3L6wl5iOp7rf/T1gX1IK075nC4837wyuYxfHi6FEX2glov0GKi/9E3JuKYvv55vdco+0hJsNMW8AQbe4Q==",
-      "adobe-idp-site-verification=5d984b54fc7397d92bb1b96a40c532b3ad090875dedb22c00a14cab10c239da0",
-      "google-site-verification=5DcZ3fJzOj0f4QBZPhxEO6lT09vXcIu-hy35RDXHkc4",
-      "f6ecbiuc2h43tvq9vav81rddmt",
-      "globalsign-domain-verification=KHdzCZD_oMiYp479wH9wCSZsMlbwL6t2W0nwUGP2eU",
+      "google-site-verification=V40iSs6vN6O1kFq-Egky0AmbTyIly-EukOcOWjuyT30",
       "MS=ms46178158",
-      "google-site-verification=V40iSs6vN6O1kFq-Egky0AmbTyIly-EukOcOWjuyT30"
+      "google-site-verification=5DcZ3fJzOj0f4QBZPhxEO6lT09vXcIu-hy35RDXHkc4",
+      "atlassian-domain-verification=T5fbuvw/H/J2eZWKPjYsqChbdQg/OqHtq4MQ1Ak76LJubHwebjnJx2DWy5zGgbDr",
+      "globalsign-domain-verification=7bjinxNsR4XyhujN4NAlLtHAWyALVtjJgzNZciDdZ-",
+      "f6ecbiuc2h43tvq9vav81rddmt",
+      "adobe-idp-site-verification=5d984b54fc7397d92bb1b96a40c532b3ad090875dedb22c00a14cab10c239da0",
+      "globalsign-domain-verification=KHdzCZD_oMiYp479wH9wCSZsMlbwL6t2W0nwUGP2eU",
+      "cMMfg3L6wl5iOp7rf/T1gX1IK075nC4837wyuYxfHi6FEX2glov0GKi/9E3JuKYvv55vdco+0hJsNMW8AQbe4Q=="
     ],
     "dmarc": [
       "v=DMARC1; p=none; fo=1; rua=mailto:dmarc_rua_UE@unidadeditorial.es; ruf=mailto:dmarc_ruf_UE@unidadeditorial.es; pct=100;"
@@ -284,11 +292,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "globalsign-domain-verification=7bjinxNsR4XyhujN4NAlLtHAWyALVtjJgzNZciDdZ-",
-    "atlassian-domain-verification=T5fbuvw/H/J2eZWKPjYsqChbdQg/OqHtq4MQ1Ak76LJubHwebj",
-    "adobe-idp-site-verification=5d984b54fc7397d92bb1b96a40c532b3ad090875dedb22c00a14",
+    "google-site-verification=V40iSs6vN6O1kFq-Egky0AmbTyIly-EukOcOWjuyT30",
     "google-site-verification=5DcZ3fJzOj0f4QBZPhxEO6lT09vXcIu-hy35RDXHkc4",
-    "globalsign-domain-verification=KHdzCZD_oMiYp479wH9wCSZsMlbwL6t2W0nwUGP2eU"
+    "atlassian-domain-verification=T5fbuvw/H/J2eZWKPjYsqChbdQg/OqHtq4MQ1Ak76LJubHwebj",
+    "globalsign-domain-verification=7bjinxNsR4XyhujN4NAlLtHAWyALVtjJgzNZciDdZ-",
+    "adobe-idp-site-verification=5d984b54fc7397d92bb1b96a40c532b3ad090875dedb22c00a14"
   ],
   "tls2": {
     "alpn": "",
@@ -299,10 +307,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.sectigo.com",
       "not_before": "20260326000000",
       "not_after": "20261010235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -329,8 +338,20 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "117.247.90.34.bc.googleusercontent.com."
     ]
   },
-  "elapsed_s": 27.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.elmundo.es/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 36.4,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -340,4 +361,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

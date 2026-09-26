@@ -7,12 +7,12 @@
 | Target | https://api.whatsapp.com/ |
 | Bug bounty program | Facebook |
 | Listed scope domain | api.whatsapp.com |
-| Test date | 2026-09-26 18:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
+Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -22,10 +22,9 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 | 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
 | 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 6 | info | P8 | Missing security.txt | CWE-1038 |
-| 7 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 8 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 9 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
-| 10 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 7 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 8 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 9 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -68,25 +67,19 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 7. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of api.whatsapp.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 8. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 7. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 9. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+### 8. [LOW] CSP present but still allows unsafe directives (`CSP1`)
 
 - **CWE:** CWE-1021
 - **Detail:** Content-Security-Policy of api.whatsapp.com permits unsafe-inline; inline script injection still executes.
 - **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
-### 10. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 9. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 57.144.93.32 carries PTR whatsapp-cdn-shv-01-tpe5.fbcdn.net. for api.whatsapp.com.
@@ -107,6 +100,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
     "cname": "web.whatsapp.com.",
     "mx": [],
     "ns": [],
+    "caa": [],
     "spf": [
       "v=spf1 a ~all"
     ],
@@ -202,10 +196,11 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.digicert.com",
       "not_before": "20260706000000",
       "not_after": "20261004235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "hsts_preloaded": true,
@@ -219,8 +214,19 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
       "whatsapp-cdn-shv-01-tpe5.fbcdn.net."
     ]
   },
-  "elapsed_s": 11.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 400,
+    "http_status": 403,
+    "p404_status": 404,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 11.7,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -230,4 +236,5 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

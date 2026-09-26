@@ -7,12 +7,12 @@
 | Target | https://j.mp/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | j.mp |
-| Test date | 2026-09-26 18:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:09 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,10 +27,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | low | DNS3 | Wildcard DNS detected | CWE-345 |
-| 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 12 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 13 | low | RED10 | Host header reflected into redirect Location | CWE-601 |
 | 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 15 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 15 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 16 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 17 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -49,7 +51,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 ### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
 - **CWE:** CWE-200
-- **Detail:** Alt-Svc: h3=":443"; ma=2592000
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
 - **Recommendation:** Verify the advertised protocol endpoints are configured.
 
 ### 4. [LOW] Missing HSTS header (`H1`)
@@ -104,14 +106,14 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 ### 11. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (wvqtd8a9duyc8h.j.mp and 8jvudlwqsd15tk.j.mp) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (tuqs78ygxlvtfx.j.mp and 6vwifsio0um8u4.j.mp) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
-### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 12. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of j.mp has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m04.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 13. [LOW] Host header reflected into redirect Location (`RED10`)
 
@@ -125,7 +127,19 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 - **Detail:** 67.199.248.16 carries PTR j.mp. for j.mp.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 15. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 15. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xk35wq4w790lgc.html -> 404; error page/headers match: Nginx.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 16. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The j.mp certificate lists an AIA OCSP responder (http://ocsp.r2m04.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
+### 17. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -145,18 +159,23 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
     "cname": null,
     "mx": [],
     "ns": [
-      "ns-403.awsdns-50.com.",
-      "ns-cloud-a4.googledomains.com.",
-      "ns-cloud-a3.googledomains.com.",
-      "ns-1927.awsdns-48.co.uk.",
-      "ns-1056.awsdns-04.org.",
       "ns-cloud-a2.googledomains.com.",
       "ns-545.awsdns-04.net.",
+      "ns-1927.awsdns-48.co.uk.",
+      "ns-cloud-a3.googledomains.com.",
+      "ns-cloud-a4.googledomains.com.",
+      "ns-403.awsdns-50.com.",
+      "ns-1056.awsdns-04.org.",
       "ns-cloud-a1.googledomains.com."
     ],
+    "caa": [
+      "0 issuewild \";\"",
+      "0 iodef \"mailto:abuse@bit.ly\"",
+      "0 issue \"amazon.com\""
+    ],
     "spf": [
-      "v=spf1 -all",
-      "_xz3da5bqfvxb6jlznt7hnmvt6m0kuce"
+      "_xz3da5bqfvxb6jlznt7hnmvt6m0kuce",
+      "v=spf1 -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:dmarc@bit.ly; ruf=mailto:ruf@dmarc.bitly.net; fo=1;"
@@ -251,10 +270,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
       "not_before": "20260728000000",
       "not_after": "20270210235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "x12": {
     "status": 404,
@@ -262,8 +282,19 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "j.mp."
     ]
   },
-  "elapsed_s": 9.1,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 404,
+    "http_status": 404,
+    "p404_status": 404,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 15.5,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -273,4 +304,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

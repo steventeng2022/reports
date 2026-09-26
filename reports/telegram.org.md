@@ -7,12 +7,12 @@
 | Target | https://telegram.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | telegram.org |
-| Test date | 2026-09-26 19:00 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:16 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,7 +28,10 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 | 10 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
 | 11 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 13 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
+| 14 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 15 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -102,20 +105,38 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 ### 11. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (zl0m9xeztheus4.telegram.org and xddpxdffszbxzx.telegram.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (0ltsc13cb6yni9.telegram.org and 5nhw2p5ijtb92l.telegram.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=R-3XYX47JUVHva3pnhnyjx5D72PtSnjtLMLj_tymTAc; google-site-verification=hAtj8VzR8lGDcv80yGd0ST-pMHU8WNU0lkswaau3v2w; yahoo-verification-key=NRNCv6/IcZMkSv28KI97E4zgZVMkk4PejCwNSh8So2k=
+- **Detail:** Apex TXT records with verification/token content: yahoo-verification-key=NRNCv6/IcZMkSv28KI97E4zgZVMkk4PejCwNSh8So2k=; google-site-verification=R-3XYX47JUVHva3pnhnyjx5D72PtSnjtLMLj_tymTAc; google-site-verification=hAtj8VzR8lGDcv80yGd0ST-pMHU8WNU0lkswaau3v2w
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 13. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of telegram.org has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.godaddy.com/ -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
+
+### 14. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkohgichl61bgy.html -> 404; error page/headers match: Nginx.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 15. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on telegram.org; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for telegram.org, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
 ## Evidence (raw response observations)
 
@@ -135,16 +156,17 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "mx110.telegram.org (pref 15)"
     ],
     "ns": [
+      "ns-cloud-b1.googledomains.com.",
       "ns-cloud-b4.googledomains.com.",
-      "ns-cloud-b2.googledomains.com.",
       "ns-cloud-b3.googledomains.com.",
-      "ns-cloud-b1.googledomains.com."
+      "ns-cloud-b2.googledomains.com."
     ],
+    "caa": [],
     "spf": [
+      "yahoo-verification-key=NRNCv6/IcZMkSv28KI97E4zgZVMkk4PejCwNSh8So2k=",
       "google-site-verification=R-3XYX47JUVHva3pnhnyjx5D72PtSnjtLMLj_tymTAc",
-      "v=spf1 ip4:95.161.64.0/28 ip4:95.161.64.16/30 ip4:149.154.160.0/20 ip4:149.154.162.125/32 ip4:149.154.162.247/32 -all",
       "google-site-verification=hAtj8VzR8lGDcv80yGd0ST-pMHU8WNU0lkswaau3v2w",
-      "yahoo-verification-key=NRNCv6/IcZMkSv28KI97E4zgZVMkk4PejCwNSh8So2k="
+      "v=spf1 ip4:95.161.64.0/28 ip4:95.161.64.16/30 ip4:149.154.160.0/20 ip4:149.154.162.125/32 ip4:149.154.162.247/32 -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; aspf=r; sp=reject; rua=mailto:dmarc@telegram.org"
@@ -232,9 +254,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   },
   "wildcard_dns": true,
   "apex_txt": [
+    "yahoo-verification-key=NRNCv6/IcZMkSv28KI97E4zgZVMkk4PejCwNSh8So2k=",
     "google-site-verification=R-3XYX47JUVHva3pnhnyjx5D72PtSnjtLMLj_tymTAc",
-    "google-site-verification=hAtj8VzR8lGDcv80yGd0ST-pMHU8WNU0lkswaau3v2w",
-    "yahoo-verification-key=NRNCv6/IcZMkSv28KI97E4zgZVMkk4PejCwNSh8So2k="
+    "google-site-verification=hAtj8VzR8lGDcv80yGd0ST-pMHU8WNU0lkswaau3v2w"
   ],
   "tls2": {
     "alpn": "",
@@ -245,10 +267,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.godaddy.com/",
       "not_before": "20260825152305",
       "not_after": "20270311152305"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "hsts_preloaded": true
@@ -256,8 +279,23 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 25.5,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 302,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 29.1,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -267,4 +305,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

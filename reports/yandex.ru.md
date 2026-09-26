@@ -7,12 +7,12 @@
 | Target | https://yandex.ru/ |
 | Bug bounty program | Yandex |
 | Listed scope domain | yandex.ru |
-| Test date | 2026-09-26 19:02 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:18 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,10 +29,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 12 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 16 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
-| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
+| 18 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 20 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -111,38 +114,56 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 12. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (doohc9ol2nxx16.yandex.ru and cr47rzox6xb35m.yandex.ru) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (zp0gm869zgxkq7.yandex.ru and pwz3czjgaergps.yandex.ru) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=e750ewnqm68u4f83wvp6qp7iiphkj0; mailru-verification: 530c425b1458283e; have-i-been-pwned-verification=13c7b50cd0b12f85dabe796e6178fb74
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=e750ewnqm68u4f83wvp6qp7iiphkj0; google-site-verification=Xj1hw8lKZK7dkCP6SCfNi98SvjacNHoNCVrFbJCZfio; have-i-been-pwned-verification=13c7b50cd0b12f85dabe796e6178fb74
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of yandex.ru has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 1108 disallow path(s), e.g. /?, /403.html, /404.html, /500.html, /adddata
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 16. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+### 15. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
 
 - **CWE:** CWE-922
 - **Detail:** Response for https://yandex.ru/ carries Cache-Control: max-age=86400,private; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
-### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 77.88.55.88 carries PTR yandex.ru. for yandex.ru.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 17. [LOW] HTTPS root redirects to a different domain (`RD2`)
+
+- **CWE:** CWE-200
+- **Detail:** https://yandex.ru/ answered 302 with Location: https://dzen.ru/?yredirect=true (cross-domain handoff at the entry point).
+- **Recommendation:** Review the cross-domain redirect; it discloses the real entry point and can be abused in open-redirect-style flows.
+
+### 18. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on yandex.ru; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for yandex.ru, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 20. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The yandex.ru certificate lists an AIA OCSP responder (http://ocsp.globalsign.com/gseccovsslca2018) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -166,14 +187,15 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "ns2.yandex.ru.",
       "ns1.yandex.ru."
     ],
+    "caa": [],
     "spf": [
       "facebook-domain-verification=e750ewnqm68u4f83wvp6qp7iiphkj0",
-      "mailru-verification: 530c425b1458283e",
-      "v=spf1 redirect=_spf.yandex.ru",
+      "google-site-verification=Xj1hw8lKZK7dkCP6SCfNi98SvjacNHoNCVrFbJCZfio",
       "have-i-been-pwned-verification=13c7b50cd0b12f85dabe796e6178fb74",
-      "MS=ms75457885",
       "google-site-verification=bDiyjBjCnMbct5cB1XZXOj5gQ0YcatJqTZUxFBo55nE",
-      "google-site-verification=Xj1hw8lKZK7dkCP6SCfNi98SvjacNHoNCVrFbJCZfio"
+      "v=spf1 redirect=_spf.yandex.ru",
+      "MS=ms75457885",
+      "mailru-verification: 530c425b1458283e"
     ],
     "dmarc": [
       "v=DMARC1; p=none; fo=1; rua=mailto:dmarc_agg@auth.returnpath.net,mailto:dmarc-rua@yandex.ru; ruf=mailto:dmarc_afrf@auth.returnpath.net"
@@ -243,7 +265,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "*.yandex.az",
       "yandex.tr"
     ],
-    "days_left": 94,
+    "days_left": 93,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -338,10 +360,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "wildcard_dns": true,
   "apex_txt": [
     "facebook-domain-verification=e750ewnqm68u4f83wvp6qp7iiphkj0",
-    "mailru-verification: 530c425b1458283e",
+    "google-site-verification=Xj1hw8lKZK7dkCP6SCfNi98SvjacNHoNCVrFbJCZfio",
     "have-i-been-pwned-verification=13c7b50cd0b12f85dabe796e6178fb74",
     "google-site-verification=bDiyjBjCnMbct5cB1XZXOj5gQ0YcatJqTZUxFBo55nE",
-    "google-site-verification=Xj1hw8lKZK7dkCP6SCfNi98SvjacNHoNCVrFbJCZfio"
+    "mailru-verification: 530c425b1458283e"
   ],
   "tls2": {
     "alpn": "",
@@ -352,10 +374,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.globalsign.com/gseccovsslca2018",
       "not_before": "20260701145410",
       "not_after": "20261229205959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -382,8 +405,24 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "yandex.ru."
     ]
   },
-  "elapsed_s": 33.1,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 302,
+    "root_location": "https://dzen.ru/?yredirect=true",
+    "http_status": 301,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 42.7,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -393,4 +432,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

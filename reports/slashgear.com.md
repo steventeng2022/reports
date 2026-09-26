@@ -7,12 +7,12 @@
 | Target | https://slashgear.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | slashgear.com |
-| Test date | 2026-09-26 18:59 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:15 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
+Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,10 +30,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 18 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 19 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -126,14 +127,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: pinterest-site-verification=99ff81df9daa6ad32e804c775f922a47; facebook-domain-verification=vcw5ice4xutsws6rj3cpxdpslwu6qd; google-site-verification=hLM8LlkEvTqibiu5LlpaUI7FcUqPRYajAd7kqdQ8yIE
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=hLM8LlkEvTqibiu5LlpaUI7FcUqPRYajAd7kqdQ8yIE; facebook-domain-verification=vcw5ice4xutsws6rj3cpxdpslwu6qd; pinterest-site-verification=99ff81df9daa6ad32e804c775f922a47
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of slashgear.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m01.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
@@ -144,10 +145,16 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 65.9.180.30 carries PTR server-65-9-180-30.tpe53.r.cloudfront.net. for slashgear.com.
+- **Detail:** 65.9.180.100 carries PTR server-65-9-180-100.tpe53.r.cloudfront.net. for slashgear.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 18. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for slashgear.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 19. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -160,32 +167,33 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "domain": "slashgear.com",
   "dns": {
     "a": [
-      "65.9.180.30",
       "65.9.180.100",
+      "65.9.180.30",
       "65.9.180.10",
       "65.9.180.36"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "aspmx3.googlemail.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx2.googlemail.com (pref 10)",
-      "aspmx3.googlemail.com (pref 10)"
+      "aspmx2.googlemail.com (pref 10)"
     ],
     "ns": [
-      "ns-432.awsdns-54.com.",
-      "ns-1080.awsdns-07.org.",
       "ns-1985.awsdns-56.co.uk.",
-      "ns-518.awsdns-00.net."
+      "ns-432.awsdns-54.com.",
+      "ns-518.awsdns-00.net.",
+      "ns-1080.awsdns-07.org."
     ],
+    "caa": [],
     "spf": [
-      "pinterest-site-verification=99ff81df9daa6ad32e804c775f922a47",
-      "facebook-domain-verification=vcw5ice4xutsws6rj3cpxdpslwu6qd",
       "google-site-verification=hLM8LlkEvTqibiu5LlpaUI7FcUqPRYajAd7kqdQ8yIE",
       "v=spf1 include:_spf.google.com ~all",
-      "sv8nbg16pjbbc11nh7l86zjw21zg20sq"
+      "sv8nbg16pjbbc11nh7l86zjw21zg20sq",
+      "facebook-domain-verification=vcw5ice4xutsws6rj3cpxdpslwu6qd",
+      "pinterest-site-verification=99ff81df9daa6ad32e804c775f922a47"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; fo=1; rua=mailto:dmarc@slashgear.com; ruf=mailto:dmarc@slashgear.com"
@@ -215,7 +223,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     }
   },
   "ports": {
-    "ip": "65.9.180.30",
+    "ip": "65.9.180.100",
     "open": []
   },
   "https": {
@@ -274,9 +282,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     ]
   },
   "apex_txt": [
-    "pinterest-site-verification=99ff81df9daa6ad32e804c775f922a47",
+    "google-site-verification=hLM8LlkEvTqibiu5LlpaUI7FcUqPRYajAd7kqdQ8yIE",
     "facebook-domain-verification=vcw5ice4xutsws6rj3cpxdpslwu6qd",
-    "google-site-verification=hLM8LlkEvTqibiu5LlpaUI7FcUqPRYajAd7kqdQ8yIE"
+    "pinterest-site-verification=99ff81df9daa6ad32e804c775f922a47"
   ],
   "tls2": {
     "alpn": "",
@@ -287,10 +295,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
       "not_before": "20260905000000",
       "not_after": "20270321235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -306,11 +315,23 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "x12": {
     "status": 301,
     "ptr": [
-      "server-65-9-180-30.tpe53.r.cloudfront.net."
+      "server-65-9-180-100.tpe53.r.cloudfront.net."
     ]
   },
-  "elapsed_s": 7.7,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.slashgear.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 9.8,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -320,4 +341,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

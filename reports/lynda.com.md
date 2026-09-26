@@ -7,12 +7,12 @@
 | Target | https://lynda.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | lynda.com |
-| Test date | 2026-09-26 18:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:10 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
+Total findings: **21** (High: 0, Medium: 0, Low: 7, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,11 +31,12 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 | 13 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 17 | low | CK4 | Session-like cookie without HttpOnly | CWE-1004 |
-| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 19 | info | CT1 | 103 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 20 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 16 | low | CK4 | Session-like cookie without HttpOnly | CWE-1004 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
+| 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 20 | info | CT1 | 103 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 21 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -138,31 +139,37 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 - **Detail:** Apex TXT records with verification/token content: google-site-verification=otgwTIY9F-b-FfbfbUI2VALTkgGcwyo7qhoj6vzSDIA
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of lynda.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 17. [LOW] Session-like cookie without HttpOnly (`CK4`)
+### 16. [LOW] Session-like cookie without HttpOnly (`CK4`)
 
 - **CWE:** CWE-1004
 - **Detail:** Cookie 'JSESSIONID' looks session-related and has no HttpOnly attribute.
 - **Recommendation:** Set HttpOnly on session cookies.
 
-### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 130.211.32.14 carries PTR 14.32.211.130.bc.googleusercontent.com. for lynda.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 19. [INFO] 103 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [LOW] HTTPS root redirects to a different domain (`RD2`)
+
+- **CWE:** CWE-200
+- **Detail:** https://lynda.com/ answered 301 with Location: https://www.linkedin.com/learning/?trk=lynda_redirect_learning (cross-domain handoff at the entry point).
+- **Recommendation:** Review the cross-domain redirect; it discloses the real entry point and can be abused in open-redirect-style flows.
+
+### 19. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The lynda.com certificate lists an AIA OCSP responder (http://ocsp.digicert.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
+### 20. [INFO] 103 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: admin.integration.lynda.com, admin.lynda.com, admin.release.lynda.com, admin.stage.lynda.com, api-1.stage.lynda.com, api.integration.lynda.com, api.release.lynda.com, api.stage.lynda.com, author.stage.lynda.com, authors.stage.lynda.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 20. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 21. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: admin.integration.lynda.com, admin.lynda.com, admin.release.lynda.com, admin.stage.lynda.com, api-1.stage.lynda.com; content may still be served via virtual-host fallback.
@@ -188,22 +195,25 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "mail-d.linkedin.com (pref 15)"
     ],
     "ns": [
-      "ns3-42.azure-dns.org.",
       "dns4.p09.nsone.net.",
       "ns2-42.azure-dns.net.",
-      "dns1.p09.nsone.net.",
-      "dns2.p09.nsone.net.",
       "dns3.p09.nsone.net.",
-      "ns1-42.azure-dns.com.",
-      "ns4-42.azure-dns.info."
+      "dns1.p09.nsone.net.",
+      "ns3-42.azure-dns.org.",
+      "ns4-42.azure-dns.info.",
+      "dns2.p09.nsone.net.",
+      "ns1-42.azure-dns.com."
+    ],
+    "caa": [
+      "0 contactemail \"caarecordaware@microsoft.com\""
     ],
     "spf": [
-      "_6xxhaq98xaeb80aazhyzt7z0gdcbn8k",
+      "google-site-verification=otgwTIY9F-b-FfbfbUI2VALTkgGcwyo7qhoj6vzSDIA",
       "MS=ms48400913",
+      "_6xxhaq98xaeb80aazhyzt7z0gdcbn8k",
       "_xqfeq9o3rn2e8qlraki47908h5c9mf1",
       "MS=ms56649312",
       "v=spf1 ip4:216.84.189.0/24 ip4:64.18.0.0/20 ip4:91.143.106.55 ip4:107.21.2.3 a:zgateway.zuora.com include:_spf.google.com include:mktomail.com include:_spf1.lynda.com include:linkedin.com ~all",
-      "google-site-verification=otgwTIY9F-b-FfbfbUI2VALTkgGcwyo7qhoj6vzSDIA",
       "wz2pkrghvpwld0jlvm13jqlqxqjtq6bn"
     ],
     "dmarc": [
@@ -363,10 +373,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.digicert.com",
       "not_before": "20260527000000",
       "not_after": "20261127235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "x12": {
     "status": 301,
@@ -374,8 +385,20 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "14.32.211.130.bc.googleusercontent.com."
     ]
   },
-  "elapsed_s": 16.1,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.linkedin.com/learning/?trk=lynda_redirect_learning",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 22.3,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -385,4 +408,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

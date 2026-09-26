@@ -7,12 +7,12 @@
 | Target | https://flipboard.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | flipboard.com |
-| Test date | 2026-09-26 18:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:05 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,10 +26,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 | 8 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 9 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 11 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 14 | info | CT1 | 12 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 14 | low | CK8 | Session-like cookie with >=30-day lifetime | CWE-613 |
+| 15 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 16 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 17 | info | CT1 | 12 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -95,14 +98,14 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-1avd9b=GWlaVK7cM1UrnAecUR0PhzRI7; google-site-verification=196ICmalqDggbij227IKpDuO8wjKIGJOoWQUKVR0B0U; have-i-been-pwned-verification=6b731851fd4ef8a6d49f6f8ff8f3eed4
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=47g-PnfQPJHjb8Ze5YYF-hF2ABg67yFQc-kwrSv8PAY; google-site-verification=BqjKftnKldO1vP49cSkz2ryHMLPk5y3V6-JlkIhUo1U; have-i-been-pwned-verification=6b731851fd4ef8a6d49f6f8ff8f3eed4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 11. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of flipboard.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m01.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
@@ -113,10 +116,28 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 ### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 54.192.248.101 carries PTR server-54-192-248-101.tpe53.r.cloudfront.net. for flipboard.com.
+- **Detail:** 54.192.248.119 carries PTR server-54-192-248-119.tpe53.r.cloudfront.net. for flipboard.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 14. [INFO] 12 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 14. [LOW] Session-like cookie with >=30-day lifetime (`CK8`)
+
+- **CWE:** CWE-613
+- **Detail:** Cookie '_csrf' on flipboard.com is session-like but carries a Max-Age/Expires lifetime of 30 days or more; a stolen cookie stays valid for a long window.
+- **Recommendation:** Shorten session-cookie lifetime and/or require re-authentication for sensitive actions.
+
+### 15. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xka1dlxegc6kc1.html -> 404; error page/headers match: CloudFront.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 16. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on flipboard.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 17. [INFO] 12 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -129,50 +150,59 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
   "domain": "flipboard.com",
   "dns": {
     "a": [
+      "54.192.248.119",
       "54.192.248.101",
-      "54.192.248.48",
       "54.192.248.59",
-      "54.192.248.119"
+      "54.192.248.48"
     ],
     "aaaa": [
-      "2600:9000:202f:2600:15:d33e:2640:93a1",
-      "2600:9000:202f:1800:15:d33e:2640:93a1",
-      "2600:9000:202f:1400:15:d33e:2640:93a1",
-      "2600:9000:202f:c400:15:d33e:2640:93a1",
-      "2600:9000:202f:e00:15:d33e:2640:93a1",
-      "2600:9000:202f:2800:15:d33e:2640:93a1",
-      "2600:9000:202f:8400:15:d33e:2640:93a1",
-      "2600:9000:202f:1c00:15:d33e:2640:93a1"
+      "2600:9000:202f:cc00:15:d33e:2640:93a1",
+      "2600:9000:202f:ea00:15:d33e:2640:93a1",
+      "2600:9000:202f:e400:15:d33e:2640:93a1",
+      "2600:9000:202f:aa00:15:d33e:2640:93a1",
+      "2600:9000:202f:1c00:15:d33e:2640:93a1",
+      "2600:9000:202f:1e00:15:d33e:2640:93a1",
+      "2600:9000:202f:e800:15:d33e:2640:93a1",
+      "2600:9000:202f:2400:15:d33e:2640:93a1"
     ],
     "cname": null,
     "mx": [
-      "aspmx5.googlemail.com (pref 30)",
-      "aspmx4.googlemail.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx2.googlemail.com (pref 30)",
+      "aspmx5.googlemail.com (pref 30)",
       "aspmx3.googlemail.com (pref 30)",
+      "aspmx4.googlemail.com (pref 30)",
+      "aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 20)",
-      "aspmx.l.google.com (pref 10)"
+      "alt1.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
+      "ns-1510.awsdns-60.org.",
       "ns-60.awsdns-07.com.",
-      "ns-816.awsdns-38.net.",
       "ns-1756.awsdns-27.co.uk.",
-      "ns-1510.awsdns-60.org."
+      "ns-816.awsdns-38.net."
+    ],
+    "caa": [
+      "0 issue \"digicert.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"amazonaws.com\"",
+      "0 issue \"pki.goog\"",
+      "0 issue \"amazon.com\"",
+      "0 issue \"awstrust.com\"",
+      "0 issue \"amazontrust.com\""
     ],
     "spf": [
-      "anthropic-domain-verification-1avd9b=GWlaVK7cM1UrnAecUR0PhzRI7",
-      "google-site-verification=196ICmalqDggbij227IKpDuO8wjKIGJOoWQUKVR0B0U",
-      "have-i-been-pwned-verification=6b731851fd4ef8a6d49f6f8ff8f3eed4",
-      "google-site-verification=9rExE5dYg3CPZ3GFGvrkj2MbbKAkdHHH5aRUYSnq9w4",
+      "google-site-verification=47g-PnfQPJHjb8Ze5YYF-hF2ABg67yFQc-kwrSv8PAY",
       "google-site-verification=BqjKftnKldO1vP49cSkz2ryHMLPk5y3V6-JlkIhUo1U",
-      "_wpengine-sso-challenge.flipboard.com= 2KkDEiUGF0IvgPeA6uHIcV57z9H",
       "_wpengine-sso-challenge= 2KkDEiUGF0IvgPeA6uHIcV57z9H",
-      "atlassian-domain-verification=dZ8g4eOwcpvhvx5AD10LH0gUSjKTUUgORwal07qANXl3412gq8IYKOlI4oa4llnl",
+      "have-i-been-pwned-verification=6b731851fd4ef8a6d49f6f8ff8f3eed4",
       "google-site-verification=eqogjmVDZB-9UMYUFvv5OlEO_a20KZadbY7DJw35Dys",
-      "v=spf1 include:servers.mcsv.net include:sendgrid.net include:_spf.google.com -all",
+      "anthropic-domain-verification-1avd9b=GWlaVK7cM1UrnAecUR0PhzRI7",
       "google-site-verification=EU2djlhiCyLFRE6dqL0HEIwLSclUSRLzkbvQ4ObXr7I",
-      "google-site-verification=47g-PnfQPJHjb8Ze5YYF-hF2ABg67yFQc-kwrSv8PAY"
+      "google-site-verification=196ICmalqDggbij227IKpDuO8wjKIGJOoWQUKVR0B0U",
+      "v=spf1 include:servers.mcsv.net include:sendgrid.net include:_spf.google.com -all",
+      "google-site-verification=9rExE5dYg3CPZ3GFGvrkj2MbbKAkdHHH5aRUYSnq9w4",
+      "_wpengine-sso-challenge.flipboard.com= 2KkDEiUGF0IvgPeA6uHIcV57z9H",
+      "atlassian-domain-verification=dZ8g4eOwcpvhvx5AD10LH0gUSjKTUUgORwal07qANXl3412gq8IYKOlI4oa4llnl"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine;"
@@ -203,7 +233,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
     }
   },
   "ports": {
-    "ip": "54.192.248.101",
+    "ip": "54.192.248.119",
     "open": []
   },
   "https": {
@@ -275,11 +305,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
     ]
   },
   "apex_txt": [
-    "anthropic-domain-verification-1avd9b=GWlaVK7cM1UrnAecUR0PhzRI7",
-    "google-site-verification=196ICmalqDggbij227IKpDuO8wjKIGJOoWQUKVR0B0U",
+    "google-site-verification=47g-PnfQPJHjb8Ze5YYF-hF2ABg67yFQc-kwrSv8PAY",
+    "google-site-verification=BqjKftnKldO1vP49cSkz2ryHMLPk5y3V6-JlkIhUo1U",
     "have-i-been-pwned-verification=6b731851fd4ef8a6d49f6f8ff8f3eed4",
-    "google-site-verification=9rExE5dYg3CPZ3GFGvrkj2MbbKAkdHHH5aRUYSnq9w4",
-    "google-site-verification=BqjKftnKldO1vP49cSkz2ryHMLPk5y3V6-JlkIhUo1U"
+    "google-site-verification=eqogjmVDZB-9UMYUFvv5OlEO_a20KZadbY7DJw35Dys",
+    "anthropic-domain-verification-1avd9b=GWlaVK7cM1UrnAecUR0PhzRI7"
   ],
   "tls2": {
     "alpn": "",
@@ -290,10 +320,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
       "not_before": "20260211000000",
       "not_after": "20270311235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -317,11 +348,26 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
   "x12": {
     "status": 200,
     "ptr": [
-      "server-54-192-248-101.tpe53.r.cloudfront.net."
+      "server-54-192-248-119.tpe53.r.cloudfront.net."
     ]
   },
-  "elapsed_s": 14.2,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 20.4,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -331,4 +377,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

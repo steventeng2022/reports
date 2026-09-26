@@ -7,12 +7,12 @@
 | Target | https://vk.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | vk.com |
-| Test date | 2026-09-26 19:01 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
+Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,6 +37,8 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 | 19 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 | 20 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 | 21 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 22 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 23 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -128,13 +130,13 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (azch2qjj9yc8g0.vk.com and 0j1vrk40wv30lk.vk.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (dzej2ep73yjpn0.vk.com and m9z87d1tpuq44m.vk.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=yIHjfPiraw7292KzmmdOaN_HbhuOagFIXRGHf_3WH4; wmail-verification: 646ff42e916a2be1aa86be6d3c742949; _globalsign-domain-verification=YM9xQ7VIOTNzoxGpxAE1kwy28slNTGWXflmZgt73D9
+- **Detail:** Apex TXT records with verification/token content: yandex-verification: 0bb3aeafaf40a3fa; _globalsign-domain-verification=yIHjfPiraw7292KzmmdOaN_HbhuOagFIXRGHf_3WH4; google-site-verification=bQE4SQUYC7KTvk4XCaMdwF0e_tj-O-6ZXMfXW2a8mHY
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -173,6 +175,18 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 - **Detail:** 87.240.132.78 carries PTR srv78-132-240-87.vk.com. for vk.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
+### 22. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/assetlinks.json on vk.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 23. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for vk.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -181,11 +195,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
   "dns": {
     "a": [
       "87.240.132.78",
-      "87.240.132.72",
       "87.240.129.133",
-      "87.240.132.67",
+      "87.240.132.72",
+      "87.240.137.164",
       "93.186.225.194",
-      "87.240.137.164"
+      "87.240.132.67"
     ],
     "aaaa": [],
     "cname": null,
@@ -194,26 +208,27 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
     ],
     "ns": [
       "ns2.vk.com.",
-      "ns1.vk.com.",
       "ns3.vk.com.",
+      "ns1.vk.com.",
       "ns4.vk.com."
     ],
+    "caa": [],
     "spf": [
+      "yandex-verification: 0bb3aeafaf40a3fa",
+      "LD6VaYCKete4UB5FIx7snCoJ8bt1nGdeCWe4my5HH5psRaTl",
+      "zAmvc",
       "_globalsign-domain-verification=yIHjfPiraw7292KzmmdOaN_HbhuOagFIXRGHf_3WH4",
+      "google-site-verification=bQE4SQUYC7KTvk4XCaMdwF0e_tj-O-6ZXMfXW2a8mHY",
       "wmail-verification: 646ff42e916a2be1aa86be6d3c742949",
-      "_globalsign-domain-verification=YM9xQ7VIOTNzoxGpxAE1kwy28slNTGWXflmZgt73D9",
       "_globalsign-domain-verification=aXxk884iIZmgR5ON_CbluBYfK4GyZLo08hLo293AHC",
+      "_globalsign-domain-verification=YM9xQ7VIOTNzoxGpxAE1kwy28slNTGWXflmZgt73D9",
       "v=spf1 ip4:93.186.224.0/20 ip4:87.240.128.0/18 i",
       "p4:95.142.192.0/21 mx include:_spf.google.com in",
       "clude:_spf.mail.ru ~all",
-      "HARICA-qudxcvYVXjYWrJvbUoX",
-      "yandex-verification: 0bb3aeafaf40a3fa",
       "HARICA-A1PCCe7rY17J2K2Ifov",
-      "google-site-verification=bQE4SQUYC7KTvk4XCaMdwF0e_tj-O-6ZXMfXW2a8mHY",
-      "_globalsign-domain-verification=3qRKI9FWh1UX5CIN5FXwL6SJnSKkJzaDkVqSPaxdfC",
-      "LD6VaYCKete4UB5FIx7snCoJ8bt1nGdeCWe4my5HH5psRaTl",
-      "zAmvc",
-      "HARICA-fLc9OEonBmci43ogW3C"
+      "HARICA-qudxcvYVXjYWrJvbUoX",
+      "HARICA-fLc9OEonBmci43ogW3C",
+      "_globalsign-domain-verification=3qRKI9FWh1UX5CIN5FXwL6SJnSKkJzaDkVqSPaxdfC"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; pct=100; rua=",
@@ -359,11 +374,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
   },
   "wildcard_dns": true,
   "apex_txt": [
+    "yandex-verification: 0bb3aeafaf40a3fa",
     "_globalsign-domain-verification=yIHjfPiraw7292KzmmdOaN_HbhuOagFIXRGHf_3WH4",
+    "google-site-verification=bQE4SQUYC7KTvk4XCaMdwF0e_tj-O-6ZXMfXW2a8mHY",
     "wmail-verification: 646ff42e916a2be1aa86be6d3c742949",
-    "_globalsign-domain-verification=YM9xQ7VIOTNzoxGpxAE1kwy28slNTGWXflmZgt73D9",
-    "_globalsign-domain-verification=aXxk884iIZmgR5ON_CbluBYfK4GyZLo08hLo293AHC",
-    "yandex-verification: 0bb3aeafaf40a3fa"
+    "_globalsign-domain-verification=aXxk884iIZmgR5ON_CbluBYfK4GyZLo08hLo293AHC"
   ],
   "tls2": {
     "alpn": "",
@@ -404,8 +419,21 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
       "srv78-132-240-87.vk.com."
     ]
   },
-  "elapsed_s": 38.9,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/assetlinks.json"
+    ],
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 42.8,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -415,4 +443,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

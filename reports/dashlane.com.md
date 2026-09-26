@@ -7,12 +7,12 @@
 | Target | https://dashlane.com/ |
 | Bug bounty program | Dashlane |
 | Listed scope domain | dashlane.com |
-| Test date | 2026-09-26 18:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:02 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
+Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -123,7 +125,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-4e55Awe1PWzWlnozKcMcHLLN; stripe-verification=F6D326204AE8297C7C1DCE7B72D865C2DF049FEF4E46AA6BACEE6316D87F; detectify-verification=19ea3dd383daec40adcb74a7968825b8
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=RFwRELa7WvbbTQW5f6j9hPJUSLTAovvSepABK6YwHaeC6AcZtm; anthropic-domain-verification-7k1h5w=lnSRFRHXgc8eyEwyyyEs0MZTE; drift-domain-verification=3e92a53ea6894b4f337d741ba27c2ab31c8630fc4eed6403e438a4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -138,6 +140,18 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 - **Detail:** robots.txt lists 6 disallow path(s), e.g. /payment, /, /payment, /payment, /payment
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 17. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on dashlane.com indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for dashlane.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -151,43 +165,44 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     "aaaa": [],
     "cname": null,
     "mx": [
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)"
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-1381.awsdns-44.org.",
+      "ns-646.awsdns-16.net.",
       "ns-1838.awsdns-37.co.uk.",
-      "ns-396.awsdns-49.com.",
-      "ns-646.awsdns-16.net."
+      "ns-1381.awsdns-44.org.",
+      "ns-396.awsdns-49.com."
     ],
+    "caa": [],
     "spf": [
+      "atlassian-domain-verification=RFwRELa7WvbbTQW5f6j9hPJUSLTAovvSepABK6YwHaeC6AcZtml0apL64eQFCdNQ",
       "CKO=cli_mi3ag5v4v5ie3fcimbb5zcjkdi",
-      "_yqvhaiv5owhbgbsa4qdcii7szjyce9m",
-      "openai-domain-verification=dv-4e55Awe1PWzWlnozKcMcHLLN",
       "ca3-3ad4d01464cb4caaad75392931cf4b49",
-      "stripe-verification=F6D326204AE8297C7C1DCE7B72D865C2DF049FEF4E46AA6BACEE6316D87F404F",
+      "_klajo684kaqqtg2dul51ana7m7aol1s",
+      "ca3-8b5b3457e553481da2ecf93bdf264443",
+      "anthropic-domain-verification-7k1h5w=lnSRFRHXgc8eyEwyyyEs0MZTE",
+      "drift-domain-verification=3e92a53ea6894b4f337d741ba27c2ab31c8630fc4eed6403e438a4fdfb162a02",
       "0ed1fe018a052438ee880c4b2fb7f1796949e855a2",
       "KOmW3ca2DpgwtUwRLQ4RHREFYMTccYEbcgnu7ipuO8syoAZI6C3u7zcGX8zAw9ssJDdffzxQinO7UJCu3PvDdA==",
-      "_klajo684kaqqtg2dul51ana7m7aol1s",
-      "detectify-verification=19ea3dd383daec40adcb74a7968825b8",
-      "stripe-verification=237c0c2be4be590e020173f0d294be75fc3de8a6271806f084d2018b62d33372",
-      "google-site-verification=6lT65mGzmxxPStSgeiblmtFtT4u5V3PJYdIJ2dFu5So",
-      "anthropic-domain-verification-7k1h5w=lnSRFRHXgc8eyEwyyyEs0MZTE",
-      "jamf-site-verification=i2cgTr97X6Qxa-MZy8gprA",
-      "ca3-8b5b3457e553481da2ecf93bdf264443",
-      "1|www.dashlane.com",
-      "google-site-verification=yS6BK31Z2KXSj9dmrqfPzPshkE7b32wulJmzfiz4EUY",
-      "v=spf1 include:_spf.google.com include:spf2.dashlane.com include:mail.zendesk.com include:mktomail.com include:mg-spf.greenhouse.io include:_spf.salesforce.com -all",
-      "wrike-verification=MjM0Nzk4OTpkODUzOWI2ZTk1ZjgyOWUxZDE2MDBmMWIyNmUxODUwODdiMTdkYjA5MjgyNjY3YjEwNmI2NzFmNTcyZjJiZGEz",
-      "drift-domain-verification=3e92a53ea6894b4f337d741ba27c2ab31c8630fc4eed6403e438a4fdfb162a02",
-      "atlassian-domain-verification=RFwRELa7WvbbTQW5f6j9hPJUSLTAovvSepABK6YwHaeC6AcZtml0apL64eQFCdNQ",
+      "miro-verification=36887a2acef64995e895317181e786f8fbc6ce21",
+      "_yqvhaiv5owhbgbsa4qdcii7szjyce9m",
       "ca3-f1f15d7cb167404ab9c514c3b87529c0",
-      "MS=ms78056367",
+      "detectify-verification=19ea3dd383daec40adcb74a7968825b8",
       "google-site-verification=ozFOOl99Gxv4y-55zHWOduavfcmZEXqS1yR_CDVmupI",
-      "miro-verification=36887a2acef64995e895317181e786f8fbc6ce21"
+      "google-site-verification=yS6BK31Z2KXSj9dmrqfPzPshkE7b32wulJmzfiz4EUY",
+      "MS=ms78056367",
+      "openai-domain-verification=dv-4e55Awe1PWzWlnozKcMcHLLN",
+      "wrike-verification=MjM0Nzk4OTpkODUzOWI2ZTk1ZjgyOWUxZDE2MDBmMWIyNmUxODUwODdiMTdkYjA5MjgyNjY3YjEwNmI2NzFmNTcyZjJiZGEz",
+      "stripe-verification=F6D326204AE8297C7C1DCE7B72D865C2DF049FEF4E46AA6BACEE6316D87F404F",
+      "google-site-verification=6lT65mGzmxxPStSgeiblmtFtT4u5V3PJYdIJ2dFu5So",
+      "stripe-verification=237c0c2be4be590e020173f0d294be75fc3de8a6271806f084d2018b62d33372",
+      "v=spf1 include:_spf.google.com include:spf2.dashlane.com include:mail.zendesk.com include:mktomail.com include:mg-spf.greenhouse.io include:_spf.salesforce.com -all",
+      "jamf-site-verification=i2cgTr97X6Qxa-MZy8gprA",
+      "1|www.dashlane.com"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; adkim=s; aspf=r; rua=mailto:dmarc-reports@dashlane.com; ruf=mailto:dmarc-reports@dashlane.com; rf=afrf; pct=100; ri=86400"
@@ -208,7 +223,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "check.dashlane.com",
       "*.check.dashlane.com"
     ],
-    "days_left": 87,
+    "days_left": 86,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -280,11 +295,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "openai-domain-verification=dv-4e55Awe1PWzWlnozKcMcHLLN",
-    "stripe-verification=F6D326204AE8297C7C1DCE7B72D865C2DF049FEF4E46AA6BACEE6316D87F",
-    "detectify-verification=19ea3dd383daec40adcb74a7968825b8",
-    "stripe-verification=237c0c2be4be590e020173f0d294be75fc3de8a6271806f084d2018b62d3",
-    "google-site-verification=6lT65mGzmxxPStSgeiblmtFtT4u5V3PJYdIJ2dFu5So"
+    "atlassian-domain-verification=RFwRELa7WvbbTQW5f6j9hPJUSLTAovvSepABK6YwHaeC6AcZtm",
+    "anthropic-domain-verification-7k1h5w=lnSRFRHXgc8eyEwyyyEs0MZTE",
+    "drift-domain-verification=3e92a53ea6894b4f337d741ba27c2ab31c8630fc4eed6403e438a4",
+    "miro-verification=36887a2acef64995e895317181e786f8fbc6ce21",
+    "detectify-verification=19ea3dd383daec40adcb74a7968825b8"
   ],
   "tls2": {
     "alpn": "",
@@ -314,8 +329,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 4.9,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.dashlane.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 5.8,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -325,4 +351,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

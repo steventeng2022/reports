@@ -7,12 +7,12 @@
 | Target | https://reuters.com/ |
 | Bug bounty program | Reuters |
 | Listed scope domain | reuters.com |
-| Test date | 2026-09-26 18:58 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:14 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
+Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,12 +30,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 16 | low | RED10 | Host header reflected into redirect Location | CWE-601 |
-| 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 19 | info | CT1 | 138 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 20 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 15 | low | RED10 | Host header reflected into redirect Location | CWE-601 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 20 | info | CT1 | 138 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 21 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -129,40 +130,46 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=LMfrSuyToK_ofO0MSu-lf5QJhLYITHNDX09ofoF7_FY; google-site-verification=FZwUpO_E2LIEPLqcxfWRpQipxi2faQ4Qt4wyYJpJr1g; yahoo-verification-key=5bF6siWgzdkfub3ZLp8cnSL2ps44ipYuy28vgoM7qDA=
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=cKpm3aVB5VEf9fQ0oxIIumulcv3CvTjrOGvqF8nUDO8; yahoo-verification-key=5bF6siWgzdkfub3ZLp8cnSL2ps44ipYuy28vgoM7qDA=; openai-domain-verification=dv-3vP8oxOY9pDhfiwzHjba8jmZ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of reuters.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 16. [LOW] Host header reflected into redirect Location (`RED10`)
+### 15. [LOW] Host header reflected into redirect Location (`RED10`)
 
 - **CWE:** CWE-601
 - **Detail:** GET with Host: evil-auditor.example -> Location: https://www.evil-auditor.example/
 - **Recommendation:** Validate redirect targets against the expected host.
 
-### 17. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 28 disallow path(s), e.g. /finance/stocks/option, /finance/stocks/financialHighlights, /search, /site-search/, /beta
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 155.46.172.255 carries PTR westlawclassic.com., go.thomson.com., westlawjapan.com., seccurrents.com., thomsonreuters.com., netlinksolution.com., es.thomson.com., westlaw.com.tw., westlawprecision.com.au., westlawhub.com., caselines.com., westlawinternational.com., cyberrisk-insurer.com., thomsonreuters.co.kr., reuters.co.uk., corepublishingsolutions.com., westlawnextcanada.com., laleynextonline.com.ar., tr.com., incomesdata.co.uk., thomsonreuters.com.pe., checkpointworld.com., thomsonreuters.in., onesourcelogin.eu., westcheck.com., roundhall.ie., findprint.com., odentrack.com., ultratax.com., triform.com., hk-lawyer.org., gsionline.com., thomsonreuters.com.au., arbsearch.com., cvmailasia.com., thomsonreuters.es., pagerohbs.com., thomsonreuters.com.br., checkpointnz.co.nz., impotexpert.ca., trymateria.ai., parametric-insurer.com., ufile.ca., thomsonreuters.co.jp., gettaxnetpro.com., westlawtoday.com., reutersconnect.com., westlawasia.com., monitorsuite.com., fastsalestax.com., thomsonreutersmexico.com., findandprint.com., onesourcetax.com., informacionlegal.com.uy., personnet.com., cs.thomson.com., pubemplaw.net., archbolde-update.co.uk., oconnors.com., thomsonreuters.ca., onesourcelogin.com.au., westdoc.com., checkpointespana.es., reuters.fr., thomson.com., wbm-digital.com., cfslaw.com., westlawbusinesscurrents.com., sureprep.com., westlawchile.cl., sweetandmaxwell.co.uk., netlinksolutionqa.com., legalcurrent.com., iblj.com., es-insurer.com., ctracknotification.com., reuters.com., ctracknotification.ca., thomsonreuters.com.hk., thomsonreuters.co.nz., westlaw.co.nz., theinsurertv.com., reuters.it., carswell.com., rtonline.com.br., litigationmonitor.com., breakingviews.com., thomsonreuters.cn., editionsyvonblais.com., wl-w.com., mypay.thomson.com., reuters.de., westlawpro.com., checkpoint.cl., westfindandprint.com., livenotecentral.com., safeguard.co.nz., legalbusinessonline.com., westfindprint.com., westlawsolo.com., westlawrewards.com., checkpoint.com.pe., sustainable-insurer.com., westlawcourtexpress.com., laley.com.ar., revistadostribunais.com.br., consumerbankruptcynews.com., westlaw.com., legalexecutiveinstitute.com., westlawuk.com., securrents.com., thomsonreuters.com.my., program-manager.com., checkpointau.com.au., checkpointmexico.com., westlaw.com.au., consumerbankruptcynews.net., courtexpress.com., westmonitor.com., thomsonreuters.com.sg., serengetilaw.com., informacionlegalonline.com.uy., reuters.com.cn., informacionlegal.com.ar., theinsurer.com., lawtel.com., reuters.es., newwestlaw.com., taxnetproplus.com., odenpt.com., myroyalty.com., quickview.com., pubemplaw.com. for reuters.com.
+- **Detail:** 155.46.172.255 carries PTR onesourcelogin.com.au., mypay.thomson.com., reuters.co.uk., hk-lawyer.org., westlawinternational.com., impotexpert.ca., westlawprecision.com.au., westlawuk.com., program-manager.com., thomsonreuters.ca., reutersconnect.com., thomsonreuters.com.hk., sureprep.com., newwestlaw.com., informacionlegal.com.ar., quickview.com., arbsearch.com., trymateria.ai., westlawchile.cl., ctracknotification.com., sustainable-insurer.com., laleynextonline.com.ar., es-insurer.com., westlawclassic.com., incomesdata.co.uk., caselines.com., reuters.com.cn., sweetandmaxwell.co.uk., cvmailasia.com., wl-w.com., lawtel.com., triform.com., editionsyvonblais.com., findandprint.com., oconnors.com., consumerbankruptcynews.net., iblj.com., checkpointmexico.com., thomsonreuters.co.jp., thomsonreuters.co.kr., checkpoint.com.pe., myroyalty.com., reuters.fr., westlawcourtexpress.com., carswell.com., findprint.com., westlaw.com.tw., westfindandprint.com., westlaw.co.nz., rtonline.com.br., wbm-digital.com., cfslaw.com., westlawrewards.com., revistadostribunais.com.br., thomsonreuters.co.nz., westdoc.com., westlawpro.com., pubemplaw.net., thomsonreuters.es., taxnetproplus.com., securrents.com., legalexecutiveinstitute.com., westlawsolo.com., informacionlegal.com.uy., theinsurertv.com., checkpoint.cl., checkpointnz.co.nz., laley.com.ar., gsionline.com., onesourcetax.com., cyberrisk-insurer.com., gettaxnetpro.com., odentrack.com., thomsonreuters.in., thomsonreuters.com.au., westlawbusinesscurrents.com., es.thomson.com., westlaw.com.au., pagerohbs.com., parametric-insurer.com., thomsonreuters.com.my., corepublishingsolutions.com., westlaw.com., seccurrents.com., informacionlegalonline.com.uy., pubemplaw.com., westlawhub.com., reuters.it., reuters.com., reuters.es., thomsonreutersmexico.com., fastsalestax.com., westlawjapan.com., netlinksolution.com., westcheck.com., westfindprint.com., tr.com., thomsonreuters.com., serengetilaw.com., thomsonreuters.com.pe., odenpt.com., legalcurrent.com., westlawnextcanada.com., archbolde-update.co.uk., breakingviews.com., monitorsuite.com., netlinksolutionqa.com., litigationmonitor.com., ultratax.com., ctracknotification.ca., theinsurer.com., thomsonreuters.com.br., thomsonreuters.com.sg., safeguard.co.nz., roundhall.ie., westlawasia.com., checkpointespana.es., cs.thomson.com., thomsonreuters.cn., consumerbankruptcynews.com., westlawtoday.com., reuters.de., checkpointworld.com., checkpointau.com.au., westmonitor.com., go.thomson.com., ufile.ca., livenotecentral.com., courtexpress.com., personnet.com., thomson.com., onesourcelogin.eu., legalbusinessonline.com. for reuters.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 19. [INFO] 138 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for reuters.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 19. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The reuters.com certificate lists an AIA OCSP responder (http://ocsp.sectigo.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
+### 20. [INFO] 138 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: apps.data.reuters.com, aws.contentdownloader.reuters.com, aws.dev.contentdownloader.reuters.com, aws.qa.contentdownloader.reuters.com, dev.ace.reuters.com, dev.commsmonitor.wne.reuters.com, dev.contentdownloader.reuters.com, dev.gpdb.media.reuters.com, dev.gpdbservices.media.reuters.com, dev.graphics.reuters.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 20. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 21. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: aws.dev.contentdownloader.reuters.com, dev.ace.reuters.com; content may still be served via virtual-host fallback.
@@ -184,23 +191,24 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "mxa-00160c04.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns-aws-1.thomsonreuters.com.",
-      "ns-aws-2.thomsonreuters.net.",
       "ns-aws-3.thomsonreuters.org.",
-      "ns-aws-4.thomsonreuters.co.uk."
+      "ns-aws-4.thomsonreuters.co.uk.",
+      "ns-aws-2.thomsonreuters.net.",
+      "ns-aws-1.thomsonreuters.com."
     ],
+    "caa": [],
     "spf": [
       "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
-      "google-site-verification=LMfrSuyToK_ofO0MSu-lf5QJhLYITHNDX09ofoF7_FY",
-      "google-site-verification=FZwUpO_E2LIEPLqcxfWRpQipxi2faQ4Qt4wyYJpJr1g",
-      "yahoo-verification-key=5bF6siWgzdkfub3ZLp8cnSL2ps44ipYuy28vgoM7qDA=",
-      "google-site-verification=O1A9GoZ5a23atyZjR2IBMnmdG-jz3mrsQ900uMn0sbY",
-      "openai-domain-verification=dv-3vP8oxOY9pDhfiwzHjba8jmZ",
       "apple-domain-verification=cKpm3aVB5VEf9fQ0oxIIumulcv3CvTjrOGvqF8nUDO8",
-      "google-site-verification=7UwjlMmBYuyFWx01Pu6NEVEWRPD9W25PnwffZejseEg",
-      "apple-domain-verification=voAz1fDhqIN4vRxG52m4VSOgLipH0OMyfJIprobVB1U",
+      "yahoo-verification-key=5bF6siWgzdkfub3ZLp8cnSL2ps44ipYuy28vgoM7qDA=",
       "MS=ms24417066",
-      "facebook-domain-verification=ra7bjxso3pnjy2p63mdc0002chquca"
+      "openai-domain-verification=dv-3vP8oxOY9pDhfiwzHjba8jmZ",
+      "google-site-verification=O1A9GoZ5a23atyZjR2IBMnmdG-jz3mrsQ900uMn0sbY",
+      "google-site-verification=LMfrSuyToK_ofO0MSu-lf5QJhLYITHNDX09ofoF7_FY",
+      "apple-domain-verification=voAz1fDhqIN4vRxG52m4VSOgLipH0OMyfJIprobVB1U",
+      "facebook-domain-verification=ra7bjxso3pnjy2p63mdc0002chquca",
+      "google-site-verification=FZwUpO_E2LIEPLqcxfWRpQipxi2faQ4Qt4wyYJpJr1g",
+      "google-site-verification=7UwjlMmBYuyFWx01Pu6NEVEWRPD9W25PnwffZejseEg"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -496,11 +504,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
     ]
   },
   "apex_txt": [
-    "google-site-verification=LMfrSuyToK_ofO0MSu-lf5QJhLYITHNDX09ofoF7_FY",
-    "google-site-verification=FZwUpO_E2LIEPLqcxfWRpQipxi2faQ4Qt4wyYJpJr1g",
+    "apple-domain-verification=cKpm3aVB5VEf9fQ0oxIIumulcv3CvTjrOGvqF8nUDO8",
     "yahoo-verification-key=5bF6siWgzdkfub3ZLp8cnSL2ps44ipYuy28vgoM7qDA=",
+    "openai-domain-verification=dv-3vP8oxOY9pDhfiwzHjba8jmZ",
     "google-site-verification=O1A9GoZ5a23atyZjR2IBMnmdG-jz3mrsQ900uMn0sbY",
-    "openai-domain-verification=dv-3vP8oxOY9pDhfiwzHjba8jmZ"
+    "google-site-verification=LMfrSuyToK_ofO0MSu-lf5QJhLYITHNDX09ofoF7_FY"
   ],
   "tls2": {
     "alpn": "",
@@ -511,10 +519,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.sectigo.com",
       "not_before": "20260903000000",
       "not_after": "20270320235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -538,143 +547,155 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
   "x12": {
     "status": 301,
     "ptr": [
-      "westlawclassic.com.",
-      "go.thomson.com.",
-      "westlawjapan.com.",
-      "seccurrents.com.",
-      "thomsonreuters.com.",
-      "netlinksolution.com.",
-      "es.thomson.com.",
-      "westlaw.com.tw.",
-      "westlawprecision.com.au.",
-      "westlawhub.com.",
-      "caselines.com.",
-      "westlawinternational.com.",
-      "cyberrisk-insurer.com.",
-      "thomsonreuters.co.kr.",
-      "reuters.co.uk.",
-      "corepublishingsolutions.com.",
-      "westlawnextcanada.com.",
-      "laleynextonline.com.ar.",
-      "tr.com.",
-      "incomesdata.co.uk.",
-      "thomsonreuters.com.pe.",
-      "checkpointworld.com.",
-      "thomsonreuters.in.",
-      "onesourcelogin.eu.",
-      "westcheck.com.",
-      "roundhall.ie.",
-      "findprint.com.",
-      "odentrack.com.",
-      "ultratax.com.",
-      "triform.com.",
-      "hk-lawyer.org.",
-      "gsionline.com.",
-      "thomsonreuters.com.au.",
-      "arbsearch.com.",
-      "cvmailasia.com.",
-      "thomsonreuters.es.",
-      "pagerohbs.com.",
-      "thomsonreuters.com.br.",
-      "checkpointnz.co.nz.",
-      "impotexpert.ca.",
-      "trymateria.ai.",
-      "parametric-insurer.com.",
-      "ufile.ca.",
-      "thomsonreuters.co.jp.",
-      "gettaxnetpro.com.",
-      "westlawtoday.com.",
-      "reutersconnect.com.",
-      "westlawasia.com.",
-      "monitorsuite.com.",
-      "fastsalestax.com.",
-      "thomsonreutersmexico.com.",
-      "findandprint.com.",
-      "onesourcetax.com.",
-      "informacionlegal.com.uy.",
-      "personnet.com.",
-      "cs.thomson.com.",
-      "pubemplaw.net.",
-      "archbolde-update.co.uk.",
-      "oconnors.com.",
-      "thomsonreuters.ca.",
       "onesourcelogin.com.au.",
-      "westdoc.com.",
-      "checkpointespana.es.",
+      "mypay.thomson.com.",
+      "reuters.co.uk.",
+      "hk-lawyer.org.",
+      "westlawinternational.com.",
+      "impotexpert.ca.",
+      "westlawprecision.com.au.",
+      "westlawuk.com.",
+      "program-manager.com.",
+      "thomsonreuters.ca.",
+      "reutersconnect.com.",
+      "thomsonreuters.com.hk.",
+      "sureprep.com.",
+      "newwestlaw.com.",
+      "informacionlegal.com.ar.",
+      "quickview.com.",
+      "arbsearch.com.",
+      "trymateria.ai.",
+      "westlawchile.cl.",
+      "ctracknotification.com.",
+      "sustainable-insurer.com.",
+      "laleynextonline.com.ar.",
+      "es-insurer.com.",
+      "westlawclassic.com.",
+      "incomesdata.co.uk.",
+      "caselines.com.",
+      "reuters.com.cn.",
+      "sweetandmaxwell.co.uk.",
+      "cvmailasia.com.",
+      "wl-w.com.",
+      "lawtel.com.",
+      "triform.com.",
+      "editionsyvonblais.com.",
+      "findandprint.com.",
+      "oconnors.com.",
+      "consumerbankruptcynews.net.",
+      "iblj.com.",
+      "checkpointmexico.com.",
+      "thomsonreuters.co.jp.",
+      "thomsonreuters.co.kr.",
+      "checkpoint.com.pe.",
+      "myroyalty.com.",
       "reuters.fr.",
-      "thomson.com.",
+      "westlawcourtexpress.com.",
+      "carswell.com.",
+      "findprint.com.",
+      "westlaw.com.tw.",
+      "westfindandprint.com.",
+      "westlaw.co.nz.",
+      "rtonline.com.br.",
       "wbm-digital.com.",
       "cfslaw.com.",
-      "westlawbusinesscurrents.com.",
-      "sureprep.com.",
-      "westlawchile.cl.",
-      "sweetandmaxwell.co.uk.",
-      "netlinksolutionqa.com.",
-      "legalcurrent.com.",
-      "iblj.com.",
-      "es-insurer.com.",
-      "ctracknotification.com.",
-      "reuters.com.",
-      "ctracknotification.ca.",
-      "thomsonreuters.com.hk.",
-      "thomsonreuters.co.nz.",
-      "westlaw.co.nz.",
-      "theinsurertv.com.",
-      "reuters.it.",
-      "carswell.com.",
-      "rtonline.com.br.",
-      "litigationmonitor.com.",
-      "breakingviews.com.",
-      "thomsonreuters.cn.",
-      "editionsyvonblais.com.",
-      "wl-w.com.",
-      "mypay.thomson.com.",
-      "reuters.de.",
-      "westlawpro.com.",
-      "checkpoint.cl.",
-      "westfindandprint.com.",
-      "livenotecentral.com.",
-      "safeguard.co.nz.",
-      "legalbusinessonline.com.",
-      "westfindprint.com.",
-      "westlawsolo.com.",
       "westlawrewards.com.",
-      "checkpoint.com.pe.",
-      "sustainable-insurer.com.",
-      "westlawcourtexpress.com.",
-      "laley.com.ar.",
       "revistadostribunais.com.br.",
-      "consumerbankruptcynews.com.",
-      "westlaw.com.",
-      "legalexecutiveinstitute.com.",
-      "westlawuk.com.",
-      "securrents.com.",
-      "thomsonreuters.com.my.",
-      "program-manager.com.",
-      "checkpointau.com.au.",
-      "checkpointmexico.com.",
-      "westlaw.com.au.",
-      "consumerbankruptcynews.net.",
-      "courtexpress.com.",
-      "westmonitor.com.",
-      "thomsonreuters.com.sg.",
-      "serengetilaw.com.",
-      "informacionlegalonline.com.uy.",
-      "reuters.com.cn.",
-      "informacionlegal.com.ar.",
-      "theinsurer.com.",
-      "lawtel.com.",
-      "reuters.es.",
-      "newwestlaw.com.",
+      "thomsonreuters.co.nz.",
+      "westdoc.com.",
+      "westlawpro.com.",
+      "pubemplaw.net.",
+      "thomsonreuters.es.",
       "taxnetproplus.com.",
+      "securrents.com.",
+      "legalexecutiveinstitute.com.",
+      "westlawsolo.com.",
+      "informacionlegal.com.uy.",
+      "theinsurertv.com.",
+      "checkpoint.cl.",
+      "checkpointnz.co.nz.",
+      "laley.com.ar.",
+      "gsionline.com.",
+      "onesourcetax.com.",
+      "cyberrisk-insurer.com.",
+      "gettaxnetpro.com.",
+      "odentrack.com.",
+      "thomsonreuters.in.",
+      "thomsonreuters.com.au.",
+      "westlawbusinesscurrents.com.",
+      "es.thomson.com.",
+      "westlaw.com.au.",
+      "pagerohbs.com.",
+      "parametric-insurer.com.",
+      "thomsonreuters.com.my.",
+      "corepublishingsolutions.com.",
+      "westlaw.com.",
+      "seccurrents.com.",
+      "informacionlegalonline.com.uy.",
+      "pubemplaw.com.",
+      "westlawhub.com.",
+      "reuters.it.",
+      "reuters.com.",
+      "reuters.es.",
+      "thomsonreutersmexico.com.",
+      "fastsalestax.com.",
+      "westlawjapan.com.",
+      "netlinksolution.com.",
+      "westcheck.com.",
+      "westfindprint.com.",
+      "tr.com.",
+      "thomsonreuters.com.",
+      "serengetilaw.com.",
+      "thomsonreuters.com.pe.",
       "odenpt.com.",
-      "myroyalty.com.",
-      "quickview.com.",
-      "pubemplaw.com."
+      "legalcurrent.com.",
+      "westlawnextcanada.com.",
+      "archbolde-update.co.uk.",
+      "breakingviews.com.",
+      "monitorsuite.com.",
+      "netlinksolutionqa.com.",
+      "litigationmonitor.com.",
+      "ultratax.com.",
+      "ctracknotification.ca.",
+      "theinsurer.com.",
+      "thomsonreuters.com.br.",
+      "thomsonreuters.com.sg.",
+      "safeguard.co.nz.",
+      "roundhall.ie.",
+      "westlawasia.com.",
+      "checkpointespana.es.",
+      "cs.thomson.com.",
+      "thomsonreuters.cn.",
+      "consumerbankruptcynews.com.",
+      "westlawtoday.com.",
+      "reuters.de.",
+      "checkpointworld.com.",
+      "checkpointau.com.au.",
+      "westmonitor.com.",
+      "go.thomson.com.",
+      "ufile.ca.",
+      "livenotecentral.com.",
+      "courtexpress.com.",
+      "personnet.com.",
+      "thomson.com.",
+      "onesourcelogin.eu.",
+      "legalbusinessonline.com."
     ]
   },
-  "elapsed_s": 29.5,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.reuters.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 38.4,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -684,4 +705,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

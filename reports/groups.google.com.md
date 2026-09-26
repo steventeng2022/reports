@@ -7,12 +7,12 @@
 | Target | https://groups.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | groups.google.com |
-| Test date | 2026-09-26 18:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:07 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 | 16 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 | 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
 
 ## Detailed findings
 
@@ -142,6 +143,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** 108.177.97.102 carries PTR tm-in-f102.1e100.net. for groups.google.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
+### 18. [LOW] HTTPS root redirects to a different domain (`RD2`)
+
+- **CWE:** CWE-200
+- **Detail:** https://groups.google.com/ answered 302 with Location: https://accounts.google.com/ServiceLogin?passive=1209600&osid=1&continue=https://groups.google.com/&followup=https://groups.google.com/ (cross-domain handoff at the entry point).
+- **Recommendation:** Review the cross-domain redirect; it discloses the real entry point and can be abused in open-redirect-style flows.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -151,26 +158,27 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "a": [
       "108.177.97.102",
       "108.177.97.138",
-      "108.177.97.113",
-      "108.177.97.101",
       "108.177.97.139",
-      "108.177.97.100"
+      "108.177.97.101",
+      "108.177.97.100",
+      "108.177.97.113"
     ],
     "aaaa": [
-      "2404:6800:4008:c00::71",
-      "2404:6800:4008:c00::64",
-      "2404:6800:4008:c00::8a",
-      "2404:6800:4008:c00::8b"
+      "2001:4860:4802:36::177",
+      "2001:4860:4802:34::177",
+      "2001:4860:4802:38::177",
+      "2001:4860:4802:32::177"
     ],
     "cname": null,
     "mx": [
-      "gmr-smtp-in.l.google.com (pref 5)",
+      "alt2.gmr-smtp-in.l.google.com (pref 20)",
       "alt1.gmr-smtp-in.l.google.com (pref 10)",
-      "alt4.gmr-smtp-in.l.google.com (pref 40)",
       "alt3.gmr-smtp-in.l.google.com (pref 30)",
-      "alt2.gmr-smtp-in.l.google.com (pref 20)"
+      "alt4.gmr-smtp-in.l.google.com (pref 40)",
+      "gmr-smtp-in.l.google.com (pref 5)"
     ],
     "ns": [],
+    "caa": [],
     "spf": [
       "v=spf1 redirect=_spf.google.com"
     ],
@@ -253,7 +261,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "android.clients.google.com",
       "*.aistudio.google.com"
     ],
-    "days_left": 68,
+    "days_left": 67,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -320,9 +328,6 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "subdomains": {
     "status": "ct-pending"
   },
-  "cname_chain": [
-    "groups-alv.google.com"
-  ],
   "tls2": {
     "alpn": "",
     "tls_ver": "TLSv1.3",
@@ -362,8 +367,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "tm-in-f102.1e100.net."
     ]
   },
-  "elapsed_s": 13.9,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 302,
+    "root_location": "https://accounts.google.com/ServiceLogin?passive=1209600&osid=1&continue=https://groups.google.com/&followup=https://groups.google.com/",
+    "http_status": 301,
+    "p404_status": 404,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 20.1,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -373,4 +389,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

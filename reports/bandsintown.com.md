@@ -7,12 +7,12 @@
 | Target | https://bandsintown.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | bandsintown.com |
-| Test date | 2026-09-26 18:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,10 +28,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
 | 11 | low | MAIL12 | MTA-STS TXT published but policy file unreachable | CWE-285 |
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 13 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 16 | info | CT1 | 36 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 17 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 18 | info | CT1 | 36 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -112,14 +114,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: stripe-verification=D1EF7AE8AFB0BBF02CD7A76B56B3BB6CE12B3D6678A1B8A22C2EF8B5621A; google-site-verification=f1CWKwhuZPLcgwoyE41lip_z1dZCy2xnA-Q7evMzrSU; status-page-domain-verification=qn6chxt05qrd
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=n3FcpfaRP0Kv679ha0/mirPFGK3ftRdN7l97Ca2T9Zz1uaL3wy; google-site-verification=f1CWKwhuZPLcgwoyE41lip_z1dZCy2xnA-Q7evMzrSU; stripe-verification=D1EF7AE8AFB0BBF02CD7A76B56B3BB6CE12B3D6678A1B8A22C2EF8B5621A
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 13. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of bandsintown.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m01.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 14. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
@@ -130,10 +132,22 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 3.212.79.149 carries PTR ec2-3-212-79-149.compute-1.amazonaws.com. for bandsintown.com.
+- **Detail:** 54.152.243.55 carries PTR ec2-54-152-243-55.compute-1.amazonaws.com. for bandsintown.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 16. [INFO] 36 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for bandsintown.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 17. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The bandsintown.com certificate lists an AIA OCSP responder (http://ocsp.r2m01.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
+### 18. [INFO] 36 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: adops.staging.bandsintown.com, cdn.bandsintown.com, help.pro.bandsintown.com, help.venues.bandsintown.com, oauth.bandsintown.com, publishers.staging.bandsintown.com, status.bandsintown.com
@@ -146,43 +160,44 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "domain": "bandsintown.com",
   "dns": {
     "a": [
-      "3.212.79.149",
       "54.152.243.55",
+      "3.212.79.149",
       "184.193.167.6"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "aspmx3.googlemail.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)",
-      "aspmx3.googlemail.com (pref 10)",
       "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "ns-1630.awsdns-11.co.uk.",
+      "ns-645.awsdns-16.net.",
       "ns-417.awsdns-52.com.",
-      "ns-1367.awsdns-42.org.",
-      "ns-645.awsdns-16.net."
+      "ns-1630.awsdns-11.co.uk.",
+      "ns-1367.awsdns-42.org."
     ],
+    "caa": [],
     "spf": [
-      "stripe-verification=D1EF7AE8AFB0BBF02CD7A76B56B3BB6CE12B3D6678A1B8A22C2EF8B5621AD9CB",
+      "atlassian-domain-verification=n3FcpfaRP0Kv679ha0/mirPFGK3ftRdN7l97Ca2T9Zz1uaL3wysi2f4VO536tNMm",
+      "v=spf1 a mx include:sendgrid.net include:_spf.google.com include:spf.protection.outlook.com include:stspg-customer.com -all",
       "google-site-verification=f1CWKwhuZPLcgwoyE41lip_z1dZCy2xnA-Q7evMzrSU",
+      "mandrill_verify.dMoB27k4ZLW5-FAhb5RTgg",
+      "stripe-verification=D1EF7AE8AFB0BBF02CD7A76B56B3BB6CE12B3D6678A1B8A22C2EF8B5621AD9CB",
+      "rippling-domain-verification=b5726a43207e41d6",
+      "rippling-domain-verification=e5824847937fee1e",
+      "MS=ms12811150",
+      "facebook-domain-verification=szd9g5rep5c2wm6e3yrxk5uqkuygh9",
+      "perplexity-ai-domain-verification-376w2f=2PeL8yNlYAkys7oM52uT6wTdC",
+      "dailymotion-domain-verification=dm21h9ylyllu1p69n",
+      "asv=aeeef7fc6b18aca440b92141741bdb9f",
+      "anthropic-domain-verification-tww6x4=SWB50zFKsYjXe3H2zayd8Sz1t",
+      "9fldg144ers8mh6f24ffrc3thk",
       "status-page-domain-verification=qn6chxt05qrd",
       "mlkfx9phjb4y6h395lt8lsy5b4sjkgc4",
-      "rippling-domain-verification=e5824847937fee1e",
-      "9fldg144ers8mh6f24ffrc3thk",
-      "perplexity-ai-domain-verification-376w2f=2PeL8yNlYAkys7oM52uT6wTdC",
-      "facebook-domain-verification=szd9g5rep5c2wm6e3yrxk5uqkuygh9",
-      "hmkuhqbttdq4i998kareathvto",
-      "MS=ms12811150",
-      "anthropic-domain-verification-tww6x4=SWB50zFKsYjXe3H2zayd8Sz1t",
-      "v=spf1 a mx include:sendgrid.net include:_spf.google.com include:spf.protection.outlook.com include:stspg-customer.com -all",
-      "asv=aeeef7fc6b18aca440b92141741bdb9f",
-      "dailymotion-domain-verification=dm21h9ylyllu1p69n",
-      "atlassian-domain-verification=n3FcpfaRP0Kv679ha0/mirPFGK3ftRdN7l97Ca2T9Zz1uaL3wysi2f4VO536tNMm",
-      "rippling-domain-verification=b5726a43207e41d6",
-      "mandrill_verify.dMoB27k4ZLW5-FAhb5RTgg"
+      "hmkuhqbttdq4i998kareathvto"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; rua=mailto:de1f17b4@mxtoolbox.dmarc-report.com,mailto:dmarc@bandsintown.com; ruf=mailto:de1f17b4@forensics.dmarc-report.com,mailto:dmarc@bandsintown.com; adkim=r; fo=1; pct=100; ri=86400"
@@ -214,7 +229,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     }
   },
   "ports": {
-    "ip": "3.212.79.149",
+    "ip": "54.152.243.55",
     "open": []
   },
   "https": {
@@ -237,8 +252,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     {
       "origin": "https://sub.bandsintown.com",
       "acao": "",
-      "acac": "",
-      "error": "ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='bandsintown.com', port=443): Read timed out. (read timeout=15)\")"
+      "acac": ""
     }
   ],
   "http": {
@@ -301,11 +315,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     ]
   },
   "apex_txt": [
-    "stripe-verification=D1EF7AE8AFB0BBF02CD7A76B56B3BB6CE12B3D6678A1B8A22C2EF8B5621A",
+    "atlassian-domain-verification=n3FcpfaRP0Kv679ha0/mirPFGK3ftRdN7l97Ca2T9Zz1uaL3wy",
     "google-site-verification=f1CWKwhuZPLcgwoyE41lip_z1dZCy2xnA-Q7evMzrSU",
-    "status-page-domain-verification=qn6chxt05qrd",
-    "rippling-domain-verification=e5824847937fee1e",
-    "perplexity-ai-domain-verification-376w2f=2PeL8yNlYAkys7oM52uT6wTdC"
+    "stripe-verification=D1EF7AE8AFB0BBF02CD7A76B56B3BB6CE12B3D6678A1B8A22C2EF8B5621A",
+    "rippling-domain-verification=b5726a43207e41d6",
+    "rippling-domain-verification=e5824847937fee1e"
   ],
   "tls2": {
     "alpn": "",
@@ -316,19 +330,32 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
       "not_before": "20260516000000",
       "not_after": "20261129235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-3-212-79-149.compute-1.amazonaws.com."
+      "ec2-54-152-243-55.compute-1.amazonaws.com."
     ]
   },
-  "elapsed_s": 49.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.bandsintown.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 57.4,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -338,4 +365,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

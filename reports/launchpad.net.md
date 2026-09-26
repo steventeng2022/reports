@@ -7,12 +7,12 @@
 | Target | https://launchpad.net/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | launchpad.net |
-| Test date | 2026-09-26 18:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:09 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
+Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 | 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 
 ## Detailed findings
 
@@ -134,8 +135,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 185.125.189.222 carries PTR launchpad.net. for launchpad.net.
+- **Detail:** 185.125.189.223 carries PTR launchpad.net. for launchpad.net.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 17. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkxhh77nx9iexq.html -> 404; error page/headers match: Gunicorn/WSGI.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ## Evidence (raw response observations)
 
@@ -144,8 +151,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
   "domain": "launchpad.net",
   "dns": {
     "a": [
-      "185.125.189.222",
-      "185.125.189.223"
+      "185.125.189.223",
+      "185.125.189.222"
     ],
     "aaaa": [
       "2620:2d:4000:1009::f3",
@@ -156,9 +163,17 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "mx.launchpad.net (pref 10)"
     ],
     "ns": [
-      "ns1.canonical.com.",
       "ns2.canonical.com.",
+      "ns1.canonical.com.",
       "ns3.canonical.com."
+    ],
+    "caa": [
+      "0 issue \"letsencrypt.org; accounturi=https://acme-v01.api.letsencrypt.org/acme/reg/32541290\"",
+      "0 issuewild \"digicert.com\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issue \"digicert.com\"",
+      "0 iodef \"mailto:is-admin@canonical.com\"",
+      "0 issue \"letsencrypt.org\""
     ],
     "spf": [
       "v=spf1 ip4:185.125.188.250 ip4:185.125.188.251 ip4:185.125.188.70 ip4:185.125.188.71 ip4:185.125.188.170 ip4:185.125.188.171 -all"
@@ -210,7 +225,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     }
   },
   "ports": {
-    "ip": "185.125.189.222",
+    "ip": "185.125.189.223",
     "open": []
   },
   "https": {
@@ -296,8 +311,18 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "launchpad.net."
     ]
   },
-  "elapsed_s": 29.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 33.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -307,4 +332,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

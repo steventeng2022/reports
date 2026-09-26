@@ -7,12 +7,12 @@
 | Target | https://theguardian.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | theguardian.com |
-| Test date | 2026-09-26 19:00 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:16 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
+Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,9 +30,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
 | 12 | low | MAIL7 | SPF include: points to unresolvable domain(s) | CWE-285 |
 | 13 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -125,14 +126,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=9SMJbNVsYm0GCVZbGVOMSzXajrK_pqVtjW3P007kaQo; miro-verification=9bbe1ce0f13ab2efbbda64d44bd0db3c1f17fd60; facebook-domain-verification=9qqmd2kl745hph02i64iyoxvdphmi9
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=4qbvNZKyKKZyBtdU; slack-domain-verification=K3gfZj51sHXR6hxk5BVVfunkmGnHxc4NvwNtqo77; lucidlink-verification=4K96N0ZDHCHPKDZ538AFRVH54G
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of theguardian.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.globalsign.com/ca/gsatlasr46dvtlsca2026q3 -> http-400
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
@@ -146,6 +147,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
 - **Detail:** robots.txt lists 50 disallow path(s), e.g. /sendarticle/, /Users/, /users/, /*/print$, /email/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for theguardian.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -154,71 +161,72 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
   "dns": {
     "a": [
       "151.101.65.111",
-      "151.101.193.111",
+      "151.101.129.111",
       "151.101.1.111",
-      "151.101.129.111"
+      "151.101.193.111"
     ],
     "aaaa": [
       "2a04:4e42:600::367",
-      "2a04:4e42:400::367",
       "2a04:4e42:200::367",
-      "2a04:4e42::367"
+      "2a04:4e42::367",
+      "2a04:4e42:400::367"
     ],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx.l.google.com (pref 10)",
-      "alt3.aspmx.l.google.com (pref 30)",
       "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 20)",
+      "alt3.aspmx.l.google.com (pref 30)",
       "alt4.aspmx.l.google.com (pref 30)"
     ],
     "ns": [
-      "ns01.theguardiandns.com.",
-      "dns2.p04.nsone.net.",
-      "dns3.p04.nsone.net.",
-      "ns04.theguardiandns.com.",
-      "dns4.p04.nsone.net.",
-      "ns03.theguardiandns.com.",
       "dns1.p04.nsone.net.",
-      "ns02.theguardiandns.com."
+      "ns04.theguardiandns.com.",
+      "ns02.theguardiandns.com.",
+      "dns4.p04.nsone.net.",
+      "ns01.theguardiandns.com.",
+      "ns03.theguardiandns.com.",
+      "dns3.p04.nsone.net.",
+      "dns2.p04.nsone.net."
     ],
+    "caa": [],
     "spf": [
-      "google-site-verification=9SMJbNVsYm0GCVZbGVOMSzXajrK_pqVtjW3P007kaQo",
-      "pardot709753=1cfbb8fa5dabcb6befc9faa15661f500a64a6f22eb83bb146848633dbe7633cf",
-      "miro-verification=9bbe1ce0f13ab2efbbda64d44bd0db3c1f17fd60",
-      "facebook-domain-verification=9qqmd2kl745hph02i64iyoxvdphmi9",
-      "google-site-verification=ujq5XlF5Ty7dwXv7S3AV99WRr8IwetZIjNqqloPpKmA",
       "apple-domain-verification=4qbvNZKyKKZyBtdU",
-      "intersight=123333260936a76db6d9dedc01d0ab4d61a9aae47515abbf0087e02a395747f9",
       "slack-domain-verification=K3gfZj51sHXR6hxk5BVVfunkmGnHxc4NvwNtqo77",
       "lucidlink-verification=4K96N0ZDHCHPKDZ538AFRVH54G",
       "multiverse-domain-verification=3e7e7acf-12cc-4934-a23a-b8c0127fb091",
-      "73t2Qr1jv9^4RG3CsYKp#F&^5S1fxpHtq9X5bLBQtc4q2PhMvMBmUrIh%LLGPb3V!XpnW9tvQd$tg^rLv!8ALDOQhhss%c9K%Xt",
-      "google-site-verification=LCHObeC_7NyDBnXVNSqm5VJAve2qxx04PmUFc697Rf0",
-      "google-site-verification=IU-vqTBscxkgU3J_f5i10_i624mvE3IjvYpeVPB2A98",
-      "cisco-ci-domain-verification=394bd3979592402fa40244fcf11f48e5e5014697e1f7e8587eba08075cdd79e3",
-      "RDOAB9Z9GAJESXAA11TST3LEI0RN5LQ4TES408NS",
-      "stripe-verification=85178DB4E6F4EC41721B7F20BD9F04B21E2B630ADA8156BDFE421272EBC2056F",
-      "amazonses:2s68hEXFIHnDWOVNuEbZ06pSFJhN0qCtTx8lztmngls=",
-      "docker-verification=42d9d88d-f950-4407-a675-3d843c16a983",
-      "formstack-domain-verification=0cc5b58e5ea4088ab9333fcd9721a72f",
-      "adobe-idp-site-verification=af3ef20fdc1d370aee02414a73ce0db9f1b465c21d53a369080184cd8e4b60f1",
-      "onetrust-domain-verification=ce4031d6f7b94fdb9ed409ab9cf643d3",
-      "google-site-verification=4l7NequdA4a20U0D9YSw7ENlF69-hDeHXx21aU2UUC0",
-      "MS=B95E020056873FBC8A077EEE2104192B3DBC1D61",
-      "apple-domain-verification=sVI2atim1Brh4UUx\n",
-      "google-site-verification=I3xSjID5V7E9UDa3WSvvvpCqiqw1_34kG1Y_rz5dlV4",
-      "docusign=1f00efb3-0975-459c-b221-e46452a0f92a",
-      "MS=ms94953828",
-      "_hfmu2x1szay737kpys7nmqjko311kxu",
-      "google-site-verification=M9Q_QcvQQCoQEca1--d55J0QKwKZt0XgAAj9DJrJ0jQ",
       "v=spf1 include:_spf.google.com include:spf_c.oraclecloud.com include:_spf.salesforce.com include:_spf1.theguardian.com ip4:199.255.192.0/22 ip4:199.127.232.0/22 ip4:54.240.0.0/18 ip4:69.169.224.0/20 ip4:23.249.208.0/20 ip4:23.251.224.0/19 ip4:76.223.176.0",
       "/20 ip4:54.240.64.0/18 ip4:76.223.128.0/19 ip4:216.221.160.0/19 ip4:206.55.144.0/20 ip4:24.110.64.0/18 -all",
-      "openai-domain-verification=dv-m8f1SR7Sj1HI4BIM0XsZAOxx",
-      "google-site-verification=iLS6vcS8qLmM07nG-W_M3TAmaSEAAwoLBKovJCGOrOs",
-      "asv=d971bc0397a95b5da450b9bfbad1212a",
+      "amazonses:2s68hEXFIHnDWOVNuEbZ06pSFJhN0qCtTx8lztmngls=",
+      "google-site-verification=9SMJbNVsYm0GCVZbGVOMSzXajrK_pqVtjW3P007kaQo",
+      "cisco-ci-domain-verification=394bd3979592402fa40244fcf11f48e5e5014697e1f7e8587eba08075cdd79e3",
+      "apple-domain-verification=sVI2atim1Brh4UUx\n",
       "google-site-verification=6-wiFtmcPHY78jVuZUE3io1c6c9SrSyjPVmUr7XRW2I",
-      "brave-ledger-verification=7e309ab3cd9203b886205458254a13f930f79821ea05031742f7dfc9285370c8"
+      "docker-verification=42d9d88d-f950-4407-a675-3d843c16a983",
+      "miro-verification=9bbe1ce0f13ab2efbbda64d44bd0db3c1f17fd60",
+      "intersight=123333260936a76db6d9dedc01d0ab4d61a9aae47515abbf0087e02a395747f9",
+      "pardot709753=1cfbb8fa5dabcb6befc9faa15661f500a64a6f22eb83bb146848633dbe7633cf",
+      "google-site-verification=M9Q_QcvQQCoQEca1--d55J0QKwKZt0XgAAj9DJrJ0jQ",
+      "google-site-verification=ujq5XlF5Ty7dwXv7S3AV99WRr8IwetZIjNqqloPpKmA",
+      "google-site-verification=I3xSjID5V7E9UDa3WSvvvpCqiqw1_34kG1Y_rz5dlV4",
+      "facebook-domain-verification=9qqmd2kl745hph02i64iyoxvdphmi9",
+      "google-site-verification=LCHObeC_7NyDBnXVNSqm5VJAve2qxx04PmUFc697Rf0",
+      "adobe-idp-site-verification=af3ef20fdc1d370aee02414a73ce0db9f1b465c21d53a369080184cd8e4b60f1",
+      "formstack-domain-verification=0cc5b58e5ea4088ab9333fcd9721a72f",
+      "MS=ms94953828",
+      "73t2Qr1jv9^4RG3CsYKp#F&^5S1fxpHtq9X5bLBQtc4q2PhMvMBmUrIh%LLGPb3V!XpnW9tvQd$tg^rLv!8ALDOQhhss%c9K%Xt",
+      "onetrust-domain-verification=ce4031d6f7b94fdb9ed409ab9cf643d3",
+      "RDOAB9Z9GAJESXAA11TST3LEI0RN5LQ4TES408NS",
+      "docusign=1f00efb3-0975-459c-b221-e46452a0f92a",
+      "MS=B95E020056873FBC8A077EEE2104192B3DBC1D61",
+      "brave-ledger-verification=7e309ab3cd9203b886205458254a13f930f79821ea05031742f7dfc9285370c8",
+      "google-site-verification=IU-vqTBscxkgU3J_f5i10_i624mvE3IjvYpeVPB2A98",
+      "_hfmu2x1szay737kpys7nmqjko311kxu",
+      "google-site-verification=iLS6vcS8qLmM07nG-W_M3TAmaSEAAwoLBKovJCGOrOs",
+      "google-site-verification=4l7NequdA4a20U0D9YSw7ENlF69-hDeHXx21aU2UUC0",
+      "asv=d971bc0397a95b5da450b9bfbad1212a",
+      "stripe-verification=85178DB4E6F4EC41721B7F20BD9F04B21E2B630ADA8156BDFE421272EBC2056F",
+      "openai-domain-verification=dv-m8f1SR7Sj1HI4BIM0XsZAOxx"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;rua=mailto:dmarcreporting@theguardian.com"
@@ -332,11 +340,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=9SMJbNVsYm0GCVZbGVOMSzXajrK_pqVtjW3P007kaQo",
-    "miro-verification=9bbe1ce0f13ab2efbbda64d44bd0db3c1f17fd60",
-    "facebook-domain-verification=9qqmd2kl745hph02i64iyoxvdphmi9",
-    "google-site-verification=ujq5XlF5Ty7dwXv7S3AV99WRr8IwetZIjNqqloPpKmA",
-    "apple-domain-verification=4qbvNZKyKKZyBtdU"
+    "apple-domain-verification=4qbvNZKyKKZyBtdU",
+    "slack-domain-verification=K3gfZj51sHXR6hxk5BVVfunkmGnHxc4NvwNtqo77",
+    "lucidlink-verification=4K96N0ZDHCHPKDZ538AFRVH54G",
+    "multiverse-domain-verification=3e7e7acf-12cc-4934-a23a-b8c0127fb091",
+    "google-site-verification=9SMJbNVsYm0GCVZbGVOMSzXajrK_pqVtjW3P007kaQo"
   ],
   "tls2": {
     "alpn": "",
@@ -347,10 +355,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.globalsign.com/ca/gsatlasr46dvtlsca2026q3",
       "not_before": "20260818112458",
       "not_after": "20270305102458"
-    }
+    },
+    "ocsp": "http-400"
   },
   "http2": {
     "robots_disallow": [
@@ -374,8 +383,20 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 17.3,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.theguardian.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 17.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -385,4 +406,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://europarl.europa.eu/ |
 | Bug bounty program | European Central Bank |
 | Listed scope domain | europarl.europa.eu |
-| Test date | 2026-09-26 18:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:04 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,9 +30,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -125,14 +127,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=qKbdxzkhADwOAk4X; flexera-domain-verification-lpktsstialtzvdbc; globalsign-domain-verification=BD0D62B15C7A7E05066B725206878608
+- **Detail:** Apex TXT records with verification/token content: flexera-domain-verification-zqsztipmwceljguc; apple-domain-verification=qKbdxzkhADwOAk4X; webexdomainverification.=b646d9da-b47b-4aab-bef6-239fa2ea87d5
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of europarl.europa.eu has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.globalsign.com/ca/gsatlasr3ovtlsca2026q2 -> http-400
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
@@ -146,6 +148,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** 136.173.69.97 carries PTR audiovisual.europarl.europa.eu., sciencemediahub.eu. for europarl.europa.eu.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for europarl.europa.eu; apex europa.eu, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 19. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The europarl.europa.eu certificate lists an AIA OCSP responder (http://ocsp.globalsign.com/ca/gsatlasr3ovtlsca2026q2) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -158,33 +172,34 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "ucsgusrbp004.ep.europa.eu (pref 100)",
-      "ucsgusrbp001.ep.europa.eu (pref 100)",
       "ucsgusrbp003.ep.europa.eu (pref 100)",
-      "ucsgusrbp002.ep.europa.eu (pref 100)",
-      "ucsgusrlp003.ep.europa.eu (pref 100)",
+      "ucsgusrbp001.ep.europa.eu (pref 100)",
       "ucsgusrlp002.ep.europa.eu (pref 100)",
+      "ucsgusrlp003.ep.europa.eu (pref 100)",
+      "ucsgusrlp001.ep.europa.eu (pref 100)",
+      "ucsgusrbp004.ep.europa.eu (pref 100)",
       "ucsgusrlp004.ep.europa.eu (pref 100)",
-      "ucsgusrlp001.ep.europa.eu (pref 100)"
+      "ucsgusrbp002.ep.europa.eu (pref 100)"
     ],
     "ns": [
-      "itecluxadnsout.europarl.europa.eu.",
-      "ans2.cw.net.",
       "ans1.cw.net.",
-      "itecbruadnsout.europarl.europa.eu."
+      "itecbruadnsout.europarl.europa.eu.",
+      "itecluxadnsout.europarl.europa.eu.",
+      "ans2.cw.net."
     ],
+    "caa": [],
     "spf": [
-      "apple-domain-verification=qKbdxzkhADwOAk4X",
-      "flexera-domain-verification-lpktsstialtzvdbc",
-      "globalsign-domain-verification=BD0D62B15C7A7E05066B725206878608",
       "flexera-domain-verification-zqsztipmwceljguc",
-      "flexera-domain-verification-dwtjdzijulkjpxak",
-      "v=spf1 redirect=_spf.ep.europa.eu",
+      "apple-domain-verification=qKbdxzkhADwOAk4X",
+      "MS=ms56498925",
       "webexdomainverification.=b646d9da-b47b-4aab-bef6-239fa2ea87d5",
-      "flexera-domain-verification-nwvxicwkiqqnfbfq",
-      "cisco-ci-domain-verification=18335c80bc24811455d7efc1f94edae0da5e8d126b83f5b3a4124f0e6437f9",
       "globalsign-domain-verification=288574904BAFBDAD213CEFABB639A762",
-      "MS=ms56498925"
+      "flexera-domain-verification-dwtjdzijulkjpxak",
+      "globalsign-domain-verification=BD0D62B15C7A7E05066B725206878608",
+      "flexera-domain-verification-lpktsstialtzvdbc",
+      "cisco-ci-domain-verification=18335c80bc24811455d7efc1f94edae0da5e8d126b83f5b3a4124f0e6437f9",
+      "v=spf1 redirect=_spf.ep.europa.eu",
+      "flexera-domain-verification-nwvxicwkiqqnfbfq"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:abuse@europarl.europa.eu"
@@ -267,10 +282,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "apple-domain-verification=qKbdxzkhADwOAk4X",
-    "flexera-domain-verification-lpktsstialtzvdbc",
-    "globalsign-domain-verification=BD0D62B15C7A7E05066B725206878608",
     "flexera-domain-verification-zqsztipmwceljguc",
+    "apple-domain-verification=qKbdxzkhADwOAk4X",
+    "webexdomainverification.=b646d9da-b47b-4aab-bef6-239fa2ea87d5",
+    "globalsign-domain-verification=288574904BAFBDAD213CEFABB639A762",
     "flexera-domain-verification-dwtjdzijulkjpxak"
   ],
   "tls2": {
@@ -282,10 +297,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.globalsign.com/ca/gsatlasr3ovtlsca2026q2",
       "not_before": "20260526073642",
       "not_after": "20261210073712"
-    }
+    },
+    "ocsp": "http-400"
   },
   "http2": {
     "robots_disallow": [
@@ -313,8 +329,20 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "sciencemediahub.eu."
     ]
   },
-  "elapsed_s": 30.5,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.europarl.europa.eu/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 41.5,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -324,4 +352,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

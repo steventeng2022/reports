@@ -7,12 +7,12 @@
 | Target | https://shopify.com/ |
 | Bug bounty program | Shopify |
 | Listed scope domain | shopify.com |
-| Test date | 2026-09-26 18:59 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:15 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
+Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 | 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 20 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 21 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -133,13 +135,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 15. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (ns1pqi1u0vbbgp.shopify.com and 3vuqx9wos60yv7.shopify.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (mhmikdv3pc765q.shopify.com and eaico29b00f89j.shopify.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: klaviyo-site-verification=VbLhyy; klaviyo-site-verification=UfTdFX; klaviyo-site-verification=SuEeFy
+- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-3UNPEg4DuUI5Ace0uw1hzLq3; teamviewer-sso-verification=85d99b4ff4b64f03a469d0c42c1eee61; facebook-domain-verification=u17rffysxyek688vqh4s02307suaza
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -160,6 +162,18 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - **Detail:** 23.227.38.33 carries PTR checkout.shopify.com. for shopify.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
+### 20. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on shopify.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 21. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for shopify.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -172,71 +186,72 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "aaaa": [],
     "cname": null,
     "mx": [
+      "aspmx.l.google.com (pref 1)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
-      "alt3.aspmx.l.google.com (pref 10)",
-      "alt4.aspmx.l.google.com (pref 10)"
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
       "gold.foundationdns.net.",
       "gold.foundationdns.org.",
       "gold.foundationdns.com."
     ],
+    "caa": [],
     "spf": [
-      "rfs0f736s88q7ml97jw9qhg1yy2wmdy5",
-      "klaviyo-site-verification=VbLhyy",
-      "klaviyo-site-verification=UfTdFX",
-      "klaviyo-site-verification=SuEeFy",
-      "klaviyo-site-verification=XxDdwy",
-      "mailru-verification: a6784d11ca5a5f7b",
-      "autodesk-domain-verification=e9Nbi4FUDsS7clWU8iNj",
-      "ca3-fc9272b0aba34ba6991c0a62bc1998a0",
-      "google-site-verification=knwYi_vDES4v7XUl8OOtP4gu4qhwAzIBbeB2ou2jx8Y",
-      "globalsign-domain-verification=Cpw4zOAIT5WSnINjnI4gafPgxsCJlEF4Ac_70Xm93I",
-      "linear-domain-verification=3xuktyudsdny",
-      "_globalsign-domain-verification=_PJNYsq_1XyZleC1yx45rb_EUgbgkaJU36yk3CK0tk",
-      "openai-domain-verification=dv-2etxemuOx7cXQDQ5EjEWGZ9A",
-      "apple-domain-verification=eMDCoIZdcJThX3yQ",
-      "klaviyo-site-verification=SA72ug",
-      "klaviyo-site-verification=RcWeYn",
-      "google-site-verification=vEpSvWK6hOKDBrCrJ4uUeCliFPV0nyP9m_UCOEjJv1Q",
-      "adobe-idp-site-verification=45576d365ff5492a15bc403c11382aad83403810324300fd62c5f196ce9e9063",
-      "openai-domain-verification=dv-SSeJm7iAiW11oexpj9ZCqdil",
       "MS=ms27001972",
       "openai-domain-verification=dv-3UNPEg4DuUI5Ace0uw1hzLq3",
-      "00078847",
-      "atlassian-domain-verification=aakXh8UjEwy75X6ck4l8jTIJDWHQ9CIunnUsE00mRgxM8IUzaJGlIt8zIINLFALR",
-      "_globalsign-domain-verification=1x11a1Wg3i08rScgK7aAMUJm_fdzKxH4whkWxr1bbg",
-      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:sendgrid.net ~all",
-      "qqmail-site-verification=bc0dd9aa889c6a66d9a58b31e496873cc7ae214ca8f",
-      "stripe-verification=61e8fb112f5e7ac2708127ea93fd0369d6a4f768bd498fd0d928c206a6240bd7",
-      "facebook-domain-verification=u17rffysxyek688vqh4s02307suaza",
-      "rzp-site-verification=0c152e27933f70c5c7df025be3319f65",
-      "0lc931fl5ld2dpl15vx2flfkdwyvrrzx",
-      "google-site-verification=a4GkGdS7vBnkI284VSCo4bfYDNg-8OcEyjz8PR8ZhDM",
-      "lucidlink-verification=7VB3ACRNY28GWP54ZC3YXN7QWR",
-      "globalsign-domain-verification=lfM-pzwumuFWKV-wNEGq7a3KtsmRLJKsDxZzQaMjkw",
-      "protonmail-verification=c7bd7e61072d9855cfcab2f08804404f639439f9",
-      "ca3-86f15a314f3342baac2abe7a8849163c",
-      "yahoo-verification-key=9t6XYs7YEajKycpYmHz742ZV/lm84njkfUfGUldOtZM=",
-      "klaviyo-site-verification=UBeZ6P",
-      "klaviyo-site-verification=YA4hNy",
-      "twilio-domain-verification=ebc01f01cee0f1aea3f4c069b8865de9",
-      "docusign=de9614db-a0fa-4060-a1fa-2c444429ed9a",
-      "klaviyo-site-verification=Y2Hvrx",
-      "amazonses:CxAO0EM1odef6TrFP0hDQh/2R7RoZYy8YlHYktk2Frk=",
-      "bitrise-verification=990e159e8448fcb6-hCIxnrabFeH9",
       "teamviewer-sso-verification=85d99b4ff4b64f03a469d0c42c1eee61",
-      "google-site-verification=Vm4475oXq82Dl_WCtZcmlaW3xrpB-6fyQXboHBjzzPY",
-      "dtm-domain-verification=LhGwRr1DLWJoF6bVodh035n_BRj4Xu8PaEZ6bvvgd2Y",
-      "mongodb-site-verification=vBP464dSOK9bgg6FWBthUMqVjYfqnjuY",
-      "drift-domain-verification=9b23e1f43b57171c988b4510e75a686bda241639096f7eaabe8ff3d72ac63476",
-      "liveramp-site-verification=N48gDNFN3IB2NKIf75Fl46_sUzjxAbY3c1mfWs5pIKM",
-      "google-site-verification=96L28-MtSBLeQmyYR04q9iKI_Ib5qZd0YzVL8s1_gD0",
+      "facebook-domain-verification=u17rffysxyek688vqh4s02307suaza",
+      "klaviyo-site-verification=SuEeFy",
+      "klaviyo-site-verification=SA72ug",
+      "klaviyo-site-verification=XxDdwy",
+      "yahoo-verification-key=9t6XYs7YEajKycpYmHz742ZV/lm84njkfUfGUldOtZM=",
       "klaviyo-site-verification=VrspSg",
+      "klaviyo-site-verification=Y2Hvrx",
+      "zapier-domain-verification-challenge=506c545d-443f-4439-8d84-64648211b1f1",
+      "mailru-verification: a6784d11ca5a5f7b",
+      "globalsign-domain-verification=lfM-pzwumuFWKV-wNEGq7a3KtsmRLJKsDxZzQaMjkw",
+      "openai-domain-verification=dv-2etxemuOx7cXQDQ5EjEWGZ9A",
+      "apple-domain-verification=eMDCoIZdcJThX3yQ",
+      "dtm-domain-verification=LhGwRr1DLWJoF6bVodh035n_BRj4Xu8PaEZ6bvvgd2Y",
+      "autodesk-domain-verification=e9Nbi4FUDsS7clWU8iNj",
+      "twilio-domain-verification=ebc01f01cee0f1aea3f4c069b8865de9",
+      "mongodb-site-verification=vBP464dSOK9bgg6FWBthUMqVjYfqnjuY",
+      "_globalsign-domain-verification=_PJNYsq_1XyZleC1yx45rb_EUgbgkaJU36yk3CK0tk",
+      "google-site-verification=96L28-MtSBLeQmyYR04q9iKI_Ib5qZd0YzVL8s1_gD0",
+      "globalsign-domain-verification=Cpw4zOAIT5WSnINjnI4gafPgxsCJlEF4Ac_70Xm93I",
+      "klaviyo-site-verification=YA4hNy",
       "google-site-verification=0nU18bxQue6doDAWZDptfd66kTIqHqW00fDhfJSd9es",
-      "zapier-domain-verification-challenge=506c545d-443f-4439-8d84-64648211b1f1"
+      "_globalsign-domain-verification=1x11a1Wg3i08rScgK7aAMUJm_fdzKxH4whkWxr1bbg",
+      "klaviyo-site-verification=RcWeYn",
+      "bitrise-verification=990e159e8448fcb6-hCIxnrabFeH9",
+      "openai-domain-verification=dv-SSeJm7iAiW11oexpj9ZCqdil",
+      "linear-domain-verification=3xuktyudsdny",
+      "ca3-86f15a314f3342baac2abe7a8849163c",
+      "klaviyo-site-verification=UBeZ6P",
+      "ca3-fc9272b0aba34ba6991c0a62bc1998a0",
+      "liveramp-site-verification=N48gDNFN3IB2NKIf75Fl46_sUzjxAbY3c1mfWs5pIKM",
+      "atlassian-domain-verification=aakXh8UjEwy75X6ck4l8jTIJDWHQ9CIunnUsE00mRgxM8IUzaJGlIt8zIINLFALR",
+      "drift-domain-verification=9b23e1f43b57171c988b4510e75a686bda241639096f7eaabe8ff3d72ac63476",
+      "klaviyo-site-verification=VbLhyy",
+      "0lc931fl5ld2dpl15vx2flfkdwyvrrzx",
+      "klaviyo-site-verification=UfTdFX",
+      "00078847",
+      "google-site-verification=vEpSvWK6hOKDBrCrJ4uUeCliFPV0nyP9m_UCOEjJv1Q",
+      "google-site-verification=Vm4475oXq82Dl_WCtZcmlaW3xrpB-6fyQXboHBjzzPY",
+      "adobe-idp-site-verification=45576d365ff5492a15bc403c11382aad83403810324300fd62c5f196ce9e9063",
+      "protonmail-verification=c7bd7e61072d9855cfcab2f08804404f639439f9",
+      "google-site-verification=a4GkGdS7vBnkI284VSCo4bfYDNg-8OcEyjz8PR8ZhDM",
+      "stripe-verification=61e8fb112f5e7ac2708127ea93fd0369d6a4f768bd498fd0d928c206a6240bd7",
+      "qqmail-site-verification=bc0dd9aa889c6a66d9a58b31e496873cc7ae214ca8f",
+      "rzp-site-verification=0c152e27933f70c5c7df025be3319f65",
+      "docusign=de9614db-a0fa-4060-a1fa-2c444429ed9a",
+      "lucidlink-verification=7VB3ACRNY28GWP54ZC3YXN7QWR",
+      "amazonses:CxAO0EM1odef6TrFP0hDQh/2R7RoZYy8YlHYktk2Frk=",
+      "google-site-verification=knwYi_vDES4v7XUl8OOtP4gu4qhwAzIBbeB2ou2jx8Y",
+      "rfs0f736s88q7ml97jw9qhg1yy2wmdy5",
+      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:sendgrid.net ~all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; fo=1; rua=mailto:dmarc-aggregate@shopify.com;ruf=mailto:dmarc-reports@shopify.com"
@@ -256,7 +271,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "shopify.com",
       "*.shopify.com"
     ],
-    "days_left": 43,
+    "days_left": 42,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -324,11 +339,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "klaviyo-site-verification=VbLhyy",
-    "klaviyo-site-verification=UfTdFX",
+    "openai-domain-verification=dv-3UNPEg4DuUI5Ace0uw1hzLq3",
+    "teamviewer-sso-verification=85d99b4ff4b64f03a469d0c42c1eee61",
+    "facebook-domain-verification=u17rffysxyek688vqh4s02307suaza",
     "klaviyo-site-verification=SuEeFy",
-    "klaviyo-site-verification=XxDdwy",
-    "mailru-verification: a6784d11ca5a5f7b"
+    "klaviyo-site-verification=SA72ug"
   ],
   "tls2": {
     "alpn": "",
@@ -356,8 +371,23 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "checkout.shopify.com."
     ]
   },
-  "elapsed_s": 4.5,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.shopify.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 5.1,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -367,4 +397,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

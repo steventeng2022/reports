@@ -7,12 +7,12 @@
 | Target | https://postmates.com/ |
 | Bug bounty program | Postmates |
 | Listed scope domain | postmates.com |
-| Test date | 2026-09-26 18:57 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:13 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
+Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 | 17 | low | CK4 | Session-like cookie without HttpOnly | CWE-1004 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 19 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 20 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 21 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 22 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 23 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -124,7 +128,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=2Ilvgbr78yRVip_eIEMEDS5i2w9I8WqlkC5MGwtT9mc; status-page-domain-verification=vbzgm2f4x75m; google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4
+- **Detail:** Apex TXT records with verification/token content: stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba65; facebook-domain-verification=lanbzff5xfbystm65ipwykm0arewgy; status-page-domain-verification=vbzgm2f4x75m
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -157,6 +161,30 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 - **Detail:** CSP of postmates.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
 - **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
 
+### 20. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on postmates.com indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 21. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkhfvvfjftwjge.html -> 404; error page/headers match: Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 22. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on postmates.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 23. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for postmates.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -169,30 +197,31 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx2.googlemail.com (pref 10)",
-      "aspmx3.googlemail.com (pref 10)",
       "aspmx5.googlemail.com (pref 10)",
-      "aspmx4.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx4.googlemail.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx3.googlemail.com (pref 10)",
+      "aspmx2.googlemail.com (pref 10)"
     ],
     "ns": [
-      "edns126.ultradns.com.",
-      "edns126.ultradns.net.",
-      "edns126.ultradns.org.",
-      "edns126.ultradns.biz."
+      "dns4.p04.nsone.net.",
+      "dns1.p04.nsone.net.",
+      "dns3.p04.nsone.net.",
+      "dns2.p04.nsone.net."
     ],
+    "caa": [],
     "spf": [
+      "hkjvwlbv3sdq8x3n7k7xg6814fktgwt9",
       "fhtfbm1hh3v7nwps06d0t8410d5r93tc",
-      "google-site-verification=2Ilvgbr78yRVip_eIEMEDS5i2w9I8WqlkC5MGwtT9mc",
-      "status-page-domain-verification=vbzgm2f4x75m",
-      "ZOOM_verify_38TrrxQgRki7d9IxN3-DPw",
-      "google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4",
+      "stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba6578d6",
       "facebook-domain-verification=lanbzff5xfbystm65ipwykm0arewgy",
       "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
-      "stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba6578d6",
-      "hkjvwlbv3sdq8x3n7k7xg6814fktgwt9"
+      "ZOOM_verify_38TrrxQgRki7d9IxN3-DPw",
+      "status-page-domain-verification=vbzgm2f4x75m",
+      "google-site-verification=2Ilvgbr78yRVip_eIEMEDS5i2w9I8WqlkC5MGwtT9mc",
+      "google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc_agg@vali.email"
@@ -311,11 +340,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=2Ilvgbr78yRVip_eIEMEDS5i2w9I8WqlkC5MGwtT9mc",
-    "status-page-domain-verification=vbzgm2f4x75m",
-    "google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4",
+    "stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba65",
     "facebook-domain-verification=lanbzff5xfbystm65ipwykm0arewgy",
-    "stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba65"
+    "status-page-domain-verification=vbzgm2f4x75m",
+    "google-site-verification=2Ilvgbr78yRVip_eIEMEDS5i2w9I8WqlkC5MGwtT9mc",
+    "google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4"
   ],
   "tls2": {
     "alpn": "",
@@ -353,8 +382,22 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 19.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 20.1,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -364,4 +407,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://istockphoto.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | istockphoto.com |
-| Test date | 2026-09-26 18:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:09 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,8 +30,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 
 ## Detailed findings
 
@@ -125,20 +126,26 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=4cqoes9ia3bfzqzq69xntb7iar6mkr; google-site-verification=Kxr9iK44cHpakxQbI3si0Gt0rTaKT-P-ldoGPvB8u8c
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=Kxr9iK44cHpakxQbI3si0Gt0rTaKT-P-ldoGPvB8u8c; facebook-domain-verification=4cqoes9ia3bfzqzq69xntb7iar6mkr
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of istockphoto.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m01.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 54.192.248.52 carries PTR server-54-192-248-52.tpe53.r.cloudfront.net. for istockphoto.com.
+- **Detail:** 54.192.248.91 carries PTR server-54-192-248-91.tpe53.r.cloudfront.net. for istockphoto.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 17. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xklnk2o7rardm7.html -> 403; error page/headers match: CloudFront.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ## Evidence (raw response observations)
 
@@ -147,9 +154,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "domain": "istockphoto.com",
   "dns": {
     "a": [
-      "54.192.248.52",
       "54.192.248.91",
       "54.192.248.56",
+      "54.192.248.52",
       "54.192.248.113"
     ],
     "aaaa": [],
@@ -159,27 +166,41 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "us-smtp-inbound-2.mimecast.com (pref 10)"
     ],
     "ns": [
+      "ns-692.awsdns-22.net.",
       "ns-1269.awsdns-30.org.",
       "ns-194.awsdns-24.com.",
-      "ns-1600.awsdns-08.co.uk.",
-      "ns-692.awsdns-22.net."
+      "ns-1600.awsdns-08.co.uk."
+    ],
+    "caa": [
+      "0 iodef \"mailto:dnsadmins@gettyimages.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issue \"digicert.com\"",
+      "0 issue \"globalsign.com\"",
+      "0 issue \"godaddy.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"pki.goog\"",
+      "0 issue \"sectigo.com\"",
+      "0 issuewild \"amazon.com\"",
+      "0 issuewild \"digicert.com\"",
+      "0 issuewild \"globalsign.com\"",
+      "0 issuewild \"godaddy.com\""
     ],
     "spf": [
-      "0OX00lOBevmMwBKqx+i4VEYt3Hh4BSEqvj5eywR4LcmQZA7wJO2GOeAy63AfjOZCwJ13Jk8zSgWKEqa4B3xXsw==",
-      "rZ82I61",
-      "6gndatn3ep6iuuuj60pnavq47b",
-      "facebook-domain-verification=4cqoes9ia3bfzqzq69xntb7iar6mkr",
+      "iblvsbv3q12clku4odkv5q2kns",
       "google-site-verification=Kxr9iK44cHpakxQbI3si0Gt0rTaKT-P-ldoGPvB8u8c",
-      "mApBQbj",
-      "gcrarlo4jnuv6jucvsu25us37t",
-      "CVimwsmxpGLA8Zz848NLFIp4MJqMzgn0K2DiVr0Rv7TrsCMNn9xjh2L71nEXuXKriJGVfu67jJpAzqQxns8TOg==",
+      "0OX00lOBevmMwBKqx+i4VEYt3Hh4BSEqvj5eywR4LcmQZA7wJO2GOeAy63AfjOZCwJ13Jk8zSgWKEqa4B3xXsw==",
+      "v=spf1 include:_spf1.gettyimages.com include:_spf2.gettyimages.com include:_spf3.gettyimages.com ~all",
+      "70aheif64ef26ttmml0v1s8u44",
+      "v=msv1 t=56E21521-0012-4C74-BAF5-371A005951A8",
       "imtrdblip7oaja1eqnsm5vv1da",
       "ozECEJCtCPL1buHkf0i1XhVu9bUhJxFEZX3QRAZp41iUI+YlumJIhPc9Uhxj/m7yJspJ0sy3Is3V1stL5vDijw==",
-      "70aheif64ef26ttmml0v1s8u44",
-      "iblvsbv3q12clku4odkv5q2kns",
-      "v=spf1 include:_spf1.gettyimages.com include:_spf2.gettyimages.com include:_spf3.gettyimages.com ~all",
+      "mApBQbj",
+      "6gndatn3ep6iuuuj60pnavq47b",
+      "gcrarlo4jnuv6jucvsu25us37t",
       "nqSz5i7",
-      "v=msv1 t=56E21521-0012-4C74-BAF5-371A005951A8"
+      "CVimwsmxpGLA8Zz848NLFIp4MJqMzgn0K2DiVr0Rv7TrsCMNn9xjh2L71nEXuXKriJGVfu67jJpAzqQxns8TOg==",
+      "rZ82I61",
+      "facebook-domain-verification=4cqoes9ia3bfzqzq69xntb7iar6mkr"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:46b8708e09fb858@rep.dmarcanalyzer.com; ruf=mailto:46b8708e09fb858@for.dmarcanalyzer.com; fo=1"
@@ -223,7 +244,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     }
   },
   "ports": {
-    "ip": "54.192.248.52",
+    "ip": "54.192.248.91",
     "open": []
   },
   "https": {
@@ -276,8 +297,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "facebook-domain-verification=4cqoes9ia3bfzqzq69xntb7iar6mkr",
-    "google-site-verification=Kxr9iK44cHpakxQbI3si0Gt0rTaKT-P-ldoGPvB8u8c"
+    "google-site-verification=Kxr9iK44cHpakxQbI3si0Gt0rTaKT-P-ldoGPvB8u8c",
+    "facebook-domain-verification=4cqoes9ia3bfzqzq69xntb7iar6mkr"
   ],
   "tls2": {
     "alpn": "",
@@ -288,19 +309,31 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
       "not_before": "20260617000000",
       "not_after": "20261231235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "x12": {
     "status": 403,
     "ptr": [
-      "server-54-192-248-52.tpe53.r.cloudfront.net."
+      "server-54-192-248-91.tpe53.r.cloudfront.net."
     ]
   },
-  "elapsed_s": 4.1,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 403,
+    "http_status": 301,
+    "p404_status": 403,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 9.3,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -310,4 +343,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

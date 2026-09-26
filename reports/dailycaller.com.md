@@ -7,12 +7,12 @@
 | Target | https://dailycaller.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | dailycaller.com |
-| Test date | 2026-09-26 18:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:02 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
+Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,7 +36,9 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 | 18 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 19 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 20 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 21 | info | CT1 | 34 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 21 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 22 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 23 | info | CT1 | 34 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -154,7 +156,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 ### 18. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-7vzw58=TbcPUP7giRsFaeMjcj5Le3Y0y; google-site-verification=MMCR7ys_IcnzoxvIgPvkIZqhaPjcnoD1xv6MX13EoGs; brave-ledger-verification=e8997655e682114364452598541e771c9848cc4a344ed9c9381f3c
+- **Detail:** Apex TXT records with verification/token content: yandex-verification: a8cb98c870b639cc; anthropic-domain-verification-7vzw58=TbcPUP7giRsFaeMjcj5Le3Y0y; google-site-verification=JdrtZ9wr1Q1g22ntrYqNUiKtYX5TMbcrERLij2gcw6g
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 19. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -169,7 +171,19 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - **Detail:** robots.txt lists 12 disallow path(s), e.g. User-agent:, User-agent:, User-agent:, User-agent:, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 21. [INFO] 34 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 21. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkxp41dkcj6pwg.html -> 404; error page/headers match: Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 22. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for dailycaller.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 23. [INFO] 34 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: git.dailycaller.com, push.cms.dailycaller.com
@@ -191,33 +205,34 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     ],
     "cname": null,
     "mx": [
-      "aspmx2.googlemail.com (pref 40)",
-      "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx.l.google.com (pref 10)",
+      "aspmx3.googlemail.com (pref 50)",
       "alt2.aspmx.l.google.com (pref 30)",
-      "aspmx3.googlemail.com (pref 50)"
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx2.googlemail.com (pref 40)",
+      "aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "cortney.ns.cloudflare.com.",
-      "nile.ns.cloudflare.com."
+      "nile.ns.cloudflare.com.",
+      "cortney.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
-      "v=spf1 mx ip4:74.203.48.0/23 ip4:74.203.57.0/24 ip4:174.46.206.0/23 include:amazonses.com include:spf.mandrillapp.com include:sendgrid.net include:_spf.genoomail.com include:spf.mtasv.net include:_spf.google.com ~all",
+      "yandex-verification: a8cb98c870b639cc",
       "anthropic-domain-verification-7vzw58=TbcPUP7giRsFaeMjcj5Le3Y0y",
-      "hiryanfromdisqus",
-      "google-site-verification=MMCR7ys_IcnzoxvIgPvkIZqhaPjcnoD1xv6MX13EoGs",
-      "brave-ledger-verification=e8997655e682114364452598541e771c9848cc4a344ed9c9381f3c95c1caf5fd",
-      "google-site-verification=2rfEL1JNH_PfDnvN8sg2Mv121z8XI-0UrVGGBiaL3NM",
       "google-site-verification=JdrtZ9wr1Q1g22ntrYqNUiKtYX5TMbcrERLij2gcw6g",
-      "google-site-verification=R_HWsuGY5D2jhyrsiBYoNdou3xQM7mfMvmLNRIf5uNk",
+      "google-site-verification=4AD9l3jnq_7mC91UBXtTJ2SVAQF65R2NqW2SzB0fyWY",
+      "notion-domain-verification=wlPIL0HDvUMkeXcyPQiHB1EnfOwwhQ1vxpmiCcLY9w3",
+      "v=spf1 mx ip4:74.203.48.0/23 ip4:74.203.57.0/24 ip4:174.46.206.0/23 include:amazonses.com include:spf.mandrillapp.com include:sendgrid.net include:_spf.genoomail.com include:spf.mtasv.net include:_spf.google.com ~all",
+      "pinterest-site-verification=b357bf035fef44e634ab43bf435d2592",
       "facebook-domain-verification=cu97te0w4snsvnklnozd4wdzpmdusx",
       "dailymotion-domain-verification=dmz0onmsz1bovllha",
+      "google-site-verification=R_HWsuGY5D2jhyrsiBYoNdou3xQM7mfMvmLNRIf5uNk",
+      "brave-ledger-verification=e8997655e682114364452598541e771c9848cc4a344ed9c9381f3c95c1caf5fd",
       "klaviyo-site-verification=VymSM6",
-      "pinterest-site-verification=b357bf035fef44e634ab43bf435d2592",
-      "yandex-verification: a8cb98c870b639cc",
+      "google-site-verification=MMCR7ys_IcnzoxvIgPvkIZqhaPjcnoD1xv6MX13EoGs",
       "google-site-verification=aDLIgzpZsWhltTo0byY4JIrXErh2FSZC7gTNA-pcado",
-      "google-site-verification=4AD9l3jnq_7mC91UBXtTJ2SVAQF65R2NqW2SzB0fyWY",
-      "notion-domain-verification=wlPIL0HDvUMkeXcyPQiHB1EnfOwwhQ1vxpmiCcLY9w3"
+      "google-site-verification=2rfEL1JNH_PfDnvN8sg2Mv121z8XI-0UrVGGBiaL3NM",
+      "hiryanfromdisqus"
     ],
     "dmarc": [
       "v=DMARC1; p=none"
@@ -237,7 +252,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "dailycaller.com",
       "meta-feed.dailycaller.com"
     ],
-    "days_left": 68,
+    "days_left": 67,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -332,11 +347,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     ]
   },
   "apex_txt": [
+    "yandex-verification: a8cb98c870b639cc",
     "anthropic-domain-verification-7vzw58=TbcPUP7giRsFaeMjcj5Le3Y0y",
-    "google-site-verification=MMCR7ys_IcnzoxvIgPvkIZqhaPjcnoD1xv6MX13EoGs",
-    "brave-ledger-verification=e8997655e682114364452598541e771c9848cc4a344ed9c9381f3c",
-    "google-site-verification=2rfEL1JNH_PfDnvN8sg2Mv121z8XI-0UrVGGBiaL3NM",
-    "google-site-verification=JdrtZ9wr1Q1g22ntrYqNUiKtYX5TMbcrERLij2gcw6g"
+    "google-site-verification=JdrtZ9wr1Q1g22ntrYqNUiKtYX5TMbcrERLij2gcw6g",
+    "google-site-verification=4AD9l3jnq_7mC91UBXtTJ2SVAQF65R2NqW2SzB0fyWY",
+    "notion-domain-verification=wlPIL0HDvUMkeXcyPQiHB1EnfOwwhQ1vxpmiCcLY9w3"
   ],
   "tls2": {
     "alpn": "",
@@ -371,8 +386,18 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 13.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 18.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -382,4 +407,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

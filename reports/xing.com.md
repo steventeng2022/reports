@@ -7,12 +7,12 @@
 | Target | https://xing.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | xing.com |
-| Test date | 2026-09-26 19:02 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:18 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
+Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,11 +30,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 19 | info | CT1 | 370 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 20 | info | CT1 | 370 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -121,20 +122,20 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (yxyasu4kotk9u1.xing.com and p62zhg4wsfhmmn.xing.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (om4pjr5pkqy6a1.xing.com and oe3ni1r46nac0b.xing.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=jC5_MqgVlYS7He0-uldAaB4z1uYxuZUKL_bTHaIYn-0; atlassian-domain-verification=jQie6vPSfhfQ4wsCwYZtuCQTWC7PhDbv9HmrAzbRc6skBWWB/T; facebook-domain-verification=xxd0q3s7lv62wywvvpver0e8j1j1vw
+- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-JfWX8IbG0n87GNHoDQvLlbeM; mongodb-site-verification=P5bGlH3I0KYBkV7Lk3ZQPkLsXxb3QN4R; google-site-verification=jC5_MqgVlYS7He0-uldAaB4z1uYxuZUKL_bTHaIYn-0
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of xing.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m04.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
@@ -154,7 +155,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - **Detail:** 18.154.144.107 carries PTR server-18-154-144-107.lax50.r.cloudfront.net. for xing.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 19. [INFO] 370 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for xing.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 20. [INFO] 370 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: admin.preview.xing.com, admin.xing.com, api.ams1.xing.com, api.ams2.xing.com, api.preview.ams1.xing.com, api.preview.ams2.xing.com, api.preview.xing.com, api.xing.com, blog.xing.com, dev.preview.xing.com
@@ -168,9 +175,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "dns": {
     "a": [
       "18.154.144.107",
-      "18.154.144.64",
       "18.154.144.42",
-      "18.154.144.78"
+      "18.154.144.78",
+      "18.154.144.64"
     ],
     "aaaa": [],
     "cname": null,
@@ -179,38 +186,39 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     ],
     "ns": [
       "ns-1321.awsdns-37.org.",
-      "ns-633.awsdns-15.net.",
       "ns-291.awsdns-36.com.",
+      "ns-633.awsdns-15.net.",
       "ns-1690.awsdns-19.co.uk."
     ],
+    "caa": [],
     "spf": [
-      "v=spf1 mx include:_netblocks.mail.xing.com include:_spf.zimpel.de include:_spf.salesforce.com include:_spf.abiliware.de ?include:servers.mcsv.net include:spf.protection.outlook.com include:mail.zendesk.com ~all",
-      "_oqnb58q3pbnwofdf7gr0jeab8ik8xs6",
-      "google-site-verification=jC5_MqgVlYS7He0-uldAaB4z1uYxuZUKL_bTHaIYn-0",
-      "atlassian-domain-verification=jQie6vPSfhfQ4wsCwYZtuCQTWC7PhDbv9HmrAzbRc6skBWWB/TfL8TpiAqozsb8N",
-      "facebook-domain-verification=xxd0q3s7lv62wywvvpver0e8j1j1vw",
-      "google-site-verification=1CoJURTg2aHLa8bvDoNt_dDrLNmVPE93-cjaxYitSo8",
-      "ZOOM_verify_av-wjAz-T62Xdl1pMRBySA",
-      "segment-site-verification=3fA98vkzGDmgoJbj3AG2CJvr8Z9mSQpx",
-      "figma-domain-verification=021dc2f32684e858eaf9842b7206f9197bbdffa76c83ac711b16ba9702aeca5c-1782465718",
-      "astro-domain-verification=clyhbm3ib0dq801kip93vxw0t",
-      "google-site-verification=Flhe3fswMbbqS2VGEy2ODM-1P_PE_Z5l2u5zZZq5UR4",
-      "MS=ms45637936",
-      "Ml9vw8Cm/Ig/xpmhhDfS9TEjuzw=",
-      "teamviewer-sso-verification=54188f7fff354a9b92f7652fd3937fb0",
-      "google-site-verification=UqxFvQ_ikK9hga0Qm1unOA9HbMWTTlJ_TTVxRTu9z04",
-      "zoom-domain-verification=5adddeb4-2a0b-4bf0-8eaf-82bc5e2c49d8",
-      "docker-verification=7d460483-f122-4277-b449-0a3a3fe26190",
-      "MS=ms63761438",
-      "docusign=73ffe7e4-a802-458a-bad3-3afefc637792",
       "openai-domain-verification=dv-JfWX8IbG0n87GNHoDQvLlbeM",
-      "google-site-verification=Qb3_TK55U83JNTsumhQ_7culHoFKMU2dcpvVvfl5h-k",
-      "TTmNrvKCKyVmW6wxgBUHPZ3Tv4VvPaUslML0MaJAYdnySEHpD7OX4QTOPBLdgFlKfIL59yXY3x6lm8iIyqWwhw==",
-      "miro-verification=3969bd74d34f4d6e10fb42f5233014d2d3dd4f9c",
       "mongodb-site-verification=P5bGlH3I0KYBkV7Lk3ZQPkLsXxb3QN4R",
+      "google-site-verification=jC5_MqgVlYS7He0-uldAaB4z1uYxuZUKL_bTHaIYn-0",
+      "MS=ms63761438",
+      "google-site-verification=Flhe3fswMbbqS2VGEy2ODM-1P_PE_Z5l2u5zZZq5UR4",
+      "zoom-domain-verification=5adddeb4-2a0b-4bf0-8eaf-82bc5e2c49d8",
+      "facebook-domain-verification=xxd0q3s7lv62wywvvpver0e8j1j1vw",
+      "docker-verification=7d460483-f122-4277-b449-0a3a3fe26190",
+      "paloaltonetworks-site-verification=93e36781f48dc570d80205f59263b53045f9a982b7fcc747a23849d162298d7f",
+      "MS=ms45637936",
+      "segment-site-verification=3fA98vkzGDmgoJbj3AG2CJvr8Z9mSQpx",
+      "ZOOM_verify_av-wjAz-T62Xdl1pMRBySA",
+      "atlassian-domain-verification=jQie6vPSfhfQ4wsCwYZtuCQTWC7PhDbv9HmrAzbRc6skBWWB/TfL8TpiAqozsb8N",
+      "v=spf1 mx include:_netblocks.mail.xing.com include:_spf.zimpel.de include:_spf.salesforce.com include:_spf.abiliware.de ?include:servers.mcsv.net include:spf.protection.outlook.com include:mail.zendesk.com ~all",
+      "google-site-verification=Qb3_TK55U83JNTsumhQ_7culHoFKMU2dcpvVvfl5h-k",
+      "google-site-verification=1CoJURTg2aHLa8bvDoNt_dDrLNmVPE93-cjaxYitSo8",
+      "docusign=73ffe7e4-a802-458a-bad3-3afefc637792",
+      "TTmNrvKCKyVmW6wxgBUHPZ3Tv4VvPaUslML0MaJAYdnySEHpD7OX4QTOPBLdgFlKfIL59yXY3x6lm8iIyqWwhw==",
       "google-site-verification=UORS-nc4KF2CsNXjoZmD3hLN9gvo3xdmmRXP2UE0N2Y",
       "google-site-verification=whYQbqxkVsb_xI5XKG3U8CQG2Vn75Nhx5HyTxo30gHA",
-      "paloaltonetworks-site-verification=93e36781f48dc570d80205f59263b53045f9a982b7fcc747a23849d162298d7f"
+      "google-site-verification=UqxFvQ_ikK9hga0Qm1unOA9HbMWTTlJ_TTVxRTu9z04",
+      "Ml9vw8Cm/Ig/xpmhhDfS9TEjuzw=",
+      "astro-domain-verification=clyhbm3ib0dq801kip93vxw0t",
+      "miro-verification=3969bd74d34f4d6e10fb42f5233014d2d3dd4f9c",
+      "_oqnb58q3pbnwofdf7gr0jeab8ik8xs6",
+      "figma-domain-verification=021dc2f32684e858eaf9842b7206f9197bbdffa76c83ac711b16ba9702aeca5c-1782465718",
+      "teamviewer-sso-verification=54188f7fff354a9b92f7652fd3937fb0"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:7675016f@in.mailhardener.com"
@@ -365,11 +373,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   },
   "wildcard_dns": true,
   "apex_txt": [
+    "openai-domain-verification=dv-JfWX8IbG0n87GNHoDQvLlbeM",
+    "mongodb-site-verification=P5bGlH3I0KYBkV7Lk3ZQPkLsXxb3QN4R",
     "google-site-verification=jC5_MqgVlYS7He0-uldAaB4z1uYxuZUKL_bTHaIYn-0",
-    "atlassian-domain-verification=jQie6vPSfhfQ4wsCwYZtuCQTWC7PhDbv9HmrAzbRc6skBWWB/T",
-    "facebook-domain-verification=xxd0q3s7lv62wywvvpver0e8j1j1vw",
-    "google-site-verification=1CoJURTg2aHLa8bvDoNt_dDrLNmVPE93-cjaxYitSo8",
-    "segment-site-verification=3fA98vkzGDmgoJbj3AG2CJvr8Z9mSQpx"
+    "google-site-verification=Flhe3fswMbbqS2VGEy2ODM-1P_PE_Z5l2u5zZZq5UR4",
+    "zoom-domain-verification=5adddeb4-2a0b-4bf0-8eaf-82bc5e2c49d8"
   ],
   "tls2": {
     "alpn": "",
@@ -380,10 +388,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
       "not_before": "20260506000000",
       "not_after": "20261119235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -410,8 +419,20 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "server-18-154-144-107.lax50.r.cloudfront.net."
     ]
   },
-  "elapsed_s": 23.5,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.xing.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 26.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -421,4 +442,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://zdnet.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | zdnet.com |
-| Test date | 2026-09-26 19:02 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:18 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -132,7 +133,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=0MpBgJlty0QJTSbL0NsxKSMQao7AtbMttqQqLBpnuqo; google-site-verification=OEcQCk6m6XyHagDu-7BnHevLzPmjK8VLrehu0rHHPGs; figma-domain-verification=4f7cdfa45ca39f617dd7ba7b165e1bfd5e9b5e1ec18b849c6098df
+- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=b6e27597198dfc9921fbe2ad78e9a76012bb17d0ddb65389e600; workplace-domain-verification=q8l8dtiG9ONhEmL8nIvj0Z5L2D5A3i; google-site-verification=pYonWwLh0y5UIPReObylCHtCWHGz9YmWq9OI0NnlEOk
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -146,6 +147,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 17 disallow path(s), e.g. /user/*, /members/, /members/newsletters/, /members/alerts/add/, /search/
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for zdnet.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
 ## Evidence (raw response observations)
 
@@ -164,30 +171,31 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "smtp.google.com (pref 1)"
     ],
     "ns": [
-      "aria.ns.cloudflare.com.",
-      "owen.ns.cloudflare.com."
+      "owen.ns.cloudflare.com.",
+      "aria.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
-      "google-site-verification=0MpBgJlty0QJTSbL0NsxKSMQao7AtbMttqQqLBpnuqo",
-      "google-site-verification=OEcQCk6m6XyHagDu-7BnHevLzPmjK8VLrehu0rHHPGs",
-      "qb5l10tv3ifansmtg2j67ls4vm",
-      "figma-domain-verification=4f7cdfa45ca39f617dd7ba7b165e1bfd5e9b5e1ec18b849c6098dfdc4a4cfa64-1740511309",
+      "adobe-idp-site-verification=b6e27597198dfc9921fbe2ad78e9a76012bb17d0ddb65389e600ecb80de9a555",
       "workplace-domain-verification=q8l8dtiG9ONhEmL8nIvj0Z5L2D5A3i",
-      "canva-site-verification=Dq2WPizCkBmFzG8pX1jdkQ",
-      "google-site-verification=VvA5ip4lC7mt45ap9Ra_PNfXXe3OgEsWiV3ZySfTRKI",
+      "MS=ms65532728",
+      "google-site-verification=pYonWwLh0y5UIPReObylCHtCWHGz9YmWq9OI0NnlEOk",
+      "knowbe4-site-verification=f250b2a70f1bef3a0d3e9e990a25ada0",
+      "google-site-verification=OEcQCk6m6XyHagDu-7BnHevLzPmjK8VLrehu0rHHPGs",
       "v=spf1 mx ip4:64.30.227.218 ip4:64.30.226.54/31 ip4:74.125.148.0/22 ip4:216.239.125.28/23 ip4:202.73.54.176/28 ip4:58.65.7.128/28 ip4:62.108.138.0/28 ip4:216.239.114.214/23 ip4:216.239.114.222/23 include:_spf.google.com include:spf-00262c01.pphosted.com i",
       "nclude:spf.protection.outlook.com -all",
-      "tollbit-domain-verification=ed765eec87445a9c7fc97d88202a4e247d115ec1dcce8b2855644de232baa795",
-      "amazonses:kWgTT8gEghPg1NxciZwhrB3xu+jSMwW8T80qgRg5Kyw=",
-      "google-site-verification=pYonWwLh0y5UIPReObylCHtCWHGz9YmWq9OI0NnlEOk",
-      "adobe-idp-site-verification=b6e27597198dfc9921fbe2ad78e9a76012bb17d0ddb65389e600ecb80de9a555",
-      "amazonses:tf7PxlKrP5loKZqpIoiHCfuwRc9LWPN35B8KBlvXYvU=",
-      "MS=ms65532728",
       "gpu99tm7bpjr5ffe6j6lff9c6g",
-      "facebook-domain-verification=qxzu4bw9l67g1b59xbja9fqgyetsfq",
-      "knowbe4-site-verification=f250b2a70f1bef3a0d3e9e990a25ada0",
+      "amazonses:kWgTT8gEghPg1NxciZwhrB3xu+jSMwW8T80qgRg5Kyw=",
+      "qb5l10tv3ifansmtg2j67ls4vm",
+      "google-site-verification=VvA5ip4lC7mt45ap9Ra_PNfXXe3OgEsWiV3ZySfTRKI",
+      "figma-domain-verification=4f7cdfa45ca39f617dd7ba7b165e1bfd5e9b5e1ec18b849c6098dfdc4a4cfa64-1740511309",
+      "google-site-verification=0MpBgJlty0QJTSbL0NsxKSMQao7AtbMttqQqLBpnuqo",
+      "canva-site-verification=Dq2WPizCkBmFzG8pX1jdkQ",
       "atlassian-domain-verification=QUsZX4LdPWTYZgx09JhShFot27EJnUl/5CyxXFsiGebXl2QD8Fh3zzfkYZJe42Ic",
-      "anthropic-domain-verification-4sn0p2=1S8SKrvmazJTSpSOW0ZEUoQHj"
+      "amazonses:tf7PxlKrP5loKZqpIoiHCfuwRc9LWPN35B8KBlvXYvU=",
+      "tollbit-domain-verification=ed765eec87445a9c7fc97d88202a4e247d115ec1dcce8b2855644de232baa795",
+      "anthropic-domain-verification-4sn0p2=1S8SKrvmazJTSpSOW0ZEUoQHj",
+      "facebook-domain-verification=qxzu4bw9l67g1b59xbja9fqgyetsfq"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;rua=mailto:088836b424@rua.easydmarc.us;"
@@ -270,11 +278,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=0MpBgJlty0QJTSbL0NsxKSMQao7AtbMttqQqLBpnuqo",
-    "google-site-verification=OEcQCk6m6XyHagDu-7BnHevLzPmjK8VLrehu0rHHPGs",
-    "figma-domain-verification=4f7cdfa45ca39f617dd7ba7b165e1bfd5e9b5e1ec18b849c6098df",
+    "adobe-idp-site-verification=b6e27597198dfc9921fbe2ad78e9a76012bb17d0ddb65389e600",
     "workplace-domain-verification=q8l8dtiG9ONhEmL8nIvj0Z5L2D5A3i",
-    "canva-site-verification=Dq2WPizCkBmFzG8pX1jdkQ"
+    "google-site-verification=pYonWwLh0y5UIPReObylCHtCWHGz9YmWq9OI0NnlEOk",
+    "knowbe4-site-verification=f250b2a70f1bef3a0d3e9e990a25ada0",
+    "google-site-verification=OEcQCk6m6XyHagDu-7BnHevLzPmjK8VLrehu0rHHPGs"
   ],
   "tls2": {
     "alpn": "",
@@ -313,8 +321,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 18.2,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.zdnet.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 20.2,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -324,4 +343,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

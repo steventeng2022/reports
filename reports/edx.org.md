@@ -7,8 +7,8 @@
 | Target | https://edx.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | edx.org |
-| Test date | 2026-09-26 18:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:04 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -30,7 +30,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
@@ -126,14 +126,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: dropbox-domain-verification=9dvz1ju53nbf; google-site-verification=-_Eevdy8NShzLkex28P2wC3zjbfVweCs0k5z5f6gm_k; atlassian-domain-verification=xpq-aB5aXpxCKMr7r3eDPHyz+H8uPB16jIppdmlCIloVrhEtCr
+- **Detail:** Apex TXT records with verification/token content: segment-site-verification=2ZGPEbxZ025BzXh516qCWeQ7sGFFltDx; google-site-verification=S98FBFJqeURQhHxBtC_UG84orCIkl7msuarSO5NoIPc; atlassian-sending-domain-verification=5c0c6ccf-f137-44f4-8b59-90f8c09ba730
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of edx.org has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m04.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
@@ -144,7 +144,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 54.192.248.20 carries PTR server-54-192-248-20.tpe53.r.cloudfront.net. for edx.org.
+- **Detail:** 54.192.248.88 carries PTR server-54-192-248-88.tpe53.r.cloudfront.net. for edx.org.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
@@ -154,51 +154,58 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "edx.org",
   "dns": {
     "a": [
-      "54.192.248.20",
       "54.192.248.88",
       "54.192.248.55",
+      "54.192.248.20",
       "54.192.248.106"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "aspmx2.googlemail.com (pref 10)",
-      "aspmx3.googlemail.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
+      "aspmx3.googlemail.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-828.awsdns-39.net.",
+      "ns-1472.awsdns-56.org.",
       "ns-73.awsdns-09.com.",
       "ns-1753.awsdns-27.co.uk.",
-      "ns-1472.awsdns-56.org."
+      "ns-828.awsdns-39.net."
+    ],
+    "caa": [
+      "0 issue \"amazon.com\"",
+      "0 issue \"digicert.com\"",
+      "0 issue \"comodoca.com\"",
+      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issue \"letsencrypt.org\""
     ],
     "spf": [
-      "dropbox-domain-verification=9dvz1ju53nbf",
-      "google-site-verification=-_Eevdy8NShzLkex28P2wC3zjbfVweCs0k5z5f6gm_k",
-      "amazonses:0rz9BauM6+L1fwnDKUmS4nofo+8gZvTReGo5q/EliHY=",
-      "atlassian-domain-verification=xpq-aB5aXpxCKMr7r3eDPHyz+H8uPB16jIppdmlCIloVrhEtCrKucpx/Nnqr1xJg",
-      "hj-ownership=pzm3zqe*fhj7RQR3cpj",
-      "google-site-verification=3wMRITKQ9E2388ON5mfWt98s48OBDMVzPO-7xY3U6H4",
-      "pardot1059723=4defac72d9323b4f44f80b440e6eb91a8958b1f3b98bc585c494a8a5af62483e",
+      "MS=ms89770774",
       "segment-site-verification=2ZGPEbxZ025BzXh516qCWeQ7sGFFltDx",
-      "google-site-verification=S98FBFJqeURQhHxBtC_UG84orCIkl7msuarSO5NoIPc",
-      "smartsheet-site-validation=bxOSD4ibPoym5apZEnln5bh2ckPn2Z1M",
-      "apple-domain-verification=6VfkC2MXgvez6NHJ",
-      "adobe-idp-site-verification=3f2215d19f499a970c4305a59755a6a1eb0f9850d7777a297a46db1e644e71c7",
-      "google-site-verification=tVFyMKACOBTnEVoW-XJ0jbunNP7bDxPLxUZpGs9j9go",
-      "atlassian-domain-verification=HN7ngRpg8qAazURti1cdbKGDap2uVfm7uvUYF/m9UkSHtwZM2P5Ub6muuhN47h1w",
-      "adobe-idp-site-verification=0614d0e44da9d4b72a75d19e9138eb0052991fb2acb9d62cfd048eee75c7f24b",
-      "atlassian-sending-domain-verification=5c0c6ccf-f137-44f4-8b59-90f8c09ba730",
-      "docusign=f1e936d4-bf65-4aed-8c0b-59630d21e09c",
       "v=spf1 include:_u.edx.org._spf.smart.ondmarc.com ~all",
+      "pardot1059723=4defac72d9323b4f44f80b440e6eb91a8958b1f3b98bc585c494a8a5af62483e",
+      "google-site-verification=S98FBFJqeURQhHxBtC_UG84orCIkl7msuarSO5NoIPc",
+      "atlassian-sending-domain-verification=5c0c6ccf-f137-44f4-8b59-90f8c09ba730",
+      "google-site-verification=-_Eevdy8NShzLkex28P2wC3zjbfVweCs0k5z5f6gm_k",
+      "atlassian-domain-verification=xpq-aB5aXpxCKMr7r3eDPHyz+H8uPB16jIppdmlCIloVrhEtCrKucpx/Nnqr1xJg",
+      "adobe-idp-site-verification=0614d0e44da9d4b72a75d19e9138eb0052991fb2acb9d62cfd048eee75c7f24b",
       "facebook-domain-verification=h2gg5zwnyax0dj0jyo4aafdtkpiiyu",
       "google-site-verification=VmJhKMomzXGRq96pOMWst3QD0KvnurTNsPHNhv8qt1k",
-      "google-site-verification=y6TTw5e5GIQJ7YzqfhuE1eyu235AVu1bqk2YAvv_IY0",
-      "ZOOM_verify_L9I5Fxqkv63ZPy63F1sHvK",
       "docusign=3b85e379-88dd-467e-a926-0b63f700d89a",
-      "MS=ms89770774"
+      "atlassian-domain-verification=HN7ngRpg8qAazURti1cdbKGDap2uVfm7uvUYF/m9UkSHtwZM2P5Ub6muuhN47h1w",
+      "apple-domain-verification=6VfkC2MXgvez6NHJ",
+      "google-site-verification=y6TTw5e5GIQJ7YzqfhuE1eyu235AVu1bqk2YAvv_IY0",
+      "amazonses:0rz9BauM6+L1fwnDKUmS4nofo+8gZvTReGo5q/EliHY=",
+      "ZOOM_verify_L9I5Fxqkv63ZPy63F1sHvK",
+      "docusign=f1e936d4-bf65-4aed-8c0b-59630d21e09c",
+      "dropbox-domain-verification=9dvz1ju53nbf",
+      "google-site-verification=tVFyMKACOBTnEVoW-XJ0jbunNP7bDxPLxUZpGs9j9go",
+      "smartsheet-site-validation=bxOSD4ibPoym5apZEnln5bh2ckPn2Z1M",
+      "hj-ownership=pzm3zqe*fhj7RQR3cpj",
+      "google-site-verification=3wMRITKQ9E2388ON5mfWt98s48OBDMVzPO-7xY3U6H4",
+      "adobe-idp-site-verification=3f2215d19f499a970c4305a59755a6a1eb0f9850d7777a297a46db1e644e71c7"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; sp=quarantine; rua=mailto:a7d505e3@inbox.ondmarc.com,mailto:dmarc-reports@edx.org; ruf=mailto:a7d505e3@inbox.ondmarc.com,mailto:dmarc-reports-forensic@edx.org; adkim=r; aspf=r; fo=1; rf=afrf; ri=3600"
@@ -227,7 +234,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "54.192.248.20",
+    "ip": "54.192.248.88",
     "open": []
   },
   "https": {
@@ -280,11 +287,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "dropbox-domain-verification=9dvz1ju53nbf",
+    "segment-site-verification=2ZGPEbxZ025BzXh516qCWeQ7sGFFltDx",
+    "google-site-verification=S98FBFJqeURQhHxBtC_UG84orCIkl7msuarSO5NoIPc",
+    "atlassian-sending-domain-verification=5c0c6ccf-f137-44f4-8b59-90f8c09ba730",
     "google-site-verification=-_Eevdy8NShzLkex28P2wC3zjbfVweCs0k5z5f6gm_k",
-    "atlassian-domain-verification=xpq-aB5aXpxCKMr7r3eDPHyz+H8uPB16jIppdmlCIloVrhEtCr",
-    "google-site-verification=3wMRITKQ9E2388ON5mfWt98s48OBDMVzPO-7xY3U6H4",
-    "segment-site-verification=2ZGPEbxZ025BzXh516qCWeQ7sGFFltDx"
+    "atlassian-domain-verification=xpq-aB5aXpxCKMr7r3eDPHyz+H8uPB16jIppdmlCIloVrhEtCr"
   ],
   "tls2": {
     "alpn": "",
@@ -295,10 +302,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
       "not_before": "20251108000000",
       "not_after": "20261206235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -322,11 +330,23 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "x12": {
     "status": 301,
     "ptr": [
-      "server-54-192-248-20.tpe53.r.cloudfront.net."
+      "server-54-192-248-88.tpe53.r.cloudfront.net."
     ]
   },
-  "elapsed_s": 5.9,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.edx.org/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 7.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -336,4 +356,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,8 +7,8 @@
 | Target | https://getpocket.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | getpocket.com |
-| Test date | 2026-09-26 18:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:06 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -17,22 +17,22 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
-| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
-| 3 | low | H1 | Missing HSTS header | CWE-319 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
-| 11 | info | P8 | Missing security.txt | CWE-1038 |
-| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
-| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
-| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 2 | low | H1 | Missing HSTS header | CWE-319 |
+| 3 | low | H2 | Missing CSP header | CWE-1021 |
+| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 5 | low | H4 | No clickjacking protection | CWE-1023 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 9 | info | P8 | Missing security.txt | CWE-1038 |
+| 10 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 13 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 16 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -42,110 +42,109 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
 - **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Technology fingerprint (`TECH1`)
-
-- **CWE:** CWE-200
-- **Detail:** Detected: Server: CloudFront
-- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
-
-### 3. [LOW] Missing HSTS header (`H1`)
+### 2. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
 - **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
 - **Context:** https response, /
 - **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 4. [LOW] Missing CSP header (`H2`)
+### 3. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
 - **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
 - **Context:** https response, /
 - **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
+### 4. [LOW] Missing X-Content-Type-Options (`H3`)
 
 - **CWE:** CWE-1194
 - **Detail:** No nosniff directive; browsers may MIME-sniff responses.
 - **Context:** https response, /
 - **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 6. [LOW] No clickjacking protection (`H4`)
+### 5. [LOW] No clickjacking protection (`H4`)
 
 - **CWE:** CWE-1023
 - **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
 - **Context:** https response, /
 - **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 7. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
 - **Context:** https response, /
 - **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 8. [INFO] Missing Permissions-Policy (`H7`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
 - **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
 - **Context:** https response, /
 - **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
 - **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
 - **Context:** https response, /
 - **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 10. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Header reveals: CloudFront
-- **Context:** https response, /
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 11. [INFO] Missing security.txt (`P8`)
+### 9. [INFO] Missing security.txt (`P8`)
 
 - **CWE:** CWE-1038
 - **Detail:** No .well-known/security.txt found (RFC 9116).
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+### 10. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
 
 - **CWE:** CWE-223
 - **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
 - **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
 
-### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+### 11. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
 
 - **CWE:** CWE-223
 - **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
 - **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
 
-### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: stripe-verification=12da43cd3189cf99e5c3ecdfdae9c97c7d4230aed93a22ae62892f0cee02; facebook-domain-verification=7onzfhlxkl6r3tyrkywbqx1ybt66jx; google-site-verification=BznukNV2feXYAk09zg1tD-zMQPL_wHoVvfbHa8g2g18
+- **Detail:** Apex TXT records with verification/token content: stripe-verification=12da43cd3189cf99e5c3ecdfdae9c97c7d4230aed93a22ae62892f0cee02; google-site-verification=Ip41qYBewmXa5vTZEKlBpwrqymJbbzzNXCDd5eyQryk; google-site-verification=zfNlIIbTnH55o0_E1S6GQdIQl6jtefL-vdk_xCyBQrE
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 13. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of getpocket.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m04.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
-### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 13 disallow path(s), e.g. /v2/*, /v3/*, /create*, /mini_login*, /button*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 3.169.121.10 carries PTR server-3-169-121-10.tpe53.r.cloudfront.net. for getpocket.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 16. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on getpocket.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for getpocket.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
 ## Evidence (raw response observations)
 
@@ -155,18 +154,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "dns": {
     "a": [
       "3.169.121.10",
-      "3.169.121.118",
       "3.169.121.32",
-      "3.169.121.84"
+      "3.169.121.84",
+      "3.169.121.118"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 30)",
       "aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 20)",
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx3.googlemail.com (pref 30)",
       "aspmx2.googlemail.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)"
+      "alt2.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
       "ns-351.awsdns-43.com.",
@@ -174,17 +173,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "ns-1518.awsdns-61.org.",
       "ns-1605.awsdns-08.co.uk."
     ],
+    "caa": [],
     "spf": [
-      "stripe-verification=12da43cd3189cf99e5c3ecdfdae9c97c7d4230aed93a22ae62892f0cee028e0c",
-      "facebook-domain-verification=7onzfhlxkl6r3tyrkywbqx1ybt66jx",
-      "google-site-verification=BznukNV2feXYAk09zg1tD-zMQPL_wHoVvfbHa8g2g18",
-      "atlassian-domain-verification=ZKdUkLuFwGhwbs6AqGb09CzrQ1EGoENusL8drKXt3+3DVnPgvbvEKhpaA0w3Crhd",
-      "google-site-verification=zfNlIIbTnH55o0_E1S6GQdIQl6jtefL-vdk_xCyBQrE",
-      "docusign=e569f89d-0082-4ffd-8973-5c7f739cdd02",
-      "apple-domain-verification=YQkH_odwWd6t5jf8ay7uZ7SdgCl7gOnggLxglPtPf-A",
       "v=spf1 include:sendgrid.net include:_spf.google.com include:helpscoutemail.com include:mail.zendesk.com ip4:63.245.208.103 ~all",
+      "stripe-verification=12da43cd3189cf99e5c3ecdfdae9c97c7d4230aed93a22ae62892f0cee028e0c",
       "google-site-verification=Ip41qYBewmXa5vTZEKlBpwrqymJbbzzNXCDd5eyQryk",
-      "google-site-verification=O73K4GuIvQ3SbegpcgVVBVm-ob8wnBQAd4V8KdXf-oI"
+      "google-site-verification=zfNlIIbTnH55o0_E1S6GQdIQl6jtefL-vdk_xCyBQrE",
+      "google-site-verification=BznukNV2feXYAk09zg1tD-zMQPL_wHoVvfbHa8g2g18",
+      "facebook-domain-verification=7onzfhlxkl6r3tyrkywbqx1ybt66jx",
+      "docusign=e569f89d-0082-4ffd-8973-5c7f739cdd02",
+      "google-site-verification=O73K4GuIvQ3SbegpcgVVBVm-ob8wnBQAd4V8KdXf-oI",
+      "atlassian-domain-verification=ZKdUkLuFwGhwbs6AqGb09CzrQ1EGoENusL8drKXt3+3DVnPgvbvEKhpaA0w3Crhd",
+      "apple-domain-verification=YQkH_odwWd6t5jf8ay7uZ7SdgCl7gOnggLxglPtPf-A"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:dmarc_agg@dmarc.250ok.net; fo=1; sp=none; aspf=r;"
@@ -232,9 +232,6 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "title": ""
   },
   "mixed_content": [],
-  "tech": [
-    "Server: CloudFront"
-  ],
   "cookies": [],
   "cors": [
     {
@@ -277,10 +274,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   },
   "apex_txt": [
     "stripe-verification=12da43cd3189cf99e5c3ecdfdae9c97c7d4230aed93a22ae62892f0cee02",
-    "facebook-domain-verification=7onzfhlxkl6r3tyrkywbqx1ybt66jx",
+    "google-site-verification=Ip41qYBewmXa5vTZEKlBpwrqymJbbzzNXCDd5eyQryk",
+    "google-site-verification=zfNlIIbTnH55o0_E1S6GQdIQl6jtefL-vdk_xCyBQrE",
     "google-site-verification=BznukNV2feXYAk09zg1tD-zMQPL_wHoVvfbHa8g2g18",
-    "atlassian-domain-verification=ZKdUkLuFwGhwbs6AqGb09CzrQ1EGoENusL8drKXt3+3DVnPgvb",
-    "google-site-verification=zfNlIIbTnH55o0_E1S6GQdIQl6jtefL-vdk_xCyBQrE"
+    "facebook-domain-verification=7onzfhlxkl6r3tyrkywbqx1ybt66jx"
   ],
   "tls2": {
     "alpn": "",
@@ -291,10 +288,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
       "not_before": "20260428000000",
       "not_after": "20261111235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -319,8 +317,24 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "server-3-169-121-10.tpe53.r.cloudfront.net."
     ]
   },
-  "elapsed_s": 10.5,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 302,
+    "root_location": "/en/",
+    "http_status": 301,
+    "p404_status": 503,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 12.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -330,4 +344,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

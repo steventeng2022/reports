@@ -7,8 +7,8 @@
 | Target | https://reddit.com/ |
 | Bug bounty program | Reddit |
 | Listed scope domain | reddit.com |
-| Test date | 2026-09-26 18:58 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:14 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -28,9 +28,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 | 10 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 11 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 15 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 15 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 
 ## Detailed findings
 
@@ -103,32 +103,32 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 ### 11. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (ktc1qxd20jie71.reddit.com and 9xnes594kn4prc.reddit.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (dgg4o7ysab0gyq.reddit.com and 0vdusye8q9gbkn.reddit.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=aGWDxGvt+oY3p7qTWt5v2uJDVJkoJAeHxwGqKmGQLMEsUXUJJe; yahoo-verification-key=I0We5FayJi0Q8XdjDgE5oN0ujM08heSVe46o/FvsMkk=; protonmail-verification=24cb91442caf54c8b820f4a0347292f143531210
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=zZHozYbAJmSLOMG4OjQFoHiVqkxtdgvyBzsE7wUGFiw; jetbrains-domain-verification=bjn7o9fxbduga0omhaepeewtx; yahoo-verification-key=I0We5FayJi0Q8XdjDgE5oN0ujM08heSVe46o/FvsMkk=
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of reddit.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 13. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 15. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+### 14. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
 
 - **CWE:** CWE-922
 - **Detail:** Response for https://reddit.com/ carries Cache-Control: private, max-age=3600; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 15. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on reddit.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
 ## Evidence (raw response observations)
 
@@ -138,23 +138,23 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
   "dns": {
     "a": [
       "151.101.129.140",
-      "151.101.65.140",
       "151.101.1.140",
-      "151.101.193.140"
+      "151.101.193.140",
+      "151.101.65.140"
     ],
     "aaaa": [
-      "2a04:4e42:400::396",
-      "2a04:4e42:200::396",
       "2a04:4e42::396",
-      "2a04:4e42:600::396"
+      "2a04:4e42:400::396",
+      "2a04:4e42:600::396",
+      "2a04:4e42:200::396"
     ],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "aspmx3.googlemail.com (pref 10)",
       "aspmx2.googlemail.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx3.googlemail.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
       "ns-378.awsdns-47.com.",
@@ -162,36 +162,40 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "ns-1887.awsdns-43.co.uk.",
       "ns-557.awsdns-05.net."
     ],
+    "caa": [
+      "0 issue \"pki.goog\"",
+      "0 issue \"digicert.com; cansignhttpexchanges=yes\""
+    ],
     "spf": [
-      "atlassian-domain-verification=aGWDxGvt+oY3p7qTWt5v2uJDVJkoJAeHxwGqKmGQLMEsUXUJJe/Pm/k+GGNPpn6M",
-      "MS=ms71041902",
+      "google-site-verification=zZHozYbAJmSLOMG4OjQFoHiVqkxtdgvyBzsE7wUGFiw",
+      "00DV90000052YKT=1TBV90000000AsD",
+      "jetbrains-domain-verification=bjn7o9fxbduga0omhaepeewtx",
       "yahoo-verification-key=I0We5FayJi0Q8XdjDgE5oN0ujM08heSVe46o/FvsMkk=",
-      "protonmail-verification=24cb91442caf54c8b820f4a0347292f143531210",
-      "atlassian-domain-verification=vBaV6PXyyu4OAPLiQFbxFMCboSTjoR/qxKJ2OlpI46ZEpZL/FVTIfMlgoM5Hy9eY",
+      "00Dbf000005OCTN=1TBbf0000000Mer",
+      "google-site-verification=0uv13-wxlHK8FFKaUpgzyrVmL1YdNYW6v3PupLdw3JI",
+      "twilio-domain-verification=5e37855d7c9445e967b31c5e0371ebb5",
+      "00Do0000000I6Pa=1TBcv0000000HQh",
+      "614ac4be-8664-4cea-8e29-f84d08ad875c",
+      "apple-domain-verification=qC3rSSKrh10DoMI7",
+      "atlassian-domain-verification=aGWDxGvt+oY3p7qTWt5v2uJDVJkoJAeHxwGqKmGQLMEsUXUJJe/Pm/k+GGNPpn6M",
+      "box-domain-verification=95c33f4ee4b11d8827190dbc5371ca7df25b961019116e5565ce4aa36de9be3a",
+      "00Dbf000005OCRl=1TBbf0000000MJt",
       "docusign=6ba0c5a9-5a5e-41f8-a7c8-8b4c6e35c10c",
       "liveramp-site-verification=hNZ5ZAy1ufTpXrpCELrrtSzTlb4KU4h7UtDPpZdj9XA",
-      "v=spf1 include:spf0.reddit.com -all",
-      "cursor-domain-verification-f9fw38=WVB8yAMGTZXO7Je9DLuj1DIZB",
-      "stripe-verification=9bd70dd1884421b47f596fea301e14838c9825cdba5b209990968fdc6f8010c7",
-      "jetbrains-domain-verification=bjn7o9fxbduga0omhaepeewtx",
-      "box-domain-verification=95c33f4ee4b11d8827190dbc5371ca7df25b961019116e5565ce4aa36de9be3a",
-      "postman-domain-verification=ad4c89daaf83d06f70cb6e8737cb323b039aeaae9e0e288c75081b0a715812a2d30e7c31402da867c70287ad8216da42074ffe7b4fcfcbf86f9316301329308f",
       "jamf-site-verification=EGK11tNR4hezQg0jZaIDpA",
-      "google-site-verification=zZHozYbAJmSLOMG4OjQFoHiVqkxtdgvyBzsE7wUGFiw",
-      "00Dbf000005OCTN=1TBbf0000000Mer",
-      "google-site-verification=oh_YJE560y0e6FHP1RT7NIjyTlBhACNMvD2EgSss0sc",
-      "apple-domain-verification=qC3rSSKrh10DoMI7",
-      "a5897185-49e1-4181-9065-51bd24737466",
-      "onetrust-domain-verification=6b98ba3dd087405399bbf45b6cbdcd37",
-      "00Do0000000I6Pa=1TBcv0000000HQh",
-      "00DV90000052YKT=1TBV90000000AsD",
-      "google-site-verification=QO4VY1PRzsG-MxiQn3j0kxd_ZaFjcTk6MWBfKru0_5I",
-      "stripe-verification=80aa7e2c9775fee2653f61b04b46da6fd227b56fecd9499e5f63cd0dcf563984",
-      "google-site-verification=0uv13-wxlHK8FFKaUpgzyrVmL1YdNYW6v3PupLdw3JI",
+      "cursor-domain-verification-f9fw38=WVB8yAMGTZXO7Je9DLuj1DIZB",
       "google-site-verification=5Qzlkl8HJJSBKnMI7rQGDr9Sgiir4Ey6klx1rWQCJ2M",
-      "twilio-domain-verification=5e37855d7c9445e967b31c5e0371ebb5",
-      "00Dbf000005OCRl=1TBbf0000000MJt",
-      "614ac4be-8664-4cea-8e29-f84d08ad875c"
+      "onetrust-domain-verification=6b98ba3dd087405399bbf45b6cbdcd37",
+      "a5897185-49e1-4181-9065-51bd24737466",
+      "google-site-verification=oh_YJE560y0e6FHP1RT7NIjyTlBhACNMvD2EgSss0sc",
+      "protonmail-verification=24cb91442caf54c8b820f4a0347292f143531210",
+      "stripe-verification=9bd70dd1884421b47f596fea301e14838c9825cdba5b209990968fdc6f8010c7",
+      "MS=ms71041902",
+      "postman-domain-verification=ad4c89daaf83d06f70cb6e8737cb323b039aeaae9e0e288c75081b0a715812a2d30e7c31402da867c70287ad8216da42074ffe7b4fcfcbf86f9316301329308f",
+      "google-site-verification=QO4VY1PRzsG-MxiQn3j0kxd_ZaFjcTk6MWBfKru0_5I",
+      "atlassian-domain-verification=vBaV6PXyyu4OAPLiQFbxFMCboSTjoR/qxKJ2OlpI46ZEpZL/FVTIfMlgoM5Hy9eY",
+      "stripe-verification=80aa7e2c9775fee2653f61b04b46da6fd227b56fecd9499e5f63cd0dcf563984",
+      "v=spf1 include:spf0.reddit.com -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; ruf=mailto:reddit@us.cp-dmarc.com; rua=mailto:reddit@us.cp-dmarc.com"
@@ -275,11 +279,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "atlassian-domain-verification=aGWDxGvt+oY3p7qTWt5v2uJDVJkoJAeHxwGqKmGQLMEsUXUJJe",
+    "google-site-verification=zZHozYbAJmSLOMG4OjQFoHiVqkxtdgvyBzsE7wUGFiw",
+    "jetbrains-domain-verification=bjn7o9fxbduga0omhaepeewtx",
     "yahoo-verification-key=I0We5FayJi0Q8XdjDgE5oN0ujM08heSVe46o/FvsMkk=",
-    "protonmail-verification=24cb91442caf54c8b820f4a0347292f143531210",
-    "atlassian-domain-verification=vBaV6PXyyu4OAPLiQFbxFMCboSTjoR/qxKJ2OlpI46ZEpZL/FV",
-    "liveramp-site-verification=hNZ5ZAy1ufTpXrpCELrrtSzTlb4KU4h7UtDPpZdj9XA"
+    "google-site-verification=0uv13-wxlHK8FFKaUpgzyrVmL1YdNYW6v3PupLdw3JI",
+    "twilio-domain-verification=5e37855d7c9445e967b31c5e0371ebb5"
   ],
   "tls2": {
     "alpn": "",
@@ -290,10 +294,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.digicert.com",
       "not_before": "20260821000000",
       "not_after": "20270216235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "hsts_preloaded": true,
@@ -304,8 +309,24 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 12.9,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.reddit.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 15.9,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -315,4 +336,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

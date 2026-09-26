@@ -7,12 +7,12 @@
 | Target | https://tripadvisor.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | tripadvisor.com |
-| Test date | 2026-09-26 19:00 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,12 +27,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 9 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 10 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 11 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 12 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 16 | info | CT1 | 125 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 17 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 17 | info | CT1 | 125 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 18 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -106,14 +107,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: stripe-verification=A71BECF4CEF430F171A6A2382BEECE6A64B9633FC460020EB8A205A95669; anthropic-domain-verification-pc5mq6=ebxPo8aNNofNaqlqU65hyJHjA; bugcrowd-verification=4889742e219d4b280f2d3673d147a6a9
+- **Detail:** Apex TXT records with verification/token content: protonmail-verification=5e35a64e327cebe41439dc21e8657f78970c051a; pendo-domain-verification=M8PpCcCrkPq-ll2Fr1arfZA1YvI; docker-verification=a6e2315b-2f86-428a-84d7-52270aea1853
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 12. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of tripadvisor.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m04.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 13. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
@@ -133,13 +134,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** 65.9.180.28 carries PTR server-65-9-180-28.tpe53.r.cloudfront.net. for tripadvisor.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 16. [INFO] 125 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for tripadvisor.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 17. [INFO] 125 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.a.tripadvisor.com, api.b.tripadvisor.com, api.content.tripadvisor.com, api.tripadvisor.com, api.w.tripadvisor.com, cdn.tripadvisor.com, certificate-requestor.ops.tripadvisor.com, docs.terra.tripadvisor.com, els-cerebro-ashburn.ops.tripadvisor.com, els-kibana1-ashburn.ops.tripadvisor.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 17. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 18. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: api.a.tripadvisor.com; content may still be served via virtual-host fallback.
@@ -153,8 +160,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "dns": {
     "a": [
       "65.9.180.28",
-      "65.9.180.51",
       "65.9.180.34",
+      "65.9.180.51",
       "65.9.180.77"
     ],
     "aaaa": [],
@@ -164,52 +171,53 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     ],
     "ns": [
       "ns-584.awsdns-09.net.",
-      "ns-1455.awsdns-53.org.",
       "ns-1702.awsdns-20.co.uk.",
+      "ns-1455.awsdns-53.org.",
       "ns-218.awsdns-27.com."
     ],
+    "caa": [],
     "spf": [
-      "bnyGlxykTsBZSdNWWe3jXJ5tVU2U7gsTx6UjsZyIpHk=",
-      "stripe-verification=A71BECF4CEF430F171A6A2382BEECE6A64B9633FC460020EB8A205A95669B679",
-      "sprout-social-85a564fb-ff50-11ef-b8c4-0e418c465417",
-      "anthropic-domain-verification-pc5mq6=ebxPo8aNNofNaqlqU65hyJHjA",
-      "MS=ms43904515",
-      "datadome-domain-verify=LtwSY8f9UsuWkflYriVEN5xJW7jb1OGB",
-      "bugcrowd-verification=4889742e219d4b280f2d3673d147a6a9",
-      "onetrust-domain-verification=9214adc265ab47e992a332150c6a315b",
-      "MS=E0371C101EE1151078A9F24A7375E7021319CF9E",
-      "atlassian-domain-verification=w2N0fg0r/RRZCQ7UgNfpKKFXJH1kvCtLacvj/HzML7VZYyhEDT7N1skt744NCyxJ",
-      "spf2.0/pra",
-      "v=spf1 include:_spf.tripadvisor.com include:mail.zendesk.com ~all",
-      "_2erojipq9p68ygptyqgypy83ah2dnzz",
-      "perplexity-ai-domain-verification-2hn78f=hnjr1IgErK6Rjhxpscmyv9Ztq",
-      "facebook-domain-verification=rld5ayte5pgnngj4ljg2ovn3kaeo4q",
-      "openai-domain-verification=dv-5I8xhFhqZatLn3rbDbmtgpc2",
+      "protonmail-verification=5e35a64e327cebe41439dc21e8657f78970c051a",
+      "pendo-domain-verification=M8PpCcCrkPq-ll2Fr1arfZA1YvI",
       "asv=d902c0e169042b928445d5bc9a610e24",
-      "bitrise-verification=b03d9c7c59423f9c-nSSshb2Ef1iv",
-      "docusign=4c82afdc-4187-4e03-9e78-8dbdc5ed7d0d",
+      "_18y5y646xcsfq732og6fu2xmgabh125",
+      "docker-verification=a6e2315b-2f86-428a-84d7-52270aea1853",
       "google-site-verification=u10Ue1BCmah8YviQ9Ju9IqSP-xZtlgEnBloxhP5Lhn8",
+      "cursor-domain-verification-bwta0g=rGWNgTQrx8pQ3A5XE0S1XxKzM",
       "miro-verification=6ff1de40e337f458d05086183318e55305c99fe1",
       "segment-site-verification=Lv56Wm7ECxH2FrJtoG9FmQ77Co6nf93L",
-      "docusign=f4d14366-23f0-482a-bc08-98b15bd25db6",
-      "cisco-ci-domain-verification=6de74e9c24339dc358b099e999ca47c34dd162c04f635f9810372e2000ad9f57",
-      "twilio-domain-verification=57fba14b7bba9c1c99652540a081cc79",
-      "b4jddSWKFAZrS-Y8QD1o7T2nzdk",
-      "duo_sso_verification=N763Lu3Yt0ygaRnHrvqziKZ7YVtOU95w7GXyHhCljSOT7d1KVi7z2TSRd5BR4a3Q",
-      "zapier-domain-verification-challenge=e7c8b772-89e7-420e-b76b-3a084b0bbf83",
       "jetbrains-domain-verification=5zlraawspitiqhi2hp4wizy31",
-      "docker-verification=a6e2315b-2f86-428a-84d7-52270aea1853",
-      "astro-domain-verification=cmhtl2g8213y801lqzjo38fe8",
-      "protonmail-verification=5e35a64e327cebe41439dc21e8657f78970c051a",
-      "cursor-domain-verification-bwta0g=rGWNgTQrx8pQ3A5XE0S1XxKzM",
-      "_18y5y646xcsfq732og6fu2xmgabh125",
+      "zapier-domain-verification-challenge=e7c8b772-89e7-420e-b76b-3a084b0bbf83",
       "jamf-site-verification=Ac2uXdbieW6reJXv2o4UQw",
-      "pendo-domain-verification=M8PpCcCrkPq-ll2Fr1arfZA1YvI",
-      "teamviewer-sso-verification=b42c480c302645eb8ed8f32688556be4",
+      "_globalsign-domain-verification=GaLfs98jrznUbwIzD2n4S8pINM0PU-EyBVWkTTQvp9",
       "pardot_211512_*=005e7416cb39efdf4ede9f02352c05fe01bf0e6c5435039550bdab7d707cae58",
+      "sprout-social-85a564fb-ff50-11ef-b8c4-0e418c465417",
+      "docusign=f4d14366-23f0-482a-bc08-98b15bd25db6",
+      "MS=E0371C101EE1151078A9F24A7375E7021319CF9E",
+      "astro-domain-verification=cmhtl2g8213y801lqzjo38fe8",
+      "onetrust-domain-verification=9214adc265ab47e992a332150c6a315b",
+      "docusign=4c82afdc-4187-4e03-9e78-8dbdc5ed7d0d",
+      "v=spf1 include:_spf.tripadvisor.com include:mail.zendesk.com ~all",
+      "facebook-domain-verification=rld5ayte5pgnngj4ljg2ovn3kaeo4q",
+      "twilio-domain-verification=57fba14b7bba9c1c99652540a081cc79",
+      "anthropic-domain-verification-pc5mq6=ebxPo8aNNofNaqlqU65hyJHjA",
+      "datadome-domain-verify=LtwSY8f9UsuWkflYriVEN5xJW7jb1OGB",
       "apple-domain-verification=jtPwxHyUkw7GVjBd",
+      "teamviewer-sso-verification=b42c480c302645eb8ed8f32688556be4",
+      "bitrise-verification=b03d9c7c59423f9c-nSSshb2Ef1iv",
+      "bugcrowd-verification=4889742e219d4b280f2d3673d147a6a9",
+      "openai-domain-verification=dv-5I8xhFhqZatLn3rbDbmtgpc2",
+      "MS=ms43904515",
+      "b4jddSWKFAZrS-Y8QD1o7T2nzdk",
+      "atlassian-domain-verification=w2N0fg0r/RRZCQ7UgNfpKKFXJH1kvCtLacvj/HzML7VZYyhEDT7N1skt744NCyxJ",
+      "_2erojipq9p68ygptyqgypy83ah2dnzz",
       "google-site-verification=XMWC5EUo1s-TCtWPBEwzBDLUHqlmf-UcS-t7E8YRlmw",
-      "_globalsign-domain-verification=GaLfs98jrznUbwIzD2n4S8pINM0PU-EyBVWkTTQvp9"
+      "bnyGlxykTsBZSdNWWe3jXJ5tVU2U7gsTx6UjsZyIpHk=",
+      "perplexity-ai-domain-verification-2hn78f=hnjr1IgErK6Rjhxpscmyv9Ztq",
+      "stripe-verification=A71BECF4CEF430F171A6A2382BEECE6A64B9633FC460020EB8A205A95669B679",
+      "duo_sso_verification=N763Lu3Yt0ygaRnHrvqziKZ7YVtOU95w7GXyHhCljSOT7d1KVi7z2TSRd5BR4a3Q",
+      "spf2.0/pra",
+      "cisco-ci-domain-verification=6de74e9c24339dc358b099e999ca47c34dd162c04f635f9810372e2000ad9f57"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-rua@tripadvisor.com; ruf=mailto:dmarc-ruf@tripadvisor.com"
@@ -374,11 +382,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     ]
   },
   "apex_txt": [
-    "stripe-verification=A71BECF4CEF430F171A6A2382BEECE6A64B9633FC460020EB8A205A95669",
-    "anthropic-domain-verification-pc5mq6=ebxPo8aNNofNaqlqU65hyJHjA",
-    "bugcrowd-verification=4889742e219d4b280f2d3673d147a6a9",
-    "onetrust-domain-verification=9214adc265ab47e992a332150c6a315b",
-    "atlassian-domain-verification=w2N0fg0r/RRZCQ7UgNfpKKFXJH1kvCtLacvj/HzML7VZYyhEDT"
+    "protonmail-verification=5e35a64e327cebe41439dc21e8657f78970c051a",
+    "pendo-domain-verification=M8PpCcCrkPq-ll2Fr1arfZA1YvI",
+    "docker-verification=a6e2315b-2f86-428a-84d7-52270aea1853",
+    "google-site-verification=u10Ue1BCmah8YviQ9Ju9IqSP-xZtlgEnBloxhP5Lhn8",
+    "cursor-domain-verification-bwta0g=rGWNgTQrx8pQ3A5XE0S1XxKzM"
   ],
   "tls2": {
     "alpn": "",
@@ -389,10 +397,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
       "not_before": "20260819000000",
       "not_after": "20270304235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -419,8 +428,20 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "server-65-9-180-28.tpe53.r.cloudfront.net."
     ]
   },
-  "elapsed_s": 10.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.tripadvisor.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 12.1,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -430,4 +451,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

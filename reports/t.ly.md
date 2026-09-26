@@ -7,12 +7,12 @@
 | Target | https://t.ly/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | t.ly |
-| Test date | 2026-09-26 19:00 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:16 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
+Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,7 +33,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 18 | info | CT1 | 4 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 18 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 19 | info | CT1 | 4 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -46,13 +47,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.20.6.133:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.20.7.133:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.20.6.133:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.20.7.133:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -124,7 +125,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg; google-site-verification=mBi24EbWStadX31zb-0MRYyAHCvogI_TdLFHFh4ULSk; ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e1
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=mBi24EbWStadX31zb-0MRYyAHCvogI_TdLFHFh4ULSk; ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e1; google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -145,7 +146,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. Sitemap:
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 18. [INFO] 4 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkkr7m7bgr96cx.html -> 404; error page/headers match: Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 19. [INFO] 4 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.t.ly
@@ -158,31 +165,43 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
   "domain": "t.ly",
   "dns": {
     "a": [
-      "104.20.6.133",
-      "104.20.7.133"
+      "104.20.7.133",
+      "104.20.6.133"
     ],
     "aaaa": [
-      "2606:4700:10::6814:685",
-      "2606:4700:10::6814:785"
+      "2606:4700:10::6814:785",
+      "2606:4700:10::6814:685"
     ],
     "cname": null,
     "mx": [
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "s76xmsvkv53zk4mecsx6vhsxovktess7wypymzdgrh3ajpxofa4a.mx-verification.google.com (pref 15)",
       "alt4.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)"
+      "aspmx.l.google.com (pref 1)",
+      "s76xmsvkv53zk4mecsx6vhsxovktess7wypymzdgrh3ajpxofa4a.mx-verification.google.com (pref 15)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
       "vida.ns.cloudflare.com.",
       "ivan.ns.cloudflare.com."
     ],
+    "caa": [
+      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issue \"ssl.com\"",
+      "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issuewild \"ssl.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issuewild \"comodoca.com\"",
+      "0 issue \"comodoca.com\"",
+      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issuewild \"pki.goog; cansignhttpexchanges=yes\""
+    ],
     "spf": [
-      "v=spf1 include:_spf.google.com ~all",
-      "google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg",
       "google-site-verification=mBi24EbWStadX31zb-0MRYyAHCvogI_TdLFHFh4ULSk",
-      "ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e18f2077315"
+      "v=spf1 include:_spf.google.com ~all",
+      "ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e18f2077315",
+      "google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; rua=mailto:postmaster@t.ly"
@@ -212,7 +231,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
     }
   },
   "ports": {
-    "ip": "104.20.6.133",
+    "ip": "104.20.7.133",
     "open": [
       8080,
       8443
@@ -279,9 +298,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
     ]
   },
   "apex_txt": [
-    "google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg",
     "google-site-verification=mBi24EbWStadX31zb-0MRYyAHCvogI_TdLFHFh4ULSk",
-    "ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e1"
+    "ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e1",
+    "google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg"
   ],
   "tls2": {
     "alpn": "",
@@ -305,8 +324,18 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 11.4,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 13.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -316,4 +345,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

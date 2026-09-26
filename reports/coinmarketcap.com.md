@@ -7,12 +7,12 @@
 | Target | https://coinmarketcap.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | coinmarketcap.com |
-| Test date | 2026-09-26 18:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
+Total findings: **17** (High: 0, Medium: 0, Low: 1, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -23,13 +23,16 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 | 5 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 6 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 7 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 8 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 8 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 9 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 10 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 11 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 | 12 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 14 | info | CT1 | 20 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 14 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 15 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 17 | info | CT1 | 20 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -74,14 +77,14 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 ### 7. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=c9mql15ejmnw7ti6tks95kx46ks3jo; google-site-verification=h8XSgzWPJa4QZP3ZmMafldNHevrcSYnWyc5RPiEvCBQ; yandex-verification: fcfc1e0853947ee6
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=Vf_mqov516xuQRQ_br3FlVER8PrZ_CaaB1OUruEjn84; yandex-verification: fcfc1e0853947ee6; ahrefs-site-verification_86f2f08131d8239e3a4d73b0179d556eae74fa62209b410a64ff348
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 8. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 8. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of coinmarketcap.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m04.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 9. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
@@ -113,7 +116,25 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 - **Detail:** 3.169.121.26 carries PTR server-3-169-121-26.tpe53.r.cloudfront.net. for coinmarketcap.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 14. [INFO] 20 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 14. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkxv7f565iazux.html -> 404; error page/headers match: Nginx, CloudFront.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 15. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on coinmarketcap.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for coinmarketcap.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 17. [INFO] 20 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: beta.coinmarketcap.com, staging.coinmarketcap.com, status.coinmarketcap.com, support.coinmarketcap.com
@@ -134,31 +155,32 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt3.aspmx.l.google.com (pref 10)",
-      "mxa-00784a01.gslb.pphosted.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "mxb-00784a01.gslb.pphosted.com (pref 1)",
-      "alt4.aspmx.l.google.com (pref 10)"
+      "mxa-00784a01.gslb.pphosted.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-763.awsdns-31.net.",
+      "ns-52.awsdns-06.com.",
       "ns-1254.awsdns-28.org.",
       "ns-2024.awsdns-61.co.uk.",
-      "ns-52.awsdns-06.com."
+      "ns-763.awsdns-31.net."
     ],
+    "caa": [],
     "spf": [
-      "facebook-domain-verification=c9mql15ejmnw7ti6tks95kx46ks3jo",
-      "google-site-verification=h8XSgzWPJa4QZP3ZmMafldNHevrcSYnWyc5RPiEvCBQ",
-      "yandex-verification: fcfc1e0853947ee6",
-      "google-site-verification=TcF0PnxBx5EyLHzPGz_rarl75Ea3HIHcbaO3PP7cT8s",
-      "google-site-verification=T5ZnzNMTvLb5kdKlwTCCJUQKWXcfgiYPkr4H8O3NmNg",
-      "atlassian-domain-verification=YT8U29m9J7i85eaznD4fr4n9PfcN/w3j/ZqlVYs2vG15VWL2NNcS9c1jkIc/BP3W",
-      "ahrefs-site-verification_86f2f08131d8239e3a4d73b0179d556eae74fa62209b410a64ff348f74e711ea",
-      "v=spf1 include:_spf.google.com include:sendgrid.net include:mail.zendesk.com include:emsd1.com include:spf-00784a01.pphosted.com -all",
-      "google-site-verification=hqUA9mBjH57N_FIJV4vkjlh_vuTGsNYJV8bErIT9izs",
-      "google-site-verification=nt91clIDjoi6MbZjqG__pGlylJVSQA6ZnoenJzdWwEU",
       "google-site-verification=Vf_mqov516xuQRQ_br3FlVER8PrZ_CaaB1OUruEjn84",
+      "yandex-verification: fcfc1e0853947ee6",
+      "ahrefs-site-verification_86f2f08131d8239e3a4d73b0179d556eae74fa62209b410a64ff348f74e711ea",
+      "google-site-verification=hqUA9mBjH57N_FIJV4vkjlh_vuTGsNYJV8bErIT9izs",
+      "google-site-verification=T5ZnzNMTvLb5kdKlwTCCJUQKWXcfgiYPkr4H8O3NmNg",
+      "google-site-verification=h8XSgzWPJa4QZP3ZmMafldNHevrcSYnWyc5RPiEvCBQ",
+      "atlassian-domain-verification=YT8U29m9J7i85eaznD4fr4n9PfcN/w3j/ZqlVYs2vG15VWL2NNcS9c1jkIc/BP3W",
+      "v=MCPv1; k=ed25519; p=Xk7wX7xqTt6MDBN0Ub8A451MVUwvawWNy9364316K24=",
       "apple-domain-verification=IpY-v5shWd9KVeDzJPS8r0okeTIwMlDkyLmF6cNAd_w",
-      "v=MCPv1; k=ed25519; p=Xk7wX7xqTt6MDBN0Ub8A451MVUwvawWNy9364316K24="
+      "google-site-verification=TcF0PnxBx5EyLHzPGz_rarl75Ea3HIHcbaO3PP7cT8s",
+      "facebook-domain-verification=c9mql15ejmnw7ti6tks95kx46ks3jo",
+      "google-site-verification=nt91clIDjoi6MbZjqG__pGlylJVSQA6ZnoenJzdWwEU",
+      "v=spf1 include:_spf.google.com include:sendgrid.net include:mail.zendesk.com include:emsd1.com include:spf-00784a01.pphosted.com -all"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;sp=reject;pct=100;rua=mailto:david.k@coinmarketcap.com;ruf=mailto:derek.li@coinmarketcap.com;ri=86400;aspf=s;adkim=s;fo=1"
@@ -275,10 +297,10 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
     ]
   },
   "apex_txt": [
-    "facebook-domain-verification=c9mql15ejmnw7ti6tks95kx46ks3jo",
-    "google-site-verification=h8XSgzWPJa4QZP3ZmMafldNHevrcSYnWyc5RPiEvCBQ",
+    "google-site-verification=Vf_mqov516xuQRQ_br3FlVER8PrZ_CaaB1OUruEjn84",
     "yandex-verification: fcfc1e0853947ee6",
-    "google-site-verification=TcF0PnxBx5EyLHzPGz_rarl75Ea3HIHcbaO3PP7cT8s",
+    "ahrefs-site-verification_86f2f08131d8239e3a4d73b0179d556eae74fa62209b410a64ff348",
+    "google-site-verification=hqUA9mBjH57N_FIJV4vkjlh_vuTGsNYJV8bErIT9izs",
     "google-site-verification=T5ZnzNMTvLb5kdKlwTCCJUQKWXcfgiYPkr4H8O3NmNg"
   ],
   "tls2": {
@@ -290,10 +312,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
       "not_before": "20260629000000",
       "not_after": "20270112235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -317,8 +340,23 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "server-3-169-121-26.tpe53.r.cloudfront.net."
     ]
   },
-  "elapsed_s": 9.2,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 8.2,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -328,4 +366,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

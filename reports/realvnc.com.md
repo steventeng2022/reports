@@ -7,12 +7,12 @@
 | Target | https://realvnc.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | realvnc.com |
-| Test date | 2026-09-26 18:58 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:14 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
+Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,8 +27,10 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 | 9 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
 | 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 12 | info | CT1 | 36 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 13 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 12 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 13 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 14 | info | CT1 | 36 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 15 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -93,7 +95,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=sinri451xxlUIP8XWzq2cnLcose6D3rZtQoTjN22urg; google-site-verification=1I3HJkpW6bKhSSPJBqQL0R8R2agif2aAwy-QsQl9Xe0; figma-domain-verification=4e46cf4c9d9aaec25262e168b0999452d5500da424414abfb1798c
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=VqytxEFfE2GGlJ_wNobagFkF_nWWGAaBalXVwGBq4Yg; atlassian-domain-verification=rslHtzOI5sqZJkCLg1ZQjp0qtLMeJMmphVrMsb925dxb2QQVv7; google-site-verification=8R_EB8SYuQWmxdEKJXObSq5BMXuZM2WXwT1uNZGMeOA
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -102,13 +104,25 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 - **Detail:** Certificate of realvnc.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 12. [INFO] 36 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 12. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on realvnc.com indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 13. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xk86pwjyf2hw4s.html -> 403; error page/headers match: Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 14. [INFO] 36 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.realvnc.com, dev.realvnc.com, docs.realvnc.com, help.realvnc.com, static.realvnc.com, status.realvnc.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 13. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 15. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: dev.realvnc.com; content may still be served via virtual-host fallback.
@@ -129,27 +143,42 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "realvnc-com.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "ns-107.awsdns-13.com.",
-      "ns-1126.awsdns-12.org.",
       "ns-697.awsdns-23.net.",
-      "ns-1853.awsdns-39.co.uk."
+      "ns-107.awsdns-13.com.",
+      "ns-1853.awsdns-39.co.uk.",
+      "ns-1126.awsdns-12.org."
+    ],
+    "caa": [
+      "0 iodef \"mailto:sslcerts@realvnc.com\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issue \"sectigo.com\"",
+      "0 issue \"digicert.com\"",
+      "0 issue \"symantec.com\"",
+      "0 issuewild \"symantec.com\"",
+      "0 issuewild \"amazon.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issuewild \"pki.goog\"",
+      "0 issuewild \"digicert.com\"",
+      "0 issue \"pki.goog\"",
+      "0 issuewild \"sectigo.com\"",
+      "0 issue \"letsencrypt.org\""
     ],
     "spf": [
-      "google-site-verification=sinri451xxlUIP8XWzq2cnLcose6D3rZtQoTjN22urg",
-      "google-site-verification=1I3HJkpW6bKhSSPJBqQL0R8R2agif2aAwy-QsQl9Xe0",
+      "google-site-verification=VqytxEFfE2GGlJ_wNobagFkF_nWWGAaBalXVwGBq4Yg",
+      "bw=tsczM6ieOZ17wC3dKOHNMGYejzemjsd8DGyziHuAFUdK",
+      "atlassian-domain-verification=rslHtzOI5sqZJkCLg1ZQjp0qtLMeJMmphVrMsb925dxb2QQVv7atnG23AoAnAUSx",
+      "google-site-verification=8R_EB8SYuQWmxdEKJXObSq5BMXuZM2WXwT1uNZGMeOA",
       "figma-domain-verification=4e46cf4c9d9aaec25262e168b0999452d5500da424414abfb1798c4fe9233e61-1771502323",
+      "v=spf1 include:spf1.realvnc.com mx a ip4:85.118.25.224/28 ip4:64.253.40.208/28 ip4:146.101.15.112/28 ip4:146.101.60.64/29 ip4:146.101.60.80/29 ip4:146.101.16.120/29 ip4:93.89.140.48/28 include:mail.zendesk.com -all",
       "access-domain-verification=c9c536439a4535e8d8dffbcb8abdeaa71e9e799dcd926e0ee962c98bc1061033",
       "anthropic-domain-verification-wk26mc=QzCmNWzkRB3fh4mHpDBWe2FdT",
       "asv=309ccc5adc09d2464ac2665e9974075c",
-      "pmpI7p6",
-      "atlassian-domain-verification=rslHtzOI5sqZJkCLg1ZQjp0qtLMeJMmphVrMsb925dxb2QQVv7atnG23AoAnAUSx",
-      "v=spf1 include:spf1.realvnc.com mx a ip4:85.118.25.224/28 ip4:64.253.40.208/28 ip4:146.101.15.112/28 ip4:146.101.60.64/29 ip4:146.101.60.80/29 ip4:146.101.16.120/29 ip4:93.89.140.48/28 include:mail.zendesk.com -all",
       "apple-domain-verification=C1oCsNHCV8WFlmUQ",
-      "Z9jkaFYlj+FbMMAK6DLQAWsT6FnAfMtRTL6T+BUM/mplV6PYR7mVhRL2nOm1DsZK2b2gv9PMa5XUVjwtcc5q9A==",
-      "google-site-verification=8R_EB8SYuQWmxdEKJXObSq5BMXuZM2WXwT1uNZGMeOA",
+      "google-site-verification=1I3HJkpW6bKhSSPJBqQL0R8R2agif2aAwy-QsQl9Xe0",
+      "google-site-verification=sinri451xxlUIP8XWzq2cnLcose6D3rZtQoTjN22urg",
       "openai-domain-verification=dv-WWEnkwoxDzw6l2qb8mJXwuYh",
-      "bw=tsczM6ieOZ17wC3dKOHNMGYejzemjsd8DGyziHuAFUdK",
-      "google-site-verification=VqytxEFfE2GGlJ_wNobagFkF_nWWGAaBalXVwGBq4Yg"
+      "pmpI7p6",
+      "Z9jkaFYlj+FbMMAK6DLQAWsT6FnAfMtRTL6T+BUM/mplV6PYR7mVhRL2nOm1DsZK2b2gv9PMa5XUVjwtcc5q9A=="
     ],
     "dmarc": [
       "v=DMARC1; p=reject; ruf=mailto:dmarcfail@realvnc.com; rua=mailto:dmarcrep@realvnc.com; adkim=r; aspf=r; fo=1"
@@ -274,11 +303,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
     ]
   },
   "apex_txt": [
-    "google-site-verification=sinri451xxlUIP8XWzq2cnLcose6D3rZtQoTjN22urg",
-    "google-site-verification=1I3HJkpW6bKhSSPJBqQL0R8R2agif2aAwy-QsQl9Xe0",
+    "google-site-verification=VqytxEFfE2GGlJ_wNobagFkF_nWWGAaBalXVwGBq4Yg",
+    "atlassian-domain-verification=rslHtzOI5sqZJkCLg1ZQjp0qtLMeJMmphVrMsb925dxb2QQVv7",
+    "google-site-verification=8R_EB8SYuQWmxdEKJXObSq5BMXuZM2WXwT1uNZGMeOA",
     "figma-domain-verification=4e46cf4c9d9aaec25262e168b0999452d5500da424414abfb1798c",
-    "access-domain-verification=c9c536439a4535e8d8dffbcb8abdeaa71e9e799dcd926e0ee962c",
-    "anthropic-domain-verification-wk26mc=QzCmNWzkRB3fh4mHpDBWe2FdT"
+    "access-domain-verification=c9c536439a4535e8d8dffbcb8abdeaa71e9e799dcd926e0ee962c"
   ],
   "tls2": {
     "alpn": "",
@@ -297,8 +326,18 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
   "x12": {
     "status": 403
   },
-  "elapsed_s": 6.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 403,
+    "http_status": 301,
+    "p404_status": 403,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 6.3,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -308,4 +347,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

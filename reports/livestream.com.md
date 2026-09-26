@@ -7,12 +7,12 @@
 | Target | https://livestream.com/ |
 | Bug bounty program | Livestream |
 | Listed scope domain | livestream.com |
-| Test date | 2026-09-26 18:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:10 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 16 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 19 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 20 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
+| 21 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -146,7 +149,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: dropbox-domain-verification=g1g5m0cy8q3x; google-site-verification=dES26MRmYRt0D4yxeJTO_b87PBNczwPUvtZXES7k5-M; google-site-verification=tcTpPh4ch-mzo5VaOmPFwsgiw2LlGfMDX62sbleUzP8
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=dES26MRmYRt0D4yxeJTO_b87PBNczwPUvtZXES7k5-M; google-site-verification=63C3Iuzm8PQ6Et4kr5GhGgTEg44iJ5Hh10Z8pmGrnQM; atlassian-domain-verification=OQUW8wO6JYgjdHThsMyRzUbqCNuYUJ1qA4ryjBsCIcdOFxvr5p
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -154,6 +157,24 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **CWE:** CWE-603
 - **Detail:** Certificate of livestream.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 19. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on livestream.com indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 20. [LOW] HTTPS root redirects to a different domain (`RD2`)
+
+- **CWE:** CWE-200
+- **Detail:** https://livestream.com/ answered 302 with Location: https://vimeo.com/features/livestreaming (cross-domain handoff at the entry point).
+- **Recommendation:** Review the cross-domain redirect; it discloses the real entry point and can be abused in open-redirect-style flows.
+
+### 21. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for livestream.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
 ## Evidence (raw response observations)
 
@@ -168,31 +189,32 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx2.googlemail.com (pref 40)",
-      "aspmx3.googlemail.com (pref 50)",
-      "aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 30)",
+      "aspmx.l.google.com (pref 10)",
+      "aspmx3.googlemail.com (pref 50)",
+      "aspmx2.googlemail.com (pref 40)",
       "alt1.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
+      "ns-1098.awsdns-09.org.",
       "ns-2025.awsdns-61.co.uk.",
-      "ns-667.awsdns-19.net.",
       "ns-305.awsdns-38.com.",
-      "ns-1098.awsdns-09.org."
+      "ns-667.awsdns-19.net."
     ],
+    "caa": [],
     "spf": [
-      "dropbox-domain-verification=g1g5m0cy8q3x",
       "google-site-verification=dES26MRmYRt0D4yxeJTO_b87PBNczwPUvtZXES7k5-M",
-      "google-site-verification=tcTpPh4ch-mzo5VaOmPFwsgiw2LlGfMDX62sbleUzP8",
       "google-site-verification=63C3Iuzm8PQ6Et4kr5GhGgTEg44iJ5Hh10Z8pmGrnQM",
+      "atlassian-domain-verification=OQUW8wO6JYgjdHThsMyRzUbqCNuYUJ1qA4ryjBsCIcdOFxvr5pFrW4Dt27ZDhLRq",
       "google-site-verification=hfoV62iPZ8P2lo-Bw5G4FaAPDRwSlxzcDmI_BWJgHmo",
+      "dropbox-domain-verification=g1g5m0cy8q3x",
       "google-site-verification=oAS5dgc5nQPljS4PiEdsO4unszDm9akoF6z1d8XY-IQ",
-      "globalsign-domain-verification=K9ZBZYNiNsNNOiaY2Tbjn-Bfe0dWwAwpstKoOOVJWO",
-      "google-site-verification=YkEQVePglv5Aq-sfJLiJw41ShuV4P-KiHFTU-1cFT5Y",
+      "google-site-verification=tcTpPh4ch-mzo5VaOmPFwsgiw2LlGfMDX62sbleUzP8",
       "ca3-d34f1a46f51d464fabed162be35e98fc",
-      "v=spf1 include:_spf.google.com include:mailgun.org include:servers.mcsv.net include:mail.zendesk.com -all",
       "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A",
-      "atlassian-domain-verification=OQUW8wO6JYgjdHThsMyRzUbqCNuYUJ1qA4ryjBsCIcdOFxvr5pFrW4Dt27ZDhLRq"
+      "globalsign-domain-verification=K9ZBZYNiNsNNOiaY2Tbjn-Bfe0dWwAwpstKoOOVJWO",
+      "v=spf1 include:_spf.google.com include:mailgun.org include:servers.mcsv.net include:mail.zendesk.com -all",
+      "google-site-verification=YkEQVePglv5Aq-sfJLiJw41ShuV4P-KiHFTU-1cFT5Y"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=none; pct=100; rua=mailto:0bf8497523a6913@rep.dmarcanalyzer.com; ruf=mailto:0bf8497523a6913@for.dmarcanalyzer.com; fo=1;"
@@ -284,11 +306,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "dropbox-domain-verification=g1g5m0cy8q3x",
     "google-site-verification=dES26MRmYRt0D4yxeJTO_b87PBNczwPUvtZXES7k5-M",
-    "google-site-verification=tcTpPh4ch-mzo5VaOmPFwsgiw2LlGfMDX62sbleUzP8",
     "google-site-verification=63C3Iuzm8PQ6Et4kr5GhGgTEg44iJ5Hh10Z8pmGrnQM",
-    "google-site-verification=hfoV62iPZ8P2lo-Bw5G4FaAPDRwSlxzcDmI_BWJgHmo"
+    "atlassian-domain-verification=OQUW8wO6JYgjdHThsMyRzUbqCNuYUJ1qA4ryjBsCIcdOFxvr5p",
+    "google-site-verification=hfoV62iPZ8P2lo-Bw5G4FaAPDRwSlxzcDmI_BWJgHmo",
+    "dropbox-domain-verification=g1g5m0cy8q3x"
   ],
   "tls2": {
     "alpn": "",
@@ -307,8 +329,19 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "x12": {
     "status": 302
   },
+  "x13": {
+    "root_status": 302,
+    "root_location": "https://vimeo.com/features/livestreaming",
+    "http_status": 302,
+    "p404_status": 302,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
   "elapsed_s": 5.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -318,4 +351,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

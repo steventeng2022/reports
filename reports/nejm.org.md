@@ -7,12 +7,12 @@
 | Target | https://nejm.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | nejm.org |
-| Test date | 2026-09-26 18:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:11 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
+Total findings: **22** (High: 0, Medium: 0, Low: 7, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,10 +32,12 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
 | 14 | low | MAIL7 | SPF include: points to unresolvable domain(s) | CWE-285 |
 | 15 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
 | 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 20 | info | CT1 | 73 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 21 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 22 | info | CT1 | 73 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -142,14 +144,14 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=NNeumMyMPkAxVMrj7qq1zrhVVGl/5usz/MXkCgRheK8j05h3hD; adobe-idp-site-verification=55cac8ffb5b23b50c94d629752efc925f61ea92c1254d16d8bd6; openai-domain-verification=dv-8uyHnjMDd4ZJ1w1CapYvN7jZ
+- **Detail:** Apex TXT records with verification/token content: onetrust-domain-verification=aea188f6772b4e0a9e7464f3a5d39d88; openai-domain-verification=dv-8uyHnjMDd4ZJ1w1CapYvN7jZ; anthropic-domain-verification-wxcd0c=BgSYxLEu4oZNGb1STL7CkvTPg
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 17. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of nejm.org has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m04.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
@@ -160,10 +162,22 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
 ### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 100.56.81.175 carries PTR ec2-100-56-81-175.compute-1.amazonaws.com. for nejm.org.
+- **Detail:** 34.194.248.53 carries PTR ec2-34-194-248-53.compute-1.amazonaws.com. for nejm.org.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 20. [INFO] 73 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for nejm.org, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 21. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The nejm.org certificate lists an AIA OCSP responder (http://ocsp.r2m04.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
+### 22. [INFO] 73 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: staging.ad.nejm.org, staging.catalyst-drsite.nejm.org, staging.prod.nejm.org, staging.qa.nejm.org, staging.voices.nejm.org, store.nejm.org
@@ -176,37 +190,38 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
   "domain": "nejm.org",
   "dns": {
     "a": [
-      "100.56.81.175",
       "34.194.248.53",
+      "100.56.81.175",
       "3.81.128.132"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "us-smtp-inbound-1.mimecast.com (pref 10)",
-      "us-smtp-inbound-2.mimecast.com (pref 10)"
+      "us-smtp-inbound-2.mimecast.com (pref 10)",
+      "us-smtp-inbound-1.mimecast.com (pref 10)"
     ],
     "ns": [
-      "ns-165.awsdns-20.com.",
-      "ns-928.awsdns-52.net.",
       "ns-1559.awsdns-02.co.uk.",
-      "ns-1284.awsdns-32.org."
+      "ns-165.awsdns-20.com.",
+      "ns-1284.awsdns-32.org.",
+      "ns-928.awsdns-52.net."
     ],
+    "caa": [],
     "spf": [
       "v=spf1 ip4:54.240.121.128/27 ip4:52.6.112.187 include:us._netblocks.mimecast.com include:spf.abila.info include:mail.zendesk.com ip4:74.220.145.8 ip4:74.203.48.0/23 ip4:74.203.57.0/24 ip4:174.46.206.0/23",
       " ip4:174.46.10.129/32 ip4:143.220.15.0/24 ip4:143.220.17.0/24 ip4:143.220.32.0/24 ip4:216.71.144.176 ip4:207.54.86.45 include:_spf.qualtrics.com include:amazonses.com ~all",
-      "atlassian-domain-verification=NNeumMyMPkAxVMrj7qq1zrhVVGl/5usz/MXkCgRheK8j05h3hDbEs6zZdYhHhGt8",
-      "0ed1fe018af5796b96adc34642aa2a42756ef1a82e",
-      "adobe-idp-site-verification=55cac8ffb5b23b50c94d629752efc925f61ea92c1254d16d8bd6f0affe96e97e",
-      "openai-domain-verification=dv-8uyHnjMDd4ZJ1w1CapYvN7jZ",
-      "onetrust-domain-verification=aea188f6772b4e0a9e7464f3a5d39d88",
-      "anthropic-domain-verification-wxcd0c=BgSYxLEu4oZNGb1STL7CkvTPg",
       "docusign=52095567-2918-44fb-ba89-2af8aa120c2b",
-      "xVXYh2htSzJmE6VkToy/aGAmNs8cxK2vV+6I70GL/zlQHSbfrd6n2vPKyYeokIK4okHucqCOzxF9J/FLb7VQZA==",
+      "6hszhhybwmrbh92rpj7m8rm8rclry7gs",
+      "onetrust-domain-verification=aea188f6772b4e0a9e7464f3a5d39d88",
+      "tz7y9ps639fshlhk6fmljls36vsgmsh2",
+      "0ed1fe018af5796b96adc34642aa2a42756ef1a82e",
+      "openai-domain-verification=dv-8uyHnjMDd4ZJ1w1CapYvN7jZ",
+      "anthropic-domain-verification-wxcd0c=BgSYxLEu4oZNGb1STL7CkvTPg",
       "4k87v34q679nnktm7msw176n2mjjt2f2",
       "MS=ms51433796",
-      "tz7y9ps639fshlhk6fmljls36vsgmsh2",
-      "6hszhhybwmrbh92rpj7m8rm8rclry7gs"
+      "atlassian-domain-verification=NNeumMyMPkAxVMrj7qq1zrhVVGl/5usz/MXkCgRheK8j05h3hDbEs6zZdYhHhGt8",
+      "adobe-idp-site-verification=55cac8ffb5b23b50c94d629752efc925f61ea92c1254d16d8bd6f0affe96e97e",
+      "xVXYh2htSzJmE6VkToy/aGAmNs8cxK2vV+6I70GL/zlQHSbfrd6n2vPKyYeokIK4okHucqCOzxF9J/FLb7VQZA=="
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=25; rua=mailto:dmarc_agg@vali.email,mailto:dmarc@mms-org.uriports.com; ruf=mailto:dmarc@mms-org.uriports.com; fo=1:d:s"
@@ -235,7 +250,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
     }
   },
   "ports": {
-    "ip": "100.56.81.175",
+    "ip": "34.194.248.53",
     "open": []
   },
   "https": {
@@ -319,11 +334,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
     ]
   },
   "apex_txt": [
-    "atlassian-domain-verification=NNeumMyMPkAxVMrj7qq1zrhVVGl/5usz/MXkCgRheK8j05h3hD",
-    "adobe-idp-site-verification=55cac8ffb5b23b50c94d629752efc925f61ea92c1254d16d8bd6",
-    "openai-domain-verification=dv-8uyHnjMDd4ZJ1w1CapYvN7jZ",
     "onetrust-domain-verification=aea188f6772b4e0a9e7464f3a5d39d88",
-    "anthropic-domain-verification-wxcd0c=BgSYxLEu4oZNGb1STL7CkvTPg"
+    "openai-domain-verification=dv-8uyHnjMDd4ZJ1w1CapYvN7jZ",
+    "anthropic-domain-verification-wxcd0c=BgSYxLEu4oZNGb1STL7CkvTPg",
+    "atlassian-domain-verification=NNeumMyMPkAxVMrj7qq1zrhVVGl/5usz/MXkCgRheK8j05h3hD",
+    "adobe-idp-site-verification=55cac8ffb5b23b50c94d629752efc925f61ea92c1254d16d8bd6"
   ],
   "tls2": {
     "alpn": "",
@@ -334,10 +349,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
       "not_before": "20251228000000",
       "not_after": "20270126235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -361,11 +377,23 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-100-56-81-175.compute-1.amazonaws.com."
+      "ec2-34-194-248-53.compute-1.amazonaws.com."
     ]
   },
-  "elapsed_s": 32.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.nejm.org:443/",
+    "http_status": 302,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 41.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -375,4 +403,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

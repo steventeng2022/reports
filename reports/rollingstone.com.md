@@ -7,12 +7,12 @@
 | Target | https://rollingstone.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | rollingstone.com |
-| Test date | 2026-09-26 18:58 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:14 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -119,7 +120,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=un0pzjeye9ylufaptfim3y66d9h9lw; adobe-idp-site-verification=5f299ac5ccddedab8418f37aad62a1ff499e5979c3b247bd4229; globalsign-domain-verification=MT3LmRzGYPgORWLlSBkPpAUpBDH9kl8xxYmB6FjtjY
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=7VABUHH6Rttvs3wGc7RIgeilrxB7Y17Jaq_Tu8w2rA8; _globalsign-domain-verification=O81xyb7YxpdGeHWkniit_VBT4vTXz9__NFrNMoTwFg; facebook-domain-verification=un0pzjeye9ylufaptfim3y66d9h9lw
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -140,6 +141,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - **Detail:** robots.txt lists 33 disallow path(s), e.g. /wp-admin/, /?s=, /*/?s=, /search/, /search?
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for rollingstone.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -155,29 +162,30 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "rollingstone-com.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "ns-718.awsdns-25.net.",
-      "ns-1426.awsdns-50.org.",
       "ns-416.awsdns-52.com.",
-      "ns-2007.awsdns-58.co.uk."
+      "ns-1426.awsdns-50.org.",
+      "ns-2007.awsdns-58.co.uk.",
+      "ns-718.awsdns-25.net."
     ],
+    "caa": [],
     "spf": [
-      "facebook-domain-verification=un0pzjeye9ylufaptfim3y66d9h9lw",
       "MS=ms82822851",
-      "adobe-idp-site-verification=5f299ac5ccddedab8418f37aad62a1ff499e5979c3b247bd4229ca57071848e8",
+      "google-site-verification=7VABUHH6Rttvs3wGc7RIgeilrxB7Y17Jaq_Tu8w2rA8",
+      "_globalsign-domain-verification=O81xyb7YxpdGeHWkniit_VBT4vTXz9__NFrNMoTwFg",
       "pardot1033643=7091b62f85e62417b6a1797105e24cae130c04c780a60ecc73e1324d6b570573",
-      "globalsign-domain-verification=MT3LmRzGYPgORWLlSBkPpAUpBDH9kl8xxYmB6FjtjY",
-      "google-site-verification=vn4y0orqW_cUPEvrE0yaSdIGOIMJ4L-VxYkCkEF5shk",
-      "v=spf1 include:spf.protection.outlook.com include:_spf.salesforce.com include:mail.zendesk.com include:amazonses.com ~all",
       "44325519CA",
+      "facebook-domain-verification=un0pzjeye9ylufaptfim3y66d9h9lw",
+      "globalsign-domain-verification=MT3LmRzGYPgORWLlSBkPpAUpBDH9kl8xxYmB6FjtjY",
+      "spf2.0/pra include:spf.protection.outlook.com ~all",
+      "adobe-idp-site-verification=5f299ac5ccddedab8418f37aad62a1ff499e5979c3b247bd4229ca57071848e8",
+      "globalsign-domain-verification=qhllLTVNbc63_k7N_0u2VjkgHnq48qKQ8gKVvHWkHI",
       "google-site-verification=s5sbAg9TL-aEYCeHHTdGzEIjhQDYvbftbWNnI_7YhJE",
       "atlassian-domain-verification=nprFKP7f9bTtDxCbcLk3c0Ag6DYYRzhq/pIp/XJkAvuuP9aQ2b6LA84i7QeoUxAt",
-      "spf2.0/pra include:spf.protection.outlook.com ~all",
-      "google-site-verification=UVCh5ORO27hs1-UmThIy8gOYXeL9jiU8Z7eR2g0PxTY",
       "KDSIGvsMCjc7eS3DE46siVbZnGv+aCCw3bLnGHCgo73SH6ZTScPF1s+JMwoXiSuRgzv49wdzg38+bUdPy3kOZg==",
-      "globalsign-domain-verification=qhllLTVNbc63_k7N_0u2VjkgHnq48qKQ8gKVvHWkHI",
+      "google-site-verification=vn4y0orqW_cUPEvrE0yaSdIGOIMJ4L-VxYkCkEF5shk",
+      "google-site-verification=UVCh5ORO27hs1-UmThIy8gOYXeL9jiU8Z7eR2g0PxTY",
       "tollbit-domain-verification=295db93fa4921634a8334a1c4c4ce22f2d04768d55ef46d502428851dd590fc9",
-      "google-site-verification=7VABUHH6Rttvs3wGc7RIgeilrxB7Y17Jaq_Tu8w2rA8",
-      "_globalsign-domain-verification=O81xyb7YxpdGeHWkniit_VBT4vTXz9__NFrNMoTwFg"
+      "v=spf1 include:spf.protection.outlook.com include:_spf.salesforce.com include:mail.zendesk.com include:amazonses.com ~all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:q4BQvTOlLL@dmarc.inboxmonster.com;"
@@ -197,7 +205,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "rollingstone.com",
       "www.rollingstone.com"
     ],
-    "days_left": 76,
+    "days_left": 75,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -260,11 +268,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "google-site-verification=7VABUHH6Rttvs3wGc7RIgeilrxB7Y17Jaq_Tu8w2rA8",
+    "_globalsign-domain-verification=O81xyb7YxpdGeHWkniit_VBT4vTXz9__NFrNMoTwFg",
     "facebook-domain-verification=un0pzjeye9ylufaptfim3y66d9h9lw",
-    "adobe-idp-site-verification=5f299ac5ccddedab8418f37aad62a1ff499e5979c3b247bd4229",
     "globalsign-domain-verification=MT3LmRzGYPgORWLlSBkPpAUpBDH9kl8xxYmB6FjtjY",
-    "google-site-verification=vn4y0orqW_cUPEvrE0yaSdIGOIMJ4L-VxYkCkEF5shk",
-    "google-site-verification=s5sbAg9TL-aEYCeHHTdGzEIjhQDYvbftbWNnI_7YhJE"
+    "adobe-idp-site-verification=5f299ac5ccddedab8418f37aad62a1ff499e5979c3b247bd4229"
   ],
   "tls2": {
     "alpn": "",
@@ -302,8 +310,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 17.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.rollingstone.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 21.4,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -313,4 +332,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

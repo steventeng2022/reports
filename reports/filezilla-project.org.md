@@ -7,12 +7,12 @@
 | Target | https://filezilla-project.org/ |
 | Bug bounty program | FileZilla |
 | Listed scope domain | filezilla-project.org |
-| Test date | 2026-09-26 18:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:05 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 1, Low: 4, Info: 12)
+Total findings: **18** (High: 0, Medium: 1, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 1, Low: 4, Info: 12)
 | 15 | low | MAIL12 | MTA-STS TXT published but policy file unreachable | CWE-285 |
 | 16 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -134,7 +135,7 @@ Total findings: **17** (High: 0, Medium: 1, Low: 4, Info: 12)
 ### 16. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (wppvufddx2p3ls.filezilla-project.org and k92ws885vrq71t.filezilla-project.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (5vtpr8gt668943.filezilla-project.org and mldv61rcf9tgrx.filezilla-project.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
@@ -142,6 +143,12 @@ Total findings: **17** (High: 0, Medium: 1, Low: 4, Info: 12)
 - **CWE:** CWE-200
 - **Detail:** Apex TXT records with verification/token content: google-site-verification=VMSIrNYAVoMPTFK6VdS6swSnzPeV9u3oDl2KraQnLI8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for filezilla-project.org, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
 ## Evidence (raw response observations)
 
@@ -160,10 +167,11 @@ Total findings: **17** (High: 0, Medium: 1, Low: 4, Info: 12)
       "filezilla-project.org (pref 10)"
     ],
     "ns": [
-      "ns2.domaindiscount24.net.",
       "ns3.domaindiscount24.net.",
+      "ns2.domaindiscount24.net.",
       "ns1.domaindiscount24.net."
     ],
+    "caa": [],
     "spf": [
       "google-site-verification=VMSIrNYAVoMPTFK6VdS6swSnzPeV9u3oDl2KraQnLI8",
       "v=spf1 mx ip4:49.12.121.47/32 ip6:2a01:4f8:242:52d0::2/64 -all"
@@ -247,7 +255,7 @@ Total findings: **17** (High: 0, Medium: 1, Low: 4, Info: 12)
     "/.git/HEAD": 404,
     "/.git/config": 404,
     "/.env": 404,
-    "/.htaccess": 0,
+    "/.htaccess": 403,
     "/wp-login.php": 0,
     "/phpmyadmin/index.php": 0,
     "/server-status": 0,
@@ -269,8 +277,16 @@ Total findings: **17** (High: 0, Medium: 1, Low: 4, Info: 12)
   "x12": {
     "error": "ConnectTimeout(MaxRetryError(\"HTTPSConnectionPool(host='filezilla-project.org', "
   },
-  "elapsed_s": 134.5,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_error": "ConnectTimeout(MaxRetryError(\"HTTPSConnectionPool(host='filezilla-project.org', ",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 195.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -280,4 +296,5 @@ Total findings: **17** (High: 0, Medium: 1, Low: 4, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

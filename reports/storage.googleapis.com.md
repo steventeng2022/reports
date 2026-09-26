@@ -7,8 +7,8 @@
 | Target | https://storage.googleapis.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | storage.googleapis.com |
-| Test date | 2026-09-26 18:59 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:16 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -119,7 +119,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (mev8zbdmg6780a.storage.googleapis.com and h4mhuuw31aywwu.storage.googleapis.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (d1a48ox0nmzltw.storage.googleapis.com and kkgjguaqirz97h.storage.googleapis.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -137,7 +137,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 64.233.188.207 carries PTR tk-in-f207.1e100.net. for storage.googleapis.com.
+- **Detail:** 142.250.198.91 carries PTR lctsaa-ab-in-f27.1e100.net. for storage.googleapis.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
@@ -147,23 +147,22 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
   "domain": "storage.googleapis.com",
   "dns": {
     "a": [
-      "64.233.188.207",
       "142.250.198.91",
+      "142.250.77.219",
       "142.250.192.155",
       "142.250.204.59",
-      "142.250.196.219",
-      "74.125.203.207",
-      "142.250.77.219"
+      "142.250.196.219"
     ],
     "aaaa": [
-      "2404:6800:4012:6::201b",
-      "2404:6800:4008:c06::cf",
-      "2404:6800:4008:c03::cf",
-      "2404:6800:4012:8::201b"
+      "2600:1901:4020:1b00::",
+      "2600:1901:4022:1b00::",
+      "2600:1901:4021:1b00::",
+      "2600:1901:4023:1b00::"
     ],
     "cname": null,
     "mx": [],
     "ns": [],
+    "caa": [],
     "spf": [],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -174,13 +173,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=storage.googleapis.com",
-    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
-    "notBefore": "Sep 10 19:26:18 2026 GMT",
-    "notAfter": "Dec  3 19:26:17 2026 GMT",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
+    "notBefore": "Sep 10 19:26:12 2026 GMT",
+    "notAfter": "Dec  3 19:26:11 2026 GMT",
     "san": [
       "storage.googleapis.com"
     ],
-    "days_left": 68,
+    "days_left": 67,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -190,7 +189,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     }
   },
   "ports": {
-    "ip": "64.233.188.207",
+    "ip": "142.250.198.91",
     "open": []
   },
   "https": {
@@ -247,23 +246,33 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     "tls_ver": "TLSv1.3",
     "subject": "None",
     "cert": {
-      "sig_oid": "1.2.840.10045.4.3.2",
+      "sig_oid": "1.2.840.113549.1.1.11",
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
-      "not_before": "20260910192618",
-      "not_after": "20261203192617"
+      "not_before": "20260910192612",
+      "not_after": "20261203192611"
     }
   },
   "x12": {
     "status": 400,
     "ptr": [
-      "tk-in-f207.1e100.net."
+      "lctsaa-ab-in-f27.1e100.net."
     ]
   },
-  "elapsed_s": 15.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 400,
+    "http_status": 400,
+    "p404_status": 404,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 13.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -273,4 +282,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

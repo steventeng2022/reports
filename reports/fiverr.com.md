@@ -7,12 +7,12 @@
 | Target | https://fiverr.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | fiverr.com |
-| Test date | 2026-09-26 18:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:05 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
+Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,8 +34,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 18 | info | SEC2 | security.txt published without a contact address | CWE-1038 |
-| 19 | info | CT1 | 44 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 20 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 20 | info | CT1 | 44 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 21 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -48,13 +49,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.114.47:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.113.47:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.114.47:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.113.47:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -134,7 +135,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: cursor-domain-verification-snmncy=v2sK6oZqni8YXE6z4r2hYiDk2; dropbox-domain-verification=8ilu3axidut2; citrix-verification-code=a6b5039d-7719-4399-a895-8dc16ee2be75
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=9KpxtRRlTnV9CMWj; google-site-verification=SO-X1xOZnZI8nCyaqDcVFT2iMKXHKzh78QZ-hQZXdDg; google-site-verification=ijrZ6Yqf-IkTyWct0jRahvbn9D3kphesRnUe4VZT9dE
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -155,13 +156,19 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - **Detail:** /.well-known/security.txt returns 200 but contains no mailto:/URL contact.
 - **Recommendation:** Add a Contact: field per RFC 9116.
 
-### 19. [INFO] 44 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for fiverr.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 20. [INFO] 44 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: dev.fiverr.com, okteto.dev.fiverr.com, pci-internal.dev.fiverr.com, pci.dev.fiverr.com, pro.dev.fiverr.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 20. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 21. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: pci-internal.dev.fiverr.com; content may still be served via virtual-host fallback.
@@ -174,61 +181,62 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   "domain": "fiverr.com",
   "dns": {
     "a": [
-      "104.18.114.47",
-      "104.18.113.47"
+      "104.18.113.47",
+      "104.18.114.47"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx2.googlemail.com (pref 40)",
+      "aspmx3.googlemail.com (pref 50)",
       "alt2.aspmx.l.google.com (pref 30)",
-      "aspmx3.googlemail.com (pref 50)"
+      "alt1.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
-      "sid.ns.cloudflare.com.",
-      "lucy.ns.cloudflare.com."
+      "lucy.ns.cloudflare.com.",
+      "sid.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
-      "cursor-domain-verification-snmncy=v2sK6oZqni8YXE6z4r2hYiDk2",
-      "8faqpd2tgvlfjq9an0q8311pv4",
-      "dropbox-domain-verification=8ilu3axidut2",
-      "sending_domain1079702=fe376d47978ba73b85655072c1359a2bde21692a90cdd2ac949ec76c9f5643f0",
-      "citrix-verification-code=a6b5039d-7719-4399-a895-8dc16ee2be75",
-      "00Df2000000vILs=1TBPn0000000Tmn",
+      "apple-domain-verification=9KpxtRRlTnV9CMWj",
+      "google-site-verification=SO-X1xOZnZI8nCyaqDcVFT2iMKXHKzh78QZ-hQZXdDg",
       "sending_domain1046343=a12cb274f55f4a914e10a7258cd1e59efe2d8d2d2cb275a91f531a3d4829d84b",
-      "facebook-domain-verification=mzxc9iigaciqjvtj28n064sk2rzbk5",
+      "mixpanel-domain-verify=90c3d81c-7a7c-4d4d-9b0d-5a60ae994e90",
+      "google-site-verification=ijrZ6Yqf-IkTyWct0jRahvbn9D3kphesRnUe4VZT9dE",
+      "jai1f598eosu9g2ua6hdcpvo5r",
+      "miro-verification=6a9e176e900b5e728d0f62659369d5d5593e28c3",
+      "citrix-verification-code=a6b5039d-7719-4399-a895-8dc16ee2be75",
+      "MS=ms20976924",
       "monday-com-verification=DHMhr9r0SLQ1XbH-UgVehCcq-kI5NO-3gC3T2YhsHNs",
+      "wiz-domain-verification=5c2bc898460351b783ced51189ad2f3d7ec3a8a6d63f2dc26fa3ec4123d899ab",
+      "atlassian-domain-verification=an+ckXl/FPR7+1gsMUQxtq4syuZoBklOsT5vcFXtDtvx9PN0bsiMTfVAGRTmOOWT",
+      "facebook-domain-verification=mzxc9iigaciqjvtj28n064sk2rzbk5",
+      "globalsign-domain-verification=8frsHcE2ag-0ccaaP5BTpPmUJC8ob8pdjDQchfAWzD",
+      "google-site-verification=ngPwP5LN0jLJFSwOIs3QPjWdNeXSBaNlAaiK489xW3w",
+      "apple-domain-verification=qnipzrtidRJDoQCh",
+      "sending_domain1079702=fe376d47978ba73b85655072c1359a2bde21692a90cdd2ac949ec76c9f5643f0",
+      "jamf-site-verification=qTZ2kHy5JVbJULQo_cm6sw",
+      "cursor-domain-verification-snmncy=v2sK6oZqni8YXE6z4r2hYiDk2",
+      "fastly-domain-delegation-j93rv73ms7qpmtzhqhqq-883244-2025-02-18",
+      "google-site-verification=hgsUdXptruag4sbh8wh7u9sOpz0rScqytDJKMTj_cUU",
+      "g2hsd2r7uqt07crr95ts25hgec",
+      "anthropic-domain-verification-nh998a=YsbxIDUYEOhBI910nAo65cY2R",
+      "v=spf1 ip4:34.192.34.210 ip4:34.192.87.38 ip4:34.243.203.200 include:sendgrid.net include:mail.zendesk.com include:_spf.google.com include:_spf.salesforce.com include:spf1.fiverr.com -all",
+      "00D7z00000Zok0H=1TB7z0000000Q0v",
+      "dropbox-domain-verification=8ilu3axidut2",
+      "google-site-verification=iNB30Gch08wWB6x_texeR3GWax3SYEanzhkPIgu5NHY",
+      "pardot1046343=0c19387b5d416ad576c0938517af3c23e0ec43bb16096e6201065cda46f41092",
+      "8faqpd2tgvlfjq9an0q8311pv4",
+      "google-site-verification=OjzIGtAACARGfq-pzfMWJMxPn6MgwCqnz8SuJ0agnGs",
+      "google-site-verification=YRULw1rJRupVM3WOgi-oe0G-ha41QBBrm1P8irxmMj4",
+      "mongodb-site-verification=qwSddVOKDfrufdjzWe8XcrxiXFqsH3HH",
+      "00Df2000000vILs=1TBPn0000000Tmn",
+      "google-site-verification=O55kJ9s5kFZ4ZBKNCc0ZoJn40YyB7yM_vONo2l3W_pc",
       "sendinblue-code:00c77aaa511d14ef758415286cceb8f8",
       "google-site-verification=8GwcSuHShuYh0Zl7pqbKLFl2Vy4LJwb663OKdq7oAfU",
-      "mongodb-site-verification=qwSddVOKDfrufdjzWe8XcrxiXFqsH3HH",
-      "google-site-verification=YRULw1rJRupVM3WOgi-oe0G-ha41QBBrm1P8irxmMj4",
-      "00D7z00000Zok0H=1TB7z0000000Q0v",
-      "apple-domain-verification=qnipzrtidRJDoQCh",
-      "pardot1046343=0c19387b5d416ad576c0938517af3c23e0ec43bb16096e6201065cda46f41092",
-      "MS=ms20976924",
       "google-site-verification=kMxO4LGDSjWFroQsa4yAFrJqPmPKg1S-LQ6RUC10DqQ",
-      "fastly-domain-delegation-j93rv73ms7qpmtzhqhqq-883244-2025-02-18",
-      "google-site-verification=OjzIGtAACARGfq-pzfMWJMxPn6MgwCqnz8SuJ0agnGs",
-      "g2hsd2r7uqt07crr95ts25hgec",
-      "apple-domain-verification=9KpxtRRlTnV9CMWj",
-      "miro-verification=6a9e176e900b5e728d0f62659369d5d5593e28c3",
-      "mixpanel-domain-verify=90c3d81c-7a7c-4d4d-9b0d-5a60ae994e90",
-      "google-site-verification=O55kJ9s5kFZ4ZBKNCc0ZoJn40YyB7yM_vONo2l3W_pc",
-      "jamf-site-verification=qTZ2kHy5JVbJULQo_cm6sw",
-      "google-site-verification=SO-X1xOZnZI8nCyaqDcVFT2iMKXHKzh78QZ-hQZXdDg",
-      "google-site-verification=iNB30Gch08wWB6x_texeR3GWax3SYEanzhkPIgu5NHY",
-      "google-site-verification=ijrZ6Yqf-IkTyWct0jRahvbn9D3kphesRnUe4VZT9dE",
-      "atlassian-domain-verification=an+ckXl/FPR7+1gsMUQxtq4syuZoBklOsT5vcFXtDtvx9PN0bsiMTfVAGRTmOOWT",
-      "google-site-verification=ngPwP5LN0jLJFSwOIs3QPjWdNeXSBaNlAaiK489xW3w",
-      "v=spf1 ip4:34.192.34.210 ip4:34.192.87.38 ip4:34.243.203.200 include:sendgrid.net include:mail.zendesk.com include:_spf.google.com include:_spf.salesforce.com include:spf1.fiverr.com -all",
-      "wiz-domain-verification=5c2bc898460351b783ced51189ad2f3d7ec3a8a6d63f2dc26fa3ec4123d899ab",
-      "anthropic-domain-verification-nh998a=YsbxIDUYEOhBI910nAo65cY2R",
-      "ZOOM_verify_t3nnvUw_QNuEQ4zcJbNWvg",
-      "globalsign-domain-verification=8frsHcE2ag-0ccaaP5BTpPmUJC8ob8pdjDQchfAWzD",
-      "jai1f598eosu9g2ua6hdcpvo5r",
-      "google-site-verification=hgsUdXptruag4sbh8wh7u9sOpz0rScqytDJKMTj_cUU"
+      "ZOOM_verify_t3nnvUw_QNuEQ4zcJbNWvg"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:dca17281@mxtoolbox.dmarc-report.com; ruf=mailto:dca17281@forensics.dmarc-report.com"
@@ -275,7 +283,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "pro.fiverr.com",
       "workspace.fiverr.com"
     ],
-    "days_left": 89,
+    "days_left": 88,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -285,7 +293,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     }
   },
   "ports": {
-    "ip": "104.18.114.47",
+    "ip": "104.18.113.47",
     "open": [
       8080,
       8443
@@ -375,11 +383,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     ]
   },
   "apex_txt": [
-    "cursor-domain-verification-snmncy=v2sK6oZqni8YXE6z4r2hYiDk2",
-    "dropbox-domain-verification=8ilu3axidut2",
-    "citrix-verification-code=a6b5039d-7719-4399-a895-8dc16ee2be75",
-    "facebook-domain-verification=mzxc9iigaciqjvtj28n064sk2rzbk5",
-    "monday-com-verification=DHMhr9r0SLQ1XbH-UgVehCcq-kI5NO-3gC3T2YhsHNs"
+    "apple-domain-verification=9KpxtRRlTnV9CMWj",
+    "google-site-verification=SO-X1xOZnZI8nCyaqDcVFT2iMKXHKzh78QZ-hQZXdDg",
+    "google-site-verification=ijrZ6Yqf-IkTyWct0jRahvbn9D3kphesRnUe4VZT9dE",
+    "miro-verification=6a9e176e900b5e728d0f62659369d5d5593e28c3",
+    "citrix-verification-code=a6b5039d-7719-4399-a895-8dc16ee2be75"
   ],
   "tls2": {
     "alpn": "",
@@ -418,8 +426,19 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 5.7,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.fiverr.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 5.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -429,4 +448,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

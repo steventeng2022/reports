@@ -7,12 +7,12 @@
 | Target | https://issuu.com/ |
 | Bug bounty program | Issuu |
 | Listed scope domain | issuu.com |
-| Test date | 2026-09-26 18:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:09 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
+Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -24,9 +24,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 | 6 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 7 | low | MAIL12 | MTA-STS TXT published but policy file unreachable | CWE-285 |
 | 8 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 9 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 9 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 10 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 11 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 12 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 13 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -80,14 +82,14 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 ### 8. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=3yHgeX--mAcr74szFR5gTbIbD1TkraSFdZS_xIm9jMY; rippling-domain-verification=217697edd61756fc; google-site-verification=GBizRM9Z_p17clZXSQMnJjIdyXLjCoDJY6aYG-kbwnQ
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=xh0flAgyOL5F8z5FQTMUnk4Z0nYehx9lPsDq1d2ntFY; rippling-domain-verification=217697edd61756fc; google-site-verification=GBizRM9Z_p17clZXSQMnJjIdyXLjCoDJY6aYG-kbwnQ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 9. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 9. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of issuu.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.globalsign.com/ca/gsatlasr46dvtlsca2026q3 -> http-400
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 10. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
@@ -101,6 +103,18 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 - **Detail:** robots.txt lists 113 disallow path(s), e.g. /, /, /, /, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 12. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on issuu.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 13. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for issuu.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -108,47 +122,48 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
   "domain": "issuu.com",
   "dns": {
     "a": [
-      "151.101.129.55",
-      "151.101.1.55",
       "151.101.65.55",
-      "151.101.193.55"
+      "151.101.1.55",
+      "151.101.193.55",
+      "151.101.129.55"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 30)",
       "aspmx2.googlemail.com (pref 40)",
-      "aspmx3.googlemail.com (pref 50)",
-      "aspmx.l.google.com (pref 10)"
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx3.googlemail.com (pref 50)"
     ],
     "ns": [
-      "ns-1343.awsdns-39.org.",
+      "ns-757.awsdns-30.net.",
       "ns-426.awsdns-53.com.",
       "ns-1582.awsdns-05.co.uk.",
-      "ns-757.awsdns-30.net."
+      "ns-1343.awsdns-39.org."
     ],
+    "caa": [],
     "spf": [
-      "google-site-verification=3yHgeX--mAcr74szFR5gTbIbD1TkraSFdZS_xIm9jMY",
+      "google-site-verification=xh0flAgyOL5F8z5FQTMUnk4Z0nYehx9lPsDq1d2ntFY",
       "rippling-domain-verification=217697edd61756fc",
       "google-site-verification=GBizRM9Z_p17clZXSQMnJjIdyXLjCoDJY6aYG-kbwnQ",
-      "docusign=828dd772-5bf2-4d4a-9956-c6b07049c55b",
-      "facebook-domain-verification=rfrx5vjx0elz3n83h0ydr94nlkptkr",
-      "atlassian-domain-verification=+SyUybAN4ilkkpHjnTS9UW9fhbIiAlFXshc97OU0IZw+UHVP0I9omo5Jzo7Qg7K+",
-      "google-site-verification=xh0flAgyOL5F8z5FQTMUnk4Z0nYehx9lPsDq1d2ntFY",
-      "miro-verification=50d48af206c43d8ba6a5c568d0b68365b08fd197",
-      "fastly-domain-delegation-00331056-2025326",
-      "mixpanel-domain-verify=3d34b526-2c05-4de4-a475-bdc5b58f49c8",
-      "apple-domain-verification=ElKeVvlCb1VtMkhI",
-      "TAILSCALE-QTxUnggBiedjypLchTwB",
-      "google-site-verification=p_DY5uxkB0uAYklg-sR0Lii2bYnF6ZooXcw2Eyi4rL8",
-      "google-site-verification=c6Hy78bVIo4EsMFlp02T8dC2rg_2s2kqhDdVkSQcNFQ",
-      "google-site-verification=0H3HL1KxMhfdap89AcuCKadjU2QFxgZ0I7CXePAEReE",
-      "MS=ms41162561",
-      "google-site-verification=5CyB-vqN7byHfN1pa3hf-FFj_ecJbkgBJ7iJr3nso98",
-      "google-site-verification=1d_IjLk0hz3l3G9KrZeiLEIjloBhk0UKtyEIuGSmGa0",
       "google-site-verification=JO5hAUdeQB6RbQhV-_AKYyv6xfJnmVKuTkYtkZYhcLk",
-      "v=spf1  include:mail.zendesk.com  include:_spf.sparkpostmail.com include:_spf.google.com include:amazonses.com include:spf.mandrillapp.com -all"
+      "MS=ms41162561",
+      "google-site-verification=1d_IjLk0hz3l3G9KrZeiLEIjloBhk0UKtyEIuGSmGa0",
+      "mixpanel-domain-verify=3d34b526-2c05-4de4-a475-bdc5b58f49c8",
+      "v=spf1  include:mail.zendesk.com  include:_spf.sparkpostmail.com include:_spf.google.com include:amazonses.com include:spf.mandrillapp.com -all",
+      "fastly-domain-delegation-00331056-2025326",
+      "google-site-verification=3yHgeX--mAcr74szFR5gTbIbD1TkraSFdZS_xIm9jMY",
+      "apple-domain-verification=ElKeVvlCb1VtMkhI",
+      "google-site-verification=c6Hy78bVIo4EsMFlp02T8dC2rg_2s2kqhDdVkSQcNFQ",
+      "docusign=828dd772-5bf2-4d4a-9956-c6b07049c55b",
+      "google-site-verification=5CyB-vqN7byHfN1pa3hf-FFj_ecJbkgBJ7iJr3nso98",
+      "miro-verification=50d48af206c43d8ba6a5c568d0b68365b08fd197",
+      "TAILSCALE-QTxUnggBiedjypLchTwB",
+      "google-site-verification=0H3HL1KxMhfdap89AcuCKadjU2QFxgZ0I7CXePAEReE",
+      "atlassian-domain-verification=+SyUybAN4ilkkpHjnTS9UW9fhbIiAlFXshc97OU0IZw+UHVP0I9omo5Jzo7Qg7K+",
+      "google-site-verification=p_DY5uxkB0uAYklg-sR0Lii2bYnF6ZooXcw2Eyi4rL8",
+      "facebook-domain-verification=rfrx5vjx0elz3n83h0ydr94nlkptkr"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:reports@dmarc.bendingspoons.com"
@@ -178,7 +193,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
     }
   },
   "ports": {
-    "ip": "151.101.129.55",
+    "ip": "151.101.65.55",
     "open": []
   },
   "https": {
@@ -228,11 +243,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=3yHgeX--mAcr74szFR5gTbIbD1TkraSFdZS_xIm9jMY",
+    "google-site-verification=xh0flAgyOL5F8z5FQTMUnk4Z0nYehx9lPsDq1d2ntFY",
     "rippling-domain-verification=217697edd61756fc",
     "google-site-verification=GBizRM9Z_p17clZXSQMnJjIdyXLjCoDJY6aYG-kbwnQ",
-    "facebook-domain-verification=rfrx5vjx0elz3n83h0ydr94nlkptkr",
-    "atlassian-domain-verification=+SyUybAN4ilkkpHjnTS9UW9fhbIiAlFXshc97OU0IZw+UHVP0I"
+    "google-site-verification=JO5hAUdeQB6RbQhV-_AKYyv6xfJnmVKuTkYtkZYhcLk",
+    "google-site-verification=1d_IjLk0hz3l3G9KrZeiLEIjloBhk0UKtyEIuGSmGa0"
   ],
   "tls2": {
     "alpn": "",
@@ -243,10 +258,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.globalsign.com/ca/gsatlasr46dvtlsca2026q3",
       "not_before": "20260831132207",
       "not_after": "20270318122207"
-    }
+    },
+    "ocsp": "http-400"
   },
   "http2": {
     "robots_disallow": [
@@ -270,8 +286,23 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 17.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 20.4,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -281,4 +312,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

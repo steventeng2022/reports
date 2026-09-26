@@ -7,12 +7,12 @@
 | Target | https://flic.kr/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | flic.kr |
-| Test date | 2026-09-26 18:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:05 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
+Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -23,9 +23,10 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 | 5 | info | CORS4 | CORS: wildcard Access-Control-Allow-Origin | CWE-942 |
 | 6 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
 | 7 | info | P8 | Missing security.txt | CWE-1038 |
-| 8 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 8 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 9 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 10 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 11 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 
 ## Detailed findings
 
@@ -77,11 +78,11 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 8. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 8. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of flic.kr has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m01.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 9. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
@@ -92,8 +93,14 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 ### 10. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 54.192.248.15 carries PTR server-54-192-248-15.tpe53.r.cloudfront.net. for flic.kr.
+- **Detail:** 54.192.248.84 carries PTR server-54-192-248-84.tpe53.r.cloudfront.net. for flic.kr.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 11. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on flic.kr; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
 ## Evidence (raw response observations)
 
@@ -102,19 +109,25 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
   "domain": "flic.kr",
   "dns": {
     "a": [
+      "54.192.248.84",
       "54.192.248.15",
       "54.192.248.76",
-      "54.192.248.84",
       "54.192.248.3"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [],
     "ns": [
+      "ns-252.awsdns-31.com.",
       "ns-1394.awsdns-46.org.",
       "ns-1832.awsdns-37.co.uk.",
-      "ns-252.awsdns-31.com.",
       "ns-739.awsdns-28.net."
+    ],
+    "caa": [
+      "0 issue \"globalsign.com\"",
+      "0 iodef \"mailto:hostmaster@smugmug.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issue \"digicert.com\""
     ],
     "spf": [],
     "dmarc": [
@@ -146,7 +159,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
     }
   },
   "ports": {
-    "ip": "54.192.248.15",
+    "ip": "54.192.248.84",
     "open": []
   },
   "https": {
@@ -204,10 +217,11 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
       "not_before": "20251205000000",
       "not_after": "20270102235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -217,11 +231,26 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
   "x12": {
     "status": 200,
     "ptr": [
-      "server-54-192-248-15.tpe53.r.cloudfront.net."
+      "server-54-192-248-84.tpe53.r.cloudfront.net."
     ]
   },
-  "elapsed_s": 19.2,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 302,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 23.7,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -231,4 +260,5 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

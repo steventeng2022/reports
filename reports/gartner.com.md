@@ -7,12 +7,12 @@
 | Target | https://gartner.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | gartner.com |
-| Test date | 2026-09-26 18:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:06 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,8 +31,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 13 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 20 | info | CT1 | 97 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 21 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -132,20 +136,44 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: prowly-verification=0a18c790f75457f4100202545f5060298b4099a9f9ad953a6f2cd406187d; slido-domain-verification=ca6c3a71-8061-4091-8dac-a342e0bd8e4b; openai-domain-verification=dv-1CqASnTt5JNxuOGMkbJziedR
+- **Detail:** Apex TXT records with verification/token content: canva-site-verification=NiX71ocXK6Nit9EcqeZZ_A; openai-domain-verification=dv-1CqASnTt5JNxuOGMkbJziedR; google-site-verification=aKIAxvYjZsxgy4fvr3ys8D_D4naYE21UpdGV3jKNbb0
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 16. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of gartner.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m04.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 99.83.168.174 carries PTR af33f8e0e3f6e442a.awsglobalaccelerator.com. for gartner.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for gartner.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 19. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The gartner.com certificate lists an AIA OCSP responder (http://ocsp.r2m04.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
+### 20. [INFO] 97 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: aemintl.emt.aws.gartner.com, aemintl.emtdev.aws.gartner.com, aemintl.emtqa.aws.gartner.com, api.reviews.dm.aws.gartner.com, api.reviews.dmqa.aws.gartner.com, apps.gartner.com, apps.pdotools.aws.gartner.com, artifactorydr-edge.cloudservicesqa.aws.gartner.com, biodataapi.da.aws.gartner.com, capimgr-use1.cloudservicesdev.aws.gartner.com
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+### 21. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+
+- **CWE:** CWE-200
+- **Detail:** Historical subdomains no longer have A/AAAA records: aemintl.emt.aws.gartner.com, aemintl.emtdev.aws.gartner.com, aemintl.emtqa.aws.gartner.com, api.reviews.dm.aws.gartner.com, api.reviews.dmqa.aws.gartner.com; content may still be served via virtual-host fallback.
+- **Recommendation:** Reclaim or delete dangling subdomains to reduce virtual-hosting attack surface.
 
 ## Evidence (raw response observations)
 
@@ -160,51 +188,52 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mx0b-0016aa01.pphosted.com (pref 5)",
-      "mx0a-0016aa01.pphosted.com (pref 5)",
+      "mxa-0016aa01.gslb.pphosted.com (pref 10)",
       "mxb-0016aa01.gslb.pphosted.com (pref 10)",
-      "mxa-0016aa01.gslb.pphosted.com (pref 10)"
+      "mx0a-0016aa01.pphosted.com (pref 5)",
+      "mx0b-0016aa01.pphosted.com (pref 5)"
     ],
     "ns": [
-      "a3-65.akam.net.",
-      "pdns77.ultradns.org.",
-      "a1-109.akam.net.",
-      "a14-64.akam.net.",
       "a28-65.akam.net.",
       "a4-64.akam.net.",
+      "a3-65.akam.net.",
+      "a1-109.akam.net.",
       "pdns77.ultradns.com.",
+      "a14-64.akam.net.",
+      "pdns77.ultradns.org.",
       "a5-64.akam.net."
     ],
+    "caa": [],
     "spf": [
-      "docusign=176ba6ee-d141-4b4f-951f-ed65844926a4",
-      "prowly-verification=0a18c790f75457f4100202545f5060298b4099a9f9ad953a6f2cd406187d096e",
-      "slido-domain-verification=ca6c3a71-8061-4091-8dac-a342e0bd8e4b",
+      "x98FvuwX6an-AAO7F0eMahTQny_-",
+      "canva-site-verification=NiX71ocXK6Nit9EcqeZZ_A",
       "openai-domain-verification=dv-1CqASnTt5JNxuOGMkbJziedR",
+      "docusign=176ba6ee-d141-4b4f-951f-ed65844926a4",
+      "google-site-verification=aKIAxvYjZsxgy4fvr3ys8D_D4naYE21UpdGV3jKNbb0",
+      "docusign=1b2f90f6-48c2-4394-8d1d-bf2ede024866",
+      "hWbBxLhyKc36IrHY2zusOB2kDAgSqdhLvJAxHo7pCUBuRh8ZpBeGKBbQix2ic6FerMsaTaiZY4gzCVnjOpqaNw==",
       "v=spf1 include:evspf1.gartner.com include:evspf2.gartner.com include:_spf.salesforce.com include:spf.mandrillapp.com ip4:8.15.203.113 ip4:8.15.203.114 ip4:8.15.203.115 ip4:8.15.203.116 ip4:148.59.100.16/28 ",
       "ip4:216.221.170.72/29 ip4:216.221.170.250/31 ip4:216.221.171.8/29 -all",
-      "drift-domain-verification=84b976bbb9c08c9f8507ed99d05493997c0f91557421b746b4ef017d64d036b6",
-      "00DRu00000RGlmb=1TBRu00000014kj",
-      "google-site-verification=aKIAxvYjZsxgy4fvr3ys8D_D4naYE21UpdGV3jKNbb0",
-      "ciscocidomainverification=57f18449faaaa96630528f3cab6ca711051e21cb8aecdd166f57444d93b57c5",
-      "ZOOM_verify_ccu8Ucbb3XjDVqaWJxKT5F",
-      "atlassian-domain-verification=8jqx2ryRUppyajabhJkDQFuiurOAJuQysDFi/wyqM11w4JVloZs9oKlFWUg0RFcu",
-      "apple-domain-verification=k0GE0BCT91wGwIyD74bKOw2pu76vgckNG8XTkpxj93w",
-      "canva-site-verification=NiX71ocXK6Nit9EcqeZZ_A",
-      "webexdomainverification.FZF7=b569771f-24c7-4cd9-b087-75b779846dde",
-      "00DD20000003MjH=1TBD20000004CBs;00DEa00000R3lsT=1TBEa0000000PWH;00DD40000009zec=1TBD4000000000v",
-      "hWbBxLhyKc36IrHY2zusOB2kDAgSqdhLvJAxHo7pCUBuRh8ZpBeGKBbQix2ic6FerMsaTaiZY4gzCVnjOpqaNw==",
-      "anthropic-domain-verification-ednxat=IQ65KbsWwqCgfrFDGjU3Dox5R",
       "uber-domain-verification=db80ddee-dc1a-47b4-b0f9-5382e61b8cc7",
-      "paloaltonetworks-site-verification=89f74fa49f2affd44039a4cfce3efa8b83e2eee7d8f52ac84ce59d7a6f41ebb4",
-      "onetrust-domain-verification=5b726d00265b47399bae397d6aa108eb",
+      "slido-domain-verification=ca6c3a71-8061-4091-8dac-a342e0bd8e4b",
       "docker-verification=0894b02a-7530-4d69-a114-b173e16374f7",
-      "docusign=1b2f90f6-48c2-4394-8d1d-bf2ede024866",
-      "x98FvuwX6an-AAO7F0eMahTQny_-",
+      "webexdomainverification.FZF7=b569771f-24c7-4cd9-b087-75b779846dde",
+      "onetrust-domain-verification=9615d0536ed947b2bde2aff220e66c8b",
+      "00DRu00000RGlmb=1TBRu00000014kj",
+      "anthropic-domain-verification-ednxat=IQ65KbsWwqCgfrFDGjU3Dox5R",
       "00DEm00000SNtEz=1TBEm0000000wjx",
       "docusign=fbd0b5e3-fd26-4058-a01e-f3231247d403",
-      "onetrust-domain-verification=9615d0536ed947b2bde2aff220e66c8b",
+      "ZOOM_verify_ccu8Ucbb3XjDVqaWJxKT5F",
       "lucidlink-verification=8CP62E0W0ET4MRZQS36V2YH1P8",
-      "google-site-verification=npR9iwOMNUbkau8Pwvd4kBqqPDMyXCUu8g5iP1PW_44"
+      "onetrust-domain-verification=5b726d00265b47399bae397d6aa108eb",
+      "00DD20000003MjH=1TBD20000004CBs;00DEa00000R3lsT=1TBEa0000000PWH;00DD40000009zec=1TBD4000000000v",
+      "paloaltonetworks-site-verification=89f74fa49f2affd44039a4cfce3efa8b83e2eee7d8f52ac84ce59d7a6f41ebb4",
+      "apple-domain-verification=k0GE0BCT91wGwIyD74bKOw2pu76vgckNG8XTkpxj93w",
+      "google-site-verification=npR9iwOMNUbkau8Pwvd4kBqqPDMyXCUu8g5iP1PW_44",
+      "prowly-verification=0a18c790f75457f4100202545f5060298b4099a9f9ad953a6f2cd406187d096e",
+      "atlassian-domain-verification=8jqx2ryRUppyajabhJkDQFuiurOAJuQysDFi/wyqM11w4JVloZs9oKlFWUg0RFcu",
+      "ciscocidomainverification=57f18449faaaa96630528f3cab6ca711051e21cb8aecdd166f57444d93b57c5",
+      "drift-domain-verification=84b976bbb9c08c9f8507ed99d05493997c0f91557421b746b4ef017d64d036b6"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com;"
@@ -284,14 +313,61 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "/api/": 301
   },
   "subdomains": {
-    "status": "ct-pending"
+    "source": "certspotter",
+    "count": 97,
+    "notable": [
+      "aemintl.emt.aws.gartner.com",
+      "aemintl.emtdev.aws.gartner.com",
+      "aemintl.emtqa.aws.gartner.com",
+      "api.reviews.dm.aws.gartner.com",
+      "api.reviews.dmqa.aws.gartner.com",
+      "apps.gartner.com",
+      "apps.pdotools.aws.gartner.com",
+      "artifactorydr-edge.cloudservicesqa.aws.gartner.com",
+      "biodataapi.da.aws.gartner.com",
+      "capimgr-use1.cloudservicesdev.aws.gartner.com",
+      "capimgr-use2.cloudservicesqa.aws.gartner.com",
+      "cloudbeesocqa-use2.cloudsharedqa.aws.gartner.com",
+      "cloudbeesocqa.cloudsharedqa.aws.gartner.com",
+      "cloudbeesocqadr.cloudsharedqa.aws.gartner.com",
+      "cppplan-devb.rcddev.aws.gartner.com"
+    ],
+    "sample": [
+      "aemintl.emt.aws.gartner.com",
+      "aemintl.emtdev.aws.gartner.com",
+      "aemintl.emtqa.aws.gartner.com",
+      "api.reviews.dm.aws.gartner.com",
+      "api.reviews.dmqa.aws.gartner.com",
+      "apps.gartner.com",
+      "apps.pdotools.aws.gartner.com",
+      "artifactorydr-edge.cloudservicesqa.aws.gartner.com",
+      "biodataapi.da.aws.gartner.com",
+      "capimgr-use1.cloudservicesdev.aws.gartner.com",
+      "capimgr-use2.cloudservicesqa.aws.gartner.com",
+      "cloudbeesocqa-use2.cloudsharedqa.aws.gartner.com",
+      "cloudbeesocqa.cloudsharedqa.aws.gartner.com",
+      "cloudbeesocqadr.cloudsharedqa.aws.gartner.com",
+      "cppplan-devb.rcddev.aws.gartner.com",
+      "css-apigw-lipp-us-east-2.emtqa.aws.gartner.com",
+      "css-apigw-lipp.emtqa.aws.gartner.com",
+      "css-apigw-servicehub-us-east-1.emtqa.aws.gartner.com",
+      "css-apigw-servicehub-us-east-2.emtqa.aws.gartner.com",
+      "css-apigw-servicehub.emtqa.aws.gartner.com"
+    ],
+    "dangling": [
+      "aemintl.emt.aws.gartner.com",
+      "aemintl.emtdev.aws.gartner.com",
+      "aemintl.emtqa.aws.gartner.com",
+      "api.reviews.dm.aws.gartner.com",
+      "api.reviews.dmqa.aws.gartner.com"
+    ]
   },
   "apex_txt": [
-    "prowly-verification=0a18c790f75457f4100202545f5060298b4099a9f9ad953a6f2cd406187d",
-    "slido-domain-verification=ca6c3a71-8061-4091-8dac-a342e0bd8e4b",
+    "canva-site-verification=NiX71ocXK6Nit9EcqeZZ_A",
     "openai-domain-verification=dv-1CqASnTt5JNxuOGMkbJziedR",
-    "drift-domain-verification=84b976bbb9c08c9f8507ed99d05493997c0f91557421b746b4ef01",
-    "google-site-verification=aKIAxvYjZsxgy4fvr3ys8D_D4naYE21UpdGV3jKNbb0"
+    "google-site-verification=aKIAxvYjZsxgy4fvr3ys8D_D4naYE21UpdGV3jKNbb0",
+    "uber-domain-verification=db80ddee-dc1a-47b4-b0f9-5382e61b8cc7",
+    "slido-domain-verification=ca6c3a71-8061-4091-8dac-a342e0bd8e4b"
   ],
   "tls2": {
     "alpn": "",
@@ -302,10 +378,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
       "not_before": "20251222000000",
       "not_after": "20270119235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "x12": {
     "status": 301,
@@ -313,8 +390,20 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "af33f8e0e3f6e442a.awsglobalaccelerator.com."
     ]
   },
-  "elapsed_s": 20.3,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.gartner.com:443/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 27.3,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -324,4 +413,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

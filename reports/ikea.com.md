@@ -7,8 +7,8 @@
 | Target | https://ikea.com/ |
 | Bug bounty program | IKEA |
 | Listed scope domain | ikea.com |
-| Test date | 2026-09-26 18:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:08 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -134,7 +134,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY; airtable-verification=1a7ed489e90d747183dc48f953dc38e2; verification=4b7a9cf113659b548dd81c74867cc6e8cdb666dcdedd89006a4b6df841436db9
+- **Detail:** Apex TXT records with verification/token content: ecostruxure-it-verification=aed1c019-11ed-4ef4-985a-9d57e6880300; google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY; pendo-domain-verification=kNv_0V-tt2G-fFDGQQ35qbcUUIk
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -180,40 +180,61 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "ikea-com.i-v1.mx.microsoft (pref 0)"
     ],
     "ns": [
-      "udns2.cscdns.uk.",
-      "udns1.cscdns.net."
+      "udns1.cscdns.net.",
+      "udns2.cscdns.uk."
+    ],
+    "caa": [
+      "0 issue \"amazontrust.com\"",
+      "0 issue \"pki.goog\"",
+      "0 issue \"digicert.com\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issuewild \"amazonaws.com\"",
+      "0 issuewild \"globalsign.com\"",
+      "0 issue \"sectigo.com\"",
+      "0 issuewild \"sectigo.com\"",
+      "0 issuewild \"amazon.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issuewild \"awstrust.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issuewild \"amazontrust.com\"",
+      "0 issue \"globalsign.com\"",
+      "0 issue \"awstrust.com\"",
+      "0 iodef \"mailto:caa@inter.IKEA.com\"",
+      "0 issuewild \"pki.goog\"",
+      "0 issuewild \"digicert.com\"",
+      "0 issue \"amazonaws.com\""
     ],
     "spf": [
-      "google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY",
-      "airtable-verification=1a7ed489e90d747183dc48f953dc38e2",
-      "verification=4b7a9cf113659b548dd81c74867cc6e8cdb666dcdedd89006a4b6df841436db9",
-      "pwr1x9yqrt58dp5q97xdqc2tjvbfdpfv",
-      "_0f5qdsfyf94runrfkk8kj91gwjunhv1",
-      "apple-domain-verification=lcR3r6mOMUXCfIBeISYyewJZUPc9Z7njjsCWH3wMJTU",
-      "apple-domain-verification=z2IPRZRTU1JvIXzc",
-      "google-site-verification=E6gWPPnFbnlfZhWvziCK1jbFr7ovdO740_nfJIsM26g",
-      "bc3r1bhgiiv5glji4a4e5q7feq",
-      "9gk35lcm87nrdcur8l5jc95ffg",
-      "r9l0gn0j4tfvikcnfsoabna4he",
-      "c7w8ywlzkqtsjrj37zwx3rls92xtg2v2",
       "ecostruxure-it-verification=aed1c019-11ed-4ef4-985a-9d57e6880300",
-      "openai-domain-verification=dv-ruk8aBZomN7tKPUudFE6f4xB",
-      "adobe-sign-verification=cedca323afb86422862e301984996075",
-      "schrgk1ftng0xtbk5hzdm37z1qm50c5x",
-      "openai-domain-verification=dv-NuhNTz6e8ZuA6QC8JPuNWQVI",
-      "ibmid= 402dfd6a-c923-4b4b-8b0b-d48321ad0c03",
-      "_0ydey5x097gtj2z92fc6xf342jhw8bm",
-      "1gsbjx5k4dg72szsrycjtvbjdxnz7f9w",
-      "pendo-domain-verification=kNv_0V-tt2G-fFDGQQ35qbcUUIk",
-      "google-site-verification=5BcCWPMkzRJlhB6Kj1oxpQD-XIiBf1I4axz_YKZhPt8",
-      "ad44n1huq06eqo04mlhp525gs8",
-      "ipimblog.azurewebsites.net",
-      "vuc9hf2qrdsa1rht6jbsvlmm63",
-      "v=spf1 include:_spf.ikea.com include:spf.protection.outlook.com -all",
-      "google-site-verification=6HRUbiMS72DqS9m1xZA7e2lERsd76qlRP3wjZdbrrr4",
+      "google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY",
       "c1uaul3js4qk63pu2rlbbipukl",
+      "bc3r1bhgiiv5glji4a4e5q7feq",
+      "1gsbjx5k4dg72szsrycjtvbjdxnz7f9w",
       "yf27ml09h67l135bgfj8r7k8l06ct0b0",
-      "google-site-verification=eJkdNhxbvSwwMjpJCul26vIgWgojR_DQtUXD9CZMXZY"
+      "pendo-domain-verification=kNv_0V-tt2G-fFDGQQ35qbcUUIk",
+      "ipimblog.azurewebsites.net",
+      "verification=4b7a9cf113659b548dd81c74867cc6e8cdb666dcdedd89006a4b6df841436db9",
+      "adobe-sign-verification=cedca323afb86422862e301984996075",
+      "v=spf1 include:_spf.ikea.com include:spf.protection.outlook.com -all",
+      "r9l0gn0j4tfvikcnfsoabna4he",
+      "openai-domain-verification=dv-NuhNTz6e8ZuA6QC8JPuNWQVI",
+      "schrgk1ftng0xtbk5hzdm37z1qm50c5x",
+      "apple-domain-verification=z2IPRZRTU1JvIXzc",
+      "9gk35lcm87nrdcur8l5jc95ffg",
+      "google-site-verification=6HRUbiMS72DqS9m1xZA7e2lERsd76qlRP3wjZdbrrr4",
+      "_0ydey5x097gtj2z92fc6xf342jhw8bm",
+      "airtable-verification=1a7ed489e90d747183dc48f953dc38e2",
+      "google-site-verification=eJkdNhxbvSwwMjpJCul26vIgWgojR_DQtUXD9CZMXZY",
+      "google-site-verification=5BcCWPMkzRJlhB6Kj1oxpQD-XIiBf1I4axz_YKZhPt8",
+      "vuc9hf2qrdsa1rht6jbsvlmm63",
+      "c7w8ywlzkqtsjrj37zwx3rls92xtg2v2",
+      "ad44n1huq06eqo04mlhp525gs8",
+      "google-site-verification=E6gWPPnFbnlfZhWvziCK1jbFr7ovdO740_nfJIsM26g",
+      "_0f5qdsfyf94runrfkk8kj91gwjunhv1",
+      "ibmid= 402dfd6a-c923-4b4b-8b0b-d48321ad0c03",
+      "pwr1x9yqrt58dp5q97xdqc2tjvbfdpfv",
+      "apple-domain-verification=lcR3r6mOMUXCfIBeISYyewJZUPc9Z7njjsCWH3wMJTU",
+      "openai-domain-verification=dv-ruk8aBZomN7tKPUudFE6f4xB"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@ikea.com; ruf=mailto:dmarc_ruf@ikea.com"
@@ -342,11 +363,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     ]
   },
   "apex_txt": [
+    "ecostruxure-it-verification=aed1c019-11ed-4ef4-985a-9d57e6880300",
     "google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY",
-    "airtable-verification=1a7ed489e90d747183dc48f953dc38e2",
+    "pendo-domain-verification=kNv_0V-tt2G-fFDGQQ35qbcUUIk",
     "verification=4b7a9cf113659b548dd81c74867cc6e8cdb666dcdedd89006a4b6df841436db9",
-    "apple-domain-verification=lcR3r6mOMUXCfIBeISYyewJZUPc9Z7njjsCWH3wMJTU",
-    "apple-domain-verification=z2IPRZRTU1JvIXzc"
+    "adobe-sign-verification=cedca323afb86422862e301984996075"
   ],
   "tls2": {
     "alpn": "",
@@ -384,8 +405,19 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 6.5,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.ikea.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 6.4,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -395,4 +427,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

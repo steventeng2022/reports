@@ -7,12 +7,12 @@
 | Target | https://indiewire.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | indiewire.com |
-| Test date | 2026-09-26 18:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:08 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -119,13 +120,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (ol5e1ugc1tg839.indiewire.com and otnv5t2nbpu5xo.indiewire.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (k3s5hvz9xhade8.indiewire.com and 586oj5xx8i0940.indiewire.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=c4llyUIufdlEQ0etHFqmwo_ZhjRlUzYk0Has-1oWkvI; _globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0; google-site-verification=W1En6n_PulGSkVU4HgXmvfYxM74cY5j_LZPYJxqUdqY
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=djqre622ebz2cxze8oo9bjau7k0hls; _globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0; _globalsign-domain-verification=-dLoamn_W8k1SJs3XuoC2JQZYSqmsrjSq07J0B0nq9
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -146,6 +147,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** robots.txt lists 35 disallow path(s), e.g. /wp-admin/, /?s=, /*/?s=, /search/, /search?
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for indiewire.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -161,26 +168,27 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "indiewire-com.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "ns-772.awsdns-32.net.",
-      "ns-474.awsdns-59.com.",
       "ns-1920.awsdns-48.co.uk.",
-      "ns-1227.awsdns-25.org."
+      "ns-1227.awsdns-25.org.",
+      "ns-772.awsdns-32.net.",
+      "ns-474.awsdns-59.com."
     ],
+    "caa": [],
     "spf": [
-      "google-site-verification=c4llyUIufdlEQ0etHFqmwo_ZhjRlUzYk0Has-1oWkvI",
+      "facebook-domain-verification=djqre622ebz2cxze8oo9bjau7k0hls",
       "_globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0",
-      "fastly-domain-delegation-0921110196-212101-2020-02-06",
-      "google-site-verification=W1En6n_PulGSkVU4HgXmvfYxM74cY5j_LZPYJxqUdqY",
-      "MS=ms85960270",
       "v=spf1 include:spf.protection.outlook.com ~all",
       "_globalsign-domain-verification=-dLoamn_W8k1SJs3XuoC2JQZYSqmsrjSq07J0B0nq9",
-      "google-site-verification=8sD-MmpsXYb6gPK8rRJWUO72s2gvtr52gjvP5LGDfRA",
-      "adobe-idp-site-verification=5f299ac5ccddedab8418f37aad62a1ff499e5979c3b247bd4229ca57071848e8",
-      "tollbit-domain-verification=2bf983cad01adc204c9f8842d71138ebce16e853d4d282afe13f7fea844cc7cd",
-      "facebook-domain-verification=djqre622ebz2cxze8oo9bjau7k0hls",
-      "atlassian-domain-verification=nprFKP7f9bTtDxCbcLk3c0Ag6DYYRzhq/pIp/XJkAvuuP9aQ2b6LA84i7QeoUxAt",
+      "google-site-verification=c4llyUIufdlEQ0etHFqmwo_ZhjRlUzYk0Has-1oWkvI",
+      "fastly-domain-delegation-0921110196-212101-2020-02-06",
       "spf2.0/pra include:spf.protection.outlook.com ~all",
-      "_globalsign-domain-verification=wK5OaJLRBlfjH5kAcbmp8K56NCtstth4bjNiNCo2j2"
+      "MS=ms85960270",
+      "google-site-verification=W1En6n_PulGSkVU4HgXmvfYxM74cY5j_LZPYJxqUdqY",
+      "_globalsign-domain-verification=wK5OaJLRBlfjH5kAcbmp8K56NCtstth4bjNiNCo2j2",
+      "adobe-idp-site-verification=5f299ac5ccddedab8418f37aad62a1ff499e5979c3b247bd4229ca57071848e8",
+      "google-site-verification=8sD-MmpsXYb6gPK8rRJWUO72s2gvtr52gjvP5LGDfRA",
+      "tollbit-domain-verification=2bf983cad01adc204c9f8842d71138ebce16e853d4d282afe13f7fea844cc7cd",
+      "atlassian-domain-verification=nprFKP7f9bTtDxCbcLk3c0Ag6DYYRzhq/pIp/XJkAvuuP9aQ2b6LA84i7QeoUxAt"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:q4BQvTOlLL@dmarc.inboxmonster.com;"
@@ -264,11 +272,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=c4llyUIufdlEQ0etHFqmwo_ZhjRlUzYk0Has-1oWkvI",
+    "facebook-domain-verification=djqre622ebz2cxze8oo9bjau7k0hls",
     "_globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0",
-    "google-site-verification=W1En6n_PulGSkVU4HgXmvfYxM74cY5j_LZPYJxqUdqY",
     "_globalsign-domain-verification=-dLoamn_W8k1SJs3XuoC2JQZYSqmsrjSq07J0B0nq9",
-    "google-site-verification=8sD-MmpsXYb6gPK8rRJWUO72s2gvtr52gjvP5LGDfRA"
+    "google-site-verification=c4llyUIufdlEQ0etHFqmwo_ZhjRlUzYk0Has-1oWkvI",
+    "google-site-verification=W1En6n_PulGSkVU4HgXmvfYxM74cY5j_LZPYJxqUdqY"
   ],
   "tls2": {
     "alpn": "",
@@ -306,8 +314,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 19.7,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.indiewire.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 21.5,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -317,4 +336,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

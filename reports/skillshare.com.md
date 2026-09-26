@@ -7,12 +7,12 @@
 | Target | https://skillshare.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | skillshare.com |
-| Test date | 2026-09-26 18:59 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:15 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
+Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,8 +32,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | CT1 | 26 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 18 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 17 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 19 | info | CT1 | 26 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 20 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -46,13 +48,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.32.122:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.64.155.134:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.32.122:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.64.155.134:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -124,7 +126,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: h1-domain-verification=J1qQPbBWpbBxGVL3i3h1dpw2rX1NwHEZhnWeRNNP5L9qB2DX; google-site-verification=DshzQEv8w03dqk3NErt1hlkBaXsKdTMaUfBY1J-8Wic; facebook-domain-verification=va9wk46fanagqpr4rc6sp4d3gap007
+- **Detail:** Apex TXT records with verification/token content: h1-domain-verification=J1qQPbBWpbBxGVL3i3h1dpw2rX1NwHEZhnWeRNNP5L9qB2DX; atlassian-domain-verification=caa1SXVOa/jn5JVpUdP/OCpP1t9l1rz9ikhEsdPLJYGgYWquY6; anthropic-domain-verification-0j2hh2=VDsV2bFDu3c0IZWFsXlG1WQ4h
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -139,13 +141,25 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 - **Detail:** robots.txt lists 11 disallow path(s), e.g. /site/search/, /dashboard/, /reset-password/, /mixpanel/, /search?
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 17. [INFO] 26 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 17. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on skillshare.com indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for skillshare.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 19. [INFO] 26 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: auth.skillshare.com, cloudflare.ingress.ops.skillshare.com, dev.skillshare.com, eng.ops.skillshare.com, events.docs.internal.skillshare.com, help.skillshare.com, ops.skillshare.com, prod.atlas.blog.skillshare.com, stg.atlas.blog.skillshare.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 18. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 20. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: dev.skillshare.com; content may still be served via virtual-host fallback.
@@ -158,45 +172,46 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "domain": "skillshare.com",
   "dns": {
     "a": [
-      "104.18.32.122",
-      "172.64.155.134"
+      "172.64.155.134",
+      "104.18.32.122"
     ],
     "aaaa": [
-      "2a06:98c1:310c::6812:207a",
-      "2606:4700:440b::ac40:9b86"
+      "2606:4700:440b::ac40:9b86",
+      "2a06:98c1:310c::6812:207a"
     ],
     "cname": null,
     "mx": [
       "aspmx2.googlemail.com (pref 40)",
+      "aspmx5.googlemail.com (pref 50)",
+      "alt2.aspmx.l.google.com (pref 30)",
       "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx.l.google.com (pref 10)",
       "aspmx4.googlemail.com (pref 50)",
       "aspmx3.googlemail.com (pref 50)",
-      "alt2.aspmx.l.google.com (pref 30)",
-      "aspmx5.googlemail.com (pref 50)"
+      "aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "garen.skillshare.com.",
-      "ashe.skillshare.com."
+      "ashe.skillshare.com.",
+      "garen.skillshare.com."
     ],
+    "caa": [],
     "spf": [
-      "amazonses:FA3mpwGhZzBmEIrp3iQXIXa3+umrH8ce03vBPry8tuI=",
-      "h1-domain-verification=J1qQPbBWpbBxGVL3i3h1dpw2rX1NwHEZhnWeRNNP5L9qB2DX",
-      "google-site-verification=DshzQEv8w03dqk3NErt1hlkBaXsKdTMaUfBY1J-8Wic",
-      "facebook-domain-verification=va9wk46fanagqpr4rc6sp4d3gap007",
-      "anthropic-domain-verification-0j2hh2=VDsV2bFDu3c0IZWFsXlG1WQ4h",
-      "jamf-site-verification=jsRO5e76-EWTHTbtESgo9g",
       "9p1q7gjsjf6jgqmkdvbdxhxch33lxzsv",
-      "mixpanel-domain-verify=739bd2fb-b682-4acf-9689-e94b74a61621",
-      "miro-verification=2accb01b1b638f37ee0cd64452e2faaa57e1cdf6",
+      "h1-domain-verification=J1qQPbBWpbBxGVL3i3h1dpw2rX1NwHEZhnWeRNNP5L9qB2DX",
+      "atlassian-domain-verification=caa1SXVOa/jn5JVpUdP/OCpP1t9l1rz9ikhEsdPLJYGgYWquY6v2tDOvBhNoJG99",
+      "anthropic-domain-verification-0j2hh2=VDsV2bFDu3c0IZWFsXlG1WQ4h",
+      "google-site-verification=DshzQEv8w03dqk3NErt1hlkBaXsKdTMaUfBY1J-8Wic",
+      "amazonses:FA3mpwGhZzBmEIrp3iQXIXa3+umrH8ce03vBPry8tuI=",
+      "firebase=skillshare-creator-dev",
       "google-site-verification=mcHpWbpzXVe4BOFgp5ijuXXqIf7OMoH1Z7ctm2mlBDc",
       "apple-domain-verification=Hb38JzhNUvqf3hR2",
+      "mixpanel-domain-verify=739bd2fb-b682-4acf-9689-e94b74a61621",
+      "miro-verification=2accb01b1b638f37ee0cd64452e2faaa57e1cdf6",
+      "jamf-site-verification=jsRO5e76-EWTHTbtESgo9g",
       "qyylpgj14chmtmds8wgz7j8lqwrd44tt",
-      "v=spf1 include:_spf0.skillshare.com include:_spf1.skillshare.com include:_spf2.skillshare.com include:_spf3.skillshare.com include:sendgrid.net include:_spf.google.com include:sendgrid.net include:_spf.google.com ip4:23.21.109.197 ip4:23.21.109.212 ~all",
-      "firebase=skillshare-creator-dev",
-      "atlassian-domain-verification=caa1SXVOa/jn5JVpUdP/OCpP1t9l1rz9ikhEsdPLJYGgYWquY6v2tDOvBhNoJG99",
       "openai-domain-verification=dv-98OuGQNGSB3R75FCYqMmzHqw",
-      "fw8mkvj2p2lgsk7crsrgylmvpzf0fkkw"
+      "v=spf1 include:_spf0.skillshare.com include:_spf1.skillshare.com include:_spf2.skillshare.com include:_spf3.skillshare.com include:sendgrid.net include:_spf.google.com include:sendgrid.net include:_spf.google.com ip4:23.21.109.197 ip4:23.21.109.212 ~all",
+      "fw8mkvj2p2lgsk7crsrgylmvpzf0fkkw",
+      "facebook-domain-verification=va9wk46fanagqpr4rc6sp4d3gap007"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:f4a1b21ad84d418380c0e4bd42294746@dmarc-reports.cloudflare.net; fo=1;"
@@ -227,7 +242,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     }
   },
   "ports": {
-    "ip": "104.18.32.122",
+    "ip": "172.64.155.134",
     "open": [
       8080,
       8443
@@ -327,10 +342,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   },
   "apex_txt": [
     "h1-domain-verification=J1qQPbBWpbBxGVL3i3h1dpw2rX1NwHEZhnWeRNNP5L9qB2DX",
-    "google-site-verification=DshzQEv8w03dqk3NErt1hlkBaXsKdTMaUfBY1J-8Wic",
-    "facebook-domain-verification=va9wk46fanagqpr4rc6sp4d3gap007",
+    "atlassian-domain-verification=caa1SXVOa/jn5JVpUdP/OCpP1t9l1rz9ikhEsdPLJYGgYWquY6",
     "anthropic-domain-verification-0j2hh2=VDsV2bFDu3c0IZWFsXlG1WQ4h",
-    "jamf-site-verification=jsRO5e76-EWTHTbtESgo9g"
+    "google-site-verification=DshzQEv8w03dqk3NErt1hlkBaXsKdTMaUfBY1J-8Wic",
+    "google-site-verification=mcHpWbpzXVe4BOFgp5ijuXXqIf7OMoH1Z7ctm2mlBDc"
   ],
   "tls2": {
     "alpn": "",
@@ -365,8 +380,19 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 9.7,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.skillshare.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 11.2,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -376,4 +402,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

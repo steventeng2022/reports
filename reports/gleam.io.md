@@ -7,12 +7,12 @@
 | Target | https://gleam.io/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | gleam.io |
-| Test date | 2026-09-26 18:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:07 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,7 +33,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 18 | info | CT1 | 6 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 18 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 19 | info | CT1 | 6 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -46,13 +47,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.66.40.77:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.66.43.179:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.66.40.77:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.66.43.179:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -123,7 +124,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: hubspot-developer-verification=YTdhYzEyMmEtOTE1ZC00MjcwLWE4Y2QtNzBlNzhiM2UxMTQx; google-site-verification=E6-eQ8w6PaDhy4OM-RhbVH2gk4EezZBiMlTz9BEPXz0; hubspot-developer-verification=NmVjZWE0ZTQtZDUxYS00ODA4LWJlZDYtZDRlMTMwODE4Y2E3
+- **Detail:** Apex TXT records with verification/token content: hubspot-developer-verification=NmVjZWE0ZTQtZDUxYS00ODA4LWJlZDYtZDRlMTMwODE4Y2E3; facebook-domain-verification=lnpnymx2u5fo84xka7q96uvwyjturq; hubspot-developer-verification=YTdhYzEyMmEtOTE1ZC00MjcwLWE4Y2QtNzBlNzhiM2UxMTQx
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -144,7 +145,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **Detail:** robots.txt lists 29 disallow path(s), e.g. /oi-, /*-*?l=https*, /*?kw=, /*/*?kw=, /auth/*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 18. [INFO] 6 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on gleam.io indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 19. [INFO] 6 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: staging.gleam.io, status.gleam.io
@@ -157,30 +164,42 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "gleam.io",
   "dns": {
     "a": [
-      "172.66.40.77",
-      "172.66.43.179"
+      "172.66.43.179",
+      "172.66.40.77"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)",
-      "aspmx3.googlemail.com (pref 10)"
+      "aspmx3.googlemail.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
       "tegan.ns.cloudflare.com.",
       "anirban.ns.cloudflare.com."
     ],
+    "caa": [
+      "0 issue \"letsencrypt.org\"",
+      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issuewild \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issuewild \"comodoca.com\"",
+      "0 issue \"ssl.com\"",
+      "0 issuewild \"ssl.com\"",
+      "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issue \"comodoca.com\""
+    ],
     "spf": [
-      "hubspot-developer-verification=YTdhYzEyMmEtOTE1ZC00MjcwLWE4Y2QtNzBlNzhiM2UxMTQx",
-      "google-site-verification=E6-eQ8w6PaDhy4OM-RhbVH2gk4EezZBiMlTz9BEPXz0",
       "hubspot-developer-verification=NmVjZWE0ZTQtZDUxYS00ODA4LWJlZDYtZDRlMTMwODE4Y2E3",
+      "v=spf1 a mx include:mailgun.org include:_spf.google.com include:amazonses.com -all",
       "facebook-domain-verification=lnpnymx2u5fo84xka7q96uvwyjturq",
-      "google-site-verification=Mqt6LB8YixoNmUrYX15T1wBhmC21gdvDey2B1l_tZUo",
+      "hubspot-developer-verification=YTdhYzEyMmEtOTE1ZC00MjcwLWE4Y2QtNzBlNzhiM2UxMTQx",
       "1password-site-verification=GDHGMUTFKNB57DFFCO4U4GF3TU",
-      "v=spf1 a mx include:mailgun.org include:_spf.google.com include:amazonses.com -all"
+      "google-site-verification=Mqt6LB8YixoNmUrYX15T1wBhmC21gdvDey2B1l_tZUo",
+      "google-site-verification=E6-eQ8w6PaDhy4OM-RhbVH2gk4EezZBiMlTz9BEPXz0"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine;"
@@ -210,7 +229,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "172.66.40.77",
+    "ip": "172.66.43.179",
     "open": [
       8080,
       8443
@@ -285,10 +304,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     ]
   },
   "apex_txt": [
-    "hubspot-developer-verification=YTdhYzEyMmEtOTE1ZC00MjcwLWE4Y2QtNzBlNzhiM2UxMTQx",
-    "google-site-verification=E6-eQ8w6PaDhy4OM-RhbVH2gk4EezZBiMlTz9BEPXz0",
     "hubspot-developer-verification=NmVjZWE0ZTQtZDUxYS00ODA4LWJlZDYtZDRlMTMwODE4Y2E3",
     "facebook-domain-verification=lnpnymx2u5fo84xka7q96uvwyjturq",
+    "hubspot-developer-verification=YTdhYzEyMmEtOTE1ZC00MjcwLWE4Y2QtNzBlNzhiM2UxMTQx",
+    "1password-site-verification=GDHGMUTFKNB57DFFCO4U4GF3TU",
     "google-site-verification=Mqt6LB8YixoNmUrYX15T1wBhmC21gdvDey2B1l_tZUo"
   ],
   "tls2": {
@@ -327,8 +346,18 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "x12": {
     "status": 403
   },
-  "elapsed_s": 5.3,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 403,
+    "http_status": 301,
+    "p404_status": 302,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 5.9,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -338,4 +367,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

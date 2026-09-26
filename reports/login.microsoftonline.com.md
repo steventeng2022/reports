@@ -7,12 +7,12 @@
 | Target | https://login.microsoftonline.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | login.microsoftonline.com |
-| Test date | 2026-09-26 18:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:10 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
+Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -23,8 +23,10 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 | 5 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 6 | info | RED2 | Soft redirect (302/303) for HTTP to HTTPS | CWE-319 |
 | 7 | info | P8 | Missing security.txt | CWE-1038 |
-| 8 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 9 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 8 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 9 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
+| 10 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 11 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -76,17 +78,29 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 8. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of login.microsoftonline.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 9. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 8. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but login.microsoftonline.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 9. [LOW] HTTPS root redirects to a different domain (`RD2`)
+
+- **CWE:** CWE-200
+- **Detail:** https://login.microsoftonline.com/ answered 302 with Location: https://www.office.com/login# (cross-domain handoff at the entry point).
+- **Recommendation:** Review the cross-domain redirect; it discloses the real entry point and can be abused in open-redirect-style flows.
+
+### 10. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on login.microsoftonline.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 11. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The login.microsoftonline.com certificate lists an AIA OCSP responder (http://ocsp.digicert.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -95,28 +109,29 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
   "domain": "login.microsoftonline.com",
   "dns": {
     "a": [
+      "40.126.13.9",
       "20.190.141.32",
-      "20.190.141.37",
-      "20.190.141.39",
-      "20.190.141.33",
-      "20.190.141.36",
-      "40.126.13.8",
       "20.190.141.35",
-      "40.126.13.9"
+      "40.126.13.8",
+      "20.190.141.36",
+      "20.190.141.34",
+      "20.190.141.37",
+      "20.190.141.33"
     ],
     "aaaa": [
-      "2603:1047:1:150::3",
-      "2603:1046:2000:148::4",
       "2603:1046:2000:148::5",
-      "2603:1046:2000:158::5",
       "2603:1047:1:150::1",
-      "2603:1046:2000:148::2",
-      "2603:1046:2000:148::3",
-      "2603:1046:2000:158::3"
+      "2603:1046:2000:148::4",
+      "2603:1046:2000:158::3",
+      "2603:1046:2000:158::4",
+      "2603:1047:1:150::2",
+      "2603:1047:1:150::3",
+      "2603:1046:2000:158::5"
     ],
     "cname": "login.mso.msidentity.com.",
     "mx": [],
     "ns": [],
+    "caa": [],
     "spf": [],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -126,12 +141,11 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
     "chain": "trusted",
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
-    "subject": "countryName=US, stateOrProvinceName=Washington, localityName=Redmond, organizationName=Microsoft Corporation, commonName=stamp2.login.microsoftonline.com",
-    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
-    "notBefore": "Aug 13 00:00:00 2026 GMT",
-    "notAfter": "Nov 21 23:59:59 2026 GMT",
+    "subject": "countryName=US, stateOrProvinceName=WA, localityName=Redmond, organizationName=Microsoft Corporation, commonName=stamp2.login.microsoftonline.com",
+    "issuer": "countryName=US, organizationName=Microsoft Corporation, commonName=Microsoft TLS G2 RSA CA OCSP 04",
+    "notBefore": "Aug 13 01:37:12 2026 GMT",
+    "notAfter": "Nov 21 00:37:12 2026 GMT",
     "san": [
-      "stamp2.login.microsoftonline.com",
       "login.microsoftonline-int.com",
       "login.microsoftonline-p.com",
       "login.microsoftonline.com",
@@ -139,9 +153,10 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
       "login2.microsoftonline.com",
       "loginex.microsoftonline-int.com",
       "loginex.microsoftonline.com",
-      "stamp2.login.microsoftonline-int.com"
+      "stamp2.login.microsoftonline-int.com",
+      "stamp2.login.microsoftonline.com"
     ],
-    "days_left": 56,
+    "days_left": 55,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -151,7 +166,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
     }
   },
   "ports": {
-    "ip": "20.190.141.32",
+    "ip": "40.126.13.9",
     "open": []
   },
   "https": {
@@ -228,16 +243,33 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.digicert.com",
       "not_before": "20260813000000",
       "not_after": "20261121235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "x12": {
     "status": 302
   },
-  "elapsed_s": 8.2,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 302,
+    "root_location": "https://www.office.com/login#",
+    "http_status": 302,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 15.1,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -247,4 +279,5 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

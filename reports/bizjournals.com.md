@@ -7,12 +7,12 @@
 | Target | https://bizjournals.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | bizjournals.com |
-| Test date | 2026-09-26 18:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,8 +30,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 18 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -125,20 +127,32 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=wcEuZ4UCk4bwVGdq9nr7S1khFSOCR5iGtG-Ig1A4W3c; globalsign-domain-verification=4F726D3CDF6B074B8A4260CB9F4C377E; atlassian-domain-verification=+6pUrCNMUxs+a72CA7DbnV48E2gK47W8AGN/XLQVvDOYxWd7Nz
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=4bkcthpt3vo2slh46zxfr02h3n3b7v; google-site-verification=LevCswd_c1IW1f8mRld4q_d-E4eLJBatxClHcGNeTNs; atlassian-domain-verification=sjLsFoaM82p57blkwCOYtnS3pyS0Yh/0FdaZV4PQ1jA/1raOiS
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of bizjournals.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m01.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 18.206.29.207 carries PTR ec2-18-206-29-207.compute-1.amazonaws.com. for bizjournals.com.
+- **Detail:** 52.0.29.175 carries PTR ec2-52-0-29-175.compute-1.amazonaws.com. for bizjournals.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for bizjournals.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 18. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The bizjournals.com certificate lists an AIA OCSP responder (http://ocsp.r2m01.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -147,8 +161,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "domain": "bizjournals.com",
   "dns": {
     "a": [
-      "18.206.29.207",
-      "52.0.29.175"
+      "52.0.29.175",
+      "18.206.29.207"
     ],
     "aaaa": [],
     "cname": null,
@@ -156,35 +170,36 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "bizjournals-com.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
+      "ns-1940.awsdns-50.co.uk.",
       "ns-41.awsdns-05.com.",
       "ns-1212.awsdns-23.org.",
-      "ns-834.awsdns-40.net.",
-      "ns-1940.awsdns-50.co.uk."
+      "ns-834.awsdns-40.net."
     ],
+    "caa": [],
     "spf": [
-      "google-site-verification=wcEuZ4UCk4bwVGdq9nr7S1khFSOCR5iGtG-Ig1A4W3c",
-      "globalsign-domain-verification=4F726D3CDF6B074B8A4260CB9F4C377E",
-      "atlassian-domain-verification=+6pUrCNMUxs+a72CA7DbnV48E2gK47W8AGN/XLQVvDOYxWd7Nz0pKkwro7Vb7GiR",
-      "amazonses:TkdX2fU5+7NqjwIhTKGh4cxDgKG1UzfimAU4+7z9vWI=",
-      "MS=ms27850487",
-      "ZOOM_verify_2cUgpojGZjyFOB0WcsL1lN",
-      "WZ66HBVLql6iCPV+U9dCG8glkuZDIPPnHSz6FRnPosNcfYtQgY8CLQ57vjqet+ahOc5ZHSS+OpB/Ym/4VAExXw==",
-      "apple-domain-verification=2xxTxVU2JUjnPwEV",
-      "mTOuQnSoBNyuJghOQk+G+G17pJdHY4oOSK66FgpLIQJYT0VH6Ljz8MKbbIkpTP81cbBduvb+nQBNQmsXDAzVFA==",
-      "slack-domain-verification=jfcQJvgKct8FZHxAbGMCwMMs5XSg0AABt1wGwPQZ",
-      "anthropic-domain-verification-z8rbfr=rA03Gea7ts0Doz2pIOCL4rKG4",
-      "apple-domain-verification=IVCxC0JQ3uDGJMIftpE75X43PjrCTJrNWwe87Xcdof0",
-      "yahoo-verification-key=YbKyySFskGpmC0YtelWQ8EHW/NJD0mxsAiUkAt3m1HQ=",
-      "google-site-verification=q3vrmfg6zSfgNnkEkz2Vl9bDwAE6khDiIY1NSZWTaH0",
-      "atlassian-domain-verification=sjLsFoaM82p57blkwCOYtnS3pyS0Yh/0FdaZV4PQ1jA/1raOiSGL5wSt/8cbzGH0",
-      "jamf-site-verification=dje_3yg_ckis5d2BwOuRnw",
-      "google-site-verification=lKPntI1ZTAgDVvksd54os6h20CaohO6Nxc4x8hH0BTI",
-      "apple-domain-verification=Z9Ll3GkVj657jbuTXAig5q0mxGEQxSNBwkSpo0NydGc",
-      "logmein-verification-code=e3f76dc8-e880-41c2-9808-25a4ed18f04b",
-      "v=spf1 a mx ip4:65.213.144.0/24 ip4:54.77.160.217 include:spf.protection.outlook.com include:_spf.salesforce.com include:amazonses.com -all",
-      "canva-site-verification=m8pNzfUCCKpKLpqTjmp6Mg",
       "facebook-domain-verification=4bkcthpt3vo2slh46zxfr02h3n3b7v",
-      "google-site-verification=LevCswd_c1IW1f8mRld4q_d-E4eLJBatxClHcGNeTNs"
+      "google-site-verification=LevCswd_c1IW1f8mRld4q_d-E4eLJBatxClHcGNeTNs",
+      "atlassian-domain-verification=sjLsFoaM82p57blkwCOYtnS3pyS0Yh/0FdaZV4PQ1jA/1raOiSGL5wSt/8cbzGH0",
+      "slack-domain-verification=jfcQJvgKct8FZHxAbGMCwMMs5XSg0AABt1wGwPQZ",
+      "google-site-verification=lKPntI1ZTAgDVvksd54os6h20CaohO6Nxc4x8hH0BTI",
+      "yahoo-verification-key=YbKyySFskGpmC0YtelWQ8EHW/NJD0mxsAiUkAt3m1HQ=",
+      "amazonses:TkdX2fU5+7NqjwIhTKGh4cxDgKG1UzfimAU4+7z9vWI=",
+      "ZOOM_verify_2cUgpojGZjyFOB0WcsL1lN",
+      "google-site-verification=wcEuZ4UCk4bwVGdq9nr7S1khFSOCR5iGtG-Ig1A4W3c",
+      "anthropic-domain-verification-z8rbfr=rA03Gea7ts0Doz2pIOCL4rKG4",
+      "globalsign-domain-verification=4F726D3CDF6B074B8A4260CB9F4C377E",
+      "apple-domain-verification=2xxTxVU2JUjnPwEV",
+      "MS=ms27850487",
+      "atlassian-domain-verification=+6pUrCNMUxs+a72CA7DbnV48E2gK47W8AGN/XLQVvDOYxWd7Nz0pKkwro7Vb7GiR",
+      "canva-site-verification=m8pNzfUCCKpKLpqTjmp6Mg",
+      "google-site-verification=q3vrmfg6zSfgNnkEkz2Vl9bDwAE6khDiIY1NSZWTaH0",
+      "v=spf1 a mx ip4:65.213.144.0/24 ip4:54.77.160.217 include:spf.protection.outlook.com include:_spf.salesforce.com include:amazonses.com -all",
+      "apple-domain-verification=IVCxC0JQ3uDGJMIftpE75X43PjrCTJrNWwe87Xcdof0",
+      "jamf-site-verification=dje_3yg_ckis5d2BwOuRnw",
+      "WZ66HBVLql6iCPV+U9dCG8glkuZDIPPnHSz6FRnPosNcfYtQgY8CLQ57vjqet+ahOc5ZHSS+OpB/Ym/4VAExXw==",
+      "mTOuQnSoBNyuJghOQk+G+G17pJdHY4oOSK66FgpLIQJYT0VH6Ljz8MKbbIkpTP81cbBduvb+nQBNQmsXDAzVFA==",
+      "logmein-verification-code=e3f76dc8-e880-41c2-9808-25a4ed18f04b",
+      "apple-domain-verification=Z9Ll3GkVj657jbuTXAig5q0mxGEQxSNBwkSpo0NydGc"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; pct=100; rua=mailto:Wv2DBvHlcl@dmarc.inboxmonster.com; ruf=mailto:dmarc@bizjournals.com"
@@ -213,7 +228,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     }
   },
   "ports": {
-    "ip": "18.206.29.207",
+    "ip": "52.0.29.175",
     "open": []
   },
   "https": {
@@ -266,11 +281,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=wcEuZ4UCk4bwVGdq9nr7S1khFSOCR5iGtG-Ig1A4W3c",
-    "globalsign-domain-verification=4F726D3CDF6B074B8A4260CB9F4C377E",
-    "atlassian-domain-verification=+6pUrCNMUxs+a72CA7DbnV48E2gK47W8AGN/XLQVvDOYxWd7Nz",
-    "apple-domain-verification=2xxTxVU2JUjnPwEV",
-    "slack-domain-verification=jfcQJvgKct8FZHxAbGMCwMMs5XSg0AABt1wGwPQZ"
+    "facebook-domain-verification=4bkcthpt3vo2slh46zxfr02h3n3b7v",
+    "google-site-verification=LevCswd_c1IW1f8mRld4q_d-E4eLJBatxClHcGNeTNs",
+    "atlassian-domain-verification=sjLsFoaM82p57blkwCOYtnS3pyS0Yh/0FdaZV4PQ1jA/1raOiS",
+    "slack-domain-verification=jfcQJvgKct8FZHxAbGMCwMMs5XSg0AABt1wGwPQZ",
+    "google-site-verification=lKPntI1ZTAgDVvksd54os6h20CaohO6Nxc4x8hH0BTI"
   ],
   "tls2": {
     "alpn": "",
@@ -281,19 +296,32 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
       "not_before": "20260809000000",
       "not_after": "20270222235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-18-206-29-207.compute-1.amazonaws.com."
+      "ec2-52-0-29-175.compute-1.amazonaws.com."
     ]
   },
-  "elapsed_s": 31.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.bizjournals.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 40.3,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -303,4 +331,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

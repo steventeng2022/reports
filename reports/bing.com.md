@@ -7,12 +7,12 @@
 | Target | https://bing.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | bing.com |
-| Test date | 2026-09-26 18:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
+Total findings: **21** (High: 0, Medium: 0, Low: 8, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,9 +33,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
 | 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 16 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 18 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 19 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 | 20 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 21 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -144,20 +145,20 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
 ### 16. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (dhpcwjk158ft8l.bing.com and vrzhkyrixe4jfr.bing.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (5ahmm0idj68sq4.bing.com and 45sioblgg9vwz6.bing.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=09yg8uzcfnqnlqekzsbwjxyy8rdck7; google-site-verification=OkRY8R261shK5B8uEwvsFZp9nQ2gRoHavGlruok1azc; google-site-verification=SHuSHN0Hv3nwBI9So329KwfbQ7xLif64SRwcGSdWNAU
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=SHuSHN0Hv3nwBI9So329KwfbQ7xLif64SRwcGSdWNAU; google-site-verification=OkRY8R261shK5B8uEwvsFZp9nQ2gRoHavGlruok1azc; facebook-domain-verification=09yg8uzcfnqnlqekzsbwjxyy8rdck7
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 18. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of bing.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://oneocsp.microsoft.com/ocsp -> http-400
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 19. [LOW] CSP present but still allows unsafe directives (`CSP1`)
 
@@ -171,6 +172,12 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
 - **Detail:** CSP of bing.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
 - **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
 
+### 21. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The bing.com certificate lists an AIA OCSP responder (http://oneocsp.microsoft.com/ocsp) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -178,33 +185,39 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
   "domain": "bing.com",
   "dns": {
     "a": [
-      "150.171.27.10",
-      "150.171.28.10"
+      "150.171.28.10",
+      "150.171.27.10"
     ],
     "aaaa": [
-      "2620:1ec:33::10",
-      "2620:1ec:33:1::10"
+      "2620:1ec:33:1::10",
+      "2620:1ec:33::10"
     ],
     "cname": null,
     "mx": [
       "bing-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "dns4.p09.nsone.net.",
-      "dns1.p09.nsone.net.",
-      "ns4-204.azure-dns.info.",
-      "ns3-204.azure-dns.org.",
       "ns1-204.azure-dns.com.",
+      "ns2-204.azure-dns.net.",
+      "ns3-204.azure-dns.org.",
+      "ns4-204.azure-dns.info.",
+      "dns1.p09.nsone.net.",
       "dns2.p09.nsone.net.",
       "dns3.p09.nsone.net.",
-      "ns2-204.azure-dns.net."
+      "dns4.p09.nsone.net."
+    ],
+    "caa": [
+      "0 issue \"digicert.com\"",
+      "0 contactemail \"caarecordaware@microsoft.com\"",
+      "0 issue \"globalsign.com\"",
+      "0 issue \"microsoft.com\""
     ],
     "spf": [
+      "google-site-verification=SHuSHN0Hv3nwBI9So329KwfbQ7xLif64SRwcGSdWNAU",
+      "google-site-verification=OkRY8R261shK5B8uEwvsFZp9nQ2gRoHavGlruok1azc",
       "facebook-domain-verification=09yg8uzcfnqnlqekzsbwjxyy8rdck7",
       "v=msv1 t=6097A7EA-53F7-4028-BA76-6869CB284C54",
-      "v=spf1 include:spf.protection.outlook.com -all",
-      "google-site-verification=OkRY8R261shK5B8uEwvsFZp9nQ2gRoHavGlruok1azc",
-      "google-site-verification=SHuSHN0Hv3nwBI9So329KwfbQ7xLif64SRwcGSdWNAU"
+      "v=spf1 include:spf.protection.outlook.com -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:BingEmailDMARC@microsoft.com;"
@@ -265,7 +278,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
     }
   },
   "ports": {
-    "ip": "150.171.27.10",
+    "ip": "150.171.28.10",
     "open": []
   },
   "https": {
@@ -328,9 +341,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "facebook-domain-verification=09yg8uzcfnqnlqekzsbwjxyy8rdck7",
+    "google-site-verification=SHuSHN0Hv3nwBI9So329KwfbQ7xLif64SRwcGSdWNAU",
     "google-site-verification=OkRY8R261shK5B8uEwvsFZp9nQ2gRoHavGlruok1azc",
-    "google-site-verification=SHuSHN0Hv3nwBI9So329KwfbQ7xLif64SRwcGSdWNAU"
+    "facebook-domain-verification=09yg8uzcfnqnlqekzsbwjxyy8rdck7"
   ],
   "tls2": {
     "alpn": "",
@@ -341,10 +354,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://oneocsp.microsoft.com/ocsp",
       "not_before": "20260901170546",
       "not_after": "20270228170546"
-    }
+    },
+    "ocsp": "http-400"
   },
   "http2": {
     "hsts_preloaded": true
@@ -352,8 +366,20 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 5.7,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.bing.com:443/?toWww=1&redig=66228545037F491EA8CEFF2AB9B787DC",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 16.4,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -363,4 +389,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://w3schools.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | w3schools.com |
-| Test date | 2026-09-26 19:01 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,9 +30,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -126,14 +128,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=9Wi0rp8KXQ3oB2KWvpcLIbwMdqFvyZe8QmOH0YnON4g; apple-domain-verification=iGza4rmAk4yMj4vi; linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=9Wi0rp8KXQ3oB2KWvpcLIbwMdqFvyZe8QmOH0YnON4g; linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5; apple-domain-verification=iGza4rmAk4yMj4vi
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of w3schools.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m01.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
@@ -146,6 +148,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **CWE:** CWE-200
 - **Detail:** 13.248.240.135 carries PTR ab2c03c0cf361bdb8.awsglobalaccelerator.com. for w3schools.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for w3schools.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 19. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The w3schools.com certificate lists an AIA OCSP responder (http://ocsp.r2m01.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -160,27 +174,28 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)",
-      "aspmx.l.google.com (pref 1)",
       "feedback-smtp.eu-west-1.amazonses.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
       "ns-1409.awsdns-48.org.",
-      "ns-1939.awsdns-50.co.uk.",
+      "ns-769.awsdns-32.net.",
       "ns-314.awsdns-39.com.",
-      "ns-769.awsdns-32.net."
+      "ns-1939.awsdns-50.co.uk."
     ],
+    "caa": [],
     "spf": [
-      "MS=338A1134735F428FF6729DDF746385742F152781",
-      "amazonses:9O9JMU+QwMbQv3k+hYpAmauno4fuJMUcWephofXN0yc=",
       "google-site-verification=9Wi0rp8KXQ3oB2KWvpcLIbwMdqFvyZe8QmOH0YnON4g",
+      "MS=338A1134735F428FF6729DDF746385742F152781",
+      "linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5",
+      "amazonses:9O9JMU+QwMbQv3k+hYpAmauno4fuJMUcWephofXN0yc=",
       "apple-domain-verification=iGza4rmAk4yMj4vi",
-      "v=spf1 include:_spf.google.com include:amazonses.com include:spf.sendinblue.com include:shops.shopify.com include:mail.zendesk.com ip4:148.122.215.227 -all",
       "Sendinblue-code:c1cb221c990a3b197b84632af64eb12a",
-      "linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5"
+      "v=spf1 include:_spf.google.com include:amazonses.com include:spf.sendinblue.com include:shops.shopify.com include:mail.zendesk.com ip4:148.122.215.227 -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:postmaster@w3schools.com; pct=100; adkim=r; aspf=s"
@@ -263,8 +278,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   },
   "apex_txt": [
     "google-site-verification=9Wi0rp8KXQ3oB2KWvpcLIbwMdqFvyZe8QmOH0YnON4g",
-    "apple-domain-verification=iGza4rmAk4yMj4vi",
-    "linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5"
+    "linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5",
+    "apple-domain-verification=iGza4rmAk4yMj4vi"
   ],
   "tls2": {
     "alpn": "",
@@ -275,10 +290,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
       "not_before": "20260131000000",
       "not_after": "20270228235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -295,8 +311,20 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "ab2c03c0cf361bdb8.awsglobalaccelerator.com."
     ]
   },
-  "elapsed_s": 33.7,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.w3schools.com:443/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 42.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -306,4 +334,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

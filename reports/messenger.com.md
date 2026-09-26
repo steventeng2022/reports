@@ -7,12 +7,12 @@
 | Target | https://messenger.com/ |
 | Bug bounty program | Facebook |
 | Listed scope domain | messenger.com |
-| Test date | 2026-09-26 18:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:10 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 8, Info: 9)
+Total findings: **16** (High: 0, Medium: 0, Low: 8, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,8 +31,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 8, Info: 9)
 | 13 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
 | 14 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -125,7 +124,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 8, Info: 9)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (pzw9ojs5fk4l8y.messenger.com and 2voqsu4ez6i3s8.messenger.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (q7r41jydf1fuvv.messenger.com and h0812khfl8xa4f.messenger.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
@@ -134,13 +133,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 8, Info: 9)
 - **Detail:** Apex TXT records with verification/token content: google-site-verification=z9mNNADBbsCO2UKMxiu5UFnUz5SvavUmC2Jx-4Lw9RI; google-site-verification=f68cxjENokmrbNLEilsjxlPqbiM3lTmXKGLJFg0OHr4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of messenger.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 57.144.92.141 carries PTR edge-star-shv-01-tpe5.facebook.com. for messenger.com.
@@ -160,24 +153,27 @@ Total findings: **17** (High: 0, Medium: 0, Low: 8, Info: 9)
     ],
     "cname": null,
     "mx": [
-      "mx0a-00082601.pphosted.com (pref 20)",
-      "mxb-00082601.gslb.pphosted.com (pref 10)",
       "mxa-00082601.gslb.pphosted.com (pref 10)",
+      "mxb-00082601.gslb.pphosted.com (pref 10)",
+      "mx0a-00082601.pphosted.com (pref 20)",
       "mx0b-00082601.pphosted.com (pref 20)"
     ],
     "ns": [
-      "c.ns.facebook.com.",
       "d.ns.facebook.com.",
+      "c.ns.facebook.com.",
       "b.ns.facebook.com.",
       "a.ns.facebook.com."
     ],
+    "caa": [
+      "0 issue \"digicert.com; account=271b0beda0771d006aa3a6c11b05187d456d6c239b46cb5241196095b09c92af\""
+    ],
     "spf": [
-      "6fd64222-f6ef-4766-87e8-34729703809a",
+      "v=spf1 redirect=_spf.fb.com",
+      "MS=ms57472615",
       "google-site-verification=z9mNNADBbsCO2UKMxiu5UFnUz5SvavUmC2Jx-4Lw9RI",
       "fLEQ2Q8vdk4sDU0r7FqRc8XJoe7FYEj3ihT0KxCABfwuAbMel2204jpnNBjV+c1rfY71OeFf/cTMCKZpzJBPPw==",
-      "v=spf1 redirect=_spf.fb.com",
       "google-site-verification=f68cxjENokmrbNLEilsjxlPqbiM3lTmXKGLJFg0OHr4",
-      "MS=ms57472615"
+      "6fd64222-f6ef-4766-87e8-34729703809a"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:a@dmarc.facebookmail.com; pct=100"
@@ -279,10 +275,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 8, Info: 9)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.digicert.com",
       "not_before": "20260706000000",
       "not_after": "20261004235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "hsts_preloaded": true
@@ -293,8 +290,20 @@ Total findings: **17** (High: 0, Medium: 0, Low: 8, Info: 9)
       "edge-star-shv-01-tpe5.facebook.com."
     ]
   },
-  "elapsed_s": 7.3,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.messenger.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 8.9,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -304,4 +313,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 8, Info: 9)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

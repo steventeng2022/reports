@@ -7,12 +7,12 @@
 | Target | https://rottentomatoes.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | rottentomatoes.com |
-| Test date | 2026-09-26 18:58 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:14 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
+Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,10 +27,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 | 9 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 10 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 11 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
-| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 13 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -103,31 +102,25 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=SOiuNurCT5KQ4utFqj2pH9D2Oww8G4r1K_Gnt27e-hQ; google-site-verification=zJOWtCsOIqoH7c20uzDEK2ZbjELwSglEmrNiPMdJxdQ; airtable-verification=a25c5929bf27eceab120aa631f5b34cb
+- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe985; google-site-verification=zJOWtCsOIqoH7c20uzDEK2ZbjELwSglEmrNiPMdJxdQ; airtable-verification=a25c5929bf27eceab120aa631f5b34cb
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of rottentomatoes.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 13. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 12. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but rottentomatoes.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 14. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+### 13. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
 
 - **CWE:** CWE-922
 - **Detail:** Response for https://rottentomatoes.com/ carries Cache-Control: max-age=0; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
-### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 23.59.252.115 carries PTR a23-59-252-115.deploy.static.akamaitechnologies.com. for rottentomatoes.com.
+- **Detail:** 23.210.215.218 carries PTR a23-210-215-218.deploy.static.akamaitechnologies.com. for rottentomatoes.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
@@ -137,41 +130,53 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
   "domain": "rottentomatoes.com",
   "dns": {
     "a": [
-      "23.59.252.115",
-      "23.59.252.67"
+      "23.210.215.218",
+      "23.210.215.203"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "mx0a-00a17301.pphosted.com (pref 20)",
       "mxb-00a17301.gslb.pphosted.com (pref 10)",
-      "mx0b-00a17301.pphosted.com (pref 20)",
       "mxa-00a17301.gslb.pphosted.com (pref 10)",
-      "mx0a-00a17301.pphosted.com (pref 20)"
+      "mx0b-00a17301.pphosted.com (pref 20)"
     ],
     "ns": [
       "udns2.ultradns.net.",
-      "a22-67.akam.net.",
-      "a13-65.akam.net.",
       "udns1.ultradns.net.",
+      "a1-42.akam.net.",
+      "a22-67.akam.net.",
+      "a4-66.akam.net.",
       "a2-65.akam.net.",
       "a5-66.akam.net.",
-      "a4-66.akam.net.",
-      "a1-42.akam.net."
+      "a13-65.akam.net."
+    ],
+    "caa": [
+      "0 issue \"digicert.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issuewild \"digicert.com\"",
+      "0 issue \"sectigo.com\"",
+      "0 issuewild \"pki.goog\"",
+      "0 issue \"amazonaws.com\"",
+      "0 issue \"awstrust.com\"",
+      "0 issue \"amazontrust.com\"",
+      "0 issue \"pki.goog\"",
+      "0 issue \"letsencrypt.org\""
     ],
     "spf": [
-      "ZOOM_verify_oGsblYdrOBX5vRITDGidMv",
-      "smartsheet-site-validation=EeqHILQCPlyqRLZalbWSAPzmPdLJqa5q",
-      "google-site-verification=SOiuNurCT5KQ4utFqj2pH9D2Oww8G4r1K_Gnt27e-hQ",
+      "adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe98526fe9bcd1502",
       "google-site-verification=zJOWtCsOIqoH7c20uzDEK2ZbjELwSglEmrNiPMdJxdQ",
+      "MS=ms76165705",
       "airtable-verification=a25c5929bf27eceab120aa631f5b34cb",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
+      "google-site-verification=SOiuNurCT5KQ4utFqj2pH9D2Oww8G4r1K_Gnt27e-hQ",
+      "airtable-verification=1ee1c3d067dcf9300bc65f995e7c794b",
+      "smartsheet-site-validation=EeqHILQCPlyqRLZalbWSAPzmPdLJqa5q",
       "dropbox-domain-verification=qwg79uqdchth",
       "yahoo-verification-key=viW+9OzMd5GimBzrAwyj8fCdyyRNhzqHo0Z7SrHM2ec=",
-      "MS=ms76165705",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
       "spf2.0/pra mx include:spf.mandrillapp.com -all",
-      "ZOOM_verify_rdYl4DWQCzWA3NSpJbBCXa",
-      "adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe98526fe9bcd1502",
-      "airtable-verification=1ee1c3d067dcf9300bc65f995e7c794b"
+      "ZOOM_verify_oGsblYdrOBX5vRITDGidMv",
+      "ZOOM_verify_rdYl4DWQCzWA3NSpJbBCXa"
     ],
     "dmarc": [
       "v=DMARC1; p=none; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -201,7 +206,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
     }
   },
   "ports": {
-    "ip": "23.59.252.115",
+    "ip": "23.210.215.218",
     "open": []
   },
   "https": {
@@ -257,11 +262,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=SOiuNurCT5KQ4utFqj2pH9D2Oww8G4r1K_Gnt27e-hQ",
+    "adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe985",
     "google-site-verification=zJOWtCsOIqoH7c20uzDEK2ZbjELwSglEmrNiPMdJxdQ",
     "airtable-verification=a25c5929bf27eceab120aa631f5b34cb",
-    "dropbox-domain-verification=qwg79uqdchth",
-    "yahoo-verification-key=viW+9OzMd5GimBzrAwyj8fCdyyRNhzqHo0Z7SrHM2ec="
+    "google-site-verification=SOiuNurCT5KQ4utFqj2pH9D2Oww8G4r1K_Gnt27e-hQ",
+    "airtable-verification=1ee1c3d067dcf9300bc65f995e7c794b"
   ],
   "tls2": {
     "alpn": "",
@@ -272,19 +277,31 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.digicert.com",
       "not_before": "20260822000000",
       "not_after": "20270308235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "x12": {
     "status": 403,
     "ptr": [
-      "a23-59-252-115.deploy.static.akamaitechnologies.com."
+      "a23-210-215-218.deploy.static.akamaitechnologies.com."
     ]
   },
-  "elapsed_s": 5.3,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 403,
+    "http_status": 403,
+    "p404_status": 403,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 5.1,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -294,4 +311,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

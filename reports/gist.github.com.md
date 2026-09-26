@@ -7,8 +7,8 @@
 | Target | https://gist.github.com/ |
 | Bug bounty program | GitHub |
 | Listed scope domain | gist.github.com |
-| Test date | 2026-09-26 18:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:06 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -28,10 +28,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 | 10 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 14 | info | CK5 | Cookie scoped to parent domain (.github.com) | CWE-200 |
-| 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 16 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 13 | info | CK5 | Cookie scoped to parent domain (.github.com) | CWE-200 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 16 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -108,32 +108,32 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: serval-domain-verification-ydryhj=qbkiEakpwEpTvHh5fIiCqtaue; anthropic-domain-verification-4az7qn=if8YWuRRqwLycGJDooumzHtxm; google-site-verification=82Le34Flgtd15ojYhHlGF_6g72muSjamlMVThBOJpks
+- **Detail:** Apex TXT records with verification/token content: loom-site-verification=f3787154f1154b7880e720a511ea664d; atlassian-domain-verification=jjgw98AKv2aeoYFxiL/VFaoyPkn3undEssTRuMg6C/3Fp/iqhk; anthropic-domain-verification-4az7qn=if8YWuRRqwLycGJDooumzHtxm
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of gist.github.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 14. [INFO] Cookie scoped to parent domain (.github.com) (`CK5`)
+### 13. [INFO] Cookie scoped to parent domain (.github.com) (`CK5`)
 
 - **CWE:** CWE-200
 - **Detail:** Set-Cookie Domain attribute is broader than the request host gist.github.com.
 - **Recommendation:** Confirm the wider cookie scope is intended.
 
-### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 241 disallow path(s), e.g. /*/*/pulse, /*/*/projects, /*/*/forks, /*/*/issues/new, /*/*/milestones/new
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 16. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+### 15. [LOW] CSP present but still allows unsafe directives (`CSP1`)
 
 - **CWE:** CWE-1021
 - **Detail:** Content-Security-Policy of gist.github.com permits unsafe-inline; inline script injection still executes.
 - **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 16. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The gist.github.com certificate lists an AIA OCSP responder (http://ocsp.sectigo.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -150,41 +150,50 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "github-com.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "ns-1707.awsdns-21.co.uk.",
-      "dns3.p08.nsone.net.",
-      "dns2.p08.nsone.net.",
-      "dns4.p08.nsone.net.",
-      "dns1.p08.nsone.net.",
-      "ns-1283.awsdns-32.org.",
       "ns-520.awsdns-01.net.",
-      "ns-421.awsdns-52.com."
+      "ns-421.awsdns-52.com.",
+      "dns2.p08.nsone.net.",
+      "ns-1707.awsdns-21.co.uk.",
+      "dns4.p08.nsone.net.",
+      "dns3.p08.nsone.net.",
+      "dns1.p08.nsone.net.",
+      "ns-1283.awsdns-32.org."
+    ],
+    "caa": [
+      "0 issuewild \"sectigo.com\"",
+      "0 issuewild \"digicert.com\"",
+      "0 issue \"globalsign.com\"",
+      "0 issue \"sectigo.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issue \"digicert.com\""
     ],
     "spf": [
-      "serval-domain-verification-ydryhj=qbkiEakpwEpTvHh5fIiCqtaue",
-      "anthropic-domain-verification-4az7qn=if8YWuRRqwLycGJDooumzHtxm",
-      "docusign=087098e3-3d46-47b7-9b4e-8a23028154cd",
-      "google-site-verification=82Le34Flgtd15ojYhHlGF_6g72muSjamlMVThBOJpks",
-      "adobe-idp-site-verification=b92c9e999aef825edc36e0a3d847d2dbad5b2fc0e05c79ddd7a16139b48ecf4b",
-      "jamf-site-verification=XtaPNIYghF_e_xRDI8CjgQ",
-      "TAILSCALE-xOzoDvFUzZr5YYVCQFuD",
-      "cursor-domain-verification-gtfwmt=1rfLOtiTngX5QSxD5HvNKTvm3",
+      "loom-site-verification=f3787154f1154b7880e720a511ea664d",
       "atlassian-domain-verification=jjgw98AKv2aeoYFxiL/VFaoyPkn3undEssTRuMg6C/3Fp/iqhkV4HVV7WjYlVeF8",
-      "MS=ms44452932",
-      "google-site-verification=UTM-3akMgubp6tQtgEuAkYNYLyYAvpTnnSrDMWoDR3o",
-      "facebook-domain-verification=39xu4jzl7roi7x0n93ldkxjiaarx50",
-      "miro-verification=d2e174fdb00c71e0bcf58f8e58c3da2dd80dcfa9",
+      "docusign=087098e3-3d46-47b7-9b4e-8a23028154cd",
       "00Dd0000000hHE0=1TBKg000000TN2r",
-      "apple-domain-verification=RyQhdzTl6Z6x8ZP4",
-      "shopify-verification-code=t1YPwcmvnxZyBycaCpk1MPyWoFs72o",
-      "krisp-domain-verification=ZlyiK7XLhnaoUQb2hpak1PLY7dFkl1WE",
-      "openai-domain-verification=dv-3nh33eQwdkotMIAzLrIDVZo1",
+      "TAILSCALE-xOzoDvFUzZr5YYVCQFuD",
       "MS=6BF03E6AF5CB689E315FB6199603BABF2C88D805",
-      "calendly-site-verification=at0DQARi7IZvJtXQAWhMqpmIzpvoBNF7aam5VKKxP",
+      "anthropic-domain-verification-4az7qn=if8YWuRRqwLycGJDooumzHtxm",
+      "google-site-verification=82Le34Flgtd15ojYhHlGF_6g72muSjamlMVThBOJpks",
+      "cursor-domain-verification-gtfwmt=1rfLOtiTngX5QSxD5HvNKTvm3",
+      "stripe-verification=f88ef17321660a01bab1660454192e014defa29ba7b8de9633c69d6b4912217f",
+      "krisp-domain-verification=ZlyiK7XLhnaoUQb2hpak1PLY7dFkl1WE",
       "v=spf1 ip4:192.30.252.0/22 include:spf.protection.outlook.com include:_netblocks.google.com include:_netblocks2.google.com include:mail.zendesk.com include:_spf.salesforce.com include:servers.mcsv.net include:mktomail.com include:sendgrid.net ip4:62.253.2",
       "27.114 ip4:166.78.69.169 ip4:166.78.69.170 ip4:166.78.71.131 ~all",
-      "loom-site-verification=f3787154f1154b7880e720a511ea664d",
+      "apple-domain-verification=RyQhdzTl6Z6x8ZP4",
+      "MS=ms44452932",
+      "calendly-site-verification=at0DQARi7IZvJtXQAWhMqpmIzpvoBNF7aam5VKKxP",
+      "jamf-site-verification=XtaPNIYghF_e_xRDI8CjgQ",
+      "openai-domain-verification=dv-3nh33eQwdkotMIAzLrIDVZo1",
       "MS=ms58704441",
-      "stripe-verification=f88ef17321660a01bab1660454192e014defa29ba7b8de9633c69d6b4912217f"
+      "adobe-idp-site-verification=b92c9e999aef825edc36e0a3d847d2dbad5b2fc0e05c79ddd7a16139b48ecf4b",
+      "shopify-verification-code=t1YPwcmvnxZyBycaCpk1MPyWoFs72o",
+      "miro-verification=d2e174fdb00c71e0bcf58f8e58c3da2dd80dcfa9",
+      "facebook-domain-verification=39xu4jzl7roi7x0n93ldkxjiaarx50",
+      "google-site-verification=UTM-3akMgubp6tQtgEuAkYNYLyYAvpTnnSrDMWoDR3o",
+      "serval-domain-verification-ydryhj=qbkiEakpwEpTvHh5fIiCqtaue"
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -282,11 +291,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     "github.com"
   ],
   "apex_txt": [
-    "serval-domain-verification-ydryhj=qbkiEakpwEpTvHh5fIiCqtaue",
+    "loom-site-verification=f3787154f1154b7880e720a511ea664d",
+    "atlassian-domain-verification=jjgw98AKv2aeoYFxiL/VFaoyPkn3undEssTRuMg6C/3Fp/iqhk",
     "anthropic-domain-verification-4az7qn=if8YWuRRqwLycGJDooumzHtxm",
     "google-site-verification=82Le34Flgtd15ojYhHlGF_6g72muSjamlMVThBOJpks",
-    "adobe-idp-site-verification=b92c9e999aef825edc36e0a3d847d2dbad5b2fc0e05c79ddd7a1",
-    "jamf-site-verification=XtaPNIYghF_e_xRDI8CjgQ"
+    "cursor-domain-verification-gtfwmt=1rfLOtiTngX5QSxD5HvNKTvm3"
   ],
   "tls2": {
     "alpn": "",
@@ -297,10 +306,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.sectigo.com",
       "not_before": "20260830000000",
       "not_after": "20261127235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "hsts_preloaded": true,
@@ -325,8 +335,20 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
   "x12": {
     "status": 302
   },
-  "elapsed_s": 12.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 302,
+    "root_location": "https://gist.github.com/starred",
+    "http_status": 301,
+    "p404_status": 404,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 20.2,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -336,4 +358,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

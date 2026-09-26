@@ -7,12 +7,12 @@
 | Target | https://nydailynews.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | nydailynews.com |
-| Test date | 2026-09-26 18:56 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:11 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
+Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 18 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 19 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -132,7 +134,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: tollbit-domain-verification=ef1c9b50f5288be2ac950c259ca3f721ddf4d2161522e79044e2; google-site-verification=hMnRAtdizhrC_XVmPTQN1cDWp-b--71NSTwSMExNeAI; google-site-verification=1RnCO3kOaGC8U0mJXV2sbY-6XM6VJscT8lSoWJOB7UY
+- **Detail:** Apex TXT records with verification/token content: tollbit-domain-verification=ef1c9b50f5288be2ac950c259ca3f721ddf4d2161522e79044e2; google-site-verification=hMnRAtdizhrC_XVmPTQN1cDWp-b--71NSTwSMExNeAI; google-site-verification=a40Yo5u46-Gpqee1PSKGDsuayXa3mn8A9wSFUJBnVDY
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -153,6 +155,18 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 - **Detail:** Content-Security-Policy of nydailynews.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
 - **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
+### 19. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on nydailynews.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for nydailynews.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -165,42 +179,43 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)"
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-670.awsdns-19.net.",
+      "ns-1494.awsdns-58.org.",
       "ns-1929.awsdns-49.co.uk.",
-      "ns-318.awsdns-39.com.",
-      "ns-1494.awsdns-58.org."
+      "ns-670.awsdns-19.net.",
+      "ns-318.awsdns-39.com."
     ],
+    "caa": [],
     "spf": [
-      "tollbit-domain-verification=ef1c9b50f5288be2ac950c259ca3f721ddf4d2161522e79044e2f7042a6d237c",
       "13kvutnp8irg8ioiotkqq86i51",
-      "google-site-verification=hMnRAtdizhrC_XVmPTQN1cDWp-b--71NSTwSMExNeAI",
-      "google-site-verification=1RnCO3kOaGC8U0mJXV2sbY-6XM6VJscT8lSoWJOB7UY",
-      "google-site-verification=8TDEqJ-arOBRammsLaJwjep-S63E7y7m-QsH9bhT6K4",
-      "google-site-verification=a40Yo5u46-Gpqee1PSKGDsuayXa3mn8A9wSFUJBnVDY",
-      "bntlt7a869guderdu33t64dms5",
-      "IPROTA_D59226-XXX",
-      "4b0695jv70h8g47zkdg16kzygm3ls02v",
-      "amazonses:rUbohPMg18d7fvhiuygSmeQbkP+Y7JuMBpNoGODmKIM=",
-      "knowbe4-site-verification=90309b4eacebd82470e924deb428c541",
-      "google-site-verification=1fTCAXxtHpJXkMkbrZjElBCAm6inCZ-7AkzpL2tLSaY",
-      "google-site-verification=5JHSGMK_gK4xGs8DWfgnX4xwHqIAePxl4j18e5qkHv4",
-      "fzkp52pbdwht5h6rsnhcfkh8hqs4d0z3",
-      "fmtpohpupbmlg7ph5dgtpqhn1r",
-      "7rdja10s86ikle4v2h82p6n642",
-      "fbd8dhf0dupevcppakg92fireq",
-      "facebook-domain-verification=ois8caa2a84ewa28r3zx5ilvxs4g4r",
-      "hucq9oebjdhnpo231ru64sqlu4",
+      "tollbit-domain-verification=ef1c9b50f5288be2ac950c259ca3f721ddf4d2161522e79044e2f7042a6d237c",
       "MS=ms76891439",
       "v=spf1 include:spf.protection.outlook.com include:_spf.google.com include:_spf.salesforce.com include:mail.zendesk.com ip4:198.21.3.53 ip4:159.183.220.8 exists:%{i}.spf.sitel.iphmx.com -all",
+      "google-site-verification=hMnRAtdizhrC_XVmPTQN1cDWp-b--71NSTwSMExNeAI",
+      "IPROTA_D59226-XXX",
+      "google-site-verification=a40Yo5u46-Gpqee1PSKGDsuayXa3mn8A9wSFUJBnVDY",
+      "4b0695jv70h8g47zkdg16kzygm3ls02v",
+      "mppmekcnmo3na10p5fqp793g9v",
+      "google-site-verification=8TDEqJ-arOBRammsLaJwjep-S63E7y7m-QsH9bhT6K4",
       "8oqjg39e67s8ao65ndrgnd5ufv",
-      "google-site-verification=wJYLuUe209pKCTIs9tSdz5kaorlk7GqqWPHX9rOzH2M",
+      "bntlt7a869guderdu33t64dms5",
       "amazonses:N8Ba1fh8HfMvT+t5J7vwXFgnXMVaK646lFnkrQkLoVc=",
-      "mppmekcnmo3na10p5fqp793g9v"
+      "fbd8dhf0dupevcppakg92fireq",
+      "fmtpohpupbmlg7ph5dgtpqhn1r",
+      "knowbe4-site-verification=90309b4eacebd82470e924deb428c541",
+      "facebook-domain-verification=ois8caa2a84ewa28r3zx5ilvxs4g4r",
+      "amazonses:rUbohPMg18d7fvhiuygSmeQbkP+Y7JuMBpNoGODmKIM=",
+      "google-site-verification=1RnCO3kOaGC8U0mJXV2sbY-6XM6VJscT8lSoWJOB7UY",
+      "google-site-verification=1fTCAXxtHpJXkMkbrZjElBCAm6inCZ-7AkzpL2tLSaY",
+      "google-site-verification=5JHSGMK_gK4xGs8DWfgnX4xwHqIAePxl4j18e5qkHv4",
+      "hucq9oebjdhnpo231ru64sqlu4",
+      "google-site-verification=wJYLuUe209pKCTIs9tSdz5kaorlk7GqqWPHX9rOzH2M",
+      "fzkp52pbdwht5h6rsnhcfkh8hqs4d0z3",
+      "7rdja10s86ikle4v2h82p6n642"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100"
@@ -267,7 +282,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   ],
   "paths": {
     "/robots.txt": 301,
-    "/sitemap.xml": 200,
+    "/sitemap.xml": 403,
     "/.well-known/security.txt": 301,
     "/security.txt": 301,
     "/.git/HEAD": 403,
@@ -285,9 +300,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   "apex_txt": [
     "tollbit-domain-verification=ef1c9b50f5288be2ac950c259ca3f721ddf4d2161522e79044e2",
     "google-site-verification=hMnRAtdizhrC_XVmPTQN1cDWp-b--71NSTwSMExNeAI",
-    "google-site-verification=1RnCO3kOaGC8U0mJXV2sbY-6XM6VJscT8lSoWJOB7UY",
+    "google-site-verification=a40Yo5u46-Gpqee1PSKGDsuayXa3mn8A9wSFUJBnVDY",
     "google-site-verification=8TDEqJ-arOBRammsLaJwjep-S63E7y7m-QsH9bhT6K4",
-    "google-site-verification=a40Yo5u46-Gpqee1PSKGDsuayXa3mn8A9wSFUJBnVDY"
+    "knowbe4-site-verification=90309b4eacebd82470e924deb428c541"
   ],
   "tls2": {
     "alpn": "",
@@ -325,8 +340,23 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 21.9,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.nydailynews.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 25.3,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -336,4 +366,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

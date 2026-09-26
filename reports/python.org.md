@@ -7,12 +7,12 @@
 | Target | https://python.org/ |
 | Bug bounty program | PSF |
 | Listed scope domain | python.org |
-| Test date | 2026-09-26 18:58 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:14 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
+Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,9 +31,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 | 13 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 18 | info | CT1 | 48 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 19 | info | CT1 | 48 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -132,14 +133,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: status-page-domain-verification=9y2klhzbxsgk; anthropic-domain-verification-x3xt87=cFLP3aL71pAYPZLQR7JKvRhcF; twilio-domain-verification=1c295667813cc0aaae819ed7657818f8
+- **Detail:** Apex TXT records with verification/token content: status-page-domain-verification=9y2klhzbxsgk; google-site-verification=dqhMiMzpbkSyEhgjGKyEOMlEg2tF0MSHD7UN-MYfD-M; google-site-verification=w3b8mU3wU6cZ8uSrj3E_5f1frPejJskDpSp_nMWJ99o
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 16. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of python.org has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2025q4 -> http-400
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 17. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
@@ -147,7 +148,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 - **Detail:** robots.txt lists 6 disallow path(s), e.g. /, /~guido/orlijn/, /webstats/, /, /~guido/orlijn/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 18. [INFO] 48 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for python.org, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 19. [INFO] 48 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.wiki.python.org, blog.python.org, jobs.python.org, mail.python.org, status.python.org, wiki.python.org
@@ -161,40 +168,41 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "dns": {
     "a": [
       "151.101.128.223",
-      "151.101.64.223",
       "151.101.0.223",
+      "151.101.64.223",
       "151.101.192.223"
     ],
     "aaaa": [
-      "2a04:4e42:600::223",
-      "2a04:4e42:200::223",
       "2a04:4e42::223",
-      "2a04:4e42:400::223"
+      "2a04:4e42:600::223",
+      "2a04:4e42:400::223",
+      "2a04:4e42:200::223"
     ],
     "cname": null,
     "mx": [
       "mail.python.org (pref 50)"
     ],
     "ns": [
-      "ns-1134.awsdns-13.org.",
       "ns-2046.awsdns-63.co.uk.",
       "ns-981.awsdns-58.net.",
-      "ns-484.awsdns-60.com."
+      "ns-484.awsdns-60.com.",
+      "ns-1134.awsdns-13.org."
     ],
+    "caa": [],
     "spf": [
       "status-page-domain-verification=9y2klhzbxsgk",
-      "anthropic-domain-verification-x3xt87=cFLP3aL71pAYPZLQR7JKvRhcF",
-      "twilio-domain-verification=1c295667813cc0aaae819ed7657818f8",
-      "openai-domain-verification=dv-VgeNijVDgW7g56UZyGIVyKNr",
-      "google-site-verification=QALZObrGl2OVG8lWUE40uVSMCAka316yADn9ZfCU5OA",
-      "libera-1298aas",
-      "google-site-verification=9852CbTRhQ51-9gCUayPbGYqJeBle_MXLb6E4AL_qQk",
-      "google-site-verification=w3b8mU3wU6cZ8uSrj3E_5f1frPejJskDpSp_nMWJ99o",
-      "v=spf1 mx ip4:188.166.95.178/32 ip6:2a03:b0c0:2:d0::71:1 include:stspg-customer.com include:_spf.google.com include:mailgun.org ~all",
-      "MS=73147F1EC0843C399CF17F586EC6B8EAF8C57961",
       "888acb5757da46ad83b7e341ec544c64",
+      "google-site-verification=dqhMiMzpbkSyEhgjGKyEOMlEg2tF0MSHD7UN-MYfD-M",
+      "google-site-verification=w3b8mU3wU6cZ8uSrj3E_5f1frPejJskDpSp_nMWJ99o",
+      "libera-1298aas",
+      "google-site-verification=QALZObrGl2OVG8lWUE40uVSMCAka316yADn9ZfCU5OA",
+      "openai-domain-verification=dv-VgeNijVDgW7g56UZyGIVyKNr",
       "_globalsign-domain-verification=B57sRQpmte4G4w-gavZbVNmmNsMxGp5kcL19UP2599",
-      "google-site-verification=dqhMiMzpbkSyEhgjGKyEOMlEg2tF0MSHD7UN-MYfD-M"
+      "MS=73147F1EC0843C399CF17F586EC6B8EAF8C57961",
+      "v=spf1 mx ip4:188.166.95.178/32 ip6:2a03:b0c0:2:d0::71:1 include:stspg-customer.com include:_spf.google.com include:mailgun.org ~all",
+      "twilio-domain-verification=1c295667813cc0aaae819ed7657818f8",
+      "google-site-verification=9852CbTRhQ51-9gCUayPbGYqJeBle_MXLb6E4AL_qQk",
+      "anthropic-domain-verification-x3xt87=cFLP3aL71pAYPZLQR7JKvRhcF"
     ],
     "dmarc": [
       "v=DMARC1; p=none; pct=100; rua=mailto:re+shb8ybr70a3@dmarc.postmarkapp.com; sp=none; aspf=r;"
@@ -310,10 +318,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   },
   "apex_txt": [
     "status-page-domain-verification=9y2klhzbxsgk",
-    "anthropic-domain-verification-x3xt87=cFLP3aL71pAYPZLQR7JKvRhcF",
-    "twilio-domain-verification=1c295667813cc0aaae819ed7657818f8",
-    "openai-domain-verification=dv-VgeNijVDgW7g56UZyGIVyKNr",
-    "google-site-verification=QALZObrGl2OVG8lWUE40uVSMCAka316yADn9ZfCU5OA"
+    "google-site-verification=dqhMiMzpbkSyEhgjGKyEOMlEg2tF0MSHD7UN-MYfD-M",
+    "google-site-verification=w3b8mU3wU6cZ8uSrj3E_5f1frPejJskDpSp_nMWJ99o",
+    "google-site-verification=QALZObrGl2OVG8lWUE40uVSMCAka316yADn9ZfCU5OA",
+    "openai-domain-verification=dv-VgeNijVDgW7g56UZyGIVyKNr"
   ],
   "tls2": {
     "alpn": "",
@@ -324,10 +332,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2025q4",
       "not_before": "20260113130346",
       "not_after": "20270214130345"
-    }
+    },
+    "ocsp": "http-400"
   },
   "http2": {
     "hsts_preloaded": true,
@@ -343,8 +352,20 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 14.5,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.python.org/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 15.1,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -354,4 +375,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

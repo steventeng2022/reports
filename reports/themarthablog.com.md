@@ -7,12 +7,12 @@
 | Target | https://themarthablog.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | themarthablog.com |
-| Test date | 2026-09-26 19:00 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:16 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
+Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,7 +31,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 15 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
-| 16 | info | CT1 | 3 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 16 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 17 | info | CT1 | 3 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -131,7 +132,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - **Detail:** Response for https://themarthablog.com/ carries Cache-Control: max-age=600, must-revalidate; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
-### 16. [INFO] 3 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on themarthablog.com indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 17. [INFO] 3 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: static.themarthablog.com
@@ -151,10 +158,26 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     "cname": null,
     "mx": [],
     "ns": [
-      "ns-1377.awsdns-44.org.",
-      "ns-2031.awsdns-61.co.uk.",
       "ns-710.awsdns-24.net.",
-      "ns-497.awsdns-62.com."
+      "ns-2031.awsdns-61.co.uk.",
+      "ns-497.awsdns-62.com.",
+      "ns-1377.awsdns-44.org."
+    ],
+    "caa": [
+      "0 issue \"ssl.com\"",
+      "0 issue \"usertrust.com\"",
+      "0 issue \"sectigo.com\"",
+      "0 issue \"trust-provider.com\"",
+      "0 issue \"amazontrust.com\"",
+      "0 issuewild \"ssl.com\"",
+      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issue \"amazonaws.com\"",
+      "0 issue \"awstrust.com\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"amazon.com\"",
+      "0 issue \"comodoca.com\"",
+      "0 issuewild \"pki.goog; cansignhttpexchanges=yes\""
     ],
     "spf": [],
     "dmarc": [],
@@ -275,8 +298,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 12.1,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.themarthablog.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 13.8,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -286,4 +320,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

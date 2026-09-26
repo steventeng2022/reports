@@ -7,8 +7,8 @@
 | Target | https://khanacademy.org/ |
 | Bug bounty program | Khan Academy |
 | Listed scope domain | khanacademy.org |
-| Test date | 2026-09-26 18:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:09 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -31,7 +31,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
@@ -126,20 +126,20 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (se1uoua2eddo95.khanacademy.org and rnsnstxeizo8un.khanacademy.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (5671bpt5u2vhsm.khanacademy.org and 9n7ye63ml2kt7v.khanacademy.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=qV_5Us2mt6FO1Ig5hnG4kYHESYAxuH5-qZ0cRXC-Ig; google-site-verification=BUF9CkP4-zm7sN2rDSq6NGRiEkrvvh2k3UdQxwSusrU; onetrust-domain-verification=4bc2331ed4d24c81b7be278e6e1fb58b
+- **Detail:** Apex TXT records with verification/token content: cursor-domain-verification-dc9ngn=XEN4zLZD2K4p5yMB2JFUNxGIk; facebook-domain-verification=8kvuco8ljlv8t1aedswjypctrp1pk3; google-site-verification=JML6gcy7DbE1dA3JB9W4O6EB9uQ8bpOlJTyniVCgd-o
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 16. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of khanacademy.org has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m01.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
@@ -155,53 +155,63 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "dns": {
     "a": [
       "65.9.180.111",
-      "65.9.180.8",
       "65.9.180.53",
+      "65.9.180.8",
       "65.9.180.126"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
       "alt2.aspmx.l.google.com (pref 5)",
       "aspmx3.googlemail.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)"
     ],
     "ns": [
       "ns-1489.awsdns-58.org.",
-      "ns-1664.awsdns-16.co.uk.",
       "ns-798.awsdns-35.net.",
-      "ns-125.awsdns-15.com."
+      "ns-125.awsdns-15.com.",
+      "ns-1664.awsdns-16.co.uk."
+    ],
+    "caa": [
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"amazon.com\"",
+      "0 issue \"digicert.com\"",
+      "0 issue \"godaddy.com\"",
+      "0 issue \"certainly.com\"",
+      "0 issue \"pki.goog\"",
+      "0 iodef \"mailto:it@khanacademy.org\"",
+      "0 issue \"globalsign.com\""
     ],
     "spf": [
-      "globalsign-domain-verification=qV_5Us2mt6FO1Ig5hnG4kYHESYAxuH5-qZ0cRXC-Ig",
-      "google-site-verification=BUF9CkP4-zm7sN2rDSq6NGRiEkrvvh2k3UdQxwSusrU",
-      "onetrust-domain-verification=4bc2331ed4d24c81b7be278e6e1fb58b",
-      "apple-domain-verification=FBF7Yx9o3htFHZ7m",
-      "cl_verification=a568671a-6112-4bc5-997d-1f06d8389b2e",
-      "openai-domain-verification=dv-E4EGw5ZIgYd9B3mwA3dPV5zY",
-      "spf2.0/pra include:_spf.google.com include:sendgrid.net include:aspmx.sailthru.com -all",
-      "_globalsign-domain-verification=Prrz12gznJzJiHaajX3CnPfpqK6hhLae0miMSZ_BGa",
-      "stripe-verification=332820F9A5BCCCACBF2F5D8636496EB723C4062C9B878B8BAB77E99A2522E947",
-      "canva-site-verification=JW5MeXNqA7ezvjIRgLOPaQ",
-      "hibp-verify=dweb_9nibj6s7woei7t5h43qd3yni",
-      "google-site-verification=y1w1HGdtmQcg92Uy4JtubYkFtDDshCwmDXTFCgjpr-Y",
-      "anthropic-domain-verification-4va7p1=Uuz4j8MkpGFjBjYBqvNGNuK46",
-      "google-site-verification=SprWzGYoIdXdFrUCSyBhXJtHzFjE8FAQNlTamgKenhU",
-      "google-site-verification=sHrvDlgokhtbjBWsn8Dhu616EFRRv8GD0C1AU4_1gl4",
-      "_globalsign-domain-verification=Ca9ol7KyPTrPtyGjL1BqGx_wv6SymozDmCXhHJveUr",
-      "v=spf1 include:_spf.google.com include:sendgrid.net include:aspmx.sailthru.com include:mail.zendesk.com exists:%{i}._spf.mta.salesforce.com include:mg-spf.greenhouse.io -all",
-      "google-site-verification=Jiabx8hC-zV0E8-hAj40dHCY_oWNIvfqkNe7VFnGbCs",
-      "google-site-verification=7kTMmLFa8kfzTFffAv659zZAhSvDX5lqnB_yuST-xLY",
-      "MS=ms10049948",
-      "google-site-verification=JML6gcy7DbE1dA3JB9W4O6EB9uQ8bpOlJTyniVCgd-o",
       "cursor-domain-verification-dc9ngn=XEN4zLZD2K4p5yMB2JFUNxGIk",
-      "yahoo-verification-key=h5B5VELNOFcyiRDJQWEiNChg+SeClI9Bk9k9daiRPR4=",
       "ZOOM_verify_G7FwqtyEKLkoQGhA3ifQq5",
-      "_globalsign-domain-verification=e70UZqvudGByIeilV8oO0gubBZi0P7QLakTxKub-zS",
+      "facebook-domain-verification=8kvuco8ljlv8t1aedswjypctrp1pk3",
+      "google-site-verification=JML6gcy7DbE1dA3JB9W4O6EB9uQ8bpOlJTyniVCgd-o",
+      "v=spf1 include:_spf.google.com include:sendgrid.net include:aspmx.sailthru.com include:mail.zendesk.com exists:%{i}._spf.mta.salesforce.com include:mg-spf.greenhouse.io -all",
+      "canva-site-verification=JW5MeXNqA7ezvjIRgLOPaQ",
       "botify-site-verification=sGRcFNKzIkHzx1jtsQ7YkiT8hgWB6RiU",
-      "facebook-domain-verification=8kvuco8ljlv8t1aedswjypctrp1pk3"
+      "spf2.0/pra include:_spf.google.com include:sendgrid.net include:aspmx.sailthru.com -all",
+      "onetrust-domain-verification=4bc2331ed4d24c81b7be278e6e1fb58b",
+      "openai-domain-verification=dv-E4EGw5ZIgYd9B3mwA3dPV5zY",
+      "cl_verification=a568671a-6112-4bc5-997d-1f06d8389b2e",
+      "_globalsign-domain-verification=Ca9ol7KyPTrPtyGjL1BqGx_wv6SymozDmCXhHJveUr",
+      "MS=ms10049948",
+      "google-site-verification=7kTMmLFa8kfzTFffAv659zZAhSvDX5lqnB_yuST-xLY",
+      "google-site-verification=Jiabx8hC-zV0E8-hAj40dHCY_oWNIvfqkNe7VFnGbCs",
+      "globalsign-domain-verification=qV_5Us2mt6FO1Ig5hnG4kYHESYAxuH5-qZ0cRXC-Ig",
+      "google-site-verification=y1w1HGdtmQcg92Uy4JtubYkFtDDshCwmDXTFCgjpr-Y",
+      "apple-domain-verification=FBF7Yx9o3htFHZ7m",
+      "google-site-verification=BUF9CkP4-zm7sN2rDSq6NGRiEkrvvh2k3UdQxwSusrU",
+      "hibp-verify=dweb_9nibj6s7woei7t5h43qd3yni",
+      "_globalsign-domain-verification=Prrz12gznJzJiHaajX3CnPfpqK6hhLae0miMSZ_BGa",
+      "yahoo-verification-key=h5B5VELNOFcyiRDJQWEiNChg+SeClI9Bk9k9daiRPR4=",
+      "google-site-verification=SprWzGYoIdXdFrUCSyBhXJtHzFjE8FAQNlTamgKenhU",
+      "_globalsign-domain-verification=e70UZqvudGByIeilV8oO0gubBZi0P7QLakTxKub-zS",
+      "stripe-verification=332820F9A5BCCCACBF2F5D8636496EB723C4062C9B878B8BAB77E99A2522E947",
+      "anthropic-domain-verification-4va7p1=Uuz4j8MkpGFjBjYBqvNGNuK46",
+      "google-site-verification=sHrvDlgokhtbjBWsn8Dhu616EFRRv8GD0C1AU4_1gl4"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-reports@khanacademy.org; ruf=mailto:dmarc-reports@khanacademy.org"
@@ -318,11 +328,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "globalsign-domain-verification=qV_5Us2mt6FO1Ig5hnG4kYHESYAxuH5-qZ0cRXC-Ig",
-    "google-site-verification=BUF9CkP4-zm7sN2rDSq6NGRiEkrvvh2k3UdQxwSusrU",
-    "onetrust-domain-verification=4bc2331ed4d24c81b7be278e6e1fb58b",
-    "apple-domain-verification=FBF7Yx9o3htFHZ7m",
-    "cl_verification=a568671a-6112-4bc5-997d-1f06d8389b2e"
+    "cursor-domain-verification-dc9ngn=XEN4zLZD2K4p5yMB2JFUNxGIk",
+    "facebook-domain-verification=8kvuco8ljlv8t1aedswjypctrp1pk3",
+    "google-site-verification=JML6gcy7DbE1dA3JB9W4O6EB9uQ8bpOlJTyniVCgd-o",
+    "canva-site-verification=JW5MeXNqA7ezvjIRgLOPaQ",
+    "botify-site-verification=sGRcFNKzIkHzx1jtsQ7YkiT8hgWB6RiU"
   ],
   "tls2": {
     "alpn": "",
@@ -333,10 +343,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
       "not_before": "20251111000000",
       "not_after": "20261210235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "x12": {
     "status": 308,
@@ -344,8 +355,20 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "server-65-9-180-111.tpe53.r.cloudfront.net."
     ]
   },
-  "elapsed_s": 6.4,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 308,
+    "root_location": "https://www.khanacademy.org/",
+    "http_status": 308,
+    "p404_status": 308,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 7.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -355,4 +378,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

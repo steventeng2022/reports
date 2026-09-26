@@ -7,12 +7,12 @@
 | Target | https://soundcloud.com/ |
 | Bug bounty program | SoundCloud |
 | Listed scope domain | soundcloud.com |
-| Test date | 2026-09-26 18:59 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:15 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,8 +31,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 13 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 19 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 
 ## Detailed findings
 
@@ -131,20 +133,32 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: jetbrains-domain-verification=77s6xu94q634n5sk6ntslgq5c; onetrust-domain-verification=f110ce3d05314cfb8054ab5e0903ff68; jamf-site-verification=1U6XZPPCv81jzz6DXNXGYA
+- **Detail:** Apex TXT records with verification/token content: docker-verification=6c85d46a-1d92-4e77-bbea-945c00c11df1; openai-domain-verification=dv-sOXO0PYHFRn8QJdpVkjwvqyI; jetbrains-domain-verification=77s6xu94q634n5sk6ntslgq5c
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 16. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of soundcloud.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m01.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 17. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 8 disallow path(s), e.g. /, /search, /you/, /stream, /upload
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 18. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xk17g52g9vtwrs.html -> 404; error page/headers match: CloudFront.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 19. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on soundcloud.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
 ## Evidence (raw response observations)
 
@@ -153,56 +167,67 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "domain": "soundcloud.com",
   "dns": {
     "a": [
-      "52.84.150.35",
-      "52.84.150.39",
       "52.84.150.52",
-      "52.84.150.57"
+      "52.84.150.57",
+      "52.84.150.35",
+      "52.84.150.39"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 20)",
-      "aspmx2.googlemail.com (pref 50)",
-      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx3.googlemail.com (pref 50)",
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx2.googlemail.com (pref 50)",
+      "alt2.aspmx.l.google.com (pref 20)",
       "aspmx.l.google.com (pref 10)"
     ],
     "ns": [
+      "ns-1445.awsdns-52.org.",
       "ns-799.awsdns-35.net.",
-      "ns-56.awsdns-07.com.",
       "ns-1745.awsdns-26.co.uk.",
-      "ns-1445.awsdns-52.org."
+      "ns-56.awsdns-07.com."
+    ],
+    "caa": [
+      "0 issue \"pki.goog\"",
+      "0 issue \"amazonaws.com\"",
+      "0 issue \"globalsign.com\"",
+      "0 issue \"digicert.com\"",
+      "0 issue \"awstrust.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issue \"amazontrust.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"sectigo.com\""
     ],
     "spf": [
+      "cdn.webflow.com",
+      "docker-verification=6c85d46a-1d92-4e77-bbea-945c00c11df1",
+      "openai-domain-verification=dv-sOXO0PYHFRn8QJdpVkjwvqyI",
       "jetbrains-domain-verification=77s6xu94q634n5sk6ntslgq5c",
-      "onetrust-domain-verification=f110ce3d05314cfb8054ab5e0903ff68",
-      "ZOOM_verify_hBlTOUUcSiW7IhDAv16bqQ",
-      "jamf-site-verification=1U6XZPPCv81jzz6DXNXGYA",
-      "miro-verification=f08757fb9739f5263de5643f8c9534cccb49b7d3",
       "postman-domain-verification=5b7709a2c59b36a8a43b9ac9dfce70486e48a77ead9bc6796eb6d23405f1e97d248fcea57dca123555ac56280fda66895e29ba3a9a0f2c6c400985776f040d5a",
-      "d24wuv6owifbwc.cloudfront.net",
-      "botify-site-verification=VyJVacuoqlVARp4iXaeza0p9iFlTUubb",
       "MS=ms25371803",
-      "google-site-verification=U41CuhcP0HS0kVo6HaaLA0Vo-6Wdk8YO-M_Q4rukDmU",
-      "google-site-verification=SdIX4P8Pq06U6a0DMUEvgI5rQS7RM0Z33zKcet-iVf8",
-      "yahoo-verification-key=X54UzsFVrbpDDU12ORu34v7OcW03f6CpgZpTUouceKQ=",
-      "MS=ms67894313",
-      "wrQAupWCtBhVn8GcFVpM6CMH--bBTLOI",
-      "stripe-verification=e1469db8bb5c9886c8a7abbece38ddc342618aa4ac7dca85b73731668ea5ec70",
+      "datadome-domain-verify=gf9iUK5M4yfQc3zyEW1aXklGOXdhjLyy",
       "v=spf1 include:_spf.google.com ip4:178.249.138.0/23 ip4:145.253.129.216/29 ip4:80.82.202.192/28 ip4:52.17.172.90/32 include:spf.mandrillapp.com include:7303199.spf04.hubspotemail.net include:spf.extole.io -all",
+      "google-site-verification=ise_yQfK5npT23y4X7QBl-WYgNjA7AuUrRQQo1Q66EU",
       "asv=f854ad6e866ab7a88b57bebd971f158b",
       "globalsign-domain-verification=tJKfbnEmy7WvFRWf3KQMyZ05PnvVJidfQRNnq4AMh8",
-      "openai-domain-verification=dv-sOXO0PYHFRn8QJdpVkjwvqyI",
-      "apple-domain-verification=DJEx73gNNUTjejVL",
-      "JlHKdOBLZpjS/UOFcGHRiSM38ADQhJ0fAN6IMMgSdts=",
-      "datadome-domain-verify=gf9iUK5M4yfQc3zyEW1aXklGOXdhjLyy",
-      "atlassian-domain-verification=fycZUT0eVlPEiaehQXOKmXCe9NJeJsZmCWgWfW7GSuras9JTdhCVrebn8zfRIQ3v",
-      "cdn.webflow.com",
-      "google-site-verification=bGedCZYrMEPIXRPH5n3Rb0dJjFPACxuP_xMbAPCPenU",
       "anthropic-domain-verification-ft7nd5=krTYkCbsCOrTIXUyLzSSegK3l",
-      "docker-verification=6c85d46a-1d92-4e77-bbea-945c00c11df1",
+      "google-site-verification=bGedCZYrMEPIXRPH5n3Rb0dJjFPACxuP_xMbAPCPenU",
+      "wrQAupWCtBhVn8GcFVpM6CMH--bBTLOI",
+      "miro-verification=f08757fb9739f5263de5643f8c9534cccb49b7d3",
+      "yahoo-verification-key=X54UzsFVrbpDDU12ORu34v7OcW03f6CpgZpTUouceKQ=",
+      "jamf-site-verification=1U6XZPPCv81jzz6DXNXGYA",
+      "botify-site-verification=VyJVacuoqlVARp4iXaeza0p9iFlTUubb",
+      "onetrust-domain-verification=f110ce3d05314cfb8054ab5e0903ff68",
+      "google-site-verification=U41CuhcP0HS0kVo6HaaLA0Vo-6Wdk8YO-M_Q4rukDmU",
+      "d24wuv6owifbwc.cloudfront.net",
       "yahoo-verification-key=2nyOaMY2z64VYBysZQLyDBjU85Vd/+N/O1tHvVvie9o=",
-      "google-site-verification=ise_yQfK5npT23y4X7QBl-WYgNjA7AuUrRQQo1Q66EU"
+      "JlHKdOBLZpjS/UOFcGHRiSM38ADQhJ0fAN6IMMgSdts=",
+      "apple-domain-verification=DJEx73gNNUTjejVL",
+      "google-site-verification=SdIX4P8Pq06U6a0DMUEvgI5rQS7RM0Z33zKcet-iVf8",
+      "atlassian-domain-verification=fycZUT0eVlPEiaehQXOKmXCe9NJeJsZmCWgWfW7GSuras9JTdhCVrebn8zfRIQ3v",
+      "ZOOM_verify_hBlTOUUcSiW7IhDAv16bqQ",
+      "stripe-verification=e1469db8bb5c9886c8a7abbece38ddc342618aa4ac7dca85b73731668ea5ec70",
+      "MS=ms67894313"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:yL97s5R6Jy@dmarc.inboxmonster.com,mailto:dmarc-rua@soundcloud.com; ruf=mailto:dmarc-ruf@soundcloud.com; pct=100; sp=reject;"
@@ -232,7 +257,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     }
   },
   "ports": {
-    "ip": "52.84.150.35",
+    "ip": "52.84.150.52",
     "open": []
   },
   "https": {
@@ -294,11 +319,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "docker-verification=6c85d46a-1d92-4e77-bbea-945c00c11df1",
+    "openai-domain-verification=dv-sOXO0PYHFRn8QJdpVkjwvqyI",
     "jetbrains-domain-verification=77s6xu94q634n5sk6ntslgq5c",
-    "onetrust-domain-verification=f110ce3d05314cfb8054ab5e0903ff68",
-    "jamf-site-verification=1U6XZPPCv81jzz6DXNXGYA",
-    "miro-verification=f08757fb9739f5263de5643f8c9534cccb49b7d3",
-    "postman-domain-verification=5b7709a2c59b36a8a43b9ac9dfce70486e48a77ead9bc6796eb6"
+    "postman-domain-verification=5b7709a2c59b36a8a43b9ac9dfce70486e48a77ead9bc6796eb6",
+    "google-site-verification=ise_yQfK5npT23y4X7QBl-WYgNjA7AuUrRQQo1Q66EU"
   ],
   "tls2": {
     "alpn": "",
@@ -309,10 +334,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
       "not_before": "20260217000000",
       "not_after": "20270318235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "hsts_preloaded": true,
@@ -330,8 +356,23 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 19.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 23.3,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -341,4 +382,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

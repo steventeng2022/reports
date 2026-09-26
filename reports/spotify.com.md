@@ -7,12 +7,12 @@
 | Target | https://spotify.com/ |
 | Bug bounty program | Spotify |
 | Listed scope domain | spotify.com |
-| Test date | 2026-09-26 18:59 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:15 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
+Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,10 +29,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 | 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -118,32 +120,44 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: onetrust-domain-verification=508849d40e2b4b8fba2b7eaf84f1bddc; loom-site-verification=3ee9ca8c2df34d08abbb7be5185bc768; apple-domain-verification=Dxae2sKJD2O5TKGK
+- **Detail:** Apex TXT records with verification/token content: yahoo-verification-key=bdudmGyddArwRiVafgItrfYq8nrhd5vzNZ7Ik/G0ILM=; atlassian-domain-verification=1My5WsxLluUY8uIjgbLs4MY3ySFp32k9aYNW2IR4ihM64k58Cx; facebook-domain-verification=qyrvuca7h4s7wevhzbprtt3tdyyhf1
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of spotify.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 15. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 14. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but spotify.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 15 disallow path(s), e.g. /*/about-us/contact/contact-spotify-password/, /*/about-us/contact/contact-spotify-account/, /*/get-spotify/*, /*/xhr/*, /*/external/*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 35.186.224.24 carries PTR 24.224.186.35.bc.googleusercontent.com. for spotify.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 17. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/assetlinks.json on spotify.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for spotify.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 19. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The spotify.com certificate lists an AIA OCSP responder (http://ocsp.digicert.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -159,57 +173,58 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     ],
     "cname": null,
     "mx": [
+      "aspmx.l.google.com (pref 1)",
       "aspmx4.googlemail.com (pref 10)",
+      "aspmx5.googlemail.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
       "aspmx3.googlemail.com (pref 10)",
-      "aspmx.l.google.com (pref 1)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx5.googlemail.com (pref 10)",
       "aspmx2.googlemail.com (pref 10)"
     ],
     "ns": [
-      "dns1.p07.nsone.net.",
-      "ns-cloud-a1.googledomains.com.",
-      "ns-cloud-a4.googledomains.com.",
       "ns-cloud-a3.googledomains.com.",
-      "ns-cloud-a2.googledomains.com."
+      "ns-cloud-a4.googledomains.com.",
+      "ns-cloud-a2.googledomains.com.",
+      "dns1.p07.nsone.net.",
+      "ns-cloud-a1.googledomains.com."
     ],
+    "caa": [],
     "spf": [
-      "onetrust-domain-verification=508849d40e2b4b8fba2b7eaf84f1bddc",
-      "cloudflare_dashboard_sso=19cd522a4fc20281209f03663d34ee76",
-      "loom-site-verification=3ee9ca8c2df34d08abbb7be5185bc768",
-      "apple-domain-verification=Dxae2sKJD2O5TKGK",
-      "notion-domain-verification=AqUDuql68X5rQ1qLwho6huUjf4QteXZlyvTIKS1txnq",
-      "openai-domain-verification=dv-VNYvLsJIttFvRz7ymxFgjrPC",
-      "atlassian-sending-domain-verification=d90f2e0c-fa57-43b6-910f-065cc4d6a0e3",
-      "anthropic-domain-verification-mqtmtz=BSac9xfxvigNt4Ralt2KPkt1V",
-      "google-site-verification=ESiNWockZgSgTPSsrsAdMX9afsj2-_8504nQ0qIHkDA",
+      "yahoo-verification-key=bdudmGyddArwRiVafgItrfYq8nrhd5vzNZ7Ik/G0ILM=",
       "atlassian-domain-verification=1My5WsxLluUY8uIjgbLs4MY3ySFp32k9aYNW2IR4ihM64k58CxpFnB5R9SEiJAnR",
+      "facebook-domain-verification=qyrvuca7h4s7wevhzbprtt3tdyyhf1",
+      "status-page-domain-verification=wq4jns7ydgbb",
       "have-i-been-pwned-verification=33b7ae688099ee8cca63259b769a0ea8",
-      "google-site-verification=ehIHBRyAOKdOfUyw_ONXT0TMuUsdk1gDGSYfk8YhRgw",
-      "google-site-verification=uD4f4k01lFWX3qwVbqnVaJg8atpKgAgc-_RYcyT3ofU",
-      "facebook-domain-verification=wtgn9pdvjdhs21j9gz6knsnpkafvs5",
-      "vmware-cloud-verification-dab4c35d-1819-4431-add3-d3c382ee32bc",
-      "docker-verification=82f3553a-fb50-4d4e-9607-8a8079ee354f",
-      "google-site-verification=buTP-BbGUoP8lPntqskvSbeS68M4PDoIFkiUtQEA5n8",
-      "tiktok-developers-site-verification=pZNawVY3o5Ma80MRCC6Fref1NiLzuEVU",
       "MS=ms38184034",
+      "tiktok-developers-site-verification=ttGXJxgq1HQKquomgiljzFq53uoLHcUC",
+      "cursor-domain-verification-985xgr=7ROYkkLIfunrK2GtW0spMGDNw",
+      "onetrust-domain-verification=508849d40e2b4b8fba2b7eaf84f1bddc",
+      "parallels-domain-verification=7bb3a358f26f4e23a5077648266570c873182a57d6d44e47a55ef6cf72cdb470",
+      "apple-domain-verification=Dxae2sKJD2O5TKGK",
+      "google-site-verification=ehIHBRyAOKdOfUyw_ONXT0TMuUsdk1gDGSYfk8YhRgw",
       "google-site-verification=0wmxUE7T2OWPhtwjco6oCyqqbYgtosjQdywAr4G4kU0",
       "wiz-domain-verification=370862886b04dfa626d54d2c4cc955174c6f3164a104a85d725ae5ece72ea3ef",
-      "_anz60jg9dhixqlmcv20ntnooz9m0k8x",
-      "parallels-domain-verification=7bb3a358f26f4e23a5077648266570c873182a57d6d44e47a55ef6cf72cdb470",
-      "v=spf1 ip4:80.76.146.172 ip4:80.76.146.173 include:_spf.google.com include:servers.mcsv.net include:_spf.salesforce.com include:_spf.netigate.se include:21894833.spf06.hubspotemail.net ~all",
-      "zapier-domain-verification-challenge=db8a0b98-bb6a-4f84-a699-344dc23fef3b",
       "windsurf-verification=LRBAV_kH3G5aleY1GIc1jMUg_8iBpigIm2qYF00bRps=",
+      "jamf-site-verification=1kKxrm0glhWvrA0YiABH_w",
+      "cloudflare_dashboard_sso=19cd522a4fc20281209f03663d34ee76",
+      "docker-verification=82f3553a-fb50-4d4e-9607-8a8079ee354f",
+      "openai-domain-verification=dv-VNYvLsJIttFvRz7ymxFgjrPC",
+      "anthropic-domain-verification-mqtmtz=BSac9xfxvigNt4Ralt2KPkt1V",
       "reachdesk-verification=v0DuUrKxORfyqxIOMkJm57GlQtvaAv0watqt7x7ylMN21LAHqR6dEhUpSxOp7DCh",
-      "yahoo-verification-key=bdudmGyddArwRiVafgItrfYq8nrhd5vzNZ7Ik/G0ILM=",
-      "cursor-domain-verification-985xgr=7ROYkkLIfunrK2GtW0spMGDNw",
-      "facebook-domain-verification=qyrvuca7h4s7wevhzbprtt3tdyyhf1",
-      "tiktok-developers-site-verification=ttGXJxgq1HQKquomgiljzFq53uoLHcUC",
+      "loom-site-verification=3ee9ca8c2df34d08abbb7be5185bc768",
+      "google-site-verification=uD4f4k01lFWX3qwVbqnVaJg8atpKgAgc-_RYcyT3ofU",
       "liveramp-site-verification=IAXPTLlWofr4aaKtwVqirrHvOqUMiXnaMW8WMmuz1v0",
       "tiktok-developers-site-verification=98xFqMKsOJ51nNJpUCGPGbo7m17gtf7f",
-      "status-page-domain-verification=wq4jns7ydgbb",
-      "jamf-site-verification=1kKxrm0glhWvrA0YiABH_w"
+      "atlassian-sending-domain-verification=d90f2e0c-fa57-43b6-910f-065cc4d6a0e3",
+      "notion-domain-verification=AqUDuql68X5rQ1qLwho6huUjf4QteXZlyvTIKS1txnq",
+      "tiktok-developers-site-verification=pZNawVY3o5Ma80MRCC6Fref1NiLzuEVU",
+      "google-site-verification=ESiNWockZgSgTPSsrsAdMX9afsj2-_8504nQ0qIHkDA",
+      "v=spf1 ip4:80.76.146.172 ip4:80.76.146.173 include:_spf.google.com include:servers.mcsv.net include:_spf.salesforce.com include:_spf.netigate.se include:21894833.spf06.hubspotemail.net ~all",
+      "_anz60jg9dhixqlmcv20ntnooz9m0k8x",
+      "facebook-domain-verification=wtgn9pdvjdhs21j9gz6knsnpkafvs5",
+      "vmware-cloud-verification-dab4c35d-1819-4431-add3-d3c382ee32bc",
+      "zapier-domain-verification-challenge=db8a0b98-bb6a-4f84-a699-344dc23fef3b",
+      "google-site-verification=buTP-BbGUoP8lPntqskvSbeS68M4PDoIFkiUtQEA5n8"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; pct=100; fo=1; rf=afrf; rua=mailto:6jxge2ly@ag.eu.dmarcian.com;"
@@ -292,11 +307,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "onetrust-domain-verification=508849d40e2b4b8fba2b7eaf84f1bddc",
-    "loom-site-verification=3ee9ca8c2df34d08abbb7be5185bc768",
-    "apple-domain-verification=Dxae2sKJD2O5TKGK",
-    "notion-domain-verification=AqUDuql68X5rQ1qLwho6huUjf4QteXZlyvTIKS1txnq",
-    "openai-domain-verification=dv-VNYvLsJIttFvRz7ymxFgjrPC"
+    "yahoo-verification-key=bdudmGyddArwRiVafgItrfYq8nrhd5vzNZ7Ik/G0ILM=",
+    "atlassian-domain-verification=1My5WsxLluUY8uIjgbLs4MY3ySFp32k9aYNW2IR4ihM64k58Cx",
+    "facebook-domain-verification=qyrvuca7h4s7wevhzbprtt3tdyyhf1",
+    "status-page-domain-verification=wq4jns7ydgbb",
+    "have-i-been-pwned-verification=33b7ae688099ee8cca63259b769a0ea8"
   ],
   "tls2": {
     "alpn": "",
@@ -307,10 +322,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.digicert.com",
       "not_before": "20260709000000",
       "not_after": "20270123235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -337,8 +353,23 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "24.224.186.35.bc.googleusercontent.com."
     ]
   },
-  "elapsed_s": 6.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.spotify.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "wellknown": [
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 12.8,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -348,4 +379,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

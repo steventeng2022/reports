@@ -7,8 +7,8 @@
 | Target | https://redhat.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | redhat.com |
-| Test date | 2026-09-26 18:58 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:14 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -30,10 +30,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -126,32 +126,32 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: pendo-domain-verification=01424ad4-8f69-4456-90ff-5f544ada6cec; google-site-verification=fkn6chapCdYNWIcpsgH0K6mkR0yo7ldeIRC7EH23yoo; atlassian-domain-verification=fHiTv781WbOHgzl6U1McyXa9JUSSO5B0ECvgSZzJ9+b4q8wv0T
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=fHiTv781WbOHgzl6U1McyXa9JUSSO5B0ECvgSZzJ9+b4q8wv0T; status-page-domain-verification=hyls0f05cd87; google-site-verification=rl_wq5rq_W7A7OSyK08d8Ta_Hf6AKP5tqtdlo4iGTvs
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of redhat.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 15. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but redhat.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 17. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 59 disallow path(s), e.g. /core/, /profiles/, /README.md, /composer/Metapackage/README.txt, /composer/Plugin/ProjectMessage/README.md
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 34.235.198.240 carries PTR ec2-34-235-198-240.compute-1.amazonaws.com. for redhat.com.
+- **Detail:** 52.200.142.250 carries PTR ec2-52-200-142-250.compute-1.amazonaws.com. for redhat.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 18. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The redhat.com certificate lists an AIA OCSP responder (http://ocsp.digicert.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -160,8 +160,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "redhat.com",
   "dns": {
     "a": [
-      "34.235.198.240",
-      "52.200.142.250"
+      "52.200.142.250",
+      "34.235.198.240"
     ],
     "aaaa": [],
     "cname": null,
@@ -170,42 +170,48 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "us-smtp-inbound-2.mimecast.com (pref 10)"
     ],
     "ns": [
-      "dns4.p01.nsone.net.",
-      "dns1.p01.nsone.net.",
-      "dns3.p01.nsone.net.",
       "dns2.p01.nsone.net.",
       "dns2.p02.nsone.net.",
+      "dns4.p01.nsone.net.",
+      "dns3.p01.nsone.net.",
+      "dns1.p01.nsone.net.",
       "dns1.p02.nsone.net."
     ],
+    "caa": [
+      "0 issue \"amazontrust.com\"",
+      "0 iodef \"mailto:it-cert-admin@redhat.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"digicert.com\""
+    ],
     "spf": [
+      "MS=ms44845140",
       "docusign=c6aa79da-fde1-4b7e-8874-28eeb223ca63",
-      "pendo-domain-verification=01424ad4-8f69-4456-90ff-5f544ada6cec",
-      "google-site-verification=fkn6chapCdYNWIcpsgH0K6mkR0yo7ldeIRC7EH23yoo",
       "atlassian-domain-verification=fHiTv781WbOHgzl6U1McyXa9JUSSO5B0ECvgSZzJ9+b4q8wv0Tf4iI75xdcyoC00",
-      "jetbrains-domain-verification=c52sdl8fpvtdvcunhy64u3149",
-      "Dynatrace-site-verification=1782cd51-ac66-4966-acdc-061c80f794f5__t1aa4l3qdsf475891sv2711t80",
-      "anthropic-domain-verification-75gwks=eCqmQbyCwqL2ocuciTDIydVPj",
-      "status-page-domain-verification=dfx5rbys1ts5",
-      "slack-domain-verification=dPrnI9sLvqvAbQUwzvFsPXSPEU1PLODdgGxLhEUr",
-      "Dynatrace-site-verification=6d28213f-f653-42df-8f09-a7ae69f50e6a__dk5hkah3juetfgj11au5isjmig",
-      "google-site-verification=TaSjV4JOe2XfmL_vHFKJHkPk8sjgoLkuuTTWezDO0Pw",
-      "google-site-verification=rl_wq5rq_W7A7OSyK08d8Ta_Hf6AKP5tqtdlo4iGTvs",
-      "atlassian-sending-domain-verification=6624a6de-2779-4cc5-9e0e-d739598be73d",
-      "adobe-idp-site-verification=10154eb7d4abe67e9e45621e46476febbec28a97a4610d7c043c42c667aa18d4",
-      "openai-domain-verification=dv-ZBmiG45XpzQoJlIf2HBlWHWf",
       "status-page-domain-verification=hyls0f05cd87",
-      "amazonses:ablaZDaC37yeQUcZAZjbfqRELxucC+8pBdvhFEpTSlY=",
       "_v9l10fwei3im7iirj8c5fy92e798j78",
-      "cursor-domain-verification-xts7mh=BCrLupJRjleUhfxmNA4CUlgaE",
+      "google-site-verification=rl_wq5rq_W7A7OSyK08d8Ta_Hf6AKP5tqtdlo4iGTvs",
+      "amazonses:ablaZDaC37yeQUcZAZjbfqRELxucC+8pBdvhFEpTSlY=",
+      "anthropic-domain-verification-75gwks=eCqmQbyCwqL2ocuciTDIydVPj",
+      "v=spf1 redirect=73t7ezjz._spf._d.mim.ec",
       "MS=ms88428189",
-      "segment-site-verification=Kk3pC9UBfhioQzibTvTIhT4TFVwP4niP",
-      "wework-site-verification=EABEURRXyO1yBZcn",
-      "miro-verification=0bc02d4257d450b9f9034363a58f88b4b904dc22",
+      "Dynatrace-site-verification=6d28213f-f653-42df-8f09-a7ae69f50e6a__dk5hkah3juetfgj11au5isjmig",
+      "slack-domain-verification=dPrnI9sLvqvAbQUwzvFsPXSPEU1PLODdgGxLhEUr",
       "docusign=cfd355fc-11f9-4eaf-8ecf-64433ef46173",
       "apple-domain-verification=xaB3GAa9xxzrpoS4",
+      "openai-domain-verification=dv-ZBmiG45XpzQoJlIf2HBlWHWf",
+      "pendo-domain-verification=01424ad4-8f69-4456-90ff-5f544ada6cec",
+      "adobe-idp-site-verification=10154eb7d4abe67e9e45621e46476febbec28a97a4610d7c043c42c667aa18d4",
+      "jetbrains-domain-verification=c52sdl8fpvtdvcunhy64u3149",
+      "atlassian-sending-domain-verification=6624a6de-2779-4cc5-9e0e-d739598be73d",
+      "miro-verification=0bc02d4257d450b9f9034363a58f88b4b904dc22",
+      "Dynatrace-site-verification=1782cd51-ac66-4966-acdc-061c80f794f5__t1aa4l3qdsf475891sv2711t80",
+      "status-page-domain-verification=dfx5rbys1ts5",
       "docker-verification=b3c48bbc-05f6-40b8-8391-b5ad3366c6ec",
-      "MS=ms44845140",
-      "v=spf1 redirect=73t7ezjz._spf._d.mim.ec"
+      "google-site-verification=TaSjV4JOe2XfmL_vHFKJHkPk8sjgoLkuuTTWezDO0Pw",
+      "wework-site-verification=EABEURRXyO1yBZcn",
+      "segment-site-verification=Kk3pC9UBfhioQzibTvTIhT4TFVwP4niP",
+      "google-site-verification=fkn6chapCdYNWIcpsgH0K6mkR0yo7ldeIRC7EH23yoo",
+      "cursor-domain-verification-xts7mh=BCrLupJRjleUhfxmNA4CUlgaE"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:5f1992045035946@rep.dmarcanalyzer.com; ruf=mailto:5f1992045035946@for.dmarcanalyzer.com; fo=1;"
@@ -234,7 +240,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "34.235.198.240",
+    "ip": "52.200.142.250",
     "open": []
   },
   "https": {
@@ -287,11 +293,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "pendo-domain-verification=01424ad4-8f69-4456-90ff-5f544ada6cec",
-    "google-site-verification=fkn6chapCdYNWIcpsgH0K6mkR0yo7ldeIRC7EH23yoo",
     "atlassian-domain-verification=fHiTv781WbOHgzl6U1McyXa9JUSSO5B0ECvgSZzJ9+b4q8wv0T",
-    "jetbrains-domain-verification=c52sdl8fpvtdvcunhy64u3149",
-    "Dynatrace-site-verification=1782cd51-ac66-4966-acdc-061c80f794f5__t1aa4l3qdsf475"
+    "status-page-domain-verification=hyls0f05cd87",
+    "google-site-verification=rl_wq5rq_W7A7OSyK08d8Ta_Hf6AKP5tqtdlo4iGTvs",
+    "anthropic-domain-verification-75gwks=eCqmQbyCwqL2ocuciTDIydVPj",
+    "Dynatrace-site-verification=6d28213f-f653-42df-8f09-a7ae69f50e6a__dk5hkah3juetfg"
   ],
   "tls2": {
     "alpn": "",
@@ -302,10 +308,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 4096,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.digicert.com",
       "not_before": "20260820000000",
       "not_after": "20270306235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -329,11 +336,23 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-34-235-198-240.compute-1.amazonaws.com."
+      "ec2-52-200-142-250.compute-1.amazonaws.com."
     ]
   },
-  "elapsed_s": 30.1,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.redhat.com/en",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 33.3,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -343,4 +362,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

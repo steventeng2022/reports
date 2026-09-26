@@ -7,12 +7,12 @@
 | Target | https://abcnews.go.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | abcnews.go.com |
-| Test date | 2026-09-26 18:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **26** (High: 0, Medium: 0, Low: 9, Info: 17)
+Total findings: **29** (High: 0, Medium: 0, Low: 10, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,11 +37,14 @@ Total findings: **26** (High: 0, Medium: 0, Low: 9, Info: 17)
 | 19 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
 | 20 | info | P8 | Missing security.txt | CWE-1038 |
 | 21 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 22 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 22 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 23 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 24 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 25 | info | CT1 | 76 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 26 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 25 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
+| 26 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 27 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 28 | info | CT1 | 76 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 29 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -189,11 +192,11 @@ Total findings: **26** (High: 0, Medium: 0, Low: 9, Info: 17)
 - **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=twvwxd607usevkqo11lc3cj9d8i35x
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 22. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 22. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of abcnews.go.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m04.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 23. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
@@ -207,13 +210,31 @@ Total findings: **26** (High: 0, Medium: 0, Low: 9, Info: 17)
 - **Detail:** 54.239.180.106 carries PTR server-54-239-180-106.lax54.r.cloudfront.net. for abcnews.go.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 25. [INFO] 76 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 25. [LOW] HTTPS root redirects to a different domain (`RD2`)
+
+- **CWE:** CWE-200
+- **Detail:** https://abcnews.go.com/ answered 301 with Location: https://abcnews.com/ (cross-domain handoff at the entry point).
+- **Recommendation:** Review the cross-domain redirect; it discloses the real entry point and can be abused in open-redirect-style flows.
+
+### 26. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xk7iaxvuj7vkyn.html -> 404; error page/headers match: CloudFront.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 27. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for abcnews.go.com; apex go.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 28. [INFO] 76 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: abcnews-react.dev.abcnews.go.com, api.abcnews.go.com, app.abcnews.go.com, dev.abcnews.go.com, dev.api.abcnews.go.com, dev.broadcaster.abcnews.go.com, dev.portal-east.abcnews.go.com, dev.portal-west.abcnews.go.com, dev.portal.abcnews.go.com, dev.ufirst.abcnews.go.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 26. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 29. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: abcnews-react.dev.abcnews.go.com; content may still be served via virtual-host fallback.
@@ -235,11 +256,12 @@ Total findings: **26** (High: 0, Medium: 0, Low: 9, Info: 17)
     "cname": null,
     "mx": [],
     "ns": [
-      "ns-1655.awsdns-14.co.uk.",
-      "ns-710.awsdns-24.net.",
+      "ns-1233.awsdns-26.org.",
       "ns-267.awsdns-33.com.",
-      "ns-1233.awsdns-26.org."
+      "ns-710.awsdns-24.net.",
+      "ns-1655.awsdns-14.co.uk."
     ],
+    "caa": [],
     "spf": [
       "facebook-domain-verification=twvwxd607usevkqo11lc3cj9d8i35x"
     ],
@@ -386,10 +408,11 @@ Total findings: **26** (High: 0, Medium: 0, Low: 9, Info: 17)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
       "not_before": "20260718000000",
       "not_after": "20270131235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -416,8 +439,20 @@ Total findings: **26** (High: 0, Medium: 0, Low: 9, Info: 17)
       "server-54-239-180-106.lax54.r.cloudfront.net."
     ]
   },
-  "elapsed_s": 21.4,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://abcnews.com/",
+    "http_status": 301,
+    "p404_status": 404,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 24.8,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -427,4 +462,5 @@ Total findings: **26** (High: 0, Medium: 0, Low: 9, Info: 17)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

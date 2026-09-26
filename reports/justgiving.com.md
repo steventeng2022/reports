@@ -7,12 +7,12 @@
 | Target | https://justgiving.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | justgiving.com |
-| Test date | 2026-09-26 18:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:09 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
+Total findings: **17** (High: 0, Medium: 0, Low: 1, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,11 +27,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
 | 9 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 10 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 11 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 12 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 16 | info | CT1 | 38 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 16 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 17 | info | CT1 | 38 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -102,14 +103,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=a4kUdVdhuRGENeMFXISY5ile-NsMNYxcyAsHknjaeSs; lucid-verification=fcj@cjz6eat.zgj9WMQ; google-site-verification=9Ie7V9M2YudzHmywa873FdLnRJKZY57zwKHzQLgj_Kw
+- **Detail:** Apex TXT records with verification/token content: adobe-sign-verification=e1e4662cb4cb8921b04ff65aacba0578; google-site-verification=2l0z9VQCacbAFBgCmfbC47bnTeHQcq4LWOHoIzYG72Q; google-site-verification=a4kUdVdhuRGENeMFXISY5ile-NsMNYxcyAsHknjaeSs
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 12. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of justgiving.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m01.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 13. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
@@ -126,10 +127,16 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
 ### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 3.169.55.71 carries PTR server-3-169-55-71.tpe54.r.cloudfront.net. for justgiving.com.
+- **Detail:** 3.169.55.52 carries PTR server-3-169-55-52.tpe54.r.cloudfront.net. for justgiving.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 16. [INFO] 38 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkaurd27ezxzi0.html -> 404; error page/headers match: CloudFront.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 17. [INFO] 38 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: app.justgiving.com, blog.justgiving.com, csp-report.staging.justgiving.com, fitness.staging.justgiving.com, graphql.staging.justgiving.com, help.justgiving.com, id.staging.justgiving.com, internal.staging.justgiving.com, media.justgiving.com, pagesettings.staging.justgiving.com
@@ -142,47 +149,53 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
   "domain": "justgiving.com",
   "dns": {
     "a": [
-      "3.169.55.71",
-      "3.169.55.116",
       "3.169.55.52",
-      "3.169.55.28"
+      "3.169.55.28",
+      "3.169.55.71",
+      "3.169.55.116"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mx1.blackbaud.iphmx.com (pref 1)",
-      "mx2.blackbaud.iphmx.com (pref 5)"
+      "mx2.blackbaud.iphmx.com (pref 5)",
+      "mx1.blackbaud.iphmx.com (pref 1)"
     ],
     "ns": [
-      "ns-959.awsdns-55.net.",
       "ns-1865.awsdns-41.co.uk.",
       "ns-493.awsdns-61.com.",
+      "ns-959.awsdns-55.net.",
       "ns-1506.awsdns-60.org."
     ],
+    "caa": [
+      "0 iodef \"mailto:security@justgiving.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"digicert.com\"",
+      "0 issue \"amazonaws.com\""
+    ],
     "spf": [
-      "MS=ms82130383",
-      "google-site-verification=a4kUdVdhuRGENeMFXISY5ile-NsMNYxcyAsHknjaeSs",
-      "lucid-verification=fcj@cjz6eat.zgj9WMQ",
-      "0TPSldHHJ3AnIIANqD3HTiUcd/40SZ097zvG7L1hCQsTA5IkkNpnVNZhBPjaoZJjwCPHtr8iDe8kdsvHGi9xSA==",
-      "v=spf1 mx a include:cust-spf.exacttarget.com include:mktomail.com include:spf.protection.outlook.com include:mail.zendesk.com include:spf.mandrillapp.com -all",
-      "smartsheet-site-validation=-ukamuNj8Xn3s0SyCGx2Xe5Vt2oDQ46I",
-      "google-site-verification=9Ie7V9M2YudzHmywa873FdLnRJKZY57zwKHzQLgj_Kw",
-      "google-site-verification=2l0z9VQCacbAFBgCmfbC47bnTeHQcq4LWOHoIzYG72Q",
-      "atlassian-domain-verification=S8uXCQd2FYeOlTqNnRo41gCwYfu8sO1gASeWx63dP5j6Yh0iNdqHotTlne8l2f50",
-      "docker-verification=eb8aed88-9460-4fab-9ef2-5ce59854ecc7",
-      "miro-verification=0a2e1dbb2412c140c5fd914272eb7e9480bf1d6e",
-      "anthropic-domain-verification-bkk0a0=vsXwOsqFiYmbQeQS4m4KiVc0Y",
-      "00D200000000iaP=1TBN2000000015l",
-      "stripe-verification=3c386b3bd938d27ee26d142e2d3201f0d49dfd68edc01090aeb71a5d542819aa",
-      "_ziryvqp598rhu877n5y4wj0shxxojdp",
       "adobe-sign-verification=e1e4662cb4cb8921b04ff65aacba0578",
+      "google-site-verification=2l0z9VQCacbAFBgCmfbC47bnTeHQcq4LWOHoIzYG72Q",
+      "google-site-verification=a4kUdVdhuRGENeMFXISY5ile-NsMNYxcyAsHknjaeSs",
       "MS=ms30587875",
-      "CKO=cli_nsgsiliz6ygezevfc2osdkvtju",
-      "CKO=cli_r5yskqycwsle3mrla2l4xig4pa",
+      "google-site-verification=9Ie7V9M2YudzHmywa873FdLnRJKZY57zwKHzQLgj_Kw",
+      "lucid-verification=fcj@cjz6eat.zgj9WMQ",
+      "stripe-verification=3c386b3bd938d27ee26d142e2d3201f0d49dfd68edc01090aeb71a5d542819aa",
       "MS=ms21109735",
-      "mixpanel-domain-verify=5386caff-2971-4e94-aee0-4d3b5ab42b90",
+      "CKO=cli_r5yskqycwsle3mrla2l4xig4pa",
       "figma-domain-verification=8a13494f101d6ca661f43b722f9d090d5a2a2ac65283628d50cfea15ce7e3076-1723691631",
-      "MS=ms63724168"
+      "v=spf1 mx a include:cust-spf.exacttarget.com include:mktomail.com include:spf.protection.outlook.com include:mail.zendesk.com include:spf.mandrillapp.com -all",
+      "_ziryvqp598rhu877n5y4wj0shxxojdp",
+      "MS=ms63724168",
+      "0TPSldHHJ3AnIIANqD3HTiUcd/40SZ097zvG7L1hCQsTA5IkkNpnVNZhBPjaoZJjwCPHtr8iDe8kdsvHGi9xSA==",
+      "anthropic-domain-verification-bkk0a0=vsXwOsqFiYmbQeQS4m4KiVc0Y",
+      "CKO=cli_nsgsiliz6ygezevfc2osdkvtju",
+      "smartsheet-site-validation=-ukamuNj8Xn3s0SyCGx2Xe5Vt2oDQ46I",
+      "miro-verification=0a2e1dbb2412c140c5fd914272eb7e9480bf1d6e",
+      "mixpanel-domain-verify=5386caff-2971-4e94-aee0-4d3b5ab42b90",
+      "docker-verification=eb8aed88-9460-4fab-9ef2-5ce59854ecc7",
+      "00D200000000iaP=1TBN2000000015l",
+      "atlassian-domain-verification=S8uXCQd2FYeOlTqNnRo41gCwYfu8sO1gASeWx63dP5j6Yh0iNdqHotTlne8l2f50",
+      "MS=ms82130383"
     ],
     "dmarc": [
       "v=DMARC1; p=none; pct=100; rua=mailto:re+gbzuz3j7wtb@dmarc.postmarkapp.com,mailto:re+or5o1vetcy9@dmarc.postmarkapp.com; sp=none; aspf=r;"
@@ -212,7 +225,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
     }
   },
   "ports": {
-    "ip": "3.169.55.71",
+    "ip": "3.169.55.52",
     "open": []
   },
   "https": {
@@ -305,11 +318,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
     ]
   },
   "apex_txt": [
-    "google-site-verification=a4kUdVdhuRGENeMFXISY5ile-NsMNYxcyAsHknjaeSs",
-    "lucid-verification=fcj@cjz6eat.zgj9WMQ",
-    "google-site-verification=9Ie7V9M2YudzHmywa873FdLnRJKZY57zwKHzQLgj_Kw",
+    "adobe-sign-verification=e1e4662cb4cb8921b04ff65aacba0578",
     "google-site-verification=2l0z9VQCacbAFBgCmfbC47bnTeHQcq4LWOHoIzYG72Q",
-    "atlassian-domain-verification=S8uXCQd2FYeOlTqNnRo41gCwYfu8sO1gASeWx63dP5j6Yh0iNd"
+    "google-site-verification=a4kUdVdhuRGENeMFXISY5ile-NsMNYxcyAsHknjaeSs",
+    "google-site-verification=9Ie7V9M2YudzHmywa873FdLnRJKZY57zwKHzQLgj_Kw",
+    "lucid-verification=fcj@cjz6eat.zgj9WMQ"
   ],
   "tls2": {
     "alpn": "",
@@ -320,10 +333,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
       "not_before": "20251103000000",
       "not_after": "20261201235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "hsts_preloaded": true,
@@ -348,11 +362,22 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
   "x12": {
     "status": 200,
     "ptr": [
-      "server-3-169-55-71.tpe54.r.cloudfront.net."
+      "server-3-169-55-52.tpe54.r.cloudfront.net."
     ]
   },
-  "elapsed_s": 12.5,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 13.2,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -362,4 +387,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://constantcontact.com/ |
 | Bug bounty program | Constant Contact |
 | Listed scope domain | constantcontact.com |
-| Test date | 2026-09-26 18:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
+Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,12 +29,14 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 14 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 16 | low | RED10 | Host header reflected into redirect Location | CWE-601 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 21 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -121,14 +123,14 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=5lHEZKPh-_wYKf6iPhatHRpXj2l0R9NmPQ9wSWIAQag; google-site-verification=9SlseBmCRNaS8PoCIcXUBYR18HWP6RBX9HyD3R5R5Ls; google-site-verification=GEYwmfZ7RuvBcI7BT6xQnrNfn1z7gWUKLfVIalnwqeA
+- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=5C905CAD6161760D48FA250433C2EEF9; jamf-site-verification=aFdwoWd1sPeHAeoixINgyw; anthropic-domain-verification-y2453z=RP4EoX2XlEAObiHw4Qyfxyif2
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 14. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of constantcontact.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.globalsign.com/ca/gsatlasr3ovtlsca2025q4 -> http-400
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 15. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
@@ -160,6 +162,18 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - **Detail:** 208.75.122.14 carries PTR www.constantcontact.com. for constantcontact.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
+### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for constantcontact.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 21. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The constantcontact.com certificate lists an AIA OCSP responder (http://ocsp.globalsign.com/ca/gsatlasr3ovtlsca2025q4) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -172,66 +186,67 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "edgemail1.constantcontact.com (pref 10)",
-      "edgemail2.constantcontact.com (pref 20)"
+      "edgemail2.constantcontact.com (pref 20)",
+      "edgemail1.constantcontact.com (pref 10)"
     ],
     "ns": [
-      "dns2.p01.nsone.net.",
-      "dns1.p01.nsone.net.",
       "dns4.p01.nsone.net.",
-      "dns3.p01.nsone.net."
+      "dns3.p01.nsone.net.",
+      "dns1.p01.nsone.net.",
+      "dns2.p01.nsone.net."
     ],
+    "caa": [],
     "spf": [
-      "meltwater_sso_20260521_triton-36710",
-      "google-site-verification=5lHEZKPh-_wYKf6iPhatHRpXj2l0R9NmPQ9wSWIAQag",
-      "google-site-verification=9SlseBmCRNaS8PoCIcXUBYR18HWP6RBX9HyD3R5R5Ls",
-      "google-site-verification=GEYwmfZ7RuvBcI7BT6xQnrNfn1z7gWUKLfVIalnwqeA",
-      "docusign=d814c280-26f9-41c7-aa92-a03b59e6fd58",
-      "SFMC-nnhzrK01oLNsym2xcDKcUEXUlbm8OIrlrUxoOGdS",
-      "globalsign-domain-verification=1FF9A93F847B1EB612F7EB378BFA8F2F",
-      "facebook-domain-verification=9wo9l62thl595soh1wjzolqfv3ao8c",
-      "v=spf1 ip4:208.75.120.0/22 ip4:205.207.104.0/22 include:_ext.constantcontact.com include:_spf.salesforce.com include:_spf.google.com ~all",
-      "logmein-verification-code=491874e6-5c3b-4b37-b19e-f523d7d74473",
-      "google-site-verification=lMXxJuCIadZI6yIKv7z5_Va70POuM19qU81NU0tmaxI",
-      "globalsign-domain-verification=1FF969BDF7F6D9B06243EFA8042CBDE7",
+      "globalsign-domain-verification=5C905CAD6161760D48FA250433C2EEF9",
       "v0IqpOXySDIxu292XtWFBWVQ2T3C/MLnpiy5EKsfKWg=.",
-      "atlassian-domain-verification=fMjaVWKHpJhM3aAlDYkNe5/yuAOUIOva2QexA9BN3WIHOkZmfqX9AWdaOicLtJYr",
-      "ZOOM_verify_lz7Vk7Mf3ZEzuB6jwtCEVv",
-      "canva-site-verification=ZyZ5z6fQIoIHCDU_U8K6YQ",
-      "validate.onetrust-domain-verification=8c431f2bfba744d99f5df0ee4ef55df1",
-      "globalsign-domain-verification=6FFE99D6D65D30A44C49A374C5143D87",
-      "validity-domain-monitoring=lWgicWp5GPvLfdEoFXdAYpMXV",
       "jamf-site-verification=aFdwoWd1sPeHAeoixINgyw",
-      "google-site-verification=Gp7Hv6yLosjKQ_t7gHJROnXoAYK7wlz1XLOBHt_J7HE",
-      "spf2.0/pra ip4:208.75.120.0/22 ip4:205.207.104.0/22 include:_ext.constantcontact.com include:_spf.salesforce.com include:_spf.google.com ~all",
-      "globalsign-domain-verification=607B2BE93D2B60F139751C389A14C13B",
-      "cisco-ci-domain-verification=2bd65a16476143d0aebade20fdf9ca88de20694b28dbd9a7630bd6a72c690a63",
-      "globalsign-domain-verification=83DF7D9B4CADBA9AB6D6ED1792F009A4",
-      "globalsign-domain-verification=D5A7AFA31C2BFA6174B52F0F9E90C9DF",
-      "TAILSCALE-WN5I3ZooiwxJsVakFdjs",
-      "cursor-domain-verification-fad4vy=0NZxtFJAF9pFISdFqx3nMzNyk",
-      "globalsign-domain-verification=C385682A22F86586CCE2465D9544AA1C",
-      "ps-cd-verification=3e13eeb0-a25b-41af-a9d1-d5c8cca8082a",
-      "google-site-verification=RMx0cdA4nEA6nAg48o0lsv4eb29EbVafa7weQBnSNJQ",
-      "google-site-verification=JtNhbwEnbIVid2N5wO0kF9kJ5jfx_ttYqfleBTqKZJY",
-      "pendo-domain-verification=n9rM3WLge63EWPA3kOPW1OUEcXg",
-      "MS=91FCD146A8340927C3F9723C8F3DC44A5AE57414",
-      "globalsign-domain-verification=A899C94328AC5076D4198E6055E9C6E1",
-      "MS=ms76971383",
       "tgXS6TJ3fVTnME8cpaIfgd9fe2rkAsn8kgSVRi/Af/c=",
       "anthropic-domain-verification-y2453z=RP4EoX2XlEAObiHw4Qyfxyif2",
-      "duo_sso_verification=7HPXqXi0wOuCX7DdMLeu09LySVwMqymRiBWo3e5f1J9JumDaZTfzYPxfcpnbQCRi",
+      "v=spf1 ip4:208.75.120.0/22 ip4:205.207.104.0/22 include:_ext.constantcontact.com include:_spf.salesforce.com include:_spf.google.com ~all",
+      "meltwater_sso_20260521_triton-36710",
+      "google-site-verification=5lHEZKPh-_wYKf6iPhatHRpXj2l0R9NmPQ9wSWIAQag",
+      "globalsign-domain-verification=83DF7D9B4CADBA9AB6D6ED1792F009A4",
+      "spf2.0/pra ip4:208.75.120.0/22 ip4:205.207.104.0/22 include:_ext.constantcontact.com include:_spf.salesforce.com include:_spf.google.com ~all",
+      "google-site-verification=JtNhbwEnbIVid2N5wO0kF9kJ5jfx_ttYqfleBTqKZJY",
+      "cursor-domain-verification-fad4vy=0NZxtFJAF9pFISdFqx3nMzNyk",
+      "cisco-ci-domain-verification=2bd65a16476143d0aebade20fdf9ca88de20694b28dbd9a7630bd6a72c690a63",
       "kF4qrcASQQx6dXlhtT5OqM1QkLhxmOFd9TIEk0+L+Hg=.",
-      "google-site-verification=ALoYvB9LP05aK7ddKNWCSrNKI4QPPh647yXxmNq1rJ4",
-      "google-site-verification=S0PJ1RSXkRxVn-okVzPY9Lzeghej1eIywqeTx0o2MKE",
-      "globalsign-domain-verification=FA2D0568288440FE444CE3BEE2B3FD88",
-      "globalsign-domain-verification=5C905CAD6161760D48FA250433C2EEF9",
-      "reachdesk-verification=1CmlRrcJcF7N7kW8ionhhGt21vydYDeiaGjRKoFAJHCsTyxLVFHOcdUBxBeUrt3H",
+      "google-site-verification=RMx0cdA4nEA6nAg48o0lsv4eb29EbVafa7weQBnSNJQ",
       "MS=ms18093078",
+      "google-site-verification=ALoYvB9LP05aK7ddKNWCSrNKI4QPPh647yXxmNq1rJ4",
+      "MS=ms76971383",
+      "atlassian-domain-verification=fMjaVWKHpJhM3aAlDYkNe5/yuAOUIOva2QexA9BN3WIHOkZmfqX9AWdaOicLtJYr",
+      "facebook-domain-verification=9wo9l62thl595soh1wjzolqfv3ao8c",
       "stripe-verification=685340051470B5606798FED265AD82838FDC4D525047AEBAC6F8577B731D91CA",
+      "pendo-domain-verification=n9rM3WLge63EWPA3kOPW1OUEcXg",
+      "logmein-verification-code=491874e6-5c3b-4b37-b19e-f523d7d74473",
       "openai-domain-verification=dv-tjo2gRJDV0e90MlGZWURanbs",
+      "globalsign-domain-verification=D5A7AFA31C2BFA6174B52F0F9E90C9DF",
+      "globalsign-domain-verification=A899C94328AC5076D4198E6055E9C6E1",
+      "google-site-verification=Gp7Hv6yLosjKQ_t7gHJROnXoAYK7wlz1XLOBHt_J7HE",
+      "ps-cd-verification=3e13eeb0-a25b-41af-a9d1-d5c8cca8082a",
+      "docusign=d814c280-26f9-41c7-aa92-a03b59e6fd58",
+      "validate.onetrust-domain-verification=8c431f2bfba744d99f5df0ee4ef55df1",
+      "validity-domain-monitoring=lWgicWp5GPvLfdEoFXdAYpMXV",
+      "globalsign-domain-verification=FA2D0568288440FE444CE3BEE2B3FD88",
       "Cb20W914dVUL9V8ziCkX1Qo",
-      "globalsign-domain-verification=F1462C7038793BEEB6A1FCE7B31E06B7"
+      "globalsign-domain-verification=607B2BE93D2B60F139751C389A14C13B",
+      "reachdesk-verification=1CmlRrcJcF7N7kW8ionhhGt21vydYDeiaGjRKoFAJHCsTyxLVFHOcdUBxBeUrt3H",
+      "canva-site-verification=ZyZ5z6fQIoIHCDU_U8K6YQ",
+      "globalsign-domain-verification=1FF9A93F847B1EB612F7EB378BFA8F2F",
+      "globalsign-domain-verification=1FF969BDF7F6D9B06243EFA8042CBDE7",
+      "TAILSCALE-WN5I3ZooiwxJsVakFdjs",
+      "google-site-verification=9SlseBmCRNaS8PoCIcXUBYR18HWP6RBX9HyD3R5R5Ls",
+      "SFMC-nnhzrK01oLNsym2xcDKcUEXUlbm8OIrlrUxoOGdS",
+      "globalsign-domain-verification=6FFE99D6D65D30A44C49A374C5143D87",
+      "duo_sso_verification=7HPXqXi0wOuCX7DdMLeu09LySVwMqymRiBWo3e5f1J9JumDaZTfzYPxfcpnbQCRi",
+      "ZOOM_verify_lz7Vk7Mf3ZEzuB6jwtCEVv",
+      "google-site-verification=lMXxJuCIadZI6yIKv7z5_Va70POuM19qU81NU0tmaxI",
+      "globalsign-domain-verification=F1462C7038793BEEB6A1FCE7B31E06B7",
+      "globalsign-domain-verification=C385682A22F86586CCE2465D9544AA1C",
+      "google-site-verification=GEYwmfZ7RuvBcI7BT6xQnrNfn1z7gWUKLfVIalnwqeA",
+      "MS=91FCD146A8340927C3F9723C8F3DC44A5AE57414",
+      "google-site-verification=S0PJ1RSXkRxVn-okVzPY9Lzeghej1eIywqeTx0o2MKE"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:tk0syg54@ag.dmarcian.com,mailto:dmarc_agg@vali.email; ruf=mailto:tk0syg54@fr.dmarcian.com; rf=afrf;"
@@ -352,11 +367,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "globalsign-domain-verification=5C905CAD6161760D48FA250433C2EEF9",
+    "jamf-site-verification=aFdwoWd1sPeHAeoixINgyw",
+    "anthropic-domain-verification-y2453z=RP4EoX2XlEAObiHw4Qyfxyif2",
     "google-site-verification=5lHEZKPh-_wYKf6iPhatHRpXj2l0R9NmPQ9wSWIAQag",
-    "google-site-verification=9SlseBmCRNaS8PoCIcXUBYR18HWP6RBX9HyD3R5R5Ls",
-    "google-site-verification=GEYwmfZ7RuvBcI7BT6xQnrNfn1z7gWUKLfVIalnwqeA",
-    "globalsign-domain-verification=1FF9A93F847B1EB612F7EB378BFA8F2F",
-    "facebook-domain-verification=9wo9l62thl595soh1wjzolqfv3ao8c"
+    "globalsign-domain-verification=83DF7D9B4CADBA9AB6D6ED1792F009A4"
   ],
   "tls2": {
     "alpn": "",
@@ -367,10 +382,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.globalsign.com/ca/gsatlasr3ovtlsca2025q4",
       "not_before": "20251110165448",
       "not_after": "20261212165447"
-    }
+    },
+    "ocsp": "http-400"
   },
   "http2": {
     "robots_disallow": [
@@ -392,8 +408,20 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "www.constantcontact.com."
     ]
   },
-  "elapsed_s": 29.1,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.constantcontact.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 36.8,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -403,4 +431,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

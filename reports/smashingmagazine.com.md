@@ -7,12 +7,12 @@
 | Target | https://smashingmagazine.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | smashingmagazine.com |
-| Test date | 2026-09-26 18:59 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:15 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
+Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,7 +32,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 17 | info | CT1 | 5 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 18 | info | CT1 | 5 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -119,7 +120,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=0robA8kpiXkVEX1ts-_xCYWRkXleQJpwyN_BYQYOX54; google-site-verification=X5sd8PEDJqYLSR98RKgSozn-0RNpknXFlGoA-UXe5K0; google-site-verification=e2dLL9LD1Z_jpCFp6BTtGMlu42BGc8ugnf_midmUIlk
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=X5sd8PEDJqYLSR98RKgSozn-0RNpknXFlGoA-UXe5K0; google-site-verification=e2dLL9LD1Z_jpCFp6BTtGMlu42BGc8ugnf_midmUIlk; google-site-verification=0robA8kpiXkVEX1ts-_xCYWRkXleQJpwyN_BYQYOX54
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -137,10 +138,16 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 15.197.167.90 carries PTR afa7f374f51cc8991.awsglobalaccelerator.com. for smashingmagazine.com.
+- **Detail:** 3.33.186.135 carries PTR afa7f374f51cc8991.awsglobalaccelerator.com. for smashingmagazine.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 17. [INFO] 5 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for smashingmagazine.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 18. [INFO] 5 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: store.smashingmagazine.com
@@ -153,31 +160,32 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
   "domain": "smashingmagazine.com",
   "dns": {
     "a": [
-      "15.197.167.90",
-      "3.33.186.135"
+      "3.33.186.135",
+      "15.197.167.90"
     ],
     "aaaa": [
       "2406:da12:53f:c100::1f5"
     ],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
       "alt3.aspmx.l.google.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
+      "dns4.p06.nsone.net.",
       "dns1.p06.nsone.net.",
-      "dns2.p06.nsone.net.",
       "dns3.p06.nsone.net.",
-      "dns4.p06.nsone.net."
+      "dns2.p06.nsone.net."
     ],
+    "caa": [],
     "spf": [
-      "google-site-verification=0robA8kpiXkVEX1ts-_xCYWRkXleQJpwyN_BYQYOX54",
-      "v=spf1 include:_spf.google.com include:servers.mcsv.net include:spf.mandrillapp.com include:em4186.swell.store -all",
       "google-site-verification=X5sd8PEDJqYLSR98RKgSozn-0RNpknXFlGoA-UXe5K0",
-      "google-site-verification=e2dLL9LD1Z_jpCFp6BTtGMlu42BGc8ugnf_midmUIlk"
+      "v=spf1 include:_spf.google.com include:servers.mcsv.net include:spf.mandrillapp.com include:em4186.swell.store -all",
+      "google-site-verification=e2dLL9LD1Z_jpCFp6BTtGMlu42BGc8ugnf_midmUIlk",
+      "google-site-verification=0robA8kpiXkVEX1ts-_xCYWRkXleQJpwyN_BYQYOX54"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;sp=reject;pct=100;rua=mailto:22c84bb25c@rua.easydmarc.eu;ruf=mailto:22c84bb25c@ruf.easydmarc.eu;ri=86400;fo=1"
@@ -207,7 +215,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     }
   },
   "ports": {
-    "ip": "15.197.167.90",
+    "ip": "3.33.186.135",
     "open": []
   },
   "https": {
@@ -271,9 +279,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     ]
   },
   "apex_txt": [
-    "google-site-verification=0robA8kpiXkVEX1ts-_xCYWRkXleQJpwyN_BYQYOX54",
     "google-site-verification=X5sd8PEDJqYLSR98RKgSozn-0RNpknXFlGoA-UXe5K0",
-    "google-site-verification=e2dLL9LD1Z_jpCFp6BTtGMlu42BGc8ugnf_midmUIlk"
+    "google-site-verification=e2dLL9LD1Z_jpCFp6BTtGMlu42BGc8ugnf_midmUIlk",
+    "google-site-verification=0robA8kpiXkVEX1ts-_xCYWRkXleQJpwyN_BYQYOX54"
   ],
   "tls2": {
     "alpn": "",
@@ -315,8 +323,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "afa7f374f51cc8991.awsglobalaccelerator.com."
     ]
   },
-  "elapsed_s": 9.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.smashingmagazine.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 10.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -326,4 +345,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

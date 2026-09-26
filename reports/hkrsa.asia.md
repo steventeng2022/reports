@@ -7,12 +7,12 @@
 | Target | https://hkrsa.asia/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | hkrsa.asia |
-| Test date | 2026-09-26 18:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:08 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **30** (High: 0, Medium: 2, Low: 5, Info: 23)
+Total findings: **32** (High: 0, Medium: 2, Low: 5, Info: 25)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -46,6 +46,8 @@ Total findings: **30** (High: 0, Medium: 2, Low: 5, Info: 23)
 | 28 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 29 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 30 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 31 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 32 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -238,6 +240,18 @@ Total findings: **30** (High: 0, Medium: 2, Low: 5, Info: 23)
 - **Detail:** 43.241.73.139 carries PTR hkbn-spk-a103.pointdnshere.com. for hkrsa.asia.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
+### 31. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkf6bbfed74wgn.html -> 404; error page/headers match: Apache, PHP, WordPress.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 32. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for hkrsa.asia, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -253,12 +267,13 @@ Total findings: **30** (High: 0, Medium: 2, Low: 5, Info: 23)
       "mail.hkrsa.asia (pref 10)"
     ],
     "ns": [
-      "ns221.pointdnshere.net.",
-      "ns222.pointdnshere.net."
+      "ns222.pointdnshere.net.",
+      "ns221.pointdnshere.net."
     ],
+    "caa": [],
     "spf": [
-      "v=spf1 a mx include:pointdnshere.com ~all",
-      "google-site-verification=fuiWzkZlc9SD_PVbngjZg6bU3XOUSVksLlTjJDccy9A"
+      "google-site-verification=fuiWzkZlc9SD_PVbngjZg6bU3XOUSVksLlTjJDccy9A",
+      "v=spf1 a mx include:pointdnshere.com ~all"
     ],
     "dmarc": [
       "v=DMARC1; p=none; sp=none; rua=mailto:spam-reports@hkrsa.asia"
@@ -386,8 +401,18 @@ Total findings: **30** (High: 0, Medium: 2, Low: 5, Info: 23)
       "hkbn-spk-a103.pointdnshere.com."
     ]
   },
-  "elapsed_s": 59.1,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 200,
+    "p404_status": 404,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 64.5,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -397,4 +422,5 @@ Total findings: **30** (High: 0, Medium: 2, Low: 5, Info: 23)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

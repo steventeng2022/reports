@@ -7,12 +7,12 @@
 | Target | https://yoursite.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | yoursite.com |
-| Test date | 2026-09-26 19:02 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:18 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
+Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,10 +30,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | low | DNS3 | Wildcard DNS detected | CWE-345 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 18 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 15 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 16 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -126,28 +124,16 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (88jgpuzwoxd5xu.yoursite.com and xm2s3uhc8lhlw8.yoursite.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (4t8jgm69gchc3y.yoursite.com and kiic957c9ofvoa.yoursite.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 15. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
-- **CWE:** CWE-603
-- **Detail:** Certificate of yoursite.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for yoursite.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt lists 5 disallow path(s), e.g. /cpx.php, /medios1.php, /toolbar.php, /check_image.php, /check_popunder.php
-- **Recommendation:** Review disallowed paths; robots is not access control.
-
-### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
-
-- **CWE:** CWE-200
-- **Detail:** 103.224.182.238 carries PTR lb-182-238.above.com. for yoursite.com.
-- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
-
-### 18. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -168,9 +154,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
       "park-mx.above.com (pref 10)"
     ],
     "ns": [
-      "ns2.abovedomains.com.",
-      "ns1.abovedomains.com."
+      "ns1.abovedomains.com.",
+      "ns2.abovedomains.com."
     ],
+    "caa": [],
     "spf": [
       "v=spf1 ip6:fdcf:abda:4154::/48 -all"
     ],
@@ -329,7 +316,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
     "/.git/HEAD": 200,
     "/.git/config": 200,
     "/.env": 200,
-    "/.htaccess": 200,
+    "/.htaccess": 302,
     "/wp-login.php": 403,
     "/phpmyadmin/index.php": 200,
     "/server-status": 200,
@@ -346,36 +333,24 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
   },
   "wildcard_dns": true,
   "tls2": {
-    "alpn": "",
-    "tls_ver": "TLSv1.3",
-    "subject": "None",
-    "cert": {
-      "sig_oid": "1.2.840.10045.4.3.3",
-      "key_alg": "1.2.840.10045.2.1",
-      "key_bits": 256,
-      "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null,
-      "not_before": "20260909182837",
-      "not_after": "20261208182836"
-    }
+    "error": "TimeoutError('timed out')"
   },
   "http2": {
-    "robots_disallow": [
-      "/cpx.php",
-      "/medios1.php",
-      "/toolbar.php",
-      "/check_image.php",
-      "/check_popunder.php"
-    ]
+    "error": "root GET failed"
   },
   "x12": {
-    "status": 200,
-    "ptr": [
-      "lb-182-238.above.com."
-    ]
+    "error": "ConnectTimeout(MaxRetryError(\"HTTPSConnectionPool(host='yoursite.com', port=443)"
   },
-  "elapsed_s": 31.3,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_error": "ConnectTimeout(MaxRetryError(\"HTTPSConnectionPool(host='yoursite.com', port=443)",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 135.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -385,4 +360,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.
