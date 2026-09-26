@@ -7,12 +7,12 @@
 | Target | https://engadget.com/ |
 | Bug bounty program | Yahoo! |
 | Listed scope domain | engadget.com |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -133,6 +134,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - **Detail:** Certificate of engadget.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 3.169.55.35 carries PTR server-3-169-55-35.tpe54.r.cloudfront.net. for engadget.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -140,30 +147,30 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
   "domain": "engadget.com",
   "dns": {
     "a": [
-      "3.169.55.67",
-      "3.169.55.83",
       "3.169.55.35",
-      "3.169.55.40"
+      "3.169.55.83",
+      "3.169.55.40",
+      "3.169.55.67"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx2.googlemail.com (pref 10)",
-      "aspmx.l.google.com (pref 1)",
       "aspmx3.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx2.googlemail.com (pref 10)"
     ],
     "ns": [
+      "ns-598.awsdns-10.net.",
       "ns-305.awsdns-38.com.",
       "ns-1449.awsdns-53.org.",
-      "ns-598.awsdns-10.net.",
       "ns-1799.awsdns-32.co.uk."
     ],
     "spf": [
+      "v=spf1 include:_spf.google.com ~all",
       "google-site-verification=z8P2Zv9ueAtK5r0B2VTHvQhS1bUWkyU0ppiD2av3pUU",
-      "facebook-domain-verification=ji23xe0rk7xahs4smgxgv2b833jbr7",
-      "v=spf1 include:_spf.google.com ~all"
+      "facebook-domain-verification=ji23xe0rk7xahs4smgxgv2b833jbr7"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc@engadget.com; ruf=mailto:dmarc@engadget.com; fo=1"
@@ -193,7 +200,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     }
   },
   "ports": {
-    "ip": "3.169.55.67",
+    "ip": "3.169.55.35",
     "open": []
   },
   "https": {
@@ -258,11 +265,19 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260428000000",
+      "not_after": "20261111235959"
     }
   },
-  "elapsed_s": 4.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403,
+    "ptr": [
+      "server-3-169-55-35.tpe54.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 4.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

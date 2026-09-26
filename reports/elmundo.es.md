@@ -7,12 +7,12 @@
 | Target | https://elmundo.es/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | elmundo.es |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
+Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 20 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -147,7 +148,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=7bjinxNsR4XyhujN4NAlLtHAWyALVtjJgzNZciDdZ-; adobe-idp-site-verification=5d984b54fc7397d92bb1b96a40c532b3ad090875dedb22c00a14; atlassian-domain-verification=T5fbuvw/H/J2eZWKPjYsqChbdQg/OqHtq4MQ1Ak76LJubHwebj
+- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=7bjinxNsR4XyhujN4NAlLtHAWyALVtjJgzNZciDdZ-; atlassian-domain-verification=T5fbuvw/H/J2eZWKPjYsqChbdQg/OqHtq4MQ1Ak76LJubHwebj; adobe-idp-site-verification=5d984b54fc7397d92bb1b96a40c532b3ad090875dedb22c00a14
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -161,6 +162,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 130 disallow path(s), e.g. /1998/, /2002/, /s/, /cgi-bin/, /perl/
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 20. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 34.90.247.117 carries PTR 117.247.90.34.bc.googleusercontent.com. for elmundo.es.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -179,22 +186,22 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "elmundo-es.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns2-02.azure-dns.net.",
-      "ns3-02.azure-dns.org.",
       "ns4-02.azure-dns.info.",
-      "ns1-02.azure-dns.com."
+      "ns1-02.azure-dns.com.",
+      "ns2-02.azure-dns.net.",
+      "ns3-02.azure-dns.org."
     ],
     "spf": [
       "globalsign-domain-verification=7bjinxNsR4XyhujN4NAlLtHAWyALVtjJgzNZciDdZ-",
-      "MS=ms46178158",
-      "adobe-idp-site-verification=5d984b54fc7397d92bb1b96a40c532b3ad090875dedb22c00a14cab10c239da0",
       "atlassian-domain-verification=T5fbuvw/H/J2eZWKPjYsqChbdQg/OqHtq4MQ1Ak76LJubHwebjnJx2DWy5zGgbDr",
-      "cMMfg3L6wl5iOp7rf/T1gX1IK075nC4837wyuYxfHi6FEX2glov0GKi/9E3JuKYvv55vdco+0hJsNMW8AQbe4Q==",
-      "google-site-verification=V40iSs6vN6O1kFq-Egky0AmbTyIly-EukOcOWjuyT30",
       "v=spf1 mx ip4:212.80.144.25 a:mailing.unidadeditorial.es ip4:193.110.128.182 ip4:93.90.16.107 ip4:212.80.144.192 include:t.contactlab.it include:amazonses.com include:spf.protection.outlook.com include:spf.mail.netclient.no ip4:13.81.124.182 -all",
+      "cMMfg3L6wl5iOp7rf/T1gX1IK075nC4837wyuYxfHi6FEX2glov0GKi/9E3JuKYvv55vdco+0hJsNMW8AQbe4Q==",
+      "adobe-idp-site-verification=5d984b54fc7397d92bb1b96a40c532b3ad090875dedb22c00a14cab10c239da0",
+      "google-site-verification=5DcZ3fJzOj0f4QBZPhxEO6lT09vXcIu-hy35RDXHkc4",
       "f6ecbiuc2h43tvq9vav81rddmt",
       "globalsign-domain-verification=KHdzCZD_oMiYp479wH9wCSZsMlbwL6t2W0nwUGP2eU",
-      "google-site-verification=5DcZ3fJzOj0f4QBZPhxEO6lT09vXcIu-hy35RDXHkc4"
+      "MS=ms46178158",
+      "google-site-verification=V40iSs6vN6O1kFq-Egky0AmbTyIly-EukOcOWjuyT30"
     ],
     "dmarc": [
       "v=DMARC1; p=none; fo=1; rua=mailto:dmarc_rua_UE@unidadeditorial.es; ruf=mailto:dmarc_ruf_UE@unidadeditorial.es; pct=100;"
@@ -278,9 +285,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
   },
   "apex_txt": [
     "globalsign-domain-verification=7bjinxNsR4XyhujN4NAlLtHAWyALVtjJgzNZciDdZ-",
-    "adobe-idp-site-verification=5d984b54fc7397d92bb1b96a40c532b3ad090875dedb22c00a14",
     "atlassian-domain-verification=T5fbuvw/H/J2eZWKPjYsqChbdQg/OqHtq4MQ1Ak76LJubHwebj",
-    "google-site-verification=V40iSs6vN6O1kFq-Egky0AmbTyIly-EukOcOWjuyT30",
+    "adobe-idp-site-verification=5d984b54fc7397d92bb1b96a40c532b3ad090875dedb22c00a14",
+    "google-site-verification=5DcZ3fJzOj0f4QBZPhxEO6lT09vXcIu-hy35RDXHkc4",
     "globalsign-domain-verification=KHdzCZD_oMiYp479wH9wCSZsMlbwL6t2W0nwUGP2eU"
   ],
   "tls2": {
@@ -292,7 +299,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260326000000",
+      "not_after": "20261010235959"
     }
   },
   "http2": {
@@ -314,8 +323,14 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "*/elmundo/hemeroteca/*/*/*/*/*"
     ]
   },
-  "elapsed_s": 27.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "117.247.90.34.bc.googleusercontent.com."
+    ]
+  },
+  "elapsed_s": 27.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

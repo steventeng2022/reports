@@ -7,12 +7,12 @@
 | Target | https://forms.gle/ |
 | Bug bounty program | Google |
 | Listed scope domain | forms.gle |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
+Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,6 +25,8 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
 | 7 | info | P8 | Missing security.txt | CWE-1038 |
 | 8 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 9 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 10 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 11 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 
 ## Detailed findings
 
@@ -87,6 +89,18 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
 - **Detail:** Certificate of forms.gle has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 10. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of forms.gle permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 11. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of forms.gle includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -102,10 +116,10 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
     "cname": null,
     "mx": [],
     "ns": [
-      "ns1.googledomains.com.",
       "ns3.googledomains.com.",
       "ns4.googledomains.com.",
-      "ns2.googledomains.com."
+      "ns2.googledomains.com.",
+      "ns1.googledomains.com."
     ],
     "spf": [
       "google-site-verification=rvdr5o5Pu2N2R1s_amIscEqKs1DVEjCIDvzkBJ7We5o"
@@ -196,11 +210,16 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260817081750",
+      "not_after": "20261115091636"
     }
   },
-  "elapsed_s": 26.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 400
+  },
+  "elapsed_s": 26.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

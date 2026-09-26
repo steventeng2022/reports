@@ -7,8 +7,8 @@
 | Target | https://diigo.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | diigo.com |
-| Test date | 2026-09-26 17:43 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -52,13 +52,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.67.68.111:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.26.4.189:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.67.68.111:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.26.4.189:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -161,35 +161,35 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   "domain": "diigo.com",
   "dns": {
     "a": [
-      "172.67.68.111",
       "104.26.4.189",
+      "172.67.68.111",
       "104.26.5.189"
     ],
     "aaaa": [
-      "2606:4700:20::ac43:446f",
       "2606:4700:20::681a:5bd",
-      "2606:4700:20::681a:4bd"
+      "2606:4700:20::681a:4bd",
+      "2606:4700:20::ac43:446f"
     ],
     "cname": null,
     "mx": [
-      "ASPMX3.GOOGLEMAIL.com (pref 20)",
-      "ALT1.ASPMX.L.GOOGLE.com (pref 10)",
       "ASPMX4.GOOGLEMAIL.com (pref 20)",
-      "ASPMX5.GOOGLEMAIL.com (pref 20)",
       "ALT2.ASPMX.L.GOOGLE.com (pref 10)",
-      "ASPMX2.GOOGLEMAIL.com (pref 20)",
-      "ASPMX.L.GOOGLE.com (pref 0)"
+      "ALT1.ASPMX.L.GOOGLE.com (pref 10)",
+      "ASPMX.L.GOOGLE.com (pref 0)",
+      "ASPMX5.GOOGLEMAIL.com (pref 20)",
+      "ASPMX3.GOOGLEMAIL.com (pref 20)",
+      "ASPMX2.GOOGLEMAIL.com (pref 20)"
     ],
     "ns": [
       "wilson.ns.cloudflare.com.",
       "karsyn.ns.cloudflare.com."
     ],
     "spf": [
-      "v=spf1 mx a:mail4.diigo.com a:mail3.diigo.com a:mail5.diigo.com a:mail6.diigo.com mx:gmail.com ip4:54.191.20.111 ip4:54.191.82.220 ip4:54.201.55.105 ip4:216.237.119.210 ip4:72.26.232.209 ip4:72.26.232.205 ~all",
-      "_n8uwun3az6dfkrpcu82ztjpsz0nm99k",
+      "xh4pys2kccpbb5f79r501gs19h6ctfy0",
       "_lbqtqwfel2p2s1hzazwciypx34dtpov",
       "google-site-verification=jEyJnTdt9H3zybR7Jh0b3WI9GxKTmKU8m7ulcqrb7mQ",
-      "xh4pys2kccpbb5f79r501gs19h6ctfy0"
+      "v=spf1 mx a:mail4.diigo.com a:mail3.diigo.com a:mail5.diigo.com a:mail6.diigo.com mx:gmail.com ip4:54.191.20.111 ip4:54.191.82.220 ip4:54.201.55.105 ip4:216.237.119.210 ip4:72.26.232.209 ip4:72.26.232.205 ~all",
+      "_n8uwun3az6dfkrpcu82ztjpsz0nm99k"
     ],
     "dmarc": [
       "_zco4dkjfh4safpywcjac0pj19pcnwkb"
@@ -219,7 +219,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     }
   },
   "ports": {
-    "ip": "172.67.68.111",
+    "ip": "104.26.4.189",
     "open": [
       8080,
       8443
@@ -287,7 +287,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260804085152",
+      "not_after": "20261102094901"
     }
   },
   "http2": {
@@ -309,8 +311,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "/user_mana2"
     ]
   },
-  "elapsed_s": 32.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 35.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

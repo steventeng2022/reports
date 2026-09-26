@@ -7,8 +7,8 @@
 | Target | https://disqus.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | disqus.com |
-| Test date | 2026-09-26 17:43 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -140,13 +140,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 ### 16. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (6qw0hirrd3ppsr.disqus.com and avj7tt4bdu7myo.disqus.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (9lv0nlgdrir8kg.disqus.com and 2bk2p7nynhthx0.disqus.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=bNxtittci6R0vzV6tO1HsHyQrydEZNZ5y1RgGoTEsHk; _globalsign-domain-verification=_XCFILJ7eSiRq9rSWcB9wqJjbgKsGbvW2wQ9FztWPW; atlassian-domain-verification=VWUavCxXQBdA22BdIz4KQDlSXFLiCdhywIZhyapNcSNjMvIyTd
+- **Detail:** Apex TXT records with verification/token content: dropbox-domain-verification=xgxriaywlrcv; atlassian-domain-verification=VWUavCxXQBdA22BdIz4KQDlSXFLiCdhywIZhyapNcSNjMvIyTd; tipalti-domain-verification=9dffb2af-8871-f111-8391-02501973a9c1
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -174,9 +174,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   "domain": "disqus.com",
   "dns": {
     "a": [
-      "151.101.64.134",
       "151.101.128.134",
       "151.101.0.134",
+      "151.101.64.134",
       "151.101.192.134"
     ],
     "aaaa": [],
@@ -185,18 +185,18 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "disqus-com.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "ns-179.awsdns-22.com.",
-      "ns-1148.awsdns-15.org.",
       "ns-1870.awsdns-41.co.uk.",
-      "ns-620.awsdns-13.net."
+      "ns-620.awsdns-13.net.",
+      "ns-1148.awsdns-15.org.",
+      "ns-179.awsdns-22.com."
     ],
     "spf": [
-      "google-site-verification=bNxtittci6R0vzV6tO1HsHyQrydEZNZ5y1RgGoTEsHk",
-      "_globalsign-domain-verification=_XCFILJ7eSiRq9rSWcB9wqJjbgKsGbvW2wQ9FztWPW",
+      "dropbox-domain-verification=xgxriaywlrcv",
       "atlassian-domain-verification=VWUavCxXQBdA22BdIz4KQDlSXFLiCdhywIZhyapNcSNjMvIyTdUSTxsaS5KsQEXy",
       "tipalti-domain-verification=9dffb2af-8871-f111-8391-02501973a9c1",
-      "dropbox-domain-verification=xgxriaywlrcv",
-      "v=spf1 include:servers.mcsv.net include:429754.spf04.hubspotemail.net include:spf.protection.outlook.com include:spfa.cpmails.com include:amazonses.com -all"
+      "v=spf1 include:servers.mcsv.net include:429754.spf04.hubspotemail.net include:spf.protection.outlook.com include:spfa.cpmails.com include:amazonses.com -all",
+      "google-site-verification=bNxtittci6R0vzV6tO1HsHyQrydEZNZ5y1RgGoTEsHk",
+      "_globalsign-domain-verification=_XCFILJ7eSiRq9rSWcB9wqJjbgKsGbvW2wQ9FztWPW"
     ],
     "dmarc": [
       "v=DMARC1; p=none; pct=100; rua=mailto:re+xcmmepsx0yx@dmarc.postmarkapp.com; sp=none; aspf=r;"
@@ -226,7 +226,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     }
   },
   "ports": {
-    "ip": "151.101.64.134",
+    "ip": "151.101.128.134",
     "open": []
   },
   "https": {
@@ -280,11 +280,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=bNxtittci6R0vzV6tO1HsHyQrydEZNZ5y1RgGoTEsHk",
-    "_globalsign-domain-verification=_XCFILJ7eSiRq9rSWcB9wqJjbgKsGbvW2wQ9FztWPW",
+    "dropbox-domain-verification=xgxriaywlrcv",
     "atlassian-domain-verification=VWUavCxXQBdA22BdIz4KQDlSXFLiCdhywIZhyapNcSNjMvIyTd",
     "tipalti-domain-verification=9dffb2af-8871-f111-8391-02501973a9c1",
-    "dropbox-domain-verification=xgxriaywlrcv"
+    "google-site-verification=bNxtittci6R0vzV6tO1HsHyQrydEZNZ5y1RgGoTEsHk",
+    "_globalsign-domain-verification=_XCFILJ7eSiRq9rSWcB9wqJjbgKsGbvW2wQ9FztWPW"
   ],
   "tls2": {
     "alpn": "",
@@ -295,7 +295,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260401000000",
+      "not_after": "20261016235959"
     }
   },
   "http2": {
@@ -304,8 +306,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "/forgot"
     ]
   },
-  "elapsed_s": 16.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 15.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://support.microsoft.com/ |
 | Bug bounty program | Microsoft Online Services |
 | Listed scope domain | support.microsoft.com |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:00 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
+Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -23,8 +23,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
 | 5 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 6 | info | P8 | Missing security.txt | CWE-1038 |
 | 7 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 8 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 9 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 8 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -75,13 +74,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
 - **Detail:** Certificate of support.microsoft.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 8. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
-
-- **CWE:** CWE-319
-- **Detail:** Strict-Transport-Security is served but support.microsoft.com is not listed in the HSTS preload list.
-- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
-
-### 9. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 8. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 34 disallow path(s), e.g. /default.aspx/kb/, /default.aspx/ph/, /mats/?diagid=100001&eulaaccept=yes*, /mats/default.aspx?diagid=100001&eulaaccept=yes*, /search/default.aspx?*
@@ -94,7 +87,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
   "domain": "support.microsoft.com",
   "dns": {
     "a": [
-      "150.171.110.66"
+      "150.171.110.68"
     ],
     "aaaa": [
       "2603:1061:14:140::1"
@@ -128,7 +121,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
     }
   },
   "ports": {
-    "ip": "150.171.110.66",
+    "ip": "150.171.110.68",
     "open": []
   },
   "https": {
@@ -168,15 +161,15 @@ Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
     "/robots.txt": 200,
     "/sitemap.xml": 404,
     "/.well-known/security.txt": 404,
-    "/security.txt": 404,
+    "/security.txt": 403,
     "/.git/HEAD": 404,
     "/.git/config": 404,
-    "/.env": 404,
-    "/.htaccess": 404,
+    "/.env": 403,
+    "/.htaccess": 403,
     "/wp-login.php": 404,
     "/phpmyadmin/index.php": 404,
     "/server-status": 404,
-    "/api/": 404
+    "/api/": 403
   },
   "subdomains": {
     "status": "ct-pending"
@@ -194,7 +187,9 @@ Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260829074417",
+      "not_after": "20270225074417"
     }
   },
   "http2": {
@@ -216,8 +211,11 @@ Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
       "/gp/international_new/"
     ]
   },
-  "elapsed_s": 14.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 7.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

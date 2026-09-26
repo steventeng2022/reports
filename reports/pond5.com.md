@@ -7,12 +7,12 @@
 | Target | https://pond5.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | pond5.com |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
+Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 19 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 20 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -141,13 +142,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 ### 16. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (pyfy8fy6jv9cwv.pond5.com and x6s4awj5nwkuyo.pond5.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (m0850q68b2myfq.pond5.com and 885a5xooaorwwh.pond5.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=JYDGEEK8YrzU6E9EoZldTSk1FhtJ7KdO3hgtDwQqP5M; google-site-verification=zjmmVprufGivs-Vsfh3ZurrqrI_3NVdzpmFgI3ZkJnM; facebook-domain-verification=92m49ul471bnn1nl2t11m7wav1of7c
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=qvuceO7yLnt4fP8wqJDDx-ezTWbZSSvuZvCXBqN6-XQ; facebook-domain-verification=92m49ul471bnn1nl2t11m7wav1of7c; google-site-verification=zjmmVprufGivs-Vsfh3ZurrqrI_3NVdzpmFgI3ZkJnM
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -162,6 +163,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 - **Detail:** Strict-Transport-Security is served but pond5.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
+### 20. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 3.169.121.75 carries PTR server-3-169-121-75.tpe53.r.cloudfront.net. for pond5.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -169,33 +176,33 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
   "domain": "pond5.com",
   "dns": {
     "a": [
-      "3.169.121.94",
-      "3.169.121.23",
+      "3.169.121.75",
       "3.169.121.26",
-      "3.169.121.75"
+      "3.169.121.94",
+      "3.169.121.23"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 0)",
-      "alt1.aspmx.l.google.com (pref 10)",
-      "aspmx2.googlemail.com (pref 20)"
+      "aspmx2.googlemail.com (pref 20)",
+      "alt2.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-1659.awsdns-15.co.uk.",
-      "ns-462.awsdns-57.com.",
       "ns-576.awsdns-08.net.",
-      "ns-1208.awsdns-23.org."
+      "ns-1208.awsdns-23.org.",
+      "ns-1659.awsdns-15.co.uk.",
+      "ns-462.awsdns-57.com."
     ],
     "spf": [
+      "google-site-verification=qvuceO7yLnt4fP8wqJDDx-ezTWbZSSvuZvCXBqN6-XQ",
       "MS=ms59996724",
-      "v=spf1 include:_spf.google.com include:amazonses.com include:mail.zendesk.com include:sendgrid.net include:aspmx.sailthru.com ip4:52.205.38.218/32 ip4:50.16.37.18/32 -all",
-      "google-site-verification=JYDGEEK8YrzU6E9EoZldTSk1FhtJ7KdO3hgtDwQqP5M",
-      "google-site-verification=zjmmVprufGivs-Vsfh3ZurrqrI_3NVdzpmFgI3ZkJnM",
       "facebook-domain-verification=92m49ul471bnn1nl2t11m7wav1of7c",
-      "yahoo-verification-key=fB6vCB3FfQW5U/lwe9qf/TJ2vtko0ulEC/nwgCoQ2dI=",
-      "google-site-verification=qvuceO7yLnt4fP8wqJDDx-ezTWbZSSvuZvCXBqN6-XQ"
+      "google-site-verification=zjmmVprufGivs-Vsfh3ZurrqrI_3NVdzpmFgI3ZkJnM",
+      "google-site-verification=JYDGEEK8YrzU6E9EoZldTSk1FhtJ7KdO3hgtDwQqP5M",
+      "v=spf1 include:_spf.google.com include:amazonses.com include:mail.zendesk.com include:sendgrid.net include:aspmx.sailthru.com ip4:52.205.38.218/32 ip4:50.16.37.18/32 -all",
+      "yahoo-verification-key=fB6vCB3FfQW5U/lwe9qf/TJ2vtko0ulEC/nwgCoQ2dI="
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@dmarc.250ok.net,mailto:add78bd9e2@rua.easydmarc.us; ruf=mailto:dmarc_fr@dmarc.250ok.net,mailto:dmarc-reports@shutterstock.com; fo=1; pct=100; rf=afrf"
@@ -225,7 +232,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     }
   },
   "ports": {
-    "ip": "3.169.121.94",
+    "ip": "3.169.121.75",
     "open": []
   },
   "https": {
@@ -284,11 +291,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=JYDGEEK8YrzU6E9EoZldTSk1FhtJ7KdO3hgtDwQqP5M",
-    "google-site-verification=zjmmVprufGivs-Vsfh3ZurrqrI_3NVdzpmFgI3ZkJnM",
+    "google-site-verification=qvuceO7yLnt4fP8wqJDDx-ezTWbZSSvuZvCXBqN6-XQ",
     "facebook-domain-verification=92m49ul471bnn1nl2t11m7wav1of7c",
-    "yahoo-verification-key=fB6vCB3FfQW5U/lwe9qf/TJ2vtko0ulEC/nwgCoQ2dI=",
-    "google-site-verification=qvuceO7yLnt4fP8wqJDDx-ezTWbZSSvuZvCXBqN6-XQ"
+    "google-site-verification=zjmmVprufGivs-Vsfh3ZurrqrI_3NVdzpmFgI3ZkJnM",
+    "google-site-verification=JYDGEEK8YrzU6E9EoZldTSk1FhtJ7KdO3hgtDwQqP5M",
+    "yahoo-verification-key=fB6vCB3FfQW5U/lwe9qf/TJ2vtko0ulEC/nwgCoQ2dI="
   ],
   "tls2": {
     "alpn": "",
@@ -299,11 +306,19 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260510000000",
+      "not_after": "20261123235959"
     }
   },
-  "elapsed_s": 7.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403,
+    "ptr": [
+      "server-3-169-121-75.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 7.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,8 +7,8 @@
 | Target | https://livestream.com/ |
 | Bug bounty program | Livestream |
 | Listed scope domain | livestream.com |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -46,13 +46,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 162.159.137.60:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 162.159.136.60:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 162.159.137.60:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 162.159.136.60:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -146,7 +146,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=dES26MRmYRt0D4yxeJTO_b87PBNczwPUvtZXES7k5-M; dropbox-domain-verification=g1g5m0cy8q3x; atlassian-domain-verification=OQUW8wO6JYgjdHThsMyRzUbqCNuYUJ1qA4ryjBsCIcdOFxvr5p
+- **Detail:** Apex TXT records with verification/token content: dropbox-domain-verification=g1g5m0cy8q3x; google-site-verification=dES26MRmYRt0D4yxeJTO_b87PBNczwPUvtZXES7k5-M; google-site-verification=tcTpPh4ch-mzo5VaOmPFwsgiw2LlGfMDX62sbleUzP8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -162,37 +162,37 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "livestream.com",
   "dns": {
     "a": [
-      "162.159.137.60",
-      "162.159.136.60"
+      "162.159.136.60",
+      "162.159.137.60"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 50)",
-      "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx.l.google.com (pref 10)",
       "aspmx2.googlemail.com (pref 40)",
-      "alt2.aspmx.l.google.com (pref 30)"
+      "aspmx3.googlemail.com (pref 50)",
+      "aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 30)",
+      "alt1.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
-      "ns-305.awsdns-38.com.",
-      "ns-1098.awsdns-09.org.",
       "ns-2025.awsdns-61.co.uk.",
-      "ns-667.awsdns-19.net."
+      "ns-667.awsdns-19.net.",
+      "ns-305.awsdns-38.com.",
+      "ns-1098.awsdns-09.org."
     ],
     "spf": [
-      "google-site-verification=dES26MRmYRt0D4yxeJTO_b87PBNczwPUvtZXES7k5-M",
       "dropbox-domain-verification=g1g5m0cy8q3x",
-      "atlassian-domain-verification=OQUW8wO6JYgjdHThsMyRzUbqCNuYUJ1qA4ryjBsCIcdOFxvr5pFrW4Dt27ZDhLRq",
-      "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A",
+      "google-site-verification=dES26MRmYRt0D4yxeJTO_b87PBNczwPUvtZXES7k5-M",
       "google-site-verification=tcTpPh4ch-mzo5VaOmPFwsgiw2LlGfMDX62sbleUzP8",
+      "google-site-verification=63C3Iuzm8PQ6Et4kr5GhGgTEg44iJ5Hh10Z8pmGrnQM",
+      "google-site-verification=hfoV62iPZ8P2lo-Bw5G4FaAPDRwSlxzcDmI_BWJgHmo",
+      "google-site-verification=oAS5dgc5nQPljS4PiEdsO4unszDm9akoF6z1d8XY-IQ",
+      "globalsign-domain-verification=K9ZBZYNiNsNNOiaY2Tbjn-Bfe0dWwAwpstKoOOVJWO",
       "google-site-verification=YkEQVePglv5Aq-sfJLiJw41ShuV4P-KiHFTU-1cFT5Y",
       "ca3-d34f1a46f51d464fabed162be35e98fc",
-      "google-site-verification=63C3Iuzm8PQ6Et4kr5GhGgTEg44iJ5Hh10Z8pmGrnQM",
-      "globalsign-domain-verification=K9ZBZYNiNsNNOiaY2Tbjn-Bfe0dWwAwpstKoOOVJWO",
       "v=spf1 include:_spf.google.com include:mailgun.org include:servers.mcsv.net include:mail.zendesk.com -all",
-      "google-site-verification=hfoV62iPZ8P2lo-Bw5G4FaAPDRwSlxzcDmI_BWJgHmo",
-      "google-site-verification=oAS5dgc5nQPljS4PiEdsO4unszDm9akoF6z1d8XY-IQ"
+      "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A",
+      "atlassian-domain-verification=OQUW8wO6JYgjdHThsMyRzUbqCNuYUJ1qA4ryjBsCIcdOFxvr5pFrW4Dt27ZDhLRq"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=none; pct=100; rua=mailto:0bf8497523a6913@rep.dmarcanalyzer.com; ruf=mailto:0bf8497523a6913@for.dmarcanalyzer.com; fo=1;"
@@ -222,7 +222,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "162.159.137.60",
+    "ip": "162.159.136.60",
     "open": [
       8080,
       8443
@@ -284,11 +284,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=dES26MRmYRt0D4yxeJTO_b87PBNczwPUvtZXES7k5-M",
     "dropbox-domain-verification=g1g5m0cy8q3x",
-    "atlassian-domain-verification=OQUW8wO6JYgjdHThsMyRzUbqCNuYUJ1qA4ryjBsCIcdOFxvr5p",
-    "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A",
-    "google-site-verification=tcTpPh4ch-mzo5VaOmPFwsgiw2LlGfMDX62sbleUzP8"
+    "google-site-verification=dES26MRmYRt0D4yxeJTO_b87PBNczwPUvtZXES7k5-M",
+    "google-site-verification=tcTpPh4ch-mzo5VaOmPFwsgiw2LlGfMDX62sbleUzP8",
+    "google-site-verification=63C3Iuzm8PQ6Et4kr5GhGgTEg44iJ5Hh10Z8pmGrnQM",
+    "google-site-verification=hfoV62iPZ8P2lo-Bw5G4FaAPDRwSlxzcDmI_BWJgHmo"
   ],
   "tls2": {
     "alpn": "",
@@ -299,11 +299,16 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260803024547",
+      "not_after": "20261101034543"
     }
   },
-  "elapsed_s": 5.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 5.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

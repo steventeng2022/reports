@@ -7,8 +7,8 @@
 | Target | https://fbi.gov/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | fbi.gov |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -47,13 +47,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.148.244:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.149.244:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.148.244:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.149.244:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -132,7 +132,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=6UEk-jfg1xPNjz_rQGcRFJOBGxMy1aARDZUTXgSNAqw; google-site-verification=L8cauHJF4MANoTCkMbrLkAVfHBta28ctva9n1IDekTo; adobe-idp-site-verification=101945e35b37c6efd526cf706f04bc9545a02f9cdc58dbf71867
+- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=101945e35b37c6efd526cf706f04bc9545a02f9cdc58dbf71867; apple-domain-verification=oOspXl6Jvnx9HzLM; google-site-verification=L8cauHJF4MANoTCkMbrLkAVfHBta28ctva9n1IDekTo
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -166,8 +166,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
   "domain": "fbi.gov",
   "dns": {
     "a": [
-      "104.16.148.244",
-      "104.16.149.244"
+      "104.16.149.244",
+      "104.16.148.244"
     ],
     "aaaa": [
       "2606:4700::6810:94f4",
@@ -179,26 +179,26 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
       "mx-west.fbi.gov (pref 20)"
     ],
     "ns": [
-      "ns-cloud-e3.googledomains.com.",
       "ns-cloud-e1.googledomains.com.",
       "ns-cloud-e4.googledomains.com.",
+      "ns-cloud-e3.googledomains.com.",
       "ns-cloud-e2.googledomains.com."
     ],
     "spf": [
-      "C8WWN4MbK7z5BL4Ivc/DSxEeVsr18DB5/P8GxlM1S3OfCxexrFpFzpY7MBDBoid3h/OxYU+1H0pFrKWhj1j3cw==",
-      "google-site-verification=6UEk-jfg1xPNjz_rQGcRFJOBGxMy1aARDZUTXgSNAqw",
-      "MS=ms39271050",
-      "google-site-verification=L8cauHJF4MANoTCkMbrLkAVfHBta28ctva9n1IDekTo",
-      "amazonses: iUbfpGEqhMPlcmJ0aykJZREltK6pWio9wOgRngnJOQE=",
       "adobe-idp-site-verification=101945e35b37c6efd526cf706f04bc9545a02f9cdc58dbf718678c506697d67d",
-      "ublrZj1CzpSEiwtiRFKDAyiek8hRqkqaTTApxvhwai14i8JqVBOauW4cA06i39H5Lhl3HnALCM/xfTxIPEXEpA==",
+      "C8WWN4MbK7z5BL4Ivc/DSxEeVsr18DB5/P8GxlM1S3OfCxexrFpFzpY7MBDBoid3h/OxYU+1H0pFrKWhj1j3cw==",
+      "amazonses: iUbfpGEqhMPlcmJ0aykJZREltK6pWio9wOgRngnJOQE=",
       "625558384-8740534",
-      "v=spf1 +mx ip4:153.31.0.0/16 -all",
+      "apple-domain-verification=oOspXl6Jvnx9HzLM",
+      "google-site-verification=L8cauHJF4MANoTCkMbrLkAVfHBta28ctva9n1IDekTo",
+      "MS=ms39271050",
       "google-gws-recovery-domain-verification=74752930",
       "kiro-site-verification=31a85f50-8d2b-4be7-9175-d16a469190ee",
+      "v=spf1 +mx ip4:153.31.0.0/16 -all",
       "_globalsign-domain-verification=xZMJnzdDAgURaBjUZ6qbqWaaYmV5W3sfo3TF8mUxne",
       "google-site-verification=uTH4Vg-Xcc9hTqSdeThbT9UnYvuphObtVSpCEgaGr78",
-      "apple-domain-verification=oOspXl6Jvnx9HzLM"
+      "google-site-verification=6UEk-jfg1xPNjz_rQGcRFJOBGxMy1aARDZUTXgSNAqw",
+      "ublrZj1CzpSEiwtiRFKDAyiek8hRqkqaTTApxvhwai14i8JqVBOauW4cA06i39H5Lhl3HnALCM/xfTxIPEXEpA=="
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-feedback@fbi.gov,mailto:reports@dmarc.cyber.dhs.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100"
@@ -228,7 +228,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
     }
   },
   "ports": {
-    "ip": "104.16.148.244",
+    "ip": "104.16.149.244",
     "open": [
       8080,
       8443
@@ -339,9 +339,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
     ]
   },
   "apex_txt": [
-    "google-site-verification=6UEk-jfg1xPNjz_rQGcRFJOBGxMy1aARDZUTXgSNAqw",
-    "google-site-verification=L8cauHJF4MANoTCkMbrLkAVfHBta28ctva9n1IDekTo",
     "adobe-idp-site-verification=101945e35b37c6efd526cf706f04bc9545a02f9cdc58dbf71867",
+    "apple-domain-verification=oOspXl6Jvnx9HzLM",
+    "google-site-verification=L8cauHJF4MANoTCkMbrLkAVfHBta28ctva9n1IDekTo",
     "google-gws-recovery-domain-verification=74752930",
     "kiro-site-verification=31a85f50-8d2b-4be7-9175-d16a469190ee"
   ],
@@ -354,7 +354,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260914121841",
+      "not_after": "20261213131821"
     }
   },
   "http2": {
@@ -377,8 +379,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
       "/*interactive*"
     ]
   },
-  "elapsed_s": 9.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 14.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

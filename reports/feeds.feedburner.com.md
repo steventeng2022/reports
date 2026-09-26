@@ -7,12 +7,12 @@
 | Target | https://feeds.feedburner.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | feeds.feedburner.com |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
+Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,6 +25,9 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 | 7 | info | H6 | Server technology disclosure | CWE-200 |
 | 8 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 9 | info | SEC2 | security.txt published without a contact address | CWE-1038 |
+| 10 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 11 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 12 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -85,6 +88,24 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 - **CWE:** CWE-1038
 - **Detail:** /security.txt returns 200 but contains no mailto:/URL contact.
 - **Recommendation:** Add a Contact: field per RFC 9116.
+
+### 10. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of feeds.feedburner.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 11. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of feeds.feedburner.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
+### 12. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 64.233.189.118 carries PTR tl-in-f118.1e100.net. for feeds.feedburner.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -595,11 +616,19 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192234",
+      "not_after": "20261203192233"
     }
   },
-  "elapsed_s": 7.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 404,
+    "ptr": [
+      "tl-in-f118.1e100.net."
+    ]
+  },
+  "elapsed_s": 6.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

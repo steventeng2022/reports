@@ -7,8 +7,8 @@
 | Target | https://soundcloud.com/ |
 | Bug bounty program | SoundCloud |
 | Listed scope domain | soundcloud.com |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -131,7 +131,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=tJKfbnEmy7WvFRWf3KQMyZ05PnvVJidfQRNnq4AMh8; google-site-verification=SdIX4P8Pq06U6a0DMUEvgI5rQS7RM0Z33zKcet-iVf8; stripe-verification=e1469db8bb5c9886c8a7abbece38ddc342618aa4ac7dca85b73731668ea5
+- **Detail:** Apex TXT records with verification/token content: jetbrains-domain-verification=77s6xu94q634n5sk6ntslgq5c; onetrust-domain-verification=f110ce3d05314cfb8054ab5e0903ff68; jamf-site-verification=1U6XZPPCv81jzz6DXNXGYA
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -153,56 +153,56 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "domain": "soundcloud.com",
   "dns": {
     "a": [
-      "52.84.150.52",
-      "52.84.150.57",
       "52.84.150.35",
-      "52.84.150.39"
+      "52.84.150.39",
+      "52.84.150.52",
+      "52.84.150.57"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 50)",
-      "aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 20)",
       "aspmx2.googlemail.com (pref 50)",
       "alt1.aspmx.l.google.com (pref 20)",
-      "alt2.aspmx.l.google.com (pref 20)"
+      "aspmx3.googlemail.com (pref 50)",
+      "aspmx.l.google.com (pref 10)"
     ],
     "ns": [
+      "ns-799.awsdns-35.net.",
       "ns-56.awsdns-07.com.",
       "ns-1745.awsdns-26.co.uk.",
-      "ns-1445.awsdns-52.org.",
-      "ns-799.awsdns-35.net."
+      "ns-1445.awsdns-52.org."
     ],
     "spf": [
-      "globalsign-domain-verification=tJKfbnEmy7WvFRWf3KQMyZ05PnvVJidfQRNnq4AMh8",
-      "google-site-verification=SdIX4P8Pq06U6a0DMUEvgI5rQS7RM0Z33zKcet-iVf8",
-      "stripe-verification=e1469db8bb5c9886c8a7abbece38ddc342618aa4ac7dca85b73731668ea5ec70",
-      "MS=ms25371803",
+      "jetbrains-domain-verification=77s6xu94q634n5sk6ntslgq5c",
+      "onetrust-domain-verification=f110ce3d05314cfb8054ab5e0903ff68",
+      "ZOOM_verify_hBlTOUUcSiW7IhDAv16bqQ",
+      "jamf-site-verification=1U6XZPPCv81jzz6DXNXGYA",
       "miro-verification=f08757fb9739f5263de5643f8c9534cccb49b7d3",
-      "anthropic-domain-verification-ft7nd5=krTYkCbsCOrTIXUyLzSSegK3l",
-      "v=spf1 include:_spf.google.com ip4:178.249.138.0/23 ip4:145.253.129.216/29 ip4:80.82.202.192/28 ip4:52.17.172.90/32 include:spf.mandrillapp.com include:7303199.spf04.hubspotemail.net include:spf.extole.io -all",
-      "apple-domain-verification=DJEx73gNNUTjejVL",
-      "yahoo-verification-key=2nyOaMY2z64VYBysZQLyDBjU85Vd/+N/O1tHvVvie9o=",
-      "JlHKdOBLZpjS/UOFcGHRiSM38ADQhJ0fAN6IMMgSdts=",
-      "google-site-verification=bGedCZYrMEPIXRPH5n3Rb0dJjFPACxuP_xMbAPCPenU",
+      "postman-domain-verification=5b7709a2c59b36a8a43b9ac9dfce70486e48a77ead9bc6796eb6d23405f1e97d248fcea57dca123555ac56280fda66895e29ba3a9a0f2c6c400985776f040d5a",
+      "d24wuv6owifbwc.cloudfront.net",
       "botify-site-verification=VyJVacuoqlVARp4iXaeza0p9iFlTUubb",
+      "MS=ms25371803",
+      "google-site-verification=U41CuhcP0HS0kVo6HaaLA0Vo-6Wdk8YO-M_Q4rukDmU",
+      "google-site-verification=SdIX4P8Pq06U6a0DMUEvgI5rQS7RM0Z33zKcet-iVf8",
+      "yahoo-verification-key=X54UzsFVrbpDDU12ORu34v7OcW03f6CpgZpTUouceKQ=",
+      "MS=ms67894313",
+      "wrQAupWCtBhVn8GcFVpM6CMH--bBTLOI",
+      "stripe-verification=e1469db8bb5c9886c8a7abbece38ddc342618aa4ac7dca85b73731668ea5ec70",
+      "v=spf1 include:_spf.google.com ip4:178.249.138.0/23 ip4:145.253.129.216/29 ip4:80.82.202.192/28 ip4:52.17.172.90/32 include:spf.mandrillapp.com include:7303199.spf04.hubspotemail.net include:spf.extole.io -all",
+      "asv=f854ad6e866ab7a88b57bebd971f158b",
+      "globalsign-domain-verification=tJKfbnEmy7WvFRWf3KQMyZ05PnvVJidfQRNnq4AMh8",
+      "openai-domain-verification=dv-sOXO0PYHFRn8QJdpVkjwvqyI",
+      "apple-domain-verification=DJEx73gNNUTjejVL",
+      "JlHKdOBLZpjS/UOFcGHRiSM38ADQhJ0fAN6IMMgSdts=",
+      "datadome-domain-verify=gf9iUK5M4yfQc3zyEW1aXklGOXdhjLyy",
       "atlassian-domain-verification=fycZUT0eVlPEiaehQXOKmXCe9NJeJsZmCWgWfW7GSuras9JTdhCVrebn8zfRIQ3v",
       "cdn.webflow.com",
-      "asv=f854ad6e866ab7a88b57bebd971f158b",
-      "MS=ms67894313",
-      "postman-domain-verification=5b7709a2c59b36a8a43b9ac9dfce70486e48a77ead9bc6796eb6d23405f1e97d248fcea57dca123555ac56280fda66895e29ba3a9a0f2c6c400985776f040d5a",
-      "jamf-site-verification=1U6XZPPCv81jzz6DXNXGYA",
-      "jetbrains-domain-verification=77s6xu94q634n5sk6ntslgq5c",
-      "datadome-domain-verify=gf9iUK5M4yfQc3zyEW1aXklGOXdhjLyy",
-      "openai-domain-verification=dv-sOXO0PYHFRn8QJdpVkjwvqyI",
-      "ZOOM_verify_hBlTOUUcSiW7IhDAv16bqQ",
+      "google-site-verification=bGedCZYrMEPIXRPH5n3Rb0dJjFPACxuP_xMbAPCPenU",
+      "anthropic-domain-verification-ft7nd5=krTYkCbsCOrTIXUyLzSSegK3l",
       "docker-verification=6c85d46a-1d92-4e77-bbea-945c00c11df1",
-      "google-site-verification=ise_yQfK5npT23y4X7QBl-WYgNjA7AuUrRQQo1Q66EU",
-      "d24wuv6owifbwc.cloudfront.net",
-      "yahoo-verification-key=X54UzsFVrbpDDU12ORu34v7OcW03f6CpgZpTUouceKQ=",
-      "wrQAupWCtBhVn8GcFVpM6CMH--bBTLOI",
-      "onetrust-domain-verification=f110ce3d05314cfb8054ab5e0903ff68",
-      "google-site-verification=U41CuhcP0HS0kVo6HaaLA0Vo-6Wdk8YO-M_Q4rukDmU"
+      "yahoo-verification-key=2nyOaMY2z64VYBysZQLyDBjU85Vd/+N/O1tHvVvie9o=",
+      "google-site-verification=ise_yQfK5npT23y4X7QBl-WYgNjA7AuUrRQQo1Q66EU"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:yL97s5R6Jy@dmarc.inboxmonster.com,mailto:dmarc-rua@soundcloud.com; ruf=mailto:dmarc-ruf@soundcloud.com; pct=100; sp=reject;"
@@ -232,7 +232,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     }
   },
   "ports": {
-    "ip": "52.84.150.52",
+    "ip": "52.84.150.35",
     "open": []
   },
   "https": {
@@ -294,11 +294,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "globalsign-domain-verification=tJKfbnEmy7WvFRWf3KQMyZ05PnvVJidfQRNnq4AMh8",
-    "google-site-verification=SdIX4P8Pq06U6a0DMUEvgI5rQS7RM0Z33zKcet-iVf8",
-    "stripe-verification=e1469db8bb5c9886c8a7abbece38ddc342618aa4ac7dca85b73731668ea5",
+    "jetbrains-domain-verification=77s6xu94q634n5sk6ntslgq5c",
+    "onetrust-domain-verification=f110ce3d05314cfb8054ab5e0903ff68",
+    "jamf-site-verification=1U6XZPPCv81jzz6DXNXGYA",
     "miro-verification=f08757fb9739f5263de5643f8c9534cccb49b7d3",
-    "anthropic-domain-verification-ft7nd5=krTYkCbsCOrTIXUyLzSSegK3l"
+    "postman-domain-verification=5b7709a2c59b36a8a43b9ac9dfce70486e48a77ead9bc6796eb6"
   ],
   "tls2": {
     "alpn": "",
@@ -309,7 +309,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260217000000",
+      "not_after": "20270318235959"
     }
   },
   "http2": {
@@ -325,8 +327,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "/*?"
     ]
   },
-  "elapsed_s": 19.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 19.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

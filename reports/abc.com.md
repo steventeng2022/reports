@@ -7,12 +7,12 @@
 | Target | https://abc.com/ |
 | Bug bounty program | The Walt Disney Company |
 | Listed scope domain | abc.com |
-| Test date | 2026-09-26 17:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
+Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,7 +33,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 18 | info | CT1 | 43 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 20 | info | CT1 | 43 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -133,7 +135,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=9KrlZfA2rYO7_JUgB6G6PzmIzp5C0aMcAgiODVFOXL4; adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e0; apple-domain-verification=pSxAase3tgjHfXBE
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=9KrlZfA2rYO7_JUgB6G6PzmIzp5C0aMcAgiODVFOXL4; extensis-domain-verification=4dec3be6-1ab2-4cd3-b508-5a61c50ac453; apple-domain-verification=pSxAase3tgjHfXBE
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -148,7 +150,19 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 - **Detail:** robots.txt lists 20 disallow path(s), e.g. /rss/, /xml/, /json/, /headerxml/, /service/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 18. [INFO] 43 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://abc.com/ carries Cache-Control: max-age=300, s-maxage=600, stale-if-error=86400 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 3.169.121.28 carries PTR server-3-169-121-28.tpe53.r.cloudfront.net. for abc.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 20. [INFO] 43 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.abc.com, api.partners.abc.com, cdn.mktg.abc.com, cdn.video.abc.com, dev.cd.abc.com, dev.galaxy.abc.com, fcast.cdn.abc.com, fcast.qa.cdn.abc.com, help.abc.com, ll.media.abc.com
@@ -161,10 +175,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "domain": "abc.com",
   "dns": {
     "a": [
-      "3.169.121.22",
-      "3.169.121.125",
+      "3.169.121.28",
       "3.169.121.54",
-      "3.169.121.28"
+      "3.169.121.125",
+      "3.169.121.22"
     ],
     "aaaa": [],
     "cname": null,
@@ -172,32 +186,32 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "abc-com.mail.protection.outlook.com (pref 5)"
     ],
     "ns": [
+      "ns-318.awsdns-39.com.",
       "ns-1368.awsdns-43.org.",
       "ns-1869.awsdns-41.co.uk.",
-      "ns-318.awsdns-39.com.",
       "ns-736.awsdns-28.net."
     ],
     "spf": [
       "42357818",
-      "docusign=12a35007-299f-4d83-bd45-4f1963b4e234",
       "google-site-verification=9KrlZfA2rYO7_JUgB6G6PzmIzp5C0aMcAgiODVFOXL4",
-      "adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e02bd5d0dc3916",
+      "MS=ms24761496",
+      "extensis-domain-verification=4dec3be6-1ab2-4cd3-b508-5a61c50ac453",
       "apple-domain-verification=pSxAase3tgjHfXBE",
-      "canva-site-verification=mQci1SnoC4Y-iJQpirTu6Q",
-      "google-site-verification=RcEUU_s2q7QWyysoeXd4Y0W3IE3QSpeu2lh2OFGRiJA",
       "nintex.5f22e1f0a5ad340038cdb208",
       "ECZjYXSxe4CRnyGjS8E1nRw2keq1hV77Z66acQb6JhwQk14sk4ZGwLt61w4aZhtOdmqIJUj1fNCxo6721F0pfg==",
+      "jumpdesktop=12d076284350363e1df1806a94f0096dc18aed9d3a58a4e35376c09ce886",
+      "canva-site-verification=mQci1SnoC4Y-iJQpirTu6Q",
+      "v=spf1 include:spf.disney.com -all",
+      "adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e02bd5d0dc3916",
+      "google-site-verification=RcEUU_s2q7QWyysoeXd4Y0W3IE3QSpeu2lh2OFGRiJA",
+      "docusign=12a35007-299f-4d83-bd45-4f1963b4e234",
       "anthropic-domain-verification-dfbjfj=cItiODp4D19q3YKkyJLoZsKXZ",
       "cisco-ci-domain-verification=4b0af123fd61d9b672e3d23654d753d00150aec9b4c32ff0673f0f1b7801edab",
-      "Dynatrace-site-verification=f8c987df-9919-467d-80cf-05c74781a94e__j7ut0lc17ppaoqaqo4hm9dbq23",
-      "extensis-domain-verification=4dec3be6-1ab2-4cd3-b508-5a61c50ac453",
-      "intersight=e61370b3eacaf63c12b058d9c7b287aa1a9fdbc17d6958aaf1036e5c54f90502",
-      "docusign=53e074c1-b80d-41a1-be73-d444698c3a91",
-      "jumpdesktop=12d076284350363e1df1806a94f0096dc18aed9d3a58a4e35376c09ce886",
       "atlassian-domain-verification=5lqJwtfJPMHqC/aGvT/7s2BR53IHCs9P6vFjCQYA5nkQ4mvoHKTqNTW7gucscGW7",
-      "MS=ms24761496",
-      "v=spf1 include:spf.disney.com -all",
-      "smartsheet-site-validation=o821NYtWlw35E2By_1h2gMDN-nAgTRqB"
+      "intersight=e61370b3eacaf63c12b058d9c7b287aa1a9fdbc17d6958aaf1036e5c54f90502",
+      "Dynatrace-site-verification=f8c987df-9919-467d-80cf-05c74781a94e__j7ut0lc17ppaoqaqo4hm9dbq23",
+      "smartsheet-site-validation=o821NYtWlw35E2By_1h2gMDN-nAgTRqB",
+      "docusign=53e074c1-b80d-41a1-be73-d444698c3a91"
     ],
     "dmarc": [
       "v=DMARC1;p=none;fo=1;rua=mailto:Corp.Dmarc_RUA@disney.com;ruf=mailto:Corp.Dmarc_RUF@disney.com"
@@ -264,7 +278,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     }
   },
   "ports": {
-    "ip": "3.169.121.22",
+    "ip": "3.169.121.28",
     "open": []
   },
   "https": {
@@ -357,10 +371,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   },
   "apex_txt": [
     "google-site-verification=9KrlZfA2rYO7_JUgB6G6PzmIzp5C0aMcAgiODVFOXL4",
-    "adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e0",
+    "extensis-domain-verification=4dec3be6-1ab2-4cd3-b508-5a61c50ac453",
     "apple-domain-verification=pSxAase3tgjHfXBE",
     "canva-site-verification=mQci1SnoC4Y-iJQpirTu6Q",
-    "google-site-verification=RcEUU_s2q7QWyysoeXd4Y0W3IE3QSpeu2lh2OFGRiJA"
+    "adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e0"
   ],
   "tls2": {
     "alpn": "",
@@ -371,7 +385,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260921000000",
+      "not_after": "20270406235959"
     }
   },
   "http2": {
@@ -393,8 +409,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "/contact-us-thanks"
     ]
   },
-  "elapsed_s": 13.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "server-3-169-121-28.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 10.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

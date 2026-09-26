@@ -7,12 +7,12 @@
 | Target | https://nydailynews.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | nydailynews.com |
-| Test date | 2026-09-26 17:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 
 ## Detailed findings
 
@@ -131,7 +132,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=hMnRAtdizhrC_XVmPTQN1cDWp-b--71NSTwSMExNeAI; knowbe4-site-verification=90309b4eacebd82470e924deb428c541; facebook-domain-verification=ois8caa2a84ewa28r3zx5ilvxs4g4r
+- **Detail:** Apex TXT records with verification/token content: tollbit-domain-verification=ef1c9b50f5288be2ac950c259ca3f721ddf4d2161522e79044e2; google-site-verification=hMnRAtdizhrC_XVmPTQN1cDWp-b--71NSTwSMExNeAI; google-site-verification=1RnCO3kOaGC8U0mJXV2sbY-6XM6VJscT8lSoWJOB7UY
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -146,6 +147,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** robots.txt lists 70 disallow path(s), e.g. /wp-admin/, /cgi-bin/, /wp-includes/, /xmlrpc.php, /wp-content/plugins/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 18. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of nydailynews.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -158,42 +165,42 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "ns-1494.awsdns-58.org.",
+      "ns-670.awsdns-19.net.",
       "ns-1929.awsdns-49.co.uk.",
       "ns-318.awsdns-39.com.",
-      "ns-670.awsdns-19.net."
+      "ns-1494.awsdns-58.org."
     ],
     "spf": [
+      "tollbit-domain-verification=ef1c9b50f5288be2ac950c259ca3f721ddf4d2161522e79044e2f7042a6d237c",
+      "13kvutnp8irg8ioiotkqq86i51",
       "google-site-verification=hMnRAtdizhrC_XVmPTQN1cDWp-b--71NSTwSMExNeAI",
-      "knowbe4-site-verification=90309b4eacebd82470e924deb428c541",
-      "fmtpohpupbmlg7ph5dgtpqhn1r",
-      "amazonses:N8Ba1fh8HfMvT+t5J7vwXFgnXMVaK646lFnkrQkLoVc=",
+      "google-site-verification=1RnCO3kOaGC8U0mJXV2sbY-6XM6VJscT8lSoWJOB7UY",
+      "google-site-verification=8TDEqJ-arOBRammsLaJwjep-S63E7y7m-QsH9bhT6K4",
+      "google-site-verification=a40Yo5u46-Gpqee1PSKGDsuayXa3mn8A9wSFUJBnVDY",
       "bntlt7a869guderdu33t64dms5",
       "IPROTA_D59226-XXX",
-      "mppmekcnmo3na10p5fqp793g9v",
-      "8oqjg39e67s8ao65ndrgnd5ufv",
-      "facebook-domain-verification=ois8caa2a84ewa28r3zx5ilvxs4g4r",
-      "v=spf1 include:spf.protection.outlook.com include:_spf.google.com include:_spf.salesforce.com include:mail.zendesk.com ip4:198.21.3.53 ip4:159.183.220.8 exists:%{i}.spf.sitel.iphmx.com -all",
-      "tollbit-domain-verification=ef1c9b50f5288be2ac950c259ca3f721ddf4d2161522e79044e2f7042a6d237c",
       "4b0695jv70h8g47zkdg16kzygm3ls02v",
-      "google-site-verification=wJYLuUe209pKCTIs9tSdz5kaorlk7GqqWPHX9rOzH2M",
-      "google-site-verification=8TDEqJ-arOBRammsLaJwjep-S63E7y7m-QsH9bhT6K4",
-      "hucq9oebjdhnpo231ru64sqlu4",
-      "google-site-verification=5JHSGMK_gK4xGs8DWfgnX4xwHqIAePxl4j18e5qkHv4",
-      "google-site-verification=1RnCO3kOaGC8U0mJXV2sbY-6XM6VJscT8lSoWJOB7UY",
-      "fbd8dhf0dupevcppakg92fireq",
-      "13kvutnp8irg8ioiotkqq86i51",
-      "7rdja10s86ikle4v2h82p6n642",
+      "amazonses:rUbohPMg18d7fvhiuygSmeQbkP+Y7JuMBpNoGODmKIM=",
+      "knowbe4-site-verification=90309b4eacebd82470e924deb428c541",
       "google-site-verification=1fTCAXxtHpJXkMkbrZjElBCAm6inCZ-7AkzpL2tLSaY",
-      "MS=ms76891439",
-      "google-site-verification=a40Yo5u46-Gpqee1PSKGDsuayXa3mn8A9wSFUJBnVDY",
+      "google-site-verification=5JHSGMK_gK4xGs8DWfgnX4xwHqIAePxl4j18e5qkHv4",
       "fzkp52pbdwht5h6rsnhcfkh8hqs4d0z3",
-      "amazonses:rUbohPMg18d7fvhiuygSmeQbkP+Y7JuMBpNoGODmKIM="
+      "fmtpohpupbmlg7ph5dgtpqhn1r",
+      "7rdja10s86ikle4v2h82p6n642",
+      "fbd8dhf0dupevcppakg92fireq",
+      "facebook-domain-verification=ois8caa2a84ewa28r3zx5ilvxs4g4r",
+      "hucq9oebjdhnpo231ru64sqlu4",
+      "MS=ms76891439",
+      "v=spf1 include:spf.protection.outlook.com include:_spf.google.com include:_spf.salesforce.com include:mail.zendesk.com ip4:198.21.3.53 ip4:159.183.220.8 exists:%{i}.spf.sitel.iphmx.com -all",
+      "8oqjg39e67s8ao65ndrgnd5ufv",
+      "google-site-verification=wJYLuUe209pKCTIs9tSdz5kaorlk7GqqWPHX9rOzH2M",
+      "amazonses:N8Ba1fh8HfMvT+t5J7vwXFgnXMVaK646lFnkrQkLoVc=",
+      "mppmekcnmo3na10p5fqp793g9v"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100"
@@ -276,11 +283,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=hMnRAtdizhrC_XVmPTQN1cDWp-b--71NSTwSMExNeAI",
-    "knowbe4-site-verification=90309b4eacebd82470e924deb428c541",
-    "facebook-domain-verification=ois8caa2a84ewa28r3zx5ilvxs4g4r",
     "tollbit-domain-verification=ef1c9b50f5288be2ac950c259ca3f721ddf4d2161522e79044e2",
-    "google-site-verification=wJYLuUe209pKCTIs9tSdz5kaorlk7GqqWPHX9rOzH2M"
+    "google-site-verification=hMnRAtdizhrC_XVmPTQN1cDWp-b--71NSTwSMExNeAI",
+    "google-site-verification=1RnCO3kOaGC8U0mJXV2sbY-6XM6VJscT8lSoWJOB7UY",
+    "google-site-verification=8TDEqJ-arOBRammsLaJwjep-S63E7y7m-QsH9bhT6K4",
+    "google-site-verification=a40Yo5u46-Gpqee1PSKGDsuayXa3mn8A9wSFUJBnVDY"
   ],
   "tls2": {
     "alpn": "",
@@ -291,7 +298,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260904003801",
+      "not_after": "20261203003800"
     }
   },
   "http2": {
@@ -313,8 +322,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/"
     ]
   },
-  "elapsed_s": 20.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 21.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

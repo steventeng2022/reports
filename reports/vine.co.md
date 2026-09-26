@@ -7,12 +7,12 @@
 | Target | https://vine.co/ |
 | Bug bounty program | Twitter |
 | Listed scope domain | vine.co |
-| Test date | 2026-09-26 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
+Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,6 +26,10 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 | 8 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 9 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 10 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 11 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 12 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 13 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -92,6 +96,30 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. User-agent:
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 11. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of vine.co permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 12. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of vine.co includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
+### 13. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://vine.co/ carries Cache-Control: max-age=600; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 52.36.139.111 carries PTR ec2-52-36-139-111.us-west-2.compute.amazonaws.com. for vine.co.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -105,23 +133,23 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
     "aaaa": [],
     "cname": null,
     "mx": [
+      "aspmx3.googlemail.com (pref 30)",
       "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx2.googlemail.com (pref 30)",
-      "alt2.aspmx.l.google.com (pref 20)",
       "aspmx.l.google.com (pref 10)",
-      "aspmx3.googlemail.com (pref 30)"
+      "aspmx2.googlemail.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
       "ns-326.awsdns-40.com.",
-      "ns-686.awsdns-21.net.",
+      "ns-2008.awsdns-59.co.uk.",
       "ns-1085.awsdns-07.org.",
-      "ns-2008.awsdns-59.co.uk."
+      "ns-686.awsdns-21.net."
     ],
     "spf": [
       "_rfdyhtedqy5qg5y9hggyt1hw6jv92sz",
+      "szx8zgqr7z21hl52tn15k2crj3jb0zp3",
       "xvbl4tx5lcwqgq09rr064s5vbmq6l651",
-      "e1f309c26fa846978a92ccebb75c7833",
-      "szx8zgqr7z21hl52tn15k2crj3jb0zp3"
+      "e1f309c26fa846978a92ccebb75c7833"
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -208,7 +236,9 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260106000000",
+      "not_after": "20270203235959"
     }
   },
   "http2": {
@@ -216,8 +246,14 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
       "User-agent:"
     ]
   },
-  "elapsed_s": 23.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "ec2-52-36-139-111.us-west-2.compute.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 24.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

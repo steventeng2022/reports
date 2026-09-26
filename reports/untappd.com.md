@@ -7,12 +7,12 @@
 | Target | https://untappd.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | untappd.com |
-| Test date | 2026-09-26 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
+Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 | 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 14 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 
 ## Detailed findings
 
@@ -104,7 +105,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=_5-to4lYBCcN4DBHN_M4Z6ST5Nle5AGkGXkzWWUZPEY; apple-domain-verification=PzeSkiU5Qi5suyUq; rippling-domain-verification=414dd4dc53702337
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=uht-ZR-lbkbuuO9L45_oKL6jtqgJYaY3vNPODTutZLo; google-site-verification=_5-to4lYBCcN4DBHN_M4Z6ST5Nle5AGkGXkzWWUZPEY; rippling-domain-verification=414dd4dc53702337
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -112,6 +113,12 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 - **CWE:** CWE-603
 - **Detail:** Certificate of untappd.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 14. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of untappd.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
 ## Evidence (raw response observations)
 
@@ -124,42 +131,42 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
       "104.20.44.111"
     ],
     "aaaa": [
-      "2606:4700:10::6814:2c6f",
-      "2606:4700:10::ac42:a34f"
+      "2606:4700:10::ac42:a34f",
+      "2606:4700:10::6814:2c6f"
     ],
     "cname": null,
     "mx": [
+      "aspmx2.googlemail.com (pref 1)",
       "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "aspmx2.googlemail.com (pref 1)",
       "aspmx3.googlemail.com (pref 10)"
     ],
     "ns": [
-      "uma.ns.cloudflare.com.",
-      "henry.ns.cloudflare.com."
+      "henry.ns.cloudflare.com.",
+      "uma.ns.cloudflare.com."
     ],
     "spf": [
+      "google-site-verification=uht-ZR-lbkbuuO9L45_oKL6jtqgJYaY3vNPODTutZLo",
       "google-site-verification=_5-to4lYBCcN4DBHN_M4Z6ST5Nle5AGkGXkzWWUZPEY",
+      "sending_domain1078002=0f34bbdfe8ce8fde994ca2d6751686e81dcabaca24039a259f7683f01bc399b7",
+      "rippling-domain-verification=414dd4dc53702337",
+      "status-page-domain-verification=vjh1rqfvh6cq",
+      "1password-site-verification=JJRHU5XGONHORHDBBN5MLCHZ54",
+      "oe1a0rcj1t86545ob3bk2ng9ml",
+      "google-site-verification=G_VXSVRR3bpfmWTa1aoZiBQpbMC3OAR11uMRvdGlgU8",
+      "sending_domain1077992=e57882e11e995d0077009d5d51ac38c75e7fa092881dbc81d4f01ea6f4aba37a",
+      "facebook-domain-verification=huzlzmhksif1ge62wip9zvpb312rwt",
+      "00D1U000000yGXd=1TBVN0000000B57",
+      "sending_domain1078002=7f3e88ab1ef815c42d93beacb80905d8e91477f133a45a0063997731dee78b8e",
+      "v=spf1 include:mailgun.org include:_spf.google.com include:8657325.spf07.hubspotemail.net ~all",
       "apple-domain-verification=PzeSkiU5Qi5suyUq",
       "pardot1078002=4b8f9c144c87c116c1071cad3b0a99a99e0c2e7cec52634a8fbd659ea5ff58b5",
-      "rippling-domain-verification=414dd4dc53702337",
-      "B99CA8E742",
-      "oe1a0rcj1t86545ob3bk2ng9ml",
-      "sending_domain1078002=0f34bbdfe8ce8fde994ca2d6751686e81dcabaca24039a259f7683f01bc399b7",
-      "pardot1077992=c1d537bb2ce30942a74c659492f30bf3c6e8d7958a88a0fb799a5024fe9346e2",
-      "v=spf1 include:mailgun.org include:_spf.google.com include:8657325.spf07.hubspotemail.net ~all",
-      "anthropic-domain-verification-fnjqmj=U1ukT7Sxor44FIU8UxQ826TP6",
-      "google-site-verification=uht-ZR-lbkbuuO9L45_oKL6jtqgJYaY3vNPODTutZLo",
-      "google-site-verification=G_VXSVRR3bpfmWTa1aoZiBQpbMC3OAR11uMRvdGlgU8",
-      "1password-site-verification=JJRHU5XGONHORHDBBN5MLCHZ54",
       "Wbvu8ty9C2PBSYUZ",
-      "00D1U000000yGXd=1TBVN0000000B57",
-      "sending_domain1077992=e57882e11e995d0077009d5d51ac38c75e7fa092881dbc81d4f01ea6f4aba37a",
+      "anthropic-domain-verification-fnjqmj=U1ukT7Sxor44FIU8UxQ826TP6",
       "MS=ms78757206",
-      "sending_domain1078002=7f3e88ab1ef815c42d93beacb80905d8e91477f133a45a0063997731dee78b8e",
-      "status-page-domain-verification=vjh1rqfvh6cq",
-      "facebook-domain-verification=huzlzmhksif1ge62wip9zvpb312rwt"
+      "B99CA8E742",
+      "pardot1077992=c1d537bb2ce30942a74c659492f30bf3c6e8d7958a88a0fb799a5024fe9346e2"
     ],
     "dmarc": [
       "v=DMARC1; p=none; sp=none; rua=mailto:re+5cfc1e8a3ff9@inbound.dmarcdigests.com; pct=100"
@@ -246,11 +253,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "google-site-verification=uht-ZR-lbkbuuO9L45_oKL6jtqgJYaY3vNPODTutZLo",
     "google-site-verification=_5-to4lYBCcN4DBHN_M4Z6ST5Nle5AGkGXkzWWUZPEY",
-    "apple-domain-verification=PzeSkiU5Qi5suyUq",
     "rippling-domain-verification=414dd4dc53702337",
-    "anthropic-domain-verification-fnjqmj=U1ukT7Sxor44FIU8UxQ826TP6",
-    "google-site-verification=uht-ZR-lbkbuuO9L45_oKL6jtqgJYaY3vNPODTutZLo"
+    "status-page-domain-verification=vjh1rqfvh6cq",
+    "1password-site-verification=JJRHU5XGONHORHDBBN5MLCHZ54"
   ],
   "tls2": {
     "alpn": "",
@@ -261,11 +268,16 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260923163200",
+      "not_after": "20261222173146"
     }
   },
+  "x12": {
+    "status": 403
+  },
   "elapsed_s": 5.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

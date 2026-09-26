@@ -7,12 +7,12 @@
 | Target | https://bloomberg.com/ |
 | Bug bounty program | Bloomberg |
 | Listed scope domain | bloomberg.com |
-| Test date | 2026-09-26 17:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
+Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -94,7 +95,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=ClT3QBQ-Rd4b3AAq2gmQ-u_94EliZRmC2e-Kb4t9zEo; cursor-domain-verification-asb77c=D43c1zjGqO3rTemQvZ121NSfi; parallels-domain-verification=47460854911b478da11221dc20e8cc0340a92adf1e6b4ff08a
+- **Detail:** Apex TXT records with verification/token content: airtable-verification=15d4376d6d99cc906abbcb295b4245da; atlassian-domain-verification=gK9LJEftkavNAe/keDgXDWOhGwUV02GQTz9BbfKLplkTTtpciO; extensis-domain-verification=707df5b4-0868-499f-af75-51718e082698
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -115,6 +116,12 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 - **Detail:** robots.txt lists 130 disallow path(s), e.g. /polska, /account/*, /tosv*.html, /search, /company/search/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 3.33.146.110 carries PTR aa2f66099ca87b6fe.awsglobalaccelerator.com. for bloomberg.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -128,44 +135,44 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mgcnj2.bloomberg.com (pref 0)",
       "mgcny2.bloomberg.com (pref 0)",
-      "mgcny1.bloomberg.com (pref 0)",
-      "mgcnj1.bloomberg.com (pref 0)"
+      "mgcnj2.bloomberg.com (pref 0)",
+      "mgcnj1.bloomberg.com (pref 0)",
+      "mgcny1.bloomberg.com (pref 0)"
     ],
     "ns": [
+      "dns1.p01.nsone.net.",
+      "pdns1.ultradns.net.",
+      "pdns3.ultradns.org.",
       "dns4.p01.nsone.net.",
       "dns3.p01.nsone.net.",
-      "pdns1.ultradns.net.",
       "pdns5.ultradns.info.",
-      "dns1.p01.nsone.net.",
-      "dns2.p01.nsone.net.",
-      "pdns3.ultradns.org."
+      "dns2.p01.nsone.net."
     ],
     "spf": [
-      "google-site-verification=ClT3QBQ-Rd4b3AAq2gmQ-u_94EliZRmC2e-Kb4t9zEo",
+      "v=spf1 ip4:69.184.0.0/13 ip4:199.172.169.0/24 ip4:208.22.56.0/24 ip4:69.191.241.124 -all",
+      "airtable-verification=15d4376d6d99cc906abbcb295b4245da",
+      "atlassian-domain-verification=gK9LJEftkavNAe/keDgXDWOhGwUV02GQTz9BbfKLplkTTtpciOH5eL1W6u7BRfVR",
       "Ymxvb21iZXJn",
       "QnH3utpbwmcXnxwnErM2by/pp37P7fYtF9si0rMmb9FgwB98zU8UAzdl1GbyQMdyNFLKobFRdX6FfLlH/LG+og==",
-      "cursor-domain-verification-asb77c=D43c1zjGqO3rTemQvZ121NSfi",
       "ZOOM_verify_8UDWCiGoiAVgGEuiZNG9Ld",
-      "parallels-domain-verification=47460854911b478da11221dc20e8cc0340a92adf1e6b4ff08a5e941f5379c267",
+      "ZOOM_verify_rl-mcFScS8W6864E30mlZg",
       "extensis-domain-verification=707df5b4-0868-499f-af75-51718e082698",
       "openai-domain-verification=dv-XaK3IjuwWpMmfss9VYKwn0eY",
+      "MS=ms33692690",
+      "F2QdzLTE6LTOyOQ7pQzoSY2pnwVM5pnfiqY3zOoYvS3LoVmIUr0J3op5vQI8Tg8VQwt24UK8v7oFWfbrCBWYYw==",
+      "jamf-site-verification=VJNRhgJ90SmyugkIPAdfCQ",
+      "apple-domain-verification=9cs9hMRccEtbVb8h",
+      "google-gws-recovery-domain-verification=72311760",
+      "MS=ms99943004",
+      "OSSRH-64276",
+      "cursor-domain-verification-asb77c=D43c1zjGqO3rTemQvZ121NSfi",
+      "google-site-verification=vH_zs-JrwvXxkyuUqmeN9t3iMYZqyt1-BJUsoyN3ca8",
       "lutron-domain-verification-p8wzsk=PQcs5tfle6vYve4ulSshxyMYi",
       "google-site-verification=CI2IKDBbk_gcKk_9CFFUrF-ZLZToKXQ7SAJ96fjqZ_I",
-      "v=spf1 ip4:69.184.0.0/13 ip4:199.172.169.0/24 ip4:208.22.56.0/24 ip4:69.191.241.124 -all",
-      "google-gws-recovery-domain-verification=72311760",
-      "F2QdzLTE6LTOyOQ7pQzoSY2pnwVM5pnfiqY3zOoYvS3LoVmIUr0J3op5vQI8Tg8VQwt24UK8v7oFWfbrCBWYYw==",
-      "2smsverify=08qXd7f0aUa5IPq0N4ETgQ",
-      "ZOOM_verify_rl-mcFScS8W6864E30mlZg",
-      "MS=ms99943004",
-      "airtable-verification=15d4376d6d99cc906abbcb295b4245da",
-      "MS=ms33692690",
-      "apple-domain-verification=9cs9hMRccEtbVb8h",
-      "google-site-verification=vH_zs-JrwvXxkyuUqmeN9t3iMYZqyt1-BJUsoyN3ca8",
-      "atlassian-domain-verification=gK9LJEftkavNAe/keDgXDWOhGwUV02GQTz9BbfKLplkTTtpciOH5eL1W6u7BRfVR",
-      "jamf-site-verification=VJNRhgJ90SmyugkIPAdfCQ",
-      "OSSRH-64276"
+      "parallels-domain-verification=47460854911b478da11221dc20e8cc0340a92adf1e6b4ff08a5e941f5379c267",
+      "google-site-verification=ClT3QBQ-Rd4b3AAq2gmQ-u_94EliZRmC2e-Kb4t9zEo",
+      "2smsverify=08qXd7f0aUa5IPq0N4ETgQ"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; adkim=r; aspf=r; ruf=mailto:dmarc-ruf@dmarc-bloomberg.com; fo=1; rua=mailto:dmarc-rua@dmarc-bloomberg.com"
@@ -297,11 +304,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=ClT3QBQ-Rd4b3AAq2gmQ-u_94EliZRmC2e-Kb4t9zEo",
-    "cursor-domain-verification-asb77c=D43c1zjGqO3rTemQvZ121NSfi",
-    "parallels-domain-verification=47460854911b478da11221dc20e8cc0340a92adf1e6b4ff08a",
+    "airtable-verification=15d4376d6d99cc906abbcb295b4245da",
+    "atlassian-domain-verification=gK9LJEftkavNAe/keDgXDWOhGwUV02GQTz9BbfKLplkTTtpciO",
     "extensis-domain-verification=707df5b4-0868-499f-af75-51718e082698",
-    "openai-domain-verification=dv-XaK3IjuwWpMmfss9VYKwn0eY"
+    "openai-domain-verification=dv-XaK3IjuwWpMmfss9VYKwn0eY",
+    "jamf-site-verification=VJNRhgJ90SmyugkIPAdfCQ"
   ],
   "tls2": {
     "alpn": "",
@@ -312,7 +319,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260723000000",
+      "not_after": "20270129235959"
     }
   },
   "http2": {
@@ -334,8 +343,14 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
       "/ukinnovators/search/"
     ]
   },
-  "elapsed_s": 17.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "aa2f66099ca87b6fe.awsglobalaccelerator.com."
+    ]
+  },
+  "elapsed_s": 17.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

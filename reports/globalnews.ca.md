@@ -7,8 +7,8 @@
 | Target | https://globalnews.ca/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | globalnews.ca |
-| Test date | 2026-09-26 17:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -125,7 +125,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=kPssqxbHl7AR6ywFdAIUH7Cx8oskiy8sR4QTb_WTPko; google-site-verification=r5wGd7czy8UL6BP-qEvk3hHrTmIBiXrTOMhd9a7cUwE ; google-site-verification=ivbhwUgHUrT7Pp9XTzD-PM-Y-Kq-xEIfqQXp6NxhRSY
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=ivbhwUgHUrT7Pp9XTzD-PM-Y-Kq-xEIfqQXp6NxhRSY; google-site-verification=kPssqxbHl7AR6ywFdAIUH7Cx8oskiy8sR4QTb_WTPko; google-site-verification=r5wGd7czy8UL6BP-qEvk3hHrTmIBiXrTOMhd9a7cUwE 
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -158,25 +158,25 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt2.us.email.fireeyecloud.com (pref 30)",
-      "primary.us.email.fireeyecloud.com (pref 10)",
       "alt1.us.email.fireeyecloud.com (pref 20)",
+      "primary.us.email.fireeyecloud.com (pref 10)",
+      "alt2.us.email.fireeyecloud.com (pref 30)",
       "alt3.us.email.fireeyecloud.com (pref 40)"
     ],
     "ns": [
-      "ns-1117.awsdns-11.org.",
+      "ns-190.awsdns-23.com.",
       "ns-1893.awsdns-44.co.uk.",
-      "ns-663.awsdns-18.net.",
-      "ns-190.awsdns-23.com."
+      "ns-1117.awsdns-11.org.",
+      "ns-663.awsdns-18.net."
     ],
     "spf": [
-      "MS=ms54689331",
+      "google-site-verification=ivbhwUgHUrT7Pp9XTzD-PM-Y-Kq-xEIfqQXp6NxhRSY",
+      "v=spf1 include:spf.protection.outlook.com include:cust-spf.exacttarget.com -all",
       "google-site-verification=kPssqxbHl7AR6ywFdAIUH7Cx8oskiy8sR4QTb_WTPko",
       "google-site-verification=r5wGd7czy8UL6BP-qEvk3hHrTmIBiXrTOMhd9a7cUwE ",
-      "loaderio=3a73e8f48658ea4ebca1e92ca22a2fd7",
-      "google-site-verification=ivbhwUgHUrT7Pp9XTzD-PM-Y-Kq-xEIfqQXp6NxhRSY",
       "fnLqBtPVqGTKdCRNja+1xdYVrwBTHiEon0RX8JHlFrnggGZ/CvKIXw3Fmrza4c0d22XCA/F47VVKrfd9YR7RJw==",
-      "v=spf1 include:spf.protection.outlook.com include:cust-spf.exacttarget.com -all"
+      "loaderio=3a73e8f48658ea4ebca1e92ca22a2fd7",
+      "MS=ms54689331"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=quarantine; adkim=s; aspf=s; pct=100; rua=mailto:dmarc.reports@corusent.com; ruf=mailto:dmarc.reports@corusent.com"
@@ -259,9 +259,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "google-site-verification=ivbhwUgHUrT7Pp9XTzD-PM-Y-Kq-xEIfqQXp6NxhRSY",
     "google-site-verification=kPssqxbHl7AR6ywFdAIUH7Cx8oskiy8sR4QTb_WTPko",
-    "google-site-verification=r5wGd7czy8UL6BP-qEvk3hHrTmIBiXrTOMhd9a7cUwE ",
-    "google-site-verification=ivbhwUgHUrT7Pp9XTzD-PM-Y-Kq-xEIfqQXp6NxhRSY"
+    "google-site-verification=r5wGd7czy8UL6BP-qEvk3hHrTmIBiXrTOMhd9a7cUwE "
   ],
   "tls2": {
     "alpn": "",
@@ -272,7 +272,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260912040926",
+      "not_after": "20261211040925"
     }
   },
   "http2": {
@@ -283,8 +285,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "/wp-admin/"
     ]
   },
+  "x12": {
+    "status": 200
+  },
   "elapsed_s": 17.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

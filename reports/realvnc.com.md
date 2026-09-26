@@ -7,8 +7,8 @@
 | Target | https://realvnc.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | realvnc.com |
-| Test date | 2026-09-26 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -93,7 +93,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=sinri451xxlUIP8XWzq2cnLcose6D3rZtQoTjN22urg; openai-domain-verification=dv-WWEnkwoxDzw6l2qb8mJXwuYh; access-domain-verification=c9c536439a4535e8d8dffbcb8abdeaa71e9e799dcd926e0ee962c
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=sinri451xxlUIP8XWzq2cnLcose6D3rZtQoTjN22urg; google-site-verification=1I3HJkpW6bKhSSPJBqQL0R8R2agif2aAwy-QsQl9Xe0; figma-domain-verification=4e46cf4c9d9aaec25262e168b0999452d5500da424414abfb1798c
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -130,26 +130,26 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
     ],
     "ns": [
       "ns-107.awsdns-13.com.",
-      "ns-697.awsdns-23.net.",
       "ns-1126.awsdns-12.org.",
+      "ns-697.awsdns-23.net.",
       "ns-1853.awsdns-39.co.uk."
     ],
     "spf": [
       "google-site-verification=sinri451xxlUIP8XWzq2cnLcose6D3rZtQoTjN22urg",
-      "bw=tsczM6ieOZ17wC3dKOHNMGYejzemjsd8DGyziHuAFUdK",
-      "v=spf1 include:spf1.realvnc.com mx a ip4:85.118.25.224/28 ip4:64.253.40.208/28 ip4:146.101.15.112/28 ip4:146.101.60.64/29 ip4:146.101.60.80/29 ip4:146.101.16.120/29 ip4:93.89.140.48/28 include:mail.zendesk.com -all",
-      "openai-domain-verification=dv-WWEnkwoxDzw6l2qb8mJXwuYh",
-      "access-domain-verification=c9c536439a4535e8d8dffbcb8abdeaa71e9e799dcd926e0ee962c98bc1061033",
-      "google-site-verification=VqytxEFfE2GGlJ_wNobagFkF_nWWGAaBalXVwGBq4Yg",
-      "atlassian-domain-verification=rslHtzOI5sqZJkCLg1ZQjp0qtLMeJMmphVrMsb925dxb2QQVv7atnG23AoAnAUSx",
       "google-site-verification=1I3HJkpW6bKhSSPJBqQL0R8R2agif2aAwy-QsQl9Xe0",
-      "apple-domain-verification=C1oCsNHCV8WFlmUQ",
-      "pmpI7p6",
-      "google-site-verification=8R_EB8SYuQWmxdEKJXObSq5BMXuZM2WXwT1uNZGMeOA",
       "figma-domain-verification=4e46cf4c9d9aaec25262e168b0999452d5500da424414abfb1798c4fe9233e61-1771502323",
+      "access-domain-verification=c9c536439a4535e8d8dffbcb8abdeaa71e9e799dcd926e0ee962c98bc1061033",
+      "anthropic-domain-verification-wk26mc=QzCmNWzkRB3fh4mHpDBWe2FdT",
       "asv=309ccc5adc09d2464ac2665e9974075c",
+      "pmpI7p6",
+      "atlassian-domain-verification=rslHtzOI5sqZJkCLg1ZQjp0qtLMeJMmphVrMsb925dxb2QQVv7atnG23AoAnAUSx",
+      "v=spf1 include:spf1.realvnc.com mx a ip4:85.118.25.224/28 ip4:64.253.40.208/28 ip4:146.101.15.112/28 ip4:146.101.60.64/29 ip4:146.101.60.80/29 ip4:146.101.16.120/29 ip4:93.89.140.48/28 include:mail.zendesk.com -all",
+      "apple-domain-verification=C1oCsNHCV8WFlmUQ",
       "Z9jkaFYlj+FbMMAK6DLQAWsT6FnAfMtRTL6T+BUM/mplV6PYR7mVhRL2nOm1DsZK2b2gv9PMa5XUVjwtcc5q9A==",
-      "anthropic-domain-verification-wk26mc=QzCmNWzkRB3fh4mHpDBWe2FdT"
+      "google-site-verification=8R_EB8SYuQWmxdEKJXObSq5BMXuZM2WXwT1uNZGMeOA",
+      "openai-domain-verification=dv-WWEnkwoxDzw6l2qb8mJXwuYh",
+      "bw=tsczM6ieOZ17wC3dKOHNMGYejzemjsd8DGyziHuAFUdK",
+      "google-site-verification=VqytxEFfE2GGlJ_wNobagFkF_nWWGAaBalXVwGBq4Yg"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; ruf=mailto:dmarcfail@realvnc.com; rua=mailto:dmarcrep@realvnc.com; adkim=r; aspf=r; fo=1"
@@ -275,10 +275,10 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
   },
   "apex_txt": [
     "google-site-verification=sinri451xxlUIP8XWzq2cnLcose6D3rZtQoTjN22urg",
-    "openai-domain-verification=dv-WWEnkwoxDzw6l2qb8mJXwuYh",
+    "google-site-verification=1I3HJkpW6bKhSSPJBqQL0R8R2agif2aAwy-QsQl9Xe0",
+    "figma-domain-verification=4e46cf4c9d9aaec25262e168b0999452d5500da424414abfb1798c",
     "access-domain-verification=c9c536439a4535e8d8dffbcb8abdeaa71e9e799dcd926e0ee962c",
-    "google-site-verification=VqytxEFfE2GGlJ_wNobagFkF_nWWGAaBalXVwGBq4Yg",
-    "atlassian-domain-verification=rslHtzOI5sqZJkCLg1ZQjp0qtLMeJMmphVrMsb925dxb2QQVv7"
+    "anthropic-domain-verification-wk26mc=QzCmNWzkRB3fh4mHpDBWe2FdT"
   ],
   "tls2": {
     "alpn": "",
@@ -289,11 +289,16 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260921070245",
+      "not_after": "20261220080240"
     }
   },
-  "elapsed_s": 5.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 6.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

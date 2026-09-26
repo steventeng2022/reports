@@ -7,12 +7,12 @@
 | Target | https://goo.gle/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | goo.gle |
-| Test date | 2026-09-26 17:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 | 11 | info | RED2 | Soft redirect (302/303) for HTTP to HTTPS | CWE-319 |
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 13 | low | RED10 | Host header reflected into redirect Location | CWE-601 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -118,6 +119,12 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - **Detail:** GET with Host: evil-auditor.example -> Location: https://bitly.com/pages/landing/branded-short-domains-powered-by-bitly?bsd=evil-auditor.example
 - **Recommendation:** Validate redirect targets against the expected host.
 
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 67.199.248.13 carries PTR cname.bitly.com. for goo.gle.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -132,10 +139,10 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     "cname": null,
     "mx": [],
     "ns": [
-      "ns2.googledomains.com.",
-      "ns3.googledomains.com.",
       "ns4.googledomains.com.",
-      "ns1.googledomains.com."
+      "ns3.googledomains.com.",
+      "ns1.googledomains.com.",
+      "ns2.googledomains.com."
     ],
     "spf": [
       "v=spf1 -all"
@@ -228,14 +235,22 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260808125220",
+      "not_after": "20261106125219"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
-  "elapsed_s": 8.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "cname.bitly.com."
+    ]
+  },
+  "elapsed_s": 8.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

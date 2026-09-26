@@ -7,12 +7,12 @@
 | Target | https://yahoo.com/ |
 | Bug bounty program | Yahoo! |
 | Listed scope domain | yahoo.com |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:02 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -93,7 +94,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=2b8irRvU5a2h4Mb-H_fdqNrqWjS00qmPfPcWqm8BhxI; google-site-verification=w4N2bNopAWw1xYrdXKORILxx-WW3_LIiyX6dIMIidgk; google-site-verification=GLp01gkFNopm_JItbLxml4iuVbTgJa3rKu0-eq1RvsE
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=xoBvU6aKxP0gYgNL0iXqF0EccAg6nFrO7XxsHnc3iNQ; facebook-domain-verification=gysqrcd69g0ej34f4jfn0huivkym1p; google-site-verification=2b8irRvU5a2h4Mb-H_fdqNrqWjS00qmPfPcWqm8BhxI
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -114,6 +115,12 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - **Detail:** robots.txt lists 23 disallow path(s), e.g. /info/p.gif, /p/, /r/, /bin/, /caas/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 74.6.143.26 carries PTR media-router-fp74.prod.media.vip.bf1.yahoo.com. for yahoo.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -121,47 +128,47 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   "domain": "yahoo.com",
   "dns": {
     "a": [
-      "98.137.11.163",
-      "74.6.231.21",
-      "98.137.11.164",
       "74.6.143.26",
+      "98.137.11.164",
+      "98.137.11.163",
       "74.6.231.20",
-      "74.6.143.25"
+      "74.6.143.25",
+      "74.6.231.21"
     ],
     "aaaa": [
-      "2001:4998:24:120d::1:0",
-      "2001:4998:24:120d::1:1",
-      "2001:4998:124:1507::f000",
       "2001:4998:44:3507::8000",
+      "2001:4998:124:1507::f000",
+      "2001:4998:24:120d::1:0",
       "2001:4998:44:3507::8001",
-      "2001:4998:124:1507::f001"
+      "2001:4998:124:1507::f001",
+      "2001:4998:24:120d::1:1"
     ],
     "cname": null,
     "mx": [
-      "mta6.am0.yahoodns.net (pref 1)",
+      "mta7.am0.yahoodns.net (pref 1)",
       "mta5.am0.yahoodns.net (pref 1)",
-      "mta7.am0.yahoodns.net (pref 1)"
+      "mta6.am0.yahoodns.net (pref 1)"
     ],
     "ns": [
+      "ns4.yahoo.com.",
       "ns2.yahoo.com.",
       "ns3.yahoo.com.",
-      "ns4.yahoo.com.",
       "ns5.yahoo.com.",
       "ns1.yahoo.com."
     ],
     "spf": [
-      "google-site-verification=2b8irRvU5a2h4Mb-H_fdqNrqWjS00qmPfPcWqm8BhxI",
       "v=spf1 redirect=_spf.mail.yahoo.com",
-      "google-site-verification=w4N2bNopAWw1xYrdXKORILxx-WW3_LIiyX6dIMIidgk",
-      "google-site-verification=GLp01gkFNopm_JItbLxml4iuVbTgJa3rKu0-eq1RvsE",
+      "google-site-verification=xoBvU6aKxP0gYgNL0iXqF0EccAg6nFrO7XxsHnc3iNQ",
       "facebook-domain-verification=gysqrcd69g0ej34f4jfn0huivkym1p",
+      "google-site-verification=2b8irRvU5a2h4Mb-H_fdqNrqWjS00qmPfPcWqm8BhxI",
+      "edb3bff2c0d64622a9b2250438277a59",
+      "google-site-verification=w4N2bNopAWw1xYrdXKORILxx-WW3_LIiyX6dIMIidgk",
+      "google-site-verification=2b0Glh8l2icXIAgAcjOcFx16Jt26yWDgEyrk5hPD-ZY",
+      "google-site-verification=GLp01gkFNopm_JItbLxml4iuVbTgJa3rKu0-eq1RvsE",
+      "google-site-verification=Z3-Vh6zqUMgybVH4wQl1GxKSKN7JE13kyCyeZ3TZZ-I",
       "_globalsign-domain-verification=3rQPnwMFlx5UmUzSMV-JeDoNEMeG8BYFKvKDsHEzr9",
       "google-site-verification=GU8WAl0zPqaxdcZqDjuN7pqdfPCpR9Amz9rwxMG91qw",
-      "edb3bff2c0d64622a9b2250438277a59",
-      "google-site-verification=2b0Glh8l2icXIAgAcjOcFx16Jt26yWDgEyrk5hPD-ZY",
-      "google-site-verification=Z3-Vh6zqUMgybVH4wQl1GxKSKN7JE13kyCyeZ3TZZ-I",
-      "Zoom=13284637",
-      "google-site-verification=xoBvU6aKxP0gYgNL0iXqF0EccAg6nFrO7XxsHnc3iNQ"
+      "Zoom=13284637"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:d@rua.agari.com; ruf=mailto:d@ruf.agari.com;"
@@ -205,7 +212,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     }
   },
   "ports": {
-    "ip": "98.137.11.163",
+    "ip": "74.6.143.26",
     "open": []
   },
   "https": {
@@ -258,11 +265,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "google-site-verification=xoBvU6aKxP0gYgNL0iXqF0EccAg6nFrO7XxsHnc3iNQ",
+    "facebook-domain-verification=gysqrcd69g0ej34f4jfn0huivkym1p",
     "google-site-verification=2b8irRvU5a2h4Mb-H_fdqNrqWjS00qmPfPcWqm8BhxI",
     "google-site-verification=w4N2bNopAWw1xYrdXKORILxx-WW3_LIiyX6dIMIidgk",
-    "google-site-verification=GLp01gkFNopm_JItbLxml4iuVbTgJa3rKu0-eq1RvsE",
-    "facebook-domain-verification=gysqrcd69g0ej34f4jfn0huivkym1p",
-    "_globalsign-domain-verification=3rQPnwMFlx5UmUzSMV-JeDoNEMeG8BYFKvKDsHEzr9"
+    "google-site-verification=2b0Glh8l2icXIAgAcjOcFx16Jt26yWDgEyrk5hPD-ZY"
   ],
   "tls2": {
     "alpn": "",
@@ -273,7 +280,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260728000000",
+      "not_after": "20261021235959"
     }
   },
   "http2": {
@@ -295,8 +304,14 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "/_remote"
     ]
   },
-  "elapsed_s": 27.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "media-router-fp74.prod.media.vip.bf1.yahoo.com."
+    ]
+  },
+  "elapsed_s": 28.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

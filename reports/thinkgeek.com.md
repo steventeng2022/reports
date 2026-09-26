@@ -7,12 +7,12 @@
 | Target | https://thinkgeek.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | thinkgeek.com |
-| Test date | 2026-09-26 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:00 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 | 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -131,7 +132,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=3_1gRaAk96wFvXtXKHjIaI9Ew5GcqF5wtj8Uyt292w; google-site-verification=4CQYV7Yz1QzmgsmT3s5s0-RK1LpAbnbjTycxgFsH0Xg; globalsign-domain-verification=MT3LmRzGYPgORWLlSBkPpAUpBDH9kl8xxYmB6FjtjY
+- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=MT3LmRzGYPgORWLlSBkPpAUpBDH9kl8xxYmB6FjtjY; google-site-verification=4CQYV7Yz1QzmgsmT3s5s0-RK1LpAbnbjTycxgFsH0Xg; _globalsign-domain-verification=3_1gRaAk96wFvXtXKHjIaI9Ew5GcqF5wtj8Uyt292w
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -140,6 +141,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - **Detail:** Certificate of thinkgeek.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 52.222.244.81 carries PTR server-52-222-244-81.lax53.r.cloudfront.net. for thinkgeek.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -147,34 +154,34 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
   "domain": "thinkgeek.com",
   "dns": {
     "a": [
-      "52.222.244.9",
-      "52.222.244.90",
       "52.222.244.81",
-      "52.222.244.127"
+      "52.222.244.127",
+      "52.222.244.9",
+      "52.222.244.90"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)"
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt4.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "ns-1740.awsdns-25.co.uk.",
       "ns-1059.awsdns-04.org.",
       "ns-295.awsdns-36.com.",
-      "ns-941.awsdns-53.net."
+      "ns-941.awsdns-53.net.",
+      "ns-1740.awsdns-25.co.uk."
     ],
     "spf": [
-      "_globalsign-domain-verification=3_1gRaAk96wFvXtXKHjIaI9Ew5GcqF5wtj8Uyt292w",
-      "ThinkGeek, Inc.",
-      "v=spf1 ip4:74.117.201.123 ip4:74.117.201.124 ip4:74.117.201.125 ip4:192.243.237.14 ip4:72.3.176.24 ip4:72.3.176.25 ip4:18.204.162.120 ip4:18.204.224.167 ip4:35.170.213.214 -all",
       "include:_spf.google.com ~all",
-      "google-site-verification=4CQYV7Yz1QzmgsmT3s5s0-RK1LpAbnbjTycxgFsH0Xg",
       "_amazonses.thinkgeek.com=eHlZKU49zLZQ4fg3x5aS5zqv/o1ByjdpUPCBWFXdL+M=",
-      "globalsign-domain-verification=MT3LmRzGYPgORWLlSBkPpAUpBDH9kl8xxYmB6FjtjY"
+      "v=spf1 ip4:74.117.201.123 ip4:74.117.201.124 ip4:74.117.201.125 ip4:192.243.237.14 ip4:72.3.176.24 ip4:72.3.176.25 ip4:18.204.162.120 ip4:18.204.224.167 ip4:35.170.213.214 -all",
+      "globalsign-domain-verification=MT3LmRzGYPgORWLlSBkPpAUpBDH9kl8xxYmB6FjtjY",
+      "google-site-verification=4CQYV7Yz1QzmgsmT3s5s0-RK1LpAbnbjTycxgFsH0Xg",
+      "_globalsign-domain-verification=3_1gRaAk96wFvXtXKHjIaI9Ew5GcqF5wtj8Uyt292w",
+      "ThinkGeek, Inc."
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1"
@@ -217,7 +224,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     }
   },
   "ports": {
-    "ip": "52.222.244.9",
+    "ip": "52.222.244.81",
     "open": []
   },
   "https": {
@@ -270,9 +277,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "_globalsign-domain-verification=3_1gRaAk96wFvXtXKHjIaI9Ew5GcqF5wtj8Uyt292w",
+    "globalsign-domain-verification=MT3LmRzGYPgORWLlSBkPpAUpBDH9kl8xxYmB6FjtjY",
     "google-site-verification=4CQYV7Yz1QzmgsmT3s5s0-RK1LpAbnbjTycxgFsH0Xg",
-    "globalsign-domain-verification=MT3LmRzGYPgORWLlSBkPpAUpBDH9kl8xxYmB6FjtjY"
+    "_globalsign-domain-verification=3_1gRaAk96wFvXtXKHjIaI9Ew5GcqF5wtj8Uyt292w"
   ],
   "tls2": {
     "alpn": "",
@@ -283,11 +290,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260517000000",
+      "not_after": "20261130235959"
     }
   },
-  "elapsed_s": 22.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "server-52-222-244-81.lax53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 21.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,8 +7,8 @@
 | Target | https://beian.gov.cn/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | beian.gov.cn |
-| Test date | 2026-09-26 17:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -64,8 +64,8 @@ Total findings: **5** (High: 0, Medium: 0, Low: 1, Info: 4)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxbiz1.qq.com (pref 5)",
-      "mxbiz2.qq.com (pref 10)"
+      "mxbiz2.qq.com (pref 10)",
+      "mxbiz1.qq.com (pref 5)"
     ],
     "ns": [
       "dns8.hichina.com.",
@@ -101,8 +101,11 @@ Total findings: **5** (High: 0, Medium: 0, Low: 1, Info: 4)
   "http2": {
     "error": "root GET failed"
   },
-  "elapsed_s": 4.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "error": "ConnectionError(MaxRetryError('HTTPSConnectionPool(host=\\'beian.gov.cn\\', port=4"
+  },
+  "elapsed_s": 2.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

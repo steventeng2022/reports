@@ -7,8 +7,8 @@
 | Target | https://python.org/ |
 | Bug bounty program | PSF |
 | Listed scope domain | python.org |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -132,7 +132,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=QALZObrGl2OVG8lWUE40uVSMCAka316yADn9ZfCU5OA; google-site-verification=w3b8mU3wU6cZ8uSrj3E_5f1frPejJskDpSp_nMWJ99o; openai-domain-verification=dv-VgeNijVDgW7g56UZyGIVyKNr
+- **Detail:** Apex TXT records with verification/token content: status-page-domain-verification=9y2klhzbxsgk; anthropic-domain-verification-x3xt87=cFLP3aL71pAYPZLQR7JKvRhcF; twilio-domain-verification=1c295667813cc0aaae819ed7657818f8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -160,41 +160,41 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "domain": "python.org",
   "dns": {
     "a": [
-      "151.101.0.223",
       "151.101.128.223",
       "151.101.64.223",
+      "151.101.0.223",
       "151.101.192.223"
     ],
     "aaaa": [
-      "2a04:4e42:200::223",
       "2a04:4e42:600::223",
-      "2a04:4e42:400::223",
-      "2a04:4e42::223"
+      "2a04:4e42:200::223",
+      "2a04:4e42::223",
+      "2a04:4e42:400::223"
     ],
     "cname": null,
     "mx": [
       "mail.python.org (pref 50)"
     ],
     "ns": [
-      "ns-981.awsdns-58.net.",
       "ns-1134.awsdns-13.org.",
-      "ns-484.awsdns-60.com.",
-      "ns-2046.awsdns-63.co.uk."
+      "ns-2046.awsdns-63.co.uk.",
+      "ns-981.awsdns-58.net.",
+      "ns-484.awsdns-60.com."
     ],
     "spf": [
+      "status-page-domain-verification=9y2klhzbxsgk",
+      "anthropic-domain-verification-x3xt87=cFLP3aL71pAYPZLQR7JKvRhcF",
+      "twilio-domain-verification=1c295667813cc0aaae819ed7657818f8",
+      "openai-domain-verification=dv-VgeNijVDgW7g56UZyGIVyKNr",
       "google-site-verification=QALZObrGl2OVG8lWUE40uVSMCAka316yADn9ZfCU5OA",
-      "888acb5757da46ad83b7e341ec544c64",
+      "libera-1298aas",
+      "google-site-verification=9852CbTRhQ51-9gCUayPbGYqJeBle_MXLb6E4AL_qQk",
       "google-site-verification=w3b8mU3wU6cZ8uSrj3E_5f1frPejJskDpSp_nMWJ99o",
       "v=spf1 mx ip4:188.166.95.178/32 ip6:2a03:b0c0:2:d0::71:1 include:stspg-customer.com include:_spf.google.com include:mailgun.org ~all",
-      "openai-domain-verification=dv-VgeNijVDgW7g56UZyGIVyKNr",
-      "status-page-domain-verification=9y2klhzbxsgk",
-      "twilio-domain-verification=1c295667813cc0aaae819ed7657818f8",
-      "google-site-verification=dqhMiMzpbkSyEhgjGKyEOMlEg2tF0MSHD7UN-MYfD-M",
-      "_globalsign-domain-verification=B57sRQpmte4G4w-gavZbVNmmNsMxGp5kcL19UP2599",
-      "anthropic-domain-verification-x3xt87=cFLP3aL71pAYPZLQR7JKvRhcF",
       "MS=73147F1EC0843C399CF17F586EC6B8EAF8C57961",
-      "libera-1298aas",
-      "google-site-verification=9852CbTRhQ51-9gCUayPbGYqJeBle_MXLb6E4AL_qQk"
+      "888acb5757da46ad83b7e341ec544c64",
+      "_globalsign-domain-verification=B57sRQpmte4G4w-gavZbVNmmNsMxGp5kcL19UP2599",
+      "google-site-verification=dqhMiMzpbkSyEhgjGKyEOMlEg2tF0MSHD7UN-MYfD-M"
     ],
     "dmarc": [
       "v=DMARC1; p=none; pct=100; rua=mailto:re+shb8ybr70a3@dmarc.postmarkapp.com; sp=none; aspf=r;"
@@ -225,7 +225,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     }
   },
   "ports": {
-    "ip": "151.101.0.223",
+    "ip": "151.101.128.223",
     "open": []
   },
   "https": {
@@ -309,11 +309,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     ]
   },
   "apex_txt": [
-    "google-site-verification=QALZObrGl2OVG8lWUE40uVSMCAka316yADn9ZfCU5OA",
-    "google-site-verification=w3b8mU3wU6cZ8uSrj3E_5f1frPejJskDpSp_nMWJ99o",
-    "openai-domain-verification=dv-VgeNijVDgW7g56UZyGIVyKNr",
     "status-page-domain-verification=9y2klhzbxsgk",
-    "twilio-domain-verification=1c295667813cc0aaae819ed7657818f8"
+    "anthropic-domain-verification-x3xt87=cFLP3aL71pAYPZLQR7JKvRhcF",
+    "twilio-domain-verification=1c295667813cc0aaae819ed7657818f8",
+    "openai-domain-verification=dv-VgeNijVDgW7g56UZyGIVyKNr",
+    "google-site-verification=QALZObrGl2OVG8lWUE40uVSMCAka316yADn9ZfCU5OA"
   ],
   "tls2": {
     "alpn": "",
@@ -324,7 +324,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260113130346",
+      "not_after": "20270214130345"
     }
   },
   "http2": {
@@ -338,8 +340,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "/webstats/"
     ]
   },
-  "elapsed_s": 13.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 14.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

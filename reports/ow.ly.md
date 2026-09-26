@@ -7,12 +7,12 @@
 | Target | https://ow.ly/ |
 | Bug bounty program | Hootsuite |
 | Listed scope domain | ow.ly |
-| Test date | 2026-09-26 17:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
+Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,6 +25,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 | 7 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 8 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 9 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 10 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -87,6 +88,12 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 - **Detail:** Certificate of ow.ly has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 10. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.21.183.49 carries PTR ec2-23-21-183-49.compute-1.amazonaws.com. for ow.ly.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -94,24 +101,24 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
   "domain": "ow.ly",
   "dns": {
     "a": [
-      "98.91.130.197",
+      "23.21.183.49",
       "44.208.198.27",
-      "23.21.183.49"
+      "98.91.130.197"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx2.googlemail.com (pref 40)",
-      "alt2.aspmx.l.google.com (pref 30)",
+      "aspmx.l.google.com (pref 10)",
       "aspmx3.googlemail.com (pref 50)",
-      "aspmx.l.google.com (pref 10)"
+      "alt2.aspmx.l.google.com (pref 30)",
+      "aspmx2.googlemail.com (pref 40)"
     ],
     "ns": [
+      "ns-1603.awsdns-08.co.uk.",
       "ns-1454.awsdns-53.org.",
-      "ns-795.awsdns-35.net.",
       "ns-133.awsdns-16.com.",
-      "ns-1603.awsdns-08.co.uk."
+      "ns-795.awsdns-35.net."
     ],
     "spf": [
       "v=spf1 ip4:69.90.101.232 a mx -all"
@@ -143,7 +150,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
     }
   },
   "ports": {
-    "ip": "98.91.130.197",
+    "ip": "23.21.183.49",
     "open": []
   },
   "https": {
@@ -200,11 +207,19 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251130000000",
+      "not_after": "20261229235959"
     }
   },
-  "elapsed_s": 24.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 404,
+    "ptr": [
+      "ec2-23-21-183-49.compute-1.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 29.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

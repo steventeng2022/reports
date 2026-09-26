@@ -7,8 +7,8 @@
 | Target | https://issuu.com/ |
 | Bug bounty program | Issuu |
 | Listed scope domain | issuu.com |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -80,7 +80,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 ### 8. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=0H3HL1KxMhfdap89AcuCKadjU2QFxgZ0I7CXePAEReE; google-site-verification=c6Hy78bVIo4EsMFlp02T8dC2rg_2s2kqhDdVkSQcNFQ; facebook-domain-verification=rfrx5vjx0elz3n83h0ydr94nlkptkr
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=3yHgeX--mAcr74szFR5gTbIbD1TkraSFdZS_xIm9jMY; rippling-domain-verification=217697edd61756fc; google-site-verification=GBizRM9Z_p17clZXSQMnJjIdyXLjCoDJY6aYG-kbwnQ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 9. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -108,47 +108,47 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
   "domain": "issuu.com",
   "dns": {
     "a": [
-      "151.101.65.55",
-      "151.101.193.55",
+      "151.101.129.55",
       "151.101.1.55",
-      "151.101.129.55"
+      "151.101.65.55",
+      "151.101.193.55"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 50)",
-      "aspmx.l.google.com (pref 10)",
-      "aspmx2.googlemail.com (pref 40)",
+      "alt1.aspmx.l.google.com (pref 20)",
       "alt2.aspmx.l.google.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)"
+      "aspmx2.googlemail.com (pref 40)",
+      "aspmx3.googlemail.com (pref 50)",
+      "aspmx.l.google.com (pref 10)"
     ],
     "ns": [
       "ns-1343.awsdns-39.org.",
-      "ns-757.awsdns-30.net.",
       "ns-426.awsdns-53.com.",
-      "ns-1582.awsdns-05.co.uk."
+      "ns-1582.awsdns-05.co.uk.",
+      "ns-757.awsdns-30.net."
     ],
     "spf": [
-      "google-site-verification=0H3HL1KxMhfdap89AcuCKadjU2QFxgZ0I7CXePAEReE",
-      "google-site-verification=c6Hy78bVIo4EsMFlp02T8dC2rg_2s2kqhDdVkSQcNFQ",
-      "facebook-domain-verification=rfrx5vjx0elz3n83h0ydr94nlkptkr",
-      "google-site-verification=1d_IjLk0hz3l3G9KrZeiLEIjloBhk0UKtyEIuGSmGa0",
-      "google-site-verification=5CyB-vqN7byHfN1pa3hf-FFj_ecJbkgBJ7iJr3nso98",
-      "rippling-domain-verification=217697edd61756fc",
-      "apple-domain-verification=ElKeVvlCb1VtMkhI",
-      "MS=ms41162561",
-      "TAILSCALE-QTxUnggBiedjypLchTwB",
-      "google-site-verification=JO5hAUdeQB6RbQhV-_AKYyv6xfJnmVKuTkYtkZYhcLk",
-      "google-site-verification=GBizRM9Z_p17clZXSQMnJjIdyXLjCoDJY6aYG-kbwnQ",
-      "miro-verification=50d48af206c43d8ba6a5c568d0b68365b08fd197",
-      "v=spf1  include:mail.zendesk.com  include:_spf.sparkpostmail.com include:_spf.google.com include:amazonses.com include:spf.mandrillapp.com -all",
       "google-site-verification=3yHgeX--mAcr74szFR5gTbIbD1TkraSFdZS_xIm9jMY",
+      "rippling-domain-verification=217697edd61756fc",
+      "google-site-verification=GBizRM9Z_p17clZXSQMnJjIdyXLjCoDJY6aYG-kbwnQ",
+      "docusign=828dd772-5bf2-4d4a-9956-c6b07049c55b",
+      "facebook-domain-verification=rfrx5vjx0elz3n83h0ydr94nlkptkr",
+      "atlassian-domain-verification=+SyUybAN4ilkkpHjnTS9UW9fhbIiAlFXshc97OU0IZw+UHVP0I9omo5Jzo7Qg7K+",
+      "google-site-verification=xh0flAgyOL5F8z5FQTMUnk4Z0nYehx9lPsDq1d2ntFY",
+      "miro-verification=50d48af206c43d8ba6a5c568d0b68365b08fd197",
       "fastly-domain-delegation-00331056-2025326",
       "mixpanel-domain-verify=3d34b526-2c05-4de4-a475-bdc5b58f49c8",
-      "google-site-verification=xh0flAgyOL5F8z5FQTMUnk4Z0nYehx9lPsDq1d2ntFY",
+      "apple-domain-verification=ElKeVvlCb1VtMkhI",
+      "TAILSCALE-QTxUnggBiedjypLchTwB",
       "google-site-verification=p_DY5uxkB0uAYklg-sR0Lii2bYnF6ZooXcw2Eyi4rL8",
-      "docusign=828dd772-5bf2-4d4a-9956-c6b07049c55b",
-      "atlassian-domain-verification=+SyUybAN4ilkkpHjnTS9UW9fhbIiAlFXshc97OU0IZw+UHVP0I9omo5Jzo7Qg7K+"
+      "google-site-verification=c6Hy78bVIo4EsMFlp02T8dC2rg_2s2kqhDdVkSQcNFQ",
+      "google-site-verification=0H3HL1KxMhfdap89AcuCKadjU2QFxgZ0I7CXePAEReE",
+      "MS=ms41162561",
+      "google-site-verification=5CyB-vqN7byHfN1pa3hf-FFj_ecJbkgBJ7iJr3nso98",
+      "google-site-verification=1d_IjLk0hz3l3G9KrZeiLEIjloBhk0UKtyEIuGSmGa0",
+      "google-site-verification=JO5hAUdeQB6RbQhV-_AKYyv6xfJnmVKuTkYtkZYhcLk",
+      "v=spf1  include:mail.zendesk.com  include:_spf.sparkpostmail.com include:_spf.google.com include:amazonses.com include:spf.mandrillapp.com -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:reports@dmarc.bendingspoons.com"
@@ -178,7 +178,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
     }
   },
   "ports": {
-    "ip": "151.101.65.55",
+    "ip": "151.101.129.55",
     "open": []
   },
   "https": {
@@ -228,11 +228,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=0H3HL1KxMhfdap89AcuCKadjU2QFxgZ0I7CXePAEReE",
-    "google-site-verification=c6Hy78bVIo4EsMFlp02T8dC2rg_2s2kqhDdVkSQcNFQ",
+    "google-site-verification=3yHgeX--mAcr74szFR5gTbIbD1TkraSFdZS_xIm9jMY",
+    "rippling-domain-verification=217697edd61756fc",
+    "google-site-verification=GBizRM9Z_p17clZXSQMnJjIdyXLjCoDJY6aYG-kbwnQ",
     "facebook-domain-verification=rfrx5vjx0elz3n83h0ydr94nlkptkr",
-    "google-site-verification=1d_IjLk0hz3l3G9KrZeiLEIjloBhk0UKtyEIuGSmGa0",
-    "google-site-verification=5CyB-vqN7byHfN1pa3hf-FFj_ecJbkgBJ7iJr3nso98"
+    "atlassian-domain-verification=+SyUybAN4ilkkpHjnTS9UW9fhbIiAlFXshc97OU0IZw+UHVP0I"
   ],
   "tls2": {
     "alpn": "",
@@ -243,7 +243,9 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260831132207",
+      "not_after": "20270318122207"
     }
   },
   "http2": {
@@ -265,8 +267,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
       "/"
     ]
   },
-  "elapsed_s": 16.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 17.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

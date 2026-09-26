@@ -7,12 +7,12 @@
 | Target | https://drupal.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | drupal.org |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
+Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,7 +34,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 | 16 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 19 | info | SEC2 | security.txt published without a contact address | CWE-1038 |
+| 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 20 | info | SEC2 | security.txt published without a contact address | CWE-1038 |
 
 ## Detailed findings
 
@@ -140,13 +141,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 16. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (k8et16ilnh4fmw.drupal.org and 019j41ch4tk8ha.drupal.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (az48u7rlexiy2p.drupal.org and lzubyme8j3i0o5.drupal.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=Qd0lcd0D9W_oK9TbiAFqQ7PDpBsCyChyHvQnKn0CGgM; _globalsign-domain-verification=ckxXdoIq27XGYE4ATbBYQOBeV7PTJWRxYe-PXDyzMX; google-site-verification=oA6bw_SaWeTbyrjWNmQG7adq0075ki6d4pKaNZ4aui0
+- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=wvdz6fqNpGYoUxoyCbEUOYrkz-Z8Nh2zXAoS8lsLRh; atlassian-domain-verification=ZePKtfBRwyzfk4yeRCOiU1xgjIPOxn9JC3ioSM/K/SIYzHxrw6; google-site-verification=Qd0lcd0D9W_oK9TbiAFqQ7PDpBsCyChyHvQnKn0CGgM
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -155,7 +156,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - **Detail:** Certificate of drupal.org has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 19. [INFO] security.txt published without a contact address (`SEC2`)
+### 19. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 56 disallow path(s), e.g. /includes/, /misc/, /modules/, /profiles/, /scripts/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 20. [INFO] security.txt published without a contact address (`SEC2`)
 
 - **CWE:** CWE-1038
 - **Detail:** /.well-known/security.txt returns 200 but contains no mailto:/URL contact.
@@ -168,35 +175,35 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   "domain": "drupal.org",
   "dns": {
     "a": [
-      "151.101.130.217",
       "151.101.2.217",
+      "151.101.130.217",
       "151.101.194.217",
       "151.101.66.217"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "smtp4.osuosl.org (pref 5)",
       "smtp2.osuosl.org (pref 5)",
-      "smtp3.osuosl.org (pref 5)",
       "smtp1.osuosl.org (pref 5)",
-      "smtp4.osuosl.org (pref 5)"
+      "smtp3.osuosl.org (pref 5)"
     ],
     "ns": [
+      "ns1.dnsmadeeasy.com.",
       "ns4.dnsmadeeasy.com.",
       "ns0.dnsmadeeasy.com.",
       "ns2.dnsmadeeasy.com.",
-      "ns3.dnsmadeeasy.com.",
-      "ns1.dnsmadeeasy.com."
+      "ns3.dnsmadeeasy.com."
     ],
     "spf": [
-      "google-site-verification=Qd0lcd0D9W_oK9TbiAFqQ7PDpBsCyChyHvQnKn0CGgM",
-      "_globalsign-domain-verification=ckxXdoIq27XGYE4ATbBYQOBeV7PTJWRxYe-PXDyzMX",
-      "libera-MuhFCh9oKFAX8JRaWuLfdx9f",
-      "v=spf1 mx include:amazonses.com include:servers.mcsv.net -all",
-      "google-site-verification=oA6bw_SaWeTbyrjWNmQG7adq0075ki6d4pKaNZ4aui0",
       "globalsign-domain-verification=wvdz6fqNpGYoUxoyCbEUOYrkz-Z8Nh2zXAoS8lsLRh",
+      "libera-MuhFCh9oKFAX8JRaWuLfdx9f",
+      "atlassian-domain-verification=ZePKtfBRwyzfk4yeRCOiU1xgjIPOxn9JC3ioSM/K/SIYzHxrw6mfbg39K7xejmhA",
+      "google-site-verification=Qd0lcd0D9W_oK9TbiAFqQ7PDpBsCyChyHvQnKn0CGgM",
+      "v=spf1 mx include:amazonses.com include:servers.mcsv.net -all",
+      "_globalsign-domain-verification=ckxXdoIq27XGYE4ATbBYQOBeV7PTJWRxYe-PXDyzMX",
       "brave-ledger-verification=39d2f4e207f7abc8b6f064d91672f3908d99079a2c03e6cbd60ef6d7daefa520",
-      "atlassian-domain-verification=ZePKtfBRwyzfk4yeRCOiU1xgjIPOxn9JC3ioSM/K/SIYzHxrw6mfbg39K7xejmhA"
+      "google-site-verification=oA6bw_SaWeTbyrjWNmQG7adq0075ki6d4pKaNZ4aui0"
     ],
     "dmarc": [
       "v=DMARC1; p=none; pct=100; rua=mailto:re+myecnlkddmo@dmarc.postmarkapp.com; sp=none; aspf=r;"
@@ -225,7 +232,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     }
   },
   "ports": {
-    "ip": "151.101.130.217",
+    "ip": "151.101.2.217",
     "open": []
   },
   "https": {
@@ -279,10 +286,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   },
   "wildcard_dns": true,
   "apex_txt": [
+    "globalsign-domain-verification=wvdz6fqNpGYoUxoyCbEUOYrkz-Z8Nh2zXAoS8lsLRh",
+    "atlassian-domain-verification=ZePKtfBRwyzfk4yeRCOiU1xgjIPOxn9JC3ioSM/K/SIYzHxrw6",
     "google-site-verification=Qd0lcd0D9W_oK9TbiAFqQ7PDpBsCyChyHvQnKn0CGgM",
     "_globalsign-domain-verification=ckxXdoIq27XGYE4ATbBYQOBeV7PTJWRxYe-PXDyzMX",
-    "google-site-verification=oA6bw_SaWeTbyrjWNmQG7adq0075ki6d4pKaNZ4aui0",
-    "globalsign-domain-verification=wvdz6fqNpGYoUxoyCbEUOYrkz-Z8Nh2zXAoS8lsLRh",
     "brave-ledger-verification=39d2f4e207f7abc8b6f064d91672f3908d99079a2c03e6cbd60ef6"
   ],
   "tls2": {
@@ -294,11 +301,35 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251208200018",
+      "not_after": "20270109200017"
     }
   },
-  "elapsed_s": 16.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "http2": {
+    "robots_disallow": [
+      "/includes/",
+      "/misc/",
+      "/modules/",
+      "/profiles/",
+      "/scripts/",
+      "/themes/",
+      "/CHANGELOG.txt",
+      "/cron.php",
+      "/INSTALL.mysql.txt",
+      "/INSTALL.pgsql.txt",
+      "/INSTALL.sqlite.txt",
+      "/install.php",
+      "/INSTALL.txt",
+      "/LICENSE.txt",
+      "/MAINTAINERS.txt"
+    ]
+  },
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 18.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

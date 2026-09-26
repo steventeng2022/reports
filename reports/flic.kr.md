@@ -7,12 +7,12 @@
 | Target | https://flic.kr/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | flic.kr |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
+Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,6 +25,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 | 7 | info | P8 | Missing security.txt | CWE-1038 |
 | 8 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 9 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 10 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -88,6 +89,12 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. /g/4arE9C
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 10. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 54.192.248.15 carries PTR server-54-192-248-15.tpe53.r.cloudfront.net. for flic.kr.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -95,19 +102,19 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
   "domain": "flic.kr",
   "dns": {
     "a": [
-      "54.192.248.84",
-      "54.192.248.76",
       "54.192.248.15",
+      "54.192.248.76",
+      "54.192.248.84",
       "54.192.248.3"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [],
     "ns": [
-      "ns-252.awsdns-31.com.",
-      "ns-739.awsdns-28.net.",
       "ns-1394.awsdns-46.org.",
-      "ns-1832.awsdns-37.co.uk."
+      "ns-1832.awsdns-37.co.uk.",
+      "ns-252.awsdns-31.com.",
+      "ns-739.awsdns-28.net."
     ],
     "spf": [],
     "dmarc": [
@@ -139,7 +146,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
     }
   },
   "ports": {
-    "ip": "54.192.248.84",
+    "ip": "54.192.248.15",
     "open": []
   },
   "https": {
@@ -197,7 +204,9 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251205000000",
+      "not_after": "20270102235959"
     }
   },
   "http2": {
@@ -205,8 +214,14 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
       "/g/4arE9C"
     ]
   },
-  "elapsed_s": 11.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "server-54-192-248-15.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 19.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

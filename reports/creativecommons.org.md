@@ -7,8 +7,8 @@
 | Target | https://creativecommons.org/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | creativecommons.org |
-| Test date | 2026-09-26 17:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -180,28 +180,28 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "104.20.6.134"
     ],
     "aaaa": [
-      "2606:4700:10::6814:686",
-      "2606:4700:10::6814:586"
+      "2606:4700:10::6814:586",
+      "2606:4700:10::6814:686"
     ],
     "cname": null,
     "mx": [
-      "aspmx5.googlemail.com (pref 80)",
-      "aspmx2.googlemail.com (pref 50)",
-      "aspmx3.googlemail.com (pref 60)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)",
       "aspmx4.googlemail.com (pref 70)",
+      "aspmx3.googlemail.com (pref 60)",
+      "aspmx2.googlemail.com (pref 50)",
+      "aspmx5.googlemail.com (pref 80)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "fiona.ns.cloudflare.com.",
-      "isaac.ns.cloudflare.com."
+      "isaac.ns.cloudflare.com.",
+      "fiona.ns.cloudflare.com."
     ],
     "spf": [
-      "MS=ms27657674",
       "blitz=mu-fbea1d1e-91b715ef-04876bbd-270e0140",
-      "v=spf1 include:_spf.google.com include:sendgrid.net ~all"
+      "v=spf1 include:_spf.google.com include:sendgrid.net ~all",
+      "MS=ms27657674"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:dmarc-reports@creativecommons.org"
@@ -296,7 +296,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260831195232",
+      "not_after": "20261129205217"
     }
   },
   "http2": {
@@ -304,8 +306,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "Sitemap:"
     ]
   },
-  "elapsed_s": 14.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 16.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://linkedin.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | linkedin.com |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
+Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,9 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
 | 9 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 12 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 13 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -85,7 +88,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
 ### 9. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: liveramp-site-verification=yQ2nkwhqszpGRQg_J38S60KHInPVs-dclgyNRtRrlBA; vmware-cloud-verification-f4d7c1c7-ad66-450f-82fa-c17b9ee79459; apple-domain-verification=Hp7LihDNsREwfHX9
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=8LaIeBMwr6K8qWeaGa4CEmfPKiZDwaT38t5mIrtaroI; google-site-verification=VE9BWhjbPPNmbr3ZJcwn5hLTsz7c5KPt3zXdYyaSnSQ; atlassian-domain-verification=juKdSE4GGphSmzPkhmnRJUNIn0ALdb0vsP7VSPM8TmTP7WgbgU
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -99,6 +102,24 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but linkedin.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 12. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of linkedin.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 13. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of linkedin.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 130.211.32.14 carries PTR 14.32.211.130.bc.googleusercontent.com. for linkedin.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -115,45 +136,45 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
     "cname": null,
     "mx": [
       "mail-d.linkedin.com (pref 10)",
-      "mail-c.linkedin.com (pref 10)",
       "mail.linkedin.com (pref 20)",
-      "mail-a.linkedin.com (pref 10)"
+      "mail-a.linkedin.com (pref 10)",
+      "mail-c.linkedin.com (pref 10)"
     ],
     "ns": [
       "dns4.p09.nsone.net.",
-      "ns3-42.azure-dns.org.",
-      "dns3.p09.nsone.net.",
+      "ns1-42.azure-dns.com.",
       "ns2-42.azure-dns.net.",
-      "ns4-42.azure-dns.info.",
-      "dns2.p09.nsone.net.",
+      "dns3.p09.nsone.net.",
       "dns1.p09.nsone.net.",
-      "ns1-42.azure-dns.com."
+      "ns4-42.azure-dns.info.",
+      "ns3-42.azure-dns.org.",
+      "dns2.p09.nsone.net."
     ],
     "spf": [
-      "liveramp-site-verification=yQ2nkwhqszpGRQg_J38S60KHInPVs-dclgyNRtRrlBA",
-      "vmware-cloud-verification-f4d7c1c7-ad66-450f-82fa-c17b9ee79459",
-      "apple-domain-verification=Hp7LihDNsREwfHX9",
-      "google-site-verification=vfmYHwjzUIFPzxFcyuwEToh_1kG9wvcpGgJnB-MhQn8",
       "448e0dc03e935ecf66d81f1ce3c26b2f2fea13756c031ffc4be91749107f3a79",
-      "google-site-verification=anx3jpa6VKkTWRJKnglUIzm7UEn-ZCT2WqAfG7h-xOg",
+      "_cthqqp5zj8g86qf3h97heqitg2zc32b",
       "google-site-verification=8LaIeBMwr6K8qWeaGa4CEmfPKiZDwaT38t5mIrtaroI",
-      "google-site-verification=mMV_EnYaB52OhMo-jbNowf8QVIKcXV3WpXreynLFFEo",
       "google-site-verification=VE9BWhjbPPNmbr3ZJcwn5hLTsz7c5KPt3zXdYyaSnSQ",
-      "docusign=11f01284-dffc-40f9-8d56-57e5261ede3f",
       "atlassian-domain-verification=juKdSE4GGphSmzPkhmnRJUNIn0ALdb0vsP7VSPM8TmTP7WgbgUQPLFdNicP7bF58",
+      "apple-domain-verification=Hp7LihDNsREwfHX9",
+      "google-site-verification=mMV_EnYaB52OhMo-jbNowf8QVIKcXV3WpXreynLFFEo",
+      "google-site-verification=oJFWbtlKRblXs4smNibcoJkTJqwT6gd3XMI80VjBihE",
+      "liveramp-site-verification=yQ2nkwhqszpGRQg_J38S60KHInPVs-dclgyNRtRrlBA",
+      "AFDVALIDATION=LinkedIn",
+      "atlassian-sending-domain-verification=3bdb0597-814d-4e10-a552-5cf78f92ab3c",
       "bluebeam-verification=02px6k8snlrzd6gx3b3oqkeatbzawd",
       "bf5fl8sny79w4c70jxp6cp3crkqtr7qk",
-      "_cthqqp5zj8g86qf3h97heqitg2zc32b",
+      "miro-verification=260f00146b6d2ad1bb70d6dc07a077b672badd28",
       "google-site-verification=X0LoSQsAMzR-TK4o-ULrYAwLi_fyopfRLkm_C-4N4Ts",
-      "AFDVALIDATION=LinkedIn",
-      "google-site-verification=xAGz495k8RbGclhamQx1TkZSHDxOaEd95fOjc8xpbTA",
-      "google-site-verification=oJFWbtlKRblXs4smNibcoJkTJqwT6gd3XMI80VjBihE",
-      "atlassian-domain-verification=dDed2VFvlDajBX8X22w52Jx/W/YLHR81SxUuraa9zNdz4aLjDS/RpfN11w2bxpRc",
-      "google-site-verification=0Vs9yf1V6RGkuzow85OzIXKEnjpRswpDkI6RgDVspMg",
       "v=spf1 ip4:199.101.162.0/25 ip4:108.174.3.0/24 ip4:108.174.6.0/24 ip4:108.174.0.0/24 ip6:2620:109:c00d:104::/64 ip6:2620:109:c006:104::/64 ip6:2620:109:c003:104::/64 ip6:2620:119:50c0:207::/64 ip4:199.101.161.130 mx mx:docusign.net ~all",
-      "atlassian-sending-domain-verification=3bdb0597-814d-4e10-a552-5cf78f92ab3c",
       "elevenlabs=hRLt8nemUjAWJSL_xhBIsKFyK4yYV089AvwkOB0cxYY",
-      "miro-verification=260f00146b6d2ad1bb70d6dc07a077b672badd28"
+      "google-site-verification=xAGz495k8RbGclhamQx1TkZSHDxOaEd95fOjc8xpbTA",
+      "docusign=11f01284-dffc-40f9-8d56-57e5261ede3f",
+      "vmware-cloud-verification-f4d7c1c7-ad66-450f-82fa-c17b9ee79459",
+      "google-site-verification=vfmYHwjzUIFPzxFcyuwEToh_1kG9wvcpGgJnB-MhQn8",
+      "google-site-verification=0Vs9yf1V6RGkuzow85OzIXKEnjpRswpDkI6RgDVspMg",
+      "google-site-verification=anx3jpa6VKkTWRJKnglUIzm7UEn-ZCT2WqAfG7h-xOg",
+      "atlassian-domain-verification=dDed2VFvlDajBX8X22w52Jx/W/YLHR81SxUuraa9zNdz4aLjDS/RpfN11w2bxpRc"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:d@rua.agari.com,mailto:yfy3q-9359@rua.dmarc.emailanalyst.com; ruf=mailto:d@ruf.agari.com"
@@ -234,11 +255,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "liveramp-site-verification=yQ2nkwhqszpGRQg_J38S60KHInPVs-dclgyNRtRrlBA",
-    "vmware-cloud-verification-f4d7c1c7-ad66-450f-82fa-c17b9ee79459",
+    "google-site-verification=8LaIeBMwr6K8qWeaGa4CEmfPKiZDwaT38t5mIrtaroI",
+    "google-site-verification=VE9BWhjbPPNmbr3ZJcwn5hLTsz7c5KPt3zXdYyaSnSQ",
+    "atlassian-domain-verification=juKdSE4GGphSmzPkhmnRJUNIn0ALdb0vsP7VSPM8TmTP7WgbgU",
     "apple-domain-verification=Hp7LihDNsREwfHX9",
-    "google-site-verification=vfmYHwjzUIFPzxFcyuwEToh_1kG9wvcpGgJnB-MhQn8",
-    "google-site-verification=anx3jpa6VKkTWRJKnglUIzm7UEn-ZCT2WqAfG7h-xOg"
+    "google-site-verification=mMV_EnYaB52OhMo-jbNowf8QVIKcXV3WpXreynLFFEo"
   ],
   "tls2": {
     "alpn": "",
@@ -249,11 +270,19 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260520000000",
+      "not_after": "20261120235959"
     }
   },
-  "elapsed_s": 4.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "14.32.211.130.bc.googleusercontent.com."
+    ]
+  },
+  "elapsed_s": 4.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

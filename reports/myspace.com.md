@@ -7,12 +7,12 @@
 | Target | https://myspace.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | myspace.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
+Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,6 +36,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
 | 18 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 19 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 20 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 21 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 22 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 23 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -157,7 +160,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
 ### 18. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (ti0tfk9xg9honl.myspace.com and 9ixffs5pm4fux1.myspace.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (v45eyqkh0t25pt.myspace.com and olfuj3z8nre5o4.myspace.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 19. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
@@ -172,6 +175,24 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
 - **Detail:** Certificate of myspace.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 21. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but myspace.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 22. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 38 disallow path(s), e.g. /settings/*, /manage/*, /signup/*, /thirdpartyimport/*, /insights/*
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 23. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 34.111.176.156 carries PTR 156.176.111.34.bc.googleusercontent.com. for myspace.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -184,28 +205,28 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxb-00ac0e01.gslb.pphosted.com (pref 10)",
-      "mxa-00ac0e01.gslb.pphosted.com (pref 10)"
+      "mxa-00ac0e01.gslb.pphosted.com (pref 10)",
+      "mxb-00ac0e01.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns-cloud-a1.googledomains.com.",
       "ns-cloud-a4.googledomains.com.",
-      "ns-cloud-a2.googledomains.com.",
-      "ns-cloud-a3.googledomains.com."
+      "ns-cloud-a1.googledomains.com.",
+      "ns-cloud-a3.googledomains.com.",
+      "ns-cloud-a2.googledomains.com."
     ],
     "spf": [
       "v=spf1 mx ip4:159.183.178.108 ip4:168.245.30.211 ip4:63.208.226.34 ip4:204.16.32.0/22 ip4:67.134.143.0/24 ip4:216.205.243.0/24 ip4:34.85.156.5/32 ip4:35.245.108.108/32 ip4:34.86.129.193/32 ip4:34.86.134.94/32 ",
       "ip4:34.85.222.234/32 ip4:34.86.176.234/32 ip4:34.86.125.212/32 ip4:34.85.224.60/32 ip4:34.86.160.49/32 ip4:35.245.64.166/32 ip4:35.188.226.11/32 ",
       "ip4:34.86.208.228/32 ip4:34.85.216.144/32 ip4:35.221.22.153/32 ip4:34.86.137.108/32 ip4:34.86.51.35/32 ip4:34.150.221.40/32 ip4:34.85.216.70/32 ip4:34.86.37.191/32 ip4:34.85.214.215/32 ",
       "ip4:35.236.234.82/32 ip4:34.86.161.241/32 ip4:216.32.181.16 ip4:216.178.32.0/20 ip4:168.235.224.0/24 include:_netblocks.mimecast.com -all",
-      "google-site-verification=q0iWqpcfOBclAJaCeWh83v62QQ4uCgbWObQ08p37qgU",
-      "google-site-verification=eu-3gW1JePvsGRRCaEvH17YUOTFJNofm4lnz2Pk0LTc",
+      "cj65vjpq0s1v9u7vfo020c6rel",
       "oZ19a+EOIwWVDPJ7POj14UAGBfzk9xcJMmsTUAMUy7H82sDuVCxvw9rZqdg3znFrdTH04+49zd1djhEAt0ooiA==",
       "al4upe6q5cl13sg4srvfivflvg",
       "qpdYoeakhlmAxsnmxgAVFmJgUSibqb/y+Eu6GGn8pdmLf+mFGIB3jhRAxIC5KObsPMES9MW2c+oOrpOo/lCQVw==",
-      "cj65vjpq0s1v9u7vfo020c6rel",
       "cr40m536tje9on1slld9bi81bg",
-      "MS=ms89904786"
+      "google-site-verification=q0iWqpcfOBclAJaCeWh83v62QQ4uCgbWObQ08p37qgU",
+      "MS=ms89904786",
+      "google-site-verification=eu-3gW1JePvsGRRCaEvH17YUOTFJNofm4lnz2Pk0LTc"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:postmaster@myspace.com"
@@ -262,8 +283,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
     {
       "origin": "https://evil-auditor.example",
       "acao": "",
-      "acac": "",
-      "error": "ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='myspace.com', port=443): Read timed out. (read timeout=15)\"))"
+      "acac": ""
     },
     {
       "origin": "https://sub.myspace.com",
@@ -291,7 +311,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
     "/.env": 404,
     "/.htaccess": 404,
     "/wp-login.php": 404,
-    "/phpmyadmin/index.php": 0,
+    "/phpmyadmin/index.php": 404,
     "/server-status": 0,
     "/api/": 200
   },
@@ -312,14 +332,38 @@ Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260817204806",
+      "not_after": "20261115214401"
     }
   },
   "http2": {
-    "error": "root GET failed"
+    "robots_disallow": [
+      "/settings/*",
+      "/manage/*",
+      "/signup/*",
+      "/thirdpartyimport/*",
+      "/insights/*",
+      "/search/*",
+      "/help/*",
+      "/auth/*",
+      "/library/*",
+      "/pages/legal*",
+      "/examples/*",
+      "/tests/*",
+      "/notifications/*",
+      "/messages/*",
+      "/ajax/*"
+    ]
   },
-  "elapsed_s": 84.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "156.176.111.34.bc.googleusercontent.com."
+    ]
+  },
+  "elapsed_s": 40.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

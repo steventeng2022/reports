@@ -7,12 +7,12 @@
 | Target | https://copyright.gov/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | copyright.gov |
-| Test date | 2026-09-26 17:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
+Total findings: **17** (High: 0, Medium: 0, Low: 1, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
 | 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -50,13 +51,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.227.115:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.226.115:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.227.115:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.226.115:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -128,7 +129,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=Ip3EEa7FthdrMW7LmkVYNoD6bcfi39uiG05RzDkHT4A; knowbe4-site-verification=9319099d4dd661d9f8e5e808389487f6; webexdomainverification.NQCL=77a00094-cd91-4c22-8613-aa03e3ad3c50
+- **Detail:** Apex TXT records with verification/token content: webexdomainverification.NQCL=77a00094-cd91-4c22-8613-aa03e3ad3c50; knowbe4-site-verification=9319099d4dd661d9f8e5e808389487f6; google-site-verification=Ip3EEa7FthdrMW7LmkVYNoD6bcfi39uiG05RzDkHT4A
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -137,6 +138,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
 - **Detail:** Certificate of copyright.gov has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 17. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://copyright.gov/ carries Cache-Control: public, max-age=14400 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -144,8 +151,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
   "domain": "copyright.gov",
   "dns": {
     "a": [
-      "104.16.227.115",
-      "104.16.226.115"
+      "104.16.226.115",
+      "104.16.227.115"
     ],
     "aaaa": [
       "2606:4700::6810:e373",
@@ -161,12 +168,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
       "alice.ns.cloudflare.com."
     ],
     "spf": [
-      "MS=ms27223468",
-      "google-site-verification=Ip3EEa7FthdrMW7LmkVYNoD6bcfi39uiG05RzDkHT4A",
-      "TEJjxf+vyMTm1H3VKL5ipuZYSAY2V3nlBXCcF4ir3h05VeJjDqUS3cOoj6nCmKzzpwauTGx4OO1cszjOJIouCw==",
-      "knowbe4-site-verification=9319099d4dd661d9f8e5e808389487f6",
+      "v=spf1 include:spf1.loc.gov include:spf2.loc.gov include:spf1.copyright.gov include:spf2.copyright.gov include:amazonses.com include:spf-00026101.gpphosted.com mx -all",
       "webexdomainverification.NQCL=77a00094-cd91-4c22-8613-aa03e3ad3c50",
-      "v=spf1 include:spf1.loc.gov include:spf2.loc.gov include:spf1.copyright.gov include:spf2.copyright.gov include:amazonses.com include:spf-00026101.gpphosted.com mx -all"
+      "knowbe4-site-verification=9319099d4dd661d9f8e5e808389487f6",
+      "MS=ms27223468",
+      "TEJjxf+vyMTm1H3VKL5ipuZYSAY2V3nlBXCcF4ir3h05VeJjDqUS3cOoj6nCmKzzpwauTGx4OO1cszjOJIouCw==",
+      "google-site-verification=Ip3EEa7FthdrMW7LmkVYNoD6bcfi39uiG05RzDkHT4A"
     ],
     "dmarc": [
       "v=DMARC1;p=none;sp=none;fo=1;rua=mailto:copyrightdmarc_reports@copyright.gov;ruf=mailto:copyrightdmarc_ruf@copyright.gov;rf=afrf;pct=100"
@@ -197,7 +204,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
     }
   },
   "ports": {
-    "ip": "104.16.227.115",
+    "ip": "104.16.226.115",
     "open": [
       8080,
       8443
@@ -223,8 +230,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
     {
       "origin": "https://sub.copyright.gov",
       "acao": "",
-      "acac": "",
-      "error": "ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='copyright.gov', port=443): Read timed out. (read timeout=15)\"))"
+      "acac": ""
     }
   ],
   "http": {
@@ -238,7 +244,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
     "/url?url=https://evil-auditor.example/x -> 403"
   ],
   "paths": {
-    "/robots.txt": 404,
+    "/robots.txt": 0,
     "/sitemap.xml": 200,
     "/.well-known/security.txt": 404,
     "/security.txt": 404,
@@ -255,9 +261,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=Ip3EEa7FthdrMW7LmkVYNoD6bcfi39uiG05RzDkHT4A",
+    "webexdomainverification.NQCL=77a00094-cd91-4c22-8613-aa03e3ad3c50",
     "knowbe4-site-verification=9319099d4dd661d9f8e5e808389487f6",
-    "webexdomainverification.NQCL=77a00094-cd91-4c22-8613-aa03e3ad3c50"
+    "google-site-verification=Ip3EEa7FthdrMW7LmkVYNoD6bcfi39uiG05RzDkHT4A"
   ],
   "tls2": {
     "alpn": "",
@@ -268,14 +274,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260921042719",
+      "not_after": "20261220052715"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
-  "elapsed_s": 41.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 36.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

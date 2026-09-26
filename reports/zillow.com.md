@@ -7,12 +7,12 @@
 | Target | https://zillow.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | zillow.com |
-| Test date | 2026-09-26 17:56 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:02 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -132,7 +133,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=d5bc3993e341ec9e2211f76c8437d1b427f8dc2b67fcaaad95e2; slack-domain-verification=SCiUKlfWV8dWeasWT0pgvLj2kDQJS7uSQSqbwf78; zapier-domain-verification-challenge=0f703ce2-8795-4c0c-88cf-ca04af96a128
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=vj5n_vwgH6UQqF3EpXUf2TCCwkF0L261STagywmS6kk; adobe-idp-site-verification=d5bc3993e341ec9e2211f76c8437d1b427f8dc2b67fcaaad95e2; apple-domain-verification=QPRde8ebYlB5qiWJLg5jy_lqZtfEs1qhV3kkahf-wVU
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -147,6 +148,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** robots.txt lists 212 disallow path(s), e.g. /api/, /homes/, /?url=, /*_rect, /*_rect/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 54.239.180.75 carries PTR server-54-239-180-75.lax54.r.cloudfront.net. for zillow.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -155,9 +162,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "dns": {
     "a": [
       "54.239.180.75",
-      "54.239.180.58",
       "54.239.180.54",
-      "54.239.180.20"
+      "54.239.180.20",
+      "54.239.180.58"
     ],
     "aaaa": [],
     "cname": null,
@@ -165,23 +172,23 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "smtp.google.com (pref 1)"
     ],
     "ns": [
-      "ns-709.awsdns-24.net.",
       "ns-1978.awsdns-55.co.uk.",
+      "ns-1126.awsdns-12.org.",
       "ns-188.awsdns-23.com.",
-      "ns-1126.awsdns-12.org."
+      "ns-709.awsdns-24.net."
     ],
     "spf": [
-      "adobe-idp-site-verification=d5bc3993e341ec9e2211f76c8437d1b427f8dc2b67fcaaad95e24c512beab351",
-      "slack-domain-verification=SCiUKlfWV8dWeasWT0pgvLj2kDQJS7uSQSqbwf78",
-      "zapier-domain-verification-challenge=0f703ce2-8795-4c0c-88cf-ca04af96a128",
-      "v=spf1 include:spf.protection.outlook.com include:mail.zendesk.com include:_spf.salesforce.com include:_spf1.zillow.com include:_spf.google.com a:c.spf.service-now.com a:zgateway.zuora.com ip4:167.89.48.88 ~all",
-      "google-site-verification=vj5n_vwgH6UQqF3EpXUf2TCCwkF0L261STagywmS6kk",
-      "ZOOM_verify_g3zmMzzxSbyRGE80XhMPaQ",
-      "facebook-domain-verification=oza42xuvjx7gi2qkqu214fdfdn83sh",
       "00D1U000000yLjx=1TBa700000001gs",
+      "ZOOM_verify_g3zmMzzxSbyRGE80XhMPaQ",
+      "google-site-verification=vj5n_vwgH6UQqF3EpXUf2TCCwkF0L261STagywmS6kk",
+      "adobe-idp-site-verification=d5bc3993e341ec9e2211f76c8437d1b427f8dc2b67fcaaad95e24c512beab351",
       "apple-domain-verification=QPRde8ebYlB5qiWJLg5jy_lqZtfEs1qhV3kkahf-wVU",
+      "docusign=d41b9d07-a056-4736-b25a-bfd9493bbcc9",
+      "slack-domain-verification=SCiUKlfWV8dWeasWT0pgvLj2kDQJS7uSQSqbwf78",
       "atlassian-domain-verification=dgV3G6mkX85097hkLZzFLTjyRE9EyRvlj3HkR+RR47uo2ISUcEVxf2tau9+TrpSZ",
-      "docusign=d41b9d07-a056-4736-b25a-bfd9493bbcc9"
+      "facebook-domain-verification=oza42xuvjx7gi2qkqu214fdfdn83sh",
+      "zapier-domain-verification-challenge=0f703ce2-8795-4c0c-88cf-ca04af96a128",
+      "v=spf1 include:spf.protection.outlook.com include:mail.zendesk.com include:_spf.salesforce.com include:_spf1.zillow.com include:_spf.google.com a:c.spf.service-now.com a:zgateway.zuora.com ip4:167.89.48.88 ~all"
     ],
     "dmarc": [
       "v=DMARC1;p=quarantine;sp=quarantine;rua=mailto:8rbmv-1@rua.dmarc.emailanalyst.com;ruf=mailto:8rbmv-1@ruf.dmarc.emailanalyst.com"
@@ -267,11 +274,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "adobe-idp-site-verification=d5bc3993e341ec9e2211f76c8437d1b427f8dc2b67fcaaad95e2",
-    "slack-domain-verification=SCiUKlfWV8dWeasWT0pgvLj2kDQJS7uSQSqbwf78",
-    "zapier-domain-verification-challenge=0f703ce2-8795-4c0c-88cf-ca04af96a128",
     "google-site-verification=vj5n_vwgH6UQqF3EpXUf2TCCwkF0L261STagywmS6kk",
-    "facebook-domain-verification=oza42xuvjx7gi2qkqu214fdfdn83sh"
+    "adobe-idp-site-verification=d5bc3993e341ec9e2211f76c8437d1b427f8dc2b67fcaaad95e2",
+    "apple-domain-verification=QPRde8ebYlB5qiWJLg5jy_lqZtfEs1qhV3kkahf-wVU",
+    "slack-domain-verification=SCiUKlfWV8dWeasWT0pgvLj2kDQJS7uSQSqbwf78",
+    "atlassian-domain-verification=dgV3G6mkX85097hkLZzFLTjyRE9EyRvlj3HkR+RR47uo2ISUcE"
   ],
   "tls2": {
     "alpn": "",
@@ -282,7 +289,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260617000000",
+      "not_after": "20261231235959"
     }
   },
   "http2": {
@@ -304,8 +313,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/*/apartments-are_att/"
     ]
   },
-  "elapsed_s": 23.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "server-54-239-180-75.lax54.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 23.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

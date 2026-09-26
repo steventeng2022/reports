@@ -7,12 +7,12 @@
 | Target | https://hkrsa.asia/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | hkrsa.asia |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **29** (High: 0, Medium: 2, Low: 5, Info: 22)
+Total findings: **30** (High: 0, Medium: 2, Low: 5, Info: 23)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -45,6 +45,7 @@ Total findings: **29** (High: 0, Medium: 2, Low: 5, Info: 22)
 | 27 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 28 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 29 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 30 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -231,6 +232,12 @@ Total findings: **29** (High: 0, Medium: 2, Low: 5, Info: 22)
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. Sitemap:
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 30. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 43.241.73.139 carries PTR hkbn-spk-a103.pointdnshere.com. for hkrsa.asia.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -363,7 +370,9 @@ Total findings: **29** (High: 0, Medium: 2, Low: 5, Info: 22)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 384,
       "curve": "1.3.132.0.34",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260805165737",
+      "not_after": "20261103165736"
     }
   },
   "http2": {
@@ -371,8 +380,14 @@ Total findings: **29** (High: 0, Medium: 2, Low: 5, Info: 22)
       "Sitemap:"
     ]
   },
-  "elapsed_s": 55.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "hkbn-spk-a103.pointdnshere.com."
+    ]
+  },
+  "elapsed_s": 59.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

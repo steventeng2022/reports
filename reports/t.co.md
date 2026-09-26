@@ -7,8 +7,8 @@
 | Target | https://t.co/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | t.co |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:00 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -160,20 +160,20 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "cname": null,
     "mx": [],
     "ns": [
+      "a.u06.twtrdns.net.",
       "c.u06.twtrdns.net.",
       "b.r06.twtrdns.net.",
-      "b.u06.twtrdns.net.",
-      "a.u06.twtrdns.net.",
-      "d.r06.twtrdns.net.",
       "c.r06.twtrdns.net.",
-      "a.r06.twtrdns.net.",
-      "d.u06.twtrdns.net."
+      "d.r06.twtrdns.net.",
+      "d.u06.twtrdns.net.",
+      "b.u06.twtrdns.net.",
+      "a.r06.twtrdns.net."
     ],
     "spf": [
       "v=spf1 -all",
-      "1nfb08f5jkpy0flhn6lwml2vk7x34hrd",
       "1z8q6j6wymwb6bh0t3q28tp7vsbgnh6d",
-      "48qgbs8f2v055y997kpf4cx2302fzfs2"
+      "48qgbs8f2v055y997kpf4cx2302fzfs2",
+      "1nfb08f5jkpy0flhn6lwml2vk7x34hrd"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; adkim=s; aspf=s; rua=mailto:d@rua.agari.com; ruf=mailto:d@ruf.agari.com; fo=1"
@@ -274,7 +274,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260906092639",
+      "not_after": "20261205092638"
     }
   },
   "http2": {
@@ -284,8 +286,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/"
     ]
   },
-  "elapsed_s": 11.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 11.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://who.int/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | who.int |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
+Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 20 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -146,7 +147,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: ciscocidomainverification=17f32bae2ea200dbca5879cd0dc89294b7e78220da17554d099fed; apple-domain-verification=cYOp0B6FuXeoDFAX; atlassian-domain-verification=UxKawy8Zm9aw6Yg8NrPBUbu9anpgfXtL2NS3L7DNt0MGYKfhw/
+- **Detail:** Apex TXT records with verification/token content: zoho-verification=zb18164630.zmverify.zoho.eu; plausible-sso-verification=4a284955-853c-4175-8f58-11542690cae7; ciscocidomainverification=17f32bae2ea200dbca5879cd0dc89294b7e78220da17554d099fed
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -160,6 +161,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 527 disallow path(s), e.g. /, /, /, /, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 20. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://who.int/ carries Cache-Control: public, max-age=0, s-maxage=7200; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
 ## Evidence (raw response observations)
 
@@ -178,24 +185,24 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "ns": [
       "ns1.wpro.who.int.",
       "ext-dns-2.cern.ch.",
+      "whqdns3.who.int.",
       "whqdns1.who.int.",
-      "whqdns2.who.int.",
-      "whqdns3.who.int."
+      "whqdns2.who.int."
     ],
     "spf": [
-      "docusign=9f72d1bd-efd7-4a97-b385-83d687978e8d",
-      "MS=ms38766037",
-      "ca3-5fc9c6c655cf481e9d53b30866a6e690",
-      "ZOOM_verify_bTI318yfSumXtVIVnfEdzQ",
-      "ciscocidomainverification=17f32bae2ea200dbca5879cd0dc89294b7e78220da17554d099fed05e3f7e8f4",
-      "apple-domain-verification=cYOp0B6FuXeoDFAX",
-      "atlassian-domain-verification=UxKawy8Zm9aw6Yg8NrPBUbu9anpgfXtL2NS3L7DNt0MGYKfhw/WOXGuRCTcQMKqi",
-      "v=spf1 ip4:158.232.12.0/24 include:spf.protection.outlook.com include:_spfincludes.who.int -all",
+      "zoho-verification=zb18164630.zmverify.zoho.eu",
       "plausible-sso-verification=4a284955-853c-4175-8f58-11542690cae7",
-      "google-gws-recovery-domain-verification=44731192",
-      "docusign=c346709c-41f2-43fd-8a5a-cf7992d6e560",
+      "ciscocidomainverification=17f32bae2ea200dbca5879cd0dc89294b7e78220da17554d099fed05e3f7e8f4",
       "kfjFGux2GvIgH+XwWJgA8YLNiX6Jc9lZEtHz+2cfDoLo4cB03zeofnNz9eioELQriSHy0S6EuDQyrFY6DuoFqA==",
-      "zoho-verification=zb18164630.zmverify.zoho.eu"
+      "MS=ms38766037",
+      "ZOOM_verify_bTI318yfSumXtVIVnfEdzQ",
+      "docusign=9f72d1bd-efd7-4a97-b385-83d687978e8d",
+      "apple-domain-verification=cYOp0B6FuXeoDFAX",
+      "v=spf1 ip4:158.232.12.0/24 include:spf.protection.outlook.com include:_spfincludes.who.int -all",
+      "google-gws-recovery-domain-verification=44731192",
+      "atlassian-domain-verification=UxKawy8Zm9aw6Yg8NrPBUbu9anpgfXtL2NS3L7DNt0MGYKfhw/WOXGuRCTcQMKqi",
+      "docusign=c346709c-41f2-43fd-8a5a-cf7992d6e560",
+      "ca3-5fc9c6c655cf481e9d53b30866a6e690"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; fo=1; ri=3600; rua=mailto:422b6d07@inbox.ondmarc.com,mailto:dmarc-rua@who.int;"
@@ -281,10 +288,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "zoho-verification=zb18164630.zmverify.zoho.eu",
+    "plausible-sso-verification=4a284955-853c-4175-8f58-11542690cae7",
     "ciscocidomainverification=17f32bae2ea200dbca5879cd0dc89294b7e78220da17554d099fed",
     "apple-domain-verification=cYOp0B6FuXeoDFAX",
-    "atlassian-domain-verification=UxKawy8Zm9aw6Yg8NrPBUbu9anpgfXtL2NS3L7DNt0MGYKfhw/",
-    "plausible-sso-verification=4a284955-853c-4175-8f58-11542690cae7",
     "google-gws-recovery-domain-verification=44731192"
   ],
   "tls2": {
@@ -296,7 +303,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260731154436",
+      "not_after": "20261029164434"
     }
   },
   "http2": {
@@ -318,8 +327,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "/"
     ]
   },
-  "elapsed_s": 8.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 6.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

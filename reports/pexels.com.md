@@ -7,8 +7,8 @@
 | Target | https://pexels.com/ |
 | Bug bounty program | Pexels |
 | Listed scope domain | pexels.com |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -47,13 +47,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.66.220:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.67.220:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.66.220:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.67.220:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -146,7 +146,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=pjVt80LseSzxnAV6xwI-MzfuNv-I1yg20Dt2VMaj98w; google-site-verification=UpD2YY9c_0BCZQLOxrY8j-TFWyVT0QLileVTkQHSbyU; google-site-verification=bFwzZtmqEKvOMCqiqev954T3qUnHfEeu3gBLuNE7K0o
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=bFwzZtmqEKvOMCqiqev954T3qUnHfEeu3gBLuNE7K0o; google-site-verification=e8gXPLwSyQ03OThjJnOddlKA1p1w2hT02UdOJfcq7NU; google-site-verification=pjVt80LseSzxnAV6xwI-MzfuNv-I1yg20Dt2VMaj98w
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -168,8 +168,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "domain": "pexels.com",
   "dns": {
     "a": [
-      "104.18.66.220",
-      "104.18.67.220"
+      "104.18.67.220",
+      "104.18.66.220"
     ],
     "aaaa": [
       "2606:4700::6812:42dc",
@@ -177,23 +177,23 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     ],
     "cname": null,
     "mx": [
-      "alt3.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)"
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt4.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
       "jill.ns.cloudflare.com.",
       "jake.ns.cloudflare.com."
     ],
     "spf": [
-      "google-site-verification=pjVt80LseSzxnAV6xwI-MzfuNv-I1yg20Dt2VMaj98w",
-      "google-site-verification=UpD2YY9c_0BCZQLOxrY8j-TFWyVT0QLileVTkQHSbyU",
       "google-site-verification=bFwzZtmqEKvOMCqiqev954T3qUnHfEeu3gBLuNE7K0o",
-      "google-site-verification=yCXDlRaeGLlz4jQ7aoPtfaSfcIw9NOseWUHKrYL5mlk",
       "google-site-verification=e8gXPLwSyQ03OThjJnOddlKA1p1w2hT02UdOJfcq7NU",
+      "google-site-verification=pjVt80LseSzxnAV6xwI-MzfuNv-I1yg20Dt2VMaj98w",
       "v=spf1 include:mailgun.org include:_spf.google.com include:mail.zendesk.com ~all",
+      "google-site-verification=yCXDlRaeGLlz4jQ7aoPtfaSfcIw9NOseWUHKrYL5mlk",
+      "google-site-verification=UpD2YY9c_0BCZQLOxrY8j-TFWyVT0QLileVTkQHSbyU",
       "google-site-verification=4ooEzF_6e1SmBjJfLnG85LUc30jwKv6RojoRUAn-AhI"
     ],
     "dmarc": [
@@ -225,7 +225,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     }
   },
   "ports": {
-    "ip": "104.18.66.220",
+    "ip": "104.18.67.220",
     "open": [
       8080,
       8443
@@ -282,11 +282,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=pjVt80LseSzxnAV6xwI-MzfuNv-I1yg20Dt2VMaj98w",
-    "google-site-verification=UpD2YY9c_0BCZQLOxrY8j-TFWyVT0QLileVTkQHSbyU",
     "google-site-verification=bFwzZtmqEKvOMCqiqev954T3qUnHfEeu3gBLuNE7K0o",
+    "google-site-verification=e8gXPLwSyQ03OThjJnOddlKA1p1w2hT02UdOJfcq7NU",
+    "google-site-verification=pjVt80LseSzxnAV6xwI-MzfuNv-I1yg20Dt2VMaj98w",
     "google-site-verification=yCXDlRaeGLlz4jQ7aoPtfaSfcIw9NOseWUHKrYL5mlk",
-    "google-site-verification=e8gXPLwSyQ03OThjJnOddlKA1p1w2hT02UdOJfcq7NU"
+    "google-site-verification=UpD2YY9c_0BCZQLOxrY8j-TFWyVT0QLileVTkQHSbyU"
   ],
   "tls2": {
     "alpn": "",
@@ -297,7 +297,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260911021403",
+      "not_after": "20261210031358"
     }
   },
   "http2": {
@@ -319,8 +321,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "*resolution_name=*"
     ]
   },
-  "elapsed_s": 5.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 5.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

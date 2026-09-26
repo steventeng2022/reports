@@ -7,8 +7,8 @@
 | Target | https://cdnjs.cloudflare.com/ |
 | Bug bounty program | Cloudflare |
 | Listed scope domain | cdnjs.cloudflare.com |
-| Test date | 2026-09-26 17:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -149,8 +149,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     "cname": null,
     "mx": [],
     "ns": [
-      "olga.ns.cloudflare.com.",
-      "dylan.ns.cloudflare.com."
+      "dylan.ns.cloudflare.com.",
+      "olga.ns.cloudflare.com."
     ],
     "spf": [],
     "dmarc": [],
@@ -248,14 +248,19 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260907144348",
+      "not_after": "20261206154345"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
-  "elapsed_s": 4.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 3.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

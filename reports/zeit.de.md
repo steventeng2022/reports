@@ -7,12 +7,12 @@
 | Target | https://zeit.de/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | zeit.de |
-| Test date | 2026-09-26 17:56 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:02 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
+Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -110,7 +111,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: tollbit-domain-verification=0acc441095133f12278c9179168937ecd19b3f5c9b36b930acac; klaviyo-site-verification=VfVpZ3; 1password-site-verification=76KQ3OKJ3FH35OMHXYMAINGJ5Q
+- **Detail:** Apex TXT records with verification/token content: jamf-site-verification=qlf_TOpLdeS2DNRMndJxIA; figma-domain-verification=5e6d24ca5cac9fbcdad302605f2185d9a7fef03e17170672f424d3; google-gws-recovery-domain-verification=59065683
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -131,6 +132,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 - **Detail:** robots.txt lists 43 disallow path(s), e.g. /angebote/, /zeit/, /suche/, /templates/, /hp_channels/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 34.40.5.50 carries PTR 50.5.40.34.bc.googleusercontent.com. for zeit.de.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -146,44 +153,44 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "zeit-de.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
+      "dns1.p01.nsone.net.",
       "dns3.p01.nsone.net.",
       "dns2.p01.nsone.net.",
-      "dns4.p01.nsone.net.",
-      "dns1.p01.nsone.net."
+      "dns4.p01.nsone.net."
     ],
     "spf": [
-      "tollbit-domain-verification=0acc441095133f12278c9179168937ecd19b3f5c9b36b930acac5d3a96353c14",
-      "klaviyo-site-verification=VfVpZ3",
-      "1password-site-verification=76KQ3OKJ3FH35OMHXYMAINGJ5Q",
-      "5F0-8UN-VT6",
-      "mxI8RUm6rfKEWT0c",
-      "adobe-idp-site-verification=23219eabc0a82ab7eca544a45515b433090e77f559461941395be62189f6d8f0",
-      "mgverify=fa8deab5e1cdad1afca895f77cb4460493457c695b1b6b0bccc40a8732f882da",
-      "3j98x7j4yjf2xvtw6gt4rt8yjn117l3x",
-      "smeazeit.sbc2.getdirectrouting.de",
-      "pardot1088002=2b9a0e203820f4740ccc144cc3a5c523f49f60334cd030c6b87aac23cf9ef02e",
-      "a8e28041862668f7d799dcf2cdff2f75",
-      "atlassian-domain-verification=0KXQ/HyHlWaW2LeS2kKh/QYjoZkk7smirpVo/Q1IPHetkLFv/eN7OwNE/FKNVMh7",
-      "google-gws-recovery-domain-verification=59065683",
-      "figma-domain-verification=5e6d24ca5cac9fbcdad302605f2185d9a7fef03e17170672f424d334b70a949b-1768473624",
-      "canva-site-verification=HGiDOMp4J0OMWIO_vX2irg",
-      "smeazeit.sbc1.getdirectrouting.de",
-      "adobe-idp-site-verification=9204c69a-b8c5-4286-a6d5-6c3259f8cf1d",
-      "MS=ms15247335",
-      "MS=ms37100824",
-      "asv=128b0bc0702196cf36653421800e6808",
       "jamf-site-verification=qlf_TOpLdeS2DNRMndJxIA",
-      "teamviewer-sso-verification=0da1e5ee3dc04351aa206dff020cda50",
-      "P2A_58148_200",
-      "google-site-verification=tLw22x4l0DHcYxy-T7rQxtbQp2bh3_GJ6vAeRXJQEAw",
-      "apple-domain-verification=TYlrXCrrWPMzHzAY",
-      "atlassian-domain-verification=1ImdxQwjaBPB5dXgPBYl2HIs9t45uAqjWHxPe2aKn2aKCTUXGuf3HXbG5vYm2959",
-      "gxg1t2ljzzj4n05h57kh5bvsxjr1ctcp",
+      "figma-domain-verification=5e6d24ca5cac9fbcdad302605f2185d9a7fef03e17170672f424d334b70a949b-1768473624",
+      "MS=ms37100824",
+      "mxI8RUm6rfKEWT0c",
+      "google-gws-recovery-domain-verification=59065683",
+      "a8e28041862668f7d799dcf2cdff2f75",
       "miro-verification=00f74b9596272eaafb51a7d481892788837e487b",
-      "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A",
-      "elevenlabs=AkVMNw8U-sHd65pGypKEoqiMEsmMhUooL9FJ4TyUgaQ",
+      "v=spf1 mx include:spf1.zeit.de include:spf.mailjet.com include:sendgrid.net include:spf.mandrillapp.com include:spfa.myconvento.com include:spf.protection.outlook.com ~all",
       "anthropic-domain-verification-djwjvt=JzQ9OZDYsDipeKOp8ddQCSBkh",
-      "v=spf1 mx include:spf1.zeit.de include:spf.mailjet.com include:sendgrid.net include:spf.mandrillapp.com include:spfa.myconvento.com include:spf.protection.outlook.com ~all"
+      "asv=128b0bc0702196cf36653421800e6808",
+      "google-site-verification=tLw22x4l0DHcYxy-T7rQxtbQp2bh3_GJ6vAeRXJQEAw",
+      "gxg1t2ljzzj4n05h57kh5bvsxjr1ctcp",
+      "atlassian-domain-verification=1ImdxQwjaBPB5dXgPBYl2HIs9t45uAqjWHxPe2aKn2aKCTUXGuf3HXbG5vYm2959",
+      "mgverify=fa8deab5e1cdad1afca895f77cb4460493457c695b1b6b0bccc40a8732f882da",
+      "pardot1088002=2b9a0e203820f4740ccc144cc3a5c523f49f60334cd030c6b87aac23cf9ef02e",
+      "teamviewer-sso-verification=0da1e5ee3dc04351aa206dff020cda50",
+      "tollbit-domain-verification=0acc441095133f12278c9179168937ecd19b3f5c9b36b930acac5d3a96353c14",
+      "adobe-idp-site-verification=23219eabc0a82ab7eca544a45515b433090e77f559461941395be62189f6d8f0",
+      "canva-site-verification=HGiDOMp4J0OMWIO_vX2irg",
+      "MS=ms15247335",
+      "elevenlabs=AkVMNw8U-sHd65pGypKEoqiMEsmMhUooL9FJ4TyUgaQ",
+      "apple-domain-verification=TYlrXCrrWPMzHzAY",
+      "klaviyo-site-verification=VfVpZ3",
+      "atlassian-domain-verification=0KXQ/HyHlWaW2LeS2kKh/QYjoZkk7smirpVo/Q1IPHetkLFv/eN7OwNE/FKNVMh7",
+      "smeazeit.sbc1.getdirectrouting.de",
+      "1password-site-verification=76KQ3OKJ3FH35OMHXYMAINGJ5Q",
+      "adobe-idp-site-verification=9204c69a-b8c5-4286-a6d5-6c3259f8cf1d",
+      "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A",
+      "smeazeit.sbc2.getdirectrouting.de",
+      "P2A_58148_200",
+      "5F0-8UN-VT6",
+      "3j98x7j4yjf2xvtw6gt4rt8yjn117l3x"
     ],
     "dmarc": [
       "v=DMARC1; p=none;"
@@ -262,11 +269,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "tollbit-domain-verification=0acc441095133f12278c9179168937ecd19b3f5c9b36b930acac",
-    "klaviyo-site-verification=VfVpZ3",
-    "1password-site-verification=76KQ3OKJ3FH35OMHXYMAINGJ5Q",
-    "adobe-idp-site-verification=23219eabc0a82ab7eca544a45515b433090e77f559461941395b",
-    "atlassian-domain-verification=0KXQ/HyHlWaW2LeS2kKh/QYjoZkk7smirpVo/Q1IPHetkLFv/e"
+    "jamf-site-verification=qlf_TOpLdeS2DNRMndJxIA",
+    "figma-domain-verification=5e6d24ca5cac9fbcdad302605f2185d9a7fef03e17170672f424d3",
+    "google-gws-recovery-domain-verification=59065683",
+    "miro-verification=00f74b9596272eaafb51a7d481892788837e487b",
+    "anthropic-domain-verification-djwjvt=JzQ9OZDYsDipeKOp8ddQCSBkh"
   ],
   "tls2": {
     "alpn": "",
@@ -277,7 +284,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260804053536",
+      "not_after": "20261102053535"
     }
   },
   "http2": {
@@ -299,8 +308,14 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "/"
     ]
   },
-  "elapsed_s": 28.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "50.5.40.34.bc.googleusercontent.com."
+    ]
+  },
+  "elapsed_s": 29.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

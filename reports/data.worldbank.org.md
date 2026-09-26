@@ -7,12 +7,12 @@
 | Target | https://data.worldbank.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | data.worldbank.org |
-| Test date | 2026-09-26 17:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
+Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 | 9 | info | H6 | Server technology disclosure | CWE-200 |
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 12 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -101,6 +102,12 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 - **Detail:** Certificate of data.worldbank.org has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 12. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://data.worldbank.org/ carries Cache-Control: public, max-age=86400 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -112,8 +119,8 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
       "104.18.35.190"
     ],
     "aaaa": [
-      "2606:4700:4407::ac40:9842",
-      "2a06:98c1:310b::6812:23be"
+      "2a06:98c1:310b::6812:23be",
+      "2606:4700:4407::ac40:9842"
     ],
     "cname": "data.worldbank.org.cdn.cloudflare.net.",
     "mx": [],
@@ -195,21 +202,21 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
   },
   "redir_probes": [
     "/redirect?url=https://evil-auditor.example/x -> 0",
-    "/redirect?next=https://evil-auditor.example/x -> 404",
+    "/redirect?next=https://evil-auditor.example/x -> 0",
     "/go?url=https://evil-auditor.example/x -> 0",
-    "/url?url=https://evil-auditor.example/x -> 0"
+    "/url?url=https://evil-auditor.example/x -> 404"
   ],
   "paths": {
     "/robots.txt": 200,
     "/sitemap.xml": 200,
-    "/.well-known/security.txt": 404,
-    "/security.txt": 404,
+    "/.well-known/security.txt": 0,
+    "/security.txt": 0,
     "/.git/HEAD": 403,
     "/.git/config": 403,
     "/.env": 403,
     "/.htaccess": 403,
     "/wp-login.php": 0,
-    "/phpmyadmin/index.php": 0,
+    "/phpmyadmin/index.php": 404,
     "/server-status": 0,
     "/api/": 301
   },
@@ -228,11 +235,16 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260916080321",
+      "not_after": "20261215090319"
     }
   },
-  "elapsed_s": 96.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 131.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

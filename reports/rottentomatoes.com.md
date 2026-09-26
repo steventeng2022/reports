@@ -7,12 +7,12 @@
 | Target | https://rottentomatoes.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | rottentomatoes.com |
-| Test date | 2026-09-26 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
+Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 | 11 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -101,7 +103,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=zJOWtCsOIqoH7c20uzDEK2ZbjELwSglEmrNiPMdJxdQ; adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe985; yahoo-verification-key=viW+9OzMd5GimBzrAwyj8fCdyyRNhzqHo0Z7SrHM2ec=
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=SOiuNurCT5KQ4utFqj2pH9D2Oww8G4r1K_Gnt27e-hQ; google-site-verification=zJOWtCsOIqoH7c20uzDEK2ZbjELwSglEmrNiPMdJxdQ; airtable-verification=a25c5929bf27eceab120aa631f5b34cb
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -116,6 +118,18 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 - **Detail:** Strict-Transport-Security is served but rottentomatoes.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
+### 14. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://rottentomatoes.com/ carries Cache-Control: max-age=0; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.59.252.115 carries PTR a23-59-252-115.deploy.static.akamaitechnologies.com. for rottentomatoes.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -123,41 +137,41 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
   "domain": "rottentomatoes.com",
   "dns": {
     "a": [
-      "23.62.20.109",
-      "23.62.20.105"
+      "23.59.252.115",
+      "23.59.252.67"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "mxb-00a17301.gslb.pphosted.com (pref 10)",
+      "mx0b-00a17301.pphosted.com (pref 20)",
       "mxa-00a17301.gslb.pphosted.com (pref 10)",
-      "mx0a-00a17301.pphosted.com (pref 20)",
-      "mx0b-00a17301.pphosted.com (pref 20)"
+      "mx0a-00a17301.pphosted.com (pref 20)"
     ],
     "ns": [
+      "udns2.ultradns.net.",
+      "a22-67.akam.net.",
+      "a13-65.akam.net.",
+      "udns1.ultradns.net.",
+      "a2-65.akam.net.",
       "a5-66.akam.net.",
       "a4-66.akam.net.",
-      "a1-42.akam.net.",
-      "a2-65.akam.net.",
-      "udns2.ultradns.net.",
-      "udns1.ultradns.net.",
-      "a22-67.akam.net.",
-      "a13-65.akam.net."
+      "a1-42.akam.net."
     ],
     "spf": [
-      "google-site-verification=zJOWtCsOIqoH7c20uzDEK2ZbjELwSglEmrNiPMdJxdQ",
-      "smartsheet-site-validation=EeqHILQCPlyqRLZalbWSAPzmPdLJqa5q",
-      "adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe98526fe9bcd1502",
-      "yahoo-verification-key=viW+9OzMd5GimBzrAwyj8fCdyyRNhzqHo0Z7SrHM2ec=",
-      "dropbox-domain-verification=qwg79uqdchth",
       "ZOOM_verify_oGsblYdrOBX5vRITDGidMv",
+      "smartsheet-site-validation=EeqHILQCPlyqRLZalbWSAPzmPdLJqa5q",
       "google-site-verification=SOiuNurCT5KQ4utFqj2pH9D2Oww8G4r1K_Gnt27e-hQ",
-      "MS=ms76165705",
+      "google-site-verification=zJOWtCsOIqoH7c20uzDEK2ZbjELwSglEmrNiPMdJxdQ",
       "airtable-verification=a25c5929bf27eceab120aa631f5b34cb",
-      "airtable-verification=1ee1c3d067dcf9300bc65f995e7c794b",
-      "spf2.0/pra mx include:spf.mandrillapp.com -all",
       "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
-      "ZOOM_verify_rdYl4DWQCzWA3NSpJbBCXa"
+      "dropbox-domain-verification=qwg79uqdchth",
+      "yahoo-verification-key=viW+9OzMd5GimBzrAwyj8fCdyyRNhzqHo0Z7SrHM2ec=",
+      "MS=ms76165705",
+      "spf2.0/pra mx include:spf.mandrillapp.com -all",
+      "ZOOM_verify_rdYl4DWQCzWA3NSpJbBCXa",
+      "adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe98526fe9bcd1502",
+      "airtable-verification=1ee1c3d067dcf9300bc65f995e7c794b"
     ],
     "dmarc": [
       "v=DMARC1; p=none; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -187,7 +201,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
     }
   },
   "ports": {
-    "ip": "23.62.20.109",
+    "ip": "23.59.252.115",
     "open": []
   },
   "https": {
@@ -243,11 +257,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "google-site-verification=SOiuNurCT5KQ4utFqj2pH9D2Oww8G4r1K_Gnt27e-hQ",
     "google-site-verification=zJOWtCsOIqoH7c20uzDEK2ZbjELwSglEmrNiPMdJxdQ",
-    "adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe985",
-    "yahoo-verification-key=viW+9OzMd5GimBzrAwyj8fCdyyRNhzqHo0Z7SrHM2ec=",
+    "airtable-verification=a25c5929bf27eceab120aa631f5b34cb",
     "dropbox-domain-verification=qwg79uqdchth",
-    "google-site-verification=SOiuNurCT5KQ4utFqj2pH9D2Oww8G4r1K_Gnt27e-hQ"
+    "yahoo-verification-key=viW+9OzMd5GimBzrAwyj8fCdyyRNhzqHo0Z7SrHM2ec="
   ],
   "tls2": {
     "alpn": "",
@@ -258,11 +272,19 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260822000000",
+      "not_after": "20270308235959"
     }
   },
-  "elapsed_s": 5.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403,
+    "ptr": [
+      "a23-59-252-115.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 5.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

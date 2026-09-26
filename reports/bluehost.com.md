@@ -7,8 +7,8 @@
 | Target | https://bluehost.com/ |
 | Bug bounty program | Bluehost |
 | Listed scope domain | bluehost.com |
-| Test date | 2026-09-26 17:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -55,13 +55,13 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.41.208:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.64.146.48:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.41.208:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.64.146.48:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -160,7 +160,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 ### 19. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=-LZzunGOfIDaGqxvWFtIFoN8PuA8VvjkP81XZZzEcJQ; knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77; onetrust-domain-verification=945145d8f9504c238ba20ad58be4ca9d
+- **Detail:** Apex TXT records with verification/token content: onetrust-domain-verification=945145d8f9504c238ba20ad58be4ca9d; google-site-verification=pFgmIQ6qK3YjcRAAhsKiPzmEiOVcynQslFMEba5lXvs; google-site-verification=66tEZdAQlA9BLDQd3QylvqYIhriJr5gGoA9cQbIOTp4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 20. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -182,8 +182,8 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
   "domain": "bluehost.com",
   "dns": {
     "a": [
-      "104.18.41.208",
-      "172.64.146.48"
+      "172.64.146.48",
+      "104.18.41.208"
     ],
     "aaaa": [],
     "cname": null,
@@ -191,23 +191,23 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
       "bluehost-com.mail.eo.outlook.com (pref 0)"
     ],
     "ns": [
-      "cody.ns.cloudflare.com.",
-      "erin.ns.cloudflare.com."
+      "erin.ns.cloudflare.com.",
+      "cody.ns.cloudflare.com."
     ],
     "spf": [
-      "google-site-verification=-LZzunGOfIDaGqxvWFtIFoN8PuA8VvjkP81XZZzEcJQ",
-      "knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77",
       "onetrust-domain-verification=945145d8f9504c238ba20ad58be4ca9d",
-      "google-site-verification=Ps-PuyL1E7WcWPrX6y78aC4P2RfLoGvwpsl4-xwJPVw",
+      "google-site-verification=pFgmIQ6qK3YjcRAAhsKiPzmEiOVcynQslFMEba5lXvs",
+      "MS=ms67698328",
       "google-site-verification=66tEZdAQlA9BLDQd3QylvqYIhriJr5gGoA9cQbIOTp4",
+      "google-site-verification=Te366sWRx0P9u95lb_Rfj5YyalbHdb20J8t6ESOx1vc",
+      "google-site-verification=Ps-PuyL1E7WcWPrX6y78aC4P2RfLoGvwpsl4-xwJPVw",
       "v=spf1 ip4:209.17.115.0/24 ip4:64.69.218.0/24 include:spf2.bluehost.com include:_spf.qualtrics.com include:_spf.salesforce.com include:sparkpostmail.com include:spf.mailjet.com include:spf.protection.outlook.com include:_spf.myorderbox.com include:eig.spf",
       ".a.cloudfilter.net include:spf.websitewelcome.com -all",
-      "google-site-verification=DzOfkbFR16zGttaTzbxkajZdHmTa66FrjVWwY5gThCE",
-      "google-site-verification=pFgmIQ6qK3YjcRAAhsKiPzmEiOVcynQslFMEba5lXvs",
       "google-site-verification=DRKzLI6tQYu_YO6K5pGg0wOuuLxVcDhWpThjGgHA-cE",
+      "google-site-verification=DzOfkbFR16zGttaTzbxkajZdHmTa66FrjVWwY5gThCE",
+      "google-site-verification=-LZzunGOfIDaGqxvWFtIFoN8PuA8VvjkP81XZZzEcJQ",
+      "knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77",
       "google-site-verification=U4hJ1v_Tet3cc77Sr3dv-Ev6J4mfMB1Gt8RX125PkcM",
-      "google-site-verification=Te366sWRx0P9u95lb_Rfj5YyalbHdb20J8t6ESOx1vc",
-      "MS=ms67698328",
       "google-site-verification=_6nbuoY72FRe_b9BN_gDw9Jkfcod1HYfWMzd9X4VwEg"
     ],
     "dmarc": [
@@ -239,7 +239,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
     }
   },
   "ports": {
-    "ip": "104.18.41.208",
+    "ip": "172.64.146.48",
     "open": [
       8080,
       8443
@@ -335,11 +335,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
     ]
   },
   "apex_txt": [
-    "google-site-verification=-LZzunGOfIDaGqxvWFtIFoN8PuA8VvjkP81XZZzEcJQ",
-    "knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77",
     "onetrust-domain-verification=945145d8f9504c238ba20ad58be4ca9d",
-    "google-site-verification=Ps-PuyL1E7WcWPrX6y78aC4P2RfLoGvwpsl4-xwJPVw",
-    "google-site-verification=66tEZdAQlA9BLDQd3QylvqYIhriJr5gGoA9cQbIOTp4"
+    "google-site-verification=pFgmIQ6qK3YjcRAAhsKiPzmEiOVcynQslFMEba5lXvs",
+    "google-site-verification=66tEZdAQlA9BLDQd3QylvqYIhriJr5gGoA9cQbIOTp4",
+    "google-site-verification=Te366sWRx0P9u95lb_Rfj5YyalbHdb20J8t6ESOx1vc",
+    "google-site-verification=Ps-PuyL1E7WcWPrX6y78aC4P2RfLoGvwpsl4-xwJPVw"
   ],
   "tls2": {
     "alpn": "",
@@ -350,11 +350,16 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260923041204",
+      "not_after": "20261222051152"
     }
   },
-  "elapsed_s": 4.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 4.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

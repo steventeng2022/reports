@@ -7,12 +7,12 @@
 | Target | https://eventbrite.com/ |
 | Bug bounty program | Eventbrite |
 | Listed scope domain | eventbrite.com |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -125,13 +126,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (lykjsdt03xsv7n.eventbrite.com and ok7hjvggb99apq.eventbrite.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (unx8er1i13b0js.eventbrite.com and tfv5npdzzqxsb9.eventbrite.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=l_BNpBAnk-rKZRyXJ9UkBfv9o6EEuuenkBrGpYNYo0; openai-domain-verification=dv-QeHXQD0uYDE3MJFRaaG6IUY7; anthropic-domain-verification-60jwz0=uWowtCsvJltNqL71mYsvUUYrY
+- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-QeHXQD0uYDE3MJFRaaG6IUY7; jamf-site-verification=_OAVLe_5zkMq3OKDfuvAbA; anthropic-domain-verification-en5n5e=4xcMKoQ71fP6tJ5D3kQp1U5xd
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -146,6 +147,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - **Detail:** robots.txt lists 185 disallow path(s), e.g. /esi_cache/, /atom/, /tickets-external?*, /rss/, /events/rss/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 65.9.180.120 carries PTR server-65-9-180-120.tpe53.r.cloudfront.net. for eventbrite.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -153,63 +160,63 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "domain": "eventbrite.com",
   "dns": {
     "a": [
-      "65.9.180.122",
+      "65.9.180.120",
       "65.9.180.129",
       "65.9.180.90",
-      "65.9.180.120"
+      "65.9.180.122"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 20)",
-      "alt4.aspmx.l.google.com (pref 30)",
-      "aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 20)",
-      "alt3.aspmx.l.google.com (pref 30)"
+      "aspmx.l.google.com (pref 10)",
+      "alt3.aspmx.l.google.com (pref 30)",
+      "alt1.aspmx.l.google.com (pref 20)",
+      "alt4.aspmx.l.google.com (pref 30)"
     ],
     "ns": [
-      "ns-1123.awsdns-12.org.",
-      "ns-164.awsdns-20.com.",
+      "ns-1609.awsdns-09.co.uk.",
       "ns-877.awsdns-45.net.",
-      "ns-1609.awsdns-09.co.uk."
+      "ns-164.awsdns-20.com.",
+      "ns-1123.awsdns-12.org."
     ],
     "spf": [
-      "_globalsign-domain-verification=l_BNpBAnk-rKZRyXJ9UkBfv9o6EEuuenkBrGpYNYo0",
       "openai-domain-verification=dv-QeHXQD0uYDE3MJFRaaG6IUY7",
-      "asv=6e628a4d91dcb379e8d8b3b3c079f1c3",
-      "docusign=3dcbd907-a57b-4492-afae-fbf89035ac69",
-      "anthropic-domain-verification-60jwz0=uWowtCsvJltNqL71mYsvUUYrY",
-      "KMNSI",
-      "apple-domain-verification=XLGRsU2KLd68CyMm",
-      "google-site-verification=UBGESQRR_1_sa-_Mi7BUgksFdmATDtXZXx4j5rHkcHM",
-      "1password-site-verification=RW47Y6P37ZDPHPWBJFBQ4WQ7NI",
-      "docusign=e3a8b4d6-a9c1-46a2-9f8b-67735287d17f",
       "jamf-site-verification=_OAVLe_5zkMq3OKDfuvAbA",
+      "anthropic-domain-verification-en5n5e=4xcMKoQ71fP6tJ5D3kQp1U5xd",
+      "notion-domain-verification=AvemneW8dATNsL9xXj07o1YOThlxrOvXh8U5iCV44S5",
+      "twilio-domain-verification=847146a96c359e60e0fc23ed5006cd06",
+      "asv=072fe34d86b9a2339591dfc59bdb9ef2",
+      "google-site-verification=xdU6vXzrHegeYkahbDbnfxqIBBZXJ3n6UmCSAhkgbR8",
+      "hubspot-domain-verification=MTIxZDVkNzQtZmYxZi00YzI2LTkyZGMtY2RiODQ4ZjhmOGEw",
+      "google-site-verification=juIc6fxii0pB7IYRSJaLhIJgdZ8tv36OTrGZ_84vGyI",
+      "google-site-verification=464d1lIdnYw18Xg5I0NTvDncdMPHnibhUtSLZRiQItc",
+      "KMNSI",
+      "slack-domain-verification=y7kTSHgKA9j15PB4p3LmUVNWc2bxIDLxV2m0pvxo",
       "v=spf1 include:mail.zendesk.com include:_ehlo.%{h2}._spf.eventbrite.com include:aws.us1.spf.staffbase.com include:authsmtp.com include:shared.hubspot.com include:servers.mcsv.net ip4:104.130.82.105 ip4:104.130.82.106 ip4:104.130.82.107 ",
       "ip4:104.130.82.108 ip4:184.106.14.63 ~all",
-      "_praer968xj1hnh9aoafq0gt3f2v07u8",
-      "asv=072fe34d86b9a2339591dfc59bdb9ef2",
+      "facebook-domain-verification=trazr23y53gj9dt7q4lqyx8z4bimqa",
+      "anthropic-domain-verification-60jwz0=uWowtCsvJltNqL71mYsvUUYrY",
+      "decagon-domain-verification-7trd52=bW12SaCfTvDYoCPye8ZPA51O3",
+      "google-site-verification=dv9oihd3MEuKQmRpfkv7jahBgN14dL1lneRy6QAL0Jw",
+      "globalsign-domain-verification=IUAylHRA1OTIjHtv-r5Py156P4CXImu7Q3D7nwuTUx",
+      "google-site-verification=UBGESQRR_1_sa-_Mi7BUgksFdmATDtXZXx4j5rHkcHM",
+      "tinfoil-site-verification: b74c198f0f52792a2e90112555552df961fc25f0=8b366f325d425673e355c8bb4e86da8ecaa72e49",
+      "google-site-verification=Upd_RL0TQdva_HTzMTWENQ37TKuYmR744S0pbHm_JC4",
       "mandrill_verify.ErZnfDwqtMs5bGoC27JCZg",
-      "google-site-verification=853cVtodFwAIS6Ef_f7ETFKwKoVDHMZQNFkU7KNwGik",
-      "anthropic-domain-verification-en5n5e=4xcMKoQ71fP6tJ5D3kQp1U5xd",
+      "docusign=3dcbd907-a57b-4492-afae-fbf89035ac69",
+      "_globalsign-domain-verification=l_BNpBAnk-rKZRyXJ9UkBfv9o6EEuuenkBrGpYNYo0",
+      "ms=ms80514108",
+      "atlassian-domain-verification=sycFmnKKlAtb4ao7rBMtkA2Zwnp6hRxuy0aUlPgAqugKrHZaZUYskdnT43MlqGpa",
+      "_praer968xj1hnh9aoafq0gt3f2v07u8",
+      "apple-domain-verification=XLGRsU2KLd68CyMm",
+      "1password-site-verification=RW47Y6P37ZDPHPWBJFBQ4WQ7NI",
       "smartsheet-site-validation=YA0MuTajr5EnliTvGq_-P0VYDEQ4SzbM",
+      "docusign=e3a8b4d6-a9c1-46a2-9f8b-67735287d17f",
+      "google-site-verification=853cVtodFwAIS6Ef_f7ETFKwKoVDHMZQNFkU7KNwGik",
       "_globalsign-domain-verification=9UioyPO0_F2Epyd3gGV5_VklXzoibTukD_jkbZPw43",
       "cursor-domain-verification-me3cjx=h6hA2FP9AYQNtS60wz3fVV0BW",
-      "google-site-verification=juIc6fxii0pB7IYRSJaLhIJgdZ8tv36OTrGZ_84vGyI",
-      "atlassian-domain-verification=sycFmnKKlAtb4ao7rBMtkA2Zwnp6hRxuy0aUlPgAqugKrHZaZUYskdnT43MlqGpa",
-      "google-site-verification=464d1lIdnYw18Xg5I0NTvDncdMPHnibhUtSLZRiQItc",
-      "twilio-domain-verification=847146a96c359e60e0fc23ed5006cd06",
-      "tinfoil-site-verification: b74c198f0f52792a2e90112555552df961fc25f0=8b366f325d425673e355c8bb4e86da8ecaa72e49",
-      "decagon-domain-verification-7trd52=bW12SaCfTvDYoCPye8ZPA51O3",
-      "globalsign-domain-verification=IUAylHRA1OTIjHtv-r5Py156P4CXImu7Q3D7nwuTUx",
-      "ms=ms80514108",
-      "facebook-domain-verification=trazr23y53gj9dt7q4lqyx8z4bimqa",
-      "google-site-verification=dv9oihd3MEuKQmRpfkv7jahBgN14dL1lneRy6QAL0Jw",
-      "hubspot-domain-verification=MTIxZDVkNzQtZmYxZi00YzI2LTkyZGMtY2RiODQ4ZjhmOGEw",
-      "google-site-verification=Upd_RL0TQdva_HTzMTWENQ37TKuYmR744S0pbHm_JC4",
-      "notion-domain-verification=AvemneW8dATNsL9xXj07o1YOThlxrOvXh8U5iCV44S5",
-      "slack-domain-verification=y7kTSHgKA9j15PB4p3LmUVNWc2bxIDLxV2m0pvxo",
-      "google-site-verification=xdU6vXzrHegeYkahbDbnfxqIBBZXJ3n6UmCSAhkgbR8",
+      "asv=6e628a4d91dcb379e8d8b3b3c079f1c3",
       "google-site-verification=7tnPT82vIEZlZ6uK0yG_loUscjXxVH6bCaV6owqTsG0"
     ],
     "dmarc": [
@@ -304,7 +311,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     }
   },
   "ports": {
-    "ip": "65.9.180.122",
+    "ip": "65.9.180.120",
     "open": []
   },
   "https": {
@@ -358,11 +365,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "_globalsign-domain-verification=l_BNpBAnk-rKZRyXJ9UkBfv9o6EEuuenkBrGpYNYo0",
     "openai-domain-verification=dv-QeHXQD0uYDE3MJFRaaG6IUY7",
-    "anthropic-domain-verification-60jwz0=uWowtCsvJltNqL71mYsvUUYrY",
-    "apple-domain-verification=XLGRsU2KLd68CyMm",
-    "google-site-verification=UBGESQRR_1_sa-_Mi7BUgksFdmATDtXZXx4j5rHkcHM"
+    "jamf-site-verification=_OAVLe_5zkMq3OKDfuvAbA",
+    "anthropic-domain-verification-en5n5e=4xcMKoQ71fP6tJ5D3kQp1U5xd",
+    "notion-domain-verification=AvemneW8dATNsL9xXj07o1YOThlxrOvXh8U5iCV44S5",
+    "twilio-domain-verification=847146a96c359e60e0fc23ed5006cd06"
   ],
   "tls2": {
     "alpn": "",
@@ -373,7 +380,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260613000000",
+      "not_after": "20261227235959"
     }
   },
   "http2": {
@@ -396,8 +405,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "*&client_token*"
     ]
   },
-  "elapsed_s": 15.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "server-65-9-180-120.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 14.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

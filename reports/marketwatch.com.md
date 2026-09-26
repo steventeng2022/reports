@@ -7,12 +7,12 @@
 | Target | https://marketwatch.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | marketwatch.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -132,7 +133,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=uYFppydFtsdAeVh-4zcS07cMFtUdZHp_QZz-ACw_AHg; mongodb-site-verification=3NjKxTnfMRjvs5GmXZrJcJDqqu8GCjDz; google-site-verification=9D2VzJi-QCek9CtqC2XV8G4VYkTiiDYYTmkM5152ad8
+- **Detail:** Apex TXT records with verification/token content: ValidationTokenValue=aa1d350e-32a6-4129-b29a-0a17a8fbe63c; google-site-verification=EGDlBNSsQnx5i-6-IAjm0Q9pykD3Bqwiesucz8hZwuw; atlassian-domain-verification=uNoIhBXurxzVlQa0FvK2t9Yld5byfvXbFRQaMToGvrieKjBdyl
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -147,6 +148,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - **Detail:** robots.txt lists 57 disallow path(s), e.g. /, /2/, /3com/, /admin/, /bgpoxy/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 65.9.180.107 carries PTR server-65-9-180-107.tpe53.r.cloudfront.net. for marketwatch.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -154,9 +161,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "domain": "marketwatch.com",
   "dns": {
     "a": [
+      "65.9.180.107",
       "65.9.180.125",
       "65.9.180.27",
-      "65.9.180.107",
       "65.9.180.59"
     ],
     "aaaa": [],
@@ -166,30 +173,30 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "mxb-00596a01.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns-1588.awsdns-06.co.uk.",
-      "ns-705.awsdns-24.net.",
       "ns-450.awsdns-56.com.",
-      "ns-1291.awsdns-33.org."
+      "ns-1588.awsdns-06.co.uk.",
+      "ns-1291.awsdns-33.org.",
+      "ns-705.awsdns-24.net."
     ],
     "spf": [
-      "google-site-verification=uYFppydFtsdAeVh-4zcS07cMFtUdZHp_QZz-ACw_AHg",
-      "mongodb-site-verification=3NjKxTnfMRjvs5GmXZrJcJDqqu8GCjDz",
-      "google-site-verification=9D2VzJi-QCek9CtqC2XV8G4VYkTiiDYYTmkM5152ad8",
+      "ValidationTokenValue=aa1d350e-32a6-4129-b29a-0a17a8fbe63c",
+      "google-site-verification=EGDlBNSsQnx5i-6-IAjm0Q9pykD3Bqwiesucz8hZwuw",
       "atlassian-domain-verification=uNoIhBXurxzVlQa0FvK2t9Yld5byfvXbFRQaMToGvrieKjBdylMs8jcSXRKQKqao",
+      "datadome-domain-verify=mBXJ0OcsBIxmEYtkepO9rBwdPNmfTk5Q",
+      "google-site-verification=uYFppydFtsdAeVh-4zcS07cMFtUdZHp_QZz-ACw_AHg",
+      "docker-verification=2b229513-3448-4073-9530-e57440f198d5",
       "v=spf1 ip4:68.232.128.0/19 ip4:63.240.26.0/24 ip4:205.203.130.22 ip4:205.203.130.101 ip4:205.203.130.102 ip4:205.203.136.101 ip4:205.203.136.102 include:spf-1.dowjones.com ",
       "include:_spf.google.com include:spf-00596a01.pphosted.com include:aspmx.sailthru.com include:spf-00596a03.pphosted.com -all",
       "knowbe4-site-verification=0694ce74005828dc4bb8b7299bfb6f61",
-      "adobe-idp-site-verification=7ef638bb68822798685f96e436bfc87a6f79319dd86369e447b84bb8ea9c6f68",
-      "google-site-verification=zbCAdHPPQU1MVv0UikjwLoiAgCLikxMKJ1h64y226-g",
-      "google-site-verification=g1arhZY9MX2Af0YQgBFVYh8WTDUG-WtEE55qEGH6hsU",
-      "docker-verification=2b229513-3448-4073-9530-e57440f198d5",
-      "datadome-domain-verify=mBXJ0OcsBIxmEYtkepO9rBwdPNmfTk5Q",
       "miro-verification=fc4f542b1bf4fc981e2f11e463246349bde0a8d0",
+      "mongodb-site-verification=3NjKxTnfMRjvs5GmXZrJcJDqqu8GCjDz",
+      "google-site-verification=g1arhZY9MX2Af0YQgBFVYh8WTDUG-WtEE55qEGH6hsU",
+      "adobe-idp-site-verification=7ef638bb68822798685f96e436bfc87a6f79319dd86369e447b84bb8ea9c6f68",
+      "openai-domain-verification=dv-Z1O5z6g6UeNwdxBpVlxRw8J6",
+      "google-site-verification=zbCAdHPPQU1MVv0UikjwLoiAgCLikxMKJ1h64y226-g",
+      "google-site-verification=9D2VzJi-QCek9CtqC2XV8G4VYkTiiDYYTmkM5152ad8",
       "figma-domain-verification=b411f1d2852c2c7e057a2d6d70fb22896f37ccc1412d1e1bb4f9da14e2b78ad9-1769000244",
-      "google-site-verification=nnn1LRQtO0v0X_DpMDGX_xZmSwTZqOaMaD0e6NDZvdA",
-      "ValidationTokenValue=aa1d350e-32a6-4129-b29a-0a17a8fbe63c",
-      "google-site-verification=EGDlBNSsQnx5i-6-IAjm0Q9pykD3Bqwiesucz8hZwuw",
-      "openai-domain-verification=dv-Z1O5z6g6UeNwdxBpVlxRw8J6"
+      "google-site-verification=nnn1LRQtO0v0X_DpMDGX_xZmSwTZqOaMaD0e6NDZvdA"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -219,7 +226,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     }
   },
   "ports": {
-    "ip": "65.9.180.125",
+    "ip": "65.9.180.107",
     "open": []
   },
   "https": {
@@ -272,11 +279,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=uYFppydFtsdAeVh-4zcS07cMFtUdZHp_QZz-ACw_AHg",
-    "mongodb-site-verification=3NjKxTnfMRjvs5GmXZrJcJDqqu8GCjDz",
-    "google-site-verification=9D2VzJi-QCek9CtqC2XV8G4VYkTiiDYYTmkM5152ad8",
+    "ValidationTokenValue=aa1d350e-32a6-4129-b29a-0a17a8fbe63c",
+    "google-site-verification=EGDlBNSsQnx5i-6-IAjm0Q9pykD3Bqwiesucz8hZwuw",
     "atlassian-domain-verification=uNoIhBXurxzVlQa0FvK2t9Yld5byfvXbFRQaMToGvrieKjBdyl",
-    "knowbe4-site-verification=0694ce74005828dc4bb8b7299bfb6f61"
+    "google-site-verification=uYFppydFtsdAeVh-4zcS07cMFtUdZHp_QZz-ACw_AHg",
+    "docker-verification=2b229513-3448-4073-9530-e57440f198d5"
   ],
   "tls2": {
     "alpn": "",
@@ -287,7 +294,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260125000000",
+      "not_after": "20270222235959"
     }
   },
   "http2": {
@@ -309,8 +318,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "/dynamiclogic/"
     ]
   },
-  "elapsed_s": 10.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "server-65-9-180-107.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 11.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

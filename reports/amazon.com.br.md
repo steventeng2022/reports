@@ -7,12 +7,12 @@
 | Target | https://amazon.com.br/ |
 | Bug bounty program | Amazon |
 | Listed scope domain | amazon.com.br |
-| Test date | 2026-09-26 17:39 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -125,7 +126,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: canva-site-verification=qQpCCrwKR-xJP6zCUYDr9Q; google-site-verification=waNAsnU6bUjjN2faNtlC7vxFKrZADM5SYW9pnNeHTO4; liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo
+- **Detail:** Apex TXT records with verification/token content: liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo; google-site-verification=GetC2weV2ix93Qn6NZB5pfa_USfIa9utVUO6aaBddmY; canva-site-verification=qQpCCrwKR-xJP6zCUYDr9Q
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -139,6 +140,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 121 disallow path(s), e.g. /gp/help/reports/infringement/jquery/handle-notice-submit.html, /gp/help/customer/handler/handle-email-submit.html, /gp/ask-widget/askWidget, /gp/cart, /gp/flex
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 98.82.142.240 carries PTR ec2-98-82-142-240.compute-1.amazonaws.com. for amazon.com.br.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -157,34 +164,34 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "amazon-smtp.amazon.com (pref 10)"
     ],
     "ns": [
-      "ns1.amzndns.org.",
-      "ns2.amzndns.net.",
-      "ns1.amzndns.com.",
-      "ns2.amzndns.co.uk.",
       "ns2.amzndns.org.",
-      "ns1.amzndns.net.",
+      "ns2.amzndns.co.uk.",
+      "ns2.amzndns.net.",
+      "ns1.amzndns.co.uk.",
       "ns2.amzndns.com.",
-      "ns1.amzndns.co.uk."
+      "ns1.amzndns.org.",
+      "ns1.amzndns.net.",
+      "ns1.amzndns.com."
     ],
     "spf": [
-      "canva-site-verification=qQpCCrwKR-xJP6zCUYDr9Q",
-      "MS=ms75478794|",
-      "TS1760027",
-      "spf2.0/pra include:amazon.com -all",
-      "sending_domain1003771=8db398f9027bd314c1cc4594ed5c69524b7cd13231da05c6342f50f6b49dd690",
-      "MS=ms26144939",
-      "sending_domain608861=f96876009bb57ece45e86c59d52c28f91967393e17e129a7bb3c8a27f2b31077",
-      "google-site-verification=waNAsnU6bUjjN2faNtlC7vxFKrZADM5SYW9pnNeHTO4",
-      "sending_domain608861=18353c947ce8c82c819fc41c50497ce3a0e215d37faef7c4722574780be1f8e6",
-      "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
-      "sending_domain229492=de46cbd47ae39b4d289e2f4d7abdfca420badac47b9260e0fa54fff56d0565d9",
-      "MS=ms75478794",
-      "v=spf1 include:amazon.com -all",
-      "facebook-domain-verification=vuc919xxsqicebwhb1vwivljnpo8wn",
       "sending_domain229492=e09f06a93ab575b878df03f3c73ffc3982f4071049484f1d094df2fe2518064d",
-      "google-site-verification=rZsTppH1Nyf4Si2dQxL-wwoyhHzlPXQqJQ022K6ZDT4",
+      "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
       "google-site-verification=GetC2weV2ix93Qn6NZB5pfa_USfIa9utVUO6aaBddmY",
-      "sending_domain1003771=40a3cf13d9285f47af298843028872eb6f913b5142a4fe49eba2a19aa478c17c"
+      "canva-site-verification=qQpCCrwKR-xJP6zCUYDr9Q",
+      "sending_domain608861=18353c947ce8c82c819fc41c50497ce3a0e215d37faef7c4722574780be1f8e6",
+      "google-site-verification=rZsTppH1Nyf4Si2dQxL-wwoyhHzlPXQqJQ022K6ZDT4",
+      "MS=ms26144939",
+      "google-site-verification=waNAsnU6bUjjN2faNtlC7vxFKrZADM5SYW9pnNeHTO4",
+      "TS1760027",
+      "sending_domain1003771=8db398f9027bd314c1cc4594ed5c69524b7cd13231da05c6342f50f6b49dd690",
+      "MS=ms75478794",
+      "sending_domain1003771=40a3cf13d9285f47af298843028872eb6f913b5142a4fe49eba2a19aa478c17c",
+      "v=spf1 include:amazon.com -all",
+      "sending_domain229492=de46cbd47ae39b4d289e2f4d7abdfca420badac47b9260e0fa54fff56d0565d9",
+      "facebook-domain-verification=vuc919xxsqicebwhb1vwivljnpo8wn",
+      "sending_domain608861=f96876009bb57ece45e86c59d52c28f91967393e17e129a7bb3c8a27f2b31077",
+      "spf2.0/pra include:amazon.com -all",
+      "MS=ms75478794|"
     ],
     "dmarc": [
       "v=DMARC1;",
@@ -280,11 +287,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "canva-site-verification=qQpCCrwKR-xJP6zCUYDr9Q",
-    "google-site-verification=waNAsnU6bUjjN2faNtlC7vxFKrZADM5SYW9pnNeHTO4",
     "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
-    "facebook-domain-verification=vuc919xxsqicebwhb1vwivljnpo8wn",
-    "google-site-verification=rZsTppH1Nyf4Si2dQxL-wwoyhHzlPXQqJQ022K6ZDT4"
+    "google-site-verification=GetC2weV2ix93Qn6NZB5pfa_USfIa9utVUO6aaBddmY",
+    "canva-site-verification=qQpCCrwKR-xJP6zCUYDr9Q",
+    "google-site-verification=rZsTppH1Nyf4Si2dQxL-wwoyhHzlPXQqJQ022K6ZDT4",
+    "google-site-verification=waNAsnU6bUjjN2faNtlC7vxFKrZADM5SYW9pnNeHTO4"
   ],
   "tls2": {
     "alpn": "",
@@ -295,7 +302,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260906000000",
+      "not_after": "20270322235959"
     }
   },
   "http2": {
@@ -317,8 +326,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "/reviews/top-reviewers/"
     ]
   },
-  "elapsed_s": 24.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ec2-98-82-142-240.compute-1.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 25.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

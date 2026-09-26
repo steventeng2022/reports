@@ -7,12 +7,12 @@
 | Target | https://zen.yandex.ru/ |
 | Bug bounty program | Yandex |
 | Listed scope domain | zen.yandex.ru |
-| Test date | 2026-09-26 17:56 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:02 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
+Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | CK5 | Cookie scoped to parent domain (.yandex.ru) | CWE-200 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -133,7 +134,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=pS5x1twac3BzKk3hE85gZ3nDua-pdHnqwmamk-XtxP0; mailru-verification: 74012169191518f4; yandex-verification: adcf799d964be8a8
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=GuJk1T5z2NlhKlN-pHwdtqiFEFJmvjm4pDu-lbj4g5A; yandex-verification: adcf799d964be8a8; facebook-domain-verification=3j25o2dnvau5xoluquutgkewnd2321
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -153,6 +154,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 91 disallow path(s), e.g. /about*?*, /away, /top$, /search, /money
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 87.250.254.116 carries PTR zen.yandex.net. for zen.yandex.ru.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -175,12 +182,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
       "ns3.yandex.ru."
     ],
     "spf": [
-      "google-site-verification=pS5x1twac3BzKk3hE85gZ3nDua-pdHnqwmamk-XtxP0",
-      "mailru-verification: 74012169191518f4",
+      "google-site-verification=GuJk1T5z2NlhKlN-pHwdtqiFEFJmvjm4pDu-lbj4g5A",
       "v=spf1 include:_spf.yandex-team.ru include:mail.zendesk.com",
       "yandex-verification: adcf799d964be8a8",
-      "google-site-verification=GuJk1T5z2NlhKlN-pHwdtqiFEFJmvjm4pDu-lbj4g5A",
-      "facebook-domain-verification=3j25o2dnvau5xoluquutgkewnd2321"
+      "facebook-domain-verification=3j25o2dnvau5xoluquutgkewnd2321",
+      "google-site-verification=pS5x1twac3BzKk3hE85gZ3nDua-pdHnqwmamk-XtxP0",
+      "mailru-verification: 74012169191518f4"
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -320,11 +327,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=pS5x1twac3BzKk3hE85gZ3nDua-pdHnqwmamk-XtxP0",
-    "mailru-verification: 74012169191518f4",
-    "yandex-verification: adcf799d964be8a8",
     "google-site-verification=GuJk1T5z2NlhKlN-pHwdtqiFEFJmvjm4pDu-lbj4g5A",
-    "facebook-domain-verification=3j25o2dnvau5xoluquutgkewnd2321"
+    "yandex-verification: adcf799d964be8a8",
+    "facebook-domain-verification=3j25o2dnvau5xoluquutgkewnd2321",
+    "google-site-verification=pS5x1twac3BzKk3hE85gZ3nDua-pdHnqwmamk-XtxP0",
+    "mailru-verification: 74012169191518f4"
   ],
   "tls2": {
     "alpn": "",
@@ -335,7 +342,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260727211409",
+      "not_after": "20270125205959"
     }
   },
   "http2": {
@@ -357,8 +366,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
       "/*sso_failed="
     ]
   },
-  "elapsed_s": 41.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "zen.yandex.net."
+    ]
+  },
+  "elapsed_s": 43.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

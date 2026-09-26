@@ -7,12 +7,12 @@
 | Target | https://www.ietf.org/ |
 | Bug bounty program | IETF |
 | Listed scope domain | www.ietf.org |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
+Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | CK5 | Cookie scoped to parent domain (ietf.org) | CWE-200 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -41,13 +42,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.45.99:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.44.99:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.45.99:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.44.99:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -115,6 +116,12 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 - **Detail:** robots.txt lists 2 disallow path(s), e.g. /admin/, /search/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 14. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://www.ietf.org/ carries Cache-Control: public, max-age=14400 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -122,8 +129,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
   "domain": "www.ietf.org",
   "dns": {
     "a": [
-      "104.16.45.99",
-      "104.16.44.99"
+      "104.16.44.99",
+      "104.16.45.99"
     ],
     "aaaa": [
       "2606:4700::6810:2d63",
@@ -159,7 +166,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
     }
   },
   "ports": {
-    "ip": "104.16.45.99",
+    "ip": "104.16.44.99",
     "open": [
       8080,
       8443
@@ -232,7 +239,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260904194639",
+      "not_after": "20261203194638"
     }
   },
   "http2": {
@@ -241,8 +250,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
       "/search/"
     ]
   },
-  "elapsed_s": 9.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 9.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

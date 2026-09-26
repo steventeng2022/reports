@@ -7,12 +7,12 @@
 | Target | https://digitaltrends.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | digitaltrends.com |
-| Test date | 2026-09-26 17:43 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
+Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,7 +35,8 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 20 | info | CT1 | 23 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 20 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 21 | info | CT1 | 23 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -149,7 +150,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=DGgmOFBDVC5ksJtU4Q5hyh9CvOXOdkNApwFou-IFOVo; google-site-verification=KwP_ps6K2dA_GqqH09sP6ZRPv71JHxnSBwoZ9uSyCgo; google-site-verification=nZ03eoxIbZX2vx96rqCcdtoGnh3s5YYKrTLrXSNsrBk
+- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A; google-site-verification=nZ03eoxIbZX2vx96rqCcdtoGnh3s5YYKrTLrXSNsrBk; google-site-verification=DGgmOFBDVC5ksJtU4Q5hyh9CvOXOdkNApwFou-IFOVo
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -164,7 +165,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - **Detail:** robots.txt lists 103 disallow path(s), e.g. /, /page/, /tag/, /author/, /feed/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 20. [INFO] 23 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 20. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 3.169.55.55 carries PTR server-3-169-55-55.tpe54.r.cloudfront.net. for digitaltrends.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 21. [INFO] 23 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: altis.staging.es.digitaltrends.com, altis.staging.www.digitaltrends.com, dev.es.digitaltrends.com, dev.www.digitaltrends.com, files.digitaltrends.com, staging.altis.digitaltrends.com, staging.es.digitaltrends.com, staging.www.digitaltrends.com, status.digitaltrends.com
@@ -177,10 +184,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   "domain": "digitaltrends.com",
   "dns": {
     "a": [
-      "3.169.55.39",
-      "3.169.55.28",
+      "3.169.55.55",
       "3.169.55.89",
-      "3.169.55.55"
+      "3.169.55.39",
+      "3.169.55.28"
     ],
     "aaaa": [],
     "cname": null,
@@ -188,38 +195,38 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "digitaltrends-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns-666.awsdns-19.net.",
       "ns-1522.awsdns-62.org.",
       "ns-78.awsdns-09.com.",
-      "ns-1711.awsdns-21.co.uk."
+      "ns-1711.awsdns-21.co.uk.",
+      "ns-666.awsdns-19.net."
     ],
     "spf": [
-      "google-site-verification=DGgmOFBDVC5ksJtU4Q5hyh9CvOXOdkNApwFou-IFOVo",
-      "google-site-verification=KwP_ps6K2dA_GqqH09sP6ZRPv71JHxnSBwoZ9uSyCgo",
-      "google-site-verification=nZ03eoxIbZX2vx96rqCcdtoGnh3s5YYKrTLrXSNsrBk",
-      "tollbit-domain-verification=834a1886734f6bddd5015deaacc39c6e682c78b4e60db097b72da9aa949d693d",
-      "facebook-domain-verification=o9gokha6nwug1sltr4wj9wtcks2ro4",
-      "yandex-verification: d3d90a55ca899aa7",
-      "google-gws-recovery-domain-verification=71417947",
-      "fastly-domain-delegation-kjfbsakjhkjfakl-178404-2019-10-16",
-      "openai-domain-verification=dv-YGTwSC2FWeOKciA5bJnao9yN",
-      "apple-domain-verification=ixKwVGxwE9TXeZ3F",
-      "ahrefs-site-verification_9a82eef87599150f2c7cb0a33fd6674efaec660b67d411fe3aaed0db8e928d0d",
-      "uber-domain-verification=69ff25a9-2786-43e3-a501-el0bf2fcf5c6",
-      "atlassian-domain-verification=fJAmOfQYHw3K7C1fuKa4yAi1JiFeMy47sg81/YoPzdpRty8zLVRGO0RsFE2nBJ8M",
-      "v=spf1 include:spf.protection.outlook.com include:spf.tipalti.com -all",
-      "google-site-verification=-MksWPwuf34sS1-oJvSzJIW9KsE7CskTBNvUJUs9zGU",
-      "dropbox-domain-verification=9zrbo1ot31id",
-      "google-site-verification=LhEEOYALF-FSwQtsNYjY34HKhnDVrnDjf79R-jywnA8",
-      "MS=ms32022712",
-      "MS=ms61723988",
-      "atlassian-domain-verification=3UciTRhiPPalGnfMwEyifXMToIaV1gtpnmaMiUMu/9js/FnaCipcVQtCjIbTpoMk",
-      "google-site-verification=9UqhZ3_NAJ9h080POi3QF5x58xVh8Fh6ksz_7VTBhrA",
-      "ZOOM_verify_XXjQmpVqSESiHkuoW4HdGw",
-      "5HwOFRfvC6HJXoxZ0NSTFWTYRqxdotArg8062xyCJLY=",
-      "anthropic-domain-verification-126xck=x61kgVFV21lGsbJaZccxJJXDS",
       "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A",
-      "0ed1fe018a398da5ca17fb44baa314e68a3dc33e5d"
+      "ZOOM_verify_XXjQmpVqSESiHkuoW4HdGw",
+      "google-site-verification=nZ03eoxIbZX2vx96rqCcdtoGnh3s5YYKrTLrXSNsrBk",
+      "0ed1fe018a398da5ca17fb44baa314e68a3dc33e5d",
+      "google-site-verification=DGgmOFBDVC5ksJtU4Q5hyh9CvOXOdkNApwFou-IFOVo",
+      "google-gws-recovery-domain-verification=71417947",
+      "google-site-verification=LhEEOYALF-FSwQtsNYjY34HKhnDVrnDjf79R-jywnA8",
+      "google-site-verification=KwP_ps6K2dA_GqqH09sP6ZRPv71JHxnSBwoZ9uSyCgo",
+      "uber-domain-verification=69ff25a9-2786-43e3-a501-el0bf2fcf5c6",
+      "yandex-verification: d3d90a55ca899aa7",
+      "openai-domain-verification=dv-YGTwSC2FWeOKciA5bJnao9yN",
+      "atlassian-domain-verification=3UciTRhiPPalGnfMwEyifXMToIaV1gtpnmaMiUMu/9js/FnaCipcVQtCjIbTpoMk",
+      "MS=ms61723988",
+      "google-site-verification=9UqhZ3_NAJ9h080POi3QF5x58xVh8Fh6ksz_7VTBhrA",
+      "dropbox-domain-verification=9zrbo1ot31id",
+      "5HwOFRfvC6HJXoxZ0NSTFWTYRqxdotArg8062xyCJLY=",
+      "facebook-domain-verification=o9gokha6nwug1sltr4wj9wtcks2ro4",
+      "anthropic-domain-verification-126xck=x61kgVFV21lGsbJaZccxJJXDS",
+      "tollbit-domain-verification=834a1886734f6bddd5015deaacc39c6e682c78b4e60db097b72da9aa949d693d",
+      "apple-domain-verification=ixKwVGxwE9TXeZ3F",
+      "MS=ms32022712",
+      "fastly-domain-delegation-kjfbsakjhkjfakl-178404-2019-10-16",
+      "v=spf1 include:spf.protection.outlook.com include:spf.tipalti.com -all",
+      "ahrefs-site-verification_9a82eef87599150f2c7cb0a33fd6674efaec660b67d411fe3aaed0db8e928d0d",
+      "google-site-verification=-MksWPwuf34sS1-oJvSzJIW9KsE7CskTBNvUJUs9zGU",
+      "atlassian-domain-verification=fJAmOfQYHw3K7C1fuKa4yAi1JiFeMy47sg81/YoPzdpRty8zLVRGO0RsFE2nBJ8M"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:newsletter@digitaltrends.com"
@@ -275,7 +282,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     }
   },
   "ports": {
-    "ip": "3.169.55.39",
+    "ip": "3.169.55.55",
     "open": []
   },
   "https": {
@@ -362,11 +369,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     ]
   },
   "apex_txt": [
-    "google-site-verification=DGgmOFBDVC5ksJtU4Q5hyh9CvOXOdkNApwFou-IFOVo",
-    "google-site-verification=KwP_ps6K2dA_GqqH09sP6ZRPv71JHxnSBwoZ9uSyCgo",
+    "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A",
     "google-site-verification=nZ03eoxIbZX2vx96rqCcdtoGnh3s5YYKrTLrXSNsrBk",
-    "tollbit-domain-verification=834a1886734f6bddd5015deaacc39c6e682c78b4e60db097b72d",
-    "facebook-domain-verification=o9gokha6nwug1sltr4wj9wtcks2ro4"
+    "google-site-verification=DGgmOFBDVC5ksJtU4Q5hyh9CvOXOdkNApwFou-IFOVo",
+    "google-gws-recovery-domain-verification=71417947",
+    "google-site-verification=LhEEOYALF-FSwQtsNYjY34HKhnDVrnDjf79R-jywnA8"
   ],
   "tls2": {
     "alpn": "",
@@ -377,7 +384,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251129000000",
+      "not_after": "20261228235959"
     }
   },
   "http2": {
@@ -399,8 +408,14 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "/search"
     ]
   },
-  "elapsed_s": 7.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 405,
+    "ptr": [
+      "server-3-169-55-55.tpe54.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 7.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

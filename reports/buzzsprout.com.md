@@ -7,8 +7,8 @@
 | Target | https://buzzsprout.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | buzzsprout.com |
-| Test date | 2026-09-26 17:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -148,13 +148,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 ### 17. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (zanvkoioc8worq.buzzsprout.com and 04tyecwe61sozx.buzzsprout.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (c21divcnwxy72v.buzzsprout.com and 8gozrqyjuhs83b.buzzsprout.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 18. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: hey-verification:8XfssdcJfvugmHzwX34PoDw4; google-site-verification=9ZMTLsplPG6vIg3qvCQP6LdZguGMGnmv6BZ15ObU53Q
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=9ZMTLsplPG6vIg3qvCQP6LdZguGMGnmv6BZ15ObU53Q; hey-verification:8XfssdcJfvugmHzwX34PoDw4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 19. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -188,13 +188,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "work-mx.app.hey.com (pref 10)"
     ],
     "ns": [
-      "bill.ns.cloudflare.com.",
-      "ivy.ns.cloudflare.com."
+      "ivy.ns.cloudflare.com.",
+      "bill.ns.cloudflare.com."
     ],
     "spf": [
-      "hey-verification:8XfssdcJfvugmHzwX34PoDw4",
+      "v=spf1 mx include:_spf.hey.com include:_spf.google.com include:helpscoutemail.com include:amazonses.com -all",
       "google-site-verification=9ZMTLsplPG6vIg3qvCQP6LdZguGMGnmv6BZ15ObU53Q",
-      "v=spf1 mx include:_spf.hey.com include:_spf.google.com include:helpscoutemail.com include:amazonses.com -all"
+      "hey-verification:8XfssdcJfvugmHzwX34PoDw4"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:re+qjjrqhserca@dmarc.postmarkapp.com; sp=quarantine; aspf=r;"
@@ -282,8 +282,8 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "hey-verification:8XfssdcJfvugmHzwX34PoDw4",
-    "google-site-verification=9ZMTLsplPG6vIg3qvCQP6LdZguGMGnmv6BZ15ObU53Q"
+    "google-site-verification=9ZMTLsplPG6vIg3qvCQP6LdZguGMGnmv6BZ15ObU53Q",
+    "hey-verification:8XfssdcJfvugmHzwX34PoDw4"
   ],
   "tls2": {
     "alpn": "",
@@ -294,7 +294,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910072426",
+      "not_after": "20261209082424"
     }
   },
   "http2": {
@@ -302,8 +304,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "/101612.rss"
     ]
   },
-  "elapsed_s": 5.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 5.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

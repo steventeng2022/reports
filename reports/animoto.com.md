@@ -7,12 +7,12 @@
 | Target | https://animoto.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | animoto.com |
-| Test date | 2026-09-26 17:39 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
+Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -94,7 +96,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=vaogq87xo9coyc8w0sjrb5ryi28hbk; apple-domain-verification=P5h3aqkyoBSk68wv; google-site-verification=nVDMjy8QEyp3Ou2X-N0N87xRmDuOj-Y-jrHItr8Aing
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=nVDMjy8QEyp3Ou2X-N0N87xRmDuOj-Y-jrHItr8Aing; facebook-domain-verification=vaogq87xo9coyc8w0sjrb5ryi28hbk; apple-domain-verification=P5h3aqkyoBSk68wv
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -115,6 +117,18 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 - **Detail:** robots.txt lists 46 disallow path(s), e.g. /, /, /, /, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 14. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://animoto.com/ carries Cache-Control: public, max-age=0, must-revalidate (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 65.9.180.15 carries PTR server-65-9-180-15.tpe53.r.cloudfront.net. for animoto.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -123,34 +137,34 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
   "dns": {
     "a": [
       "65.9.180.15",
-      "65.9.180.57",
       "65.9.180.63",
+      "65.9.180.57",
       "65.9.180.9"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 30)",
-      "aspmx2.googlemail.com (pref 40)",
       "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx.l.google.com (pref 10)",
+      "aspmx2.googlemail.com (pref 40)",
       "aspmx3.googlemail.com (pref 50)",
-      "aspmx.l.google.com (pref 10)"
+      "alt2.aspmx.l.google.com (pref 30)"
     ],
     "ns": [
-      "ns-976.awsdns-58.net.",
       "ns-1582.awsdns-05.co.uk.",
       "ns-1412.awsdns-48.org.",
+      "ns-976.awsdns-58.net.",
       "ns-257.awsdns-32.com."
     ],
     "spf": [
-      "cloudflare_dashboard_sso=d2d32d5343cad69b0321aa4fdf630d46",
+      "google-site-verification=nVDMjy8QEyp3Ou2X-N0N87xRmDuOj-Y-jrHItr8Aing",
+      "v=spf1 include:_spf.google.com include:authsmtp.com include:mail.zendesk.com -all",
       "facebook-domain-verification=vaogq87xo9coyc8w0sjrb5ryi28hbk",
       "apple-domain-verification=P5h3aqkyoBSk68wv",
-      "google-site-verification=nVDMjy8QEyp3Ou2X-N0N87xRmDuOj-Y-jrHItr8Aing",
+      "F678B3E8D0",
       "ps-cd-verification=068149de-3572-4643-b829-b259af0fd02b",
-      "MS=ms58433399",
-      "v=spf1 include:_spf.google.com include:authsmtp.com include:mail.zendesk.com -all",
-      "F678B3E8D0"
+      "cloudflare_dashboard_sso=d2d32d5343cad69b0321aa4fdf630d46",
+      "MS=ms58433399"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc-reports@animoto.com; sp=none"
@@ -234,9 +248,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "google-site-verification=nVDMjy8QEyp3Ou2X-N0N87xRmDuOj-Y-jrHItr8Aing",
     "facebook-domain-verification=vaogq87xo9coyc8w0sjrb5ryi28hbk",
     "apple-domain-verification=P5h3aqkyoBSk68wv",
-    "google-site-verification=nVDMjy8QEyp3Ou2X-N0N87xRmDuOj-Y-jrHItr8Aing",
     "ps-cd-verification=068149de-3572-4643-b829-b259af0fd02b"
   ],
   "tls2": {
@@ -248,7 +262,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260816000000",
+      "not_after": "20270301235959"
     }
   },
   "http2": {
@@ -270,8 +286,14 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
       "/appservice/"
     ]
   },
-  "elapsed_s": 14.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "server-65-9-180-15.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 13.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

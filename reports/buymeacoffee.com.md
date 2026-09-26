@@ -7,12 +7,12 @@
 | Target | https://buymeacoffee.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | buymeacoffee.com |
-| Test date | 2026-09-26 17:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
+Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 | 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 19 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -46,13 +47,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.67.75.15:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.26.2.199:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.67.75.15:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.26.2.199:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -138,7 +139,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=ifeov4jZgnjj51jCdnmTbFvdqQqsgdDp_Gp0On-pkrY; facebook-domain-verification=uowjjaddqox3ne3zo53s8y2pt6p1pv; google-site-verification=QDPWgc777mEpYLh-P8xkDhrZ7eTgFM-Wu1FRxvZN8WU
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=Fn2a1Bqwf6vLSjrwNWeC0o9Jg2wTqr7vmLWO4erTNhE; facebook-domain-verification=uowjjaddqox3ne3zo53s8y2pt6p1pv; google-site-verification=JsoWgaqx0JNxka54pxwpHThXrmnQlN7-XIxgPQnlFhY
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -153,6 +154,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. /app/*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 19. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://buymeacoffee.com/ carries Cache-Control: public, max-age=31536000, s-maxage=86400 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -160,21 +167,21 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "domain": "buymeacoffee.com",
   "dns": {
     "a": [
-      "172.67.75.15",
       "104.26.2.199",
-      "104.26.3.199"
+      "104.26.3.199",
+      "172.67.75.15"
     ],
     "aaaa": [
       "2606:4700:20::ac43:4b0f",
-      "2606:4700:20::681a:3c7",
-      "2606:4700:20::681a:2c7"
+      "2606:4700:20::681a:2c7",
+      "2606:4700:20::681a:3c7"
     ],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)",
-      "alt4.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
+      "alt4.aspmx.l.google.com (pref 10)",
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
@@ -182,17 +189,17 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "alexis.ns.cloudflare.com."
     ],
     "spf": [
-      "google-site-verification=ifeov4jZgnjj51jCdnmTbFvdqQqsgdDp_Gp0On-pkrY",
-      "facebook-domain-verification=uowjjaddqox3ne3zo53s8y2pt6p1pv",
-      "google-site-verification=QDPWgc777mEpYLh-P8xkDhrZ7eTgFM-Wu1FRxvZN8WU",
-      "google-site-verification=JsoWgaqx0JNxka54pxwpHThXrmnQlN7-XIxgPQnlFhY",
       "google-site-verification=Fn2a1Bqwf6vLSjrwNWeC0o9Jg2wTqr7vmLWO4erTNhE",
+      "facebook-domain-verification=uowjjaddqox3ne3zo53s8y2pt6p1pv",
+      "google-site-verification=JsoWgaqx0JNxka54pxwpHThXrmnQlN7-XIxgPQnlFhY",
       "v=spf1 include:mlrcloud.com include:_spf.google.com include:amazonses.com include:spf.mtasv.net -all",
-      "google-site-verification=Gk69bY-P6pmMA4wl0KEDuG1Dzfn75oftGeS7yRq3q64",
+      "google-site-verification=hyCVJ8W7SxMjC8KmEMHKG8-wW5xmxKjXeEmXJrzpExA",
       "stripe-verification=95acda8ff8a80c42943efa2c7448080559bbc484c590986e6de261e0be32886e",
       "google-site-verification=TIGAwXGV7VUvZMvzZIjonnusU0xoWFxrVdQsHpXoOmM",
-      "yahoo-verification-key=XyesRIG5Fcz2JwspA3lVgCvQXOvyCJVBJXRkyQ9dV04=",
-      "google-site-verification=hyCVJ8W7SxMjC8KmEMHKG8-wW5xmxKjXeEmXJrzpExA"
+      "google-site-verification=ifeov4jZgnjj51jCdnmTbFvdqQqsgdDp_Gp0On-pkrY",
+      "google-site-verification=QDPWgc777mEpYLh-P8xkDhrZ7eTgFM-Wu1FRxvZN8WU",
+      "google-site-verification=Gk69bY-P6pmMA4wl0KEDuG1Dzfn75oftGeS7yRq3q64",
+      "yahoo-verification-key=XyesRIG5Fcz2JwspA3lVgCvQXOvyCJVBJXRkyQ9dV04="
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:re+htmwrakxmmn@dmarc.postmarkapp.com,mailto:dmarc@mlrcloud.com; sp=none; ruf=mailto:dmarc@mlrcloud.com"
@@ -222,7 +229,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     }
   },
   "ports": {
-    "ip": "172.67.75.15",
+    "ip": "104.26.2.199",
     "open": [
       8080,
       8443
@@ -279,11 +286,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=ifeov4jZgnjj51jCdnmTbFvdqQqsgdDp_Gp0On-pkrY",
+    "google-site-verification=Fn2a1Bqwf6vLSjrwNWeC0o9Jg2wTqr7vmLWO4erTNhE",
     "facebook-domain-verification=uowjjaddqox3ne3zo53s8y2pt6p1pv",
-    "google-site-verification=QDPWgc777mEpYLh-P8xkDhrZ7eTgFM-Wu1FRxvZN8WU",
     "google-site-verification=JsoWgaqx0JNxka54pxwpHThXrmnQlN7-XIxgPQnlFhY",
-    "google-site-verification=Fn2a1Bqwf6vLSjrwNWeC0o9Jg2wTqr7vmLWO4erTNhE"
+    "google-site-verification=hyCVJ8W7SxMjC8KmEMHKG8-wW5xmxKjXeEmXJrzpExA",
+    "stripe-verification=95acda8ff8a80c42943efa2c7448080559bbc484c590986e6de261e0be32"
   ],
   "tls2": {
     "alpn": "",
@@ -294,7 +301,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260806220401",
+      "not_after": "20261104220400"
     }
   },
   "http2": {
@@ -302,8 +311,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "/app/*"
     ]
   },
-  "elapsed_s": 8.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 10.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

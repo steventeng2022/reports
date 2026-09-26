@@ -7,8 +7,8 @@
 | Target | https://activecampaign.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | activecampaign.com |
-| Test date | 2026-09-26 17:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -160,7 +160,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 ### 19. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=0wCIZBGn1K/9SerwAoj1UyInzqjUZyJTODZJ1UPpBu+swTTfNB; stripe-verification=B8A6127A871981E95923CC0E59815D7C397AD696A04B0E5B60CBE58F81D5; canva-site-verification=jr7ubLUf4AdQz7NWkCAPnQ
+- **Detail:** Apex TXT records with verification/token content: canva-site-verification=jr7ubLUf4AdQz7NWkCAPnQ; google-site-verification=pns8v6xoUCNjHvUFVWiTCI4LJj7LHyz5CPghUG4ZYvc; google-site-verification=5ecE6QK-uN7epMvq2briZD_vYB2nC_5Y3BukiSILBUI
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 20. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -192,52 +192,52 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
       "104.20.1.15"
     ],
     "aaaa": [
-      "2606:4700:10::6814:f",
-      "2606:4700:10::6814:10f"
+      "2606:4700:10::6814:10f",
+      "2606:4700:10::6814:f"
     ],
     "cname": null,
     "mx": [
-      "usb-smtp-inbound-2.mimecast.com (pref 10)",
-      "usb-smtp-inbound-1.mimecast.com (pref 10)"
+      "usb-smtp-inbound-1.mimecast.com (pref 10)",
+      "usb-smtp-inbound-2.mimecast.com (pref 10)"
     ],
     "ns": [
-      "abby.ns.cloudflare.com.",
-      "alex.ns.cloudflare.com."
+      "alex.ns.cloudflare.com.",
+      "abby.ns.cloudflare.com."
     ],
     "spf": [
-      "cloudflare_dashboard_sso=68e80b6640cd17c492819fa073f4c765",
-      "atlassian-domain-verification=0wCIZBGn1K/9SerwAoj1UyInzqjUZyJTODZJ1UPpBu+swTTfNBZxL2WhQZGvkfo/",
-      "vnr8cy64z7nvm6vq9xycm1t9t3wx625z",
-      "docusign=b6411fd9-d54c-42ec-9a1e-9c718099b208",
-      "stripe-verification=B8A6127A871981E95923CC0E59815D7C397AD696A04B0E5B60CBE58F81D54B65",
       "canva-site-verification=jr7ubLUf4AdQz7NWkCAPnQ",
-      "ps-cd-verification=445a8aa6-f462-4ac5-89b9-cf62b8f9ea91",
-      "google-site-verification=yZpqL2DYnFgeE1CANvNSvCaY6vchX6cUsOnKIswM9nY",
-      "facebook-domain-verification=vj4bbc79ppnrt612769n33gxnqezjt",
-      "google-site-verification=bsPOFNz4WrydBvfNkWbSIfsIlkRev4iGBxCHnB3wsA4",
-      "docker-verification=88049882-e3b0-454f-bfc6-99f5945ec081",
-      "v=DMARC1; p=none; rua=mailto:dmarc@activecampaign.com",
-      "pendo-domain-verification=JK5zYujOmKqXb5aS1pRudbgHp2s",
-      "google-site-verification=z4cu4ksSlD1F4VwsV7aeuI3agrK4xT2HzLJwvNqXh-I",
-      "google-site-verification=5ecE6QK-uN7epMvq2briZD_vYB2nC_5Y3BukiSILBUI",
-      "openai-domain-verification=dv-hGDc7dQuUtX9y1AaOh3g5zLk",
-      "apple-domain-verification=VblInNeuuVuHySfU",
-      "MS=ms78211706",
       "google-site-verification=pns8v6xoUCNjHvUFVWiTCI4LJj7LHyz5CPghUG4ZYvc",
-      "google-site-verification=aZc8XNJa2DPnRqQMK58izlsKurjRm-hwdl-U4nsIBjY",
+      "google-site-verification=5ecE6QK-uN7epMvq2briZD_vYB2nC_5Y3BukiSILBUI",
+      "cloudflare_dashboard_sso=68e80b6640cd17c492819fa073f4c765",
+      "status-page-domain-verification=8wyn9807n4gs",
       "v=spf1 ip4:173.236.20.0/24 ip4:192.92.97.0/24 ip4:52.128.40.0/21 ip4:217.8.118.0/24 ip4:103.229.233.0/24 include:usb._netblocks.mimecast.com include:_spf.google.com include:mail.zendesk.com include:stspg-customer.com include:sent-via.netsuite.com include:",
       "_spf-",
       "lrn.activecampaign.com ~all",
-      "asv=2a7893285fd0ab817b0ac10ee4afcded",
-      "status-page-domain-verification=8wyn9807n4gs",
+      "pendo-domain-verification=JK5zYujOmKqXb5aS1pRudbgHp2s",
+      "vnr8cy64z7nvm6vq9xycm1t9t3wx625z",
+      "google-site-verification=aZc8XNJa2DPnRqQMK58izlsKurjRm-hwdl-U4nsIBjY",
       "ahrefs-site-verification_13f6592c6dbc2e2fd5a07a7ba689ee0acaf5285f7dbf7a1c3eed5fcc8799689a",
-      "cursor-domain-verification-mggxet=yI5H5w8prfWJQbesZn4JgSFiX",
-      "google-site-verification=hLQ1bCw_QcM04p9JX8V-EF2yFMN1phpFf4F1XAYSkXg",
-      "ZOOM_verify_X_DkuppUTyaf0Col_X_dWQ",
       "google-site-verification=ZO9kf3bTT021P8qlB2BQ5rmk1e4bS8rsoYTnSpo9Nqg",
+      "atlassian-domain-verification=0wCIZBGn1K/9SerwAoj1UyInzqjUZyJTODZJ1UPpBu+swTTfNBZxL2WhQZGvkfo/",
+      "ps-cd-verification=445a8aa6-f462-4ac5-89b9-cf62b8f9ea91",
+      "MS=ms78211706",
+      "docker-verification=88049882-e3b0-454f-bfc6-99f5945ec081",
+      "facebook-domain-verification=vj4bbc79ppnrt612769n33gxnqezjt",
+      "stripe-verification=B8A6127A871981E95923CC0E59815D7C397AD696A04B0E5B60CBE58F81D54B65",
+      "google-site-verification=z4cu4ksSlD1F4VwsV7aeuI3agrK4xT2HzLJwvNqXh-I",
       "intacct-esk=4FED1A5177F8769BE0538C06A8C0589E",
+      "google-site-verification=hLQ1bCw_QcM04p9JX8V-EF2yFMN1phpFf4F1XAYSkXg",
       "google-site-verification=oZuy90wJc1WtJL-OqSxrqLKcqE_xWlBcRncm88kc6xo",
-      "anthropic-domain-verification-2wy46r=746EyPf5UdzlAhUQfRnbJGFAi"
+      "google-site-verification=bsPOFNz4WrydBvfNkWbSIfsIlkRev4iGBxCHnB3wsA4",
+      "asv=2a7893285fd0ab817b0ac10ee4afcded",
+      "docusign=b6411fd9-d54c-42ec-9a1e-9c718099b208",
+      "cursor-domain-verification-mggxet=yI5H5w8prfWJQbesZn4JgSFiX",
+      "v=DMARC1; p=none; rua=mailto:dmarc@activecampaign.com",
+      "google-site-verification=yZpqL2DYnFgeE1CANvNSvCaY6vchX6cUsOnKIswM9nY",
+      "ZOOM_verify_X_DkuppUTyaf0Col_X_dWQ",
+      "anthropic-domain-verification-2wy46r=746EyPf5UdzlAhUQfRnbJGFAi",
+      "apple-domain-verification=VblInNeuuVuHySfU",
+      "openai-domain-verification=dv-hGDc7dQuUtX9y1AaOh3g5zLk"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:re+eab9f0889f10@inbound.dmarcdigests.com; fo=1;"
@@ -329,11 +329,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "atlassian-domain-verification=0wCIZBGn1K/9SerwAoj1UyInzqjUZyJTODZJ1UPpBu+swTTfNB",
-    "stripe-verification=B8A6127A871981E95923CC0E59815D7C397AD696A04B0E5B60CBE58F81D5",
     "canva-site-verification=jr7ubLUf4AdQz7NWkCAPnQ",
-    "ps-cd-verification=445a8aa6-f462-4ac5-89b9-cf62b8f9ea91",
-    "google-site-verification=yZpqL2DYnFgeE1CANvNSvCaY6vchX6cUsOnKIswM9nY"
+    "google-site-verification=pns8v6xoUCNjHvUFVWiTCI4LJj7LHyz5CPghUG4ZYvc",
+    "google-site-verification=5ecE6QK-uN7epMvq2briZD_vYB2nC_5Y3BukiSILBUI",
+    "status-page-domain-verification=8wyn9807n4gs",
+    "pendo-domain-verification=JK5zYujOmKqXb5aS1pRudbgHp2s"
   ],
   "tls2": {
     "alpn": "",
@@ -344,7 +344,9 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20250925000000",
+      "not_after": "20261026235959"
     }
   },
   "http2": {
@@ -366,8 +368,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
       "/podcast/feed"
     ]
   },
-  "elapsed_s": 8.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 8.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

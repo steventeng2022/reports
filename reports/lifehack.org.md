@@ -7,8 +7,8 @@
 | Target | https://lifehack.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | lifehack.org |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -54,13 +54,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.25.107.109:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.25.108.109:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.25.107.109:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.25.108.109:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -153,7 +153,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 18. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: stripe-verification=f109bbdb74b41b943bfe6709930005dd8351a7e48541f94149677d651848; openai-domain-verification=dv-zSG8HaXwpp090iPxcMUIf5ib; google-site-verification=aUO_VM4C0PVpOlhuJWeNrfee2m7adwfv4Oyv-c8tnVg
+- **Detail:** Apex TXT records with verification/token content: stripe-verification=f109bbdb74b41b943bfe6709930005dd8351a7e48541f94149677d651848; google-site-verification=ykt3mwOeQz4-giS64MOYhNodJEBdTP6RdmkZ6TVdxwQ; google-site-verification=aSD4me_0Ux1v8c9dEnCi2wPRrFBatN5cphUbTqKuLyA
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 19. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -175,9 +175,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   "domain": "lifehack.org",
   "dns": {
     "a": [
+      "104.25.108.109",
       "104.25.107.109",
-      "172.67.66.83",
-      "104.25.108.109"
+      "172.67.66.83"
     ],
     "aaaa": [
       "2606:4700:20::6819:6b6d",
@@ -186,13 +186,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     ],
     "cname": null,
     "mx": [
+      "aspmx2.googlemail.com (pref 30)",
+      "aspmx3.googlemail.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)",
       "alt1.aspmx.l.google.com (pref 20)",
       "aspmx5.googlemail.com (pref 30)",
-      "aspmx2.googlemail.com (pref 30)",
-      "aspmx4.googlemail.com (pref 30)",
-      "aspmx3.googlemail.com (pref 30)",
       "aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 20)"
+      "aspmx4.googlemail.com (pref 30)"
     ],
     "ns": [
       "alla.ns.cloudflare.com.",
@@ -200,14 +200,14 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     ],
     "spf": [
       "stripe-verification=f109bbdb74b41b943bfe6709930005dd8351a7e48541f94149677d651848e6d9",
-      "openai-domain-verification=dv-zSG8HaXwpp090iPxcMUIf5ib",
-      "proxy-ssl.webflow.com",
+      "google-site-verification=ykt3mwOeQz4-giS64MOYhNodJEBdTP6RdmkZ6TVdxwQ",
+      "spf2.0/pra include:amazonses.com ?all",
+      "google-site-verification=aSD4me_0Ux1v8c9dEnCi2wPRrFBatN5cphUbTqKuLyA",
       "google-site-verification=aUO_VM4C0PVpOlhuJWeNrfee2m7adwfv4Oyv-c8tnVg",
       "v=spf1 a mx include:relay.mailchannels.net include:_spf.google.com include:helpscoutemail.com include:emsd1.com include:spf.messagingengine.com ~all",
-      "google-site-verification=aSD4me_0Ux1v8c9dEnCi2wPRrFBatN5cphUbTqKuLyA",
-      "spf2.0/pra include:amazonses.com ?all",
-      "google-site-verification=ykt3mwOeQz4-giS64MOYhNodJEBdTP6RdmkZ6TVdxwQ",
-      "firebase=timeblock-prod"
+      "firebase=timeblock-prod",
+      "openai-domain-verification=dv-zSG8HaXwpp090iPxcMUIf5ib",
+      "proxy-ssl.webflow.com"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:e3fbc17aa00648fb8dab36cc4cb4a5ba@dmarc-reports.cloudflare.net;"
@@ -237,7 +237,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     }
   },
   "ports": {
-    "ip": "104.25.107.109",
+    "ip": "104.25.108.109",
     "open": [
       8080,
       8443
@@ -295,10 +295,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   },
   "apex_txt": [
     "stripe-verification=f109bbdb74b41b943bfe6709930005dd8351a7e48541f94149677d651848",
-    "openai-domain-verification=dv-zSG8HaXwpp090iPxcMUIf5ib",
-    "google-site-verification=aUO_VM4C0PVpOlhuJWeNrfee2m7adwfv4Oyv-c8tnVg",
+    "google-site-verification=ykt3mwOeQz4-giS64MOYhNodJEBdTP6RdmkZ6TVdxwQ",
     "google-site-verification=aSD4me_0Ux1v8c9dEnCi2wPRrFBatN5cphUbTqKuLyA",
-    "google-site-verification=ykt3mwOeQz4-giS64MOYhNodJEBdTP6RdmkZ6TVdxwQ"
+    "google-site-verification=aUO_VM4C0PVpOlhuJWeNrfee2m7adwfv4Oyv-c8tnVg",
+    "openai-domain-verification=dv-zSG8HaXwpp090iPxcMUIf5ib"
   ],
   "tls2": {
     "alpn": "",
@@ -309,7 +309,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260918010456",
+      "not_after": "20261217020453"
     }
   },
   "http2": {
@@ -331,8 +333,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "/"
     ]
   },
-  "elapsed_s": 5.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 6.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

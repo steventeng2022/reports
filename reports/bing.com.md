@@ -7,12 +7,12 @@
 | Target | https://bing.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | bing.com |
-| Test date | 2026-09-26 17:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 7, Info: 11)
+Total findings: **20** (High: 0, Medium: 0, Low: 8, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 7, Info: 11)
 | 16 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 19 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 20 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 
 ## Detailed findings
 
@@ -142,13 +144,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 7, Info: 11)
 ### 16. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (mf4168x4sv6dr8.bing.com and d6lu9f4q3x0wan.bing.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (dhpcwjk158ft8l.bing.com and vrzhkyrixe4jfr.bing.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=OkRY8R261shK5B8uEwvsFZp9nQ2gRoHavGlruok1azc; facebook-domain-verification=09yg8uzcfnqnlqekzsbwjxyy8rdck7; google-site-verification=SHuSHN0Hv3nwBI9So329KwfbQ7xLif64SRwcGSdWNAU
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=09yg8uzcfnqnlqekzsbwjxyy8rdck7; google-site-verification=OkRY8R261shK5B8uEwvsFZp9nQ2gRoHavGlruok1azc; google-site-verification=SHuSHN0Hv3nwBI9So329KwfbQ7xLif64SRwcGSdWNAU
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -157,6 +159,18 @@ Total findings: **18** (High: 0, Medium: 0, Low: 7, Info: 11)
 - **Detail:** Certificate of bing.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 19. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of bing.com permits unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 20. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of bing.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -164,8 +178,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 7, Info: 11)
   "domain": "bing.com",
   "dns": {
     "a": [
-      "150.171.28.10",
-      "150.171.27.10"
+      "150.171.27.10",
+      "150.171.28.10"
     ],
     "aaaa": [
       "2620:1ec:33::10",
@@ -176,20 +190,20 @@ Total findings: **18** (High: 0, Medium: 0, Low: 7, Info: 11)
       "bing-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns2-204.azure-dns.net.",
-      "dns2.p09.nsone.net.",
       "dns4.p09.nsone.net.",
-      "ns3-204.azure-dns.org.",
       "dns1.p09.nsone.net.",
-      "dns3.p09.nsone.net.",
       "ns4-204.azure-dns.info.",
-      "ns1-204.azure-dns.com."
+      "ns3-204.azure-dns.org.",
+      "ns1-204.azure-dns.com.",
+      "dns2.p09.nsone.net.",
+      "dns3.p09.nsone.net.",
+      "ns2-204.azure-dns.net."
     ],
     "spf": [
-      "v=msv1 t=6097A7EA-53F7-4028-BA76-6869CB284C54",
-      "google-site-verification=OkRY8R261shK5B8uEwvsFZp9nQ2gRoHavGlruok1azc",
       "facebook-domain-verification=09yg8uzcfnqnlqekzsbwjxyy8rdck7",
+      "v=msv1 t=6097A7EA-53F7-4028-BA76-6869CB284C54",
       "v=spf1 include:spf.protection.outlook.com -all",
+      "google-site-verification=OkRY8R261shK5B8uEwvsFZp9nQ2gRoHavGlruok1azc",
       "google-site-verification=SHuSHN0Hv3nwBI9So329KwfbQ7xLif64SRwcGSdWNAU"
     ],
     "dmarc": [
@@ -251,7 +265,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 7, Info: 11)
     }
   },
   "ports": {
-    "ip": "150.171.28.10",
+    "ip": "150.171.27.10",
     "open": []
   },
   "https": {
@@ -314,8 +328,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 7, Info: 11)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=OkRY8R261shK5B8uEwvsFZp9nQ2gRoHavGlruok1azc",
     "facebook-domain-verification=09yg8uzcfnqnlqekzsbwjxyy8rdck7",
+    "google-site-verification=OkRY8R261shK5B8uEwvsFZp9nQ2gRoHavGlruok1azc",
     "google-site-verification=SHuSHN0Hv3nwBI9So329KwfbQ7xLif64SRwcGSdWNAU"
   ],
   "tls2": {
@@ -327,14 +341,19 @@ Total findings: **18** (High: 0, Medium: 0, Low: 7, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260901170546",
+      "not_after": "20270228170546"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
-  "elapsed_s": 5.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 5.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

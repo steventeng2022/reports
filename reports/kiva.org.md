@@ -7,12 +7,12 @@
 | Target | https://kiva.org/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | kiva.org |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
+Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 | 17 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 18 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 19 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 20 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -146,13 +147,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 ### 17. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (wi0iq2zn485ye9.kiva.org and 3fsoxz61p8delx.kiva.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (lkh1foya9hdv3b.kiva.org and ghv8afl5yh6lvu.kiva.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 18. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=R376pH2Qg1DF_VAUNVoD9UdHnYQZgJc58a0RuOZBRJo; adobe-idp-site-verification=6fe80722ea29c9a5df78b8cc8395beef437166b62246b1ae0f96; google-site-verification=OC0AuKwkDfkZPB9fFbcQic9Sy0BEzHiJ_oiOtUH13lE
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=aNSEEHIDfPXNUeb67q8FOy1leF8IHP3my5W5P-K3Ras; google-site-verification=K6pOshF2tXM_Od3Aox6x0D5NCifEGgjeoKpEgm_0FnA; have-i-been-pwned-verification=db1636b384f9357d05e558bf19131b1c
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 19. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -161,6 +162,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 - **Detail:** Certificate of kiva.org has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 20. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 35.84.123.227 carries PTR ec2-35-84-123-227.us-west-2.compute.amazonaws.com. for kiva.org.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -168,49 +175,49 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
   "domain": "kiva.org",
   "dns": {
     "a": [
-      "184.32.154.120",
       "35.84.123.227",
+      "184.32.154.120",
       "52.38.210.220"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 10)",
       "aspmx3.googlemail.com (pref 30)",
-      "aspmx2.googlemail.com (pref 30)",
+      "aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 20)",
-      "alt2.aspmx.l.google.com (pref 20)"
+      "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx2.googlemail.com (pref 30)"
     ],
     "ns": [
       "ns-823.awsdns-38.net.",
+      "ns-467.awsdns-58.com.",
       "ns-1401.awsdns-47.org.",
-      "ns-1628.awsdns-11.co.uk.",
-      "ns-467.awsdns-58.com."
+      "ns-1628.awsdns-11.co.uk."
     ],
     "spf": [
-      "google-site-verification=R376pH2Qg1DF_VAUNVoD9UdHnYQZgJc58a0RuOZBRJo",
-      "ZOOM_verify_EG8dulX8TLC_IA_EcCClOw",
-      "adobe-idp-site-verification=6fe80722ea29c9a5df78b8cc8395beef437166b62246b1ae0f966dc9518e0be7",
-      "google-site-verification=OC0AuKwkDfkZPB9fFbcQic9Sy0BEzHiJ_oiOtUH13lE",
-      "anthropic-domain-verification-dpkt2p=m5p14kRrmTYLhAsidkSy7A3no",
-      "google-site-verification=K6pOshF2tXM_Od3Aox6x0D5NCifEGgjeoKpEgm_0FnA",
-      "6v2dgkhyvf59rskdrvnftbk323znlwlh",
-      "google-site-verification=_Xv5McueunM-dPmSF1ge6wsY8FVJq0aPt_pcDKaeBm4",
-      "google-site-verification=dw2XUoLh5GVnlVttqOWbFXhrDjOlJBhhPZ2eYZmoUPY",
-      "have-i-been-pwned-verification=db1636b384f9357d05e558bf19131b1c",
-      "google-site-verification=1fC3FgT5ECns8re10uYmOP6ti515lHow0590LexLpZI",
       "google-site-verification=aNSEEHIDfPXNUeb67q8FOy1leF8IHP3my5W5P-K3Ras",
       "v=spf1 ip4:50.31.62.59 ip4:149.72.59.130 ip4:44.231.14.47 ip4:44.228.3.254 ip4:98.124.155.57 ip4:167.89.73.35 +ip4:63.146.102.40 +ip4:159.242.240.114 +ip4:159.242.241.114 +ip4:184.105.251.240 +ip4:205.219.64.40 +ip4:209.117.187.240",
       " include:sendgrid.net include:_spf.salesforce.com include:_spf.google.com include:spf1.formassembly.com include:mg-spf.greenhouse.io ~all",
-      "onetrust-domain-verification=7d515025ceee4735a290af3918d6eab1",
-      "openai-domain-verification=dv-yC2ze882C9VikO8gNy93jlRg",
-      "google-site-verification=p8xG9TMPbQbi9nZd95YSxllHvJAD67-tqmHpAhXImIk",
-      "facebook-domain-verification=6k9ebdtev0wfu1xrh5uuy0a898natq",
-      "atlassian-domain-verification=OVxK2M7RNrqHbkHkbj5fgLMB7PskfmIGG/vuJOF56EfSoZwcEOEH+1K83N1x8Io3",
+      "google-site-verification=K6pOshF2tXM_Od3Aox6x0D5NCifEGgjeoKpEgm_0FnA",
+      "have-i-been-pwned-verification=db1636b384f9357d05e558bf19131b1c",
+      "google-site-verification=dw2XUoLh5GVnlVttqOWbFXhrDjOlJBhhPZ2eYZmoUPY",
       "MS=ms86669204",
-      "pinterest-site-verification=5d85d0a1883817322133a4b593943825",
+      "google-site-verification=_Xv5McueunM-dPmSF1ge6wsY8FVJq0aPt_pcDKaeBm4",
+      "google-site-verification=5jYUB2vDYFFMq4m_24JfhaRstDUUtCWM-YDQmyeNudE",
+      "onetrust-domain-verification=7d515025ceee4735a290af3918d6eab1",
+      "facebook-domain-verification=6k9ebdtev0wfu1xrh5uuy0a898natq",
+      "google-site-verification=1fC3FgT5ECns8re10uYmOP6ti515lHow0590LexLpZI",
       "apple-domain-verification=aMzQxkiCFjcw6qs2",
-      "google-site-verification=5jYUB2vDYFFMq4m_24JfhaRstDUUtCWM-YDQmyeNudE"
+      "pinterest-site-verification=5d85d0a1883817322133a4b593943825",
+      "anthropic-domain-verification-dpkt2p=m5p14kRrmTYLhAsidkSy7A3no",
+      "ZOOM_verify_EG8dulX8TLC_IA_EcCClOw",
+      "google-site-verification=p8xG9TMPbQbi9nZd95YSxllHvJAD67-tqmHpAhXImIk",
+      "google-site-verification=OC0AuKwkDfkZPB9fFbcQic9Sy0BEzHiJ_oiOtUH13lE",
+      "adobe-idp-site-verification=6fe80722ea29c9a5df78b8cc8395beef437166b62246b1ae0f966dc9518e0be7",
+      "atlassian-domain-verification=OVxK2M7RNrqHbkHkbj5fgLMB7PskfmIGG/vuJOF56EfSoZwcEOEH+1K83N1x8Io3",
+      "openai-domain-verification=dv-yC2ze882C9VikO8gNy93jlRg",
+      "6v2dgkhyvf59rskdrvnftbk323znlwlh",
+      "google-site-verification=R376pH2Qg1DF_VAUNVoD9UdHnYQZgJc58a0RuOZBRJo"
     ],
     "dmarc": [
       "v=DMARC1; p=none; sp=none; rua=mailto:dmarc@kiva.org, mailto:dmarc_agg@vali.email; ruf=mailto:dmarc@kiva.org; rf=afrf; pct=100; ri=86400"
@@ -240,7 +247,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     }
   },
   "ports": {
-    "ip": "184.32.154.120",
+    "ip": "35.84.123.227",
     "open": []
   },
   "https": {
@@ -294,11 +301,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=R376pH2Qg1DF_VAUNVoD9UdHnYQZgJc58a0RuOZBRJo",
-    "adobe-idp-site-verification=6fe80722ea29c9a5df78b8cc8395beef437166b62246b1ae0f96",
-    "google-site-verification=OC0AuKwkDfkZPB9fFbcQic9Sy0BEzHiJ_oiOtUH13lE",
-    "anthropic-domain-verification-dpkt2p=m5p14kRrmTYLhAsidkSy7A3no",
-    "google-site-verification=K6pOshF2tXM_Od3Aox6x0D5NCifEGgjeoKpEgm_0FnA"
+    "google-site-verification=aNSEEHIDfPXNUeb67q8FOy1leF8IHP3my5W5P-K3Ras",
+    "google-site-verification=K6pOshF2tXM_Od3Aox6x0D5NCifEGgjeoKpEgm_0FnA",
+    "have-i-been-pwned-verification=db1636b384f9357d05e558bf19131b1c",
+    "google-site-verification=dw2XUoLh5GVnlVttqOWbFXhrDjOlJBhhPZ2eYZmoUPY",
+    "google-site-verification=_Xv5McueunM-dPmSF1ge6wsY8FVJq0aPt_pcDKaeBm4"
   ],
   "tls2": {
     "alpn": "",
@@ -309,11 +316,19 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251211000000",
+      "not_after": "20270109235959"
     }
   },
-  "elapsed_s": 26.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ec2-35-84-123-227.us-west-2.compute.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 27.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

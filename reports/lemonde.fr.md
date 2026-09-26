@@ -7,8 +7,8 @@
 | Target | https://lemonde.fr/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | lemonde.fr |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -166,32 +166,32 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
+      "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
       "alt2.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)",
-      "aspmx.l.google.com (pref 1)"
+      "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-cloud-b4.googledomains.com.",
       "ns-cloud-b2.googledomains.com.",
-      "ns-cloud-b3.googledomains.com.",
-      "ns-cloud-b1.googledomains.com."
+      "ns-cloud-b1.googledomains.com.",
+      "ns-cloud-b4.googledomains.com.",
+      "ns-cloud-b3.googledomains.com."
     ],
     "spf": [
-      "v=spf1 include:spf1.lemonde.fr include:spf2.lemonde.fr include:_spf.salesforce.com ip4:79.99.32.203 ip4:79.99.32.185 ip4:79.99.32.186 ip4:217.74.103.211 ip4:195.154.80.82 ip4:163.172.55.8 ip4:35.181.34.138 ip4:35.181.85.71 ip4:52.143.135.92 -all",
-      "00DWx000008KcED=1TBSb0000000Ak9",
-      "00DAP00000MRjsP=1TBAP0000000CHJ",
+      "00DAU00000LLlRQ=1TBAU0000000GJJ",
       "openai-domain-verification=dv-nQ1ldfkkoDfrWmjKfXdqLG2h",
       "jamf-site-verification=zUEgWKIxDl9-X3pb0bIY7A",
-      "00DAU00000LLlRQ=1TBAU0000000GJJ",
-      "d7o5vwenp6",
-      "recyclagerecylum=1fd014598415abe7ca04160fccf87442",
-      "mandrill_verify.2xFVS2iRdBArj1vR6iXqDw",
       "sendinblue-code:bfdbbdc264502c94bb90794d2a902e50",
-      "fastly-domain-delegation-x2kl6p87n3g5b6FDG-79324-2018-04-10",
+      "recyclagerecylum=1fd014598415abe7ca04160fccf87442",
       "_globalsign-domain-verification=yRdIt507tQIZyVRXF6VBvVbEIWhqpzJaxh8r1qdSUr",
-      "google-site-verification=712IVumgXvK3v6WCyCJVLS6O96hThcw39o84JSN9m_k"
+      "fastly-domain-delegation-x2kl6p87n3g5b6FDG-79324-2018-04-10",
+      "mandrill_verify.2xFVS2iRdBArj1vR6iXqDw",
+      "00DAP00000MRjsP=1TBAP0000000CHJ",
+      "google-site-verification=712IVumgXvK3v6WCyCJVLS6O96hThcw39o84JSN9m_k",
+      "v=spf1 include:spf1.lemonde.fr include:spf2.lemonde.fr include:_spf.salesforce.com ip4:79.99.32.203 ip4:79.99.32.185 ip4:79.99.32.186 ip4:217.74.103.211 ip4:195.154.80.82 ip4:163.172.55.8 ip4:35.181.34.138 ip4:35.181.85.71 ip4:52.143.135.92 -all",
+      "d7o5vwenp6",
+      "00DWx000008KcED=1TBSb0000000Ak9"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=quarantine; adkim=r; aspf=r; pct=100; rua=mailto:dmarc.report@lemonde.fr"
@@ -327,7 +327,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260817074753",
+      "not_after": "20261115074752"
     }
   },
   "http2": {
@@ -349,8 +351,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "/cgi-bin/*"
     ]
   },
-  "elapsed_s": 28.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 29.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

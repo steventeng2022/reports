@@ -7,12 +7,12 @@
 | Target | https://drive.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | drive.google.com |
-| Test date | 2026-09-26 17:43 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 13 | info | CK5 | Cookie scoped to parent domain (.google.com) | CWE-200 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 16 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -93,7 +96,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 ### 10. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (eol2ywvgg4u3xj.drive.google.com and 7tdr0kmpwj8qrz.drive.google.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (y9qwu3d312fadm.drive.google.com and kp90h1c7tencif.drive.google.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
@@ -120,6 +123,24 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 - **Detail:** robots.txt lists 4 disallow path(s), e.g. /?hl=*&, /open, /templateabuse, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 15. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of drive.google.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 16. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of drive.google.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 142.250.204.46 carries PTR lctsaa-ac-in-f14.1e100.net., hkg07s38-in-f14.1e100.net. for drive.google.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -135,10 +156,10 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
     "cname": null,
     "mx": [
       "gmr-smtp-in.l.google.com (pref 5)",
-      "alt4.gmr-smtp-in.l.google.com (pref 40)",
       "alt1.gmr-smtp-in.l.google.com (pref 10)",
       "alt2.gmr-smtp-in.l.google.com (pref 20)",
-      "alt3.gmr-smtp-in.l.google.com (pref 30)"
+      "alt3.gmr-smtp-in.l.google.com (pref 30)",
+      "alt4.gmr-smtp-in.l.google.com (pref 40)"
     ],
     "ns": [],
     "spf": [
@@ -306,7 +327,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192153",
+      "not_after": "20261203192152"
     }
   },
   "http2": {
@@ -318,8 +341,15 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
       "/"
     ]
   },
-  "elapsed_s": 8.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "lctsaa-ac-in-f14.1e100.net.",
+      "hkg07s38-in-f14.1e100.net."
+    ]
+  },
+  "elapsed_s": 8.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

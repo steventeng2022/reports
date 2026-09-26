@@ -7,12 +7,12 @@
 | Target | https://mega.nz/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | mega.nz |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
+Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 
 ## Detailed findings
 
@@ -108,7 +109,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=3U54cgxJ3rwkYixvtZtI4DPTRrPWclp5Mb437k0-lOM; google-site-verification=Y8iGjJFNwRhopP4rze9n5eDgRzisdJBBzxtbhvUV6es; anthropic-domain-verification-emwyv4=721oqr54fQkeUSj1O0qOdcOlh
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=Y8iGjJFNwRhopP4rze9n5eDgRzisdJBBzxtbhvUV6es; anthropic-domain-verification-emwyv4=721oqr54fQkeUSj1O0qOdcOlh; google-site-verification=eYzEf0tV_bQerKRYO3PwDptch5jNR_isXfhbxn7EM0A
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -123,6 +124,12 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 15. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of mega.nz permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -130,31 +137,31 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
   "domain": "mega.nz",
   "dns": {
     "a": [
-      "31.216.145.5",
-      "66.203.127.18"
+      "66.203.127.18",
+      "31.216.145.5"
     ],
     "aaaa": [
-      "2a0b:e46:1:145::5",
-      "2a0b:e40:3::18"
+      "2a0b:e40:3::18",
+      "2a0b:e46:1:145::5"
     ],
     "cname": null,
     "mx": [
       "mail.mega.co.nz (pref 10)"
     ],
     "ns": [
-      "nsnl1.mega.nz.",
       "nslu2.mega.nz.",
+      "nsnl1.mega.nz.",
       "nslu1.mega.nz.",
       "nsnl2.mega.nz."
     ],
     "spf": [
-      "google-site-verification=3U54cgxJ3rwkYixvtZtI4DPTRrPWclp5Mb437k0-lOM",
       "google-site-verification=Y8iGjJFNwRhopP4rze9n5eDgRzisdJBBzxtbhvUV6es",
       "anthropic-domain-verification-emwyv4=721oqr54fQkeUSj1O0qOdcOlh",
-      "6b9a442bef678c91ce4aaf66dfb6c438",
       "google-site-verification=eYzEf0tV_bQerKRYO3PwDptch5jNR_isXfhbxn7EM0A",
       "v=spf1 ip4:122.56.56.210 ip4:31.216.147.132/30 ip4:31.216.147.136/31 ip4:31.216.147.231 ip4:122.56.56.222 ip4:66.203.125.8/29 ",
-      "  ip4:66.203.125.16/30 ip4:66.203.124.0/28 ip4:66.203.124.38/28 ip6:2a0b:0e46:0001:0050::/121 include:43855380.spf10.hubspotemail.net -all"
+      "  ip4:66.203.125.16/30 ip4:66.203.124.0/28 ip4:66.203.124.38/28 ip6:2a0b:0e46:0001:0050::/121 include:43855380.spf10.hubspotemail.net -all",
+      "google-site-verification=3U54cgxJ3rwkYixvtZtI4DPTRrPWclp5Mb437k0-lOM",
+      "6b9a442bef678c91ce4aaf66dfb6c438"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; adkim=s; aspf=s; ri=86400"
@@ -168,8 +175,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=mega.nz",
     "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YR2",
-    "notBefore": "Aug 13 21:02:59 2026 GMT",
-    "notAfter": "Nov 11 21:02:58 2026 GMT",
+    "notBefore": "Aug 13 21:43:56 2026 GMT",
+    "notAfter": "Nov 11 21:43:55 2026 GMT",
     "san": [
       "mega.nz",
       "www.mega.nz"
@@ -184,7 +191,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
     }
   },
   "ports": {
-    "ip": "31.216.145.5",
+    "ip": "66.203.127.18",
     "open": []
   },
   "https": {
@@ -236,10 +243,10 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=3U54cgxJ3rwkYixvtZtI4DPTRrPWclp5Mb437k0-lOM",
     "google-site-verification=Y8iGjJFNwRhopP4rze9n5eDgRzisdJBBzxtbhvUV6es",
     "anthropic-domain-verification-emwyv4=721oqr54fQkeUSj1O0qOdcOlh",
-    "google-site-verification=eYzEf0tV_bQerKRYO3PwDptch5jNR_isXfhbxn7EM0A"
+    "google-site-verification=eYzEf0tV_bQerKRYO3PwDptch5jNR_isXfhbxn7EM0A",
+    "google-site-verification=3U54cgxJ3rwkYixvtZtI4DPTRrPWclp5Mb437k0-lOM"
   ],
   "tls2": {
     "alpn": "",
@@ -250,7 +257,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260813214356",
+      "not_after": "20261111214355"
     }
   },
   "http2": {
@@ -259,8 +268,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
       "/"
     ]
   },
-  "elapsed_s": 28.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 29.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

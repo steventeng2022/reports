@@ -7,12 +7,12 @@
 | Target | https://ca.linkedin.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ca.linkedin.com |
-| Test date | 2026-09-26 17:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
+Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -21,16 +21,18 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 | 3 | info | PRT8443 | Alternate web service (port 8443) reachable | CWE-200 |
 | 4 | info | TECH1 | Technology fingerprint | CWE-200 |
 | 5 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
-| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 7 | info | H6 | Server technology disclosure | CWE-200 |
-| 8 | low | CK1 | Cookie set without Secure flag over HTTPS | CWE-614 |
-| 9 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 9 | info | H6 | Server technology disclosure | CWE-200 |
 | 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 12 | low | CK4 | Session-like cookie without HttpOnly | CWE-1004 |
 | 13 | info | CK5 | Cookie scoped to parent domain (linkedin.com) | CWE-200 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 15 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 16 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 17 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -64,33 +66,33 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 - **Detail:** Alt-Svc: h3=":443"; ma=86400
 - **Recommendation:** Verify the advertised protocol endpoints are configured.
 
-### 6. [INFO] Missing Permissions-Policy (`H7`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
 - **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
 - **Context:** https response, /
 - **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 7. [INFO] Server technology disclosure (`H6`)
+### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 9. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
 - **Detail:** Header reveals: cloudflare
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
-
-### 8. [LOW] Cookie set without Secure flag over HTTPS (`CK1`)
-
-- **CWE:** CWE-614
-- **Detail:** Cookie 'sdui_ver' has no Secure attribute on an HTTPS response.
-- **Context:** https response, /
-- **Recommendation:** Set Secure on all cookies over HTTPS.
-
-### 9. [INFO] Cookie without SameSite attribute (`CK3`)
-
-- **CWE:** CWE-1275
-- **Detail:** Cookie 'sdui_ver' has no SameSite attribute.
-- **Context:** https response, /
-- **Recommendation:** Set SameSite=Lax (or Strict) to reduce CSRF surface.
 
 ### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
 
@@ -122,7 +124,19 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 - **Detail:** robots.txt lists 4398 disallow path(s), e.g. /addContacts*, /addressBookExport*, /ambry, /analytics/, /answers*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 15. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 15. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of ca.linkedin.com permits unsafe-inline; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 16. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of ca.linkedin.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
+### 17. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -139,8 +153,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "172.64.146.215"
     ],
     "aaaa": [
-      "2a06:98c1:3109::6812:2929",
-      "2a06:98c1:310b::ac40:92d7"
+      "2a06:98c1:310b::ac40:92d7",
+      "2a06:98c1:3109::6812:2929"
     ],
     "cname": "cctld.linkedin.com.",
     "mx": [],
@@ -255,8 +269,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
   },
   "https": {
     "status": 200,
-    "content_type": "text/html",
-    "title": "Log In or Sign Up | LinkedIn"
+    "content_type": "text/html; charset=utf-8",
+    "title": "LinkedIn: Log In or Sign Up"
   },
   "mixed_content": [],
   "tech": [
@@ -266,14 +280,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
   ],
   "cookies": [
     {
-      "domain": ".linkedin.com"
-    },
-    {
       "domain": ".ca.linkedin.com",
       "samesite": "none"
     },
     {
-      "domain": ".linkedin.com",
+      "domain": "linkedin.com",
       "samesite": "none"
     },
     {
@@ -351,7 +362,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260903000000",
+      "not_after": "20270303235959"
     }
   },
   "http2": {
@@ -373,8 +386,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "/edurec*"
     ]
   },
-  "elapsed_s": 11.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 11.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

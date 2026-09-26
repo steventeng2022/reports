@@ -7,29 +7,30 @@
 | Target | https://opera.com/ |
 | Bug bounty program | Opera Public Bug Bounty |
 | Listed scope domain | opera.com |
-| Test date | 2026-09-26 17:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
+Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
-| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | low | H4 | No clickjacking protection | CWE-1023 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
-| 9 | info | H6 | Server technology disclosure | CWE-200 |
-| 10 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
-| 11 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 2 | info | MAIL1 | Mail servers exist (MX) but no SPF record | CWE-200 |
+| 3 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -39,72 +40,72 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 - **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
 - **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Technology fingerprint (`TECH1`)
+### 2. [INFO] Mail servers exist (MX) but no SPF record (`MAIL1`)
+
+- **CWE:** CWE-200
+- **Detail:** MX records are published but no SPF TXT record; sender-domain spoofing is harder to validate.
+- **Recommendation:** Publish an SPF record enumerating authorized senders.
+
+### 3. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
 - **Detail:** Detected: Server: nginx
 - **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 4. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
 - **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
 - **Context:** https response, /
 - **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
+### 5. [LOW] Missing X-Content-Type-Options (`H3`)
 
 - **CWE:** CWE-1194
 - **Detail:** No nosniff directive; browsers may MIME-sniff responses.
 - **Context:** https response, /
 - **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 5. [LOW] No clickjacking protection (`H4`)
+### 6. [LOW] No clickjacking protection (`H4`)
 
 - **CWE:** CWE-1023
 - **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
 - **Context:** https response, /
 - **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
 - **Context:** https response, /
 - **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 7. [INFO] Missing Permissions-Policy (`H7`)
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
 - **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
 - **Context:** https response, /
 - **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
 - **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
 - **Context:** https response, /
 - **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 9. [INFO] Server technology disclosure (`H6`)
+### 10. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
 - **Detail:** Header reveals: nginx
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
-### 10. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+### 11. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
 
 - **CWE:** CWE-223
 - **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
 - **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
-
-### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
-
-- **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-kjAJTFRCoOY6YboxYHmIN5wi; adobe-idp-site-verification=61e18c604ee93df7fb52b11bab48531b3112c62f0db7249f9946; google-site-verification=zsu8s2znTOAuZ0dkksfMdQE3HmkoNNyuijNib1xkiQo
-- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
 
@@ -124,6 +125,12 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 - **Detail:** robots.txt lists 34 disallow path(s), e.g. /o/, /*/o/, /abtest/, /*/abtest/, /api/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 185.26.182.103 carries PTR opera.com. for opera.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -137,36 +144,20 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "ALT1.ASPMX.L.GOOGLE.com (pref 5)",
-      "ALT3.ASPMX.L.GOOGLE.com (pref 10)",
       "ALT4.ASPMX.L.GOOGLE.com (pref 10)",
       "ASPMX.L.GOOGLE.com (pref 1)",
+      "ALT1.ASPMX.L.GOOGLE.com (pref 5)",
+      "ALT3.ASPMX.L.GOOGLE.com (pref 10)",
       "ALT2.ASPMX.L.GOOGLE.com (pref 5)"
     ],
     "ns": [
       "nic4.opera.com.",
-      "nic3.opera.com.",
-      "nic2.opera.com.",
+      "nic6.opera.com.",
       "nic1.opera.com.",
-      "nic6.opera.com."
+      "nic2.opera.com.",
+      "nic3.opera.com."
     ],
-    "spf": [
-      "openai-domain-verification=dv-kjAJTFRCoOY6YboxYHmIN5wi",
-      "adobe-idp-site-verification=61e18c604ee93df7fb52b11bab48531b3112c62f0db7249f99463fa327f9c69d",
-      "_nt0mk4rbdlrkccjcxafujsak0umpiu7",
-      "google-site-verification=zsu8s2znTOAuZ0dkksfMdQE3HmkoNNyuijNib1xkiQo",
-      "google-site-verification=M1WsVfJ0xUplsAdeDZ76BkHn9QL-IOWDyq9zziApgAI",
-      "facebook-domain-verification=up2ljn0zco95f4f16hjxe6we815q19",
-      "v=spf1 ip4:185.26.182.76 ip4:195.189.142.89 ip6:2001:4c28:4000:722:185:26:182:76 ip6:2001:4c28:4000:779:195:189:142:89 mx include:_spf.google.com ~all",
-      "apple-domain-verification=SWfwiYtREsASOqwv",
-      "teamtailor=baaff065e3b7dbc102b34ce11a472f5c",
-      "keybase-site-verification=uH1gfE9c0VONYIy9Hq-WuhCOx6JclPV3_M3j9fAPnXU",
-      "BQ33d38Z4c0YY0OBRQuXcXsgWcVd9_w",
-      "FIO7ppPA1vjosCuWmpg32zcajEQgpx5RgsHG78x2T5oojZ2C6ujnN",
-      "baaff065e3b7dbc102b34ce11a472f5c",
-      "07b121f99e9843a192c18b3cf340b8fb",
-      "google-site-verification=mi7mVeHWYoxrnV4M85YytexDvFMwa23tvOOcg0f0w-E"
-    ],
+    "spf": [],
     "dmarc": [
       "v=DMARC1; p=reject; aspf=s; adkim=s; ri=86400; rua=mailto:c22187dc@in.mailhardener.com"
     ],
@@ -247,13 +238,6 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
   "subdomains": {
     "status": "ct-pending"
   },
-  "apex_txt": [
-    "openai-domain-verification=dv-kjAJTFRCoOY6YboxYHmIN5wi",
-    "adobe-idp-site-verification=61e18c604ee93df7fb52b11bab48531b3112c62f0db7249f9946",
-    "google-site-verification=zsu8s2znTOAuZ0dkksfMdQE3HmkoNNyuijNib1xkiQo",
-    "google-site-verification=M1WsVfJ0xUplsAdeDZ76BkHn9QL-IOWDyq9zziApgAI",
-    "facebook-domain-verification=up2ljn0zco95f4f16hjxe6we815q19"
-  ],
   "tls2": {
     "alpn": "",
     "tls_ver": "TLSv1.3",
@@ -263,7 +247,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260107000000",
+      "not_after": "20270206235959"
     }
   },
   "http2": {
@@ -285,8 +271,14 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
       "/*/campaign/"
     ]
   },
-  "elapsed_s": 26.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "opera.com."
+    ]
+  },
+  "elapsed_s": 33.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,8 +7,8 @@
 | Target | https://jstor.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | jstor.org |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -125,7 +125,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-EAO0jUA8iKZCqlqYfddXpA3R; _globalsign-domain-verification=-lBuNJDFRxDkLkNbYOLBU03PlWjnPqAzBPAVUokhAw; facebook-domain-verification=t7mhq4udodhlfom0rn909rrhmrcq7f
+- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=-lBuNJDFRxDkLkNbYOLBU03PlWjnPqAzBPAVUokhAw; openai-domain-verification=dv-EAO0jUA8iKZCqlqYfddXpA3R; google-site-verification=fUzFvqROnu3S1gFEmkwguY42PzRgOFzwg4qQMP24sU4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -147,8 +147,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "domain": "jstor.org",
   "dns": {
     "a": [
-      "151.101.0.152",
       "151.101.128.152",
+      "151.101.0.152",
       "151.101.64.152",
       "151.101.192.152"
     ],
@@ -158,24 +158,24 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "IthakaHarbors-org.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
+      "usmiaa1ns03.ithaka.org.",
+      "usnjpr2ns02.ithaka.org.",
+      "usnjpr2ns01.ithaka.org.",
       "usnyny1ns05.ithaka.org.",
       "usaeaz1ns03.ithaka.org.",
       "usnjpr2ns04.ithaka.org.",
-      "usnjpr2ns01.ithaka.org.",
-      "usnjpr2ns02.ithaka.org.",
-      "usmiaa1ns03.ithaka.org.",
       "usaeaz1ns05.ithaka.org."
     ],
     "spf": [
-      "openai-domain-verification=dv-EAO0jUA8iKZCqlqYfddXpA3R",
-      "sending_domain1053043=a4a2b757167b9ba217895b3e2bb19f3873b9db5b7c0e9b4c6dd2c98c32b93935",
-      "u1h2sp5uvkoufuh88hdvhk9orc.",
-      "MS=ms59722565",
-      "_globalsign-domain-verification=-lBuNJDFRxDkLkNbYOLBU03PlWjnPqAzBPAVUokhAw",
-      "facebook-domain-verification=t7mhq4udodhlfom0rn909rrhmrcq7f",
       "v=spf1 mx include:spf.protection.outlook.com include:u1397501.wl.sendgrid.net include:mail.zendesk.com include:aspmx.pardot.com  ~all",
+      "_globalsign-domain-verification=-lBuNJDFRxDkLkNbYOLBU03PlWjnPqAzBPAVUokhAw",
+      "MS=ms59722565",
+      "sending_domain1053043=a4a2b757167b9ba217895b3e2bb19f3873b9db5b7c0e9b4c6dd2c98c32b93935",
+      "openai-domain-verification=dv-EAO0jUA8iKZCqlqYfddXpA3R",
       "google-site-verification=fUzFvqROnu3S1gFEmkwguY42PzRgOFzwg4qQMP24sU4",
-      "pardot1053043=4a6c81f133c99f6b859af420931577c383a1b1cd4e153d11ddb1b150a902b382"
+      "pardot1053043=4a6c81f133c99f6b859af420931577c383a1b1cd4e153d11ddb1b150a902b382",
+      "facebook-domain-verification=t7mhq4udodhlfom0rn909rrhmrcq7f",
+      "u1h2sp5uvkoufuh88hdvhk9orc."
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:ITI_Win_DMARC@jstor.org; ruf=mailto:ITI_Win_DMARC@jstor.org; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400"
@@ -243,7 +243,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     }
   },
   "ports": {
-    "ip": "151.101.0.152",
+    "ip": "151.101.128.152",
     "open": []
   },
   "https": {
@@ -296,10 +296,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "openai-domain-verification=dv-EAO0jUA8iKZCqlqYfddXpA3R",
     "_globalsign-domain-verification=-lBuNJDFRxDkLkNbYOLBU03PlWjnPqAzBPAVUokhAw",
-    "facebook-domain-verification=t7mhq4udodhlfom0rn909rrhmrcq7f",
-    "google-site-verification=fUzFvqROnu3S1gFEmkwguY42PzRgOFzwg4qQMP24sU4"
+    "openai-domain-verification=dv-EAO0jUA8iKZCqlqYfddXpA3R",
+    "google-site-verification=fUzFvqROnu3S1gFEmkwguY42PzRgOFzwg4qQMP24sU4",
+    "facebook-domain-verification=t7mhq4udodhlfom0rn909rrhmrcq7f"
   ],
   "tls2": {
     "alpn": "",
@@ -310,7 +310,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260717204736",
+      "not_after": "20270201194736"
     }
   },
   "http2": {
@@ -332,8 +334,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "/token"
     ]
   },
-  "elapsed_s": 20.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 19.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

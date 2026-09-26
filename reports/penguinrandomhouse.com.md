@@ -7,8 +7,8 @@
 | Target | https://penguinrandomhouse.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | penguinrandomhouse.com |
-| Test date | 2026-09-26 17:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -109,7 +109,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: canva-site-verification=qrGQ4gxWAdHknibYOR88zw; miro-verification=20deb2e76b80e8360f078ce72b4c1b020ccbe7e1; atlassian-domain-verification=Kl3ByU1tsfV9fKiC7TDDZYz1uCeTeUo0SSEh5SitZ9q99Ua74O
+- **Detail:** Apex TXT records with verification/token content: miro-verification=20deb2e76b80e8360f078ce72b4c1b020ccbe7e1; atlassian-domain-verification=Kl3ByU1tsfV9fKiC7TDDZYz1uCeTeUo0SSEh5SitZ9q99Ua74O; canva-site-verification=qrGQ4gxWAdHknibYOR88zw
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -134,29 +134,29 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "us-smtp-inbound-2.mimecast.com (pref 10)"
     ],
     "ns": [
+      "ns-362.awsdns-45.com.",
       "ns-1709.awsdns-21.co.uk.",
-      "ns-1259.awsdns-29.org.",
       "ns-643.awsdns-16.net.",
-      "ns-362.awsdns-45.com."
+      "ns-1259.awsdns-29.org."
     ],
     "spf": [
-      "canva-site-verification=qrGQ4gxWAdHknibYOR88zw",
-      "p^80Ofvy%178DnED&JH$OktbSDSDHdBu8r5TXqXJUzrLTNplO6PB1VAb%#xV06wEKl7lOoFd2erdL@$w0BThd9#s6rEd%9C%tPu",
       "miro-verification=20deb2e76b80e8360f078ce72b4c1b020ccbe7e1",
       "atlassian-domain-verification=Kl3ByU1tsfV9fKiC7TDDZYz1uCeTeUo0SSEh5SitZ9q99Ua74O571fgiIg//j5Hn",
-      "apple-domain-verification=fSsk2qTskZIXUkhu",
-      "monday-com-verification=TT0Hb7qY-id2x_o-2OkWXSSLVpTxTADfmHwVAOcLHIk",
-      "anthropic-domain-verification-p3yxqz=0oTx7Z8mJYN8MCnVfLRuy7xrz",
-      "openai-domain-verification=dv-Rhm7Hg5yRtoNsmysb1sZR4hb",
-      "asv=300738b15ca5d787a896887a6179da76",
-      "twilio-domain-verification=fc6fe5f3866856223b427fe22f87cacc",
-      "applause-verification:e7f9bc17-1978-415a-83ab-955ebc93e7eb",
+      "canva-site-verification=qrGQ4gxWAdHknibYOR88zw",
       "airtable-verification=07656b9d1c59ef275dc5cf2cc40f902f",
-      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
       "d240bb6782951c680216e3b2c275a67a287ab413a4dbc83ff6",
-      "smartsheet-site-validation=cVJvac04NWxSPbNbKVyoQXTc977egjBr",
+      "p^80Ofvy%178DnED&JH$OktbSDSDHdBu8r5TXqXJUzrLTNplO6PB1VAb%#xV06wEKl7lOoFd2erdL@$w0BThd9#s6rEd%9C%tPu",
       "HmQrtF+YeGABOOs4sUIGNzx5oH/hxa/uuKITM72aP2D3Mmo45+IYTHRRNErkCFI5FluDKT7Og9fYZwF4n3wWlw==",
-      "sophos-domain-verification=30c16c4ad4dd85043d6766d195b3be1bf04c9425e55a4a79745bd7a135474f3b"
+      "twilio-domain-verification=fc6fe5f3866856223b427fe22f87cacc",
+      "sophos-domain-verification=30c16c4ad4dd85043d6766d195b3be1bf04c9425e55a4a79745bd7a135474f3b",
+      "monday-com-verification=TT0Hb7qY-id2x_o-2OkWXSSLVpTxTADfmHwVAOcLHIk",
+      "asv=300738b15ca5d787a896887a6179da76",
+      "apple-domain-verification=fSsk2qTskZIXUkhu",
+      "anthropic-domain-verification-p3yxqz=0oTx7Z8mJYN8MCnVfLRuy7xrz",
+      "applause-verification:e7f9bc17-1978-415a-83ab-955ebc93e7eb",
+      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
+      "openai-domain-verification=dv-Rhm7Hg5yRtoNsmysb1sZR4hb",
+      "smartsheet-site-validation=cVJvac04NWxSPbNbKVyoQXTc977egjBr"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; adkim=r; aspf=r; rua=mailto:dmarc_agg@vali.email,mailto:4065f1db5e3e741@rep.dmarcanalyzer.com,mailto:bb918c48@inbox.ondmarc.com; ruf=mailto:4065f1db5e3e741@for.dmarcanalyzer.com,mailto:bb918c48@inbox.ondmarc.com; fo=1; ri=",
@@ -237,11 +237,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "canva-site-verification=qrGQ4gxWAdHknibYOR88zw",
     "miro-verification=20deb2e76b80e8360f078ce72b4c1b020ccbe7e1",
     "atlassian-domain-verification=Kl3ByU1tsfV9fKiC7TDDZYz1uCeTeUo0SSEh5SitZ9q99Ua74O",
-    "apple-domain-verification=fSsk2qTskZIXUkhu",
-    "monday-com-verification=TT0Hb7qY-id2x_o-2OkWXSSLVpTxTADfmHwVAOcLHIk"
+    "canva-site-verification=qrGQ4gxWAdHknibYOR88zw",
+    "airtable-verification=07656b9d1c59ef275dc5cf2cc40f902f",
+    "twilio-domain-verification=fc6fe5f3866856223b427fe22f87cacc"
   ],
   "tls2": {
     "alpn": "",
@@ -252,11 +252,16 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251216000000",
+      "not_after": "20270109235959"
     }
   },
-  "elapsed_s": 35.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 36.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

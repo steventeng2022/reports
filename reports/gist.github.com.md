@@ -7,12 +7,12 @@
 | Target | https://gist.github.com/ |
 | Bug bounty program | GitHub |
 | Listed scope domain | gist.github.com |
-| Test date | 2026-09-26 17:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
+Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | CK5 | Cookie scoped to parent domain (.github.com) | CWE-200 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 
 ## Detailed findings
 
@@ -107,7 +108,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-4az7qn=if8YWuRRqwLycGJDooumzHtxm; shopify-verification-code=t1YPwcmvnxZyBycaCpk1MPyWoFs72o; miro-verification=d2e174fdb00c71e0bcf58f8e58c3da2dd80dcfa9
+- **Detail:** Apex TXT records with verification/token content: serval-domain-verification-ydryhj=qbkiEakpwEpTvHh5fIiCqtaue; anthropic-domain-verification-4az7qn=if8YWuRRqwLycGJDooumzHtxm; google-site-verification=82Le34Flgtd15ojYhHlGF_6g72muSjamlMVThBOJpks
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -128,6 +129,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 - **Detail:** robots.txt lists 241 disallow path(s), e.g. /*/*/pulse, /*/*/projects, /*/*/forks, /*/*/issues/new, /*/*/milestones/new
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 16. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of gist.github.com permits unsafe-inline; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -143,41 +150,41 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "github-com.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "dns2.p08.nsone.net.",
+      "ns-1707.awsdns-21.co.uk.",
       "dns3.p08.nsone.net.",
-      "ns-1283.awsdns-32.org.",
+      "dns2.p08.nsone.net.",
       "dns4.p08.nsone.net.",
-      "ns-520.awsdns-01.net.",
-      "ns-421.awsdns-52.com.",
       "dns1.p08.nsone.net.",
-      "ns-1707.awsdns-21.co.uk."
+      "ns-1283.awsdns-32.org.",
+      "ns-520.awsdns-01.net.",
+      "ns-421.awsdns-52.com."
     ],
     "spf": [
-      "anthropic-domain-verification-4az7qn=if8YWuRRqwLycGJDooumzHtxm",
-      "shopify-verification-code=t1YPwcmvnxZyBycaCpk1MPyWoFs72o",
-      "MS=6BF03E6AF5CB689E315FB6199603BABF2C88D805",
-      "miro-verification=d2e174fdb00c71e0bcf58f8e58c3da2dd80dcfa9",
-      "openai-domain-verification=dv-3nh33eQwdkotMIAzLrIDVZo1",
-      "krisp-domain-verification=ZlyiK7XLhnaoUQb2hpak1PLY7dFkl1WE",
-      "MS=ms44452932",
-      "apple-domain-verification=RyQhdzTl6Z6x8ZP4",
-      "atlassian-domain-verification=jjgw98AKv2aeoYFxiL/VFaoyPkn3undEssTRuMg6C/3Fp/iqhkV4HVV7WjYlVeF8",
-      "google-site-verification=UTM-3akMgubp6tQtgEuAkYNYLyYAvpTnnSrDMWoDR3o",
-      "stripe-verification=f88ef17321660a01bab1660454192e014defa29ba7b8de9633c69d6b4912217f",
-      "TAILSCALE-xOzoDvFUzZr5YYVCQFuD",
-      "v=spf1 ip4:192.30.252.0/22 include:spf.protection.outlook.com include:_netblocks.google.com include:_netblocks2.google.com include:mail.zendesk.com include:_spf.salesforce.com include:servers.mcsv.net include:mktomail.com include:sendgrid.net ip4:62.253.2",
-      "27.114 ip4:166.78.69.169 ip4:166.78.69.170 ip4:166.78.71.131 ~all",
-      "jamf-site-verification=XtaPNIYghF_e_xRDI8CjgQ",
       "serval-domain-verification-ydryhj=qbkiEakpwEpTvHh5fIiCqtaue",
-      "loom-site-verification=f3787154f1154b7880e720a511ea664d",
-      "cursor-domain-verification-gtfwmt=1rfLOtiTngX5QSxD5HvNKTvm3",
-      "MS=ms58704441",
+      "anthropic-domain-verification-4az7qn=if8YWuRRqwLycGJDooumzHtxm",
       "docusign=087098e3-3d46-47b7-9b4e-8a23028154cd",
-      "facebook-domain-verification=39xu4jzl7roi7x0n93ldkxjiaarx50",
       "google-site-verification=82Le34Flgtd15ojYhHlGF_6g72muSjamlMVThBOJpks",
       "adobe-idp-site-verification=b92c9e999aef825edc36e0a3d847d2dbad5b2fc0e05c79ddd7a16139b48ecf4b",
+      "jamf-site-verification=XtaPNIYghF_e_xRDI8CjgQ",
+      "TAILSCALE-xOzoDvFUzZr5YYVCQFuD",
+      "cursor-domain-verification-gtfwmt=1rfLOtiTngX5QSxD5HvNKTvm3",
+      "atlassian-domain-verification=jjgw98AKv2aeoYFxiL/VFaoyPkn3undEssTRuMg6C/3Fp/iqhkV4HVV7WjYlVeF8",
+      "MS=ms44452932",
+      "google-site-verification=UTM-3akMgubp6tQtgEuAkYNYLyYAvpTnnSrDMWoDR3o",
+      "facebook-domain-verification=39xu4jzl7roi7x0n93ldkxjiaarx50",
+      "miro-verification=d2e174fdb00c71e0bcf58f8e58c3da2dd80dcfa9",
+      "00Dd0000000hHE0=1TBKg000000TN2r",
+      "apple-domain-verification=RyQhdzTl6Z6x8ZP4",
+      "shopify-verification-code=t1YPwcmvnxZyBycaCpk1MPyWoFs72o",
+      "krisp-domain-verification=ZlyiK7XLhnaoUQb2hpak1PLY7dFkl1WE",
+      "openai-domain-verification=dv-3nh33eQwdkotMIAzLrIDVZo1",
+      "MS=6BF03E6AF5CB689E315FB6199603BABF2C88D805",
       "calendly-site-verification=at0DQARi7IZvJtXQAWhMqpmIzpvoBNF7aam5VKKxP",
-      "00Dd0000000hHE0=1TBKg000000TN2r"
+      "v=spf1 ip4:192.30.252.0/22 include:spf.protection.outlook.com include:_netblocks.google.com include:_netblocks2.google.com include:mail.zendesk.com include:_spf.salesforce.com include:servers.mcsv.net include:mktomail.com include:sendgrid.net ip4:62.253.2",
+      "27.114 ip4:166.78.69.169 ip4:166.78.69.170 ip4:166.78.71.131 ~all",
+      "loom-site-verification=f3787154f1154b7880e720a511ea664d",
+      "MS=ms58704441",
+      "stripe-verification=f88ef17321660a01bab1660454192e014defa29ba7b8de9633c69d6b4912217f"
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -275,11 +282,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
     "github.com"
   ],
   "apex_txt": [
+    "serval-domain-verification-ydryhj=qbkiEakpwEpTvHh5fIiCqtaue",
     "anthropic-domain-verification-4az7qn=if8YWuRRqwLycGJDooumzHtxm",
-    "shopify-verification-code=t1YPwcmvnxZyBycaCpk1MPyWoFs72o",
-    "miro-verification=d2e174fdb00c71e0bcf58f8e58c3da2dd80dcfa9",
-    "openai-domain-verification=dv-3nh33eQwdkotMIAzLrIDVZo1",
-    "krisp-domain-verification=ZlyiK7XLhnaoUQb2hpak1PLY7dFkl1WE"
+    "google-site-verification=82Le34Flgtd15ojYhHlGF_6g72muSjamlMVThBOJpks",
+    "adobe-idp-site-verification=b92c9e999aef825edc36e0a3d847d2dbad5b2fc0e05c79ddd7a1",
+    "jamf-site-verification=XtaPNIYghF_e_xRDI8CjgQ"
   ],
   "tls2": {
     "alpn": "",
@@ -290,7 +297,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260830000000",
+      "not_after": "20261127235959"
     }
   },
   "http2": {
@@ -313,8 +322,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "/*/*/compare"
     ]
   },
-  "elapsed_s": 11.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 12.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

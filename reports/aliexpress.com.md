@@ -7,8 +7,8 @@
 | Target | https://aliexpress.com/ |
 | Bug bounty program | Alibaba |
 | Listed scope domain | aliexpress.com |
-| Test date | 2026-09-26 17:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -165,13 +165,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
 ### 19. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (71dpr6uzd9eu71.aliexpress.com and 9d3ss5oyvu8msu.aliexpress.com) both resolve to distinct addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (59sh3v9ilyg7cc.aliexpress.com and g3nn8tf0svn97r.aliexpress.com) both resolve to distinct addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 20. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: Validity-Domain-Verification=yidvO17A1k5rojYMFX81UL2y7Cw=; google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw; google-site-verification=GCJUnSbd3EWW3g7cRvHi57DLpGuR6CEJHzkk6-SOjAs
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=qipEZ2Q9JVgKJxvS-0G3nvAh729OMkjaAouGkcSxVBE; mailru-verification: c9feb214b705f911; google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 21. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -202,22 +202,22 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
       "mx2.mail.aliyun.com (pref 10)"
     ],
     "ns": [
-      "ns2.alibabadns.com.",
-      "ns1.alibabadns.com."
+      "ns1.alibabadns.com.",
+      "ns2.alibabadns.com."
     ],
     "spf": [
-      "Validity-Domain-Verification=yidvO17A1k5rojYMFX81UL2y7Cw=",
-      "google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw",
-      "f6t8k5j81d8psl001ddncwt7zd1v0rr4",
-      "google-site-verification=GCJUnSbd3EWW3g7cRvHi57DLpGuR6CEJHzkk6-SOjAs",
-      "tnz9gvzzksy8l6y5jcmz0slnjk3yxbgm",
-      "8rlnys07lnz6xvr7wsr4zg0kkz8yd6d5",
-      "cloudflare-verify.aliexpress.com=366647249-1105276800",
+      "apple-domain-verification=qipEZ2Q9JVgKJxvS-0G3nvAh729OMkjaAouGkcSxVBE",
       "v=BIMI1;l=https://bimi.entrust.net/aliexpress.com/logo.svg;a=https://bimi.entrust.net/aliexpress.com/certchain.pem",
-      "v=spf1 include:spf1.service.alibaba.com include:spf2.service.alibaba.com include:spf2.ocm.aliyun.com -all",
       "mailru-verification: c9feb214b705f911",
+      "8rlnys07lnz6xvr7wsr4zg0kkz8yd6d5",
+      "google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw",
       "_globalsign-domain-verification=yhVu_dlmWJNswki9B4Za7HtMd7ihnDDIzpm-RM7nMR",
-      "apple-domain-verification=qipEZ2Q9JVgKJxvS-0G3nvAh729OMkjaAouGkcSxVBE"
+      "cloudflare-verify.aliexpress.com=366647249-1105276800",
+      "f6t8k5j81d8psl001ddncwt7zd1v0rr4",
+      "v=spf1 include:spf1.service.alibaba.com include:spf2.service.alibaba.com include:spf2.ocm.aliyun.com -all",
+      "Validity-Domain-Verification=yidvO17A1k5rojYMFX81UL2y7Cw=",
+      "tnz9gvzzksy8l6y5jcmz0slnjk3yxbgm",
+      "google-site-verification=GCJUnSbd3EWW3g7cRvHi57DLpGuR6CEJHzkk6-SOjAs"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-ap@service.alibaba.com; ruf=mailto:dmarc-ap@service.alibaba.com"
@@ -395,11 +395,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "Validity-Domain-Verification=yidvO17A1k5rojYMFX81UL2y7Cw=",
-    "google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw",
-    "google-site-verification=GCJUnSbd3EWW3g7cRvHi57DLpGuR6CEJHzkk6-SOjAs",
+    "apple-domain-verification=qipEZ2Q9JVgKJxvS-0G3nvAh729OMkjaAouGkcSxVBE",
     "mailru-verification: c9feb214b705f911",
-    "_globalsign-domain-verification=yhVu_dlmWJNswki9B4Za7HtMd7ihnDDIzpm-RM7nMR"
+    "google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw",
+    "_globalsign-domain-verification=yhVu_dlmWJNswki9B4Za7HtMd7ihnDDIzpm-RM7nMR",
+    "Validity-Domain-Verification=yidvO17A1k5rojYMFX81UL2y7Cw="
   ],
   "tls2": {
     "alpn": "",
@@ -410,7 +410,9 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260518112202",
+      "not_after": "20261203111615"
     }
   },
   "http2": {
@@ -432,8 +434,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
       "/product/*"
     ]
   },
+  "x12": {
+    "status": 200
+  },
   "elapsed_s": 15.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

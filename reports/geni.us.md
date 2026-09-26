@@ -7,8 +7,8 @@
 | Target | https://geni.us/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | geni.us |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -152,30 +152,30 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "geni.us",
   "dns": {
     "a": [
-      "64.225.89.3"
+      "174.138.117.212"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "aspmx3.googlemail.com (pref 30)",
+      "aspmx2.googlemail.com (pref 30)",
       "aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 20)",
-      "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx2.googlemail.com (pref 30)"
+      "alt1.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
-      "ns4.geniuslink.com.",
-      "ns6.geniuslink.com.",
+      "ns3.geniuslink.com.",
       "ns5.geniuslink.com.",
       "ns2.geniuslink.com.",
+      "ns4.geniuslink.com.",
       "ns1.geniuslink.com.",
-      "ns3.geniuslink.com."
+      "ns6.geniuslink.com."
     ],
     "spf": [
       "facebook-domain-verification=tyexc4pj94jtntzlgetkc9h6qlxaj7",
       "status-page-domain-verification=px3r907b3k7k",
-      "v=spf1 redirect=geni.us.hosted.spf-report.com",
-      "google-site-verification=mpRbKoQ7OleZ5yhUF-NSmdN9RhrbGisKciCwo4ufIE4"
+      "google-site-verification=mpRbKoQ7OleZ5yhUF-NSmdN9RhrbGisKciCwo4ufIE4",
+      "v=spf1 redirect=geni.us.hosted.spf-report.com"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:9bb5d347@mxtoolbox.dmarc-report.com,mailto:bmeip0rx@ag.us.dmarcian.com,mailto:adc00ec0f5@rua.easydmarc.us; ruf=mailto:9bb5d347@forensics.dmarc-report.com,mailto:adc00ec0f5@ruf.easydmarc.us,",
@@ -203,7 +203,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "target.georiot.com",
       "www.georiot.com"
     ],
-    "days_left": 63,
+    "days_left": 62,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -213,7 +213,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "64.225.89.3",
+    "ip": "174.138.117.212",
     "open": []
   },
   "https": {
@@ -252,7 +252,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "/robots.txt": 200,
     "/sitemap.xml": 404,
     "/.well-known/security.txt": 404,
-    "/security.txt": 429,
+    "/security.txt": 404,
     "/.git/HEAD": 429,
     "/.git/config": 429,
     "/.env": 429,
@@ -315,11 +315,16 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260830180205",
+      "not_after": "20261128180204"
     }
   },
-  "elapsed_s": 22.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 429
+  },
+  "elapsed_s": 18.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

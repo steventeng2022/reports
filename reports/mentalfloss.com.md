@@ -7,12 +7,12 @@
 | Target | https://mentalfloss.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | mentalfloss.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -139,7 +140,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=y-SZX1wXDfAt3K_CF7Fl9gbGYUpxXQ96TY7zGK14oSQ; google-site-verification=fgC5-DxY6HvFT8fM0SiUAhdq8SDSuE1zvW0HpdlwdgA; google-site-verification=PwHgWMzA1M9ET0l3j0Rla5nCyb02HTa1oLSN5OXUVaQ
+- **Detail:** Apex TXT records with verification/token content: yahoo-verification-key=lyoqSKYVgsjW3xJbQlCFP/nMpIN/jC4gtPPkVLfh+OY=; google-site-verification=y-SZX1wXDfAt3K_CF7Fl9gbGYUpxXQ96TY7zGK14oSQ; google-site-verification=fgC5-DxY6HvFT8fM0SiUAhdq8SDSuE1zvW0HpdlwdgA
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -154,6 +155,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **Detail:** robots.txt lists 85 disallow path(s), e.g. */?*utm_source=*, */?*utm_campaign=*, */?*utm_medium=*, /*?source=*, */?*utm_content
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 35.83.190.225 carries PTR ec2-35-83-190-225.us-west-2.compute.amazonaws.com. for mentalfloss.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -161,38 +168,38 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "mentalfloss.com",
   "dns": {
     "a": [
-      "44.241.188.24",
-      "35.83.190.225"
+      "35.83.190.225",
+      "44.241.188.24"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx3.googlemail.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
       "aspmx2.googlemail.com (pref 10)"
     ],
     "ns": [
       "ns-1355.awsdns-41.org.",
-      "ns-127.awsdns-15.com.",
       "ns-1783.awsdns-30.co.uk.",
-      "ns-856.awsdns-43.net."
+      "ns-856.awsdns-43.net.",
+      "ns-127.awsdns-15.com."
     ],
     "spf": [
-      "v=DMARC1; p=reject; rua=mailto:postmaster@solarmora.com, mailto:dmarc@solarmora.com",
-      "v=spf1 include:aspmx.sailthru.com include:_spf.google.com include:mail.zendesk.com ~all",
-      "bpjjzh8yhgm6n0y9437fbz52gs9j0lph",
-      "google-site-verification=y-SZX1wXDfAt3K_CF7Fl9gbGYUpxXQ96TY7zGK14oSQ",
-      "google-site-verification=fgC5-DxY6HvFT8fM0SiUAhdq8SDSuE1zvW0HpdlwdgA",
-      "google-site-verification=PwHgWMzA1M9ET0l3j0Rla5nCyb02HTa1oLSN5OXUVaQ",
-      "yahoo-verification-key=lyoqSKYVgsjW3xJbQlCFP/nMpIN/jC4gtPPkVLfh+OY=",
-      "google-site-verification=z4YHNPYC5G4ehxb4caJGpn3jv1vGdOVgZYa1EGw8j-Q",
-      "facebook-domain-verification=8p8k8s86fzfb5d2g2zq15818aj4u62",
       "brevo-code:25bd81de5f53ea7ec3c6b9f3e71ef018",
-      "google-site-verification=Cl1nAqp5GlOLDdnSAS1Dg2wyIVilb76SZ9B43NKBFls",
+      "yahoo-verification-key=lyoqSKYVgsjW3xJbQlCFP/nMpIN/jC4gtPPkVLfh+OY=",
+      "v=spf1 include:aspmx.sailthru.com include:_spf.google.com include:mail.zendesk.com ~all",
+      "google-site-verification=y-SZX1wXDfAt3K_CF7Fl9gbGYUpxXQ96TY7zGK14oSQ",
       "MS=ms12917153",
-      "google-site-verification=g19BQLQaGVGFsp9S--Nux-0AjT79KfOYJdpjnEKsA9c"
+      "google-site-verification=fgC5-DxY6HvFT8fM0SiUAhdq8SDSuE1zvW0HpdlwdgA",
+      "google-site-verification=g19BQLQaGVGFsp9S--Nux-0AjT79KfOYJdpjnEKsA9c",
+      "facebook-domain-verification=8p8k8s86fzfb5d2g2zq15818aj4u62",
+      "google-site-verification=z4YHNPYC5G4ehxb4caJGpn3jv1vGdOVgZYa1EGw8j-Q",
+      "v=DMARC1; p=reject; rua=mailto:postmaster@solarmora.com, mailto:dmarc@solarmora.com",
+      "google-site-verification=PwHgWMzA1M9ET0l3j0Rla5nCyb02HTa1oLSN5OXUVaQ",
+      "google-site-verification=Cl1nAqp5GlOLDdnSAS1Dg2wyIVilb76SZ9B43NKBFls",
+      "bpjjzh8yhgm6n0y9437fbz52gs9j0lph"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com"
@@ -221,7 +228,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "44.241.188.24",
+    "ip": "35.83.190.225",
     "open": []
   },
   "https": {
@@ -274,11 +281,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "yahoo-verification-key=lyoqSKYVgsjW3xJbQlCFP/nMpIN/jC4gtPPkVLfh+OY=",
     "google-site-verification=y-SZX1wXDfAt3K_CF7Fl9gbGYUpxXQ96TY7zGK14oSQ",
     "google-site-verification=fgC5-DxY6HvFT8fM0SiUAhdq8SDSuE1zvW0HpdlwdgA",
-    "google-site-verification=PwHgWMzA1M9ET0l3j0Rla5nCyb02HTa1oLSN5OXUVaQ",
-    "yahoo-verification-key=lyoqSKYVgsjW3xJbQlCFP/nMpIN/jC4gtPPkVLfh+OY=",
-    "google-site-verification=z4YHNPYC5G4ehxb4caJGpn3jv1vGdOVgZYa1EGw8j-Q"
+    "google-site-verification=g19BQLQaGVGFsp9S--Nux-0AjT79KfOYJdpjnEKsA9c",
+    "facebook-domain-verification=8p8k8s86fzfb5d2g2zq15818aj4u62"
   ],
   "tls2": {
     "alpn": "",
@@ -289,7 +296,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260820121613",
+      "not_after": "20261118121612"
     }
   },
   "http2": {
@@ -311,8 +320,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "*?georedirect=*"
     ]
   },
-  "elapsed_s": 23.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ec2-35-83-190-225.us-west-2.compute.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 25.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

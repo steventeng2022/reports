@@ -7,12 +7,12 @@
 | Target | https://dailymotion.com/ |
 | Bug bounty program | Dailymotion |
 | Listed scope domain | dailymotion.com |
-| Test date | 2026-09-26 17:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -124,7 +125,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: notion-domain-verification=uvbWKKeyZnS8S7Wbx92ycOmg6ciLlUt4DXUbFAGGx9K; google-site-verification=CmwXiGhZe_wN9v_ACMLi26gPNF8jMSiO7IIm3uJDflU; anthropic-domain-verification-c1804p=NXPXkMxpSDDbn8bTInhn5Ajb7
+- **Detail:** Apex TXT records with verification/token content: notion-domain-verification=uvbWKKeyZnS8S7Wbx92ycOmg6ciLlUt4DXUbFAGGx9K; wiz-domain-verification=22e8ef3cd472ce86a7a48ea0bf2d3113fa543c2d41f969132187ce1c; atlassian-domain-verification=1fQPUuD1xWMMiqUh4TDo7tO4mPlbE/ptj393wMdMtIRv5UXlZm
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -139,6 +140,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - **Detail:** robots.txt lists 735 disallow path(s), e.g. /a/*, /abuse/group/, /activate, */adfit/*, /ajax/user
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 195.8.215.136 carries PTR www.dailymotion.com. for dailymotion.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -151,30 +158,30 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxa-009c2301.gslb.pphosted.com (pref 10)",
-      "mxb-009c2301.gslb.pphosted.com (pref 10)"
+      "mxb-009c2301.gslb.pphosted.com (pref 10)",
+      "mxa-009c2301.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "a.dailymotion.com.",
-      "b.dailymotion.com."
+      "b.dailymotion.com.",
+      "a.dailymotion.com."
     ],
     "spf": [
       "notion-domain-verification=uvbWKKeyZnS8S7Wbx92ycOmg6ciLlUt4DXUbFAGGx9K",
+      "wiz-domain-verification=22e8ef3cd472ce86a7a48ea0bf2d3113fa543c2d41f969132187ce1c7142466e",
+      "atlassian-domain-verification=1fQPUuD1xWMMiqUh4TDo7tO4mPlbE/ptj393wMdMtIRv5UXlZmKDb2cfLlApGCBs",
+      "anthropic-domain-verification-c1804p=NXPXkMxpSDDbn8bTInhn5Ajb7",
       "google-site-verification=CmwXiGhZe_wN9v_ACMLi26gPNF8jMSiO7IIm3uJDflU",
+      "jamf-site-verification=tyNylgsFuzDaZKhtv2ws8A",
+      "google-site-verification=jb-qAE0Qy-NAyOuv1frZT1A1UE6gNE955_I3lhjZP_0",
+      "miro-verification=a02c054603f34e1def7bec67636b72d31e230cf4",
+      "432125346-6247381",
+      "OSSRH-69635",
       "v=spf1 include:spf.protection.outlook.com include:_spf.salesforce.com include:_spf.google.com include:spfa.dailymotion.com include:spfb.dailymotion.com include:spfc.dailymotion.com ~all",
       "docusign=c8b32be7-de71-4c64-a061-78cd9ef299ee",
-      "anthropic-domain-verification-c1804p=NXPXkMxpSDDbn8bTInhn5Ajb7",
-      "canva-site-verification=M-ynsH9PuwqgXIvdn1n6XA",
-      "miro-verification=a02c054603f34e1def7bec67636b72d31e230cf4",
-      "jamf-site-verification=tyNylgsFuzDaZKhtv2ws8A",
-      "atlassian-domain-verification=1fQPUuD1xWMMiqUh4TDo7tO4mPlbE/ptj393wMdMtIRv5UXlZmKDb2cfLlApGCBs",
-      "google-site-verification=jb-qAE0Qy-NAyOuv1frZT1A1UE6gNE955_I3lhjZP_0",
       "facebook-domain-verification=12wxrtyxlslijcmfpit8f0fwtlywlz",
-      "figma-domain-verification=cbb3b2f479e5448b33c1db6b92c0a5c13113593739aa38b3ab18f4e7dfcad023-1777467509",
-      "OSSRH-69635",
-      "wiz-domain-verification=22e8ef3cd472ce86a7a48ea0bf2d3113fa543c2d41f969132187ce1c7142466e",
-      "432125346-6247381",
       "MS=ms31612776",
+      "canva-site-verification=M-ynsH9PuwqgXIvdn1n6XA",
+      "figma-domain-verification=cbb3b2f479e5448b33c1db6b92c0a5c13113593739aa38b3ab18f4e7dfcad023-1777467509",
       "apple-domain-verification=Xc0pXSUjiGdd6fzI"
     ],
     "dmarc": [
@@ -259,10 +266,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   },
   "apex_txt": [
     "notion-domain-verification=uvbWKKeyZnS8S7Wbx92ycOmg6ciLlUt4DXUbFAGGx9K",
-    "google-site-verification=CmwXiGhZe_wN9v_ACMLi26gPNF8jMSiO7IIm3uJDflU",
+    "wiz-domain-verification=22e8ef3cd472ce86a7a48ea0bf2d3113fa543c2d41f969132187ce1c",
+    "atlassian-domain-verification=1fQPUuD1xWMMiqUh4TDo7tO4mPlbE/ptj393wMdMtIRv5UXlZm",
     "anthropic-domain-verification-c1804p=NXPXkMxpSDDbn8bTInhn5Ajb7",
-    "canva-site-verification=M-ynsH9PuwqgXIvdn1n6XA",
-    "miro-verification=a02c054603f34e1def7bec67636b72d31e230cf4"
+    "google-site-verification=CmwXiGhZe_wN9v_ACMLi26gPNF8jMSiO7IIm3uJDflU"
   ],
   "tls2": {
     "alpn": "",
@@ -273,7 +280,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260727000000",
+      "not_after": "20261025235959"
     }
   },
   "http2": {
@@ -296,8 +305,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "*/edited/"
     ]
   },
-  "elapsed_s": 39.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "www.dailymotion.com."
+    ]
+  },
+  "elapsed_s": 39.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,8 +7,8 @@
 | Target | https://europa.eu/ |
 | Bug bounty program | European Central Bank |
 | Listed scope domain | europa.eu |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -132,7 +132,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=6E976E49300A09A522CDF38DD011C63F; globalsign-domain-verification=1DAC9871AC98A3037988017AF30FA87F; globalsign-domain-verification=B762A73F73CF60DC20EC10D5BCC1F69F
+- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=6E976E49300A09A522CDF38DD011C63F; google-site-verification=OjhPSDIP2VIXIUH7hMv7CrLWwkyvnVgBdU-VcMHDoUI; google-site-verification=C0d5wiXRs2yokw7eUIL5Gz1825U9-M-HumwMZZYC7co
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -158,50 +158,50 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "147.67.210.45"
     ],
     "aaaa": [
-      "2a01:7080:14:100::666:45",
-      "2a01:7080:24:100::666:45"
+      "2a01:7080:24:100::666:45",
+      "2a01:7080:14:100::666:45"
     ],
     "cname": null,
     "mx": [
+      "mxa-00244802.gslb.pphosted.com (pref 10)",
       "europa-eu.mail.protection.outlook.com (pref 30)",
-      "mxb-00244802.gslb.pphosted.com (pref 10)",
-      "mxa-00244802.gslb.pphosted.com (pref 10)"
+      "mxb-00244802.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns1bru.europa.eu.",
-      "ns3lux.europa.eu.",
-      "ns2lux.europa.eu.",
-      "ns4az1.europa.eu.",
-      "ans1.cw.net.",
-      "ns3bru.europa.eu.",
       "ans2.cw.net.",
       "ns4az2.europa.eu.",
+      "ns3bru.europa.eu.",
+      "ns1lux.europa.eu.",
       "ns2bru.europa.eu.",
-      "ns1lux.europa.eu."
+      "ns4az1.europa.eu.",
+      "ns1bru.europa.eu.",
+      "ns3lux.europa.eu.",
+      "ans1.cw.net.",
+      "ns2lux.europa.eu."
     ],
     "spf": [
       "globalsign-domain-verification=6E976E49300A09A522CDF38DD011C63F",
-      "nebYTcEacNoHj/N4hQzlTm96MnMnc30ILD2tZb2NsjM=",
-      "_telesec-domain-validation=A04C937E41A9E22C91DC0F50FD4D6C9095ABAC1B09A81560305F2710373C16DB",
-      "globalsign-domain-verification=1DAC9871AC98A3037988017AF30FA87F",
-      "pnfm8n4m7lmp9d1pajbg9r75kg",
-      "qjN-z-oil6MiHrTAeEPV9832p9-1ewZQs8CEFV8idpU",
-      "globalsign-domain-verification=B762A73F73CF60DC20EC10D5BCC1F69F",
-      "s5okgqb037ach4jjok6997blj7",
-      "MS=ms27630582",
-      "WM+KEtZ8csQ1+YoyvDY+JophT0DYfsjJsYeNgkkxH8o=",
-      "2y8xxj7q7dt3hxkh7zk1psbz59cz0q12",
-      "585pfn277okgsr6eqq5cp66kjc",
-      "yjh4bgq2dh9j194hj56s9ykgzf2nkh0g",
-      "v1he8htvegs2u8pk09img207mh",
-      "v1inc38ais4eor8dd2be59ap7v",
-      "v=spf1 -all",
-      "google-site-verification=C0d5wiXRs2yokw7eUIL5Gz1825U9-M-HumwMZZYC7co",
-      "globalsign-domain-verification=EE82C636B37B31C32CDDE24375C410A9",
       "google-site-verification=OjhPSDIP2VIXIUH7hMv7CrLWwkyvnVgBdU-VcMHDoUI",
+      "MS=ms27630582",
+      "google-site-verification=C0d5wiXRs2yokw7eUIL5Gz1825U9-M-HumwMZZYC7co",
+      "pnfm8n4m7lmp9d1pajbg9r75kg",
+      "WM+KEtZ8csQ1+YoyvDY+JophT0DYfsjJsYeNgkkxH8o=",
       "DN6kiCaIRHg011SWPd/y5wK0nF1lAB0vxkimTgK6YHQ=",
+      "_telesec-domain-validation=A04C937E41A9E22C91DC0F50FD4D6C9095ABAC1B09A81560305F2710373C16DB",
+      "v=spf1 -all",
+      "585pfn277okgsr6eqq5cp66kjc",
       "35HsndgfVFDTReSgRvCjY3t5wlWjYsLllfUgRIpuDfk=",
-      "OSSRH-80601"
+      "v1he8htvegs2u8pk09img207mh",
+      "qjN-z-oil6MiHrTAeEPV9832p9-1ewZQs8CEFV8idpU",
+      "OSSRH-80601",
+      "globalsign-domain-verification=B762A73F73CF60DC20EC10D5BCC1F69F",
+      "globalsign-domain-verification=1DAC9871AC98A3037988017AF30FA87F",
+      "2y8xxj7q7dt3hxkh7zk1psbz59cz0q12",
+      "nebYTcEacNoHj/N4hQzlTm96MnMnc30ILD2tZb2NsjM=",
+      "s5okgqb037ach4jjok6997blj7",
+      "globalsign-domain-verification=EE82C636B37B31C32CDDE24375C410A9",
+      "v1inc38ais4eor8dd2be59ap7v",
+      "yjh4bgq2dh9j194hj56s9ykgzf2nkh0g"
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -283,10 +283,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   },
   "apex_txt": [
     "globalsign-domain-verification=6E976E49300A09A522CDF38DD011C63F",
-    "globalsign-domain-verification=1DAC9871AC98A3037988017AF30FA87F",
-    "globalsign-domain-verification=B762A73F73CF60DC20EC10D5BCC1F69F",
+    "google-site-verification=OjhPSDIP2VIXIUH7hMv7CrLWwkyvnVgBdU-VcMHDoUI",
     "google-site-verification=C0d5wiXRs2yokw7eUIL5Gz1825U9-M-HumwMZZYC7co",
-    "globalsign-domain-verification=EE82C636B37B31C32CDDE24375C410A9"
+    "globalsign-domain-verification=B762A73F73CF60DC20EC10D5BCC1F69F",
+    "globalsign-domain-verification=1DAC9871AC98A3037988017AF30FA87F"
   ],
   "tls2": {
     "alpn": "",
@@ -297,7 +297,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260811082810",
+      "not_after": "20270226082809"
     }
   },
   "http2": {
@@ -319,8 +321,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "/youth/xmlrpc.php"
     ]
   },
-  "elapsed_s": 32.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 34.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

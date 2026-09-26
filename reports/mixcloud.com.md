@@ -7,8 +7,8 @@
 | Target | https://mixcloud.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | mixcloud.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -48,13 +48,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.20.4.36:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.20.5.36:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.20.4.36:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.20.5.36:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -147,7 +147,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=MIkL-g_FIR1v7JnMSJ-Ilfjqlqz6xAQtK7CP3AzlyNE; apple-domain-verification=cBSzBF9wU7M8t86W; google-site-verification=z00gWRhfVeQQGXNgzCg9xd2WUXMhFuWl4QbXx3mN5zU
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=CB4tWZGyP2d-9jp1_q7WPJOuIGz6UUHm8nnMeY9Tsj8; apple-domain-verification=cBSzBF9wU7M8t86W; google-site-verification=z00gWRhfVeQQGXNgzCg9xd2WUXMhFuWl4QbXx3mN5zU
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -175,8 +175,8 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   "domain": "mixcloud.com",
   "dns": {
     "a": [
-      "104.20.4.36",
-      "104.20.5.36"
+      "104.20.5.36",
+      "104.20.4.36"
     ],
     "aaaa": [
       "2606:4700:10::6814:424",
@@ -184,25 +184,25 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     ],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 3)",
-      "alt1.aspmx.l.google.com (pref 3)",
-      "aspmx.l.google.com (pref 1)",
-      "aspmx5.googlemail.com (pref 5)",
       "aspmx2.googlemail.com (pref 5)",
       "aspmx3.googlemail.com (pref 5)",
-      "aspmx4.googlemail.com (pref 5)"
+      "aspmx5.googlemail.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 3)",
+      "aspmx4.googlemail.com (pref 5)",
+      "alt1.aspmx.l.google.com (pref 3)",
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "tegan.ns.cloudflare.com.",
-      "miles.ns.cloudflare.com."
+      "miles.ns.cloudflare.com.",
+      "tegan.ns.cloudflare.com."
     ],
     "spf": [
       "cloudflare_dashboard_sso=a2939222461cc73e72b3c1a180c1715e",
-      "google-site-verification=MIkL-g_FIR1v7JnMSJ-Ilfjqlqz6xAQtK7CP3AzlyNE",
-      "v=spf1 include:_spf.google.com include:mail.zendesk.com ip4:153.56.154.0/24 -all",
+      "google-site-verification=CB4tWZGyP2d-9jp1_q7WPJOuIGz6UUHm8nnMeY9Tsj8",
       "apple-domain-verification=cBSzBF9wU7M8t86W",
+      "v=spf1 include:_spf.google.com include:mail.zendesk.com ip4:153.56.154.0/24 -all",
       "google-site-verification=z00gWRhfVeQQGXNgzCg9xd2WUXMhFuWl4QbXx3mN5zU",
-      "google-site-verification=CB4tWZGyP2d-9jp1_q7WPJOuIGz6UUHm8nnMeY9Tsj8"
+      "google-site-verification=MIkL-g_FIR1v7JnMSJ-Ilfjqlqz6xAQtK7CP3AzlyNE"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; pct=100; rua=mailto:5f2e9c9009c34a7eab0b76c4cf89cb42@dmarc-reports.cloudflare.net,mailto:dmarc@mixcloud.com; adkim=s; aspf=s"
@@ -233,7 +233,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     }
   },
   "ports": {
-    "ip": "104.20.4.36",
+    "ip": "104.20.5.36",
     "open": [
       8080,
       8443
@@ -325,10 +325,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     ]
   },
   "apex_txt": [
-    "google-site-verification=MIkL-g_FIR1v7JnMSJ-Ilfjqlqz6xAQtK7CP3AzlyNE",
+    "google-site-verification=CB4tWZGyP2d-9jp1_q7WPJOuIGz6UUHm8nnMeY9Tsj8",
     "apple-domain-verification=cBSzBF9wU7M8t86W",
     "google-site-verification=z00gWRhfVeQQGXNgzCg9xd2WUXMhFuWl4QbXx3mN5zU",
-    "google-site-verification=CB4tWZGyP2d-9jp1_q7WPJOuIGz6UUHm8nnMeY9Tsj8"
+    "google-site-verification=MIkL-g_FIR1v7JnMSJ-Ilfjqlqz6xAQtK7CP3AzlyNE"
   ],
   "tls2": {
     "alpn": "",
@@ -339,7 +339,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260926144533",
+      "not_after": "20261225154528"
     }
   },
   "http2": {
@@ -349,8 +351,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "/pigeon/"
     ]
   },
-  "elapsed_s": 7.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 6.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

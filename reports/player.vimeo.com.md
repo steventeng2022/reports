@@ -7,12 +7,12 @@
 | Target | https://player.vimeo.com/ |
 | Bug bounty program | Vimeo |
 | Listed scope domain | player.vimeo.com |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
+Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 13 | info | CK5 | Cookie scoped to parent domain (vimeo.com) | CWE-200 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 
 ## Detailed findings
 
@@ -42,13 +43,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 162.159.128.61:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 162.159.138.60:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 162.159.128.61:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 162.159.138.60:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -123,6 +124,12 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 - **Detail:** robots.txt lists 2 disallow path(s), e.g. /, /external
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 15. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of player.vimeo.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -130,8 +137,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
   "domain": "player.vimeo.com",
   "dns": {
     "a": [
-      "162.159.128.61",
-      "162.159.138.60"
+      "162.159.138.60",
+      "162.159.128.61"
     ],
     "aaaa": [],
     "cname": "player.vimeo.com.cdn.cloudflare.net.",
@@ -164,7 +171,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
     }
   },
   "ports": {
-    "ip": "162.159.128.61",
+    "ip": "162.159.138.60",
     "open": [
       8080,
       8443
@@ -237,7 +244,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260903122717",
+      "not_after": "20261202132658"
     }
   },
   "http2": {
@@ -247,8 +256,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "/external"
     ]
   },
-  "elapsed_s": 9.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 9.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

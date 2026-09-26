@@ -7,12 +7,12 @@
 | Target | https://help.apple.com/ |
 | Bug bounty program | Apple |
 | Listed scope domain | help.apple.com |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
+Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -118,6 +120,18 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 - **Detail:** robots.txt lists 122 disallow path(s), e.g. /imovie/Contents/en/searchindex/, /garageband/Contents/en/searchindex/, /imovie/cameras/, /finalcutpro, /finalcutpro/cameras/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 14. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://help.apple.com/ carries Cache-Control: max-age=600; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 17.253.117.131 carries PTR twtpe2-vip-fx-101.a.aaplimg.com. for help.apple.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -125,12 +139,12 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
   "domain": "help.apple.com",
   "dns": {
     "a": [
-      "203.121.225.70",
-      "203.121.225.71"
+      "17.253.117.131",
+      "17.253.117.132"
     ],
     "aaaa": [
-      "2403:300:a30:f000::133",
-      "2403:300:a30:f000::132"
+      "2403:300:a30:f000::131",
+      "2403:300:a30:f000::134"
     ],
     "cname": "help.origin-apple.com.akadns.net.",
     "mx": [],
@@ -145,15 +159,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "countryName=US, stateOrProvinceName=California, organizationName=Apple Inc., commonName=help.apple.com",
-    "issuer": "commonName=Apple Public Server RSA CA 11 - G1, organizationName=Apple Inc., stateOrProvinceName=California, countryName=US",
-    "notBefore": "Jul  3 14:25:26 2026 GMT",
-    "notAfter": "Jan 14 20:32:46 2027 GMT",
+    "issuer": "countryName=US, organizationName=Apple Inc., commonName=Apple Public Server ECC CA 1 - G1",
+    "notBefore": "Aug 16 23:56:15 2026 GMT",
+    "notAfter": "Nov 10 18:52:18 2026 GMT",
     "san": [
-      "help.apple.com",
-      "helposx.apple.com",
-      "prohelp.apple.com"
+      "help.apple.com"
     ],
-    "days_left": 110,
+    "days_left": 44,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -163,7 +175,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     }
   },
   "ports": {
-    "ip": "203.121.225.70",
+    "ip": "17.253.117.131",
     "open": []
   },
   "https": {
@@ -225,11 +237,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     "tls_ver": "TLSv1.3",
     "subject": "None",
     "cert": {
-      "sig_oid": "1.2.840.113549.1.1.11",
-      "key_alg": "1.2.840.113549.1.1.1",
-      "key_bits": 2048,
-      "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null,
+      "not_before": "20260816235615",
+      "not_after": "20261110185218"
     }
   },
   "http2": {
@@ -251,8 +265,14 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
       "/backuphelpr1"
     ]
   },
-  "elapsed_s": 9.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "twtpe2-vip-fx-101.a.aaplimg.com."
+    ]
+  },
+  "elapsed_s": 9.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

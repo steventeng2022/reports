@@ -7,12 +7,12 @@
 | Target | https://faa.gov/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | faa.gov |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
+Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 | 16 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -148,7 +149,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=qtgRthDvinDxfuZb; apple-domain-verification=u6VDYAQzYrOfivbe; airtable-verification=980f49ddafd00c06f4e37be0a0e74d83
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=u6VDYAQzYrOfivbe; adobe-sign-verification=d9b517c45c4c2b0277445e0d9d7eac344dcb02519394a0ea08faee8c; adobe-idp-site-verification=2d36c88877f2772ad0e628e64e865a3a225928ef49b2967f35ec
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -156,6 +157,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 - **CWE:** CWE-603
 - **Detail:** Certificate of faa.gov has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 155.178.201.85 carries PTR faa.gov. for faa.gov.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -171,42 +178,42 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
     ],
     "cname": null,
     "mx": [
-      "relay3.faa.gov (pref 5)",
-      "relay4.faa.gov (pref 5)",
       "relay1.faa.gov (pref 5)",
+      "amcrelay1.faa.gov (pref 5)",
       "relay2.faa.gov (pref 5)",
-      "amcrelay3.faa.gov (pref 5)",
+      "relay4.faa.gov (pref 5)",
       "amcrelay4.faa.gov (pref 5)",
-      "amcrelay2.faa.gov (pref 5)",
-      "amcrelay1.faa.gov (pref 5)"
+      "amcrelay3.faa.gov (pref 5)",
+      "relay3.faa.gov (pref 5)",
+      "amcrelay2.faa.gov (pref 5)"
     ],
     "ns": [
-      "a24-64.akam.net.",
-      "a14-64.akam.net.",
-      "a12-64.akam.net.",
       "a11-65.akam.net.",
-      "a5-65.akam.net.",
-      "a1-97.akam.net.",
+      "a12-64.akam.net.",
       "faa-ct-egm1.faa.gov.",
-      "faa-mc-egm1.faa.gov."
+      "a1-97.akam.net.",
+      "a24-64.akam.net.",
+      "faa-mc-egm1.faa.gov.",
+      "a14-64.akam.net.",
+      "a5-65.akam.net."
     ],
     "spf": [
-      "apple-domain-verification=qtgRthDvinDxfuZb",
+      "docusign=080db4e4-218c-443b-ad76-1963743f3157",
       "apple-domain-verification=u6VDYAQzYrOfivbe",
-      "smartsheet-gov-site-validation=mIkWyNAOEJecACv9-NJtfYQNvPNPrAKB",
-      "airtable-verification=980f49ddafd00c06f4e37be0a0e74d83",
-      "_mhp0ohi7rqkhwe0s2sd2wz626zbzq50",
       "docusign=36a52596-5d8b-4aa8-a3ea-fd823a641d7b",
+      "adobe-sign-verification=d9b517c45c4c2b0277445e0d9d7eac344dcb02519394a0ea08faee8c40d85dc3",
       "adobe-idp-site-verification=2d36c88877f2772ad0e628e64e865a3a225928ef49b2967f35ece163e84ae203",
+      "_mhp0ohi7rqkhwe0s2sd2wz626zbzq50",
+      "box-domain-verification=6e6d49a46237d2f704840481289b15d3e7a02a41723fe3cdfd9341b6f52df150",
+      "google-gws-recovery-domain-verification=61134742",
+      "apple-domain-verification=qtgRthDvinDxfuZb",
       "_m0b4vf6qhrh5scrrxosrx9nlq687irj",
       "atlassian-domain-verification=wtYpZOBvqKwb5ZROaraY6fshROjgQ0TOYLAGTZnDsOuoqJCyjOey552col60ndzg",
-      "google-gws-recovery-domain-verification=61134742",
-      "_dxoevfz55dgcr8btzsrr2zg588vrpy7",
       "zy861l2r0qc6nqjqkwprs8w047f6m44n",
-      "box-domain-verification=6e6d49a46237d2f704840481289b15d3e7a02a41723fe3cdfd9341b6f52df150",
-      "adobe-sign-verification=d9b517c45c4c2b0277445e0d9d7eac344dcb02519394a0ea08faee8c40d85dc3",
+      "smartsheet-gov-site-validation=mIkWyNAOEJecACv9-NJtfYQNvPNPrAKB",
+      "_dxoevfz55dgcr8btzsrr2zg588vrpy7",
       "_j0jnoq89nb5odruj97i87etsntvpfoc",
-      "docusign=080db4e4-218c-443b-ad76-1963743f3157",
+      "airtable-verification=980f49ddafd00c06f4e37be0a0e74d83",
       "v=spf1 include:faa.gov._nspf.valigov.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.valigov.email ~all"
     ],
     "dmarc": [
@@ -289,11 +296,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "apple-domain-verification=qtgRthDvinDxfuZb",
     "apple-domain-verification=u6VDYAQzYrOfivbe",
-    "airtable-verification=980f49ddafd00c06f4e37be0a0e74d83",
+    "adobe-sign-verification=d9b517c45c4c2b0277445e0d9d7eac344dcb02519394a0ea08faee8c",
     "adobe-idp-site-verification=2d36c88877f2772ad0e628e64e865a3a225928ef49b2967f35ec",
-    "atlassian-domain-verification=wtYpZOBvqKwb5ZROaraY6fshROjgQ0TOYLAGTZnDsOuoqJCyjO"
+    "box-domain-verification=6e6d49a46237d2f704840481289b15d3e7a02a41723fe3cdfd9341b6",
+    "google-gws-recovery-domain-verification=61134742"
   ],
   "tls2": {
     "alpn": "",
@@ -304,11 +311,19 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260511000000",
+      "not_after": "20261125235959"
     }
   },
-  "elapsed_s": 35.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "faa.gov."
+    ]
+  },
+  "elapsed_s": 36.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

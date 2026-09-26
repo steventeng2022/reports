@@ -7,12 +7,12 @@
 | Target | https://journals.sagepub.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | journals.sagepub.com |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
+Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,7 +28,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 | 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 13 | info | CT1 | 4 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 13 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 14 | info | CT1 | 4 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -41,13 +42,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.36.195:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.64.151.61:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.36.195:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.64.151.61:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -79,7 +80,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 ### 8. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (jqdxbuwthgqsst.journals.sagepub.com and e41cbkhx4xhoph.journals.sagepub.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (dpqqil46o6gbyq.journals.sagepub.com and yzsoj58x2fpn26.journals.sagepub.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 9. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
@@ -106,7 +107,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 - **Detail:** robots.txt lists 22 disallow path(s), e.g. /action, /help, /search, /feedback, /rss
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 13. [INFO] 4 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 13. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of journals.sagepub.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 14. [INFO] 4 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: staging.journals.sagepub.com
@@ -119,8 +126,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
   "domain": "journals.sagepub.com",
   "dns": {
     "a": [
-      "104.18.36.195",
-      "172.64.151.61"
+      "172.64.151.61",
+      "104.18.36.195"
     ],
     "aaaa": [],
     "cname": null,
@@ -157,7 +164,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
     }
   },
   "ports": {
-    "ip": "104.18.36.195",
+    "ip": "172.64.151.61",
     "open": [
       8080,
       8443
@@ -236,7 +243,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260804044749",
+      "not_after": "20261102054745"
     }
   },
   "http2": {
@@ -258,8 +267,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
       "/author/"
     ]
   },
-  "elapsed_s": 3.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 4.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

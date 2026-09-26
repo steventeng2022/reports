@@ -7,8 +7,8 @@
 | Target | https://sciencedaily.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | sciencedaily.com |
-| Test date | 2026-09-26 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -48,13 +48,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.26.5.15:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.67.75.166:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.26.5.15:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.67.75.166:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -147,7 +147,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=5oq14nyaskwhbumbv9ciq9u6673us5; google-site-verification=VTa387KessSeUKIk82l7wxHCJBfSkQSXbazhfOPXc_c; globalsign-domain-verification=QNggA5G6QQDkhq8HwwSkk3Pq-pS-ocYFv594GxNfmw
+- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=QNggA5G6QQDkhq8HwwSkk3Pq-pS-ocYFv594GxNfmw; google-site-verification=WM-ZBKOaI9fmMYiqOsm8UuIlbUdNfbiii4HFgt-XxZc; google-site-verification=VTa387KessSeUKIk82l7wxHCJBfSkQSXbazhfOPXc_c
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -175,9 +175,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   "domain": "sciencedaily.com",
   "dns": {
     "a": [
-      "104.26.5.15",
+      "172.67.75.166",
       "104.26.4.15",
-      "172.67.75.166"
+      "104.26.5.15"
     ],
     "aaaa": [
       "2606:4700:20::681a:40f",
@@ -186,24 +186,24 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     ],
     "cname": null,
     "mx": [
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx3.googlemail.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)",
-      "aspmx3.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "beth.ns.cloudflare.com.",
-      "noah.ns.cloudflare.com."
+      "noah.ns.cloudflare.com.",
+      "beth.ns.cloudflare.com."
     ],
     "spf": [
-      "facebook-domain-verification=5oq14nyaskwhbumbv9ciq9u6673us5",
-      "58piam3mhj3hac4u0msb49h9jo",
       "irjlmconcnkfmetvds6djpfhga",
-      "google-site-verification=VTa387KessSeUKIk82l7wxHCJBfSkQSXbazhfOPXc_c",
       "globalsign-domain-verification=QNggA5G6QQDkhq8HwwSkk3Pq-pS-ocYFv594GxNfmw",
+      "58piam3mhj3hac4u0msb49h9jo",
+      "google-site-verification=WM-ZBKOaI9fmMYiqOsm8UuIlbUdNfbiii4HFgt-XxZc",
       "v=spf1 include:_spf.google.com -all",
-      "google-site-verification=WM-ZBKOaI9fmMYiqOsm8UuIlbUdNfbiii4HFgt-XxZc"
+      "google-site-verification=VTa387KessSeUKIk82l7wxHCJBfSkQSXbazhfOPXc_c",
+      "facebook-domain-verification=5oq14nyaskwhbumbv9ciq9u6673us5"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; adkim=s; aspf=s"
@@ -223,7 +223,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "sciencedaily.com",
       "*.sciencedaily.com"
     ],
-    "days_left": 83,
+    "days_left": 82,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -233,7 +233,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     }
   },
   "ports": {
-    "ip": "104.26.5.15",
+    "ip": "172.67.75.166",
     "open": [
       8080,
       8443
@@ -297,10 +297,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     ]
   },
   "apex_txt": [
-    "facebook-domain-verification=5oq14nyaskwhbumbv9ciq9u6673us5",
-    "google-site-verification=VTa387KessSeUKIk82l7wxHCJBfSkQSXbazhfOPXc_c",
     "globalsign-domain-verification=QNggA5G6QQDkhq8HwwSkk3Pq-pS-ocYFv594GxNfmw",
-    "google-site-verification=WM-ZBKOaI9fmMYiqOsm8UuIlbUdNfbiii4HFgt-XxZc"
+    "google-site-verification=WM-ZBKOaI9fmMYiqOsm8UuIlbUdNfbiii4HFgt-XxZc",
+    "google-site-verification=VTa387KessSeUKIk82l7wxHCJBfSkQSXbazhfOPXc_c",
+    "facebook-domain-verification=5oq14nyaskwhbumbv9ciq9u6673us5"
   ],
   "tls2": {
     "alpn": "",
@@ -311,7 +311,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260919173448",
+      "not_after": "20261218183444"
     }
   },
   "http2": {
@@ -319,8 +321,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "/test/"
     ]
   },
-  "elapsed_s": 45.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 46.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

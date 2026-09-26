@@ -7,8 +7,8 @@
 | Target | https://seroundtable.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | seroundtable.com |
-| Test date | 2026-09-26 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -162,26 +162,26 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "dns": {
     "a": [
       "172.67.69.148",
-      "104.26.14.170",
-      "104.26.15.170"
+      "104.26.15.170",
+      "104.26.14.170"
     ],
     "aaaa": [
-      "2606:4700:20::681a:faa",
+      "2606:4700:20::ac43:4594",
       "2606:4700:20::681a:eaa",
-      "2606:4700:20::ac43:4594"
+      "2606:4700:20::681a:faa"
     ],
     "cname": null,
     "mx": [
-      "mxa.mailgun.org (pref 10)",
-      "mxb.mailgun.org (pref 10)"
+      "mxb.mailgun.org (pref 10)",
+      "mxa.mailgun.org (pref 10)"
     ],
     "ns": [
-      "april.ns.cloudflare.com.",
-      "george.ns.cloudflare.com."
+      "george.ns.cloudflare.com.",
+      "april.ns.cloudflare.com."
     ],
     "spf": [
-      "v=spf1 include:mailgun.org include:amazonses.com ~all",
-      "google-site-verification=Xdunnteqo7VS3wRH2WgXz8dDsKOagfajHjjln9Pr9bQ"
+      "google-site-verification=Xdunnteqo7VS3wRH2WgXz8dDsKOagfajHjjln9Pr9bQ",
+      "v=spf1 include:mailgun.org include:amazonses.com ~all"
     ],
     "dmarc": [
       "v=DMARC1;p=quarantine;pct=100;rua=mailto:author@seroundtable.com"
@@ -279,7 +279,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260907180701",
+      "not_after": "20261206190651"
     }
   },
   "http2": {
@@ -289,8 +291,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "/t2e.php"
     ]
   },
-  "elapsed_s": 27.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 12.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

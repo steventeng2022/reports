@@ -7,12 +7,12 @@
 | Target | https://wetransfer.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | wetransfer.com |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
+Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,6 +26,9 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 | 8 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 9 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 10 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 11 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 12 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -70,13 +73,13 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 ### 7. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (rohqitfvhhysco.wetransfer.com and ecdw99vrwcqo1w.wetransfer.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (ka7qu5wwph7ok9.wetransfer.com and 43nrdxrfm6d6f7.wetransfer.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 8. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=XW_EN8p8Aq6F0vXQo8QJFXTzZH3bHQnLYA4TFyPN63E; google-site-verification=L4cTbeDJCawV2WcUBdIg0ZohUIzmQsyri0cW9Vfx3ms; adobe-idp-site-verification=27c19071d43cf50bb319f12dca1b494fb4ac78700f01158bc53c
+- **Detail:** Apex TXT records with verification/token content: rippling-domain-verification=217697edd61756fc; google-site-verification=L4cTbeDJCawV2WcUBdIg0ZohUIzmQsyri0cW9Vfx3ms; notion-domain-verification=Yg69TXpuZUoTBv5Ri6zQhMtHrF7gDDypUiwiwsKcc8Q
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 9. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -91,6 +94,24 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 - **Detail:** robots.txt lists 24 disallow path(s), e.g. /*?*, /api/, /ter-optout, /pm-optout, /mar-optout
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 11. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of wetransfer.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 12. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of wetransfer.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
+### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 54.192.248.7 carries PTR server-54-192-248-7.tpe53.r.cloudfront.net. for wetransfer.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -98,59 +119,59 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
   "domain": "wetransfer.com",
   "dns": {
     "a": [
-      "54.192.248.118",
       "54.192.248.7",
       "54.192.248.21",
+      "54.192.248.118",
       "54.192.248.99"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "alt2.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt4.aspmx.l.google.com (pref 10)"
+      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-616.awsdns-13.net.",
       "ns-381.awsdns-47.com.",
-      "ns-1743.awsdns-25.co.uk.",
-      "ns-1495.awsdns-58.org."
+      "ns-616.awsdns-13.net.",
+      "ns-1495.awsdns-58.org.",
+      "ns-1743.awsdns-25.co.uk."
     ],
     "spf": [
-      "lemlist-verif=3a27e226",
-      "google-site-verification=XW_EN8p8Aq6F0vXQo8QJFXTzZH3bHQnLYA4TFyPN63E",
-      "ZOOM_verify_KL0Tx6QHRE-pFo1TUH489w",
+      "rippling-domain-verification=217697edd61756fc",
       "google-site-verification=L4cTbeDJCawV2WcUBdIg0ZohUIzmQsyri0cW9Vfx3ms",
-      "adobe-idp-site-verification=27c19071d43cf50bb319f12dca1b494fb4ac78700f01158bc53c750a64a62677",
-      "anthropic-domain-verification-v74473=mmo7JLEzQN3oOrEhxNuzyUxja",
-      "notion-domain-verification=Yg69TXpuZUoTBv5Ri6zQhMtHrF7gDDypUiwiwsKcc8Q",
-      "v=spf1 include:spf1.wetransfer.com include:servers.mcsv.net include:_spf.google.com include:mail.zendesk.com include:mailsenders.netsuite.com -all",
-      "docusign=d8951d4e-554f-42ad-878e-a8cfa144f728",
-      "slack-domain-verification=wvKukMkbZSVirrbxUeRN90GH6W7HoJVKjCqpdsCc",
-      "atlassian-domain-verification=SvE4jaub7awLiMuXWZa/MJuI10LQaiwUVcYdQa2xKuCB6Y6dKD9Z9olL9iVfyJed",
-      "facebook-domain-verification=h9w15klgw91n2ot3lw77t035wqw2vb",
       "_1l13uk3o31dwxht8gy20uftkq7njy9i",
-      "google-site-verification=psmb0t3fy95_06_HZTTKA42vG8jQp8utdBMGYCgbJn8",
-      "apple-domain-verification=HVcqj6adUo39535i",
-      "google-site-verification=22yq8uEpGxlFe2r7H413v6Wor4yaJDF_XM0wsOxoXjs",
-      "jamf-site-verification=EPAkOUuclyfbWuPrE4bFJg",
-      "wrike-verification=MTc5Mjk4MTpjOWI1MzY4ODdmMGU4ZDA1NDI4MWJiM2ZkYmJhMmE0YzMzMmVkOTUyMjg0MWZjNWFhZTY2YjliOWMyMDExY2M4",
-      "airtable-verification=1424b5a97e88024b52c0d21bf8a1cd64",
-      "asv=89178be4f98e857aed14bc7a748446eb",
-      "Notion_verify_4qsvK9AQNWyTTydLGyF3ysuoJuYcgPfo6qzsKeWsJba9ayET3MJsMLQA2AhsM6HGMa7UL",
+      "notion-domain-verification=Yg69TXpuZUoTBv5Ri6zQhMtHrF7gDDypUiwiwsKcc8Q",
       "ibmid=0b0660a3-b186-469a-8b70-25eac0c5a095",
+      "slack-domain-verification=wvKukMkbZSVirrbxUeRN90GH6W7HoJVKjCqpdsCc",
+      "MS=ms33481336",
+      "google-site-verification=psmb0t3fy95_06_HZTTKA42vG8jQp8utdBMGYCgbJn8",
+      "onetrust-domain-verification=2580b3683efb4e6f91ea1440cc1bee77",
+      "anthropic-domain-verification-v74473=mmo7JLEzQN3oOrEhxNuzyUxja",
+      "asv=89178be4f98e857aed14bc7a748446eb",
+      "google-site-verification=22yq8uEpGxlFe2r7H413v6Wor4yaJDF_XM0wsOxoXjs",
       "google-site-verification=o1-Z5_XysLkNRL_Fr0XzMxTNDGCHoVJzwmOgG5apYrs",
-      "google-site-verification=pZwqaQca9efqhei-uJPD1AYhimUB37qXYq-2jvp-mhc",
+      "jamf-site-verification=EPAkOUuclyfbWuPrE4bFJg",
+      "facebook-domain-verification=h9w15klgw91n2ot3lw77t035wqw2vb",
       "google-site-verification=ZdmG6lG1KKqyINxvbgMYMLtigj2Zjc5qasxPp7ikZ3I",
-      "stripe-verification=448ebe2b06a2eba394d9e73a16a897dee98918e6e8593961f56e86bb6296c520",
+      "adobe-idp-site-verification=27c19071d43cf50bb319f12dca1b494fb4ac78700f01158bc53c750a64a62677",
       "google-site-verification=12Dz3BKB7bWfhvTLookytJl2LUfhuheBky3SokggYkc",
+      "wrike-verification=MTc5Mjk4MTpjOWI1MzY4ODdmMGU4ZDA1NDI4MWJiM2ZkYmJhMmE0YzMzMmVkOTUyMjg0MWZjNWFhZTY2YjliOWMyMDExY2M4",
+      "google-site-verification=pZwqaQca9efqhei-uJPD1AYhimUB37qXYq-2jvp-mhc",
+      "apple-domain-verification=HVcqj6adUo39535i",
+      "stripe-verification=448ebe2b06a2eba394d9e73a16a897dee98918e6e8593961f56e86bb6296c520",
+      "airtable-verification=1424b5a97e88024b52c0d21bf8a1cd64",
+      "lemlist-verif=3a27e226",
+      "v=spf1 include:spf1.wetransfer.com include:servers.mcsv.net include:_spf.google.com include:mail.zendesk.com include:mailsenders.netsuite.com -all",
+      "ZOOM_verify_KL0Tx6QHRE-pFo1TUH489w",
       "google-site-verification=QgqEa_4yOMSHcWSMtJrG4M0jeBwKBK07p7E5A73Ht_Q",
       "amazonses:OkYxgsklLbk4Efq6tshR+hWtLlWSmWy6A49YvL6zwqw=",
-      "rippling-domain-verification=217697edd61756fc",
-      "onetrust-domain-verification=2580b3683efb4e6f91ea1440cc1bee77",
-      "MS=ms33481336"
+      "Notion_verify_4qsvK9AQNWyTTydLGyF3ysuoJuYcgPfo6qzsKeWsJba9ayET3MJsMLQA2AhsM6HGMa7UL",
+      "atlassian-domain-verification=SvE4jaub7awLiMuXWZa/MJuI10LQaiwUVcYdQa2xKuCB6Y6dKD9Z9olL9iVfyJed",
+      "docusign=d8951d4e-554f-42ad-878e-a8cfa144f728",
+      "google-site-verification=XW_EN8p8Aq6F0vXQo8QJFXTzZH3bHQnLYA4TFyPN63E"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:reports@dmarc.bendingspoons.com; pct=100;"
@@ -180,13 +201,13 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
     }
   },
   "ports": {
-    "ip": "54.192.248.118",
+    "ip": "54.192.248.7",
     "open": []
   },
   "https": {
     "status": 200,
     "content_type": "text/html; charset=utf-8",
-    "title": "WeTransfer | Invia rapidamente file di grandi dimensioni"
+    "title": "WeTransfer | Send Large Files Fast"
   },
   "mixed_content": [],
   "cookies": [],
@@ -231,11 +252,11 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=XW_EN8p8Aq6F0vXQo8QJFXTzZH3bHQnLYA4TFyPN63E",
+    "rippling-domain-verification=217697edd61756fc",
     "google-site-verification=L4cTbeDJCawV2WcUBdIg0ZohUIzmQsyri0cW9Vfx3ms",
-    "adobe-idp-site-verification=27c19071d43cf50bb319f12dca1b494fb4ac78700f01158bc53c",
-    "anthropic-domain-verification-v74473=mmo7JLEzQN3oOrEhxNuzyUxja",
-    "notion-domain-verification=Yg69TXpuZUoTBv5Ri6zQhMtHrF7gDDypUiwiwsKcc8Q"
+    "notion-domain-verification=Yg69TXpuZUoTBv5Ri6zQhMtHrF7gDDypUiwiwsKcc8Q",
+    "slack-domain-verification=wvKukMkbZSVirrbxUeRN90GH6W7HoJVKjCqpdsCc",
+    "google-site-verification=psmb0t3fy95_06_HZTTKA42vG8jQp8utdBMGYCgbJn8"
   ],
   "tls2": {
     "alpn": "",
@@ -246,7 +267,9 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260724000000",
+      "not_after": "20270206235959"
     }
   },
   "http2": {
@@ -269,8 +292,14 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
       "/payment/"
     ]
   },
-  "elapsed_s": 13.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "server-54-192-248-7.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 12.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

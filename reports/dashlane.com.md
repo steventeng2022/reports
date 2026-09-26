@@ -7,8 +7,8 @@
 | Target | https://dashlane.com/ |
 | Bug bounty program | Dashlane |
 | Listed scope domain | dashlane.com |
-| Test date | 2026-09-26 17:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -123,7 +123,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=RFwRELa7WvbbTQW5f6j9hPJUSLTAovvSepABK6YwHaeC6AcZtm; google-site-verification=yS6BK31Z2KXSj9dmrqfPzPshkE7b32wulJmzfiz4EUY; wrike-verification=MjM0Nzk4OTpkODUzOWI2ZTk1ZjgyOWUxZDE2MDBmMWIyNmUxODUwODdiMTdkY
+- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-4e55Awe1PWzWlnozKcMcHLLN; stripe-verification=F6D326204AE8297C7C1DCE7B72D865C2DF049FEF4E46AA6BACEE6316D87F; detectify-verification=19ea3dd383daec40adcb74a7968825b8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -151,43 +151,43 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     "aaaa": [],
     "cname": null,
     "mx": [
+      "alt4.aspmx.l.google.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
       "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)",
-      "alt3.aspmx.l.google.com (pref 10)",
-      "aspmx.l.google.com (pref 1)"
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
+      "ns-1381.awsdns-44.org.",
       "ns-1838.awsdns-37.co.uk.",
-      "ns-646.awsdns-16.net.",
       "ns-396.awsdns-49.com.",
-      "ns-1381.awsdns-44.org."
+      "ns-646.awsdns-16.net."
     ],
     "spf": [
-      "MS=ms78056367",
-      "ca3-3ad4d01464cb4caaad75392931cf4b49",
-      "_yqvhaiv5owhbgbsa4qdcii7szjyce9m",
-      "ca3-f1f15d7cb167404ab9c514c3b87529c0",
-      "atlassian-domain-verification=RFwRELa7WvbbTQW5f6j9hPJUSLTAovvSepABK6YwHaeC6AcZtml0apL64eQFCdNQ",
-      "google-site-verification=yS6BK31Z2KXSj9dmrqfPzPshkE7b32wulJmzfiz4EUY",
-      "wrike-verification=MjM0Nzk4OTpkODUzOWI2ZTk1ZjgyOWUxZDE2MDBmMWIyNmUxODUwODdiMTdkYjA5MjgyNjY3YjEwNmI2NzFmNTcyZjJiZGEz",
-      "0ed1fe018a052438ee880c4b2fb7f1796949e855a2",
-      "v=spf1 include:_spf.google.com include:spf2.dashlane.com include:mail.zendesk.com include:mktomail.com include:mg-spf.greenhouse.io include:_spf.salesforce.com -all",
-      "stripe-verification=237c0c2be4be590e020173f0d294be75fc3de8a6271806f084d2018b62d33372",
-      "ca3-8b5b3457e553481da2ecf93bdf264443",
-      "drift-domain-verification=3e92a53ea6894b4f337d741ba27c2ab31c8630fc4eed6403e438a4fdfb162a02",
-      "google-site-verification=ozFOOl99Gxv4y-55zHWOduavfcmZEXqS1yR_CDVmupI",
-      "openai-domain-verification=dv-4e55Awe1PWzWlnozKcMcHLLN",
-      "google-site-verification=6lT65mGzmxxPStSgeiblmtFtT4u5V3PJYdIJ2dFu5So",
-      "jamf-site-verification=i2cgTr97X6Qxa-MZy8gprA",
-      "anthropic-domain-verification-7k1h5w=lnSRFRHXgc8eyEwyyyEs0MZTE",
-      "miro-verification=36887a2acef64995e895317181e786f8fbc6ce21",
-      "KOmW3ca2DpgwtUwRLQ4RHREFYMTccYEbcgnu7ipuO8syoAZI6C3u7zcGX8zAw9ssJDdffzxQinO7UJCu3PvDdA==",
       "CKO=cli_mi3ag5v4v5ie3fcimbb5zcjkdi",
+      "_yqvhaiv5owhbgbsa4qdcii7szjyce9m",
+      "openai-domain-verification=dv-4e55Awe1PWzWlnozKcMcHLLN",
+      "ca3-3ad4d01464cb4caaad75392931cf4b49",
+      "stripe-verification=F6D326204AE8297C7C1DCE7B72D865C2DF049FEF4E46AA6BACEE6316D87F404F",
+      "0ed1fe018a052438ee880c4b2fb7f1796949e855a2",
+      "KOmW3ca2DpgwtUwRLQ4RHREFYMTccYEbcgnu7ipuO8syoAZI6C3u7zcGX8zAw9ssJDdffzxQinO7UJCu3PvDdA==",
       "_klajo684kaqqtg2dul51ana7m7aol1s",
-      "1|www.dashlane.com",
       "detectify-verification=19ea3dd383daec40adcb74a7968825b8",
-      "stripe-verification=F6D326204AE8297C7C1DCE7B72D865C2DF049FEF4E46AA6BACEE6316D87F404F"
+      "stripe-verification=237c0c2be4be590e020173f0d294be75fc3de8a6271806f084d2018b62d33372",
+      "google-site-verification=6lT65mGzmxxPStSgeiblmtFtT4u5V3PJYdIJ2dFu5So",
+      "anthropic-domain-verification-7k1h5w=lnSRFRHXgc8eyEwyyyEs0MZTE",
+      "jamf-site-verification=i2cgTr97X6Qxa-MZy8gprA",
+      "ca3-8b5b3457e553481da2ecf93bdf264443",
+      "1|www.dashlane.com",
+      "google-site-verification=yS6BK31Z2KXSj9dmrqfPzPshkE7b32wulJmzfiz4EUY",
+      "v=spf1 include:_spf.google.com include:spf2.dashlane.com include:mail.zendesk.com include:mktomail.com include:mg-spf.greenhouse.io include:_spf.salesforce.com -all",
+      "wrike-verification=MjM0Nzk4OTpkODUzOWI2ZTk1ZjgyOWUxZDE2MDBmMWIyNmUxODUwODdiMTdkYjA5MjgyNjY3YjEwNmI2NzFmNTcyZjJiZGEz",
+      "drift-domain-verification=3e92a53ea6894b4f337d741ba27c2ab31c8630fc4eed6403e438a4fdfb162a02",
+      "atlassian-domain-verification=RFwRELa7WvbbTQW5f6j9hPJUSLTAovvSepABK6YwHaeC6AcZtml0apL64eQFCdNQ",
+      "ca3-f1f15d7cb167404ab9c514c3b87529c0",
+      "MS=ms78056367",
+      "google-site-verification=ozFOOl99Gxv4y-55zHWOduavfcmZEXqS1yR_CDVmupI",
+      "miro-verification=36887a2acef64995e895317181e786f8fbc6ce21"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; adkim=s; aspf=r; rua=mailto:dmarc-reports@dashlane.com; ruf=mailto:dmarc-reports@dashlane.com; rf=afrf; pct=100; ri=86400"
@@ -280,11 +280,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "atlassian-domain-verification=RFwRELa7WvbbTQW5f6j9hPJUSLTAovvSepABK6YwHaeC6AcZtm",
-    "google-site-verification=yS6BK31Z2KXSj9dmrqfPzPshkE7b32wulJmzfiz4EUY",
-    "wrike-verification=MjM0Nzk4OTpkODUzOWI2ZTk1ZjgyOWUxZDE2MDBmMWIyNmUxODUwODdiMTdkY",
+    "openai-domain-verification=dv-4e55Awe1PWzWlnozKcMcHLLN",
+    "stripe-verification=F6D326204AE8297C7C1DCE7B72D865C2DF049FEF4E46AA6BACEE6316D87F",
+    "detectify-verification=19ea3dd383daec40adcb74a7968825b8",
     "stripe-verification=237c0c2be4be590e020173f0d294be75fc3de8a6271806f084d2018b62d3",
-    "drift-domain-verification=3e92a53ea6894b4f337d741ba27c2ab31c8630fc4eed6403e438a4"
+    "google-site-verification=6lT65mGzmxxPStSgeiblmtFtT4u5V3PJYdIJ2dFu5So"
   ],
   "tls2": {
     "alpn": "",
@@ -295,7 +295,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260923184328",
+      "not_after": "20261222194305"
     }
   },
   "http2": {
@@ -309,8 +311,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "/payment"
     ]
   },
-  "elapsed_s": 5.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 4.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

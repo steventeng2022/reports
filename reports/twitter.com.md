@@ -7,12 +7,12 @@
 | Target | https://twitter.com/ |
 | Bug bounty program | Twitter |
 | Listed scope domain | twitter.com |
-| Test date | 2026-09-26 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:00 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
+Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
 | 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 13 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 
 ## Detailed findings
 
@@ -40,13 +41,13 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.66.0.227:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 162.159.140.229:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.66.0.227:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 162.159.140.229:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -91,7 +92,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=q1ghWjGLX9Ba-Gy_B4n_pAgC_mQYzWmQpOD8CMWl_Hw; canva-site-verification=lMnZ3wMh7c1uqZqa-cxZTg; google-site-verification=P9-NRZ0gaRKRGNDOXOjct5XETPtr3P9D-XA8HnlbAy4
+- **Detail:** Apex TXT records with verification/token content: stripe-verification=46F7B88485621DC18923B43D12E90E6CDBCE232F2FEBCF084E6EFA91F6BA; adobe-idp-site-verification=a2ff8fc40c434d1d6f02f68b0b1a683e400572ab8c1f2c180c71; miro-verification=6e1ca9ad6d0c2cd2e4186141265f23ed618cfe37
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -106,6 +107,12 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
 - **Detail:** robots.txt lists 45 disallow path(s), e.g. /*?lang=en-ss, /search/realtime, /search/users, /search/*/grid, /*/analytics
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 13. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of twitter.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -113,52 +120,52 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
   "domain": "twitter.com",
   "dns": {
     "a": [
-      "172.66.0.227"
+      "162.159.140.229"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
+      "c.r06.twtrdns.net.",
+      "d.u06.twtrdns.net.",
       "a.r06.twtrdns.net.",
       "c.u06.twtrdns.net.",
-      "b.r06.twtrdns.net.",
-      "b.u06.twtrdns.net.",
-      "d.u06.twtrdns.net.",
-      "c.r06.twtrdns.net.",
       "a.u06.twtrdns.net.",
+      "b.u06.twtrdns.net.",
+      "b.r06.twtrdns.net.",
       "d.r06.twtrdns.net."
     ],
     "spf": [
-      "google-site-verification=q1ghWjGLX9Ba-Gy_B4n_pAgC_mQYzWmQpOD8CMWl_Hw",
-      "canva-site-verification=lMnZ3wMh7c1uqZqa-cxZTg",
-      "google-site-verification=P9-NRZ0gaRKRGNDOXOjct5XETPtr3P9D-XA8HnlbAy4",
-      "wrike-verification=MjU4MTA5MjoyN2UzNDc1MjU3MDZiZTY4NjBiNzliNDQ2OTUwNWY3NmM5NDgyMTBlYzFkNTcwYTE2YWNmZDdkNTY2ZmE4Yzlh",
-      "miro-verification=6e1ca9ad6d0c2cd2e4186141265f23ed618cfe37",
-      "linear-domain-verification=t5iq7e7nbw5w",
-      "adobe-idp-site-verification=a2ff8fc40c434d1d6f02f68b0b1a683e400572ab8c1f2c180c71c3d985b9270a",
-      "v=spf1 ip4:199.16.156.0/22 ip4:199.59.148.0/22 ip4:8.25.194.0/23 ip4:8.25.196.0/23 ip4:204.92.114.203 ip4:204.92.114.204/31 include:_spf.google.com include:_thirdparty.twitter.com -all",
-      "traction-guest=6882b04e-4188-4ff9-8bb4-bff5a3d358e6",
-      "apple-domain-verification=zd1iHoEO9LILEQIq",
-      "google-site-verification=TNhAkfLUeIbzzzSgPNxS5aEkKMf3aUcpPmCK1_kmIvU",
-      "traction-guest=a4d0248d-fe01-4222-8fcc-33f68323e667",
-      "0a8c0fc6-bfa5-4ea7-b09b-87f2989022d6",
-      "notion-domain-verification=uKi5TAGxlhWMHG9uHKHkDY3cVc6zraAE1I44bILENlB",
-      "google-site-verification=F2uUiLUsD6kQlpUVQzxUM3PHa0uPo5GBS84SCG8QwXI",
-      "MS=BEE202D20C326867290BDEFA2DDDF4594B5D6860",
       "stripe-verification=46F7B88485621DC18923B43D12E90E6CDBCE232F2FEBCF084E6EFA91F6BA707D",
+      "mixpanel-domain-verify=164dda91-31f4-41e8-a816-0f59b38fea30",
+      "adobe-idp-site-verification=a2ff8fc40c434d1d6f02f68b0b1a683e400572ab8c1f2c180c71c3d985b9270a",
+      "MS=BEE202D20C326867290BDEFA2DDDF4594B5D6860",
+      "miro-verification=6e1ca9ad6d0c2cd2e4186141265f23ed618cfe37",
+      "apple-domain-verification=zd1iHoEO9LILEQIq",
+      "v=spf1 ip4:199.16.156.0/22 ip4:199.59.148.0/22 ip4:8.25.194.0/23 ip4:8.25.196.0/23 ip4:204.92.114.203 ip4:204.92.114.204/31 include:_spf.google.com include:_thirdparty.twitter.com -all",
+      "canva-site-verification=lMnZ3wMh7c1uqZqa-cxZTg",
+      "wrike-verification=MjU4MTA5MjoyN2UzNDc1MjU3MDZiZTY4NjBiNzliNDQ2OTUwNWY3NmM5NDgyMTBlYzFkNTcwYTE2YWNmZDdkNTY2ZmE4Yzlh",
+      "notion-domain-verification=uKi5TAGxlhWMHG9uHKHkDY3cVc6zraAE1I44bILENlB",
+      "google-site-verification=TNhAkfLUeIbzzzSgPNxS5aEkKMf3aUcpPmCK1_kmIvU",
+      "linear-domain-verification=t5iq7e7nbw5w",
+      "google-site-verification=P9-NRZ0gaRKRGNDOXOjct5XETPtr3P9D-XA8HnlbAy4",
+      "atlassian-domain-verification=j6u0o1PTkobCXC84uEF/sWpIPtaZURBVYqKzmTvT8wugLcHT1vvrzzA63iP1qSLN",
+      "traction-guest=a4d0248d-fe01-4222-8fcc-33f68323e667",
       "google-site-verification=600dQ0pZYsH2xOFt4hYmf5f5NpjCbWE_qk5Y04dErYM",
+      "traction-guest=6882b04e-4188-4ff9-8bb4-bff5a3d358e6",
       "bj6sbt5xqs9hw9jrfvz7hplrg0l680sb",
       "google-site-verification=h6dJIv0HXjLOkGAotLAWEzvoi9SxqP4vjpx98vrCvvQ",
-      "slack-domain-verification=9oO8P4Glf4252QJDOg4rHGs6KlSkBuI5ZVmWRO8d",
-      "atlassian-domain-verification=j6u0o1PTkobCXC84uEF/sWpIPtaZURBVYqKzmTvT8wugLcHT1vvrzzA63iP1qSLN",
-      "mixpanel-domain-verify=164dda91-31f4-41e8-a816-0f59b38fea30",
-      "loom-site-verification=638c6bc173b9458997f64d305bf42499"
+      "loom-site-verification=638c6bc173b9458997f64d305bf42499",
+      "0a8c0fc6-bfa5-4ea7-b09b-87f2989022d6",
+      "google-site-verification=F2uUiLUsD6kQlpUVQzxUM3PHa0uPo5GBS84SCG8QwXI",
+      "google-site-verification=q1ghWjGLX9Ba-Gy_B4n_pAgC_mQYzWmQpOD8CMWl_Hw",
+      "slack-domain-verification=9oO8P4Glf4252QJDOg4rHGs6KlSkBuI5ZVmWRO8d"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:d3omt-8484@rua.dmarc.emailanalyst.com; ruf=mailto:d3omt-8484@ruf.dmarc.emailanalyst.com; fo=1"
@@ -189,7 +196,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
     }
   },
   "ports": {
-    "ip": "172.66.0.227",
+    "ip": "162.159.140.229",
     "open": [
       8080,
       8443
@@ -266,11 +273,11 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=q1ghWjGLX9Ba-Gy_B4n_pAgC_mQYzWmQpOD8CMWl_Hw",
-    "canva-site-verification=lMnZ3wMh7c1uqZqa-cxZTg",
-    "google-site-verification=P9-NRZ0gaRKRGNDOXOjct5XETPtr3P9D-XA8HnlbAy4",
-    "wrike-verification=MjU4MTA5MjoyN2UzNDc1MjU3MDZiZTY4NjBiNzliNDQ2OTUwNWY3NmM5NDgyM",
-    "miro-verification=6e1ca9ad6d0c2cd2e4186141265f23ed618cfe37"
+    "stripe-verification=46F7B88485621DC18923B43D12E90E6CDBCE232F2FEBCF084E6EFA91F6BA",
+    "adobe-idp-site-verification=a2ff8fc40c434d1d6f02f68b0b1a683e400572ab8c1f2c180c71",
+    "miro-verification=6e1ca9ad6d0c2cd2e4186141265f23ed618cfe37",
+    "apple-domain-verification=zd1iHoEO9LILEQIq",
+    "canva-site-verification=lMnZ3wMh7c1uqZqa-cxZTg"
   ],
   "tls2": {
     "alpn": "",
@@ -281,7 +288,9 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260814174802",
+      "not_after": "20261112174801"
     }
   },
   "http2": {
@@ -304,8 +313,11 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
       "/*/media"
     ]
   },
+  "x12": {
+    "status": 301
+  },
   "elapsed_s": 7.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,8 +7,8 @@
 | Target | https://mobile.twitter.com/ |
 | Bug bounty program | Twitter |
 | Listed scope domain | mobile.twitter.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -45,13 +45,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.66.0.227:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 162.159.140.229:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.66.0.227:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 162.159.140.229:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -154,7 +154,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
   "domain": "mobile.twitter.com",
   "dns": {
     "a": [
-      "172.66.0.227"
+      "162.159.140.229"
     ],
     "aaaa": [],
     "cname": null,
@@ -188,7 +188,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     }
   },
   "ports": {
-    "ip": "172.66.0.227",
+    "ip": "162.159.140.229",
     "open": [
       8080,
       8443
@@ -274,7 +274,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260814174802",
+      "not_after": "20261112174801"
     }
   },
   "http2": {
@@ -290,8 +292,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "/"
     ]
   },
-  "elapsed_s": 7.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 8.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

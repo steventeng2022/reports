@@ -7,12 +7,12 @@
 | Target | https://abc.net.au/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | abc.net.au |
-| Test date | 2026-09-26 17:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,8 +30,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 | 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 15 | info | CT1 | 338 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 16 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 16 | info | CT1 | 338 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 17 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -118,7 +119,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-3cs5FvAqthq1oIovgoLAvJpO; facebook-domain-verification=wetfyk60byzwzxc6af5ct4iidciiz8; jamf-site-verification=uatZyaF6YBPkZV-hoGjIDg
+- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-A6eDZvBKglVN8S81SVfxEWjh; logmein-verification-code=2aafe7d0-e0e8-474e-b565-25f09e4b52ef; adobe-idp-site-verification=7c3065b8-a1ac-4df8-8440-8ae4a2b371e1
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -127,13 +128,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - **Detail:** Certificate of abc.net.au has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 15. [INFO] 338 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.209.216.141 carries PTR a23-209-216-141.deploy.static.akamaitechnologies.com. for abc.net.au.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 16. [INFO] 338 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.abc.net.au, api.iview.abc.net.au, api.rex.abc.net.au, api.seesaw.abc.net.au, app.abc.net.au, apps.abc.net.au, auth.confluence.c2.abc.net.au, beta.abc.net.au, careers.abc.net.au, cdn.audience-mms-processor-nonp.c0.abc.net.au
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 16. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 17. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: app.abc.net.au; content may still be served via virtual-host fallback.
@@ -151,50 +158,50 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxb-0036d701.gslb.pphosted.com (pref 10)",
-      "mxa-0036d701.gslb.pphosted.com (pref 10)"
+      "mxa-0036d701.gslb.pphosted.com (pref 10)",
+      "mxb-0036d701.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "eur3.akam.net.",
-      "usw5.akam.net.",
-      "ns1-31.akam.net.",
-      "asia1.akam.net.",
-      "eur5.akam.net.",
       "eur2.akam.net.",
+      "asia1.akam.net.",
+      "ns1-31.akam.net.",
+      "eur3.akam.net.",
       "ns1-129.akam.net.",
-      "usw1.akam.net."
+      "eur5.akam.net.",
+      "usw1.akam.net.",
+      "usw5.akam.net."
     ],
     "spf": [
-      "DS_GUID=1f556b4d-4242-48a2-98ec-8b5389b9768a",
-      "openai-domain-verification=dv-3cs5FvAqthq1oIovgoLAvJpO",
-      "facebook-domain-verification=wetfyk60byzwzxc6af5ct4iidciiz8",
-      "wmwgwl7t2p9c0pyqjtxg21zv07sjkw0z",
-      "jamf-site-verification=uatZyaF6YBPkZV-hoGjIDg",
-      "_6zqpkv8jv9wixx2iahc3c9l73xzlcq3",
-      "atlassian-domain-verification=VqcGTxT7+T2pb61t6YK69euiLYhHFIeqmEZhmZ1kn+Nw9MDeCxVvnthHJaOyuh53",
-      "_mpsr69of9h3phkpg1oo4pkg7z9o13u8",
-      "Ki*!8fZN^6$3kPjwdj4lGl%d^AJtICghTa$@cDmHSrGPv%JiQfK#bUJ2464UFJEds*RdmDAi%7poA57UwIJH#BI82Tsg@M!KE4I",
-      "google-site-verification=YODbrd1vAD6Bvvh0nVqJ90UhzAmn9PY1JbZiEFCNnFg",
       "_ypyfvza3k9d012wozvcpqr2rl5hgwax",
-      "google-site-verification=hE1kILZtpqkyPs5Szz0KpVbNaTiprJyPVeCfNB1D5-g",
-      "google-site-verification=Fe7MviHWN97I2rkSkD-uHqnXoRle0l60KrKG_qiu4EQ",
-      "openai-domain-verification=dv-A6eDZvBKglVN8S81SVfxEWjh",
-      "segment-site-verification=CPDEMeOkLajeqEcfuKs0TMeSQM8S4K9u",
-      "logmein-verification-code=2aafe7d0-e0e8-474e-b565-25f09e4b52ef",
-      "meltwater_sso_20220706_TRITON-9530",
-      "docker-verification=2c63eedd-5a73-4165-b8a3-1581ddf10029",
-      "hcte5z9aRQBXzsiYoLbb2H6OXB/39P1lZ9FAUWYSjzh/XVWNMZgKjjMw0Qo9CBFGWalVAFV/pTFQRwZXJQmlTw==",
-      "hpe-greenlake-domain-verification=5a79544f6b576334325571625553586569355537544a69367939324271775968",
-      "security_policy=https://ab.co/security-guidelines",
-      "adobe-idp-site-verification=7c3065b8-a1ac-4df8-8440-8ae4a2b371e1",
-      "MS=F3CCB183E28279EA6BFB729BB36F156C93E1E6FC",
-      "anthropic-domain-verification-j2g448=j6ujaV7B2ctVhXdNRWCAbgWQB",
-      "successfactors-site-verification=ZWY4YWNhODM1YTI2Y2FlNzAyMmIzYTRjODcyMWY0MGJjM2ViMzU5OTA0NTdhZGY3MTRjMWM1MWQzMGU5ZmVjOA==",
-      "docusign=5193e34f-7907-4a09-8a2c-8e6059238790",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
       "MS=ms97238178",
+      "MS=F3CCB183E28279EA6BFB729BB36F156C93E1E6FC",
+      "openai-domain-verification=dv-A6eDZvBKglVN8S81SVfxEWjh",
+      "logmein-verification-code=2aafe7d0-e0e8-474e-b565-25f09e4b52ef",
+      "_6zqpkv8jv9wixx2iahc3c9l73xzlcq3",
+      "wmwgwl7t2p9c0pyqjtxg21zv07sjkw0z",
+      "_mpsr69of9h3phkpg1oo4pkg7z9o13u8",
+      "adobe-idp-site-verification=7c3065b8-a1ac-4df8-8440-8ae4a2b371e1",
       "security_contact=https://ab.co/security-contact",
-      "google-site-verification=7054D-8q7ysCi8XYhwx8gZOjJJoYZpbcN5mSRYsKznA"
+      "facebook-domain-verification=wetfyk60byzwzxc6af5ct4iidciiz8",
+      "hpe-greenlake-domain-verification=5a79544f6b576334325571625553586569355537544a69367939324271775968",
+      "segment-site-verification=CPDEMeOkLajeqEcfuKs0TMeSQM8S4K9u",
+      "Ki*!8fZN^6$3kPjwdj4lGl%d^AJtICghTa$@cDmHSrGPv%JiQfK#bUJ2464UFJEds*RdmDAi%7poA57UwIJH#BI82Tsg@M!KE4I",
+      "security_policy=https://ab.co/security-guidelines",
+      "successfactors-site-verification=ZWY4YWNhODM1YTI2Y2FlNzAyMmIzYTRjODcyMWY0MGJjM2ViMzU5OTA0NTdhZGY3MTRjMWM1MWQzMGU5ZmVjOA==",
+      "jamf-site-verification=uatZyaF6YBPkZV-hoGjIDg",
+      "DS_GUID=1f556b4d-4242-48a2-98ec-8b5389b9768a",
+      "docker-verification=2c63eedd-5a73-4165-b8a3-1581ddf10029",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
+      "openai-domain-verification=dv-3cs5FvAqthq1oIovgoLAvJpO",
+      "anthropic-domain-verification-j2g448=j6ujaV7B2ctVhXdNRWCAbgWQB",
+      "atlassian-domain-verification=VqcGTxT7+T2pb61t6YK69euiLYhHFIeqmEZhmZ1kn+Nw9MDeCxVvnthHJaOyuh53",
+      "hcte5z9aRQBXzsiYoLbb2H6OXB/39P1lZ9FAUWYSjzh/XVWNMZgKjjMw0Qo9CBFGWalVAFV/pTFQRwZXJQmlTw==",
+      "meltwater_sso_20220706_TRITON-9530",
+      "google-site-verification=7054D-8q7ysCi8XYhwx8gZOjJJoYZpbcN5mSRYsKznA",
+      "google-site-verification=Fe7MviHWN97I2rkSkD-uHqnXoRle0l60KrKG_qiu4EQ",
+      "google-site-verification=YODbrd1vAD6Bvvh0nVqJ90UhzAmn9PY1JbZiEFCNnFg",
+      "docusign=5193e34f-7907-4a09-8a2c-8e6059238790",
+      "google-site-verification=hE1kILZtpqkyPs5Szz0KpVbNaTiprJyPVeCfNB1D5-g"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -368,11 +375,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     ]
   },
   "apex_txt": [
-    "openai-domain-verification=dv-3cs5FvAqthq1oIovgoLAvJpO",
+    "openai-domain-verification=dv-A6eDZvBKglVN8S81SVfxEWjh",
+    "logmein-verification-code=2aafe7d0-e0e8-474e-b565-25f09e4b52ef",
+    "adobe-idp-site-verification=7c3065b8-a1ac-4df8-8440-8ae4a2b371e1",
     "facebook-domain-verification=wetfyk60byzwzxc6af5ct4iidciiz8",
-    "jamf-site-verification=uatZyaF6YBPkZV-hoGjIDg",
-    "atlassian-domain-verification=VqcGTxT7+T2pb61t6YK69euiLYhHFIeqmEZhmZ1kn+Nw9MDeCx",
-    "google-site-verification=YODbrd1vAD6Bvvh0nVqJ90UhzAmn9PY1JbZiEFCNnFg"
+    "hpe-greenlake-domain-verification=5a79544f6b576334325571625553586569355537544a69"
   ],
   "tls2": {
     "alpn": "",
@@ -383,11 +390,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260507000000",
+      "not_after": "20261121235959"
     }
   },
-  "elapsed_s": 6.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403,
+    "ptr": [
+      "a23-209-216-141.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 6.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

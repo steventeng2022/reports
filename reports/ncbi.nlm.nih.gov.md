@@ -7,12 +7,12 @@
 | Target | https://ncbi.nlm.nih.gov/ |
 | Bug bounty program | U.S. Dept of Health & Human Services (HHS) |
 | Listed scope domain | ncbi.nlm.nih.gov |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
+Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -129,6 +130,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 - **Detail:** robots.txt lists 335 disallow path(s), e.g. /cgi-bin, /entrez, /stat, /COG, /Entrez
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 34.107.134.59 carries PTR 59.134.107.34.bc.googleusercontent.com. for ncbi.nlm.nih.gov.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -143,32 +150,32 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
     ],
     "cname": null,
     "mx": [
-      "nihcesxway5.hub.nih.gov (pref 10)",
       "nihcesxway4.hub.nih.gov (pref 10)",
+      "nihcesxway5.hub.nih.gov (pref 10)",
+      "nihcesxway2.hub.nih.gov (pref 10)",
       "nihcesxway3.hub.nih.gov (pref 10)",
-      "nihcesxway.hub.nih.gov (pref 10)",
-      "nihcesxway2.hub.nih.gov (pref 10)"
+      "nihcesxway.hub.nih.gov (pref 10)"
     ],
     "ns": [
       "lhcns1.nlm.nih.gov.",
-      "ns3.nih.gov.",
-      "dns1-ncbi.ncbi.nlm.nih.gov.",
-      "ns2.nih.gov.",
       "dns2-ncbi.ncbi.nlm.nih.gov.",
+      "ns2.nih.gov.",
+      "lhcns2.nlm.nih.gov.",
       "ns.nih.gov.",
-      "lhcns2.nlm.nih.gov."
+      "dns1-ncbi.ncbi.nlm.nih.gov.",
+      "ns3.nih.gov."
     ],
     "spf": [
-      "6ochlmevf91qg4f4aq6bo33ofk",
-      "64ae187888c443b49126410c89e19f91",
       "+UYkiJ9LhpTEGd+XduX0MaAclYq9qoJF4Ls5FJaAwl6LRx4aozocl8ZRea9MKMRaquSBJaZC52liuRb0rkxAMA==",
+      "64ae187888c443b49126410c89e19f91",
+      "5ongv773afed7ghag3eubs9v6c",
+      "6ochlmevf91qg4f4aq6bo33ofk",
       "google-site-verification=nMmA8DdB_FATP9hChkks7To1ndl-jGwVn624WV03SJg",
       "21mn4fyhz69y985h80bcyrf4vjqjl0ln",
       "google-site-verification=r_gJSAUUa9jLHjrDalVHx6YDW-U-bIXvV5RAq4l1BEI",
       "v=spf1 ip4:130.14.26.0/25 ip4:165.112.9.132 ip4:130.14.19.0/24 ip4:130.14.28.0/24 ip4:10.65.8.60 ip4:130.14.22.0/24 ip4:128.231.90.64/26 ip4:165.112.13.0/26 ip6:2607:f220:0404:8104::0/64 ip6:2607:f220:402:1a01::0/64 ",
       "ip4:63.150.153.0/28 ip4:63.236.109.192/28 ip4:63.236.97.64/27 ip4:66.77.66.64/26 ip4:63.236.105.192/28 ip4:63.236.106.128/27 ip4:68.177.111.128/26 ip4:156.40.79.128/25 ip4:165.112.194.0/25 ",
-      "ip6:2607:f220:041e:4260::41/64 ip6:2607:f220:041e:4260::42/64 ip6:2607:f220:041e:4260::15/64 ip6:2607:f220:041e:4260::16/64 ip6:2607:f220:41f:4260::132/64 include:nih.gov -all",
-      "5ongv773afed7ghag3eubs9v6c"
+      "ip6:2607:f220:041e:4260::41/64 ip6:2607:f220:041e:4260::42/64 ip6:2607:f220:041e:4260::15/64 ip6:2607:f220:041e:4260::16/64 ip6:2607:f220:41f:4260::132/64 include:nih.gov -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:8idhoybh@ag.us.dmarcian.com,mailto:reports@dmarc.cyber.dhs.gov; ruf=mailto:8idhoybh@fr.us.dmarcian.com; fo=1;"
@@ -263,7 +270,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260828163119",
+      "not_after": "20270314163119"
     }
   },
   "http2": {
@@ -285,8 +294,14 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "/portal"
     ]
   },
-  "elapsed_s": 30.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "59.134.107.34.bc.googleusercontent.com."
+    ]
+  },
+  "elapsed_s": 31.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

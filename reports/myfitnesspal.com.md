@@ -7,8 +7,8 @@
 | Target | https://myfitnesspal.com/ |
 | Bug bounty program | UNDER ARMOUR |
 | Listed scope domain | myfitnesspal.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -147,7 +147,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: loom-site-verification=edd4369291874aacb2b5aae6ea089158; 1password-site-verification=VOWKAPWYWZCT5HUOWLC2SAZL5E; google-site-verification=kHACMEqbYV5qgu3tprf-GnXzWeHvWVHgVncFCiQKlb4
+- **Detail:** Apex TXT records with verification/token content: segment-site-verification=xopGmJnxbn2rPzZXsS2fMLslPYUndBeJ; openai-domain-verification=dv-UNBZKzk7GFSRuVEUk4KHWObW; loom-site-verification=edd4369291874aacb2b5aae6ea089158
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -179,43 +179,43 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     "cname": null,
     "mx": [
       "alt1.aspmx.l.google.com (pref 5)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
+      "alt3.aspmx.l.google.com (pref 10)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "alt3.aspmx.l.google.com (pref 10)"
+      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "elisa.ns.cloudflare.com.",
-      "gannon.ns.cloudflare.com."
+      "gannon.ns.cloudflare.com.",
+      "elisa.ns.cloudflare.com."
     ],
     "spf": [
-      "MS=ms95772151",
+      "segment-site-verification=xopGmJnxbn2rPzZXsS2fMLslPYUndBeJ",
+      "Pv0TLiWeowXZIsAw68NzAb3SgjY",
+      "openai-domain-verification=dv-UNBZKzk7GFSRuVEUk4KHWObW",
+      "docusign=70668272-5104-4868-af0d-389211541998",
+      "0r4UVQn/K1PldOhFrE9MoJLiJXfQLSKU+uLPm4Z1uGfGrxtPLbQ+ymZcnBCVIkemqdAFahKrsLodU2cqFkkbtA==",
       "loom-site-verification=edd4369291874aacb2b5aae6ea089158",
+      "facebook-domain-verification=ckr53ulsmy1vs2dwppppt6xwhtc5fk",
+      "apple-domain-verification=WCdjJmlbmQSDdvD3",
+      "google-site-verification=kHACMEqbYV5qgu3tprf-GnXzWeHvWVHgVncFCiQKlb4",
+      "asv=57fab8da76cd7db6399386b2fbb8266e",
+      "MS=ms95772151",
       "1password-site-verification=VOWKAPWYWZCT5HUOWLC2SAZL5E",
       "MS=ms15058904",
-      "7aff834813804a3ea18721b6bce7740d",
-      "google-site-verification=kHACMEqbYV5qgu3tprf-GnXzWeHvWVHgVncFCiQKlb4",
-      "segment-site-verification=xopGmJnxbn2rPzZXsS2fMLslPYUndBeJ",
-      "apple-domain-verification=WCdjJmlbmQSDdvD3",
-      "ca3-b122d05a919141ba91aba958f04a3a83",
-      "have-i-been-pwned-verification=37c31c95ebc27a82104fd378e23c6f3e",
-      "stripe-verification=4fa8f2705ed3ca0496b4d680bdec5d74213c22e6c1428282612504c2c55d7558",
-      "v=spf1 include:mail.zendesk.com include:_spf.google.com include:_spf.qualtrics.com include:sendgrid.net ip4:208.185.229.40/29 -all",
-      "atlassian-domain-verification=vRVlNNYB4Ta6QoLCQtsmdBc6emoab1Jsldy9az8E47tQW4cHajZHsi4rTq4HM0PE",
-      "Pv0TLiWeowXZIsAw68NzAb3SgjY",
-      "logmein-verification-code=25ce4838-7980-4719-b4c5-e76450a6066f",
-      "asv=57fab8da76cd7db6399386b2fbb8266e",
-      "cursor-domain-verification-f88819=Y8P5LsyqtmltA7MfMr2jwtMiQ",
-      "GUID=9928b8b1-f83f-4518-bf35-ac7504f9b417",
       "planet-scale-domain-verification-xqrft3=bqeTziO1BFwTrh3fexfLtqTDb",
-      "openai-domain-verification=dv-UNBZKzk7GFSRuVEUk4KHWObW",
-      "google-site-verification=gB6gRbVH-PkcwwblYYT_s6peEZ-uOCU4SCN-m6t2-0Q",
-      "0r4UVQn/K1PldOhFrE9MoJLiJXfQLSKU+uLPm4Z1uGfGrxtPLbQ+ymZcnBCVIkemqdAFahKrsLodU2cqFkkbtA==",
+      "atlassian-domain-verification=vRVlNNYB4Ta6QoLCQtsmdBc6emoab1Jsldy9az8E47tQW4cHajZHsi4rTq4HM0PE",
+      "GUID=9928b8b1-f83f-4518-bf35-ac7504f9b417",
+      "7aff834813804a3ea18721b6bce7740d",
+      "ca3-b122d05a919141ba91aba958f04a3a83",
+      "cursor-domain-verification-f88819=Y8P5LsyqtmltA7MfMr2jwtMiQ",
+      "logmein-verification-code=25ce4838-7980-4719-b4c5-e76450a6066f",
+      "stripe-verification=4fa8f2705ed3ca0496b4d680bdec5d74213c22e6c1428282612504c2c55d7558",
       "status-page-domain-verification=qh3cfw6syrg3",
-      "anthropic-domain-verification-1mjwc0=ydAYQut9EZNXEQaKnOtAjzP66",
       "asn-verification=113e130f52ef13092231213dbadd8d30f0143c37b2c2744d24b16bfbc770372a",
-      "facebook-domain-verification=ckr53ulsmy1vs2dwppppt6xwhtc5fk",
-      "docusign=70668272-5104-4868-af0d-389211541998"
+      "anthropic-domain-verification-1mjwc0=ydAYQut9EZNXEQaKnOtAjzP66",
+      "google-site-verification=gB6gRbVH-PkcwwblYYT_s6peEZ-uOCU4SCN-m6t2-0Q",
+      "v=spf1 include:mail.zendesk.com include:_spf.google.com include:_spf.qualtrics.com include:sendgrid.net ip4:208.185.229.40/29 -all",
+      "have-i-been-pwned-verification=37c31c95ebc27a82104fd378e23c6f3e"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:074cb25249364ef2b4923557da662d24@dmarc-reports.cloudflare.net; ruf=mailto:074cb25249364ef2b4923557da662d24@dmarc-reports.cloudflare.net; ri=3600; sp=reject; pct=100; fo=0:1:d:s;"
@@ -310,10 +310,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "loom-site-verification=edd4369291874aacb2b5aae6ea089158",
-    "1password-site-verification=VOWKAPWYWZCT5HUOWLC2SAZL5E",
-    "google-site-verification=kHACMEqbYV5qgu3tprf-GnXzWeHvWVHgVncFCiQKlb4",
     "segment-site-verification=xopGmJnxbn2rPzZXsS2fMLslPYUndBeJ",
+    "openai-domain-verification=dv-UNBZKzk7GFSRuVEUk4KHWObW",
+    "loom-site-verification=edd4369291874aacb2b5aae6ea089158",
+    "facebook-domain-verification=ckr53ulsmy1vs2dwppppt6xwhtc5fk",
     "apple-domain-verification=WCdjJmlbmQSDdvD3"
   ],
   "tls2": {
@@ -325,7 +325,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260818200555",
+      "not_after": "20261116210544"
     }
   },
   "http2": {
@@ -347,8 +349,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "/add_to_diary"
     ]
   },
-  "elapsed_s": 10.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 11.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

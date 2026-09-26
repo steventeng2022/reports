@@ -7,12 +7,12 @@
 | Target | https://validator.w3.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | validator.w3.org |
-| Test date | 2026-09-26 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
+Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,6 +26,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 | 8 | info | P8 | Missing security.txt | CWE-1038 |
 | 9 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 10 | info | CK5 | Cookie scoped to parent domain (w3.org) | CWE-200 |
+| 11 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 
 ## Detailed findings
 
@@ -92,6 +93,12 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 - **Detail:** Set-Cookie Domain attribute is broader than the request host validator.w3.org.
 - **Recommendation:** Confirm the wider cookie scope is intended.
 
+### 11. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of validator.w3.org permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -103,8 +110,8 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
       "104.18.23.19"
     ],
     "aaaa": [
-      "2606:4700::6812:1713",
-      "2606:4700::6812:1613"
+      "2606:4700::6812:1613",
+      "2606:4700::6812:1713"
     ],
     "cname": null,
     "mx": [],
@@ -206,11 +213,16 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260906033747",
+      "not_after": "20261205043732"
     }
   },
-  "elapsed_s": 3.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 4.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

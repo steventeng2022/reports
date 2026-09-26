@@ -7,12 +7,12 @@
 | Target | https://makeuseof.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | makeuseof.com |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
+Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -100,7 +102,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=ZwHXQlySYIBTJb0yfB1PfKNyUyk2cbBXO4Bx8NWkzqU; pinterest-site-verification=1f3676d8e31ceb74da001978566feaef; facebook-domain-verification=vfni2281oyr62lwycezyspzglls69v
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=YU-A4nWOzc_7_BXIASILHngCcOsOKQHNcFMkpo_SCT4; google-site-verification=2cno1kK27wks5ACgpcGEBVNW4nqk88HwgZyOyvcYBmQ; facebook-domain-verification=vfni2281oyr62lwycezyspzglls69v
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -121,6 +123,18 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 - **Detail:** robots.txt lists 23 disallow path(s), e.g. /admin/, /api/auth, /api/v1, /api/v2, /api/v3
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 15. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of makeuseof.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 54.157.137.27 carries PTR ec2-54-157-137-27.compute-1.amazonaws.com. for makeuseof.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -133,30 +147,30 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx3.googlemail.com (pref 30)",
+      "aspmx2.googlemail.com (pref 30)",
       "aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 20)",
-      "aspmx2.googlemail.com (pref 30)"
+      "aspmx3.googlemail.com (pref 30)",
+      "alt1.aspmx.l.google.com (pref 20)",
+      "alt2.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
-      "ns14.dnsmadeeasy.com.",
-      "ns11.dnsmadeeasy.com.",
       "ns12.dnsmadeeasy.com.",
-      "ns15.dnsmadeeasy.com.",
+      "ns14.dnsmadeeasy.com.",
       "ns13.dnsmadeeasy.com.",
+      "ns15.dnsmadeeasy.com.",
+      "ns11.dnsmadeeasy.com.",
       "ns10.dnsmadeeasy.com."
     ],
     "spf": [
-      "google-site-verification=ZwHXQlySYIBTJb0yfB1PfKNyUyk2cbBXO4Bx8NWkzqU",
-      "pinterest-site-verification=1f3676d8e31ceb74da001978566feaef",
-      "facebook-domain-verification=vfni2281oyr62lwycezyspzglls69v",
       "7gx0896dqyj4wpkrjw6hltxrzz44wzhm",
-      "google-site-verification=YU-A4nWOzc_7_BXIASILHngCcOsOKQHNcFMkpo_SCT4",
-      "google-site-verification=HstUOQsM5p9HxuVTYeVe79TJC10DsjRLp9vkXi4dTdU",
       "v=spf1 include:_spf.google.com include:amazonses.com include:one.zoho.com ~all",
+      "google-site-verification=YU-A4nWOzc_7_BXIASILHngCcOsOKQHNcFMkpo_SCT4",
       "google-site-verification=2cno1kK27wks5ACgpcGEBVNW4nqk88HwgZyOyvcYBmQ",
-      "google-site-verification=CAxaugD_nFh8lAwBX0_fm-0rheocNki0ZTiwESP--Kw"
+      "facebook-domain-verification=vfni2281oyr62lwycezyspzglls69v",
+      "google-site-verification=HstUOQsM5p9HxuVTYeVe79TJC10DsjRLp9vkXi4dTdU",
+      "google-site-verification=ZwHXQlySYIBTJb0yfB1PfKNyUyk2cbBXO4Bx8NWkzqU",
+      "google-site-verification=CAxaugD_nFh8lAwBX0_fm-0rheocNki0ZTiwESP--Kw",
+      "pinterest-site-verification=1f3676d8e31ceb74da001978566feaef"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; adkim=r; aspf=r"
@@ -241,11 +255,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=ZwHXQlySYIBTJb0yfB1PfKNyUyk2cbBXO4Bx8NWkzqU",
-    "pinterest-site-verification=1f3676d8e31ceb74da001978566feaef",
-    "facebook-domain-verification=vfni2281oyr62lwycezyspzglls69v",
     "google-site-verification=YU-A4nWOzc_7_BXIASILHngCcOsOKQHNcFMkpo_SCT4",
-    "google-site-verification=HstUOQsM5p9HxuVTYeVe79TJC10DsjRLp9vkXi4dTdU"
+    "google-site-verification=2cno1kK27wks5ACgpcGEBVNW4nqk88HwgZyOyvcYBmQ",
+    "facebook-domain-verification=vfni2281oyr62lwycezyspzglls69v",
+    "google-site-verification=HstUOQsM5p9HxuVTYeVe79TJC10DsjRLp9vkXi4dTdU",
+    "google-site-verification=ZwHXQlySYIBTJb0yfB1PfKNyUyk2cbBXO4Bx8NWkzqU"
   ],
   "tls2": {
     "alpn": "",
@@ -256,7 +270,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260909230342",
+      "not_after": "20261208230341"
     }
   },
   "http2": {
@@ -278,8 +294,14 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "/profile/"
     ]
   },
-  "elapsed_s": 29.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ec2-54-157-137-27.compute-1.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 29.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

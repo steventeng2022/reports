@@ -7,12 +7,12 @@
 | Target | https://docs.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | docs.google.com |
-| Test date | 2026-09-26 17:43 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
+Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | CK5 | Cookie scoped to parent domain (.google.com) | CWE-200 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 15 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -86,7 +89,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 ### 9. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (lbbhiz1aix0scq.docs.google.com and k8eh8b10nus5p7.docs.google.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (46qi6gtmm9lpe2.docs.google.com and xz7gg1rx0xnpgn.docs.google.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
@@ -113,6 +116,24 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 - **Detail:** robots.txt lists 3 disallow path(s), e.g. /?hl=*&, /templateabuse, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 14. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of docs.google.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 15. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of docs.google.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 142.250.77.206 carries PTR lctsaa-ah-in-f14.1e100.net., del11s08-in-f14.1e100.net. for docs.google.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -120,26 +141,18 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
   "domain": "docs.google.com",
   "dns": {
     "a": [
-      "142.251.8.102",
-      "142.251.8.138",
-      "142.251.8.139",
-      "142.251.8.101",
-      "142.251.8.100",
-      "142.251.8.113"
+      "142.250.77.206"
     ],
     "aaaa": [
-      "2404:6800:4008:c15::65",
-      "2404:6800:4008:c15::64",
-      "2404:6800:4008:c15::8b",
-      "2404:6800:4008:c15::66"
+      "2404:6800:4012::200e"
     ],
     "cname": null,
     "mx": [
+      "alt2.gmr-smtp-in.l.google.com (pref 20)",
       "alt1.gmr-smtp-in.l.google.com (pref 10)",
       "alt3.gmr-smtp-in.l.google.com (pref 30)",
-      "alt2.gmr-smtp-in.l.google.com (pref 20)",
-      "gmr-smtp-in.l.google.com (pref 5)",
-      "alt4.gmr-smtp-in.l.google.com (pref 40)"
+      "alt4.gmr-smtp-in.l.google.com (pref 40)",
+      "gmr-smtp-in.l.google.com (pref 5)"
     ],
     "ns": [],
     "spf": [
@@ -156,9 +169,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=*.google.com",
-    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
-    "notBefore": "Sep 10 19:22:01 2026 GMT",
-    "notAfter": "Dec  3 19:22:00 2026 GMT",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
+    "notBefore": "Sep 10 19:21:53 2026 GMT",
+    "notAfter": "Dec  3 19:21:52 2026 GMT",
     "san": [
       "*.google.com",
       "*.appengine.google.com",
@@ -236,7 +249,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     }
   },
   "ports": {
-    "ip": "142.251.8.102",
+    "ip": "142.250.77.206",
     "open": []
   },
   "https": {
@@ -302,11 +315,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     "tls_ver": "TLSv1.3",
     "subject": "None",
     "cert": {
-      "sig_oid": "1.2.840.10045.4.3.2",
+      "sig_oid": "1.2.840.113549.1.1.11",
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192153",
+      "not_after": "20261203192152"
     }
   },
   "http2": {
@@ -317,8 +332,15 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
       "/"
     ]
   },
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "lctsaa-ah-in-f14.1e100.net.",
+      "del11s08-in-f14.1e100.net."
+    ]
+  },
   "elapsed_s": 8.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

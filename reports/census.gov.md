@@ -7,8 +7,8 @@
 | Target | https://census.gov/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | census.gov |
-| Test date | 2026-09-26 18:14 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -45,7 +45,7 @@ Total findings: **5** (High: 0, Medium: 0, Low: 1, Info: 4)
 ### 4. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=OMpp6MyQ1bAbnGclpbKqCMZal_1HxJapzG2tSRWFbzI; airtable-verification=3602865d8095935581ec510122a7f819; apple-domain-verification=A8NwvlnLg7Cm2H3G
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=5gdefaxvKpVMBIGemF2Dw4yBrtDazSNnprwC3sLsrUE; apple-domain-verification=A8NwvlnLg7Cm2H3G; google-site-verification=KnpcXkPcji6vLLd7Scev-xZMllMdI8f75Ibi--S4lzI
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 5. [INFO] 139 hostnames found via Certificate Transparency (certspotter) (`CT1`)
@@ -72,21 +72,21 @@ Total findings: **5** (High: 0, Medium: 0, Low: 1, Info: 4)
       "mail2.census.gov (pref 50)"
     ],
     "ns": [
-      "ns1e.census.gov.",
-      "ns2e.census.gov."
+      "ns2e.census.gov.",
+      "ns1e.census.gov."
     ],
     "spf": [
+      "google-site-verification=5gdefaxvKpVMBIGemF2Dw4yBrtDazSNnprwC3sLsrUE",
       "+i27enlfMpLlk9UWn4Ku+sUy3QO5Lnbysj+2rdvlyfPtq28iCTuH3b9ZnVWcYbhtrY1f1H9xsXT74U75J6h2aQ==",
-      "google-site-verification=OMpp6MyQ1bAbnGclpbKqCMZal_1HxJapzG2tSRWFbzI",
-      "airtable-verification=3602865d8095935581ec510122a7f819",
+      "v=spf1 ip4:148.129.0.0/16 ip6:2610:20:2000:101::f:0 ip6:2610:20:2010:a04::f:0 mx include:csod.spf.census.gov include:i1.spf.census.gov include:i2.spf.census.gov ~all",
       "apple-domain-verification=A8NwvlnLg7Cm2H3G",
       "google-site-verification=KnpcXkPcji6vLLd7Scev-xZMllMdI8f75Ibi--S4lzI",
-      "apple-domain-verification=2jIC5VNEsj8bPdnu",
-      "infoblox-domain-mastery=578e129560f03adc81a7b3f658065459be516b52709d8fde2b1183b71db46b7e5c",
-      "adobe-idp-site-verification=c75e766ae664774cb9d671205f69ba1bbb97fbacb49c55d78725c432ef88e31d",
+      "google-site-verification=OMpp6MyQ1bAbnGclpbKqCMZal_1HxJapzG2tSRWFbzI",
+      "airtable-verification=3602865d8095935581ec510122a7f819",
       "MS=ms38105103",
-      "google-site-verification=5gdefaxvKpVMBIGemF2Dw4yBrtDazSNnprwC3sLsrUE",
-      "v=spf1 ip4:148.129.0.0/16 ip6:2610:20:2000:101::f:0 ip6:2610:20:2010:a04::f:0 mx include:csod.spf.census.gov include:i1.spf.census.gov include:i2.spf.census.gov ~all"
+      "adobe-idp-site-verification=c75e766ae664774cb9d671205f69ba1bbb97fbacb49c55d78725c432ef88e31d",
+      "infoblox-domain-mastery=578e129560f03adc81a7b3f658065459be516b52709d8fde2b1183b71db46b7e5c",
+      "apple-domain-verification=2jIC5VNEsj8bPdnu"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@valigov.email,mailto:dmarc+rua@other.mail.census.gov,mailto:dmarc-reports@doc.gov,mailto:reports@dmarc.cyber.dhs.gov; ruf=mailto:dmarc+ruf@other.mail.census.gov; fo=1"
@@ -95,11 +95,11 @@ Total findings: **5** (High: 0, Medium: 0, Low: 1, Info: 4)
   },
   "error": "TimeoutError('timed out')",
   "apex_txt": [
-    "google-site-verification=OMpp6MyQ1bAbnGclpbKqCMZal_1HxJapzG2tSRWFbzI",
-    "airtable-verification=3602865d8095935581ec510122a7f819",
+    "google-site-verification=5gdefaxvKpVMBIGemF2Dw4yBrtDazSNnprwC3sLsrUE",
     "apple-domain-verification=A8NwvlnLg7Cm2H3G",
     "google-site-verification=KnpcXkPcji6vLLd7Scev-xZMllMdI8f75Ibi--S4lzI",
-    "apple-domain-verification=2jIC5VNEsj8bPdnu"
+    "google-site-verification=OMpp6MyQ1bAbnGclpbKqCMZal_1HxJapzG2tSRWFbzI",
+    "airtable-verification=3602865d8095935581ec510122a7f819"
   ],
   "tls2": {
     "error": "TimeoutError('timed out')"
@@ -107,8 +107,11 @@ Total findings: **5** (High: 0, Medium: 0, Low: 1, Info: 4)
   "http2": {
     "error": "root GET failed"
   },
-  "elapsed_s": 45.5,
-  "rechecked": "2026-09-26 18:15 UTC",
+  "x12": {
+    "error": "ConnectTimeout(MaxRetryError(\"HTTPSConnectionPool(host='census.gov', port=443): "
+  },
+  "elapsed_s": 54.2,
+  "rechecked": "2026-09-26 18:44 UTC",
   "subdomains": {
     "source": "certspotter",
     "count": 139,

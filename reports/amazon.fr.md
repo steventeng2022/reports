@@ -7,12 +7,12 @@
 | Target | https://amazon.fr/ |
 | Bug bounty program | Amazon |
 | Listed scope domain | amazon.fr |
-| Test date | 2026-09-26 17:39 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,7 +32,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | CT1 | 132 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | CT1 | 132 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -126,7 +127,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2a; google-gws-recovery-domain-verification=68064248; cisco-ci-domain-verification=13ba27e01f786cffd46142fb80e6f2ec6a8523fe86a66d591b1
+- **Detail:** Apex TXT records with verification/token content: google-gws-recovery-domain-verification=68064248; adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2a; box-domain-verification=ffea95cd0e0d61c302198367155b07e74fd534fa1d867662dc9bf996
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -141,7 +142,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** robots.txt lists 190 disallow path(s), e.g. */s?k=*&rh=n*p_*p_*p_, /dp/product-availability/, /dp/rate-this-item/, /exec/obidos/account-access-login, /exec/obidos/change-style
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 17. [INFO] 132 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 3.254.236.66 carries PTR ec2-3-254-236-66.eu-west-1.compute.amazonaws.com. for amazon.fr.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 18. [INFO] 132 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: beta.gql.music.amazon.fr, cloud.amazon.fr, help.amazon.fr, support.amazon.fr
@@ -154,9 +161,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "amazon.fr",
   "dns": {
     "a": [
+      "3.254.236.66",
       "3.254.237.67",
-      "3.253.169.23",
-      "3.254.236.66"
+      "3.253.169.23"
     ],
     "aaaa": [],
     "cname": null,
@@ -164,44 +171,44 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "amazon-smtp.amazon.com (pref 10)"
     ],
     "ns": [
-      "ns2.amzndns.org.",
-      "ns1.amzndns.com.",
       "ns1.amzndns.org.",
+      "ns2.amzndns.org.",
+      "ns1.amzndns.net.",
+      "ns1.amzndns.com.",
       "ns2.amzndns.com.",
       "ns1.amzndns.co.uk.",
-      "ns1.amzndns.net.",
       "ns2.amzndns.net.",
       "ns2.amzndns.co.uk."
     ],
     "spf": [
-      "sending_domain1003771=d9728424f2813de308b9887cb13c87f9400c6172e727dca7b3feca1cb4437055",
-      "MS=ms18995963",
-      "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814",
-      "MS=ms46743318",
       "google-gws-recovery-domain-verification=68064248",
-      "cisco-ci-domain-verification=13ba27e01f786cffd46142fb80e6f2ec6a8523fe86a66d591b101401dc4d6b8c",
-      "canva-site-verification=bFpVPinHHZos3PY6CD0Tbw",
-      "google-site-verification=NkoFxShJGME_teW9sIj1QzZ7gbyG-HWJvLtFhIfqHnc",
-      "v=spf1 include:spf.mandrillapp.com include:amazon.com -all",
-      "cisco-ci-domain-verification=74d02efdae2201a6a42b1c6e1068a47e69dda71fbd4defef5a70e23d800da1fd",
-      "sending_domain608861=73515280138a29820094c17699cd6051561cd16b1b60c732ed4860cad0b96480",
+      "MS=ms18995963",
+      "sending_domain229492=583de145d75ff66143e88dca273460447d95061a4213307f4d320600a3c1dcaa",
+      "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814",
+      "sending_domain608861=cf2a0d867c19a529fea9d2246519da0b618b935a8d64efb744ea49ef76b52869",
+      "sending_domain1003771=3267c0d73b632f4cc5acb58bc0f3b77915039677c23eb7d503d89928b10cbbe2",
       "box-domain-verification=ffea95cd0e0d61c302198367155b07e74fd534fa1d867662dc9bf9969b6f535d",
       "facebook-domain-verification=pkqx4a7mquzleeunwoog6hv56rny8w",
-      "kahoot-domain-verification=b62357d8cf9c76c6d5bf6888b63b9f1a6a65ebb3755210709a16ce752b3253f6",
-      "google-gws-recovery-domain-verification=70440556",
       "bluebeam-verification=aoc2ya9tkhh2drq1723kaba2yui1nd",
-      "sending_domain1003771=3267c0d73b632f4cc5acb58bc0f3b77915039677c23eb7d503d89928b10cbbe2",
-      "google-site-verification=U3inbmCLfS-MnCQvnNkeCB2aPKsmqeS9Ly54tfJJR50",
-      "spf2.0/pra include:spf.mandrillapp.com include:amazon.com -all",
-      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
-      "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
+      "kahoot-domain-verification=b62357d8cf9c76c6d5bf6888b63b9f1a6a65ebb3755210709a16ce752b3253f6",
       "docker-verification=64c0e1f7-ccdf-4192-8eaa-8eb129095d13",
-      "autodesk-domain-verification=N5Zg6KZwXQDo-pudDkME",
-      "sending_domain229492=5ff0ab96243078b774f045d24b65144988a46f4578e8c0116d7eb099b14cc13c",
-      "google-site-verification=vmQPE7p4uYTNHVtaQmytT-CZayW8ruLXycMsEBl_kIo",
-      "sending_domain608861=cf2a0d867c19a529fea9d2246519da0b618b935a8d64efb744ea49ef76b52869",
       "ZOOM_verify_uzXEpZoIQGsNdrlphjJ59I",
-      "sending_domain229492=583de145d75ff66143e88dca273460447d95061a4213307f4d320600a3c1dcaa"
+      "google-gws-recovery-domain-verification=70440556",
+      "google-site-verification=vmQPE7p4uYTNHVtaQmytT-CZayW8ruLXycMsEBl_kIo",
+      "spf2.0/pra include:spf.mandrillapp.com include:amazon.com -all",
+      "canva-site-verification=bFpVPinHHZos3PY6CD0Tbw",
+      "sending_domain1003771=d9728424f2813de308b9887cb13c87f9400c6172e727dca7b3feca1cb4437055",
+      "autodesk-domain-verification=N5Zg6KZwXQDo-pudDkME",
+      "cisco-ci-domain-verification=13ba27e01f786cffd46142fb80e6f2ec6a8523fe86a66d591b101401dc4d6b8c",
+      "google-site-verification=NkoFxShJGME_teW9sIj1QzZ7gbyG-HWJvLtFhIfqHnc",
+      "MS=ms46743318",
+      "sending_domain608861=73515280138a29820094c17699cd6051561cd16b1b60c732ed4860cad0b96480",
+      "google-site-verification=U3inbmCLfS-MnCQvnNkeCB2aPKsmqeS9Ly54tfJJR50",
+      "v=spf1 include:spf.mandrillapp.com include:amazon.com -all",
+      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
+      "cisco-ci-domain-verification=74d02efdae2201a6a42b1c6e1068a47e69dda71fbd4defef5a70e23d800da1fd",
+      "sending_domain229492=5ff0ab96243078b774f045d24b65144988a46f4578e8c0116d7eb099b14cc13c",
+      "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo"
     ],
     "dmarc": [
       "v=DMARC1;",
@@ -242,7 +249,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "3.254.237.67",
+    "ip": "3.254.236.66",
     "open": []
   },
   "https": {
@@ -324,11 +331,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     ]
   },
   "apex_txt": [
-    "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2a",
     "google-gws-recovery-domain-verification=68064248",
-    "cisco-ci-domain-verification=13ba27e01f786cffd46142fb80e6f2ec6a8523fe86a66d591b1",
-    "canva-site-verification=bFpVPinHHZos3PY6CD0Tbw",
-    "google-site-verification=NkoFxShJGME_teW9sIj1QzZ7gbyG-HWJvLtFhIfqHnc"
+    "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2a",
+    "box-domain-verification=ffea95cd0e0d61c302198367155b07e74fd534fa1d867662dc9bf996",
+    "facebook-domain-verification=pkqx4a7mquzleeunwoog6hv56rny8w",
+    "bluebeam-verification=aoc2ya9tkhh2drq1723kaba2yui1nd"
   ],
   "tls2": {
     "alpn": "",
@@ -339,7 +346,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260804000000",
+      "not_after": "20270217235959"
     }
   },
   "http2": {
@@ -361,8 +370,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/gp/cart"
     ]
   },
-  "elapsed_s": 23.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ec2-3-254-236-66.eu-west-1.compute.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 26.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

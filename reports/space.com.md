@@ -7,8 +7,8 @@
 | Target | https://space.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | space.com |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -134,7 +134,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=SQONiBgTxRVzPPtIHjei_IUGCiAa0KxoVWFw1QfVes; google-site-verification=j3PRzXxw33AX3XBZcH-DMUKEVdF3l0K-FqWToWyujWs; google-site-verification=nrpIn3a0BMjdgL7in8p4mOAxuGhxv_djn9luMGspEvE
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=j3PRzXxw33AX3XBZcH-DMUKEVdF3l0K-FqWToWyujWs; google-site-verification=nrpIn3a0BMjdgL7in8p4mOAxuGhxv_djn9luMGspEvE; _globalsign-domain-verification=SQONiBgTxRVzPPtIHjei_IUGCiAa0KxoVWFw1QfVes
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -162,8 +162,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "space.com",
   "dns": {
     "a": [
-      "199.232.194.114",
-      "199.232.198.114"
+      "199.232.198.114",
+      "199.232.194.114"
     ],
     "aaaa": [],
     "cname": null,
@@ -171,19 +171,19 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "smtp.google.com (pref 1)"
     ],
     "ns": [
-      "ns-2020.awsdns-60.co.uk.",
-      "ns-380.awsdns-47.com.",
       "ns-1150.awsdns-15.org.",
-      "ns-755.awsdns-30.net."
+      "ns-2020.awsdns-60.co.uk.",
+      "ns-755.awsdns-30.net.",
+      "ns-380.awsdns-47.com."
     ],
     "spf": [
-      "_globalsign-domain-verification=SQONiBgTxRVzPPtIHjei_IUGCiAa0KxoVWFw1QfVes",
-      "fastly-domain-delegation-vckjl45689sbmnqwe-17052021",
+      "google-site-verification=j3PRzXxw33AX3XBZcH-DMUKEVdF3l0K-FqWToWyujWs",
+      "v=spf1 include:_spf.google.com -all",
+      "google-site-verification=nrpIn3a0BMjdgL7in8p4mOAxuGhxv_djn9luMGspEvE",
       "KoZcnAZIpNcp+/+EWpnHW+JWcMrcnbzAjETeK1AgWgcrPx5Ql7QVSaMpNPZOnnBnsJbG925lo/DMvT3qDROgDA==",
       "MS=ms10680980",
-      "v=spf1 include:_spf.google.com -all",
-      "google-site-verification=j3PRzXxw33AX3XBZcH-DMUKEVdF3l0K-FqWToWyujWs",
-      "google-site-verification=nrpIn3a0BMjdgL7in8p4mOAxuGhxv_djn9luMGspEvE",
+      "fastly-domain-delegation-vckjl45689sbmnqwe-17052021",
+      "_globalsign-domain-verification=SQONiBgTxRVzPPtIHjei_IUGCiAa0KxoVWFw1QfVes",
       "google-site-verification=JA-BSr_vWxfCvgvdZkwkxtvAXXut6wMwjLiTs_aVOz4"
     ],
     "dmarc": [
@@ -214,7 +214,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "199.232.194.114",
+    "ip": "199.232.198.114",
     "open": []
   },
   "https": {
@@ -271,9 +271,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "_globalsign-domain-verification=SQONiBgTxRVzPPtIHjei_IUGCiAa0KxoVWFw1QfVes",
     "google-site-verification=j3PRzXxw33AX3XBZcH-DMUKEVdF3l0K-FqWToWyujWs",
     "google-site-verification=nrpIn3a0BMjdgL7in8p4mOAxuGhxv_djn9luMGspEvE",
+    "_globalsign-domain-verification=SQONiBgTxRVzPPtIHjei_IUGCiAa0KxoVWFw1QfVes",
     "google-site-verification=JA-BSr_vWxfCvgvdZkwkxtvAXXut6wMwjLiTs_aVOz4"
   ],
   "tls2": {
@@ -285,7 +285,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260819153801",
+      "not_after": "20261117153800"
     }
   },
   "http2": {
@@ -307,8 +309,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "*seenMatchId=*"
     ]
   },
-  "elapsed_s": 28.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 28.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

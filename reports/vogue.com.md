@@ -7,12 +7,12 @@
 | Target | https://vogue.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | vogue.com |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,7 +32,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | CT1 | 39 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | CT1 | 39 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -126,7 +127,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=TotKJyzGHFh-Cx9RPOCylr-TeWAhHQW4-wx-m09MA0w; atlassian-domain-verification=mYtQWl3namqmk5ikMKT48XVnS+XdjdbkLlkWMcNyvsddK2JDAi; pinterest-site-verification=079bd01e42d8f0eaa5422e8618a6c6d4
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=Zg2QYDSkRzso69ytr0XEOkPovxRiyUzmaxpLG6cmvho; google-site-verification=zcD6BQv00vEAHz7gR-RM32XcQ6viddAOiZ1r5DNkQgo; facebook-domain-verification=6x1dytzup5zmced9tfbjt53v381sd5
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -141,7 +142,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** robots.txt lists 20 disallow path(s), e.g. /*?, /auth/, /account/, /user/, /user-context
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 17. [INFO] 39 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 52.223.6.210 carries PTR aeed6796a0f5c0317.awsglobalaccelerator.com. for vogue.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 18. [INFO] 39 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.vogue.com, app.link.vogue.com, app.vogue.com, assets.vogue.com, my.vogue.com, shop.vogue.com
@@ -158,43 +165,43 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "166.117.251.134"
     ],
     "aaaa": [
-      "2600:9000:a41b:ef95:eff:32b3:411c:f36c",
-      "2600:9000:a707:a46c:560f:b721:9702:d75e"
+      "2600:9000:a707:a46c:560f:b721:9702:d75e",
+      "2600:9000:a41b:ef95:eff:32b3:411c:f36c"
     ],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "alt4.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
       "alt3.aspmx.l.google.com (pref 10)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
       "ns-1116.awsdns-11.org.",
+      "ns-1935.awsdns-49.co.uk.",
       "ns-28.awsdns-03.com.",
-      "ns-836.awsdns-40.net.",
-      "ns-1935.awsdns-49.co.uk."
+      "ns-836.awsdns-40.net."
     ],
     "spf": [
-      "google-site-verification=TotKJyzGHFh-Cx9RPOCylr-TeWAhHQW4-wx-m09MA0w",
-      "atlassian-domain-verification=mYtQWl3namqmk5ikMKT48XVnS+XdjdbkLlkWMcNyvsddK2JDAib+9a8MJCXTDMyJ",
-      "ZOOM_verify_kdyAdyAMRLmIhWagXSIIAg",
-      "pinterest-site-verification=079bd01e42d8f0eaa5422e8618a6c6d4",
-      "v=spf1 include:_u.vogue.com._spf.smart.ondmarc.com -all",
-      "yahoo-verification-key=wNK397wYlhUjvNegBd2B9l5tgqbgfLIRT0BSY2zQ910=",
-      "xt2rbt7mdy4gk53hgy2mf3sx8j9f22v8",
-      "MS=ms95711702",
-      "google-site-verification=0rCw3th8Nz8zUpLrjnI5ddz-wT-iv-IfYFYE4W434Pw",
       "fastly-domain-delegation-grdt7uboiyaqqtgjenzi-789661-2024-07-19",
+      "google-site-verification=Zg2QYDSkRzso69ytr0XEOkPovxRiyUzmaxpLG6cmvho",
       "MS=ms23179707",
       "google-site-verification=zcD6BQv00vEAHz7gR-RM32XcQ6viddAOiZ1r5DNkQgo",
-      "google-site-verification=75Jd5pu9q9ASOY0VZggn-TZZGwGsVXex4POiiGCUKJc",
-      "zapier-domain-verification-challenge=9acd95dc-f346-4b72-acb0-ceb88d996ba4",
-      "adobe-idp-site-verification=c2108b9dbc0fc05ff0794006df1c41b6c945bd2c8a904bef754ec850a7c6873f",
-      "google-site-verification=KC8kypqWuXMriWr2c1yLNvTa_h8Lj3u3Ls7utthC3dQ",
       "facebook-domain-verification=6x1dytzup5zmced9tfbjt53v381sd5",
+      "ZOOM_verify_kdyAdyAMRLmIhWagXSIIAg",
+      "google-site-verification=TotKJyzGHFh-Cx9RPOCylr-TeWAhHQW4-wx-m09MA0w",
+      "v=spf1 include:_u.vogue.com._spf.smart.ondmarc.com -all",
+      "zapier-domain-verification-challenge=9acd95dc-f346-4b72-acb0-ceb88d996ba4",
+      "google-site-verification=75Jd5pu9q9ASOY0VZggn-TZZGwGsVXex4POiiGCUKJc",
+      "google-site-verification=KC8kypqWuXMriWr2c1yLNvTa_h8Lj3u3Ls7utthC3dQ",
+      "google-site-verification=0rCw3th8Nz8zUpLrjnI5ddz-wT-iv-IfYFYE4W434Pw",
+      "atlassian-domain-verification=mYtQWl3namqmk5ikMKT48XVnS+XdjdbkLlkWMcNyvsddK2JDAib+9a8MJCXTDMyJ",
+      "xt2rbt7mdy4gk53hgy2mf3sx8j9f22v8",
+      "MS=ms95711702",
+      "adobe-idp-site-verification=c2108b9dbc0fc05ff0794006df1c41b6c945bd2c8a904bef754ec850a7c6873f",
+      "yahoo-verification-key=wNK397wYlhUjvNegBd2B9l5tgqbgfLIRT0BSY2zQ910=",
       "fastly-domain-delegation-LRX8J5E7-877731-20250130",
-      "google-site-verification=Zg2QYDSkRzso69ytr0XEOkPovxRiyUzmaxpLG6cmvho"
+      "pinterest-site-verification=079bd01e42d8f0eaa5422e8618a6c6d4"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; sp=reject; rua=mailto:a6816915@inbox.ondmarc.com; ruf=mailto:a6816915@inbox.ondmarc.com; adkim=r; aspf=r; fo=1; rf=afrf; ri=3600"
@@ -398,11 +405,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     ]
   },
   "apex_txt": [
+    "google-site-verification=Zg2QYDSkRzso69ytr0XEOkPovxRiyUzmaxpLG6cmvho",
+    "google-site-verification=zcD6BQv00vEAHz7gR-RM32XcQ6viddAOiZ1r5DNkQgo",
+    "facebook-domain-verification=6x1dytzup5zmced9tfbjt53v381sd5",
     "google-site-verification=TotKJyzGHFh-Cx9RPOCylr-TeWAhHQW4-wx-m09MA0w",
-    "atlassian-domain-verification=mYtQWl3namqmk5ikMKT48XVnS+XdjdbkLlkWMcNyvsddK2JDAi",
-    "pinterest-site-verification=079bd01e42d8f0eaa5422e8618a6c6d4",
-    "yahoo-verification-key=wNK397wYlhUjvNegBd2B9l5tgqbgfLIRT0BSY2zQ910=",
-    "google-site-verification=0rCw3th8Nz8zUpLrjnI5ddz-wT-iv-IfYFYE4W434Pw"
+    "zapier-domain-verification-challenge=9acd95dc-f346-4b72-acb0-ceb88d996ba4"
   ],
   "tls2": {
     "alpn": "",
@@ -413,7 +420,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251023000000",
+      "not_after": "20261121235959"
     }
   },
   "http2": {
@@ -435,8 +444,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/https://player.cnevids.com/"
     ]
   },
-  "elapsed_s": 8.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "aeed6796a0f5c0317.awsglobalaccelerator.com."
+    ]
+  },
+  "elapsed_s": 8.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

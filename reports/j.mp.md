@@ -7,12 +7,12 @@
 | Target | https://j.mp/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | j.mp |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
+Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,7 +29,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 | 11 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 13 | low | RED10 | Host header reflected into redirect Location | CWE-601 |
-| 14 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 15 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -48,7 +49,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 ### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
 - **CWE:** CWE-200
-- **Detail:** Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000
 - **Recommendation:** Verify the advertised protocol endpoints are configured.
 
 ### 4. [LOW] Missing HSTS header (`H1`)
@@ -103,7 +104,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 ### 11. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (pj7icv70v5g5bq.j.mp and scr5y54z7ucb1h.j.mp) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (wvqtd8a9duyc8h.j.mp and 8jvudlwqsd15tk.j.mp) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -118,7 +119,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 - **Detail:** GET with Host: evil-auditor.example -> Location: https://bitly.com/pages/landing/branded-short-domains-powered-by-bitly?bsd=evil-auditor.example
 - **Recommendation:** Validate redirect targets against the expected host.
 
-### 14. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 67.199.248.16 carries PTR j.mp. for j.mp.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 15. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -138,18 +145,18 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
     "cname": null,
     "mx": [],
     "ns": [
-      "ns-cloud-a4.googledomains.com.",
-      "ns-545.awsdns-04.net.",
       "ns-403.awsdns-50.com.",
-      "ns-cloud-a2.googledomains.com.",
-      "ns-cloud-a1.googledomains.com.",
-      "ns-1927.awsdns-48.co.uk.",
+      "ns-cloud-a4.googledomains.com.",
       "ns-cloud-a3.googledomains.com.",
-      "ns-1056.awsdns-04.org."
+      "ns-1927.awsdns-48.co.uk.",
+      "ns-1056.awsdns-04.org.",
+      "ns-cloud-a2.googledomains.com.",
+      "ns-545.awsdns-04.net.",
+      "ns-cloud-a1.googledomains.com."
     ],
     "spf": [
-      "_xz3da5bqfvxb6jlznt7hnmvt6m0kuce",
-      "v=spf1 -all"
+      "v=spf1 -all",
+      "_xz3da5bqfvxb6jlznt7hnmvt6m0kuce"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:dmarc@bit.ly; ruf=mailto:ruf@dmarc.bitly.net; fo=1;"
@@ -244,11 +251,19 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260728000000",
+      "not_after": "20270210235959"
     }
   },
-  "elapsed_s": 8.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 404,
+    "ptr": [
+      "j.mp."
+    ]
+  },
+  "elapsed_s": 9.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

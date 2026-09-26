@@ -7,12 +7,12 @@
 | Target | https://sproutsocial.com/ |
 | Bug bounty program | Sprout Social |
 | Listed scope domain | sproutsocial.com |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
+Total findings: **14** (High: 0, Medium: 0, Low: 0, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,8 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
 | 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 13 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -93,7 +95,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=yq35AOMklIFyD7HelrWMtlretcRBQAt1AY7qTtwvdhg; bugcrowd-verification=f0154a310f16c24b2f611860fa95ee0a; jamf-site-verification=iQrilIoGuZCr_m8AjCBWZA
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-4bvzj1=5CSEl4SRsXptHHAsnE12kwPWq; apple-domain-verification=fUR5lrIb8ZXAgRZh; uber-domain-verification=f857c206-5a02-4eb4-9bd0-2b7316f02c03
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -108,6 +110,18 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
 - **Detail:** Strict-Transport-Security is served but sproutsocial.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
+### 13. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://sproutsocial.com/ carries Cache-Control: public,max-age=3600,must-revalidate (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 65.9.180.100 carries PTR server-65-9-180-100.tpe53.r.cloudfront.net. for sproutsocial.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -115,65 +129,65 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
   "domain": "sproutsocial.com",
   "dns": {
     "a": [
-      "65.9.180.114",
-      "65.9.180.129",
       "65.9.180.100",
+      "65.9.180.129",
+      "65.9.180.114",
       "65.9.180.87"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "alt4.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "alt4.aspmx.l.google.com (pref 10)"
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-1770.awsdns-29.co.uk.",
-      "ns-1475.awsdns-56.org.",
       "ns-851.awsdns-42.net.",
+      "ns-1475.awsdns-56.org.",
+      "ns-1770.awsdns-29.co.uk.",
       "ns-109.awsdns-13.com."
     ],
     "spf": [
-      "google-site-verification=yq35AOMklIFyD7HelrWMtlretcRBQAt1AY7qTtwvdhg",
-      "bugcrowd-verification=f0154a310f16c24b2f611860fa95ee0a",
-      "jamf-site-verification=iQrilIoGuZCr_m8AjCBWZA",
-      "loom-site-verification=c0a47021adc14be19b38292b33d1d30f",
-      "uber-domain-verification=f857c206-5a02-4eb4-9bd0-2b7316f02c03",
-      "canva-site-verification=_JpZfL3nf2ijBh990p20Qg",
       "anthropic-domain-verification-4bvzj1=5CSEl4SRsXptHHAsnE12kwPWq",
-      "google-site-verification=ij4vG3FdwygeRWH5NW4N4caykX25Kd0e0WB4Mthyq20",
-      "_clickhouse-challenge=50106aaaf400edbcefac28bda83bc112729a303de14fb02fb2aacc7b3325eb8e",
-      "miro-verification=391fdb38d34cadae4ef10844ee78b9621782d343",
-      "ZOOM_verify_SCYUdVERQLutYg2MMk5n1g",
+      "docusign=eedc187f-e4c6-4ac9-8e13-c6ccd40314b7",
+      "e2e721fe-abe5-42a4-927b-912cc5c69b36",
+      "apple-domain-verification=fUR5lrIb8ZXAgRZh",
+      "mixpanel-domain-verify=163fe517-5be9-4a94-9755-d4f557dd500c",
+      "uber-domain-verification=f857c206-5a02-4eb4-9bd0-2b7316f02c03",
+      "bugcrowd-verification=f0154a310f16c24b2f611860fa95ee0a",
+      "status-page-domain-verification=mtln2tk244cb",
       "v=spf1 include:mail.zendesk.com include:6cb9ee.workshop-spf.net include:_spf.salesforce.com include:_spf.google.com ip4:167.89.16.0/24 ip4:13.111.63.123 ip4:216.74.162.13 ip4:216.74.162.14 include:stspg-customer.com -all",
       "google-site-verification=Mhehxk91tmdl972lIt1tUudqxk-UZ-dess1iBOOynkk",
-      "google-site-verification=BqcVSfrFZjfdxdEO8uatlQkqe60OY_oN1l0lJZfmZ9k",
-      "docker-verification=43fcdc1c-c507-4b42-a59f-bbe4ec0bb157",
-      "google-site-verification=H8kk7gZcBYmngKs49pHpvunadVcRo05xHvYFm8OIE-I",
-      "pardot638801=5d51367473c46ae4c72b898ec13660f709def997e4a94c499727a407afb942ee",
-      "MS=ms12400529",
-      "reachdesk-verification=DUxgtvZRe02HbR5zQceu542WuioEOiKst7RqNUFgWSKm21dUpY3Qfq9LCrrlJItn",
-      "e2e721fe-abe5-42a4-927b-912cc5c69b36",
-      "fastly-domain-delegation-789693-Kj90J2mV3G9-2024-07-19",
-      "apple-domain-verification=fUR5lrIb8ZXAgRZh",
-      "atlassian-domain-verification=RxqzNQU9S390W85VwH10vVpz3Di558ORKIVSKmVAQT4+y7Ql0sQs5izaEFJ3sqHt",
+      "canva-site-verification=_JpZfL3nf2ijBh990p20Qg",
       "drift-domain-verification=24480bfa6b88081e403b5a627581c72e596dc1c3ed5645fe6efcd60dd55b867d",
-      "slack-domain-verification=I615FeKXlfrAPDJmDACA9SyJDK5G1ZGhti5m0hp1",
-      "facebook-domain-verification=2sqha4fft688a7u7q3figd59ep0w4b",
-      "mixpanel-domain-verify=163fe517-5be9-4a94-9755-d4f557dd500c",
+      "fastly-domain-delegation-789693-Kj90J2mV3G9-2024-07-19",
       "dropbox-domain-verification=r5b6zg48jbmp",
+      "ZOOM_verify_SCYUdVERQLutYg2MMk5n1g",
+      "jamf-site-verification=iQrilIoGuZCr_m8AjCBWZA",
+      "miro-verification=391fdb38d34cadae4ef10844ee78b9621782d343",
+      "atlassian-domain-verification=RxqzNQU9S390W85VwH10vVpz3Di558ORKIVSKmVAQT4+y7Ql0sQs5izaEFJ3sqHt",
+      "loom-site-verification=c0a47021adc14be19b38292b33d1d30f",
       "openai-domain-verification=dv-qdwcM7SqQQz9Vh7yfHW8W55g",
+      "google-site-verification=H8kk7gZcBYmngKs49pHpvunadVcRo05xHvYFm8OIE-I",
+      "google-site-verification=cXlmyZR0poIpagrHUTLcClMxgOT4IkJT0j7_1-e0tsU",
+      "_clickhouse-challenge=50106aaaf400edbcefac28bda83bc112729a303de14fb02fb2aacc7b3325eb8e",
+      "slack-domain-verification=I615FeKXlfrAPDJmDACA9SyJDK5G1ZGhti5m0hp1",
+      "ca3-7d04cacf69a549d4addeff17e6909a24",
+      "BVZ71B+mKCBqRr1w3VIASfVh3pQZB03sHrBNBFpHX1o=",
+      "MS=ms12400529",
+      "google-site-verification=ij4vG3FdwygeRWH5NW4N4caykX25Kd0e0WB4Mthyq20",
+      "reachdesk-verification=DUxgtvZRe02HbR5zQceu542WuioEOiKst7RqNUFgWSKm21dUpY3Qfq9LCrrlJItn",
+      "docker-verification=43fcdc1c-c507-4b42-a59f-bbe4ec0bb157",
+      "pardot638801=5d51367473c46ae4c72b898ec13660f709def997e4a94c499727a407afb942ee",
+      "ca3-8a1e55e3fcee4fa491e23cbded2bc67e",
+      "facebook-domain-verification=2sqha4fft688a7u7q3figd59ep0w4b",
+      "detectify-verification=12d573890acb6ade469e03765116c9e2",
+      "google-site-verification=BqcVSfrFZjfdxdEO8uatlQkqe60OY_oN1l0lJZfmZ9k",
       "google-site-verification=kqO9m7kdcbY5YskqQd2zJq54BQSHCF9uNP_E2s4yoAM",
       "adobe-idp-site-verification=0a066b06b8045615fcdf23249b39f3d914314bdfb3ee967c2e1ffb54d91d8abc",
-      "ca3-7d04cacf69a549d4addeff17e6909a24",
-      "docusign=eedc187f-e4c6-4ac9-8e13-c6ccd40314b7",
-      "BVZ71B+mKCBqRr1w3VIASfVh3pQZB03sHrBNBFpHX1o=",
-      "ca3-8a1e55e3fcee4fa491e23cbded2bc67e",
-      "status-page-domain-verification=mtln2tk244cb",
-      "google-site-verification=cXlmyZR0poIpagrHUTLcClMxgOT4IkJT0j7_1-e0tsU",
-      "detectify-verification=12d573890acb6ade469e03765116c9e2"
+      "google-site-verification=yq35AOMklIFyD7HelrWMtlretcRBQAt1AY7qTtwvdhg"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; rua=mailto:6bd0bfcf@mxtoolbox.dmarc-report.com; ruf=mailto:6bd0bfcf@forensics.dmarc-report.com; aspf=r;"
@@ -204,7 +218,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
     }
   },
   "ports": {
-    "ip": "65.9.180.114",
+    "ip": "65.9.180.100",
     "open": []
   },
   "https": {
@@ -257,11 +271,11 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=yq35AOMklIFyD7HelrWMtlretcRBQAt1AY7qTtwvdhg",
+    "anthropic-domain-verification-4bvzj1=5CSEl4SRsXptHHAsnE12kwPWq",
+    "apple-domain-verification=fUR5lrIb8ZXAgRZh",
+    "uber-domain-verification=f857c206-5a02-4eb4-9bd0-2b7316f02c03",
     "bugcrowd-verification=f0154a310f16c24b2f611860fa95ee0a",
-    "jamf-site-verification=iQrilIoGuZCr_m8AjCBWZA",
-    "loom-site-verification=c0a47021adc14be19b38292b33d1d30f",
-    "uber-domain-verification=f857c206-5a02-4eb4-9bd0-2b7316f02c03"
+    "status-page-domain-verification=mtln2tk244cb"
   ],
   "tls2": {
     "alpn": "",
@@ -272,11 +286,19 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260818000000",
+      "not_after": "20270303235959"
     }
   },
-  "elapsed_s": 17.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "server-65-9-180-100.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 18.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://eepurl.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | eepurl.com |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
+Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 | 12 | low | MAIL9 | DMARC enforces (p=reject) but has no reporting address (rua) | CWE-285 |
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -126,6 +128,18 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 - **Detail:** Certificate of eepurl.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 15. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://eepurl.com/ carries Cache-Control: max-age=300; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.50.227.124 carries PTR a23-50-227-124.deploy.static.akamaitechnologies.com. for eepurl.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -140,20 +154,20 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
     "mx": [],
     "ns": [
       "a4-65.akam.net.",
-      "a6-66.akam.net.",
-      "a1-205.akam.net.",
-      "a7-66.akam.net.",
+      "a14-66.akam.net.",
       "a5-65.akam.net.",
-      "a14-66.akam.net."
+      "a1-205.akam.net.",
+      "a6-66.akam.net.",
+      "a7-66.akam.net."
     ],
     "spf": [
       "95hl48p0xjbqydr7xyzz8ptmksl1334w",
-      "524t8ygzcd8l07x0v7bhq882qj55dgsw",
-      "_72ru7fr8c0ncfmjg71hyedfisw40m4h",
-      "_z0wc6vmvjbvcm5fp3gts295gq1nqf8d",
       "_8hkh7i00e0luex039dp6fsfjhs4bk8u",
       "_lgool0gg7wzos9kz40nbb40e86izja0",
-      "spycloud-domain-verification=2127e2b7-da8a-44df-95f5-c77882a949b1"
+      "_72ru7fr8c0ncfmjg71hyedfisw40m4h",
+      "spycloud-domain-verification=2127e2b7-da8a-44df-95f5-c77882a949b1",
+      "524t8ygzcd8l07x0v7bhq882qj55dgsw",
+      "_z0wc6vmvjbvcm5fp3gts295gq1nqf8d"
     ],
     "dmarc": [
       "v=DMARC1; p=reject;"
@@ -275,11 +289,19 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260416000000",
+      "not_after": "20261031235959"
     }
   },
-  "elapsed_s": 6.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403,
+    "ptr": [
+      "a23-50-227-124.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 6.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

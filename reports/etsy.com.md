@@ -7,8 +7,8 @@
 | Target | https://etsy.com/ |
 | Bug bounty program | Etsy |
 | Listed scope domain | etsy.com |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -133,13 +133,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 8, Info: 10)
 ### 15. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (hyvk4cp5zn27ld.etsy.com and 05jpmz3wrsdig4.etsy.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (b9fdzeydto2wty.etsy.com and qihghlduyfhanv.etsy.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0; anthropic-domain-verification-nehbw6=4taelnzAjM6NVkhm1rylyYZ8r; lucidlink-verification=HYZGQ2NMESYDAVG1GR5EJX21Z0
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=j81l6m6391dika9nlbuh2c8ji9nhye; jamf-site-verification=lUaUDNLb-GDzmbIbaCg_lg; _globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -162,55 +162,55 @@ Total findings: **18** (High: 0, Medium: 0, Low: 8, Info: 10)
   "dns": {
     "a": [
       "151.101.129.224",
-      "151.101.1.224",
+      "151.101.65.224",
       "151.101.193.224",
-      "151.101.65.224"
+      "151.101.1.224"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 50)",
       "alt2.aspmx.l.google.com (pref 30)",
+      "aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx2.googlemail.com (pref 40)",
-      "aspmx.l.google.com (pref 10)"
+      "aspmx3.googlemail.com (pref 50)",
+      "aspmx2.googlemail.com (pref 40)"
     ],
     "ns": [
-      "ns-1264.awsdns-30.org.",
       "ns-162.awsdns-20.com.",
       "dns3.p03.nsone.net.",
-      "dns1.p03.nsone.net."
+      "dns1.p03.nsone.net.",
+      "ns-1264.awsdns-30.org."
     ],
     "spf": [
+      "facebook-domain-verification=j81l6m6391dika9nlbuh2c8ji9nhye",
+      "jamf-site-verification=lUaUDNLb-GDzmbIbaCg_lg",
       "_globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0",
-      "anthropic-domain-verification-nehbw6=4taelnzAjM6NVkhm1rylyYZ8r",
-      "lucidlink-verification=HYZGQ2NMESYDAVG1GR5EJX21Z0",
       "MS=ms91667443",
+      "anthropic-domain-verification-nehbw6=4taelnzAjM6NVkhm1rylyYZ8r",
+      "apple-domain-verification=qgAwoHpdlhEv-3QiQ3G11S5xHj60JbTSzecxszntlvo",
+      "bugcrowd-verification=460ceee75155fa4965c62123bc9cd182",
       "atlassian-domain-verification=cMcfcaBm3JNaxKiO2fok5oOn20qbqxLmjQdFrsLV25SQj8l5hTkX/pb21NqLPLP0",
-      "openai-domain-verification=dv-kBkaf6OFwgohxPZc4YIjOD6t",
+      "docusign=9866d46c-c0b0-47c6-a98e-c6381eb4ccc6",
+      "cursor-domain-verification-vyqnwm=JyRGj2Bcnbk8QqNAclaAE8mHY",
+      "MS=61C0D53B132406B96613AF941D1FFB83A6CFCD73",
+      "adobe-idp-site-verification=1858581c5ab657f77e067d14de03dd297c85f0b6b2916dbe0adeca4fac539e6b",
+      "google-site-verification=mpVLpWjH_tjbc5eK6pmVTZjq4xmHhzoE3crE0rKFULs",
+      "stripe-verification=660c4cdde58756c254bc46c26b92b6232ebc140156e6d2ba74cbb988b283b5ae",
+      "segment-site-verification=qK8Hs2slX9yMAAiKpgMoNP6bJCKq0cqQ",
+      "fastly-domain-delegation-svi5ebiqbg4tbn-20251029",
+      "stripe-verification=fe491048e654bcc35d8f194964540604a3a4108e3191ffd27a9ea4c232d5bcf1",
+      "pinterest-site-verification=b92965d84ebb1103548fbd23e39baf66",
+      "docker-verification=40052c18-7a84-4d01-a294-9fed0866066e",
+      "wrike-verification=NDMwNDc4NDo3YzVlMGVmM2RhZGU0NjRkZTIxZTBjYmU5Mjc2NGZmODRmNzVhMDc2NjRmMTI0NThhYzlhZTdhMzhkNzkyY2Uw",
+      "onetrust-domain-verification=9f4716cb45f046429764b34174392ce2",
+      "stripe-verification=5e8773ee85575b784fc2a6868da2b17b165e2e59f62d067f77bfd40c0ad5cdc5",
+      "monday-com-verification=bG-_DMl97UjUXdEr36_aoOlymHnNMGiZ9z_UM8h7t20",
       "v=spf1 ip4:66.3.159.0/24 ip4:192.147.0.0/24 ip4:173.46.67.72/29 ip4:192.147.1.0/24 ip4:38.106.64.0/24 ip4:38.76.1.0/24 ip4:38.76.2.0/24 ip4:162.220.28.32/27 ip4:162.220.28.64/28 ip4:208.74.204.0/22 ip4:46.19.168.0/23 include:servers.mcsv.net include:mail.",
       "zendesk.com include:amazonses.com include:_netblocks.google.com include:_netblocks2.google.com include:_netblocks3.google.com a:web.q4press.com include:cvent-planner.com include:mail.clinchtalent.com include:spf.redpoints.com -all",
-      "google-site-verification=mpVLpWjH_tjbc5eK6pmVTZjq4xmHhzoE3crE0rKFULs",
-      "bugcrowd-verification=460ceee75155fa4965c62123bc9cd182",
-      "cursor-domain-verification-vyqnwm=JyRGj2Bcnbk8QqNAclaAE8mHY",
-      "miro-verification=31250d3fe2c000cf1f892588d27dcf9eeb6afdd8",
-      "stripe-verification=5e8773ee85575b784fc2a6868da2b17b165e2e59f62d067f77bfd40c0ad5cdc5",
-      "facebook-domain-verification=j81l6m6391dika9nlbuh2c8ji9nhye",
-      "docker-verification=40052c18-7a84-4d01-a294-9fed0866066e",
-      "stripe-verification=fe491048e654bcc35d8f194964540604a3a4108e3191ffd27a9ea4c232d5bcf1",
-      "apple-domain-verification=qgAwoHpdlhEv-3QiQ3G11S5xHj60JbTSzecxszntlvo",
-      "docusign=9866d46c-c0b0-47c6-a98e-c6381eb4ccc6",
-      "MS=61C0D53B132406B96613AF941D1FFB83A6CFCD73",
+      "openai-domain-verification=dv-kBkaf6OFwgohxPZc4YIjOD6t",
       "datadome-domain-verify=BNtk7vonAvB8fhBLjp0E2orOzns71WB1",
-      "fastly-domain-delegation-svi5ebiqbg4tbn-20251029",
-      "stripe-verification=660c4cdde58756c254bc46c26b92b6232ebc140156e6d2ba74cbb988b283b5ae",
-      "adobe-idp-site-verification=1858581c5ab657f77e067d14de03dd297c85f0b6b2916dbe0adeca4fac539e6b",
-      "monday-com-verification=bG-_DMl97UjUXdEr36_aoOlymHnNMGiZ9z_UM8h7t20",
-      "segment-site-verification=qK8Hs2slX9yMAAiKpgMoNP6bJCKq0cqQ",
-      "pinterest-site-verification=b92965d84ebb1103548fbd23e39baf66",
-      "onetrust-domain-verification=9f4716cb45f046429764b34174392ce2",
-      "wrike-verification=NDMwNDc4NDo3YzVlMGVmM2RhZGU0NjRkZTIxZTBjYmU5Mjc2NGZmODRmNzVhMDc2NjRmMTI0NThhYzlhZTdhMzhkNzkyY2Uw",
-      "jamf-site-verification=lUaUDNLb-GDzmbIbaCg_lg"
+      "lucidlink-verification=HYZGQ2NMESYDAVG1GR5EJX21Z0",
+      "miro-verification=31250d3fe2c000cf1f892588d27dcf9eeb6afdd8"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc@etsy.com; ruf=mailto:dmarc@etsy.com"
@@ -300,11 +300,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 8, Info: 10)
   },
   "wildcard_dns": true,
   "apex_txt": [
+    "facebook-domain-verification=j81l6m6391dika9nlbuh2c8ji9nhye",
+    "jamf-site-verification=lUaUDNLb-GDzmbIbaCg_lg",
     "_globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0",
     "anthropic-domain-verification-nehbw6=4taelnzAjM6NVkhm1rylyYZ8r",
-    "lucidlink-verification=HYZGQ2NMESYDAVG1GR5EJX21Z0",
-    "atlassian-domain-verification=cMcfcaBm3JNaxKiO2fok5oOn20qbqxLmjQdFrsLV25SQj8l5hT",
-    "openai-domain-verification=dv-kBkaf6OFwgohxPZc4YIjOD6t"
+    "apple-domain-verification=qgAwoHpdlhEv-3QiQ3G11S5xHj60JbTSzecxszntlvo"
   ],
   "tls2": {
     "alpn": "",
@@ -315,7 +315,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 8, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251103150945",
+      "not_after": "20261205150944"
     }
   },
   "http2": {
@@ -337,8 +339,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 8, Info: 10)
       "/se-en/people"
     ]
   },
-  "elapsed_s": 16.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 16.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

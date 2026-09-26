@@ -7,12 +7,12 @@
 | Target | https://health.harvard.edu/ |
 | Bug bounty program | Harvard |
 | Listed scope domain | health.harvard.edu |
-| Test date | 2026-09-26 17:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -125,13 +126,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (iq70jondpged3q.health.harvard.edu and px9stk62oet56d.health.harvard.edu) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (r9ne19l6l9dk8k.health.harvard.edu and lb2ncaq5usphb9.health.harvard.edu) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=mlwes5jtV6OgwW2b_5WYDiYvXML71jkhm3Veu0RkiKU; openai-domain-verification=dv-b5Z4wfoVX9eCwD0bSvONy2J7; google-site-verification=o61BqEAEJyuhF5Go3hWNr3SQjFPa-ma71JGgHt5ZRIw
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=o61BqEAEJyuhF5Go3hWNr3SQjFPa-ma71JGgHt5ZRIw; google-site-verification=mlwes5jtV6OgwW2b_5WYDiYvXML71jkhm3Veu0RkiKU; openai-domain-verification=dv-b5Z4wfoVX9eCwD0bSvONy2J7
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -146,6 +147,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** Strict-Transport-Security is served but health.harvard.edu is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 54.165.240.143 carries PTR ec2-54-165-240-143.compute-1.amazonaws.com. for health.harvard.edu.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -158,25 +165,25 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mx0b-00171101.pphosted.com (pref 100)",
-      "mx0a-00171101.pphosted.com (pref 100)"
+      "mx0a-00171101.pphosted.com (pref 100)",
+      "mx0b-00171101.pphosted.com (pref 100)"
     ],
     "ns": [
       "a26-64.akam.net.",
-      "a11-64.akam.net.",
       "a7-67.akam.net.",
-      "a20-65.akam.net.",
       "a18-67.akam.net.",
-      "a1-188.akam.net."
+      "a1-188.akam.net.",
+      "a20-65.akam.net.",
+      "a11-64.akam.net."
     ],
     "spf": [
-      "PLW5YJNKNZ6S9PzmBKcEQtujxAA0bqSCWnGCTfY8Erc=",
-      "2Vd60FRVvbEIPDEmsD09mhoY888t/8OpPL1ye4vj3LlSubCkE4acQWoLbu8DhyRvljamDSWPEMQDy2gQVxwuBg==",
+      "google-site-verification=o61BqEAEJyuhF5Go3hWNr3SQjFPa-ma71JGgHt5ZRIw",
+      "v=spf1 ip4:74.203.49.7 ip4:74.203.57.96 include:ne16.com ~all",
       "google-site-verification=mlwes5jtV6OgwW2b_5WYDiYvXML71jkhm3Veu0RkiKU",
       "openai-domain-verification=dv-b5Z4wfoVX9eCwD0bSvONy2J7",
-      "google-site-verification=o61BqEAEJyuhF5Go3hWNr3SQjFPa-ma71JGgHt5ZRIw",
-      "MS=ms52076061",
-      "v=spf1 ip4:74.203.49.7 ip4:74.203.57.96 include:ne16.com ~all"
+      "PLW5YJNKNZ6S9PzmBKcEQtujxAA0bqSCWnGCTfY8Erc=",
+      "2Vd60FRVvbEIPDEmsD09mhoY888t/8OpPL1ye4vj3LlSubCkE4acQWoLbu8DhyRvljamDSWPEMQDy2gQVxwuBg==",
+      "MS=ms52076061"
     ],
     "dmarc": [
       "v=DMARC1;",
@@ -261,9 +268,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   },
   "wildcard_dns": true,
   "apex_txt": [
+    "google-site-verification=o61BqEAEJyuhF5Go3hWNr3SQjFPa-ma71JGgHt5ZRIw",
     "google-site-verification=mlwes5jtV6OgwW2b_5WYDiYvXML71jkhm3Veu0RkiKU",
-    "openai-domain-verification=dv-b5Z4wfoVX9eCwD0bSvONy2J7",
-    "google-site-verification=o61BqEAEJyuhF5Go3hWNr3SQjFPa-ma71JGgHt5ZRIw"
+    "openai-domain-verification=dv-b5Z4wfoVX9eCwD0bSvONy2J7"
   ],
   "tls2": {
     "alpn": "",
@@ -274,11 +281,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260926103701",
+      "not_after": "20261225103700"
     }
   },
-  "elapsed_s": 27.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ec2-54-165-240-143.compute-1.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 27.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

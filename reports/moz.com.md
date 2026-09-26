@@ -7,12 +7,12 @@
 | Target | https://moz.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | moz.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
+Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -45,13 +46,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.64.25:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.127.24:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.64.25:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.127.24:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [LOW] Mixed content: HTTP resources referenced from HTTPS page (`MIX1`)
@@ -122,7 +123,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: docker-verification=4a939ab4-d6ef-447c-ba3b-26cad14a0619; google-site-verification=0dVASzy6Ecn6zMkNRgUbgd4AO6EbbmY1R_bjz2ni4ns; google-site-verification=W8sczjwGpAVj0AwI56aOpLnr9QkYELeVFksaaSmorQY
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=W8sczjwGpAVj0AwI56aOpLnr9QkYELeVFksaaSmorQY; tollbit-domain-verification=98375727b42ff3176aa408092bfa1854563221fa6f0d64891e62; miro-verification=2c6e56ff03a0434678621253eb6bc4b02772a446
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -143,6 +144,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 - **Detail:** robots.txt lists 23 disallow path(s), e.g. /blog/, /learn/seo/, /blog/, /learn/seo/, /products/content/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 18. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://moz.com/ carries Cache-Control: public, max-age=3600 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -150,66 +157,66 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
   "domain": "moz.com",
   "dns": {
     "a": [
-      "104.16.64.25",
-      "104.16.127.24"
+      "104.16.127.24",
+      "104.16.64.25"
     ],
     "aaaa": [
-      "2606:4700::6810:7f18",
-      "2606:4700::6810:4019"
+      "2606:4700::6810:4019",
+      "2606:4700::6810:7f18"
     ],
     "cname": null,
     "mx": [
-      "aspmx2.googlemail.com (pref 40)",
-      "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 30)",
-      "aspmx3.googlemail.com (pref 50)"
+      "aspmx2.googlemail.com (pref 40)",
+      "aspmx.l.google.com (pref 10)",
+      "aspmx3.googlemail.com (pref 50)",
+      "alt1.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
-      "karl.ns.cloudflare.com.",
-      "alla.ns.cloudflare.com."
+      "alla.ns.cloudflare.com.",
+      "karl.ns.cloudflare.com."
     ],
     "spf": [
-      "docker-verification=4a939ab4-d6ef-447c-ba3b-26cad14a0619",
-      "google-site-verification=0dVASzy6Ecn6zMkNRgUbgd4AO6EbbmY1R_bjz2ni4ns",
       "google-site-verification=W8sczjwGpAVj0AwI56aOpLnr9QkYELeVFksaaSmorQY",
-      "google-site-verification=Ojzzpw0y5g5RLxGnkVSHkA3pYUu76XonzxpbVVnS47g",
-      "atlassian-domain-verification=QUsZX4LdPWTYZgx09JhShFot27EJnUl/5CyxXFsiGebXl2QD8Fh3zzfkYZJe42Ic",
-      "onetrust-domain-verification=2cab83837fea449daed73c76571b4987",
-      "stripe-verification=f1e0852092ff90300fdcc180864ba044b04cb485605abeb2ead0a4b2e768f078",
-      "teamviewer-sso-verification=d3c5a1ad7c6c4594b06cf03702863556",
-      "workplace-domain-verification=aX6fdWT1pAZx9PNAPPUNKdc2UHBkPP",
-      "v=spf1 include:_spf.google.com include:2886781.spf01.hubspotemail.net include:mail.zendesk.com include:amazonses.com include:_spf.smtp.com include:_spf.salesforce.com ip4:192.40.176.17/32 ip4:192.40.176.18/31 ~all",
-      "google-site-verification=-2xOD6UrAQv_tNO6Auum4Di0T_b-JIkVZVL5DUuY9gE",
-      "bc6c0735020041da878699ad1e6865b9",
-      "openai-domain-verification=dv-KeQmqjmjNx2VL6SVSvGuCtBn",
-      "google-site-verification=wnDxq7QQUdAAzCwmzR96eARzyv26_h0K9rd7TEYVRbY",
-      "zapier-domain-verification-challenge=6310926b-0d6e-4194-9469-54942fda3750",
-      "google-site-verification=OOIlmzCB32MZxONvYaHhVz1mQZ9Vxi5GpsH79-DJ3wg",
-      "facebook-domain-verification=d610r60v1y48jvfs0grtgo59ueh1db",
-      "stripe-verification=970b0b83f1523e0f3e137e0f833aa3ce62a396b82bfff081a14225e48bfb49d5",
-      "stripe-verification=f1dc55fec68a82a87b55c1d1d96e1d927f0508547932e52ee2a2d136c39ba227",
-      "segment-site-verification=Vta003Ip8NYORFgGkNzPqLg5f2qNZzFD",
-      "stripe-verification=51BEF67C3B1EF40AC20D9413296F7414370646A39E58673F790CA9D173A95E93",
-      "knowbe4-site-verification=f8a0eecde40ecb172ead956570d9179c",
-      "stripe-verification=1D2B2A9419F443824C62198552C6C5EDB1075E786353169FD8446EFA655A80CE",
-      "airtable-verification=ca0889850dbeee47cedc12537e59438f",
-      "canva-site-verification=BlqjLmS_JEvEk5kuYiJNkg",
-      "pendo-domain-verification=f9a24257-9d80-423d-81a9-fbd3c65cf433",
-      "atlassian-domain-verification=qaVThwiX6U67ZIy0EBDXXb7KGLa5atdF7YrsL4WSLvJUpyd98hNZpPOSjtmscytI",
-      "adobe-idp-site-verification=cd8dab640ab786a9457c8757f4188cd682dd687a694d1d9c251e9ef54140a0ec",
       "tollbit-domain-verification=98375727b42ff3176aa408092bfa1854563221fa6f0d64891e62db111763b9a0",
-      "zendeskverification.moz.com=283dd8e30cab7c30",
-      "MVNCENTRAL-7735",
-      "cursor-domain-verification-xfe2k4=jq0PCDhMiDNXhbfIPFtgY3ecU",
-      "cloudhealth=e5c1f20d-0921-48bd-8845-769ca1a28eb0",
-      "anthropic-domain-verification-rdmxkk=fa3qnDuce9wR9UQdaP8HIBJJC",
-      "google-site-verification=rDkrzYNA-m4FC6AKeZ1d5mYKl02VGu438r_kLWzuYGY",
-      "atlassian-domain-verification=ais6F15PUaVYoFUzdWkVhKUITK+2UW8BV+Prmd71cBBFC/73YuxXPiLYXWHGfrkI",
       "miro-verification=2c6e56ff03a0434678621253eb6bc4b02772a446",
-      "stripe-verification=18b9aeaac5c7db0d57e521bef3f925d40471d026b5263b76386c192a40d04094",
+      "cloudhealth=e5c1f20d-0921-48bd-8845-769ca1a28eb0",
+      "knowbe4-site-verification=f8a0eecde40ecb172ead956570d9179c",
+      "pendo-domain-verification=f9a24257-9d80-423d-81a9-fbd3c65cf433",
+      "atlassian-domain-verification=QUsZX4LdPWTYZgx09JhShFot27EJnUl/5CyxXFsiGebXl2QD8Fh3zzfkYZJe42Ic",
+      "openai-domain-verification=dv-KeQmqjmjNx2VL6SVSvGuCtBn",
+      "cursor-domain-verification-xfe2k4=jq0PCDhMiDNXhbfIPFtgY3ecU",
+      "stripe-verification=f1e0852092ff90300fdcc180864ba044b04cb485605abeb2ead0a4b2e768f078",
+      "zendeskverification.moz.com=283dd8e30cab7c30",
+      "zapier-domain-verification-challenge=6310926b-0d6e-4194-9469-54942fda3750",
+      "stripe-verification=970b0b83f1523e0f3e137e0f833aa3ce62a396b82bfff081a14225e48bfb49d5",
+      "segment-site-verification=Vta003Ip8NYORFgGkNzPqLg5f2qNZzFD",
+      "atlassian-domain-verification=qaVThwiX6U67ZIy0EBDXXb7KGLa5atdF7YrsL4WSLvJUpyd98hNZpPOSjtmscytI",
+      "docker-verification=4a939ab4-d6ef-447c-ba3b-26cad14a0619",
+      "adobe-idp-site-verification=cd8dab640ab786a9457c8757f4188cd682dd687a694d1d9c251e9ef54140a0ec",
+      "bc6c0735020041da878699ad1e6865b9",
+      "teamviewer-sso-verification=d3c5a1ad7c6c4594b06cf03702863556",
+      "google-site-verification=0dVASzy6Ecn6zMkNRgUbgd4AO6EbbmY1R_bjz2ni4ns",
+      "facebook-domain-verification=d610r60v1y48jvfs0grtgo59ueh1db",
+      "stripe-verification=1D2B2A9419F443824C62198552C6C5EDB1075E786353169FD8446EFA655A80CE",
+      "atlassian-domain-verification=ais6F15PUaVYoFUzdWkVhKUITK+2UW8BV+Prmd71cBBFC/73YuxXPiLYXWHGfrkI",
+      "workplace-domain-verification=aX6fdWT1pAZx9PNAPPUNKdc2UHBkPP",
       "docusign=b5f4fc26-d624-472f-916e-be13ad191a51",
-      "google-site-verification=RIhThOSaCCGWYVN3cDCHQCFUpyGdXiN4MCnbRbZFkAY"
+      "google-site-verification=-2xOD6UrAQv_tNO6Auum4Di0T_b-JIkVZVL5DUuY9gE",
+      "stripe-verification=f1dc55fec68a82a87b55c1d1d96e1d927f0508547932e52ee2a2d136c39ba227",
+      "google-site-verification=RIhThOSaCCGWYVN3cDCHQCFUpyGdXiN4MCnbRbZFkAY",
+      "google-site-verification=rDkrzYNA-m4FC6AKeZ1d5mYKl02VGu438r_kLWzuYGY",
+      "google-site-verification=wnDxq7QQUdAAzCwmzR96eARzyv26_h0K9rd7TEYVRbY",
+      "onetrust-domain-verification=2cab83837fea449daed73c76571b4987",
+      "anthropic-domain-verification-rdmxkk=fa3qnDuce9wR9UQdaP8HIBJJC",
+      "MVNCENTRAL-7735",
+      "stripe-verification=18b9aeaac5c7db0d57e521bef3f925d40471d026b5263b76386c192a40d04094",
+      "stripe-verification=51BEF67C3B1EF40AC20D9413296F7414370646A39E58673F790CA9D173A95E93",
+      "google-site-verification=Ojzzpw0y5g5RLxGnkVSHkA3pYUu76XonzxpbVVnS47g",
+      "v=spf1 include:_spf.google.com include:2886781.spf01.hubspotemail.net include:mail.zendesk.com include:amazonses.com include:_spf.smtp.com include:_spf.salesforce.com ip4:192.40.176.17/32 ip4:192.40.176.18/31 ~all",
+      "google-site-verification=OOIlmzCB32MZxONvYaHhVz1mQZ9Vxi5GpsH79-DJ3wg",
+      "canva-site-verification=BlqjLmS_JEvEk5kuYiJNkg",
+      "airtable-verification=ca0889850dbeee47cedc12537e59438f"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=quarantine; pct=100; rua=mailto:088836b424@rua.easydmarc.us;"
@@ -239,7 +246,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     }
   },
   "ports": {
-    "ip": "104.16.64.25",
+    "ip": "104.16.127.24",
     "open": [
       8080,
       8443
@@ -304,11 +311,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "docker-verification=4a939ab4-d6ef-447c-ba3b-26cad14a0619",
-    "google-site-verification=0dVASzy6Ecn6zMkNRgUbgd4AO6EbbmY1R_bjz2ni4ns",
     "google-site-verification=W8sczjwGpAVj0AwI56aOpLnr9QkYELeVFksaaSmorQY",
-    "google-site-verification=Ojzzpw0y5g5RLxGnkVSHkA3pYUu76XonzxpbVVnS47g",
-    "atlassian-domain-verification=QUsZX4LdPWTYZgx09JhShFot27EJnUl/5CyxXFsiGebXl2QD8F"
+    "tollbit-domain-verification=98375727b42ff3176aa408092bfa1854563221fa6f0d64891e62",
+    "miro-verification=2c6e56ff03a0434678621253eb6bc4b02772a446",
+    "knowbe4-site-verification=f8a0eecde40ecb172ead956570d9179c",
+    "pendo-domain-verification=f9a24257-9d80-423d-81a9-fbd3c65cf433"
   ],
   "tls2": {
     "alpn": "",
@@ -319,7 +326,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260911034320",
+      "not_after": "20261210044317"
     }
   },
   "http2": {
@@ -341,8 +350,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "/messages/"
     ]
   },
-  "elapsed_s": 9.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 9.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://evernote.com/ |
 | Bug bounty program | Evernote |
 | Listed scope domain | evernote.com |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,8 +31,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 16 | info | CT1 | 94 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 17 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | info | CT1 | 94 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 18 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -118,7 +119,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: canva-site-verification=_a7Hc12U89xMaVt0CzG-mw; google-site-verification=-tROSeCW72D2qJrtgHAu2XtmEUdNg0pVK7JgXQc5FZI; rippling-domain-verification=217697edd61756fc
+- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=453e072a-bf19-40ff-a370-146e1459ffd0; google-site-verification=-tROSeCW72D2qJrtgHAu2XtmEUdNg0pVK7JgXQc5FZI; google-site-verification=dswNJSKs6qzI6U2FgFv5SFInM8oRSAUctV4g7cVTnfs
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -133,13 +134,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. /download-evernote/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 16. [INFO] 94 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 34.98.96.201 carries PTR 201.96.98.34.bc.googleusercontent.com. for evernote.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 17. [INFO] 94 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.evernote.com, api.preprod3.evernote.com, api.production.gateways.evernote.com, api.stage.evernote.com, api.staging.evernote.com, api.staging.gateways.evernote.com, api.testing.evernote.com, api.testing.gateways.evernote.com, app.preprod3.evernote.com, auth.production.gateways.evernote.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 17. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 18. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: api.production.gateways.evernote.com; content may still be served via virtual-host fallback.
@@ -157,41 +164,41 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 20)",
-      "aspmx3.googlemail.com (pref 30)",
-      "aspmx5.googlemail.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx4.googlemail.com (pref 30)",
       "aspmx2.googlemail.com (pref 30)",
-      "aspmx.l.google.com (pref 10)"
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx5.googlemail.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx.l.google.com (pref 10)",
+      "aspmx3.googlemail.com (pref 30)",
+      "aspmx4.googlemail.com (pref 30)"
     ],
     "ns": [
+      "ns-cloud-a3.googledomains.com.",
       "ns-cloud-a4.googledomains.com.",
-      "ns-cloud-a2.googledomains.com.",
       "ns-cloud-a1.googledomains.com.",
-      "ns-cloud-a3.googledomains.com."
+      "ns-cloud-a2.googledomains.com."
     ],
     "spf": [
-      "canva-site-verification=_a7Hc12U89xMaVt0CzG-mw",
-      "google-site-verification=-tROSeCW72D2qJrtgHAu2XtmEUdNg0pVK7JgXQc5FZI",
-      "rippling-domain-verification=217697edd61756fc",
-      "docusign=1724c740-d62f-4f0e-b956-0e8787843ef0",
-      "asv=9d228dc836a5edcac89e69ce0b2ab4cc",
-      "notion-domain-verification=PjXoSWSCXGi4euHbeppuaTYLWO7vhUdn5u9oEzzyt3X",
-      "atlassian-domain-verification=tOVXqvuSdF7wH9xBOcTHifwIEfXQX6XGoTgtPxe46s5sqCLZax9yh7Ms46Uuns0N",
-      "5hg44l7nrl4tfsqj45zfp34qxqnx6129",
-      "facebook-domain-verification=ald97r41mq52lyt3zyn7iipmy75y93",
       "adobe-idp-site-verification=453e072a-bf19-40ff-a370-146e1459ffd0",
-      "central-8812",
-      "apple-domain-verification=yJzU0JcusoBfuohM",
-      "v=spf1 ip4:119.254.30.0/26 ip4:204.154.94.0/23 ip4:167.89.16.0/24 include:_spf.google.com include:mail.zendesk.com include:mailsenders.netsuite.com include:_spf.sparkpostmail.com -all",
+      "5hg44l7nrl4tfsqj45zfp34qxqnx6129",
+      "google-site-verification=-tROSeCW72D2qJrtgHAu2XtmEUdNg0pVK7JgXQc5FZI",
       "google-site-verification=dswNJSKs6qzI6U2FgFv5SFInM8oRSAUctV4g7cVTnfs",
-      "docker-verification=d4449a7e-12da-4006-be0c-cb9c965031f5",
-      "lc7kqxfd8kpr7hwptf9msfg60vg19wll",
+      "v=spf1 ip4:119.254.30.0/26 ip4:204.154.94.0/23 ip4:167.89.16.0/24 include:_spf.google.com include:mail.zendesk.com include:mailsenders.netsuite.com include:_spf.sparkpostmail.com -all",
+      "atlassian-domain-verification=tOVXqvuSdF7wH9xBOcTHifwIEfXQX6XGoTgtPxe46s5sqCLZax9yh7Ms46Uuns0N",
       "google-site-verification=746Vk94H7agHphG-MN3o0ZF82RRnvaVH9WWtpmD2G5o",
-      "h1-domain-verification=RRP11TgYbS83xtxg31xb8StneabT5XQ7Uo6eiS44odH8iLvJ",
+      "apple-domain-verification=yJzU0JcusoBfuohM",
+      "asv=9d228dc836a5edcac89e69ce0b2ab4cc",
+      "facebook-domain-verification=ald97r41mq52lyt3zyn7iipmy75y93",
+      "docusign=1724c740-d62f-4f0e-b956-0e8787843ef0",
       "google-site-verification=TphACNeqZxSVjMZlu6C2OemNCLCtbP2yMJMm1eornp4",
-      "_lbrr2xccc7tfxjp5xf77af22poxe4w5"
+      "docker-verification=d4449a7e-12da-4006-be0c-cb9c965031f5",
+      "rippling-domain-verification=217697edd61756fc",
+      "central-8812",
+      "_lbrr2xccc7tfxjp5xf77af22poxe4w5",
+      "notion-domain-verification=PjXoSWSCXGi4euHbeppuaTYLWO7vhUdn5u9oEzzyt3X",
+      "h1-domain-verification=RRP11TgYbS83xtxg31xb8StneabT5XQ7Uo6eiS44odH8iLvJ",
+      "canva-site-verification=_a7Hc12U89xMaVt0CzG-mw",
+      "lc7kqxfd8kpr7hwptf9msfg60vg19wll"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:reports@dmarc.bendingspoons.com; sp=reject;"
@@ -322,11 +329,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     ]
   },
   "apex_txt": [
-    "canva-site-verification=_a7Hc12U89xMaVt0CzG-mw",
+    "adobe-idp-site-verification=453e072a-bf19-40ff-a370-146e1459ffd0",
     "google-site-verification=-tROSeCW72D2qJrtgHAu2XtmEUdNg0pVK7JgXQc5FZI",
-    "rippling-domain-verification=217697edd61756fc",
-    "notion-domain-verification=PjXoSWSCXGi4euHbeppuaTYLWO7vhUdn5u9oEzzyt3X",
-    "atlassian-domain-verification=tOVXqvuSdF7wH9xBOcTHifwIEfXQX6XGoTgtPxe46s5sqCLZax"
+    "google-site-verification=dswNJSKs6qzI6U2FgFv5SFInM8oRSAUctV4g7cVTnfs",
+    "atlassian-domain-verification=tOVXqvuSdF7wH9xBOcTHifwIEfXQX6XGoTgtPxe46s5sqCLZax",
+    "google-site-verification=746Vk94H7agHphG-MN3o0ZF82RRnvaVH9WWtpmD2G5o"
   ],
   "tls2": {
     "alpn": "",
@@ -337,7 +344,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260811220259",
+      "not_after": "20261109225854"
     }
   },
   "http2": {
@@ -345,8 +354,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/download-evernote/"
     ]
   },
-  "elapsed_s": 39.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "201.96.98.34.bc.googleusercontent.com."
+    ]
+  },
+  "elapsed_s": 27.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://abcnews.go.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | abcnews.go.com |
-| Test date | 2026-09-26 17:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
+Total findings: **26** (High: 0, Medium: 0, Low: 9, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -39,6 +39,9 @@ Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
 | 21 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 22 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 23 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 24 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 25 | info | CT1 | 76 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 26 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -198,6 +201,24 @@ Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
 - **Detail:** robots.txt lists 56 disallow path(s), e.g. /, /, /, /, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 24. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 54.239.180.106 carries PTR server-54-239-180-106.lax54.r.cloudfront.net. for abcnews.go.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 25. [INFO] 76 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: abcnews-react.dev.abcnews.go.com, api.abcnews.go.com, app.abcnews.go.com, dev.abcnews.go.com, dev.api.abcnews.go.com, dev.broadcaster.abcnews.go.com, dev.portal-east.abcnews.go.com, dev.portal-west.abcnews.go.com, dev.portal.abcnews.go.com, dev.ufirst.abcnews.go.com
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+### 26. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+
+- **CWE:** CWE-200
+- **Detail:** Historical subdomains no longer have A/AAAA records: abcnews-react.dev.abcnews.go.com; content may still be served via virtual-host fallback.
+- **Recommendation:** Reclaim or delete dangling subdomains to reduce virtual-hosting attack surface.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -206,17 +227,17 @@ Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
   "dns": {
     "a": [
       "54.239.180.106",
-      "54.239.180.57",
       "54.239.180.79",
-      "54.239.180.31"
+      "54.239.180.31",
+      "54.239.180.57"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [],
     "ns": [
-      "ns-267.awsdns-33.com.",
-      "ns-710.awsdns-24.net.",
       "ns-1655.awsdns-14.co.uk.",
+      "ns-710.awsdns-24.net.",
+      "ns-267.awsdns-33.com.",
       "ns-1233.awsdns-26.org."
     ],
     "spf": [
@@ -308,7 +329,50 @@ Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
     "/api/": 404
   },
   "subdomains": {
-    "status": "ct-pending"
+    "source": "certspotter",
+    "count": 76,
+    "notable": [
+      "abcnews-react.dev.abcnews.go.com",
+      "api.abcnews.go.com",
+      "app.abcnews.go.com",
+      "dev.abcnews.go.com",
+      "dev.api.abcnews.go.com",
+      "dev.broadcaster.abcnews.go.com",
+      "dev.portal-east.abcnews.go.com",
+      "dev.portal-west.abcnews.go.com",
+      "dev.portal.abcnews.go.com",
+      "dev.ufirst.abcnews.go.com",
+      "my.abcnews.go.com",
+      "portal.abcnews.go.com",
+      "preview.api.abcnews.go.com",
+      "qa.api.abcnews.go.com",
+      "qa.api.distribution.lightsaber.abcnews.go.com"
+    ],
+    "sample": [
+      "a.abcnews.go.com",
+      "abc.abcnews.go.com",
+      "abcnews-react.dev.abcnews.go.com",
+      "abcnews-react.prod.abcnews.go.com",
+      "abcnews-react.prv.abcnews.go.com",
+      "abcnews-react.qa.abcnews.go.com",
+      "abcnews-react.stg.abcnews.go.com",
+      "abcnews.go.com",
+      "api.abcnews.go.com",
+      "app.abcnews.go.com",
+      "applenews.abcnews.go.com",
+      "broadcaster.abcnews.go.com",
+      "dev.abcnews.go.com",
+      "dev.api.abcnews.go.com",
+      "dev.broadcaster.abcnews.go.com",
+      "dev.portal-east.abcnews.go.com",
+      "dev.portal-west.abcnews.go.com",
+      "dev.portal.abcnews.go.com",
+      "dev.ufirst.abcnews.go.com",
+      "elections-results.abcnews.go.com"
+    ],
+    "dangling": [
+      "abcnews-react.dev.abcnews.go.com"
+    ]
   },
   "apex_txt": [
     "facebook-domain-verification=twvwxd607usevkqo11lc3cj9d8i35x"
@@ -322,7 +386,9 @@ Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260718000000",
+      "not_after": "20270131235959"
     }
   },
   "http2": {
@@ -344,8 +410,14 @@ Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
       "/cgi"
     ]
   },
-  "elapsed_s": 19.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "server-54-239-180-106.lax54.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 21.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

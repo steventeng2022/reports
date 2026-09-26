@@ -7,12 +7,12 @@
 | Target | https://bandcamp.com/ |
 | Bug bounty program | Epic Games |
 | Listed scope domain | bandcamp.com |
-| Test date | 2026-09-26 17:39 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 
 ## Detailed findings
 
@@ -103,13 +104,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 ### 11. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (7ybn4ccz9fkveh.bandcamp.com and chnjrvll6r9vyb.bandcamp.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (rzjfrxr0un7adx.bandcamp.com and ww26su95coyiuv.bandcamp.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=R2K3ueaK09kESoG_YBuvOdRI7KWlKTgJket4pCrObTs; anthropic-domain-verification-k95236=fP5eU7agEB5py1gXXJmNmUrfK; google-site-verification=n7VFVIsha5YafmTLSe77JvVFOMw95jU5S5BQRRL_6Qc
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=1zzPh4J8oCSfyiKMYuZRhpD4rf1iip6VEZ4m5URsIh0; box-domain-verification=90c68eb309746ce326626165eadc4785e6094731b6e841ac85dab1c1; anthropic-domain-verification-k95236=fP5eU7agEB5py1gXXJmNmUrfK
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -130,6 +131,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - **Detail:** robots.txt lists 28 disallow path(s), e.g. /tools, /checkout, /download_check, /cart/, /corpbanner/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 16. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of bandcamp.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -138,36 +145,36 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
   "dns": {
     "a": [
       "151.101.193.91",
+      "151.101.65.91",
       "151.101.1.91",
-      "151.101.129.91",
-      "151.101.65.91"
+      "151.101.129.91"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx2.googlemail.com (pref 10)",
       "aspmx3.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx2.googlemail.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-cloud-d1.googledomains.com.",
       "ns-cloud-d2.googledomains.com.",
+      "ns-cloud-d1.googledomains.com.",
       "ns-cloud-d4.googledomains.com.",
       "ns-cloud-d3.googledomains.com."
     ],
     "spf": [
-      "google-site-verification=R2K3ueaK09kESoG_YBuvOdRI7KWlKTgJket4pCrObTs",
-      "anthropic-domain-verification-k95236=fP5eU7agEB5py1gXXJmNmUrfK",
-      "google-site-verification=n7VFVIsha5YafmTLSe77JvVFOMw95jU5S5BQRRL_6Qc",
-      "atlassian-domain-verification=BTH5hOYBqeIEweoD5sO+R9uM4HGvi6XMLhyOGmvQWowfdg2+QBoGpOUygbJG54Xn",
-      "_globalsign-domain-verification=nx5U56FiDUqhsckpguh1BWVo8oJVRsFtwCfGxdBN4e",
-      "v=spf1 include:sendgrid.net include:_spf.google.com include:servers.mcsv.net include:smtp.app.echomark.com ~all",
       "google-site-verification=1zzPh4J8oCSfyiKMYuZRhpD4rf1iip6VEZ4m5URsIh0",
-      "apple-domain-verification=YnAbPC9ay7NlvPfJ",
       "box-domain-verification=90c68eb309746ce326626165eadc4785e6094731b6e841ac85dab1c1d08a071c",
-      "knowbe4-site-verification=bd869772c82849fbe473ecd2303fd637"
+      "anthropic-domain-verification-k95236=fP5eU7agEB5py1gXXJmNmUrfK",
+      "knowbe4-site-verification=bd869772c82849fbe473ecd2303fd637",
+      "google-site-verification=n7VFVIsha5YafmTLSe77JvVFOMw95jU5S5BQRRL_6Qc",
+      "_globalsign-domain-verification=nx5U56FiDUqhsckpguh1BWVo8oJVRsFtwCfGxdBN4e",
+      "apple-domain-verification=YnAbPC9ay7NlvPfJ",
+      "v=spf1 include:sendgrid.net include:_spf.google.com include:servers.mcsv.net include:smtp.app.echomark.com ~all",
+      "atlassian-domain-verification=BTH5hOYBqeIEweoD5sO+R9uM4HGvi6XMLhyOGmvQWowfdg2+QBoGpOUygbJG54Xn",
+      "google-site-verification=R2K3ueaK09kESoG_YBuvOdRI7KWlKTgJket4pCrObTs"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:dmarcreports@bandcamp.com"
@@ -251,11 +258,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=R2K3ueaK09kESoG_YBuvOdRI7KWlKTgJket4pCrObTs",
+    "google-site-verification=1zzPh4J8oCSfyiKMYuZRhpD4rf1iip6VEZ4m5URsIh0",
+    "box-domain-verification=90c68eb309746ce326626165eadc4785e6094731b6e841ac85dab1c1",
     "anthropic-domain-verification-k95236=fP5eU7agEB5py1gXXJmNmUrfK",
-    "google-site-verification=n7VFVIsha5YafmTLSe77JvVFOMw95jU5S5BQRRL_6Qc",
-    "atlassian-domain-verification=BTH5hOYBqeIEweoD5sO+R9uM4HGvi6XMLhyOGmvQWowfdg2+QB",
-    "_globalsign-domain-verification=nx5U56FiDUqhsckpguh1BWVo8oJVRsFtwCfGxdBN4e"
+    "knowbe4-site-verification=bd869772c82849fbe473ecd2303fd637",
+    "google-site-verification=n7VFVIsha5YafmTLSe77JvVFOMw95jU5S5BQRRL_6Qc"
   ],
   "tls2": {
     "alpn": "",
@@ -266,7 +273,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260509230816",
+      "not_after": "20261124220816"
     }
   },
   "http2": {
@@ -288,8 +297,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "/"
     ]
   },
-  "elapsed_s": 21.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 20.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

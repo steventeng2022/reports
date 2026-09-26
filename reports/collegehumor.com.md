@@ -7,8 +7,8 @@
 | Target | https://collegehumor.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | collegehumor.com |
-| Test date | 2026-09-26 18:16 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -66,16 +66,16 @@ Total findings: **5** (High: 0, Medium: 0, Low: 1, Info: 4)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
       "alt4.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)"
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ha4.markmonitor.zone.",
       "ha3.markmonitor.zone.",
       "ha1.markmonitor.zone.",
+      "ha4.markmonitor.zone.",
       "ha2.markmonitor.zone."
     ],
     "spf": [],
@@ -89,8 +89,11 @@ Total findings: **5** (High: 0, Medium: 0, Low: 1, Info: 4)
   "http2": {
     "error": "root GET failed"
   },
-  "elapsed_s": 33.9,
-  "rechecked": "2026-09-26 18:17 UTC"
+  "x12": {
+    "error": "ConnectTimeout(MaxRetryError(\"HTTPSConnectionPool(host='collegehumor.com', port="
+  },
+  "elapsed_s": 43.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

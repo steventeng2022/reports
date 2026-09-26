@@ -7,8 +7,8 @@
 | Target | https://xbox.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | xbox.com |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:02 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -120,7 +120,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=jRoICv0mMREqo5IthM1McDzE_8rRtEYtSVtHmOTUoJA; google-site-verification=e70dJcpsqnXzda_PC9I_VO_bpU9hlMlqhtvsxegHEQc; facebook-domain-verification=n2md3enk4k9r4s6kylpqmekhxyyrq7
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=xvoaqRfxSg3PnlVnR4xCSOlKyw1Aln0MMxRiKXnwWroFG7vI76; adobe-idp-site-verification=8aa35c528af5d72beb19b1bd3ed9b86d87ea7f24b2ba3c99ffcd; google-site-verification=e70dJcpsqnXzda_PC9I_VO_bpU9hlMlqhtvsxegHEQc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -160,17 +160,17 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "xbox.com",
   "dns": {
     "a": [
+      "20.76.201.171",
+      "20.112.250.133",
       "20.70.246.20",
       "20.231.239.246",
-      "20.112.250.133",
-      "20.236.44.162",
-      "20.76.201.171"
+      "20.236.44.162"
     ],
     "aaaa": [
-      "2603:1030:c02:8::14",
       "2603:1020:201:10::10f",
       "2603:1030:20e:3::23c",
       "2603:1030:b:3::152",
+      "2603:1030:c02:8::14",
       "2603:1010:3:3::5b"
     ],
     "cname": null,
@@ -184,16 +184,16 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "ns3-205.azure-dns.org."
     ],
     "spf": [
-      "google-site-verification=jRoICv0mMREqo5IthM1McDzE_8rRtEYtSVtHmOTUoJA",
-      "b1939PPDAGDjXs+54riWGyuzfCM+s+PE66uPOHEQ+9z264YnfenE2CVrUxq+5UGTDqiOU8JqZ5AKRvfcUVpfXQ==",
-      "google-site-verification=e70dJcpsqnXzda_PC9I_VO_bpU9hlMlqhtvsxegHEQc",
-      "facebook-domain-verification=n2md3enk4k9r4s6kylpqmekhxyyrq7",
-      "v=spf1 ip4:65.55.42.0/24 ip4:65.55.76.0/24 mx:xbox.com include:_spf-ssg-a.microsoft.com include:spf.protection.outlook.com -all",
-      "facebook-domain-verification=yvcz1zil7qv3biswf68ikkxkh1nsoh",
-      "docusign=c2837ae3-ac1e-446d-b257-c2328dce901a",
-      "adobe-idp-site-verification=8aa35c528af5d72beb19b1bd3ed9b86d87ea7f24b2ba3c99ffcd00c27e9d809c",
       "atlassian-domain-verification=xvoaqRfxSg3PnlVnR4xCSOlKyw1Aln0MMxRiKXnwWroFG7vI76TUC8xYb03MwMXv",
-      "AFDVALIDATION=Xbox"
+      "docusign=c2837ae3-ac1e-446d-b257-c2328dce901a",
+      "AFDVALIDATION=Xbox",
+      "adobe-idp-site-verification=8aa35c528af5d72beb19b1bd3ed9b86d87ea7f24b2ba3c99ffcd00c27e9d809c",
+      "google-site-verification=e70dJcpsqnXzda_PC9I_VO_bpU9hlMlqhtvsxegHEQc",
+      "v=spf1 ip4:65.55.42.0/24 ip4:65.55.76.0/24 mx:xbox.com include:_spf-ssg-a.microsoft.com include:spf.protection.outlook.com -all",
+      "facebook-domain-verification=n2md3enk4k9r4s6kylpqmekhxyyrq7",
+      "b1939PPDAGDjXs+54riWGyuzfCM+s+PE66uPOHEQ+9z264YnfenE2CVrUxq+5UGTDqiOU8JqZ5AKRvfcUVpfXQ==",
+      "google-site-verification=jRoICv0mMREqo5IthM1McDzE_8rRtEYtSVtHmOTUoJA",
+      "facebook-domain-verification=yvcz1zil7qv3biswf68ikkxkh1nsoh"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:rua@dmarc.microsoft; ruf=mailto:ruf@dmarc.microsoft; fo=1:s:d"
@@ -414,7 +414,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "20.70.246.20",
+    "ip": "20.76.201.171",
     "open": []
   },
   "https": {
@@ -511,11 +511,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     ]
   },
   "apex_txt": [
-    "google-site-verification=jRoICv0mMREqo5IthM1McDzE_8rRtEYtSVtHmOTUoJA",
+    "atlassian-domain-verification=xvoaqRfxSg3PnlVnR4xCSOlKyw1Aln0MMxRiKXnwWroFG7vI76",
+    "adobe-idp-site-verification=8aa35c528af5d72beb19b1bd3ed9b86d87ea7f24b2ba3c99ffcd",
     "google-site-verification=e70dJcpsqnXzda_PC9I_VO_bpU9hlMlqhtvsxegHEQc",
     "facebook-domain-verification=n2md3enk4k9r4s6kylpqmekhxyyrq7",
-    "facebook-domain-verification=yvcz1zil7qv3biswf68ikkxkh1nsoh",
-    "adobe-idp-site-verification=8aa35c528af5d72beb19b1bd3ed9b86d87ea7f24b2ba3c99ffcd"
+    "google-site-verification=jRoICv0mMREqo5IthM1McDzE_8rRtEYtSVtHmOTUoJA"
   ],
   "tls2": {
     "alpn": "",
@@ -526,7 +526,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260917113730",
+      "not_after": "20261226103730"
     }
   },
   "http2": {
@@ -542,8 +544,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "/*/play/user/*"
     ]
   },
-  "elapsed_s": 18.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 24.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

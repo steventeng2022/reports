@@ -7,12 +7,12 @@
 | Target | https://dribbble.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | dribbble.com |
-| Test date | 2026-09-26 17:43 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
+Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,7 +32,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | CT1 | 16 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | CT1 | 16 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -117,13 +118,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (t9mw0fu1292sm8.dribbble.com and h85rdip99l9vvy.dribbble.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (4i25cdb0wzhvnn.dribbble.com and 2pfifd5xcyjcik.dribbble.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=ybbtm3dCtyshdETl5YMLL3YdRh1D50P1uLkcav13IG8; google-site-verification=nBBj8ycb88f7pry7MiUNDo7KdXDBxl-WOYEPHRCQw8E; google-site-verification=6ehiKlbD2ElK4AJXLe8nDTBOw7FNfb8uj1LukQgJnqY
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=70pPwM6XlplaQ7lxSmW3PZa-U9VVMRcx6Q4ht8uv6nM; google-site-verification=ybbtm3dCtyshdETl5YMLL3YdRh1D50P1uLkcav13IG8; google-site-verification=6ehiKlbD2ElK4AJXLe8nDTBOw7FNfb8uj1LukQgJnqY
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -138,7 +139,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - **Detail:** robots.txt lists 39 disallow path(s), e.g. /*/buckets$, /*/click?type=*$, /*/click$, /*/followers$, /*/following$
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 17. [INFO] 16 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 18.155.192.128 carries PTR server-18-155-192-128.sfo53.r.cloudfront.net. for dribbble.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 18. [INFO] 16 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: checkout.dribbble.com, okta.dribbble.com
@@ -151,42 +158,42 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
   "domain": "dribbble.com",
   "dns": {
     "a": [
-      "18.155.192.81",
+      "18.155.192.128",
       "18.155.192.59",
-      "18.155.192.103",
-      "18.155.192.128"
+      "18.155.192.81",
+      "18.155.192.103"
     ],
     "aaaa": [
-      "2600:9000:24bb:c00:18:db55:bf00:93a1",
-      "2600:9000:24bb:e200:18:db55:bf00:93a1",
-      "2600:9000:24bb:cc00:18:db55:bf00:93a1",
-      "2600:9000:24bb:4200:18:db55:bf00:93a1",
-      "2600:9000:24bb:200:18:db55:bf00:93a1",
-      "2600:9000:24bb:6600:18:db55:bf00:93a1",
-      "2600:9000:24bb:a000:18:db55:bf00:93a1",
-      "2600:9000:24bb:7600:18:db55:bf00:93a1"
+      "2600:9000:210b:fc00:18:db55:bf00:93a1",
+      "2600:9000:210b:6c00:18:db55:bf00:93a1",
+      "2600:9000:210b:e000:18:db55:bf00:93a1",
+      "2600:9000:210b:9400:18:db55:bf00:93a1",
+      "2600:9000:210b:4c00:18:db55:bf00:93a1",
+      "2600:9000:210b:f600:18:db55:bf00:93a1",
+      "2600:9000:210b:3400:18:db55:bf00:93a1",
+      "2600:9000:210b:8c00:18:db55:bf00:93a1"
     ],
     "cname": null,
     "mx": [
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx3.googlemail.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)",
+      "aspmx3.googlemail.com (pref 10)",
       "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "ns4.dnsimple-edge.org.",
       "ns1.dnsimple-edge.com.",
       "ns3.dnsimple-edge.io.",
-      "ns2.dnsimple-edge.net."
+      "ns2.dnsimple-edge.net.",
+      "ns4.dnsimple-edge.org."
     ],
     "spf": [
       "v=spf1 include:_spf.google.com -all",
+      "google-site-verification=70pPwM6XlplaQ7lxSmW3PZa-U9VVMRcx6Q4ht8uv6nM",
       "google-site-verification=ybbtm3dCtyshdETl5YMLL3YdRh1D50P1uLkcav13IG8",
-      "google-site-verification=nBBj8ycb88f7pry7MiUNDo7KdXDBxl-WOYEPHRCQw8E",
       "kbjtt2313vqsxb13wy2tzr8mwmbwnsjb",
       "google-site-verification=6ehiKlbD2ElK4AJXLe8nDTBOw7FNfb8uj1LukQgJnqY",
-      "google-site-verification=70pPwM6XlplaQ7lxSmW3PZa-U9VVMRcx6Q4ht8uv6nM",
+      "google-site-verification=nBBj8ycb88f7pry7MiUNDo7KdXDBxl-WOYEPHRCQw8E",
       "globalsign-domain-verification=FnXWfFjPqReOGiIH8ITAbUasqKxnix6ftvTUzPOKHF"
     ],
     "dmarc": [
@@ -217,7 +224,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     }
   },
   "ports": {
-    "ip": "18.155.192.81",
+    "ip": "18.155.192.128",
     "open": []
   },
   "https": {
@@ -294,10 +301,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=ybbtm3dCtyshdETl5YMLL3YdRh1D50P1uLkcav13IG8",
-    "google-site-verification=nBBj8ycb88f7pry7MiUNDo7KdXDBxl-WOYEPHRCQw8E",
-    "google-site-verification=6ehiKlbD2ElK4AJXLe8nDTBOw7FNfb8uj1LukQgJnqY",
     "google-site-verification=70pPwM6XlplaQ7lxSmW3PZa-U9VVMRcx6Q4ht8uv6nM",
+    "google-site-verification=ybbtm3dCtyshdETl5YMLL3YdRh1D50P1uLkcav13IG8",
+    "google-site-verification=6ehiKlbD2ElK4AJXLe8nDTBOw7FNfb8uj1LukQgJnqY",
+    "google-site-verification=nBBj8ycb88f7pry7MiUNDo7KdXDBxl-WOYEPHRCQw8E",
     "globalsign-domain-verification=FnXWfFjPqReOGiIH8ITAbUasqKxnix6ftvTUzPOKHF"
   ],
   "tls2": {
@@ -309,7 +316,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251028000000",
+      "not_after": "20261125235959"
     }
   },
   "http2": {
@@ -332,8 +341,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "/blocks/*"
     ]
   },
-  "elapsed_s": 20.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 202,
+    "ptr": [
+      "server-18-155-192-128.sfo53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 27.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

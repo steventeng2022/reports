@@ -7,12 +7,12 @@
 | Target | https://play.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | play.google.com |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
+Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 18 | info | CK5 | Cookie scoped to parent domain (.google.com) | CWE-200 |
 | 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 20 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -160,6 +161,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - **Detail:** robots.txt lists 97 disallow path(s), e.g. /books/*, /googlebooks/images, /music, /music/*, /store/purchase
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 20. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 142.250.198.78 carries PTR lctsaa-ab-in-f14.1e100.net. for play.google.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -170,20 +177,20 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "142.250.198.78"
     ],
     "aaaa": [
-      "2404:6800:4012:8::200e"
+      "2404:6800:4012:2::200e"
     ],
     "cname": null,
     "mx": [
-      "alt3.gmr-smtp-in.l.google.com (pref 30)",
-      "alt1.gmr-smtp-in.l.google.com (pref 10)",
       "gmr-smtp-in.l.google.com (pref 5)",
-      "alt4.gmr-smtp-in.l.google.com (pref 40)",
-      "alt2.gmr-smtp-in.l.google.com (pref 20)"
+      "alt2.gmr-smtp-in.l.google.com (pref 20)",
+      "alt1.gmr-smtp-in.l.google.com (pref 10)",
+      "alt3.gmr-smtp-in.l.google.com (pref 30)",
+      "alt4.gmr-smtp-in.l.google.com (pref 40)"
     ],
     "ns": [],
     "spf": [
-      "v=spf1 redirect=_spf.google.com",
-      "facebook-domain-verification=l3ljyvzkhsau69imdwww4eizcqgmma"
+      "facebook-domain-verification=l3ljyvzkhsau69imdwww4eizcqgmma",
+      "v=spf1 redirect=_spf.google.com"
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -343,7 +350,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192153",
+      "not_after": "20261203192152"
     }
   },
   "http2": {
@@ -365,8 +374,14 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "/work/licenses/apps"
     ]
   },
-  "elapsed_s": 4.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "lctsaa-ab-in-f14.1e100.net."
+    ]
+  },
+  "elapsed_s": 4.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

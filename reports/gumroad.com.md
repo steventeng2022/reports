@@ -7,12 +7,12 @@
 | Target | https://gumroad.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | gumroad.com |
-| Test date | 2026-09-26 17:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
+Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,8 +37,10 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 | 19 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 20 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 21 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 22 | info | CT1 | 42 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 23 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 22 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 23 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 24 | info | CT1 | 42 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 25 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -57,13 +59,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.243.99:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.17.176.98:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.243.99:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.17.176.98:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [LOW] Mixed content: HTTP resources referenced from HTTPS page (`MIX1`)
@@ -147,13 +149,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 ### 17. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (xhnk6h4y0tpdcd.gumroad.com and iry8qrewykd347.gumroad.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (ozky1o0temh23y.gumroad.com and a3ll6r4efgxpoy.gumroad.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 18. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=PgpLEes7We_6DhccKbUEiYcZ0pdoMFKC9nvJzv5llfo; notion-domain-verification=sSdqoXWqKQb9UfQM5R80tQCvesneCxOsRl4uKtCzkZc; tiktok-developers-site-verification=EAMtFdg7OB3QLjHaQnqfXjp7NocwiRoa
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=lrFehNfjlR5pdQ9Yl1S3X4-HclWnL2hRE-lp5ciPfYs; tiktok-developers-site-verification=EAMtFdg7OB3QLjHaQnqfXjp7NocwiRoa; google-site-verification=PgpLEes7We_6DhccKbUEiYcZ0pdoMFKC9nvJzv5llfo
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 19. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -174,13 +176,25 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. /purchases/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 22. [INFO] 42 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 22. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of gumroad.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 23. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://gumroad.com/ carries Cache-Control: max-age=60, public, stale-while-revalidate=3600, s-maxage=300; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 24. [INFO] 42 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.gumroad.com, blog.gumroad.com, help.gumroad.com, staging.creators.gumroad.com, staging.customers.gumroad.com, staging.followers.gumroad.com, staging.gumroad.com, static.gumroad.com, status.gumroad.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 23. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 25. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: staging.creators.gumroad.com, staging.customers.gumroad.com; content may still be served via virtual-host fallback.
@@ -193,8 +207,8 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
   "domain": "gumroad.com",
   "dns": {
     "a": [
-      "104.18.243.99",
-      "104.17.176.98"
+      "104.17.176.98",
+      "104.18.243.99"
     ],
     "aaaa": [
       "2606:4700::6812:f363",
@@ -202,24 +216,24 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
     ],
     "cname": null,
     "mx": [
-      "aspmx2.googlemail.com (pref 10)",
-      "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx3.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx2.googlemail.com (pref 10)",
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
       "venus.ns.cloudflare.com.",
       "jeff.ns.cloudflare.com."
     ],
     "spf": [
-      "google-site-verification=PgpLEes7We_6DhccKbUEiYcZ0pdoMFKC9nvJzv5llfo",
-      "notion-domain-verification=sSdqoXWqKQb9UfQM5R80tQCvesneCxOsRl4uKtCzkZc",
-      "tiktok-developers-site-verification=EAMtFdg7OB3QLjHaQnqfXjp7NocwiRoa",
-      "status-page-domain-verification=8vj11whsslmd",
-      "MS=ms30035841",
       "google-site-verification=lrFehNfjlR5pdQ9Yl1S3X4-HclWnL2hRE-lp5ciPfYs",
-      "v=spf1 a mx ip4:67.225.137.176 include:sendgrid.net include:stspg-customer.com include:_spf.google.com ~all"
+      "tiktok-developers-site-verification=EAMtFdg7OB3QLjHaQnqfXjp7NocwiRoa",
+      "google-site-verification=PgpLEes7We_6DhccKbUEiYcZ0pdoMFKC9nvJzv5llfo",
+      "v=spf1 a mx ip4:67.225.137.176 include:sendgrid.net include:stspg-customer.com include:_spf.google.com ~all",
+      "notion-domain-verification=sSdqoXWqKQb9UfQM5R80tQCvesneCxOsRl4uKtCzkZc",
+      "MS=ms30035841",
+      "status-page-domain-verification=8vj11whsslmd"
     ],
     "dmarc": [
       "v=DMARC1; p=none; pct=100; rua=mailto:re+qv9rjnupoda@dmarc.postmarkapp.com; sp=none; aspf=r;"
@@ -249,7 +263,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
     }
   },
   "ports": {
-    "ip": "104.18.243.99",
+    "ip": "104.17.176.98",
     "open": [
       8080,
       8443
@@ -347,11 +361,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
   },
   "wildcard_dns": true,
   "apex_txt": [
+    "google-site-verification=lrFehNfjlR5pdQ9Yl1S3X4-HclWnL2hRE-lp5ciPfYs",
+    "tiktok-developers-site-verification=EAMtFdg7OB3QLjHaQnqfXjp7NocwiRoa",
     "google-site-verification=PgpLEes7We_6DhccKbUEiYcZ0pdoMFKC9nvJzv5llfo",
     "notion-domain-verification=sSdqoXWqKQb9UfQM5R80tQCvesneCxOsRl4uKtCzkZc",
-    "tiktok-developers-site-verification=EAMtFdg7OB3QLjHaQnqfXjp7NocwiRoa",
-    "status-page-domain-verification=8vj11whsslmd",
-    "google-site-verification=lrFehNfjlR5pdQ9Yl1S3X4-HclWnL2hRE-lp5ciPfYs"
+    "status-page-domain-verification=8vj11whsslmd"
   ],
   "tls2": {
     "alpn": "",
@@ -362,7 +376,9 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260911024552",
+      "not_after": "20261210034535"
     }
   },
   "http2": {
@@ -370,8 +386,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
       "/purchases/"
     ]
   },
-  "elapsed_s": 9.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 9.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://laughingsquid.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | laughingsquid.com |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -132,7 +133,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=jlnBtzoM-8PRZf4q4GOYyu-RCogRnQIKMTcdZHGHa3U; facebook-domain-verification=5tnff0y6vt7fo4q1s8p3lkbfwb9vwh; google-site-verification=jJyLGaYS5OcLQKNjQ3hN9jTVV6CMcalfPNN3lA3lir4
+- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-8WBu3tu8uqeH2r9p8PyX79cC; apple-domain-verification=jlnBtzoM-8PRZf4q4GOYyu-RCogRnQIKMTcdZHGHa3U; google-site-verification=jJyLGaYS5OcLQKNjQ3hN9jTVV6CMcalfPNN3lA3lir4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -147,6 +148,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. Sitemap:
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 18. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://laughingsquid.com/ carries Cache-Control: max-age=300, must-revalidate; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -159,19 +166,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mx1.emailsrvr.com (pref 10)",
-      "mx2.emailsrvr.com (pref 20)"
+      "mx2.emailsrvr.com (pref 20)",
+      "mx1.emailsrvr.com (pref 10)"
     ],
     "ns": [
       "rob.ns.cloudflare.com.",
       "gail.ns.cloudflare.com."
     ],
     "spf": [
-      "apple-domain-verification=jlnBtzoM-8PRZf4q4GOYyu-RCogRnQIKMTcdZHGHa3U",
-      "facebook-domain-verification=5tnff0y6vt7fo4q1s8p3lkbfwb9vwh",
+      "openai-domain-verification=dv-8WBu3tu8uqeH2r9p8PyX79cC",
       "v=spf1 a mx include:emailsrvr.com include:_spf.mlsend.com ~all",
+      "apple-domain-verification=jlnBtzoM-8PRZf4q4GOYyu-RCogRnQIKMTcdZHGHa3U",
       "google-site-verification=jJyLGaYS5OcLQKNjQ3hN9jTVV6CMcalfPNN3lA3lir4",
-      "openai-domain-verification=dv-8WBu3tu8uqeH2r9p8PyX79cC"
+      "facebook-domain-verification=5tnff0y6vt7fo4q1s8p3lkbfwb9vwh"
     ],
     "dmarc": [
       "v=DMARC1;  p=quarantine; rua=mailto:30e4d221396c49d1a1c7099a4ac68b1c@dmarc-reports.cloudflare.net"
@@ -255,10 +262,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "openai-domain-verification=dv-8WBu3tu8uqeH2r9p8PyX79cC",
     "apple-domain-verification=jlnBtzoM-8PRZf4q4GOYyu-RCogRnQIKMTcdZHGHa3U",
-    "facebook-domain-verification=5tnff0y6vt7fo4q1s8p3lkbfwb9vwh",
     "google-site-verification=jJyLGaYS5OcLQKNjQ3hN9jTVV6CMcalfPNN3lA3lir4",
-    "openai-domain-verification=dv-8WBu3tu8uqeH2r9p8PyX79cC"
+    "facebook-domain-verification=5tnff0y6vt7fo4q1s8p3lkbfwb9vwh"
   ],
   "tls2": {
     "alpn": "",
@@ -269,7 +276,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260925151232",
+      "not_after": "20261224151231"
     }
   },
   "http2": {
@@ -277,8 +286,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "Sitemap:"
     ]
   },
-  "elapsed_s": 17.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 17.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

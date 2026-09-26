@@ -7,8 +7,8 @@
 | Target | https://money.yandex.ru/ |
 | Bug bounty program | Yandex |
 | Listed scope domain | money.yandex.ru |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -90,8 +90,11 @@ Total findings: **3** (High: 0, Medium: 0, Low: 2, Info: 1)
   "http2": {
     "error": "root GET failed"
   },
-  "elapsed_s": 7.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "error": "ConnectionError(MaxRetryError('HTTPSConnectionPool(host=\\'money.yandex.ru\\', por"
+  },
+  "elapsed_s": 9.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

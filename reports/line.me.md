@@ -7,8 +7,8 @@
 | Target | https://line.me/ |
 | Bug bounty program | LINE |
 | Listed scope domain | line.me |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -158,16 +158,16 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mx2-common.line-apps.com (pref 100)",
       "mx3-common.line-apps.com (pref 100)",
-      "mx1-common.line-apps.com (pref 100)",
-      "mx-common.line-apps.com (pref 10)"
+      "mx2-common.line-apps.com (pref 100)",
+      "mx-common.line-apps.com (pref 10)",
+      "mx1-common.line-apps.com (pref 100)"
     ],
     "ns": [
       "ans1.linecorp.com.",
-      "ns1.naver.jp.",
       "ans2.linecorp.com.",
-      "ns2.naver.jp."
+      "ns2.naver.jp.",
+      "ns1.naver.jp."
     ],
     "spf": [
       "google-site-verification=Ri-G6bf49-iTkhhxR6TAWnk0_yfslPvcvsQrPa8Usvc",
@@ -267,7 +267,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260814010631",
+      "not_after": "20270301010631"
     }
   },
   "http2": {
@@ -289,8 +291,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/run/"
     ]
   },
-  "elapsed_s": 6.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 7.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

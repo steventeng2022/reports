@@ -7,12 +7,12 @@
 | Target | https://join.slack.com/ |
 | Bug bounty program | Slack |
 | Listed scope domain | join.slack.com |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
+Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 | 14 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -124,7 +125,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (vvqxpor26cljaf.join.slack.com and 7grwfjph3sl3kz.join.slack.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (wfb8nw14gm030c.join.slack.com and p43gobn8qxcfk3.join.slack.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -139,6 +140,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 - **Detail:** robots.txt lists 15 disallow path(s), e.g. /messages, /quickstart, /go/, /unsub/, /answers/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 52.196.128.139 carries PTR ec2-52-196-128-139.ap-northeast-1.compute.amazonaws.com. for join.slack.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -146,8 +153,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
   "domain": "join.slack.com",
   "dns": {
     "a": [
-      "35.73.126.78",
       "52.196.128.139",
+      "35.73.126.78",
       "35.74.58.174",
       "52.192.46.121"
     ],
@@ -188,7 +195,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
     }
   },
   "ports": {
-    "ip": "35.73.126.78",
+    "ip": "52.196.128.139",
     "open": []
   },
   "https": {
@@ -250,7 +257,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260806093339",
+      "not_after": "20261104093338"
     }
   },
   "http2": {
@@ -272,8 +281,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
       "/files-pri/"
     ]
   },
-  "elapsed_s": 22.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "ec2-52-196-128-139.ap-northeast-1.compute.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 21.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

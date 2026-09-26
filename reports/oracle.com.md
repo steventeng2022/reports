@@ -7,12 +7,12 @@
 | Target | https://oracle.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | oracle.com |
-| Test date | 2026-09-26 17:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
+Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 | 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -116,7 +117,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: webexdomainverification.=6d066ca0-8f37-48c6-8a96-1909343f9c23; webexdomainverification.=cfeaa219-cb2c-458e-baea-d24703ba2355; google-site-verification=Tpoo3Bhw4cI4JjPp4v2RZz3JzSNkYg98yPwOLanQ2gI
+- **Detail:** Apex TXT records with verification/token content: webexdomainverification.=603d007e-3304-48a2-b9bc-c8d22b669304; webexdomainverification.F00R=81ccb499-274a-447d-a54a-934bb0dafec4; google-site-verification=RzPlMxOfod0eiMchm-MP3BhdhPgDHzL2mE_mAD91IWg
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -124,6 +125,12 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 - **CWE:** CWE-603
 - **Detail:** Certificate of oracle.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 138.1.33.162 carries PTR ocomtld-prod.appoci.oracle.com. for oracle.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -137,69 +144,69 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxa-00069f01.gslb.pphosted.com (pref 20)",
-      "mxb-00069f01.gslb.pphosted.com (pref 20)"
+      "mxb-00069f01.gslb.pphosted.com (pref 20)",
+      "mxa-00069f01.gslb.pphosted.com (pref 20)"
     ],
     "ns": [
       "a13-65.akam.net.",
       "ns1.p201.dns.oraclecloud.net.",
-      "ns4.p201.dns.oraclecloud.net.",
-      "a1-160.akam.net.",
       "a18-67.akam.net.",
-      "a11-66.akam.net.",
+      "a1-160.akam.net.",
+      "ns2.p201.dns.oraclecloud.net.",
       "ns3.p201.dns.oraclecloud.net.",
-      "ns2.p201.dns.oraclecloud.net."
+      "ns4.p201.dns.oraclecloud.net.",
+      "a11-66.akam.net."
     ],
     "spf": [
-      "webexdomainverification.=6d066ca0-8f37-48c6-8a96-1909343f9c23",
-      "webexdomainverification.=cfeaa219-cb2c-458e-baea-d24703ba2355",
-      "google-site-verification=Tpoo3Bhw4cI4JjPp4v2RZz3JzSNkYg98yPwOLanQ2gI",
-      "5mqsjfm8mpy57x4xwfs8dbfrgx14vhs5",
-      "docusign=2be17354-8326-4a61-8700-8276a284f7f8",
-      "webexdomainverification.=bbd0294a-bc53-46f4-b21c-8dfab1cb7666",
-      "atlassian-domain-verification=dKssjBiaoCdxRMWHZE/bBDYu4Wh4oJ6P6tJ/jxDKM37grHev0Qa5eWhnuAi1lJfJ",
-      "amazonses:bGS07pWw+FmfvUu4KgJNzF1GIZqr8BJrrqcw7NtMJlI=",
-      "webexdomainverification.=e86664eb-38ad-46f7-aa1a-60203dfca9a0",
-      "anthropic-domain-verification-f69hf4=EP3M2VJ8RvglBNY3ipKf1ChUb",
-      "webexdomainverification.=a3652afd-f531-4076-9a45-1e184df3a2d6",
-      "ciscocidomainverification=1864e14e0478e40197a9f4b07e52f6add508db236b82a10b6aa2df2eac6fe75b",
       "webexdomainverification.=603d007e-3304-48a2-b9bc-c8d22b669304",
-      "google-site-verification=IwkBNLXsgiyZ9wUuXa1-PynELZFJlYOduHp7uPcTfdo",
-      "webexdomainverification.JRJC=6ac35490-0c1a-4729-b3fc-78a568159417",
-      "atlassian-domain-verification=xpCgyo81RlS8Nywge8zAU0pqo89fXgqXNsCp9VVSIxP2j0Z9sthcjZbygEUlocRy",
-      "webexdomainverification.HO6U=eeb397a4-2b0c-4475-ae07-56dfc4507757",
-      "webexdomainverification.JRGF=35895e43-87ca-4bdf-8feb-b7a0e22694f3",
-      "v=spf1 include:spf_s.oracle.com include:spf_r.oracle.com include:spf_c.oraclecloud.com include:spf_x.oracle.com include:spf_z.oracle.com include:stspg-customer.com ~all",
-      "amazonses:WiyIwuGeeSNOIz7rqmlfP1MfDGCQFLMv4MgUsvcUTWE=",
-      "adobe-idp-site-verification=897d22d1-bca0-4449-90a4-1ac86c506dcd",
+      "webexdomainverification.F00R=81ccb499-274a-447d-a54a-934bb0dafec4",
       "google-site-verification=RzPlMxOfod0eiMchm-MP3BhdhPgDHzL2mE_mAD91IWg",
-      "amazonses:rJLKgYvappkvPl76X7w/Eeq6Qdk9AorogfUGE0NB0G8=",
+      "webexdomainverification.=d3071182-7ce2-4cb6-b315-90e9b7f866dc",
       "webexdomainverification.JIOB=3bc19d00-8f37-45bd-9799-e8ffa9c77306",
-      "webexdomainverification.=5c0fd5af-2fff-48d7-a138-10711dd460bb",
-      "yandex-verification: 4f894a8e737184e9",
+      "webexdomainverification.=bbd0294a-bc53-46f4-b21c-8dfab1cb7666",
+      "zoom-domain-verification = 31c4caad-f2b3-4ef8-8d92-26df2e836f3e",
+      "webexdomainverification.=cfeaa219-cb2c-458e-baea-d24703ba2355",
+      "adobe-idp-site-verification=897d22d1-bca0-4449-90a4-1ac86c506dcd",
+      "atlassian-domain-verification=1Oromr6nviNhRSPQouu6eUUWlzUzqZt/84xNgWEunEkHEvAK1oY0i9GaHlO7MPi4",
+      "MS=ms56590334",
+      "webexdomainverification.JRGF=35895e43-87ca-4bdf-8feb-b7a0e22694f3",
+      "webexdomainverification.=6d066ca0-8f37-48c6-8a96-1909343f9c23",
       " _4tbszkg4ufy8su1xuke2bq2zfmzx3mm",
-      "webexdomainverification.LSOJ=4b3a4ca8-7b0a-4bbc-8816-686e1bb4ddf7",
-      "webexdomainverification.=1f146848-946a-45a1-b021-4b3d4ef924d6",
+      "anthropic-domain-verification-f69hf4=EP3M2VJ8RvglBNY3ipKf1ChUb",
+      "webexdomainverification.=21e2aa9c-745f-4388-a31f-eac4f6c16444",
+      "webexdomainverification.JRJC=6ac35490-0c1a-4729-b3fc-78a568159417",
+      "paloaltonetworks-site-verification=8759980204930d68307e4387f6b7db958dec60048cc1053aa8f0a7396916c491",
+      "google-site-verification=IwkBNLXsgiyZ9wUuXa1-PynELZFJlYOduHp7uPcTfdo",
+      "webexdomainverification.JM3I=c1caad11-9eb5-4c76-877d-06dcfcb95db3",
+      "google-site-verification=Tpoo3Bhw4cI4JjPp4v2RZz3JzSNkYg98yPwOLanQ2gI",
+      "webexdomainverification.=e86664eb-38ad-46f7-aa1a-60203dfca9a0",
+      "5mqsjfm8mpy57x4xwfs8dbfrgx14vhs5",
       "amazonses:w4vl+NQAMony+agN9mt8H5MV4isrTCU3iFGSFSmgs7E=",
-      "cloudhealth=647661d7-af1e-4696-88b6-eed192d10e56",
-      "docusign=061e3d77-6c9b-4908-afd2-b2f02c39ecf2",
+      "amazonses:rJLKgYvappkvPl76X7w/Eeq6Qdk9AorogfUGE0NB0G8=",
+      "webexdomainverification.=d729667e-36b8-4d4a-bbb7-0f3069025573",
+      "webexdomainverification.=a3652afd-f531-4076-9a45-1e184df3a2d6",
+      "amazonses:bGS07pWw+FmfvUu4KgJNzF1GIZqr8BJrrqcw7NtMJlI=",
+      "webexdomainverification.=2f927290-1d5f-4df2-b1bb-bbb71bea85a9",
       "zoom-domain-verification",
       "=",
       "31c4caad-f2b3-4ef8-8d92-26df2e836f3e",
-      "webexdomainverification.JM3I=c1caad11-9eb5-4c76-877d-06dcfcb95db3",
-      "webexdomainverification.LSOE=4e1c3c86-abf0-4902-8a84-b34420ef075c",
-      "zoom-domain-verification = 31c4caad-f2b3-4ef8-8d92-26df2e836f3e",
-      "MS=ms68450787",
-      "webexdomainverification.=04ce0c34-7d39-41dd-a3ba-627a30cd205c",
-      "paloaltonetworks-site-verification=8759980204930d68307e4387f6b7db958dec60048cc1053aa8f0a7396916c491",
-      "webexdomainverification.F00R=81ccb499-274a-447d-a54a-934bb0dafec4",
-      "webexdomainverification.=2f927290-1d5f-4df2-b1bb-bbb71bea85a9",
       "google-site-verification=wXL-gAW01OVDMhb-6YPCh4XxwPBIXfGhGDcQhLSzd-k",
-      "MS=ms56590334",
-      "atlassian-domain-verification=1Oromr6nviNhRSPQouu6eUUWlzUzqZt/84xNgWEunEkHEvAK1oY0i9GaHlO7MPi4",
-      "webexdomainverification.=21e2aa9c-745f-4388-a31f-eac4f6c16444",
-      "webexdomainverification.=d729667e-36b8-4d4a-bbb7-0f3069025573",
-      "webexdomainverification.=d3071182-7ce2-4cb6-b315-90e9b7f866dc"
+      "webexdomainverification.=1f146848-946a-45a1-b021-4b3d4ef924d6",
+      "webexdomainverification.LSOJ=4b3a4ca8-7b0a-4bbc-8816-686e1bb4ddf7",
+      "webexdomainverification.=5c0fd5af-2fff-48d7-a138-10711dd460bb",
+      "v=spf1 include:spf_s.oracle.com include:spf_r.oracle.com include:spf_c.oraclecloud.com include:spf_x.oracle.com include:spf_z.oracle.com include:stspg-customer.com ~all",
+      "docusign=2be17354-8326-4a61-8700-8276a284f7f8",
+      "webexdomainverification.LSOE=4e1c3c86-abf0-4902-8a84-b34420ef075c",
+      "cloudhealth=647661d7-af1e-4696-88b6-eed192d10e56",
+      "webexdomainverification.HO6U=eeb397a4-2b0c-4475-ae07-56dfc4507757",
+      "yandex-verification: 4f894a8e737184e9",
+      "amazonses:WiyIwuGeeSNOIz7rqmlfP1MfDGCQFLMv4MgUsvcUTWE=",
+      "webexdomainverification.=04ce0c34-7d39-41dd-a3ba-627a30cd205c",
+      "atlassian-domain-verification=dKssjBiaoCdxRMWHZE/bBDYu4Wh4oJ6P6tJ/jxDKM37grHev0Qa5eWhnuAi1lJfJ",
+      "atlassian-domain-verification=xpCgyo81RlS8Nywge8zAU0pqo89fXgqXNsCp9VVSIxP2j0Z9sthcjZbygEUlocRy",
+      "ciscocidomainverification=1864e14e0478e40197a9f4b07e52f6add508db236b82a10b6aa2df2eac6fe75b",
+      "MS=ms68450787",
+      "docusign=061e3d77-6c9b-4908-afd2-b2f02c39ecf2"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;rua=mailto:dmarc_rua@emaildefense.proofpoint.com;ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com;fo=1"
@@ -362,11 +369,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "webexdomainverification.=6d066ca0-8f37-48c6-8a96-1909343f9c23",
-    "webexdomainverification.=cfeaa219-cb2c-458e-baea-d24703ba2355",
-    "google-site-verification=Tpoo3Bhw4cI4JjPp4v2RZz3JzSNkYg98yPwOLanQ2gI",
-    "webexdomainverification.=bbd0294a-bc53-46f4-b21c-8dfab1cb7666",
-    "atlassian-domain-verification=dKssjBiaoCdxRMWHZE/bBDYu4Wh4oJ6P6tJ/jxDKM37grHev0Q"
+    "webexdomainverification.=603d007e-3304-48a2-b9bc-c8d22b669304",
+    "webexdomainverification.F00R=81ccb499-274a-447d-a54a-934bb0dafec4",
+    "google-site-verification=RzPlMxOfod0eiMchm-MP3BhdhPgDHzL2mE_mAD91IWg",
+    "webexdomainverification.=d3071182-7ce2-4cb6-b315-90e9b7f866dc",
+    "webexdomainverification.JIOB=3bc19d00-8f37-45bd-9799-e8ffa9c77306"
   ],
   "tls2": {
     "alpn": "",
@@ -377,11 +384,19 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260604000000",
+      "not_after": "20261219235959"
     }
   },
-  "elapsed_s": 52.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ocomtld-prod.appoci.oracle.com."
+    ]
+  },
+  "elapsed_s": 32.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

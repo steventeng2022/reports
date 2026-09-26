@@ -7,8 +7,8 @@
 | Target | https://wordpress.com/ |
 | Bug bounty program | WordPress |
 | Listed scope domain | wordpress.com |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -142,13 +142,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 ### 16. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (f46r60vqvns3fc.wordpress.com and zu5hf1d97bzo2u.wordpress.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (ps53k8zdpp5igr.wordpress.com and eg4c2g9us5muk5.wordpress.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-AKnzAsfVXHG2wucO1Bcx2JC7; yahoo-verification-key=GqtxTvPQ+tFgwrCg9xNl6srlPSpDkTIj6q9YzADxxdE=; google-site-verification=CW2JYOoHSXW8x6QyQO_a0edu0gNOKsLIHcO49QquLdU
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=CW2JYOoHSXW8x6QyQO_a0edu0gNOKsLIHcO49QquLdU; yahoo-verification-key=GqtxTvPQ+tFgwrCg9xNl6srlPSpDkTIj6q9YzADxxdE=; openai-domain-verification=dv-AKnzAsfVXHG2wucO1Bcx2JC7
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -186,16 +186,16 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "mx-dfw.automattic.com (pref 10)"
     ],
     "ns": [
+      "ns4.wordpress.com.",
       "ns1.wordpress.com.",
       "ns3.wordpress.com.",
-      "ns4.wordpress.com.",
       "ns2.wordpress.com."
     ],
     "spf": [
-      "openai-domain-verification=dv-AKnzAsfVXHG2wucO1Bcx2JC7",
-      "v=spf1 include:_spf.automattic.com include:servers.mcsv.net include:_spf-wwd.automattic.com include:mail.zendesk.com include:sendgrid.net include:145630858.spf04.hubspotemail.net include:amazonses.com -all",
+      "google-site-verification=CW2JYOoHSXW8x6QyQO_a0edu0gNOKsLIHcO49QquLdU",
       "yahoo-verification-key=GqtxTvPQ+tFgwrCg9xNl6srlPSpDkTIj6q9YzADxxdE=",
-      "google-site-verification=CW2JYOoHSXW8x6QyQO_a0edu0gNOKsLIHcO49QquLdU"
+      "v=spf1 include:_spf.automattic.com include:servers.mcsv.net include:_spf-wwd.automattic.com include:mail.zendesk.com include:sendgrid.net include:145630858.spf04.hubspotemail.net include:amazonses.com -all",
+      "openai-domain-verification=dv-AKnzAsfVXHG2wucO1Bcx2JC7"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:0bqp2jnw@ag.dmarcian.com; ruf=mailto:0bqp2jnw@fr.dmarcian.com;"
@@ -317,9 +317,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "openai-domain-verification=dv-AKnzAsfVXHG2wucO1Bcx2JC7",
+    "google-site-verification=CW2JYOoHSXW8x6QyQO_a0edu0gNOKsLIHcO49QquLdU",
     "yahoo-verification-key=GqtxTvPQ+tFgwrCg9xNl6srlPSpDkTIj6q9YzADxxdE=",
-    "google-site-verification=CW2JYOoHSXW8x6QyQO_a0edu0gNOKsLIHcO49QquLdU"
+    "openai-domain-verification=dv-AKnzAsfVXHG2wucO1Bcx2JC7"
   ],
   "tls2": {
     "alpn": "",
@@ -330,14 +330,19 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260904194525",
+      "not_after": "20261203194524"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
-  "elapsed_s": 9.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 9.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

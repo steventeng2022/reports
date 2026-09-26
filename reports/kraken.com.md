@@ -7,8 +7,8 @@
 | Target | https://kraken.com/ |
 | Bug bounty program | Kraken |
 | Listed scope domain | kraken.com |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -44,13 +44,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.17.189.205:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.17.188.205:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.17.189.205:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.17.188.205:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -117,7 +117,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: status-page-domain-verification=zvdwk97f78sw; yahoo-verification-key=vaBi9VRY3fC1ePDJDKbb3JeKZkVxdHdNNS2ehnZfPNs=; slack-domain-verification=xF9FoS5YecfnIOdXDAWxjJlBJeTP4k0x4XVUDcBm
+- **Detail:** Apex TXT records with verification/token content: chain-patrol-domain-verification-d32dw1=6Bi2nOcSd80VwhhSb1ieNE23u; yahoo-verification-key=vaBi9VRY3fC1ePDJDKbb3JeKZkVxdHdNNS2ehnZfPNs=; applause-verification=475eb036-5381-4119-9100-5293e2ce0ba8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -145,11 +145,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
   "domain": "kraken.com",
   "dns": {
     "a": [
-      "104.17.189.205",
-      "104.17.185.205",
+      "104.17.188.205",
       "104.17.186.205",
+      "104.17.189.205",
       "104.17.187.205",
-      "104.17.188.205"
+      "104.17.185.205"
     ],
     "aaaa": [],
     "cname": null,
@@ -161,39 +161,39 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "art.ns.cloudflare.com."
     ],
     "spf": [
-      "status-page-domain-verification=zvdwk97f78sw",
-      "yahoo-verification-key=vaBi9VRY3fC1ePDJDKbb3JeKZkVxdHdNNS2ehnZfPNs=",
-      "mixpanel-domain-verify=8d24704c-eebf-4a86-bc1d-5facea16d192",
-      "slack-domain-verification=xF9FoS5YecfnIOdXDAWxjJlBJeTP4k0x4XVUDcBm",
-      "anthropic-domain-verification-qq6f4e=yMnhINbeoqj341dPhfek46Gvw",
-      "sinch-domain-verification=f784f03b-c2b8-4acc-8790-30b91c091d49",
-      "docusign=df1e68ac-ef17-4239-a91c-ddc63bbf37a0",
-      "facebook-domain-verification=aoubhu5uh89ja6n8x12q5rwgxjy4qk",
-      "jamf-site-verification=s7-zemXlw9o875MwP_jHJQ",
-      "MS=ms92323866",
-      "verification_token=YEulsvbYjUK5ARSNvSKChCvak",
-      "lovable_verification=yrJSzJCXE2IlVOsGopmj",
+      "docusign=9c156ad3-ca07-455a-ac23-4b069bff0cfc",
       "chain-patrol-domain-verification-d32dw1=6Bi2nOcSd80VwhhSb1ieNE23u",
-      "cursor-domain-verification-1q4veq=T4badkQWyIFP5sdGc2ZdZO5hH",
-      "hubspot-domain-verification=YzE0ZGQ3MDYtYzc0ZC00MjhjLTg1MzktNWFhOWY0MGVmN2Uy",
-      "apple-domain-verification=GxkQnQWBDwHc5Lwo",
-      "google-site-verification=Pn6aFNBpXpjjEwQiBhV2w86qkmACWSj6bSWf6iq93N4",
-      "loom-site-verification=0994d1d30bec445bb94dee2ca26c6672",
+      "mixpanel-domain-verify=8d24704c-eebf-4a86-bc1d-5facea16d192",
+      "yahoo-verification-key=vaBi9VRY3fC1ePDJDKbb3JeKZkVxdHdNNS2ehnZfPNs=",
       "applause-verification=475eb036-5381-4119-9100-5293e2ce0ba8",
-      "google-site-verification=XPT9uOe0jA_sa1A9KO2KHlflVyytnnJI6c51vXL7Th0",
-      "apple-domain-verification=jhXlcC3333rByj6_TIRCWS8depzse4Zg_PA2TAA8MvY",
+      "status-page-domain-verification=zvdwk97f78sw",
+      "loom-site-verification=0994d1d30bec445bb94dee2ca26c6672",
+      "apple-domain-verification=GxkQnQWBDwHc5Lwo",
+      "facebook-domain-verification=aoubhu5uh89ja6n8x12q5rwgxjy4qk",
       "v=spf1 include:_spf.google.com include:mail.zendesk.com include:mailgun.org -all",
       "hubspot-domain-verification=ZDNhOWZkYmMtZjU0Yi00NjM0LTg0YTYtOWI3ZmM3ZDE1MTMx",
-      "attio-domain-verification=2PW6H5PPEKZJ5NZ536X46U9D",
-      "docusign=9c156ad3-ca07-455a-ac23-4b069bff0cfc",
-      "borderless-ai-domain-verification-891kzp=imAYYfgCNhUvxixCG9xeLErS7",
-      "tenderly-domain-verification-h41x4t=Xb51eXZGQ6C9IlZJXexoZnSkh",
+      "google-site-verification=XPT9uOe0jA_sa1A9KO2KHlflVyytnnJI6c51vXL7Th0",
       "TSW_MTk2M3RlcmFzd2l0Y2g=",
-      "have-i-been-pwned-verification=dweb_htjuxmmxivpa7y21mu12mq4f",
-      "linear-domain-verification=z4df5eemibyi",
+      "slack-domain-verification=xF9FoS5YecfnIOdXDAWxjJlBJeTP4k0x4XVUDcBm",
       "openai-domain-verification=dv-dzZ4sOyX0NcWC0W69R0SsmoJ",
+      "jamf-site-verification=s7-zemXlw9o875MwP_jHJQ",
+      "google-site-verification=Pn6aFNBpXpjjEwQiBhV2w86qkmACWSj6bSWf6iq93N4",
+      "onetrust-domain-verification=ef58037d66994387a249e260b49da885",
+      "verification_token=YEulsvbYjUK5ARSNvSKChCvak",
+      "attio-domain-verification=2PW6H5PPEKZJ5NZ536X46U9D",
+      "lovable_verification=yrJSzJCXE2IlVOsGopmj",
+      "anthropic-domain-verification-qq6f4e=yMnhINbeoqj341dPhfek46Gvw",
+      "borderless-ai-domain-verification-891kzp=imAYYfgCNhUvxixCG9xeLErS7",
+      "cursor-domain-verification-1q4veq=T4badkQWyIFP5sdGc2ZdZO5hH",
+      "hubspot-domain-verification=YzE0ZGQ3MDYtYzc0ZC00MjhjLTg1MzktNWFhOWY0MGVmN2Uy",
+      "MS=ms92323866",
+      "docusign=df1e68ac-ef17-4239-a91c-ddc63bbf37a0",
+      "linear-domain-verification=z4df5eemibyi",
+      "apple-domain-verification=jhXlcC3333rByj6_TIRCWS8depzse4Zg_PA2TAA8MvY",
+      "tenderly-domain-verification-h41x4t=Xb51eXZGQ6C9IlZJXexoZnSkh",
       "atlassian-domain-verification=4jtiW1tiUQSTvJZESUb2w2e6bDUeZnwV3HuW4EKB8Dnj7wVDMzFFvtXm/mFgKiq/",
-      "onetrust-domain-verification=ef58037d66994387a249e260b49da885"
+      "sinch-domain-verification=f784f03b-c2b8-4acc-8790-30b91c091d49",
+      "have-i-been-pwned-verification=dweb_htjuxmmxivpa7y21mu12mq4f"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; pct=100; adkim=r; aspf=s; fo=1; rua=mailto:dmarc-rua@kraken.com; ruf=mailto:dmarc-ruf@kraken.com"
@@ -222,7 +222,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     }
   },
   "ports": {
-    "ip": "104.17.189.205",
+    "ip": "104.17.188.205",
     "open": [
       8080,
       8443
@@ -279,11 +279,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "status-page-domain-verification=zvdwk97f78sw",
+    "chain-patrol-domain-verification-d32dw1=6Bi2nOcSd80VwhhSb1ieNE23u",
     "yahoo-verification-key=vaBi9VRY3fC1ePDJDKbb3JeKZkVxdHdNNS2ehnZfPNs=",
-    "slack-domain-verification=xF9FoS5YecfnIOdXDAWxjJlBJeTP4k0x4XVUDcBm",
-    "anthropic-domain-verification-qq6f4e=yMnhINbeoqj341dPhfek46Gvw",
-    "sinch-domain-verification=f784f03b-c2b8-4acc-8790-30b91c091d49"
+    "applause-verification=475eb036-5381-4119-9100-5293e2ce0ba8",
+    "status-page-domain-verification=zvdwk97f78sw",
+    "loom-site-verification=0994d1d30bec445bb94dee2ca26c6672"
   ],
   "tls2": {
     "alpn": "",
@@ -294,7 +294,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260830105716",
+      "not_after": "20261128115712"
     }
   },
   "http2": {
@@ -303,8 +305,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "/lp/"
     ]
   },
-  "elapsed_s": 4.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 4.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

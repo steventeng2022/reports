@@ -7,8 +7,8 @@
 | Target | https://nasa.gov/ |
 | Bug bounty program | Nasa VDP |
 | Listed scope domain | nasa.gov |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -116,7 +116,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=oNzRM7G9GIAL/LLP5c7sPOQiAHsHrQ1hKcU7GGZ0ADRZJFhUB/; apple-domain-verification=qw51K0kGzRHLbN9S; google-site-verification=ZKpcXLqaBX3jND8Fybkvr3MaaOpC_6MRjXBYm0XNkJQ
+- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-Fbq5PVntP9qLelQPUBKniDjr; openai-domain-verification=dv-CO0ENDLO7EB9V5E4JnmE6pS8; atlassian-sending-domain-verification=4730ddf4-d24e-4a91-9612-cb14998d0e47
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -142,36 +142,36 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
       "nasa-gov.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "a1-32.akam.net.",
       "a5-66.akam.net.",
-      "a12-64.akam.net.",
-      "a14-67.akam.net.",
       "a9-64.akam.net.",
-      "a8-66.akam.net."
+      "a8-66.akam.net.",
+      "a1-32.akam.net.",
+      "a12-64.akam.net.",
+      "a14-67.akam.net."
     ],
     "spf": [
-      "atlassian-domain-verification=oNzRM7G9GIAL/LLP5c7sPOQiAHsHrQ1hKcU7GGZ0ADRZJFhUB/upe935/2RYq/jO",
-      "amazonses:PvUL7T41LO87xjr+2nfgxTu11i75NeT9HzY3xYv82Ko=",
-      "n39n7frbwnkhcmky2nps779y4ttn61wl",
-      "apple-domain-verification=qw51K0kGzRHLbN9S",
-      "nmh1f9tgxhmfmjkshg7qh595drdfgnf1",
-      "mj8729pr7k44dx62wwtx5745xr5njzkn",
-      "v=spf1 include:_spf-4a.nasa.gov include:_spf-4b.nasa.gov include:_spf-4c.nasa.gov include:_spf-4d.nasa.gov include:_spf-4g.nasa.gov include:_spf-4m.nasa.gov include:_spf-4x.nasa.gov include:_spf-6a.nasa.gov include:spf.protection.outlook.com -all",
-      "HRlHXyx8jXo+9pIaJWFVBPOLVfeI2biAj3VT1woaTFpp05D5/q6AoD5KpUgws539/d2jl8wBJiEr58OEsRVugQ==",
-      "asv=12d88629ae88f5017642bfc4981f8dd7",
-      "uechcfoubh169akghg2214p54n",
-      "google-site-verification=ZKpcXLqaBX3jND8Fybkvr3MaaOpC_6MRjXBYm0XNkJQ",
-      "google-site-verification=BUxd0xTJY4ZjGohBwKDpNms-yOATz92Y54kgme4eKHs",
-      "smartsheet-site-validation=gnL11HAQqHlH1tQabmxKf12b5ZCNxJfx",
-      "amazonses:FXFVeQnEO3Wua+aY/H4aOIH3sSwteE+7YpGrwm8kF/s=",
-      "pvv8mevb6qrmqvqi8alhmreg42",
-      "atlassian-sending-domain-verification=4730ddf4-d24e-4a91-9612-cb14998d0e47",
       "openai-domain-verification=dv-Fbq5PVntP9qLelQPUBKniDjr",
-      "MS=ms93625004",
-      "openai-domain-verification=dv-CO0ENDLO7EB9V5E4JnmE6pS8",
-      "1HqDXPHdt8JOt02qy6FB+l3+Z1zXScqcPxlE/faXjZLS9FRbVhHCUCHQE2bWofZt2TWKPchjjma3Pqli4FULFw==",
+      "v=spf1 include:_spf-4a.nasa.gov include:_spf-4b.nasa.gov include:_spf-4c.nasa.gov include:_spf-4d.nasa.gov include:_spf-4g.nasa.gov include:_spf-4m.nasa.gov include:_spf-4x.nasa.gov include:_spf-6a.nasa.gov include:spf.protection.outlook.com -all",
+      "amazonses:PvUL7T41LO87xjr+2nfgxTu11i75NeT9HzY3xYv82Ko=",
       "docusign=4025560e-93c9-4920-bb13-849c6fc35d58",
-      "webexdomainverification.1YPST=f98a61ea-b92e-41f2-87aa-5651b2af43b8"
+      "smartsheet-site-validation=gnL11HAQqHlH1tQabmxKf12b5ZCNxJfx",
+      "HRlHXyx8jXo+9pIaJWFVBPOLVfeI2biAj3VT1woaTFpp05D5/q6AoD5KpUgws539/d2jl8wBJiEr58OEsRVugQ==",
+      "amazonses:FXFVeQnEO3Wua+aY/H4aOIH3sSwteE+7YpGrwm8kF/s=",
+      "mj8729pr7k44dx62wwtx5745xr5njzkn",
+      "openai-domain-verification=dv-CO0ENDLO7EB9V5E4JnmE6pS8",
+      "n39n7frbwnkhcmky2nps779y4ttn61wl",
+      "atlassian-sending-domain-verification=4730ddf4-d24e-4a91-9612-cb14998d0e47",
+      "MS=ms93625004",
+      "google-site-verification=BUxd0xTJY4ZjGohBwKDpNms-yOATz92Y54kgme4eKHs",
+      "asv=12d88629ae88f5017642bfc4981f8dd7",
+      "google-site-verification=ZKpcXLqaBX3jND8Fybkvr3MaaOpC_6MRjXBYm0XNkJQ",
+      "atlassian-domain-verification=oNzRM7G9GIAL/LLP5c7sPOQiAHsHrQ1hKcU7GGZ0ADRZJFhUB/upe935/2RYq/jO",
+      "uechcfoubh169akghg2214p54n",
+      "nmh1f9tgxhmfmjkshg7qh595drdfgnf1",
+      "pvv8mevb6qrmqvqi8alhmreg42",
+      "webexdomainverification.1YPST=f98a61ea-b92e-41f2-87aa-5651b2af43b8",
+      "1HqDXPHdt8JOt02qy6FB+l3+Z1zXScqcPxlE/faXjZLS9FRbVhHCUCHQE2bWofZt2TWKPchjjma3Pqli4FULFw==",
+      "apple-domain-verification=qw51K0kGzRHLbN9S"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarcmail@mail.nasa.gov,mailto:reports@dmarc.cyber.dhs.gov"
@@ -254,11 +254,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "atlassian-domain-verification=oNzRM7G9GIAL/LLP5c7sPOQiAHsHrQ1hKcU7GGZ0ADRZJFhUB/",
-    "apple-domain-verification=qw51K0kGzRHLbN9S",
-    "google-site-verification=ZKpcXLqaBX3jND8Fybkvr3MaaOpC_6MRjXBYm0XNkJQ",
+    "openai-domain-verification=dv-Fbq5PVntP9qLelQPUBKniDjr",
+    "openai-domain-verification=dv-CO0ENDLO7EB9V5E4JnmE6pS8",
+    "atlassian-sending-domain-verification=4730ddf4-d24e-4a91-9612-cb14998d0e47",
     "google-site-verification=BUxd0xTJY4ZjGohBwKDpNms-yOATz92Y54kgme4eKHs",
-    "atlassian-sending-domain-verification=4730ddf4-d24e-4a91-9612-cb14998d0e47"
+    "google-site-verification=ZKpcXLqaBX3jND8Fybkvr3MaaOpC_6MRjXBYm0XNkJQ"
   ],
   "tls2": {
     "alpn": "",
@@ -269,14 +269,19 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260811232259",
+      "not_after": "20261109232258"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
-  "elapsed_s": 16.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 17.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

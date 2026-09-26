@@ -7,8 +7,8 @@
 | Target | https://newegg.com/ |
 | Bug bounty program | Newegg |
 | Listed scope domain | newegg.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -31,7 +31,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -44,7 +44,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** Detected: Server: nginx
+- **Detail:** Detected: Server: AkamaiGHost
 - **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
 ### 3. [LOW] Missing CSP header (`H2`)
@@ -92,7 +92,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 9. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** Header reveals: nginx
+- **Detail:** Header reveals: AkamaiGHost
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
@@ -118,7 +118,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=ajXtDle0UfsPUgtjCZ37T8opwg2zvXLzkHNjZTlIVFI; anthropic-domain-verification-1k1kwv=sA28xQK50TxxHO9tIaJbCEP60; apple-domain-verification=fookR9-T71Tb7G4opXgos6kiHa32YIsCriQxJY4SNU8
+- **Detail:** Apex TXT records with verification/token content: yahoo-verification-key=UuN8VB7V7E4fK9e6tGDxdS2LNdDFfDU50tLmkOQftws=; anthropic-domain-verification-1k1kwv=sA28xQK50TxxHO9tIaJbCEP60; apple-domain-verification=fookR9-T71Tb7G4opXgos6kiHa32YIsCriQxJY4SNU8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -133,11 +133,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - **Detail:** Strict-Transport-Security is served but newegg.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt lists 86 disallow path(s), e.g. /Common/BML/, /Common/ThirdParty/, /App/, /Application/, /Configuration/
-- **Recommendation:** Review disallowed paths; robots is not access control.
+- **Detail:** 104.115.226.136 carries PTR a104-115-226-136.deploy.static.akamaitechnologies.com. for newegg.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -151,26 +151,26 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxb-004ed001.gslb.pphosted.com (pref 10)",
-      "mxa-004ed001.gslb.pphosted.com (pref 10)"
+      "mxa-004ed001.gslb.pphosted.com (pref 10)",
+      "mxb-004ed001.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns0011.secondary.cloudflare.com.",
-      "ns0197.secondary.cloudflare.com.",
-      "a24-67.akam.net.",
-      "a1-21.akam.net.",
       "a16-66.akam.net.",
       "a28-64.akam.net.",
-      "a7-65.akam.net.",
-      "a9-66.akam.net."
+      "a1-21.akam.net.",
+      "a9-66.akam.net.",
+      "a24-67.akam.net.",
+      "ns0011.secondary.cloudflare.com.",
+      "ns0197.secondary.cloudflare.com.",
+      "a7-65.akam.net."
     ],
     "spf": [
-      "google-site-verification=ajXtDle0UfsPUgtjCZ37T8opwg2zvXLzkHNjZTlIVFI",
-      "anthropic-domain-verification-1k1kwv=sA28xQK50TxxHO9tIaJbCEP60",
       "v=spf1 ip4:107.20.210.250/32 ip4:52.1.14.157/32 ip4:216.52.208.0/24 ip4:204.14.213.0/24 ip4:204.89.152.0/24 ip4:50.79.138.221 include:spf-004ed001.pphosted.com include:u1970239.wl.sendgrid.net include:spf.protection.outlook.com -all",
       "_a4kh6j7awcaw7fxqj5shnpuurxqqwy8",
-      "apple-domain-verification=fookR9-T71Tb7G4opXgos6kiHa32YIsCriQxJY4SNU8",
       "yahoo-verification-key=UuN8VB7V7E4fK9e6tGDxdS2LNdDFfDU50tLmkOQftws=",
+      "anthropic-domain-verification-1k1kwv=sA28xQK50TxxHO9tIaJbCEP60",
+      "apple-domain-verification=fookR9-T71Tb7G4opXgos6kiHa32YIsCriQxJY4SNU8",
+      "google-site-verification=ajXtDle0UfsPUgtjCZ37T8opwg2zvXLzkHNjZTlIVFI",
       "cursor-domain-verification-w61mwq=TQrKtOakRs3OBorucA3sDlbEQ"
     ],
     "dmarc": [
@@ -264,7 +264,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
   },
   "mixed_content": [],
   "tech": [
-    "Server: nginx"
+    "Server: AkamaiGHost"
   ],
   "cookies": [],
   "cors": [
@@ -296,21 +296,21 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     "/security.txt": 301,
     "/.git/HEAD": 301,
     "/.git/config": 301,
-    "/.env": 301,
-    "/.htaccess": 301,
-    "/wp-login.php": 301,
-    "/phpmyadmin/index.php": 301,
-    "/server-status": 301,
-    "/api/": 301
+    "/.env": 400,
+    "/.htaccess": 400,
+    "/wp-login.php": 400,
+    "/phpmyadmin/index.php": 400,
+    "/server-status": 400,
+    "/api/": 400
   },
   "subdomains": {
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=ajXtDle0UfsPUgtjCZ37T8opwg2zvXLzkHNjZTlIVFI",
+    "yahoo-verification-key=UuN8VB7V7E4fK9e6tGDxdS2LNdDFfDU50tLmkOQftws=",
     "anthropic-domain-verification-1k1kwv=sA28xQK50TxxHO9tIaJbCEP60",
     "apple-domain-verification=fookR9-T71Tb7G4opXgos6kiHa32YIsCriQxJY4SNU8",
-    "yahoo-verification-key=UuN8VB7V7E4fK9e6tGDxdS2LNdDFfDU50tLmkOQftws=",
+    "google-site-verification=ajXtDle0UfsPUgtjCZ37T8opwg2zvXLzkHNjZTlIVFI",
     "cursor-domain-verification-w61mwq=TQrKtOakRs3OBorucA3sDlbEQ"
   ],
   "tls2": {
@@ -322,30 +322,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260429000000",
+      "not_after": "20261113235959"
     }
   },
-  "http2": {
-    "robots_disallow": [
-      "/Common/BML/",
-      "/Common/ThirdParty/",
-      "/App/",
-      "/Application/",
-      "/Configuration/",
-      "/NewMyAccount/",
-      "/MyNewegg/",
-      "/insider/blog/wp-admin/",
-      "/api/UpdateStorage",
-      "/api/TrendingNow",
-      "/mycountry",
-      "/api/MiniCart",
-      "/api/GetStorage",
-      "/areyouahuman",
-      "/api/Common/GBuy"
+  "x12": {
+    "status": 400,
+    "ptr": [
+      "a104-115-226-136.deploy.static.akamaitechnologies.com."
     ]
   },
-  "elapsed_s": 15.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "elapsed_s": 7.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

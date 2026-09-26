@@ -7,12 +7,12 @@
 | Target | https://flipboard.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | flipboard.com |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
+Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,7 +28,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 | 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 13 | info | CT1 | 12 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 14 | info | CT1 | 12 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -94,7 +95,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=EU2djlhiCyLFRE6dqL0HEIwLSclUSRLzkbvQ4ObXr7I; google-site-verification=9rExE5dYg3CPZ3GFGvrkj2MbbKAkdHHH5aRUYSnq9w4; google-site-verification=eqogjmVDZB-9UMYUFvv5OlEO_a20KZadbY7DJw35Dys
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-1avd9b=GWlaVK7cM1UrnAecUR0PhzRI7; google-site-verification=196ICmalqDggbij227IKpDuO8wjKIGJOoWQUKVR0B0U; have-i-been-pwned-verification=6b731851fd4ef8a6d49f6f8ff8f3eed4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -109,7 +110,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 - **Detail:** robots.txt lists 19 disallow path(s), e.g. /, /analytics/, /api/, /bookmarklet/, /editor/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 13. [INFO] 12 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 54.192.248.101 carries PTR server-54-192-248-101.tpe53.r.cloudfront.net. for flipboard.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 14. [INFO] 12 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -122,50 +129,50 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
   "domain": "flipboard.com",
   "dns": {
     "a": [
-      "54.192.248.59",
+      "54.192.248.101",
       "54.192.248.48",
-      "54.192.248.119",
-      "54.192.248.101"
+      "54.192.248.59",
+      "54.192.248.119"
     ],
     "aaaa": [
-      "2600:9000:202f:2c00:15:d33e:2640:93a1",
+      "2600:9000:202f:2600:15:d33e:2640:93a1",
+      "2600:9000:202f:1800:15:d33e:2640:93a1",
+      "2600:9000:202f:1400:15:d33e:2640:93a1",
       "2600:9000:202f:c400:15:d33e:2640:93a1",
-      "2600:9000:202f:7e00:15:d33e:2640:93a1",
-      "2600:9000:202f:9c00:15:d33e:2640:93a1",
-      "2600:9000:202f:3e00:15:d33e:2640:93a1",
-      "2600:9000:202f:5e00:15:d33e:2640:93a1",
-      "2600:9000:202f:f800:15:d33e:2640:93a1",
-      "2600:9000:202f:4000:15:d33e:2640:93a1"
+      "2600:9000:202f:e00:15:d33e:2640:93a1",
+      "2600:9000:202f:2800:15:d33e:2640:93a1",
+      "2600:9000:202f:8400:15:d33e:2640:93a1",
+      "2600:9000:202f:1c00:15:d33e:2640:93a1"
     ],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx5.googlemail.com (pref 30)",
-      "aspmx2.googlemail.com (pref 30)",
       "aspmx4.googlemail.com (pref 30)",
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx2.googlemail.com (pref 30)",
       "aspmx3.googlemail.com (pref 30)",
       "alt2.aspmx.l.google.com (pref 20)",
       "aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-1510.awsdns-60.org.",
+      "ns-60.awsdns-07.com.",
       "ns-816.awsdns-38.net.",
       "ns-1756.awsdns-27.co.uk.",
-      "ns-60.awsdns-07.com."
+      "ns-1510.awsdns-60.org."
     ],
     "spf": [
-      "google-site-verification=EU2djlhiCyLFRE6dqL0HEIwLSclUSRLzkbvQ4ObXr7I",
-      "google-site-verification=9rExE5dYg3CPZ3GFGvrkj2MbbKAkdHHH5aRUYSnq9w4",
-      "google-site-verification=eqogjmVDZB-9UMYUFvv5OlEO_a20KZadbY7DJw35Dys",
-      "v=spf1 include:servers.mcsv.net include:sendgrid.net include:_spf.google.com -all",
+      "anthropic-domain-verification-1avd9b=GWlaVK7cM1UrnAecUR0PhzRI7",
       "google-site-verification=196ICmalqDggbij227IKpDuO8wjKIGJOoWQUKVR0B0U",
-      "atlassian-domain-verification=dZ8g4eOwcpvhvx5AD10LH0gUSjKTUUgORwal07qANXl3412gq8IYKOlI4oa4llnl",
+      "have-i-been-pwned-verification=6b731851fd4ef8a6d49f6f8ff8f3eed4",
+      "google-site-verification=9rExE5dYg3CPZ3GFGvrkj2MbbKAkdHHH5aRUYSnq9w4",
+      "google-site-verification=BqjKftnKldO1vP49cSkz2ryHMLPk5y3V6-JlkIhUo1U",
       "_wpengine-sso-challenge.flipboard.com= 2KkDEiUGF0IvgPeA6uHIcV57z9H",
       "_wpengine-sso-challenge= 2KkDEiUGF0IvgPeA6uHIcV57z9H",
-      "google-site-verification=BqjKftnKldO1vP49cSkz2ryHMLPk5y3V6-JlkIhUo1U",
-      "have-i-been-pwned-verification=6b731851fd4ef8a6d49f6f8ff8f3eed4",
-      "google-site-verification=47g-PnfQPJHjb8Ze5YYF-hF2ABg67yFQc-kwrSv8PAY",
-      "anthropic-domain-verification-1avd9b=GWlaVK7cM1UrnAecUR0PhzRI7"
+      "atlassian-domain-verification=dZ8g4eOwcpvhvx5AD10LH0gUSjKTUUgORwal07qANXl3412gq8IYKOlI4oa4llnl",
+      "google-site-verification=eqogjmVDZB-9UMYUFvv5OlEO_a20KZadbY7DJw35Dys",
+      "v=spf1 include:servers.mcsv.net include:sendgrid.net include:_spf.google.com -all",
+      "google-site-verification=EU2djlhiCyLFRE6dqL0HEIwLSclUSRLzkbvQ4ObXr7I",
+      "google-site-verification=47g-PnfQPJHjb8Ze5YYF-hF2ABg67yFQc-kwrSv8PAY"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine;"
@@ -196,7 +203,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
     }
   },
   "ports": {
-    "ip": "54.192.248.59",
+    "ip": "54.192.248.101",
     "open": []
   },
   "https": {
@@ -268,11 +275,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
     ]
   },
   "apex_txt": [
-    "google-site-verification=EU2djlhiCyLFRE6dqL0HEIwLSclUSRLzkbvQ4ObXr7I",
-    "google-site-verification=9rExE5dYg3CPZ3GFGvrkj2MbbKAkdHHH5aRUYSnq9w4",
-    "google-site-verification=eqogjmVDZB-9UMYUFvv5OlEO_a20KZadbY7DJw35Dys",
+    "anthropic-domain-verification-1avd9b=GWlaVK7cM1UrnAecUR0PhzRI7",
     "google-site-verification=196ICmalqDggbij227IKpDuO8wjKIGJOoWQUKVR0B0U",
-    "atlassian-domain-verification=dZ8g4eOwcpvhvx5AD10LH0gUSjKTUUgORwal07qANXl3412gq8"
+    "have-i-been-pwned-verification=6b731851fd4ef8a6d49f6f8ff8f3eed4",
+    "google-site-verification=9rExE5dYg3CPZ3GFGvrkj2MbbKAkdHHH5aRUYSnq9w4",
+    "google-site-verification=BqjKftnKldO1vP49cSkz2ryHMLPk5y3V6-JlkIhUo1U"
   ],
   "tls2": {
     "alpn": "",
@@ -283,7 +290,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260211000000",
+      "not_after": "20270311235959"
     }
   },
   "http2": {
@@ -305,8 +314,14 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "/static/gfs/"
     ]
   },
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "server-54-192-248-101.tpe53.r.cloudfront.net."
+    ]
+  },
   "elapsed_s": 14.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

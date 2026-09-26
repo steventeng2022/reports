@@ -7,12 +7,12 @@
 | Target | https://css-tricks.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | css-tricks.com |
-| Test date | 2026-09-26 17:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
+Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -143,6 +144,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - **Detail:** robots.txt lists 13 disallow path(s), e.g. /, /, /, /wp-admin/, /wp-login.php
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 18. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://css-tricks.com/ carries Cache-Control: max-age=0, s-maxage=2592000 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -159,13 +166,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     ],
     "cname": null,
     "mx": [
-      "aspmx5.googlemail.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx2.googlemail.com (pref 30)",
       "aspmx.l.google.com (pref 10)",
+      "aspmx5.googlemail.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)",
       "aspmx3.googlemail.com (pref 30)",
       "aspmx4.googlemail.com (pref 30)",
-      "aspmx2.googlemail.com (pref 30)",
-      "alt2.aspmx.l.google.com (pref 20)"
+      "alt1.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
       "nicole.ns.cloudflare.com.",
@@ -268,7 +275,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260731044507",
+      "not_after": "20261029054456"
     }
   },
   "http2": {
@@ -288,8 +297,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "/category/*/page/"
     ]
   },
-  "elapsed_s": 13.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 13.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,8 +7,8 @@
 | Target | https://pixiv.net/ |
 | Bug bounty program | Pixiv |
 | Listed scope domain | pixiv.net |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -118,7 +118,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=xAnUeXKY_KgBIU3bipOPWHY9svivd1TqrjcW78IbVoI; globalsign-domain-verification=e_Nj1kv39zKi39YDMjczo6I7enPLWRCo7nMfs7uXGW; google-site-verification=oxtVRjNBArcXLAcQAnu4cMCqNrHIdNjRLdGE9yOsXOo
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=vNUz01aVidCrTTtKNCaiqUlfjOxCmVHRiuRQLTRq63A; google-site-verification=xAnUeXKY_KgBIU3bipOPWHY9svivd1TqrjcW78IbVoI; globalsign-domain-verification=e_Nj1kv39zKi39YDMjczo6I7enPLWRCo7nMfs7uXGW
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -146,36 +146,36 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
   "domain": "pixiv.net",
   "dns": {
     "a": [
+      "210.140.139.155",
       "210.140.139.158",
-      "210.140.139.161",
       "210.140.139.152",
-      "210.140.139.155"
+      "210.140.139.161"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "alt4.aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns2.pixiv.net.",
-      "ns1.pixiv.net."
+      "ns1.pixiv.net.",
+      "ns2.pixiv.net."
     ],
     "spf": [
+      "OSSRH-78583",
+      "google-site-verification=vNUz01aVidCrTTtKNCaiqUlfjOxCmVHRiuRQLTRq63A",
       "google-site-verification=xAnUeXKY_KgBIU3bipOPWHY9svivd1TqrjcW78IbVoI",
       "globalsign-domain-verification=e_Nj1kv39zKi39YDMjczo6I7enPLWRCo7nMfs7uXGW",
+      "google-site-verification=rS1Mg2WHOuRkdwyS88Gfbm-Ol465if5TTLUL5h9lu-E",
       "v=spf1 include:_spf.pixiv.net include:mail.zendesk.com include:sendgrid.net include:_spf.google.com ~all",
       "google-site-verification=oxtVRjNBArcXLAcQAnu4cMCqNrHIdNjRLdGE9yOsXOo",
-      "facebook-domain-verification=ehppa9dvc6xcigimqv0ydnvdzl0kml",
-      "OSSRH-78583",
-      "google-site-verification=eVfT24dAtKUSNJTkjJKoEr4LOBLJyLfm3YN59oP5bRE",
-      "google-site-verification=vNUz01aVidCrTTtKNCaiqUlfjOxCmVHRiuRQLTRq63A",
-      "ca3-9373f91b0f6c49ee984a67d1e6325e4f",
       "firebase=pixiv-comic-store-production",
-      "google-site-verification=rS1Mg2WHOuRkdwyS88Gfbm-Ol465if5TTLUL5h9lu-E"
+      "facebook-domain-verification=ehppa9dvc6xcigimqv0ydnvdzl0kml",
+      "google-site-verification=eVfT24dAtKUSNJTkjJKoEr4LOBLJyLfm3YN59oP5bRE",
+      "ca3-9373f91b0f6c49ee984a67d1e6325e4f"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:174afb3d51494e64bee7d0913aea39b2@dmarc-reports.cloudflare.net,mailto:dmarc@pixiv.com; ruf=mailto:dmarc@pixiv.com; fo=1:d:s"
@@ -211,7 +211,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     }
   },
   "ports": {
-    "ip": "210.140.139.158",
+    "ip": "210.140.139.155",
     "open": []
   },
   "https": {
@@ -264,11 +264,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "google-site-verification=vNUz01aVidCrTTtKNCaiqUlfjOxCmVHRiuRQLTRq63A",
     "google-site-verification=xAnUeXKY_KgBIU3bipOPWHY9svivd1TqrjcW78IbVoI",
     "globalsign-domain-verification=e_Nj1kv39zKi39YDMjczo6I7enPLWRCo7nMfs7uXGW",
-    "google-site-verification=oxtVRjNBArcXLAcQAnu4cMCqNrHIdNjRLdGE9yOsXOo",
-    "facebook-domain-verification=ehppa9dvc6xcigimqv0ydnvdzl0kml",
-    "google-site-verification=eVfT24dAtKUSNJTkjJKoEr4LOBLJyLfm3YN59oP5bRE"
+    "google-site-verification=rS1Mg2WHOuRkdwyS88Gfbm-Ol465if5TTLUL5h9lu-E",
+    "google-site-verification=oxtVRjNBArcXLAcQAnu4cMCqNrHIdNjRLdGE9yOsXOo"
   ],
   "tls2": {
     "alpn": "",
@@ -279,7 +279,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260803144559",
+      "not_after": "20261101144558"
     }
   },
   "http2": {
@@ -301,8 +303,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "/en/search/"
     ]
   },
-  "elapsed_s": 9.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 10.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

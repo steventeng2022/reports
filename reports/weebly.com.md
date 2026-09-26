@@ -7,12 +7,12 @@
 | Target | https://weebly.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | weebly.com |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
+Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -39,6 +39,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 | 21 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 22 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 23 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 24 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -57,13 +58,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 74.115.51.6:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 74.115.51.7:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 74.115.51.6:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 74.115.51.7:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -171,13 +172,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 ### 20. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (e49hj51pmsnjdj.weebly.com and kvt91xut396gfa.weebly.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (lmzfzwqogoinht.weebly.com and yyvsfo3m4ctsfv.weebly.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 21. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda553; facebook-domain-verification=pgcgq3ulxdr0q5k8130ihxgsfgajtx; google-site-verification=TZ4zEVLWw4gmABVLLvmfhXKRj-zP8yV_Llo38JMHGyc
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=TZ4zEVLWw4gmABVLLvmfhXKRj-zP8yV_Llo38JMHGyc; facebook-domain-verification=pgcgq3ulxdr0q5k8130ihxgsfgajtx; postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda553
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 22. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -192,6 +193,12 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 - **Detail:** robots.txt lists 21 disallow path(s), e.g. /, /designer_pricing.php, /ipad/, /uploads/7/0/2/6/70262511/custom_themes/, /uploads/8/5/1/4/85141968/custom_themes/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 24. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 74.115.51.7 carries PTR www.weebly.com. for weebly.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -199,17 +206,17 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
   "domain": "weebly.com",
   "dns": {
     "a": [
-      "74.115.51.6",
-      "74.115.51.7"
+      "74.115.51.7",
+      "74.115.51.6"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "alt1.aspmx.l.google.com (pref 20)",
       "aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 20)",
       "aspmx3.googlemail.com (pref 20)",
-      "aspmx2.googlemail.com (pref 20)",
-      "alt2.aspmx.l.google.com (pref 20)"
+      "aspmx2.googlemail.com (pref 20)"
     ],
     "ns": [
       "ns-1500.awsdns-59.org.",
@@ -218,11 +225,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
       "ns-646.awsdns-16.net."
     ],
     "spf": [
-      "postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda5530224a7661f91528b27485bc875c9c71d37bd628267264a247a929ad63752883379e313d91a3a",
       "v=spf1 include:_spf.google.com include:mail.zendesk.com include:_netblocks.sparkpostmail.com include:sendgrid.net ip4:74.115.48.0/22 ip6:2620:11c::/44 mx ~all",
+      "google-site-verification=TZ4zEVLWw4gmABVLLvmfhXKRj-zP8yV_Llo38JMHGyc",
       "facebook-domain-verification=pgcgq3ulxdr0q5k8130ihxgsfgajtx",
       "78e4ad1ec37ca38d4dbe035e01fa3a0533ccacc4f8e2083013d13571e5904ef9",
-      "google-site-verification=TZ4zEVLWw4gmABVLLvmfhXKRj-zP8yV_Llo38JMHGyc"
+      "postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda5530224a7661f91528b27485bc875c9c71d37bd628267264a247a929ad63752883379e313d91a3a"
     ],
     "dmarc": [
       "v=DMARC1; p=none;"
@@ -252,7 +259,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
     }
   },
   "ports": {
-    "ip": "74.115.51.6",
+    "ip": "74.115.51.7",
     "open": [
       8080,
       8443
@@ -318,9 +325,9 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda553",
+    "google-site-verification=TZ4zEVLWw4gmABVLLvmfhXKRj-zP8yV_Llo38JMHGyc",
     "facebook-domain-verification=pgcgq3ulxdr0q5k8130ihxgsfgajtx",
-    "google-site-verification=TZ4zEVLWw4gmABVLLvmfhXKRj-zP8yV_Llo38JMHGyc"
+    "postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda553"
   ],
   "tls2": {
     "alpn": "",
@@ -331,7 +338,9 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260808202054",
+      "not_after": "20261106202053"
     }
   },
   "http2": {
@@ -353,8 +362,14 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
       "/wedding-site/"
     ]
   },
-  "elapsed_s": 13.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "www.weebly.com."
+    ]
+  },
+  "elapsed_s": 13.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

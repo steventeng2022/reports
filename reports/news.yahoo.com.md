@@ -7,12 +7,12 @@
 | Target | https://news.yahoo.com/ |
 | Bug bounty program | Yahoo! |
 | Listed scope domain | news.yahoo.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
+Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 | 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -109,6 +110,12 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 - **Detail:** robots.txt lists 23 disallow path(s), e.g. /info/p.gif, /p/, /r/, /bin/, /caas/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 180.222.109.252 carries PTR e2-bmr.ycpi.vip.twd.yahoo.com. for news.yahoo.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -116,12 +123,12 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
   "domain": "news.yahoo.com",
   "dns": {
     "a": [
-      "180.222.109.251",
-      "180.222.109.252"
+      "180.222.109.252",
+      "180.222.109.251"
     ],
     "aaaa": [
-      "2406:2000:a0:807::1",
-      "2406:2000:a0:807::2"
+      "2406:2000:a0:807::2",
+      "2406:2000:a0:807::1"
     ],
     "cname": "me-ycpi-cf.news.g06.yahoodns.net.",
     "mx": [],
@@ -235,7 +242,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
     }
   },
   "ports": {
-    "ip": "180.222.109.251",
+    "ip": "180.222.109.252",
     "open": []
   },
   "https": {
@@ -299,7 +306,9 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260817000000",
+      "not_after": "20261007235959"
     }
   },
   "http2": {
@@ -321,8 +330,14 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "/_remote"
     ]
   },
-  "elapsed_s": 6.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "e2-bmr.ycpi.vip.twd.yahoo.com."
+    ]
+  },
+  "elapsed_s": 5.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

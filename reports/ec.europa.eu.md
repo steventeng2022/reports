@@ -7,8 +7,8 @@
 | Target | https://ec.europa.eu/ |
 | Bug bounty program | European Central Bank |
 | Listed scope domain | ec.europa.eu |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -118,7 +118,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-w18fn5=aCZHCSXAOr6mwQB6zAVj4LGSJ; yahoo-verification-key=mIbs1g4mUnS9N9xQpPywHyyQ462sU/5p7+ObnIeT6QE=; apple-domain-verification=0zqmupc9IJswQan3
+- **Detail:** Apex TXT records with verification/token content: yahoo-verification-key=mIbs1g4mUnS9N9xQpPywHyyQ462sU/5p7+ObnIeT6QE=; cisco-ci-domain-verification=71375d94308e5d9c151ed03fb38e6e7c40081021ffaad12391a; atlassian-domain-verification=CdVasMY4c9BTCt8IJvPUjKbyz8YkV095KyECi5dLyhg481LAhk
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -161,19 +161,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     ],
     "ns": [],
     "spf": [
-      "anthropic-domain-verification-w18fn5=aCZHCSXAOr6mwQB6zAVj4LGSJ",
+      "v=spf1 include:_spf.tech.ec.europa.eu include:_spf-jrc.tech.ec.europa.eu -all",
       "yahoo-verification-key=mIbs1g4mUnS9N9xQpPywHyyQ462sU/5p7+ObnIeT6QE=",
-      "DN6kiCaIRHg011SWPd/y5wK0nF1lAB0vxkimTgK6YHQ=",
-      "apple-domain-verification=0zqmupc9IJswQan3",
+      "cisco-ci-domain-verification=71375d94308e5d9c151ed03fb38e6e7c40081021ffaad12391a0797f3487236f",
+      "MS=ms93839866",
       "atlassian-domain-verification=CdVasMY4c9BTCt8IJvPUjKbyz8YkV095KyECi5dLyhg481LAhkwutfFJHSjULhnx",
       "atlassian-domain-verification=Sn5ZgXoanhUhLAap/3tkBbsCa4Kag0SfkSMmpJX8piK6/NsGjt5l7QJZYiDlhYh7",
+      "anthropic-domain-verification-w18fn5=aCZHCSXAOr6mwQB6zAVj4LGSJ",
+      "apple-domain-verification=0zqmupc9IJswQan3",
       "google-site-verification=eyHX1dZlZS9ZXUW4486Y8_HpDHE1ubuzInqkzRjnVBE",
-      "cisco-ci-domain-verification=71375d94308e5d9c151ed03fb38e6e7c40081021ffaad12391a0797f3487236f",
-      "globalsign-domain-verification=U-m3rn1OpP3XdBtI6G_e7kKw156XwchHbjmX3n0iKq",
-      "MS=ms93839866",
       "cisco-ci-domain-verification=d9a4e5f569f0c36f811a4eb618d520d8d73a90beac438e9234a915465c56a2",
-      "v=spf1 include:_spf.tech.ec.europa.eu include:_spf-jrc.tech.ec.europa.eu -all",
-      "google-site-verification=Hf3TsilSdPh4WhYu26eFxy_8pIrtGVdDgqbAdjbbAw8"
+      "globalsign-domain-verification=U-m3rn1OpP3XdBtI6G_e7kKw156XwchHbjmX3n0iKq",
+      "google-site-verification=Hf3TsilSdPh4WhYu26eFxy_8pIrtGVdDgqbAdjbbAw8",
+      "DN6kiCaIRHg011SWPd/y5wK0nF1lAB0vxkimTgK6YHQ="
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:swtyii6t@ag.eu.dmarcadvisor.com; adkim=s; aspf=s"
@@ -256,11 +256,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "anthropic-domain-verification-w18fn5=aCZHCSXAOr6mwQB6zAVj4LGSJ",
     "yahoo-verification-key=mIbs1g4mUnS9N9xQpPywHyyQ462sU/5p7+ObnIeT6QE=",
-    "apple-domain-verification=0zqmupc9IJswQan3",
+    "cisco-ci-domain-verification=71375d94308e5d9c151ed03fb38e6e7c40081021ffaad12391a",
     "atlassian-domain-verification=CdVasMY4c9BTCt8IJvPUjKbyz8YkV095KyECi5dLyhg481LAhk",
-    "atlassian-domain-verification=Sn5ZgXoanhUhLAap/3tkBbsCa4Kag0SfkSMmpJX8piK6/NsGjt"
+    "atlassian-domain-verification=Sn5ZgXoanhUhLAap/3tkBbsCa4Kag0SfkSMmpJX8piK6/NsGjt",
+    "anthropic-domain-verification-w18fn5=aCZHCSXAOr6mwQB6zAVj4LGSJ"
   ],
   "tls2": {
     "alpn": "",
@@ -271,7 +271,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260731083105",
+      "not_after": "20270215083104"
     }
   },
   "http2": {
@@ -293,8 +295,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "/employment_social/anticipedia/xwiki/bin/commentadd/"
     ]
   },
-  "elapsed_s": 30.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 33.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://vk.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | vk.com |
-| Test date | 2026-09-26 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
+Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 19 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 20 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 21 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -125,13 +128,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (s653eqcv1cm0bl.vk.com and k0uib81e40nbp0.vk.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (azch2qjj9yc8g0.vk.com and 0j1vrk40wv30lk.vk.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: wmail-verification: 646ff42e916a2be1aa86be6d3c742949; _globalsign-domain-verification=YM9xQ7VIOTNzoxGpxAE1kwy28slNTGWXflmZgt73D9; _globalsign-domain-verification=3qRKI9FWh1UX5CIN5FXwL6SJnSKkJzaDkVqSPaxdfC
+- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=yIHjfPiraw7292KzmmdOaN_HbhuOagFIXRGHf_3WH4; wmail-verification: 646ff42e916a2be1aa86be6d3c742949; _globalsign-domain-verification=YM9xQ7VIOTNzoxGpxAE1kwy28slNTGWXflmZgt73D9
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -152,6 +155,24 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 - **Detail:** robots.txt lists 230 disallow path(s), e.g. /doc-*, /away.php, /im?, /search*&*&*&, *?w=story
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 19. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of vk.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 20. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of vk.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
+### 21. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 87.240.132.78 carries PTR srv78-132-240-87.vk.com. for vk.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -159,12 +180,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   "domain": "vk.com",
   "dns": {
     "a": [
-      "87.240.129.133",
-      "93.186.225.194",
       "87.240.132.78",
-      "87.240.137.164",
+      "87.240.132.72",
+      "87.240.129.133",
       "87.240.132.67",
-      "87.240.132.72"
+      "93.186.225.194",
+      "87.240.137.164"
     ],
     "aaaa": [],
     "cname": null,
@@ -173,26 +194,26 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     ],
     "ns": [
       "ns2.vk.com.",
-      "ns3.vk.com.",
       "ns1.vk.com.",
+      "ns3.vk.com.",
       "ns4.vk.com."
     ],
     "spf": [
-      "HARICA-A1PCCe7rY17J2K2Ifov",
-      "HARICA-qudxcvYVXjYWrJvbUoX",
-      "LD6VaYCKete4UB5FIx7snCoJ8bt1nGdeCWe4my5HH5psRaTl",
-      "zAmvc",
+      "_globalsign-domain-verification=yIHjfPiraw7292KzmmdOaN_HbhuOagFIXRGHf_3WH4",
       "wmail-verification: 646ff42e916a2be1aa86be6d3c742949",
       "_globalsign-domain-verification=YM9xQ7VIOTNzoxGpxAE1kwy28slNTGWXflmZgt73D9",
-      "_globalsign-domain-verification=3qRKI9FWh1UX5CIN5FXwL6SJnSKkJzaDkVqSPaxdfC",
-      "HARICA-fLc9OEonBmci43ogW3C",
-      "google-site-verification=bQE4SQUYC7KTvk4XCaMdwF0e_tj-O-6ZXMfXW2a8mHY",
-      "yandex-verification: 0bb3aeafaf40a3fa",
+      "_globalsign-domain-verification=aXxk884iIZmgR5ON_CbluBYfK4GyZLo08hLo293AHC",
       "v=spf1 ip4:93.186.224.0/20 ip4:87.240.128.0/18 i",
       "p4:95.142.192.0/21 mx include:_spf.google.com in",
       "clude:_spf.mail.ru ~all",
-      "_globalsign-domain-verification=yIHjfPiraw7292KzmmdOaN_HbhuOagFIXRGHf_3WH4",
-      "_globalsign-domain-verification=aXxk884iIZmgR5ON_CbluBYfK4GyZLo08hLo293AHC"
+      "HARICA-qudxcvYVXjYWrJvbUoX",
+      "yandex-verification: 0bb3aeafaf40a3fa",
+      "HARICA-A1PCCe7rY17J2K2Ifov",
+      "google-site-verification=bQE4SQUYC7KTvk4XCaMdwF0e_tj-O-6ZXMfXW2a8mHY",
+      "_globalsign-domain-verification=3qRKI9FWh1UX5CIN5FXwL6SJnSKkJzaDkVqSPaxdfC",
+      "LD6VaYCKete4UB5FIx7snCoJ8bt1nGdeCWe4my5HH5psRaTl",
+      "zAmvc",
+      "HARICA-fLc9OEonBmci43ogW3C"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; pct=100; rua=",
@@ -254,7 +275,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     }
   },
   "ports": {
-    "ip": "87.240.129.133",
+    "ip": "87.240.132.78",
     "open": []
   },
   "https": {
@@ -338,10 +359,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   },
   "wildcard_dns": true,
   "apex_txt": [
+    "_globalsign-domain-verification=yIHjfPiraw7292KzmmdOaN_HbhuOagFIXRGHf_3WH4",
     "wmail-verification: 646ff42e916a2be1aa86be6d3c742949",
     "_globalsign-domain-verification=YM9xQ7VIOTNzoxGpxAE1kwy28slNTGWXflmZgt73D9",
-    "_globalsign-domain-verification=3qRKI9FWh1UX5CIN5FXwL6SJnSKkJzaDkVqSPaxdfC",
-    "google-site-verification=bQE4SQUYC7KTvk4XCaMdwF0e_tj-O-6ZXMfXW2a8mHY",
+    "_globalsign-domain-verification=aXxk884iIZmgR5ON_CbluBYfK4GyZLo08hLo293AHC",
     "yandex-verification: 0bb3aeafaf40a3fa"
   ],
   "tls2": {
@@ -353,7 +374,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260714061925",
+      "not_after": "20261012061924"
     }
   },
   "http2": {
@@ -375,8 +398,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "/call?id="
     ]
   },
-  "elapsed_s": 33.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "srv78-132-240-87.vk.com."
+    ]
+  },
+  "elapsed_s": 38.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://eff.org/ |
 | Bug bounty program | EFF |
 | Listed scope domain | eff.org |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
+Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -116,7 +117,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=Xqf-4VNlMzsu7X8mmX33O3jdZcvFavWtZen9xLBZ5S4; ms-domain-verification=55064e24-4bc6-4f21-a39c-f9c0b295f3f3
+- **Detail:** Apex TXT records with verification/token content: ms-domain-verification=55064e24-4bc6-4f21-a39c-f9c0b295f3f3; google-site-verification=Xqf-4VNlMzsu7X8mmX33O3jdZcvFavWtZen9xLBZ5S4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -130,6 +131,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 68 disallow path(s), e.g. /includes/, /misc/, /modules/, /profiles/, /scripts/
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 173.239.79.200 carries PTR observatory1.eff.org. for eff.org.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -146,14 +153,14 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "eff-org.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "ns1.eff.org.",
+      "ns4.eff.org.",
       "ns2.eff.org.",
-      "ns4.eff.org."
+      "ns1.eff.org."
     ],
     "spf": [
+      "ms-domain-verification=55064e24-4bc6-4f21-a39c-f9c0b295f3f3",
       "google-site-verification=Xqf-4VNlMzsu7X8mmX33O3jdZcvFavWtZen9xLBZ5S4",
-      "v=spf1 mx ip4:173.239.79.202 include:spf1.eff.org include:spf2.eff.org include:spf.protection.outlook.com include:salsalabs.org -all",
-      "ms-domain-verification=55064e24-4bc6-4f21-a39c-f9c0b295f3f3"
+      "v=spf1 mx ip4:173.239.79.202 include:spf1.eff.org include:spf2.eff.org include:spf.protection.outlook.com include:salsalabs.org -all"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:dmarc_rua@eff.org; ruf=mailto:dmarc_ruf@eff.org;"
@@ -172,7 +179,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     "san": [
       "eff.org"
     ],
-    "days_left": 65,
+    "days_left": 64,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -237,8 +244,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=Xqf-4VNlMzsu7X8mmX33O3jdZcvFavWtZen9xLBZ5S4",
-    "ms-domain-verification=55064e24-4bc6-4f21-a39c-f9c0b295f3f3"
+    "ms-domain-verification=55064e24-4bc6-4f21-a39c-f9c0b295f3f3",
+    "google-site-verification=Xqf-4VNlMzsu7X8mmX33O3jdZcvFavWtZen9xLBZ5S4"
   ],
   "tls2": {
     "alpn": "",
@@ -249,7 +256,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260901184326",
+      "not_after": "20261130184325"
     }
   },
   "http2": {
@@ -272,8 +281,14 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "/MAINTAINERS.txt"
     ]
   },
-  "elapsed_s": 27.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "observatory1.eff.org."
+    ]
+  },
+  "elapsed_s": 29.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

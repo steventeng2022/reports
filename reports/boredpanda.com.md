@@ -7,12 +7,12 @@
 | Target | https://boredpanda.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | boredpanda.com |
-| Test date | 2026-09-26 17:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
+Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,7 +34,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 | 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 19 | info | CT1 | 44 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 20 | info | CT1 | 44 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -142,7 +143,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM; google-site-verification=E-VWzamHJVxn2aKoEbD2dNX18GG_rEuHAJIAcsZ9JQY; trustpilot-one-time-verification-id=9eb08d90-b03e-4784-821f-4256acbae37d
+- **Detail:** Apex TXT records with verification/token content: trustpilot-one-time-verification-id=9eb08d90-b03e-4784-821f-4256acbae37d; apple-domain-verification=hops-EdsP_znUZ0tgSnyMFqx9WcQ6J6CLUlLwNJuseY; google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -157,7 +158,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 - **Detail:** robots.txt lists 11 disallow path(s), e.g. /, /, /, /, /?s=
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 19. [INFO] 44 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 44.220.98.194 carries PTR ec2-44-220-98-194.compute-1.amazonaws.com. for boredpanda.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 20. [INFO] 44 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: 2.stage.boredpanda.com, api.backbone.boredpanda.com, api.boredpanda.com, api.ideas.boredpanda.com, assets.boredpanda.com, growthbook-api.internal.boredpanda.com, growthbook.internal.boredpanda.com, img.boredpanda.com, img.stage.boredpanda.com, jobs.boredpanda.com
@@ -170,8 +177,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
   "domain": "boredpanda.com",
   "dns": {
     "a": [
-      "35.168.213.86",
       "44.220.98.194",
+      "35.168.213.86",
       "44.221.107.254",
       "54.204.103.197"
     ],
@@ -181,25 +188,25 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "smtp.google.com (pref 1)"
     ],
     "ns": [
-      "ns-1425.awsdns-50.org.",
-      "ns-972.awsdns-57.net.",
       "ns-1985.awsdns-56.co.uk.",
-      "ns-173.awsdns-21.com."
+      "ns-972.awsdns-57.net.",
+      "ns-173.awsdns-21.com.",
+      "ns-1425.awsdns-50.org."
     ],
     "spf": [
-      "brevo-code:59ddf176bd2029a7dea7a297ba5967ef",
-      "google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM",
-      "google-site-verification=E-VWzamHJVxn2aKoEbD2dNX18GG_rEuHAJIAcsZ9JQY",
-      "trustpilot-one-time-verification-id=9eb08d90-b03e-4784-821f-4256acbae37d",
-      "anthropic-domain-verification-qp0t5e=qyjWbKPmD6hTz77lb10rBJ2hi",
-      "google-site-verification=XuF5a9eahvWOgNLrh7WkeiFQpnIjdbpEgbWPZ0a1oYY",
-      "google-site-verification=MxIMpuiT8s52Vltu5GksnMWb3AmEfjHaawL4ii8SD_Q",
-      "MS=ms42183495",
-      "google-site-verification=KIIUiAJna3_1-eDilP2A9ENUy2oiWftdyHXyCMhnz3s",
-      "v=spf1 a mx include:_spf.mlsend.com include:_spf.google.com include:spf.mailjet.com ~all",
       "MS=E04C457D679181C1054598D9F097241502D2B900",
-      "facebook-domain-verification=fgwdxllanmj6qtcuvmke1si9ec60ia",
+      "trustpilot-one-time-verification-id=9eb08d90-b03e-4784-821f-4256acbae37d",
       "apple-domain-verification=hops-EdsP_znUZ0tgSnyMFqx9WcQ6J6CLUlLwNJuseY",
+      "google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM",
+      "MS=ms42183495",
+      "v=spf1 a mx include:_spf.mlsend.com include:_spf.google.com include:spf.mailjet.com ~all",
+      "google-site-verification=MxIMpuiT8s52Vltu5GksnMWb3AmEfjHaawL4ii8SD_Q",
+      "google-site-verification=XuF5a9eahvWOgNLrh7WkeiFQpnIjdbpEgbWPZ0a1oYY",
+      "google-site-verification=KIIUiAJna3_1-eDilP2A9ENUy2oiWftdyHXyCMhnz3s",
+      "brevo-code:59ddf176bd2029a7dea7a297ba5967ef",
+      "facebook-domain-verification=fgwdxllanmj6qtcuvmke1si9ec60ia",
+      "anthropic-domain-verification-qp0t5e=qyjWbKPmD6hTz77lb10rBJ2hi",
+      "google-site-verification=E-VWzamHJVxn2aKoEbD2dNX18GG_rEuHAJIAcsZ9JQY",
       "google-site-verification=QyUw3s4mkxY3wZMMy4oMT3yHhdCqtiBuusYhmvAdgVM"
     ],
     "dmarc": [
@@ -232,7 +239,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     }
   },
   "ports": {
-    "ip": "35.168.213.86",
+    "ip": "44.220.98.194",
     "open": []
   },
   "https": {
@@ -324,10 +331,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     ]
   },
   "apex_txt": [
-    "google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM",
-    "google-site-verification=E-VWzamHJVxn2aKoEbD2dNX18GG_rEuHAJIAcsZ9JQY",
     "trustpilot-one-time-verification-id=9eb08d90-b03e-4784-821f-4256acbae37d",
-    "anthropic-domain-verification-qp0t5e=qyjWbKPmD6hTz77lb10rBJ2hi",
+    "apple-domain-verification=hops-EdsP_znUZ0tgSnyMFqx9WcQ6J6CLUlLwNJuseY",
+    "google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM",
+    "google-site-verification=MxIMpuiT8s52Vltu5GksnMWb3AmEfjHaawL4ii8SD_Q",
     "google-site-verification=XuF5a9eahvWOgNLrh7WkeiFQpnIjdbpEgbWPZ0a1oYY"
   ],
   "tls2": {
@@ -339,7 +346,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260130000000",
+      "not_after": "20270227235959"
     }
   },
   "http2": {
@@ -357,8 +366,14 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "/contributor/"
     ]
   },
-  "elapsed_s": 34.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ec2-44-220-98-194.compute-1.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 35.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

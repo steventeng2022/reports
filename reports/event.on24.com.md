@@ -7,12 +7,12 @@
 | Target | https://event.on24.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | event.on24.com |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
+Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,6 +25,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
 | 7 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 8 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 9 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 10 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -86,6 +87,12 @@ Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 30 disallow path(s), e.g. /, /clients/, /emailBlaster/, /emergency/, /events/
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 10. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 199.83.44.71 carries PTR eventprd10b.on24.com. for event.on24.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -191,7 +198,9 @@ Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260624000000",
+      "not_after": "20270108235959"
     }
   },
   "http2": {
@@ -213,8 +222,14 @@ Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
       "/pm2/"
     ]
   },
-  "elapsed_s": 26.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 418,
+    "ptr": [
+      "eventprd10b.on24.com."
+    ]
+  },
+  "elapsed_s": 27.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

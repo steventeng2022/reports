@@ -7,12 +7,12 @@
 | Target | https://plaza.rakuten.co.jp/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | plaza.rakuten.co.jp |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
+Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,8 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 | 9 | info | P8 | Missing security.txt | CWE-1038 |
 | 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 11 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 12 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -103,6 +105,18 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. /*comment
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 12. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://plaza.rakuten.co.jp/ carries Cache-Control: max-age=0, must-revalidate, private; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 133.237.180.217 carries PTR lb-133-237-180-217.lbaas.jpe1a.rdcnw.net. for plaza.rakuten.co.jp.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -110,7 +124,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
   "domain": "plaza.rakuten.co.jp",
   "dns": {
     "a": [
-      "133.237.157.30"
+      "133.237.180.217"
     ],
     "aaaa": [],
     "cname": "plaza-rakuten-co-jp.gslb.rdcnw.net.",
@@ -125,8 +139,8 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
   "tls": {
     "status": "ok",
     "chain": "trusted",
-    "version": "TLSv1.2",
-    "cipher": "ECDHE-RSA-AES256-GCM-SHA384",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "countryName=JP, stateOrProvinceName=Tokyo, localityName=Setagaya-ku, organizationName=Rakuten Group, Inc., commonName=*.rakuten.co.jp",
     "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
     "notBefore": "Sep 18 00:00:00 2026 GMT",
@@ -141,11 +155,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
       "TLS1.0": false,
       "TLS1.1": false,
       "TLS1.2": true,
-      "TLS1.3": false
+      "TLS1.3": true
     }
   },
   "ports": {
-    "ip": "133.237.157.30",
+    "ip": "133.237.180.217",
     "open": []
   },
   "https": {
@@ -206,18 +220,20 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
   },
   "cname_chain": [
     "plaza-rakuten-co-jp.gslb.rdcnw.net",
-    "lb-133-237-180-217.lbaas.jpe1a.rdcnw.net"
+    "lb-133-237-157-30.lbaas.jpw2a.rdcnw.net"
   ],
   "tls2": {
     "alpn": "",
-    "tls_ver": "TLSv1.2",
+    "tls_ver": "TLSv1.3",
     "subject": "None",
     "cert": {
       "sig_oid": "1.2.840.113549.1.1.11",
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260918000000",
+      "not_after": "20270404235959"
     }
   },
   "http2": {
@@ -225,8 +241,14 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
       "/*comment"
     ]
   },
-  "elapsed_s": 22.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "lb-133-237-180-217.lbaas.jpe1a.rdcnw.net."
+    ]
+  },
+  "elapsed_s": 13.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

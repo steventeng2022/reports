@@ -7,8 +7,8 @@
 | Target | https://t.ly/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | t.ly |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:00 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -124,7 +124,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e1; google-site-verification=mBi24EbWStadX31zb-0MRYyAHCvogI_TdLFHFh4ULSk; google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg; google-site-verification=mBi24EbWStadX31zb-0MRYyAHCvogI_TdLFHFh4ULSk; ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e1
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -162,27 +162,27 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
       "104.20.7.133"
     ],
     "aaaa": [
-      "2606:4700:10::6814:785",
-      "2606:4700:10::6814:685"
+      "2606:4700:10::6814:685",
+      "2606:4700:10::6814:785"
     ],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
+      "alt3.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)",
       "s76xmsvkv53zk4mecsx6vhsxovktess7wypymzdgrh3ajpxofa4a.mx-verification.google.com (pref 15)",
-      "alt3.aspmx.l.google.com (pref 10)"
+      "alt4.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "ivan.ns.cloudflare.com.",
-      "vida.ns.cloudflare.com."
+      "vida.ns.cloudflare.com.",
+      "ivan.ns.cloudflare.com."
     ],
     "spf": [
-      "ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e18f2077315",
       "v=spf1 include:_spf.google.com ~all",
+      "google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg",
       "google-site-verification=mBi24EbWStadX31zb-0MRYyAHCvogI_TdLFHFh4ULSk",
-      "google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg"
+      "ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e18f2077315"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; rua=mailto:postmaster@t.ly"
@@ -202,7 +202,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
       "t.ly",
       "*.t.ly"
     ],
-    "days_left": 75,
+    "days_left": 74,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -279,9 +279,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
     ]
   },
   "apex_txt": [
-    "ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e1",
+    "google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg",
     "google-site-verification=mBi24EbWStadX31zb-0MRYyAHCvogI_TdLFHFh4ULSk",
-    "google-site-verification=VWAuVVDbDERkwD7j0HffRxV_4ZYNSlmSFHZZQ6mBZLg"
+    "ahrefs-site-verification_ec855967deaadda458c24ee0ae05e82d0a144e2d91f9ff840ccb2e1"
   ],
   "tls2": {
     "alpn": "",
@@ -292,7 +292,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260911170340",
+      "not_after": "20261210180334"
     }
   },
   "http2": {
@@ -300,8 +302,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
       "Sitemap:"
     ]
   },
-  "elapsed_s": 11.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 11.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://popularmechanics.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | popularmechanics.com |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -126,7 +127,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=i25ihj6b5eze1xweou34v7znz6k5v9; yahoo-verification-key=5xONH6yORwG/7kfa3pYWXykyZGH78hWvc/P+MqxMxhI=; google-site-verification=wcwFYNVQ_gHEG0lRSSOEkrXtuYQ5zNIXFTodmJivqgw
+- **Detail:** Apex TXT records with verification/token content: tollbit-domain-verification=ece496246caa370d7f007485c8f75bd2fddff24339ca004233b2; google-site-verification=twOgjzEass2e5I7cd-1TQlMR9dhhBOBVnI-e2P7hSvs; yahoo-verification-key=5xONH6yORwG/7kfa3pYWXykyZGH78hWvc/P+MqxMxhI=
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -147,6 +148,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** robots.txt lists 34 disallow path(s), e.g. User-agent:, /au/, /cn/, /dk/, /en/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 18. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://popularmechanics.com/ carries Cache-Control: max-age=0, must-revalidate, private; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -154,9 +161,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "popularmechanics.com",
   "dns": {
     "a": [
-      "151.101.128.155",
-      "151.101.192.155",
       "151.101.0.155",
+      "151.101.192.155",
+      "151.101.128.155",
       "151.101.64.155"
     ],
     "aaaa": [],
@@ -165,25 +172,25 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "popularmechanics-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
+      "ns-181.awsdns-22.com.",
       "ns-1955.awsdns-52.co.uk.",
       "ns-790.awsdns-34.net.",
-      "ns-181.awsdns-22.com.",
       "ns-1122.awsdns-12.org."
     ],
     "spf": [
-      "facebook-domain-verification=i25ihj6b5eze1xweou34v7znz6k5v9",
-      "9991472f6clc7g866tmn1tbhspnwxcdl",
-      "fastly-domain-delegation-LJIHG7If6u5dy45rhtfjyGUKHk-00839260-20260924",
-      "yahoo-verification-key=5xONH6yORwG/7kfa3pYWXykyZGH78hWvc/P+MqxMxhI=",
-      "google-site-verification=wcwFYNVQ_gHEG0lRSSOEkrXtuYQ5zNIXFTodmJivqgw",
-      "BSI91896679786",
-      "MS=ms37465013",
-      "google-site-verification=twOgjzEass2e5I7cd-1TQlMR9dhhBOBVnI-e2P7hSvs",
-      "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
-      "v=spf1 include:aspmx.sailthru.com include:spf.protection.outlook.com ip4:63.240.19.128/25 ip4:12.182.88.0/25 ip4:12.130.33.128/25 ip4:24.103.50.168/29 ip4:205.220.176.159 ip4:205.220.164.154 ~all",
-      "google-site-verification=98saqo61zkfl_yfZaXKLgLkazlZwpUcMCkqCFEO-O18",
       "tollbit-domain-verification=ece496246caa370d7f007485c8f75bd2fddff24339ca004233b2740cc82bada5",
-      "fastly-domain-delegation-tHoPyhjKot-363395-2021-04-28"
+      "9991472f6clc7g866tmn1tbhspnwxcdl",
+      "google-site-verification=twOgjzEass2e5I7cd-1TQlMR9dhhBOBVnI-e2P7hSvs",
+      "yahoo-verification-key=5xONH6yORwG/7kfa3pYWXykyZGH78hWvc/P+MqxMxhI=",
+      "MS=ms37465013",
+      "BSI91896679786",
+      "v=spf1 include:aspmx.sailthru.com include:spf.protection.outlook.com ip4:63.240.19.128/25 ip4:12.182.88.0/25 ip4:12.130.33.128/25 ip4:24.103.50.168/29 ip4:205.220.176.159 ip4:205.220.164.154 ~all",
+      "facebook-domain-verification=i25ihj6b5eze1xweou34v7znz6k5v9",
+      "fastly-domain-delegation-LJIHG7If6u5dy45rhtfjyGUKHk-00839260-20260924",
+      "google-site-verification=wcwFYNVQ_gHEG0lRSSOEkrXtuYQ5zNIXFTodmJivqgw",
+      "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
+      "fastly-domain-delegation-tHoPyhjKot-363395-2021-04-28",
+      "google-site-verification=98saqo61zkfl_yfZaXKLgLkazlZwpUcMCkqCFEO-O18"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@vali.email"
@@ -359,7 +366,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "151.101.128.155",
+    "ip": "151.101.0.155",
     "open": []
   },
   "https": {
@@ -411,11 +418,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "facebook-domain-verification=i25ihj6b5eze1xweou34v7znz6k5v9",
-    "yahoo-verification-key=5xONH6yORwG/7kfa3pYWXykyZGH78hWvc/P+MqxMxhI=",
-    "google-site-verification=wcwFYNVQ_gHEG0lRSSOEkrXtuYQ5zNIXFTodmJivqgw",
+    "tollbit-domain-verification=ece496246caa370d7f007485c8f75bd2fddff24339ca004233b2",
     "google-site-verification=twOgjzEass2e5I7cd-1TQlMR9dhhBOBVnI-e2P7hSvs",
-    "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3"
+    "yahoo-verification-key=5xONH6yORwG/7kfa3pYWXykyZGH78hWvc/P+MqxMxhI=",
+    "facebook-domain-verification=i25ihj6b5eze1xweou34v7znz6k5v9",
+    "google-site-verification=wcwFYNVQ_gHEG0lRSSOEkrXtuYQ5zNIXFTodmJivqgw"
   ],
   "tls2": {
     "alpn": "",
@@ -426,7 +433,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260611150705",
+      "not_after": "20261227140705"
     }
   },
   "http2": {
@@ -448,8 +457,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/uk/"
     ]
   },
-  "elapsed_s": 15.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 15.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

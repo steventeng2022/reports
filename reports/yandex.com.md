@@ -7,12 +7,12 @@
 | Target | https://yandex.com/ |
 | Bug bounty program | Yandex |
 | Listed scope domain | yandex.com |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:02 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 15 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -87,13 +90,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 ### 9. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (1b6xjup98dol2k.yandex.com and fvro5wp0va7x0s.yandex.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (hue0ftevtrnkmk.yandex.com and zrey5qf2ce290a.yandex.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a; _globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l; google-site-verification=FVk3gum7zZLdkqi96ypScROFMew0wMetq1Gpu4rkzPI
+- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l; google-site-verification=FVk3gum7zZLdkqi96ypScROFMew0wMetq1Gpu4rkzPI; facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -114,6 +117,24 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - **Detail:** robots.txt lists 618 disallow path(s), e.g. /?, /403.html, /404.html, /500.html, /about.html
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 14. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of yandex.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 15. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of yandex.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 77.88.55.88 carries PTR yandex.ru. for yandex.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -121,9 +142,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   "domain": "yandex.com",
   "dns": {
     "a": [
-      "5.255.255.77",
+      "77.88.55.88",
       "77.88.44.55",
-      "77.88.55.88"
+      "5.255.255.77"
     ],
     "aaaa": [
       "2a02:6b8:a::a"
@@ -133,16 +154,16 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "mx.yandex.ru (pref 10)"
     ],
     "ns": [
-      "ns1.yandex.net.",
-      "ns2.yandex.net."
+      "ns2.yandex.net.",
+      "ns1.yandex.net."
     ],
     "spf": [
-      "facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a",
-      "v=spf1 redirect=_spf.yandex.ru",
-      "5849d1f0fc8a9e73d82dfed9f2c33931",
       "_globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l",
       "google-site-verification=FVk3gum7zZLdkqi96ypScROFMew0wMetq1Gpu4rkzPI",
-      "facebook-domain-verification=gy3xj2e9mxu0vtcdgqcznoaxoaiv63"
+      "5849d1f0fc8a9e73d82dfed9f2c33931",
+      "facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a",
+      "facebook-domain-verification=gy3xj2e9mxu0vtcdgqcznoaxoaiv63",
+      "v=spf1 redirect=_spf.yandex.ru"
     ],
     "dmarc": [
       "v=DMARC1; p=none; fo=1; rua=mailto:dmarc_agg@auth.returnpath.net,mailto:dmarc-rua@yandex.ru; ruf=mailto:dmarc_afrf@auth.returnpath.net"
@@ -222,7 +243,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     }
   },
   "ports": {
-    "ip": "5.255.255.77",
+    "ip": "77.88.55.88",
     "open": []
   },
   "https": {
@@ -318,9 +339,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a",
     "_globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l",
     "google-site-verification=FVk3gum7zZLdkqi96ypScROFMew0wMetq1Gpu4rkzPI",
+    "facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a",
     "facebook-domain-verification=gy3xj2e9mxu0vtcdgqcznoaxoaiv63"
   ],
   "tls2": {
@@ -332,7 +353,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260701145410",
+      "not_after": "20261229205959"
     }
   },
   "http2": {
@@ -354,8 +377,14 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "/articles"
     ]
   },
-  "elapsed_s": 36.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "yandex.ru."
+    ]
+  },
+  "elapsed_s": 40.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

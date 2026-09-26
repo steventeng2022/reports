@@ -7,12 +7,12 @@
 | Target | https://freelancer.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | freelancer.com |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,7 +33,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 18 | info | CT1 | 36 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 19 | info | CT1 | 36 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -120,13 +121,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (5ab0tgakuvo1k9.freelancer.com and mrz9ipa0i3hb84.freelancer.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (fuqmasz5esorat.freelancer.com and qkn7g2hq28y4u3.freelancer.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: ahrefs-site-verification_d3c10f66e1e45dd0ba44ea9e87972068ada4cc55399000cd0bf2dd6; anthropic-domain-verification-zmrkrz=BWcvNIhdz7pRP5S3gNSKur2wW; openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK
+- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK; globalsign-domain-verification=WkLv9MyE6hoZ2g9h5eP3fBXm0FAfqv5X8L-J8iPmGe; cursor-domain-verification-1c4pg9=RSGYjeGSZhXVJg4djpmBMSxjy
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -147,7 +148,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **Detail:** robots.txt lists 40 disallow path(s), e.g. /, /, /sellers/placebid.php*, /buyers/repost.php*, /ajax/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 18. [INFO] 36 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 34.197.165.66 carries PTR ec2-34-197-165-66.compute-1.amazonaws.com. for freelancer.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 19. [INFO] 36 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: git.freelancer.com, my.freelancer.com, news.freelancer.com, www.my.freelancer.com
@@ -160,37 +167,37 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "freelancer.com",
   "dns": {
     "a": [
+      "34.197.165.66",
       "54.221.62.44",
-      "52.86.196.209",
-      "34.197.165.66"
+      "52.86.196.209"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx5.googlemail.com (pref 30)",
-      "alt2.aspmx.l.google.com (pref 20)",
-      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx3.googlemail.com (pref 30)",
-      "aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx5.googlemail.com (pref 30)",
+      "aspmx2.googlemail.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)",
       "aspmx4.googlemail.com (pref 30)",
-      "aspmx2.googlemail.com (pref 30)"
+      "aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-470.awsdns-58.com.",
       "ns-1363.awsdns-42.org.",
       "ns-549.awsdns-04.net.",
+      "ns-470.awsdns-58.com.",
       "ns-1780.awsdns-30.co.uk."
     ],
     "spf": [
-      "ZOOM_verify_MucGMGVCBb0sY18bpTcobR",
-      "ahrefs-site-verification_d3c10f66e1e45dd0ba44ea9e87972068ada4cc55399000cd0bf2dd68a7338a46",
-      "MS=ms24738001",
-      "v=spf1 include:_spf1.freelancer.com include:_spf2.freelancer.com include:_spf.google.com -all",
-      "anthropic-domain-verification-zmrkrz=BWcvNIhdz7pRP5S3gNSKur2wW",
       "openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK",
+      "globalsign-domain-verification=WkLv9MyE6hoZ2g9h5eP3fBXm0FAfqv5X8L-J8iPmGe",
       "cursor-domain-verification-1c4pg9=RSGYjeGSZhXVJg4djpmBMSxjy",
-      "twilio-domain-verification=e6bbec233a8c9e43fe0548ee6c530dfe",
-      "globalsign-domain-verification=WkLv9MyE6hoZ2g9h5eP3fBXm0FAfqv5X8L-J8iPmGe"
+      "anthropic-domain-verification-zmrkrz=BWcvNIhdz7pRP5S3gNSKur2wW",
+      "MS=ms24738001",
+      "ahrefs-site-verification_d3c10f66e1e45dd0ba44ea9e87972068ada4cc55399000cd0bf2dd68a7338a46",
+      "v=spf1 include:_spf1.freelancer.com include:_spf2.freelancer.com include:_spf.google.com -all",
+      "ZOOM_verify_MucGMGVCBb0sY18bpTcobR",
+      "twilio-domain-verification=e6bbec233a8c9e43fe0548ee6c530dfe"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; rua=mailto:y4fb8gcr@ag.au.dmarcian.com,mailto:61597d2f@mxtoolbox.dmarc-report.com,mailto:a68db7279cf8db37fa9c3e812a3543a8-t@dmarc.report-uri.com,mailto:dmarc+rua@freelancer.com;"
@@ -220,7 +227,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "54.221.62.44",
+    "ip": "34.197.165.66",
     "open": []
   },
   "https": {
@@ -303,11 +310,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "ahrefs-site-verification_d3c10f66e1e45dd0ba44ea9e87972068ada4cc55399000cd0bf2dd6",
-    "anthropic-domain-verification-zmrkrz=BWcvNIhdz7pRP5S3gNSKur2wW",
     "openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK",
+    "globalsign-domain-verification=WkLv9MyE6hoZ2g9h5eP3fBXm0FAfqv5X8L-J8iPmGe",
     "cursor-domain-verification-1c4pg9=RSGYjeGSZhXVJg4djpmBMSxjy",
-    "twilio-domain-verification=e6bbec233a8c9e43fe0548ee6c530dfe"
+    "anthropic-domain-verification-zmrkrz=BWcvNIhdz7pRP5S3gNSKur2wW",
+    "ahrefs-site-verification_d3c10f66e1e45dd0ba44ea9e87972068ada4cc55399000cd0bf2dd6"
   ],
   "tls2": {
     "alpn": "",
@@ -318,7 +325,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260829000000",
+      "not_after": "20270314235959"
     }
   },
   "http2": {
@@ -340,8 +349,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "/widgets/*"
     ]
   },
-  "elapsed_s": 27.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ec2-34-197-165-66.compute-1.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 27.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

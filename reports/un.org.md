@@ -7,8 +7,8 @@
 | Target | https://un.org/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | un.org |
-| Test date | 2026-09-26 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -111,7 +111,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=upE8q9Q9163O4I3STTC5-_7JD5phBQpi2CMFWRCqom; ms-domain-verification=a90c74aa-0e09-44e5-aff2-9e0d51862a8a; atlassian-domain-verification=FTWfMaOalWt6nDxqxSGymL9Ey/KoIooB7a1zLsjL5bvuQbXb/C
+- **Detail:** Apex TXT records with verification/token content: ms-domain-verification=a90c74aa-0e09-44e5-aff2-9e0d51862a8a; _globalsign-domain-verification=upE8q9Q9163O4I3STTC5-_7JD5phBQpi2CMFWRCqom; atlassian-sending-domain-verification=b818d67b-c504-4b82-a2ac-fb1ffa5dd99e
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -139,8 +139,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
   "domain": "un.org",
   "dns": {
     "a": [
-      "157.150.185.49",
-      "157.150.185.92"
+      "157.150.185.92",
+      "157.150.185.49"
     ],
     "aaaa": [],
     "cname": null,
@@ -153,41 +153,41 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "ns2.un.org."
     ],
     "spf": [
-      "_globalsign-domain-verification=upE8q9Q9163O4I3STTC5-_7JD5phBQpi2CMFWRCqom",
-      "ms-domain-verification=a90c74aa-0e09-44e5-aff2-9e0d51862a8a",
-      "amazonses:cq717whOBbl30dhYr9HtG5aBpZfmtVwZ8/8TyeUrXh8=",
-      "sendinblue-code:c80931e2ffea8fadc62c1bfb5141f449",
-      "atlassian-domain-verification=FTWfMaOalWt6nDxqxSGymL9Ey/KoIooB7a1zLsjL5bvuQbXb/CPo6bsrqR2yTU0G",
-      "v=spf1 include:spf.protection.outlook.com include:_netblocks.un.org include:_netblocks2.un.org include:_spf.google.com -all",
-      "j9lgbXbR0aOn/a3/tHAIQ1aK4uhUriBVu4/6I88jmBK0NyrCV36RIyrHwXouU3F0uQSEK0EPj6eBZ/Tc1odW4w==",
-      "mandrill_verify.J6D4EK4DxGiLqR1nMTfHSA",
-      "google-site-verification=dFG8i5QSNlXCckN62lWWTmmj7TEVkVh_G82rHzMPeaE",
-      "_globalsign-domain-verification=InsBxD8bdOtSqNib2b8QE1vAWRL07fy1C1VP9BHZO1",
-      "cisco-ci-domain-verification=3be0a328c387dcfe19bfab64b24e33f04b04e2065771adbc4043b754f65d8392",
-      "brevo-code:8016bd7e8b58b2c44d2253f7a674b1f9",
-      "atlassian-domain-verification=1rY0mwP3xqUqI0Z6SVEdrrPHJ4hquQL28GrmRTVZ6/IZMKDmPspPa9jE7fXrIYMj",
-      "FOhfWhsJtJ/FZcqQdLjqBNwOqynP/KX4ozWsJFw+k50mDbWjv05zbvEonHMzMIKP9XSZ77kWWuilSHT/t7BQ8w==",
-      "brevo-code:0502b29d26710cfe3a7f5a6713f7b141",
-      "d365mktkey=GU4x93TE2dUlhH2NSdB6v7gbxcKnvDje0eF8WD0rNnUx",
-      "atlassian-sending-domain-verification=1d232bde-ddc5-4e81-84a4-5fc29c17acdf",
-      "cisco-ci-domain-verification=71023db9cebccd164d6c6916b649179c4109a8bf4a53206db808dc9c778dd271",
       "MS=ms26002463",
-      "webexdomainverification.4C675B882DC2B136E053AB06FC0A3F65=6652b0a5-c301-4a9f-8629-d7e156da37b8",
-      "adobe-idp-site-verification=44b9613bd417076c4622079494211a8fb11053a66a37a841db2e2dceccae8485",
-      "teamviewer-sso-verification=fde5c90fdb764da199caa79160aef58b",
-      "rij4mb6stfqk9nqp6db054r4se",
-      "iContact1651565",
-      "atlassian-sending-domain-verification=030cf619-e1ff-4c61-b2ff-0b8bf31422e8",
-      "xrqyoOBvFUFgFNdafNF3eo+zN4SEGAc+1gcHkfcbobjGa/UFAkMc/rCWUxywPjgWU1yMIYtuFAnHfLXdgFbRLQ==",
-      "atlassian-domain-verification=4qBZ2F7TUigBgD7l6Ate/ExncM2HVQU855IzHmcHurVkPVGUU6H2ATvyZFEnnk9N",
-      "atlassian-sending-domain-verification=b818d67b-c504-4b82-a2ac-fb1ffa5dd99e",
-      "brevo-code:2b3f7ca5e298561aaac08baef2898ff7",
       "00D2E000000pRe2=1TBVK00000000o1",
-      "56a37f487f3361c43f8c285de2f7f60839ac3a7f1bd37b37353ecd343c995fa2",
-      "atlassian-sending-domain-verification=685ec4a1-3cfc-4ffa-8d51-9f6bb6f07baa",
+      "ms-domain-verification=a90c74aa-0e09-44e5-aff2-9e0d51862a8a",
+      "brevo-code:4258a8aaff2c4cc4d4f46631ee3f416d",
+      "_globalsign-domain-verification=upE8q9Q9163O4I3STTC5-_7JD5phBQpi2CMFWRCqom",
       "fastly-domain-delegation-xss3y9gtai43byf7o4ey-00458132-2025-07-09",
+      "atlassian-sending-domain-verification=b818d67b-c504-4b82-a2ac-fb1ffa5dd99e",
+      "iContact1651565",
+      "teamviewer-sso-verification=fde5c90fdb764da199caa79160aef58b",
+      "atlassian-domain-verification=FTWfMaOalWt6nDxqxSGymL9Ey/KoIooB7a1zLsjL5bvuQbXb/CPo6bsrqR2yTU0G",
+      "atlassian-sending-domain-verification=030cf619-e1ff-4c61-b2ff-0b8bf31422e8",
+      "atlassian-domain-verification=1rY0mwP3xqUqI0Z6SVEdrrPHJ4hquQL28GrmRTVZ6/IZMKDmPspPa9jE7fXrIYMj",
+      "56a37f487f3361c43f8c285de2f7f60839ac3a7f1bd37b37353ecd343c995fa2",
+      "brevo-code:0502b29d26710cfe3a7f5a6713f7b141",
+      "amazonses:cq717whOBbl30dhYr9HtG5aBpZfmtVwZ8/8TyeUrXh8=",
+      "brevo-code:8016bd7e8b58b2c44d2253f7a674b1f9",
+      "atlassian-domain-verification=4qBZ2F7TUigBgD7l6Ate/ExncM2HVQU855IzHmcHurVkPVGUU6H2ATvyZFEnnk9N",
       "apple-domain-verification=yaMAnI0GjK2mwjBL",
-      "brevo-code:4258a8aaff2c4cc4d4f46631ee3f416d"
+      "atlassian-sending-domain-verification=1d232bde-ddc5-4e81-84a4-5fc29c17acdf",
+      "mandrill_verify.J6D4EK4DxGiLqR1nMTfHSA",
+      "rij4mb6stfqk9nqp6db054r4se",
+      "FOhfWhsJtJ/FZcqQdLjqBNwOqynP/KX4ozWsJFw+k50mDbWjv05zbvEonHMzMIKP9XSZ77kWWuilSHT/t7BQ8w==",
+      "webexdomainverification.4C675B882DC2B136E053AB06FC0A3F65=6652b0a5-c301-4a9f-8629-d7e156da37b8",
+      "brevo-code:2b3f7ca5e298561aaac08baef2898ff7",
+      "v=spf1 include:spf.protection.outlook.com include:_netblocks.un.org include:_netblocks2.un.org include:_spf.google.com -all",
+      "google-site-verification=dFG8i5QSNlXCckN62lWWTmmj7TEVkVh_G82rHzMPeaE",
+      "xrqyoOBvFUFgFNdafNF3eo+zN4SEGAc+1gcHkfcbobjGa/UFAkMc/rCWUxywPjgWU1yMIYtuFAnHfLXdgFbRLQ==",
+      "sendinblue-code:c80931e2ffea8fadc62c1bfb5141f449",
+      "_globalsign-domain-verification=InsBxD8bdOtSqNib2b8QE1vAWRL07fy1C1VP9BHZO1",
+      "cisco-ci-domain-verification=71023db9cebccd164d6c6916b649179c4109a8bf4a53206db808dc9c778dd271",
+      "d365mktkey=GU4x93TE2dUlhH2NSdB6v7gbxcKnvDje0eF8WD0rNnUx",
+      "j9lgbXbR0aOn/a3/tHAIQ1aK4uhUriBVu4/6I88jmBK0NyrCV36RIyrHwXouU3F0uQSEK0EPj6eBZ/Tc1odW4w==",
+      "atlassian-sending-domain-verification=685ec4a1-3cfc-4ffa-8d51-9f6bb6f07baa",
+      "adobe-idp-site-verification=44b9613bd417076c4622079494211a8fb11053a66a37a841db2e2dceccae8485",
+      "cisco-ci-domain-verification=3be0a328c387dcfe19bfab64b24e33f04b04e2065771adbc4043b754f65d8392"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc@un.org; ruf=mailto:dmarc@un.org; fo=0:1:d:s; adkim=r; aspf=r"
@@ -217,7 +217,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     }
   },
   "ports": {
-    "ip": "157.150.185.49",
+    "ip": "157.150.185.92",
     "open": []
   },
   "https": {
@@ -267,11 +267,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "_globalsign-domain-verification=upE8q9Q9163O4I3STTC5-_7JD5phBQpi2CMFWRCqom",
     "ms-domain-verification=a90c74aa-0e09-44e5-aff2-9e0d51862a8a",
-    "atlassian-domain-verification=FTWfMaOalWt6nDxqxSGymL9Ey/KoIooB7a1zLsjL5bvuQbXb/C",
-    "google-site-verification=dFG8i5QSNlXCckN62lWWTmmj7TEVkVh_G82rHzMPeaE",
-    "_globalsign-domain-verification=InsBxD8bdOtSqNib2b8QE1vAWRL07fy1C1VP9BHZO1"
+    "_globalsign-domain-verification=upE8q9Q9163O4I3STTC5-_7JD5phBQpi2CMFWRCqom",
+    "atlassian-sending-domain-verification=b818d67b-c504-4b82-a2ac-fb1ffa5dd99e",
+    "teamviewer-sso-verification=fde5c90fdb764da199caa79160aef58b",
+    "atlassian-domain-verification=FTWfMaOalWt6nDxqxSGymL9Ey/KoIooB7a1zLsjL5bvuQbXb/C"
   ],
   "tls2": {
     "alpn": "",
@@ -282,7 +282,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260904174136",
+      "not_after": "20270322174136"
     }
   },
   "http2": {
@@ -304,8 +306,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "/LICENSE.txt"
     ]
   },
-  "elapsed_s": 37.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 38.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

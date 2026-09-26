@@ -7,8 +7,8 @@
 | Target | https://notion.so/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | notion.so |
-| Test date | 2026-09-26 17:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -63,133 +63,133 @@ Total findings: **35** (High: 0, Medium: 9, Low: 2, Info: 24)
 ### 2. [MEDIUM] FTP service (cleartext) reachable (`PRT21`)
 
 - **CWE:** CWE-319
-- **Detail:** TCP connect to 208.103.161.17:21 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:21 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] SSH reachable (`PRT22`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:22 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:22 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [MEDIUM] Telnet service (cleartext) reachable (`PRT23`)
 
 - **CWE:** CWE-319
-- **Detail:** TCP connect to 208.103.161.17:23 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:23 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] SMTP (port 25) reachable (`PRT25`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:25 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:25 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 6. [INFO] DNS service reachable (`PRT53`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:53 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:53 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 7. [INFO] POP3 (cleartext) reachable (`PRT110`)
 
 - **CWE:** CWE-319
-- **Detail:** TCP connect to 208.103.161.17:110 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:110 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 8. [INFO] IMAP (cleartext) reachable (`PRT143`)
 
 - **CWE:** CWE-319
-- **Detail:** TCP connect to 208.103.161.17:143 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:143 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 9. [INFO] IMAPS (port 993) reachable (`PRT993`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:993 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:993 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 10. [INFO] POP3S (port 995) reachable (`PRT995`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:995 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:995 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 11. [MEDIUM] MSSQL (port 1433) reachable (`PRT1433`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:1433 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:1433 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 12. [MEDIUM] MySQL (port 3306) reachable (`PRT3306`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:3306 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:3306 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 13. [INFO] RDP (port 3389) reachable (`PRT3389`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:3389 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:3389 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 14. [MEDIUM] PostgreSQL (port 5432) reachable (`PRT5432`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:5432 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:5432 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 15. [MEDIUM] VNC (port 5900) reachable (`PRT5900`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:5900 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:5900 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 16. [MEDIUM] Redis (port 6379) reachable (`PRT6379`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:6379 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:6379 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 17. [INFO] Alternate web service (port 8000) reachable (`PRT8000`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:8000 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:8000 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 18. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 19. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 20. [INFO] Alternate web service (port 8888) reachable (`PRT8888`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:8888 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:8888 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 21. [INFO] Service (port 9090, e.g. Elasticsearch/debug) reachable (`PRT9090`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:9090 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:9090 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 22. [MEDIUM] Elasticsearch (port 9200) reachable (`PRT9200`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:9200 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:9200 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 23. [MEDIUM] MongoDB (port 27017) reachable (`PRT27017`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.17:27017 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:27017 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 24. [INFO] Technology fingerprint (`TECH1`)
@@ -250,7 +250,7 @@ Total findings: **35** (High: 0, Medium: 9, Low: 2, Info: 24)
 ### 32. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=2agf76ffad9vxlxya597jrzil7xoxf; google-site-verification=01Xid8U6cE4LuiG2OeRTL-hnDC9MxKvVD6mAgAS51Oo; google-site-verification=_aahlmtDiPlbg224pU3M_8w9Ka-3tcGUmBd6ZW052AU
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=01Xid8U6cE4LuiG2OeRTL-hnDC9MxKvVD6mAgAS51Oo; google-site-verification=U2r6h9FWkKMadZDxW94daNJ1YUGXP-9_tJ7PUYfYz4c; google-site-verification=LBOGI6TChsA_9vwaJYLU7RXgunDGAWKG0fcHxiU2-o4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 33. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -278,15 +278,15 @@ Total findings: **35** (High: 0, Medium: 9, Low: 2, Info: 24)
   "domain": "notion.so",
   "dns": {
     "a": [
-      "208.103.161.17",
-      "208.103.161.16",
+      "208.103.161.2",
       "208.103.161.1",
-      "208.103.161.2"
+      "208.103.161.16",
+      "208.103.161.17"
     ],
     "aaaa": [
+      "2602:f79a:0:1::1",
       "2602:f79a::2",
       "2602:f79a::1",
-      "2602:f79a:0:1::1",
       "2602:f79a:0:1::2"
     ],
     "cname": null,
@@ -296,14 +296,14 @@ Total findings: **35** (High: 0, Medium: 9, Low: 2, Info: 24)
       "woz.ns.cloudflare.com."
     ],
     "spf": [
-      "facebook-domain-verification=2agf76ffad9vxlxya597jrzil7xoxf",
       "proxy-ssl.webflow.com",
-      "_eohaffzltripfzavo0ehlmi84k0tkxw",
-      "v=spf1 ~all",
       "google-site-verification=01Xid8U6cE4LuiG2OeRTL-hnDC9MxKvVD6mAgAS51Oo",
-      "google-site-verification=_aahlmtDiPlbg224pU3M_8w9Ka-3tcGUmBd6ZW052AU",
       "google-site-verification=U2r6h9FWkKMadZDxW94daNJ1YUGXP-9_tJ7PUYfYz4c",
-      "google-site-verification=LBOGI6TChsA_9vwaJYLU7RXgunDGAWKG0fcHxiU2-o4"
+      "google-site-verification=LBOGI6TChsA_9vwaJYLU7RXgunDGAWKG0fcHxiU2-o4",
+      "_eohaffzltripfzavo0ehlmi84k0tkxw",
+      "facebook-domain-verification=2agf76ffad9vxlxya597jrzil7xoxf",
+      "google-site-verification=_aahlmtDiPlbg224pU3M_8w9Ka-3tcGUmBd6ZW052AU",
+      "v=spf1 ~all"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; rua=mailto:re+1b3a27dd30bc@inbound.dmarcdigests.com;"
@@ -336,7 +336,7 @@ Total findings: **35** (High: 0, Medium: 9, Low: 2, Info: 24)
     }
   },
   "ports": {
-    "ip": "208.103.161.17",
+    "ip": "208.103.161.2",
     "open": [
       21,
       22,
@@ -453,11 +453,11 @@ Total findings: **35** (High: 0, Medium: 9, Low: 2, Info: 24)
     ]
   },
   "apex_txt": [
-    "facebook-domain-verification=2agf76ffad9vxlxya597jrzil7xoxf",
     "google-site-verification=01Xid8U6cE4LuiG2OeRTL-hnDC9MxKvVD6mAgAS51Oo",
-    "google-site-verification=_aahlmtDiPlbg224pU3M_8w9Ka-3tcGUmBd6ZW052AU",
     "google-site-verification=U2r6h9FWkKMadZDxW94daNJ1YUGXP-9_tJ7PUYfYz4c",
-    "google-site-verification=LBOGI6TChsA_9vwaJYLU7RXgunDGAWKG0fcHxiU2-o4"
+    "google-site-verification=LBOGI6TChsA_9vwaJYLU7RXgunDGAWKG0fcHxiU2-o4",
+    "facebook-domain-verification=2agf76ffad9vxlxya597jrzil7xoxf",
+    "google-site-verification=_aahlmtDiPlbg224pU3M_8w9Ka-3tcGUmBd6ZW052AU"
   ],
   "tls2": {
     "alpn": "",
@@ -468,7 +468,9 @@ Total findings: **35** (High: 0, Medium: 9, Low: 2, Info: 24)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260813225948",
+      "not_after": "20261111235935"
     }
   },
   "http2": {
@@ -491,8 +493,11 @@ Total findings: **35** (High: 0, Medium: 9, Low: 2, Info: 24)
       "/"
     ]
   },
-  "elapsed_s": 4.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 3.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

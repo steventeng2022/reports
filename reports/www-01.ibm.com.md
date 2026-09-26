@@ -7,12 +7,12 @@
 | Target | https://www-01.ibm.com/ |
 | Bug bounty program | IBM |
 | Listed scope domain | www-01.ibm.com |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -119,6 +120,12 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - **Detail:** robots.txt lists 154 disallow path(s), e.g. /account/registration, /account/mypro, /account/myint, /Admin, /cgi-
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.209.217.36 carries PTR a23-209-217-36.deploy.static.akamaitechnologies.com. for www-01.ibm.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -129,8 +136,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "23.209.217.36"
     ],
     "aaaa": [
-      "2600:1417:76:587::1e89",
-      "2600:1417:76:584::1e89"
+      "2600:1417:76:584::1e89",
+      "2600:1417:76:587::1e89"
     ],
     "cname": "www-01-ext.ibm.net.",
     "mx": [],
@@ -291,7 +298,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260106000000",
+      "not_after": "20270105235959"
     }
   },
   "http2": {
@@ -313,8 +322,14 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "/fscripts"
     ]
   },
-  "elapsed_s": 9.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "a23-209-217-36.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 9.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

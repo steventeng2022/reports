@@ -7,12 +7,12 @@
 | Target | https://mailchimp.com/ |
 | Bug bounty program | Intuit |
 | Listed scope domain | mailchimp.com |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 | 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -131,7 +132,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=ruul5w2E3u_oxPm-3xBtwAPFtTus0sysqVmIxy5frlg; google-site-verification=FCp4CIH0-oOMadlYtNFvxRTI9_2zW1WDkXFR7pV8kPg; digicert-verification=zp2grw3qhjdfrzqpyybxtfbpzrk266g7
+- **Detail:** Apex TXT records with verification/token content: google-gws-recovery-domain-verification=48989807; google-site-verification=kjsRysndjNMMbqiWeLDEWuFKQifOKoBTpHJWZhFwr6E; google-site-verification=gYGKtLPycLOsWo5xUlOOGWsvENDmTYIt1X9iE1PZEP8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -139,6 +140,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - **CWE:** CWE-603
 - **Detail:** Certificate of mailchimp.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.209.216.105 carries PTR a23-209-216-105.deploy.static.akamaitechnologies.com. for mailchimp.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -156,49 +163,49 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "mx1.intuit.iphmx.com (pref 5)"
     ],
     "ns": [
-      "a1-205.akam.net.",
-      "a4-65.akam.net.",
       "a7-66.akam.net.",
+      "a14-66.akam.net.",
+      "a4-65.akam.net.",
       "a5-65.akam.net.",
       "a6-66.akam.net.",
-      "a14-66.akam.net."
+      "a1-205.akam.net."
     ],
     "spf": [
-      "google-site-verification=ruul5w2E3u_oxPm-3xBtwAPFtTus0sysqVmIxy5frlg",
-      "MS=5D41393E1B1E2A326C6154F96B8D4EEBDC58A667",
-      "google-site-verification=FCp4CIH0-oOMadlYtNFvxRTI9_2zW1WDkXFR7pV8kPg",
-      "digicert-verification=zp2grw3qhjdfrzqpyybxtfbpzrk266g7",
-      "docusign=a0dc4d7a-5002-4653-bb4f-959c68aa9074",
-      "google-site-verification=kjsRysndjNMMbqiWeLDEWuFKQifOKoBTpHJWZhFwr6E",
-      "zscaler-verification-42108621-10312025-7GNw9T",
-      "apple-domain-verification=VyVmVW02Ds1n6FQa",
-      "google-site-verification=iBzo6FrDJ3rlsGoEUXL_YNHKVreLxzetIZRuCUlnBeQ",
-      "onetrust-domain-verification=a014c8e6937e453f8448babef5311dfd",
-      "o0m1nz3r7t",
-      "google-site-verification=HceFICpk7mLeoOmNAIxQyKx6NMEEjRlNgU_GC7UmaZI",
-      "atlassian-domain-verification=rOuxrbpoM8X0dyjve2lLYnnHEXBtmxbGzk17YgboFB62K3dXo2gnekijahD5DdOg",
       "_72ru7fr8c0ncfmjg71hyedfisw40m4h",
+      "google-gws-recovery-domain-verification=48989807",
+      "google-site-verification=kjsRysndjNMMbqiWeLDEWuFKQifOKoBTpHJWZhFwr6E",
+      "google-site-verification=gYGKtLPycLOsWo5xUlOOGWsvENDmTYIt1X9iE1PZEP8",
+      "adobe-idp-site-verification=b462bb17fbdf88e847859454079da73265c27a30a38d2c83f4a6e21a085a6d72",
+      "google-site-verification=FCp4CIH0-oOMadlYtNFvxRTI9_2zW1WDkXFR7pV8kPg",
+      "atlassian-domain-verification=rOuxrbpoM8X0dyjve2lLYnnHEXBtmxbGzk17YgboFB62K3dXo2gnekijahD5DdOg",
+      "onetrust-domain-verification=a014c8e6937e453f8448babef5311dfd",
+      "smartsheet-site-validation=iJlsJdcpCMM9BUovg1yWWyqVYfZZWDdx",
+      "google-site-verification=WW0kxheERt2YHAEclRL_5DCFawde0CCdmJtXyNXS_7I",
+      "google-site-verification=iBzo6FrDJ3rlsGoEUXL_YNHKVreLxzetIZRuCUlnBeQ",
+      "zapier-domain-verification-challenge=7f0c4720-f8f2-4f40-b264-cb21fe731403",
+      "google-site-verification=ruul5w2E3u_oxPm-3xBtwAPFtTus0sysqVmIxy5frlg",
+      "google-site-verification=qSv3r3tfEN8dtGaL1jVStrokm_jKImsl4cvgUG_6q5g",
+      "onetrust-domain-verification=c77e00667a61495a933ef5219a1f71db",
+      "facebook-domain-verification=hmwpoaxoffl9lyv7a1jag656uo66wb",
+      "MS=ms64719398",
+      "_hzhrvm90xu668iuj6wb6s6swrxpa130",
+      "digicert-domain-verification-api=_l7n57xjtvdexvstchmg2p9g0647df5j",
+      "apple-domain-verification=VyVmVW02Ds1n6FQa",
+      "onetrust-domain-verification=39a9942af0b642f1b6d2129f2aeaa1cc",
       "v=spf1 ip4:205.201.128.0/20 ip4:198.2.128.0/18 ip4:148.105.0.0/16 ip4:129.145.74.12 include:_spf.google.com include:mailsenders.netsuite.com include:_spf2.intuit.com ",
       "include:_spf.qualtrics.com ip4:199.33.145.1 ip4:199.33.145.32 ip4:35.176.132.251 ip4:52.60.115.116 ~all",
-      "mandrill_verify.5xzlEj2UVG87cZHpVJCi1A",
-      "_hzhrvm90xu668iuj6wb6s6swrxpa130",
+      "MS=5D41393E1B1E2A326C6154F96B8D4EEBDC58A667",
       "google-site-verification=6dAIWpnctxIKj5r1bLhn2iGED8AGy8W_17S6scTDbbw",
-      "google-site-verification=qSv3r3tfEN8dtGaL1jVStrokm_jKImsl4cvgUG_6q5g",
       "digicert-domain-verification=_6g0u9nlv0mrvwb42upf06tgvu9gfum0",
-      "zapier-domain-verification-challenge=7f0c4720-f8f2-4f40-b264-cb21fe731403",
-      "google-gws-recovery-domain-verification=48989807",
+      "mandrill_verify.5xzlEj2UVG87cZHpVJCi1A",
+      "google-site-verification=HceFICpk7mLeoOmNAIxQyKx6NMEEjRlNgU_GC7UmaZI",
+      "digicert-verification=zp2grw3qhjdfrzqpyybxtfbpzrk266g7",
       "_4u0mlvjxxxpqyv676anx8wkajzdzk0q",
-      "smartsheet-site-validation=iJlsJdcpCMM9BUovg1yWWyqVYfZZWDdx",
       "_5ztv7l82u6qsfemlfu89jyhrhyho2z1",
-      "onetrust-domain-verification=c77e00667a61495a933ef5219a1f71db",
-      "MS=ms64719398",
+      "o0m1nz3r7t",
       "apple-domain-verification=rtX1pAADNqH2UyA1vjbkylBSL92ZkTBvvFt54v3z5ck",
-      "adobe-idp-site-verification=b462bb17fbdf88e847859454079da73265c27a30a38d2c83f4a6e21a085a6d72",
-      "digicert-domain-verification-api=_l7n57xjtvdexvstchmg2p9g0647df5j",
-      "onetrust-domain-verification=39a9942af0b642f1b6d2129f2aeaa1cc",
-      "google-site-verification=gYGKtLPycLOsWo5xUlOOGWsvENDmTYIt1X9iE1PZEP8",
-      "facebook-domain-verification=hmwpoaxoffl9lyv7a1jag656uo66wb",
-      "google-site-verification=WW0kxheERt2YHAEclRL_5DCFawde0CCdmJtXyNXS_7I"
+      "zscaler-verification-42108621-10312025-7GNw9T",
+      "docusign=a0dc4d7a-5002-4653-bb4f-959c68aa9074"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:19ezfriw@ag.dmarcian.com,mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:19ezfriw@fr.dmarcian.com,mailto:dmarc_ruf@emaildefense.proofpoint.com;"
@@ -279,11 +286,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=ruul5w2E3u_oxPm-3xBtwAPFtTus0sysqVmIxy5frlg",
-    "google-site-verification=FCp4CIH0-oOMadlYtNFvxRTI9_2zW1WDkXFR7pV8kPg",
-    "digicert-verification=zp2grw3qhjdfrzqpyybxtfbpzrk266g7",
+    "google-gws-recovery-domain-verification=48989807",
     "google-site-verification=kjsRysndjNMMbqiWeLDEWuFKQifOKoBTpHJWZhFwr6E",
-    "zscaler-verification-42108621-10312025-7GNw9T"
+    "google-site-verification=gYGKtLPycLOsWo5xUlOOGWsvENDmTYIt1X9iE1PZEP8",
+    "adobe-idp-site-verification=b462bb17fbdf88e847859454079da73265c27a30a38d2c83f4a6",
+    "google-site-verification=FCp4CIH0-oOMadlYtNFvxRTI9_2zW1WDkXFR7pV8kPg"
   ],
   "tls2": {
     "alpn": "",
@@ -294,11 +301,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260109000000",
+      "not_after": "20270116235959"
     }
   },
-  "elapsed_s": 6.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403,
+    "ptr": [
+      "a23-209-216-105.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 6.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

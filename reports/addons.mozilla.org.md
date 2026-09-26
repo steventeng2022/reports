@@ -7,12 +7,12 @@
 | Target | https://addons.mozilla.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | addons.mozilla.org |
-| Test date | 2026-09-26 17:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
+Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,7 +28,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 | 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 13 | info | CT1 | 7 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 13 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 15 | info | CT1 | 7 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -108,7 +110,19 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 - **Detail:** robots.txt lists 260 disallow path(s), e.g. /firefox/downloads/, /android/downloads/, /cs/firefox/collections/4757633/$, /cs/firefox/collections/mozilla/$, /cs/firefox/search/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 13. [INFO] 7 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 13. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of addons.mozilla.org includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
+### 14. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://addons.mozilla.org/ carries Cache-Control: max-age=31536000; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 15. [INFO] 7 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -121,14 +135,14 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
   "domain": "addons.mozilla.org",
   "dns": {
     "a": [
-      "151.101.1.91",
-      "151.101.193.91",
       "151.101.129.91",
-      "151.101.65.91"
+      "151.101.193.91",
+      "151.101.65.91",
+      "151.101.1.91"
     ],
     "aaaa": [
-      "2a04:4e42:600::347",
       "2a04:4e42:200::347",
+      "2a04:4e42:600::347",
       "2a04:4e42:400::347",
       "2a04:4e42::347"
     ],
@@ -138,9 +152,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     ],
     "ns": [
       "ns-967.awsdns-56.net.",
+      "ns-1140.awsdns-14.org.",
       "ns-144.awsdns-18.com.",
-      "ns-1696.awsdns-20.co.uk.",
-      "ns-1140.awsdns-14.org."
+      "ns-1696.awsdns-20.co.uk."
     ],
     "spf": [],
     "dmarc": [],
@@ -169,7 +183,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     }
   },
   "ports": {
-    "ip": "151.101.1.91",
+    "ip": "151.101.129.91",
     "open": []
   },
   "https": {
@@ -238,7 +252,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260926150809",
+      "not_after": "20261225150808"
     }
   },
   "http2": {
@@ -260,8 +276,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
       "/dsb/firefox/collections/4757633/$"
     ]
   },
-  "elapsed_s": 14.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 14.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

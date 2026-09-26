@@ -7,12 +7,12 @@
 | Target | https://yoursite.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | yoursite.com |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:02 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
+Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,7 +31,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 16 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -124,7 +126,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (mt53fdxr7yz2vr.yoursite.com and watbfvwvwvuubd.yoursite.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (88jgpuzwoxd5xu.yoursite.com and xm2s3uhc8lhlw8.yoursite.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -133,7 +135,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 - **Detail:** Certificate of yoursite.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 16. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 5 disallow path(s), e.g. /cpx.php, /medios1.php, /toolbar.php, /check_image.php, /check_popunder.php
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 103.224.182.238 carries PTR lb-182-238.above.com. for yoursite.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 18. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -154,8 +168,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
       "park-mx.above.com (pref 10)"
     ],
     "ns": [
-      "ns1.abovedomains.com.",
-      "ns2.abovedomains.com."
+      "ns2.abovedomains.com.",
+      "ns1.abovedomains.com."
     ],
     "spf": [
       "v=spf1 ip6:fdcf:abda:4154::/48 -all"
@@ -263,7 +277,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
       "yoursite.com",
       "yxglqc.vip"
     ],
-    "days_left": 73,
+    "days_left": 72,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -340,11 +354,28 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260909182837",
+      "not_after": "20261208182836"
     }
   },
-  "elapsed_s": 99.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "http2": {
+    "robots_disallow": [
+      "/cpx.php",
+      "/medios1.php",
+      "/toolbar.php",
+      "/check_image.php",
+      "/check_popunder.php"
+    ]
+  },
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "lb-182-238.above.com."
+    ]
+  },
+  "elapsed_s": 31.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

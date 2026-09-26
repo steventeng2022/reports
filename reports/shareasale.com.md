@@ -7,12 +7,12 @@
 | Target | https://shareasale.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | shareasale.com |
-| Test date | 2026-09-26 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -149,6 +150,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - **Detail:** Certificate of shareasale.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 3.169.55.43 carries PTR server-3-169-55-43.tpe54.r.cloudfront.net. for shareasale.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -156,10 +163,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "domain": "shareasale.com",
   "dns": {
     "a": [
+      "3.169.55.43",
       "3.169.55.26",
-      "3.169.55.2",
       "3.169.55.112",
-      "3.169.55.43"
+      "3.169.55.2"
     ],
     "aaaa": [],
     "cname": null,
@@ -168,9 +175,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     ],
     "ns": [
       "ns-581.awsdns-08.net.",
-      "ns-1496.awsdns-59.org.",
       "ns-1744.awsdns-26.co.uk.",
-      "ns-222.awsdns-27.com."
+      "ns-222.awsdns-27.com.",
+      "ns-1496.awsdns-59.org."
     ],
     "spf": [
       "adobe-sign-verification=6b46612fdf192a89f40282249c9d1f29",
@@ -205,7 +212,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     }
   },
   "ports": {
-    "ip": "3.169.55.26",
+    "ip": "3.169.55.43",
     "open": []
   },
   "https": {
@@ -277,11 +284,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251030000000",
+      "not_after": "20261128235959"
     }
   },
-  "elapsed_s": 7.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "server-3-169-55-43.tpe54.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 9.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

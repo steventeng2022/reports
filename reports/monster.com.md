@@ -7,8 +7,8 @@
 | Target | https://monster.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | monster.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -52,7 +52,7 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
 ### 5. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=rRq11A1dCsb5_qBT_3Fs9Sag5f8Wm5t58e05wQAESa0; apple-domain-verification=jHHEM7KcSPaadK20; yahoo-verification-key=E3zIMY4vqEPbyoGg80CV/bYPK0gmAjYeuPtCA+b20To=
+- **Detail:** Apex TXT records with verification/token content: onetrust-domain-verification=0ec2972887414a679d57a96ccc29b5b0; dell-technologies-domain-verification=monster.com_14b47215-d44f-4358-908e-2b7892; ciscocidomainverification=460719eb94004fbc3ffceb58ee7a94d0e45e14d1d224b3f193f0d1
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 6. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -74,46 +74,46 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "ALT2.ASPMX.L.GOOGLE.com (pref 5)",
-      "ALT4.ASPMX.L.GOOGLE.com (pref 10)",
       "ALT3.ASPMX.L.GOOGLE.com (pref 10)",
       "ALT1.ASPMX.L.GOOGLE.com (pref 5)",
+      "ALT2.ASPMX.L.GOOGLE.com (pref 5)",
+      "ALT4.ASPMX.L.GOOGLE.com (pref 10)",
       "ASPMX.L.GOOGLE.com (pref 1)"
     ],
     "ns": [
-      "ns2.tmpw.net.",
-      "ns1.tmpw.net."
+      "ns1.tmpw.net.",
+      "ns2.tmpw.net."
     ],
     "spf": [
-      "google-site-verification=rRq11A1dCsb5_qBT_3Fs9Sag5f8Wm5t58e05wQAESa0",
-      "apple-domain-verification=jHHEM7KcSPaadK20",
-      "yahoo-verification-key=E3zIMY4vqEPbyoGg80CV/bYPK0gmAjYeuPtCA+b20To=",
-      "_emotuf3vawbotgg5omeu1cvo2jhxdvu",
-      "google-site-verification=h1591ugHHOFsWchw3mvQFe_l7qR4iinHtA4sDlxmwRE",
-      "amazonses:gceEoeOqKvtfdmPp+y52S86QwEM6SHc4QH3ekZE3bpQ=",
       "v=spf1 mx ip4:220.226.205.66/32 ip4:208.71.192.0/21 ip4:193.164.143.0/24 ip4:64.127.116.65/26 ip4:64.127.121.0/27 ip4:98.174.21.153 ip4:69.25.33.0/24 include:spf.protection.outlook.com include:amazonses.com include:zgateway.zuora.com include:_spf.google.c",
       "om include:_spf.salesforce.com ip4:34.237.212.16/32 ip4:18.136.40.242/32 ip4:44.238.220.251/32  ~all",
-      "google-site-verification=zXNA4jzGldUrb4WTfbWVyylyVgZRuVjpzS94ul_sr4g",
-      "dell-technologies-domain-verification=monster.com_14b47215-d44f-4358-908e-2b7892392b4c_1722463976",
-      "cloudhealth=471ef53e-b947-4d03-adf9-ca29bb43a8c3",
-      "webexdomainverification.=d6c0c09e-1efb-4b83-ac2c-c8b15118cc48",
-      "ciscocidomainverification=460719eb94004fbc3ffceb58ee7a94d0e45e14d1d224b3f193f0d122a6bdfbae",
-      "ZOOM_verify_943D2iGtnuDRLVbiPRdQdz",
+      "_emotuf3vawbotgg5omeu1cvo2jhxdvu",
+      "onetrust-domain-verification=0ec2972887414a679d57a96ccc29b5b0",
       "_gkbtqbmmu4k082wtt6q501wxlf0r48a",
+      "dell-technologies-domain-verification=monster.com_14b47215-d44f-4358-908e-2b7892392b4c_1722463976",
+      "ciscocidomainverification=460719eb94004fbc3ffceb58ee7a94d0e45e14d1d224b3f193f0d122a6bdfbae",
+      "apple-domain-verification=jHHEM7KcSPaadK20",
       "datadome-domain-verify=B3KUK3qaB3COSjvTsFb9ZlUuVKr8F0ZJ",
       "oeIe2rwXtpnwFPKPFBl9AUpQpm1iDrxNx4NI18LFyR6cWwoIYsvRYfHhkxLg8PNGDw2IPkdD3q6w0cDi5wRxgA==",
+      "google-site-verification=zXNA4jzGldUrb4WTfbWVyylyVgZRuVjpzS94ul_sr4g",
+      "ZOOM_verify_943D2iGtnuDRLVbiPRdQdz",
+      "google-site-verification=ecvdyQLuC440qHVOKlQG9McMXmlqn5oJzuskNAFssDk",
+      "google-site-verification=bAK2I4sWt6ICJa5zMkJcjbMr-wR8Qzk_TpJCFmvmaCc",
+      "google-site-verification=h1591ugHHOFsWchw3mvQFe_l7qR4iinHtA4sDlxmwRE",
       "9uhsn2f7lot7574rnlm4ercqpb",
-      "GOytBs9lVe7A6ONbpEz1H+ouv1k8wnclMo3W48PX7mnZBaxXqJpJxTR5cdRPkUnunTbWui64V/PCEOOZDZsEXg==",
-      "onetrust-domain-verification=0ec2972887414a679d57a96ccc29b5b0",
-      "atlassian-domain-verification=bKSyyEicgY0Nu7x4asJ5ja9ueF/q8H55gAcyMZfz2XKzDvu5sZaC96LCfSoibq82",
+      "facebook-domain-verification=nxqqu1usearteri105exfg33t1yyos",
+      "google-site-verification=rRq11A1dCsb5_qBT_3Fs9Sag5f8Wm5t58e05wQAESa0",
+      "webexdomainverification.=d6c0c09e-1efb-4b83-ac2c-c8b15118cc48",
       "MS=ms50474575",
+      "cloudhealth=471ef53e-b947-4d03-adf9-ca29bb43a8c3",
+      "GOytBs9lVe7A6ONbpEz1H+ouv1k8wnclMo3W48PX7mnZBaxXqJpJxTR5cdRPkUnunTbWui64V/PCEOOZDZsEXg==",
       "ifl513ibj8j0v63nhvkhlf0e61",
       "atlassian-domain-verification=CWJ0Dn5MkEJB1/e3h2WmOicez83C/W3RnqnrJoaAL66tcIf5yhDV0YTRrf4QVnxn",
-      "facebook-domain-verification=nxqqu1usearteri105exfg33t1yyos",
-      "adobe-idp-site-verification=7452b219-e19d-43c7-b5fb-a381f17b01e6",
-      "google-site-verification=ecvdyQLuC440qHVOKlQG9McMXmlqn5oJzuskNAFssDk",
       "knowbe4-site-verification=37422bc6f9a6ff24d631677404b331b8",
-      "google-site-verification=bAK2I4sWt6ICJa5zMkJcjbMr-wR8Qzk_TpJCFmvmaCc"
+      "yahoo-verification-key=E3zIMY4vqEPbyoGg80CV/bYPK0gmAjYeuPtCA+b20To=",
+      "adobe-idp-site-verification=7452b219-e19d-43c7-b5fb-a381f17b01e6",
+      "atlassian-domain-verification=bKSyyEicgY0Nu7x4asJ5ja9ueF/q8H55gAcyMZfz2XKzDvu5sZaC96LCfSoibq82",
+      "amazonses:gceEoeOqKvtfdmPp+y52S86QwEM6SHc4QH3ekZE3bpQ="
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com;ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -166,7 +166,7 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
       "*.monster.es",
       "*.monster.com"
     ],
-    "days_left": 131,
+    "days_left": 130,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -198,10 +198,10 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=rRq11A1dCsb5_qBT_3Fs9Sag5f8Wm5t58e05wQAESa0",
+    "onetrust-domain-verification=0ec2972887414a679d57a96ccc29b5b0",
+    "dell-technologies-domain-verification=monster.com_14b47215-d44f-4358-908e-2b7892",
+    "ciscocidomainverification=460719eb94004fbc3ffceb58ee7a94d0e45e14d1d224b3f193f0d1",
     "apple-domain-verification=jHHEM7KcSPaadK20",
-    "yahoo-verification-key=E3zIMY4vqEPbyoGg80CV/bYPK0gmAjYeuPtCA+b20To=",
-    "google-site-verification=h1591ugHHOFsWchw3mvQFe_l7qR4iinHtA4sDlxmwRE",
     "google-site-verification=zXNA4jzGldUrb4WTfbWVyylyVgZRuVjpzS94ul_sr4g"
   ],
   "tls2": {
@@ -213,14 +213,19 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260204183908",
+      "not_after": "20270204183908"
     }
   },
   "http2": {
     "error": "root GET failed"
   },
-  "elapsed_s": 13.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "error": "SSLError(MaxRetryError(\"HTTPSConnectionPool(host='monster.com', port=443): Max r"
+  },
+  "elapsed_s": 13.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

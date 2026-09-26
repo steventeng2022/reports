@@ -7,12 +7,12 @@
 | Target | https://storage.googleapis.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | storage.googleapis.com |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
+Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 | 12 | info | P8 | Missing security.txt | CWE-1038 |
 | 13 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -117,7 +119,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (w9bax2cfizgq5q.storage.googleapis.com and 529i2b2i0ih6or.storage.googleapis.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (mev8zbdmg6780a.storage.googleapis.com and h4mhuuw31aywwu.storage.googleapis.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -126,6 +128,18 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 - **Detail:** Certificate of storage.googleapis.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 15. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://storage.googleapis.com/ carries Cache-Control: private, max-age=0; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 64.233.188.207 carries PTR tk-in-f207.1e100.net. for storage.googleapis.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -133,19 +147,19 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
   "domain": "storage.googleapis.com",
   "dns": {
     "a": [
-      "142.250.157.207",
+      "64.233.188.207",
       "142.250.198.91",
       "142.250.192.155",
       "142.250.204.59",
-      "142.250.77.219",
-      "64.233.189.207",
-      "142.250.196.219"
+      "142.250.196.219",
+      "74.125.203.207",
+      "142.250.77.219"
     ],
     "aaaa": [
-      "2404:6800:4012:8::201b",
-      "2404:6800:4012:9::201b",
       "2404:6800:4012:6::201b",
-      "2404:6800:4012:2::201b"
+      "2404:6800:4008:c06::cf",
+      "2404:6800:4008:c03::cf",
+      "2404:6800:4012:8::201b"
     ],
     "cname": null,
     "mx": [],
@@ -176,7 +190,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
     }
   },
   "ports": {
-    "ip": "142.250.157.207",
+    "ip": "64.233.188.207",
     "open": []
   },
   "https": {
@@ -237,11 +251,19 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192618",
+      "not_after": "20261203192617"
     }
   },
-  "elapsed_s": 14.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 400,
+    "ptr": [
+      "tk-in-f207.1e100.net."
+    ]
+  },
+  "elapsed_s": 15.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

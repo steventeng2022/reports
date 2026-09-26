@@ -7,12 +7,12 @@
 | Target | https://ftc.gov/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | ftc.gov |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
+Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -123,7 +124,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=VemqQV9Hiv6MzI1B0hzhRq4mlC2mVvs5qUUog19MRso; facebook-domain-verification=i064e2y03lievnt3ubarreperwg6mf; cisco-ci-domain-verification=25cadc1688da051ffa2539c464e864ec4aaefd22a584a0251e9
+- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=a832eee07863ffdf3f5fdfc757918cff06c414cc6426d443d893; hpe-greenlake-domain-verification=6f677033714443654164395339726174365a7544727047; facebook-domain-verification=i064e2y03lievnt3ubarreperwg6mf
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -131,6 +132,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 - **CWE:** CWE-603
 - **Detail:** Certificate of ftc.gov has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 184.50.180.40 carries PTR a184-50-180-40.deploy.static.akamaitechnologies.com. for ftc.gov.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -142,38 +149,38 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "184.50.180.40"
     ],
     "aaaa": [
-      "2600:1417:76:4a0::2031",
-      "2600:1417:76:4a1::2031"
+      "2600:1417:76:4a1::2031",
+      "2600:1417:76:4a0::2031"
     ],
     "cname": null,
     "mx": [
       "ftc-gov.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "a7-67.akam.net.",
-      "a26-64.akam.net.",
       "a1-252.akam.net.",
-      "a3-65.akam.net.",
+      "a24-67.akam.net.",
       "a6-66.akam.net.",
-      "a24-67.akam.net."
+      "a3-65.akam.net.",
+      "a26-64.akam.net.",
+      "a7-67.akam.net."
     ],
     "spf": [
-      "_a2ac2792i79twzh20o9uow3xf2g61d4",
-      "google-site-verification=VemqQV9Hiv6MzI1B0hzhRq4mlC2mVvs5qUUog19MRso",
-      "NzWLUncbdZVFeNNXMttXmWGCtTfPC610lVN0DG4twtsHL/fF6nVZ55r7BqRBAwnrzb076GaeoI+KR/D688HhEw==",
-      "facebook-domain-verification=i064e2y03lievnt3ubarreperwg6mf",
-      "MS=ms80119051",
-      "cisco-ci-domain-verification=25cadc1688da051ffa2539c464e864ec4aaefd22a584a0251e9a7b769df530bf",
-      "ab+sBVXiIC82wNktOPIy6RX8agj5Evkxyo85mpdxHboRO0smOB8QUksAASKBEFW1yz9vbMdeFb6kz3GkyshW+g==",
-      "adobe-sign-verification=6aef5f85dec2584b6bd8bc23abb2418c2fd5746c6b72586f884b983098370e38",
-      "apple-domain-verification=yDCeSJ81y3pXRCi0",
-      "v=spf1 mx include:spf1.ftc.gov include:spf2.ftc.gov -all",
       "dwgyAlEH+VVQ4N58bmeEgHt3HhajTjhhUm+VEY/orFKBEvH2dcjCEBgIw9usDqvfE4etnbgRlB9RalHvcPraVg==",
-      "identrust_validate=AW6O5chGVEhxWmmFGKoMLN8DZRwEsR4bmAtOrkHPfkc9",
-      "MS=ms26536772",
       "adobe-idp-site-verification=a832eee07863ffdf3f5fdfc757918cff06c414cc6426d443d893f7e4740ac4f4",
+      "MS=ms26536772",
+      "hpe-greenlake-domain-verification=6f677033714443654164395339726174365a7544727047374e74545068636837",
+      "v=spf1 mx include:spf1.ftc.gov include:spf2.ftc.gov -all",
+      "facebook-domain-verification=i064e2y03lievnt3ubarreperwg6mf",
+      "adobe-sign-verification=6aef5f85dec2584b6bd8bc23abb2418c2fd5746c6b72586f884b983098370e38",
       "identrust_validate=ba+DUU6G9a65f8A1q6tau3K4bx5bi/29LZlwh82DrgPG",
-      "hpe-greenlake-domain-verification=6f677033714443654164395339726174365a7544727047374e74545068636837"
+      "_a2ac2792i79twzh20o9uow3xf2g61d4",
+      "MS=ms80119051",
+      "ab+sBVXiIC82wNktOPIy6RX8agj5Evkxyo85mpdxHboRO0smOB8QUksAASKBEFW1yz9vbMdeFb6kz3GkyshW+g==",
+      "google-site-verification=VemqQV9Hiv6MzI1B0hzhRq4mlC2mVvs5qUUog19MRso",
+      "apple-domain-verification=yDCeSJ81y3pXRCi0",
+      "NzWLUncbdZVFeNNXMttXmWGCtTfPC610lVN0DG4twtsHL/fF6nVZ55r7BqRBAwnrzb076GaeoI+KR/D688HhEw==",
+      "cisco-ci-domain-verification=25cadc1688da051ffa2539c464e864ec4aaefd22a584a0251e9a7b769df530bf",
+      "identrust_validate=AW6O5chGVEhxWmmFGKoMLN8DZRwEsR4bmAtOrkHPfkc9"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; rua=mailto:reports@dmarc.cyber.dhs.gov, mailto:dmarcemails@ftc.gov; ruf=mailto:dmarcemails@ftc.gov; rf=afrf; pct=100; ri=86400"
@@ -294,11 +301,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=VemqQV9Hiv6MzI1B0hzhRq4mlC2mVvs5qUUog19MRso",
+    "adobe-idp-site-verification=a832eee07863ffdf3f5fdfc757918cff06c414cc6426d443d893",
+    "hpe-greenlake-domain-verification=6f677033714443654164395339726174365a7544727047",
     "facebook-domain-verification=i064e2y03lievnt3ubarreperwg6mf",
-    "cisco-ci-domain-verification=25cadc1688da051ffa2539c464e864ec4aaefd22a584a0251e9",
     "adobe-sign-verification=6aef5f85dec2584b6bd8bc23abb2418c2fd5746c6b72586f884b9830",
-    "apple-domain-verification=yDCeSJ81y3pXRCi0"
+    "google-site-verification=VemqQV9Hiv6MzI1B0hzhRq4mlC2mVvs5qUUog19MRso"
   ],
   "tls2": {
     "alpn": "",
@@ -309,14 +316,22 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260209000000",
+      "not_after": "20270208235959"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
-  "elapsed_s": 6.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403,
+    "ptr": [
+      "a184-50-180-40.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 6.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

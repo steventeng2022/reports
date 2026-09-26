@@ -7,8 +7,8 @@
 | Target | https://envato.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | envato.com |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -124,7 +124,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-4m610k=r3RLSmreLrBeFlorsJha5GDSi; google-site-verification=0f4zdOViZI0ZJPqxBPcdhfjxDudTX9aGlhjdVVmdUjc; hcp-domain-verification=3d12e95e14099158e8019c43c44dfce80587ab18d5e3000b25e7068b
+- **Detail:** Apex TXT records with verification/token content: astro-domain-verification=cma4lzzar0f4u01lc7himjgni; dropbox-domain-verification=x6p2nw6fusyg; apple-domain-verification=0JiJPfT9geyDt5tmeBPjFw8WksWOHi5ak-p85omfvW8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -152,44 +152,44 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "aspmx5.googlemail.com (pref 10)",
-      "aspmx4.googlemail.com (pref 10)",
       "aspmx3.googlemail.com (pref 10)",
+      "aspmx5.googlemail.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx4.googlemail.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
       "aspmx2.googlemail.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "nile.ns.cloudflare.com.",
-      "dell.ns.cloudflare.com."
+      "dell.ns.cloudflare.com.",
+      "nile.ns.cloudflare.com."
     ],
     "spf": [
-      "anthropic-domain-verification-4m610k=r3RLSmreLrBeFlorsJha5GDSi",
-      "google-site-verification=0f4zdOViZI0ZJPqxBPcdhfjxDudTX9aGlhjdVVmdUjc",
-      "hcp-domain-verification=3d12e95e14099158e8019c43c44dfce80587ab18d5e3000b25e7068b78b43ecf",
-      "hubspot-domain-verification=NGRhMjhmYTEtNmQ3NC00ZTA0LWIyNzEtYWY5ZDE4MmJhNmFj",
-      "google-site-verification=5ibqEB0P7kVObmAbCwJ6tRHTv5i-QW4TFknW1MzR1TA",
-      "5B8A3F03DB",
-      "ZOOM_verify_Qk85dV8OP5F56AsvYcFh95",
-      "apple-domain-verification=CTNfFcKtjK9bLt24",
-      "apple-domain-verification=0JiJPfT9geyDt5tmeBPjFw8WksWOHi5ak-p85omfvW8",
-      "openai-domain-verification=dv-2KUs3OZt2X7mHXT2y1vM1VbH",
-      "stripe-verification=4CF7AEE652822C305C91D2279959E1EE04A622A05F28DC315DD60FAFD1F83C49",
-      "atlassian-domain-verification=kiFJgWu0N7Mbpdvo3NDlaVtyuvXi8w9832q98Or5sAExDZ7eCNhFXFJGcxjawehC",
-      "cursor-domain-verification-np1040=h4Xy1ABclLizvza7KdFYOtdpY",
-      "dropbox-domain-verification=x6p2nw6fusyg",
-      "miro-verification=447de3cf7e9cc7a44574eca8b8ccad4f240b19b0",
-      "google-site-verification=CZ0SrSyNYTzXypy5zmW9jx8VrkvP3RTurnhFIkPGb14",
-      "slack-domain-verification=brcGZdMBE2m0Btj5r9x2qO1CofXCRoSqytSH0aS5",
-      "work-accounts-domain-verification=5M1xtlLhZDAJmWWrEN1mxVNU9dMVKq",
-      "zapier-domain-verification-challenge=6fc8d092-2f00-4b34-a771-d00f73bdf865",
       "astro-domain-verification=cma4lzzar0f4u01lc7himjgni",
-      "google-site-verification=GasgDpcZHaY-Klr-la94gYU_Yhd-XjkjbAcqv1gNnIw",
+      "dropbox-domain-verification=x6p2nw6fusyg",
+      "apple-domain-verification=0JiJPfT9geyDt5tmeBPjFw8WksWOHi5ak-p85omfvW8",
+      "zapier-domain-verification-challenge=6fc8d092-2f00-4b34-a771-d00f73bdf865",
+      "hubspot-domain-verification=NGRhMjhmYTEtNmQ3NC00ZTA0LWIyNzEtYWY5ZDE4MmJhNmFj",
+      "cursor-domain-verification-np1040=h4Xy1ABclLizvza7KdFYOtdpY",
+      "docusign=a667d9bf-12ef-4245-b1b8-1a04aaf7ad0b",
+      "google-site-verification=5ibqEB0P7kVObmAbCwJ6tRHTv5i-QW4TFknW1MzR1TA",
+      "apple-domain-verification=CTNfFcKtjK9bLt24",
+      "atlassian-domain-verification=kiFJgWu0N7Mbpdvo3NDlaVtyuvXi8w9832q98Or5sAExDZ7eCNhFXFJGcxjawehC",
       "facebook-domain-verification=rnvvwsvjlv9385gqqmug553m7vztt3",
-      "configcat-domain-verification=08daf1db-8a65-4a3e-8eea-38c360117fc2",
+      "miro-verification=447de3cf7e9cc7a44574eca8b8ccad4f240b19b0",
       "v=spf1 include:_spf.google.com ~all",
-      "docusign=a667d9bf-12ef-4245-b1b8-1a04aaf7ad0b"
+      "configcat-domain-verification=08daf1db-8a65-4a3e-8eea-38c360117fc2",
+      "anthropic-domain-verification-4m610k=r3RLSmreLrBeFlorsJha5GDSi",
+      "5B8A3F03DB",
+      "stripe-verification=4CF7AEE652822C305C91D2279959E1EE04A622A05F28DC315DD60FAFD1F83C49",
+      "hcp-domain-verification=3d12e95e14099158e8019c43c44dfce80587ab18d5e3000b25e7068b78b43ecf",
+      "slack-domain-verification=brcGZdMBE2m0Btj5r9x2qO1CofXCRoSqytSH0aS5",
+      "google-site-verification=CZ0SrSyNYTzXypy5zmW9jx8VrkvP3RTurnhFIkPGb14",
+      "ZOOM_verify_Qk85dV8OP5F56AsvYcFh95",
+      "google-site-verification=GasgDpcZHaY-Klr-la94gYU_Yhd-XjkjbAcqv1gNnIw",
+      "work-accounts-domain-verification=5M1xtlLhZDAJmWWrEN1mxVNU9dMVKq",
+      "openai-domain-verification=dv-2KUs3OZt2X7mHXT2y1vM1VbH",
+      "google-site-verification=0f4zdOViZI0ZJPqxBPcdhfjxDudTX9aGlhjdVVmdUjc"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:c4db5b7f857c4b1086c737b01dd7e949@dmarc-reports.cloudflare.net,mailto:y9an51hu@ag.dmarcian.com;"
@@ -280,11 +280,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "anthropic-domain-verification-4m610k=r3RLSmreLrBeFlorsJha5GDSi",
-    "google-site-verification=0f4zdOViZI0ZJPqxBPcdhfjxDudTX9aGlhjdVVmdUjc",
-    "hcp-domain-verification=3d12e95e14099158e8019c43c44dfce80587ab18d5e3000b25e7068b",
-    "hubspot-domain-verification=NGRhMjhmYTEtNmQ3NC00ZTA0LWIyNzEtYWY5ZDE4MmJhNmFj",
-    "google-site-verification=5ibqEB0P7kVObmAbCwJ6tRHTv5i-QW4TFknW1MzR1TA"
+    "astro-domain-verification=cma4lzzar0f4u01lc7himjgni",
+    "dropbox-domain-verification=x6p2nw6fusyg",
+    "apple-domain-verification=0JiJPfT9geyDt5tmeBPjFw8WksWOHi5ak-p85omfvW8",
+    "zapier-domain-verification-challenge=6fc8d092-2f00-4b34-a771-d00f73bdf865",
+    "hubspot-domain-verification=NGRhMjhmYTEtNmQ3NC00ZTA0LWIyNzEtYWY5ZDE4MmJhNmFj"
   ],
   "tls2": {
     "alpn": "",
@@ -295,7 +295,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260921062319",
+      "not_after": "20261220072315"
     }
   },
   "http2": {
@@ -304,8 +306,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "/"
     ]
   },
+  "x12": {
+    "status": 301
+  },
   "elapsed_s": 4.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,8 +7,8 @@
 | Target | https://msn.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | msn.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -117,13 +117,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (w26igpsabgv6ba.msn.com and ri220nuti1z723.msn.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (hd0x3hmi7k1ex3.msn.com and ay76rtitrweifp.msn.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=3lJkn9Ti3ZZZEzyGfgndcatwCZ93RLqWOYjIckfeKlM; google-site-verification=snWRecgPSoBabrLXKCz4W8SZYabue7JrtXQM36fq6PE; facebook-domain-verification=q715hqwb3sc3mkxajcokcksu21c8r2
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=q715hqwb3sc3mkxajcokcksu21c8r2; google-site-verification=3lJkn9Ti3ZZZEzyGfgndcatwCZ93RLqWOYjIckfeKlM; globalsign-domain-verification=KaParXxs1OHDy7o8CMbPpHBN-2m_mzwdPqKMMQ66a6
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -153,22 +153,22 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "msn-com.olc.protection.outlook.com (pref 2)"
     ],
     "ns": [
-      "ns1-204.azure-dns.com.",
       "dns4.p08.nsone.net.",
-      "ns2-204.azure-dns.net.",
       "ns3-204.azure-dns.org.",
-      "ns4-204.azure-dns.info.",
-      "dns1.p08.nsone.net.",
+      "dns3.p08.nsone.net.",
+      "ns1-204.azure-dns.com.",
       "dns2.p08.nsone.net.",
-      "dns3.p08.nsone.net."
+      "ns2-204.azure-dns.net.",
+      "ns4-204.azure-dns.info.",
+      "dns1.p08.nsone.net."
     ],
     "spf": [
+      "facebook-domain-verification=q715hqwb3sc3mkxajcokcksu21c8r2",
       "google-site-verification=3lJkn9Ti3ZZZEzyGfgndcatwCZ93RLqWOYjIckfeKlM",
       "AFDVALIDATION=IcePrime",
-      "google-site-verification=snWRecgPSoBabrLXKCz4W8SZYabue7JrtXQM36fq6PE",
-      "facebook-domain-verification=q715hqwb3sc3mkxajcokcksu21c8r2",
+      "v=spf1 include:spf.protection.outlook.com include:spf-a.hotmail.com include:spf-b.hotmail.com include:spf-c.hotmail.com include:spf-d.hotmail.com include:_spf-ssg-a.microsoft.com ~all",
       "globalsign-domain-verification=KaParXxs1OHDy7o8CMbPpHBN-2m_mzwdPqKMMQ66a6",
-      "v=spf1 include:spf.protection.outlook.com include:spf-a.hotmail.com include:spf-b.hotmail.com include:spf-c.hotmail.com include:spf-d.hotmail.com include:_spf-ssg-a.microsoft.com ~all"
+      "google-site-verification=snWRecgPSoBabrLXKCz4W8SZYabue7JrtXQM36fq6PE"
     ],
     "dmarc": [
       "v=DMARC1; p=none; sp=quarantine; pct=100; rua=mailto:d@rua.agari.com; fo=1"
@@ -250,10 +250,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=3lJkn9Ti3ZZZEzyGfgndcatwCZ93RLqWOYjIckfeKlM",
-    "google-site-verification=snWRecgPSoBabrLXKCz4W8SZYabue7JrtXQM36fq6PE",
     "facebook-domain-verification=q715hqwb3sc3mkxajcokcksu21c8r2",
-    "globalsign-domain-verification=KaParXxs1OHDy7o8CMbPpHBN-2m_mzwdPqKMMQ66a6"
+    "google-site-verification=3lJkn9Ti3ZZZEzyGfgndcatwCZ93RLqWOYjIckfeKlM",
+    "globalsign-domain-verification=KaParXxs1OHDy7o8CMbPpHBN-2m_mzwdPqKMMQ66a6",
+    "google-site-verification=snWRecgPSoBabrLXKCz4W8SZYabue7JrtXQM36fq6PE"
   ],
   "tls2": {
     "alpn": "",
@@ -264,14 +264,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260829212813",
+      "not_after": "20270225212813"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
+  "x12": {
+    "status": 301
+  },
   "elapsed_s": 5.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

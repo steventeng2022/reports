@@ -7,8 +7,8 @@
 | Target | https://ctt.ec/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | ctt.ec |
-| Test date | 2026-09-26 17:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -146,9 +146,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
     "cname": null,
     "mx": [],
     "ns": [
+      "ns1.digitalocean.com.",
       "ns3.digitalocean.com.",
-      "ns2.digitalocean.com.",
-      "ns1.digitalocean.com."
+      "ns2.digitalocean.com."
     ],
     "spf": [],
     "dmarc": [],
@@ -239,7 +239,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260723204539",
+      "not_after": "20261021204538"
     }
   },
   "http2": {
@@ -247,8 +249,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "/go.php"
     ]
   },
-  "elapsed_s": 41.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 42.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

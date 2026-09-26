@@ -7,12 +7,12 @@
 | Target | https://click.linksynergy.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | click.linksynergy.com |
-| Test date | 2026-09-26 17:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
+Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 | 9 | info | P8 | Missing security.txt | CWE-1038 |
 | 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 11 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 12 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -104,6 +105,12 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 12. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 35.213.113.72 carries PTR 72.113.213.35.bc.googleusercontent.com. for click.linksynergy.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -111,16 +118,16 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
   "domain": "click.linksynergy.com",
   "dns": {
     "a": [
-      "35.213.28.76"
+      "35.213.113.72"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [],
     "ns": [
-      "dns4.p09.nsone.net.",
-      "dns1.p09.nsone.net.",
       "dns2.p09.nsone.net.",
-      "dns3.p09.nsone.net."
+      "dns1.p09.nsone.net.",
+      "dns3.p09.nsone.net.",
+      "dns4.p09.nsone.net."
     ],
     "spf": [
       "v=spf1 -all"
@@ -153,7 +160,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
     }
   },
   "ports": {
-    "ip": "35.213.28.76",
+    "ip": "35.213.113.72",
     "open": []
   },
   "https": {
@@ -211,7 +218,9 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260312000000",
+      "not_after": "20270312235959"
     }
   },
   "http2": {
@@ -219,8 +228,14 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
       "/"
     ]
   },
-  "elapsed_s": 7.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "72.113.213.35.bc.googleusercontent.com."
+    ]
+  },
+  "elapsed_s": 7.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

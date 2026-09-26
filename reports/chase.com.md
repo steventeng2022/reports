@@ -7,8 +7,8 @@
 | Target | https://chase.com/ |
 | Bug bounty program | Chase |
 | Listed scope domain | chase.com |
-| Test date | 2026-09-26 17:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -118,7 +118,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: wiz-domain-verification=ccd3ec907fff510311f6a14b2a659fcb83adea2818bb6e78503239d2; google-site-verification=w00TwyVREI5RpqAT9hqSLZVvZcZi46578G57D1aMGeE; google-site-verification=iZwZzo1YPl0G29U136Suzn4c1VptcA_LkvvdWOYC6B0
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=iZwZzo1YPl0G29U136Suzn4c1VptcA_LkvvdWOYC6B0; wiz-domain-verification=68c6d9fa0c4bdd60150d3df50635cd0fcf4af6af079771d90239d10a; sinch-domain-verification=6848bb42-da6f-49cf-8974-920af9cf1806
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -140,48 +140,48 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
   "domain": "chase.com",
   "dns": {
     "a": [
-      "146.143.141.57",
+      "146.143.13.57",
       "146.143.83.57",
-      "146.143.13.57"
+      "146.143.141.57"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "cluster14.us.messagelabs.com (pref 20)",
       "cluster14a.us.messagelabs.com (pref 40)",
       "cluster14.us.messagelabs.com (pref 10)",
-      "cluster14.us.messagelabs.com (pref 20)",
       "cluster14.us.messagelabs.com (pref 30)"
     ],
     "ns": [
-      "ns0140.secondary.cloudflare.com.",
-      "ns2.jpmorganchase.com.",
-      "ns06.jpmorganchase.com.",
-      "ns1.jpmorganchase.com.",
       "ns05.jpmorganchase.com.",
+      "ns2.jpmorganchase.com.",
+      "ns1.jpmorganchase.com.",
+      "ns06.jpmorganchase.com.",
+      "ns0140.secondary.cloudflare.com.",
       "ns0119.secondary.cloudflare.com."
     ],
     "spf": [
-      "wiz-domain-verification=ccd3ec907fff510311f6a14b2a659fcb83adea2818bb6e78503239d2877e8657?",
-      "_m47rp0d9u3ci4ycif1echp310q0yy09",
-      "google-site-verification=w00TwyVREI5RpqAT9hqSLZVvZcZi46578G57D1aMGeE",
-      "docusign=500adee6-4cca-451d-bcd8-2813346419c8",
-      "smartsheet-site-validation=JdBS3Kn_332V6dI9U0iq0TV3RZZXTUhL",
       "google-site-verification=iZwZzo1YPl0G29U136Suzn4c1VptcA_LkvvdWOYC6B0",
+      "smartsheet-site-validation=JdBS3Kn_332V6dI9U0iq0TV3RZZXTUhL",
       "wiz-domain-verification=68c6d9fa0c4bdd60150d3df50635cd0fcf4af6af079771d90239d10add2c2967",
-      "wiz-domain-verification=66aa74155d5e84d10ed4b5a786a66f94063cff3b4c7e11d09fb46f027736dbf0",
-      "atlassian-domain-verification=wUjrfh2T73RznZOKmEZfc0mRF92bjC7JyjSgRXg9Yt2e9ZMRZwafUO6GPJaecYOh",
-      "google-site-verification=PfSAyrffyVUKXLc1Ew8C2IFPWkjufFSsbboFz_24Qt4",
-      "atlassian-domain-verification=PZApk1vJjd7scChzBMQy2d4NEwk4Bt26obCVACc7vWiOBVCOxTOV4/EB9LMexMnl",
       "sinch-domain-verification=6848bb42-da6f-49cf-8974-920af9cf1806",
-      "DirectFedAuthUrl=https://idauatg2.jpmorganchase.com/adfs/ls/",
+      "_m47rp0d9u3ci4ycif1echp310q0yy09",
       "atlassian-domain-verification=Ua2Fovb97Ak39kxh4koulfhVlpieV1PLhaMkdZpzINDMQGlcvLV+ORgL2QmOryw+",
-      "docusign=b04ddbec-21ac-4d6b-bb8b-3f1a3bca079f",
+      "DirectFedAuthUrl=https://idauatg2.jpmorganchase.com/adfs/ls/",
+      "onetrust-domain-verification=ccee45576c1e4fbfaa4014725a73344f",
+      "wiz-domain-verification=66aa74155d5e84d10ed4b5a786a66f94063cff3b4c7e11d09fb46f027736dbf0",
+      "atlassian-domain-verification=PZApk1vJjd7scChzBMQy2d4NEwk4Bt26obCVACc7vWiOBVCOxTOV4/EB9LMexMnl",
+      "docusign=500adee6-4cca-451d-bcd8-2813346419c8",
+      "atlassian-domain-verification=wUjrfh2T73RznZOKmEZfc0mRF92bjC7JyjSgRXg9Yt2e9ZMRZwafUO6GPJaecYOh",
       "wiz-domain-verification=a0d8d067bcb1cdd44255d0633a31df3ba13c82e30f27c080519b0b85ba734d32",
       "atlassian-domain-verification\\u003dpD6ozLCGDinP/R+vd5R9hpoPCSOmTFTHfWPK633PXEtELa5KlVDw4w1Pnn02aTdC",
-      "airtable-verification=1d59ed5062280d21aeef0c14aaf4f950",
-      "v=spf1 include:tpo.chase.com exists:%{i}.spf.chase.com exists:%{i}.spf.hc4673-96.iphmx.com exists:%{i}.spf.hc4698-8.iphmx.com -all",
       "pendo-domain-verification=1f6e5677-d405-438e-88ba-141766793ce8",
-      "onetrust-domain-verification=ccee45576c1e4fbfaa4014725a73344f"
+      "google-site-verification=PfSAyrffyVUKXLc1Ew8C2IFPWkjufFSsbboFz_24Qt4",
+      "google-site-verification=w00TwyVREI5RpqAT9hqSLZVvZcZi46578G57D1aMGeE",
+      "v=spf1 include:tpo.chase.com exists:%{i}.spf.chase.com exists:%{i}.spf.hc4673-96.iphmx.com exists:%{i}.spf.hc4698-8.iphmx.com -all",
+      "docusign=b04ddbec-21ac-4d6b-bb8b-3f1a3bca079f",
+      "wiz-domain-verification=ccd3ec907fff510311f6a14b2a659fcb83adea2818bb6e78503239d2877e8657?",
+      "airtable-verification=1d59ed5062280d21aeef0c14aaf4f950"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:d@rua.agari.com; ruf=mailto:d@ruf.agari.com;"
@@ -212,7 +212,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
     }
   },
   "ports": {
-    "ip": "146.143.141.57",
+    "ip": "146.143.13.57",
     "open": []
   },
   "https": {
@@ -289,11 +289,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
     ]
   },
   "apex_txt": [
-    "wiz-domain-verification=ccd3ec907fff510311f6a14b2a659fcb83adea2818bb6e78503239d2",
-    "google-site-verification=w00TwyVREI5RpqAT9hqSLZVvZcZi46578G57D1aMGeE",
     "google-site-verification=iZwZzo1YPl0G29U136Suzn4c1VptcA_LkvvdWOYC6B0",
     "wiz-domain-verification=68c6d9fa0c4bdd60150d3df50635cd0fcf4af6af079771d90239d10a",
-    "wiz-domain-verification=66aa74155d5e84d10ed4b5a786a66f94063cff3b4c7e11d09fb46f02"
+    "sinch-domain-verification=6848bb42-da6f-49cf-8974-920af9cf1806",
+    "atlassian-domain-verification=Ua2Fovb97Ak39kxh4koulfhVlpieV1PLhaMkdZpzINDMQGlcvL",
+    "onetrust-domain-verification=ccee45576c1e4fbfaa4014725a73344f"
   ],
   "tls2": {
     "alpn": "",
@@ -304,11 +304,16 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260908000000",
+      "not_after": "20270325235959"
     }
   },
-  "elapsed_s": 29.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 29.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

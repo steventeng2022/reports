@@ -7,12 +7,12 @@
 | Target | https://skfb.ly/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | skfb.ly |
-| Test date | 2026-09-26 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 | 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -140,6 +141,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - **Detail:** Certificate of skfb.ly has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 54.192.248.119 carries PTR server-54-192-248-119.tpe53.r.cloudfront.net. for skfb.ly.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -155,17 +162,17 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt3.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)",
-      "aspmx.l.google.com (pref 1)"
+      "aspmx.l.google.com (pref 1)",
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
+      "ns-1345.awsdns-40.org.",
       "ns-479.awsdns-59.com.",
-      "ns-876.awsdns-45.net.",
       "ns-1605.awsdns-08.co.uk.",
-      "ns-1345.awsdns-40.org."
+      "ns-876.awsdns-45.net."
     ],
     "spf": [
       "google-site-verification=xiyMajOtcVSOrj79ps7_lNNPigbBCIPD0h3DeHI0jGE"
@@ -233,18 +240,18 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     "location": "https://sketchfab.com:443/s/"
   },
   "redir_probes": [
-    "/redirect?url=https://evil-auditor.example/x -> 202",
+    "/redirect?url=https://evil-auditor.example/x -> 301",
     "/redirect?next=https://evil-auditor.example/x -> 301",
-    "/go?url=https://evil-auditor.example/x -> 202",
+    "/go?url=https://evil-auditor.example/x -> 301",
     "/url?url=https://evil-auditor.example/x -> 301"
   ],
   "paths": {
-    "/robots.txt": 202,
+    "/robots.txt": 301,
     "/sitemap.xml": 202,
     "/.well-known/security.txt": 202,
-    "/security.txt": 301,
+    "/security.txt": 202,
     "/.git/HEAD": 202,
-    "/.git/config": 202,
+    "/.git/config": 301,
     "/.env": 202,
     "/.htaccess": 202,
     "/wp-login.php": 202,
@@ -267,11 +274,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251217000000",
+      "not_after": "20270115235959"
     }
   },
-  "elapsed_s": 7.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 202,
+    "ptr": [
+      "server-54-192-248-119.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 7.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

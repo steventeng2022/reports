@@ -7,12 +7,12 @@
 | Target | https://mlb.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | mlb.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -117,7 +119,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: cursor-domain-verification-ghqnyw=dHOe7fY7Ygl1Al61QPw1JMNrX; google-site-verification=ecWDspflVGxmZOFfl5U-feFA50MZguqCygpZH-fHvw0; onetrust-domain-verification=dd8aecd72e714036a95ea068cfe6f2e7
+- **Detail:** Apex TXT records with verification/token content: onetrust-domain-verification=dd8aecd72e714036a95ea068cfe6f2e7; twilio-domain-verification=5450879a5dddd10b96b14397eb242d58; apple-domain-verification=6IYQq9hakr4CM8uN
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -131,6 +133,18 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 76 disallow path(s), e.g. /test/, /api/, /app/, /embed/, /en/
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 16. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://mlb.com/ carries Cache-Control: public, max-age=600, stale-while-revalidate=120, stale-if-error=86400; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 34.102.163.158 carries PTR 158.163.102.34.bc.googleusercontent.com. for mlb.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -147,47 +161,47 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "mlb-com.mail.protection.outlook.com (pref 1)"
     ],
     "ns": [
-      "ns-cloud-b4.googledomains.com.",
+      "ns-1997.awsdns-57.co.uk.",
       "ns-204.awsdns-25.com.",
+      "ns-cloud-b3.googledomains.com.",
+      "ns-cloud-b4.googledomains.com.",
+      "ns-976.awsdns-58.net.",
       "ns-1370.awsdns-43.org.",
       "ns-cloud-b2.googledomains.com.",
-      "ns-1997.awsdns-57.co.uk.",
-      "ns-cloud-b1.googledomains.com.",
-      "ns-cloud-b3.googledomains.com.",
-      "ns-976.awsdns-58.net."
+      "ns-cloud-b1.googledomains.com."
     ],
     "spf": [
-      "cursor-domain-verification-ghqnyw=dHOe7fY7Ygl1Al61QPw1JMNrX",
-      "google-site-verification=ecWDspflVGxmZOFfl5U-feFA50MZguqCygpZH-fHvw0",
-      "onetrust-domain-verification=dd8aecd72e714036a95ea068cfe6f2e7",
-      "MS=ms69694204",
+      "smartsheet-site-validation=oaC-Jj1jFnvmweM2PoQJUhOQtun7sj3s",
+      "mgverify=4486080ee27dbe9c532d7c06bd6416c0594bdb2747dc01acfb5e97721389f1c9",
       "mandrill_verify.Ug0KyLxAlKlJFADUoUKazw",
+      "onetrust-domain-verification=dd8aecd72e714036a95ea068cfe6f2e7",
+      "twilio-domain-verification=5450879a5dddd10b96b14397eb242d58",
+      "apple-domain-verification=6IYQq9hakr4CM8uN",
+      "cloudflare_dashboard_sso=99d69311be411f4639d09940caef8875",
+      "e2ma-verification=0x5bb",
+      "atlassian-domain-verification=g2T53fLDVGlvthuuEp+3tHYaHRCtRg7YE0c6muK0q1eRZToBwzYMwLOUVBbImxpM",
+      "adobe-idp-site-verification=48421df2-6edd-4d7a-9a50-5d6b7ac37140",
+      "google-site-verification=xLIe2kvVf_RIlRbMuNhQfxu5QhOj38hG38eCHOVRI-Q",
+      "_71zjwgnt0xvgl1emmv7hgs83q8v0jd4",
+      "7zvy2rtgl87v1529vvz467263ttxv00w",
+      "MS=ms85676836",
+      "anthropic-domain-verification-w0tddh=eUI1DrzYqtNfrirT3GQDfShYK",
+      "google-site-verification=ecWDspflVGxmZOFfl5U-feFA50MZguqCygpZH-fHvw0",
+      "yahoo-verification-key=/7YvIV9kTBbJETYphs2ydo2GBj6XuhvO4P1H1M6dh+o=",
+      "cursor-domain-verification-ghqnyw=dHOe7fY7Ygl1Al61QPw1JMNrX",
+      "postman-domain-verification=9e8cbf6e58c180aceab032d7f85e916683a73fc5f9dceed2fec8ceba7ca719dddf7b8799b8b78e0153cc9769218729171dd7425c1092c8b14967492e31672762",
+      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email include:mailgun.org ~all",
+      "6cai8ssdT8bfglT/gt8kwoKyhyAgPcWDuCGhXf6NRtlGOxnCwCVxvE0gV8MARuqkl340xHdWjJtLgFXFk4XOtQ==",
       "paloaltonetworks-site-verification=7be9535bc2affb742cb82ebe821a04088380fb53981671210a413b185923dafc",
       "onetrust-domain-verification=b65699a512a948ec984777b9ad7d28f7",
-      "6cai8ssdT8bfglT/gt8kwoKyhyAgPcWDuCGhXf6NRtlGOxnCwCVxvE0gV8MARuqkl340xHdWjJtLgFXFk4XOtQ==",
-      "anthropic-domain-verification-w0tddh=eUI1DrzYqtNfrirT3GQDfShYK",
-      "e2ma-verification=m4j3",
-      "google-site-verification=ewYCvyU3ZIlPv8GRbEfttW-iXf6Rvo4C1lzUgfi2W4k",
-      "_71zjwgnt0xvgl1emmv7hgs83q8v0jd4",
-      "facebook-domain-verification=6l9n1mpxxnvj1l19nmitlu3e5t9qgu",
-      "postman-domain-verification=9e8cbf6e58c180aceab032d7f85e916683a73fc5f9dceed2fec8ceba7ca719dddf7b8799b8b78e0153cc9769218729171dd7425c1092c8b14967492e31672762",
-      "twilio-domain-verification=5450879a5dddd10b96b14397eb242d58",
-      "7zvy2rtgl87v1529vvz467263ttxv00w",
-      "google-site-verification=xLIe2kvVf_RIlRbMuNhQfxu5QhOj38hG38eCHOVRI-Q",
-      "adobe-idp-site-verification=48421df2-6edd-4d7a-9a50-5d6b7ac37140",
-      "mgverify=4486080ee27dbe9c532d7c06bd6416c0594bdb2747dc01acfb5e97721389f1c9",
-      "MS=ms85676836",
       "asv=f4d8b04afc0fa2a21f4e5156ec6c2789",
-      "e2ma-verification=0x5bb",
-      "docusign=dd0cbf68-020f-4af4-9785-638db04566ef",
+      "e2ma-verification=m4j3",
+      "facebook-domain-verification=6l9n1mpxxnvj1l19nmitlu3e5t9qgu",
       "google-site-verification=XOnG1KFFRFfMJeUU7-uEnjQPrJ5bgfSKLU3n-ddA5o0",
-      "apple-domain-verification=6IYQq9hakr4CM8uN",
-      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email include:mailgun.org ~all",
-      "smartsheet-site-validation=oaC-Jj1jFnvmweM2PoQJUhOQtun7sj3s",
-      "yahoo-verification-key=/7YvIV9kTBbJETYphs2ydo2GBj6XuhvO4P1H1M6dh+o=",
-      "atlassian-domain-verification=g2T53fLDVGlvthuuEp+3tHYaHRCtRg7YE0c6muK0q1eRZToBwzYMwLOUVBbImxpM",
-      "cloudflare_dashboard_sso=99d69311be411f4639d09940caef8875",
-      "openai-domain-verification=dv-D9zatZspLcySUfsBz3ytGnq9"
+      "MS=ms69694204",
+      "google-site-verification=ewYCvyU3ZIlPv8GRbEfttW-iXf6Rvo4C1lzUgfi2W4k",
+      "openai-domain-verification=dv-D9zatZspLcySUfsBz3ytGnq9",
+      "docusign=dd0cbf68-020f-4af4-9785-638db04566ef"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@vali.email"
@@ -266,11 +280,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "cursor-domain-verification-ghqnyw=dHOe7fY7Ygl1Al61QPw1JMNrX",
-    "google-site-verification=ecWDspflVGxmZOFfl5U-feFA50MZguqCygpZH-fHvw0",
     "onetrust-domain-verification=dd8aecd72e714036a95ea068cfe6f2e7",
-    "paloaltonetworks-site-verification=7be9535bc2affb742cb82ebe821a04088380fb5398167",
-    "onetrust-domain-verification=b65699a512a948ec984777b9ad7d28f7"
+    "twilio-domain-verification=5450879a5dddd10b96b14397eb242d58",
+    "apple-domain-verification=6IYQq9hakr4CM8uN",
+    "e2ma-verification=0x5bb",
+    "atlassian-domain-verification=g2T53fLDVGlvthuuEp+3tHYaHRCtRg7YE0c6muK0q1eRZToBwz"
   ],
   "tls2": {
     "alpn": "",
@@ -281,7 +295,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260912101202",
+      "not_after": "20261211110556"
     }
   },
   "http2": {
@@ -303,8 +319,14 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "/search"
     ]
   },
-  "elapsed_s": 10.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "158.163.102.34.bc.googleusercontent.com."
+    ]
+  },
+  "elapsed_s": 9.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

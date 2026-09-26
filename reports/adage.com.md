@@ -7,12 +7,12 @@
 | Target | https://adage.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | adage.com |
-| Test date | 2026-09-26 17:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -139,6 +141,18 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - **Detail:** Certificate of adage.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 17. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://adage.com/ carries Cache-Control: private, max-age=60; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 184.26.127.144 carries PTR a184-26-127-144.deploy.static.akamaitechnologies.com. for adage.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -146,8 +160,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "domain": "adage.com",
   "dns": {
     "a": [
-      "184.26.127.138",
-      "184.26.127.144"
+      "184.26.127.144",
+      "184.26.127.138"
     ],
     "aaaa": [
       "2001:b034:1c:200::d247:e348",
@@ -155,18 +169,18 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     ],
     "cname": null,
     "mx": [
-      "usb-smtp-inbound-1.mimecast.com (pref 10)",
-      "usb-smtp-inbound-2.mimecast.com (pref 60)"
+      "usb-smtp-inbound-2.mimecast.com (pref 60)",
+      "usb-smtp-inbound-1.mimecast.com (pref 10)"
     ],
     "ns": [
-      "connie.ns.cloudflare.com.",
-      "kurt.ns.cloudflare.com."
+      "kurt.ns.cloudflare.com.",
+      "connie.ns.cloudflare.com."
     ],
     "spf": [
-      "v=spf1 include:spf.crain.com include:_spf.clickshare.com include:aspmx.pardot.com include:usb._netblocks.mimecast.com ~all",
       "MS=ms52345011",
-      "bw=A0toi1iKzrmRS2jxukTxOo6KI3d7V7eoIzDw5G7ubw5s",
+      "v=spf1 include:spf.crain.com include:_spf.clickshare.com include:aspmx.pardot.com include:usb._netblocks.mimecast.com ~all",
       "google-site-verification=uWzYibDTuhjliXGRiMnMEthKIS6O5mnJViVhGIOvK28",
+      "bw=A0toi1iKzrmRS2jxukTxOo6KI3d7V7eoIzDw5G7ubw5s",
       "anthropic-domain-verification-pg50pw=UwO6bTKI23RICT2yieNZizAJB",
       "lucidlink-verification=J1CHE4K03BM1Q64NFPMW63KC24",
       "google-site-verification=69bymnCN1yRQSpHf-DQz5sLMlqQ0GuCspakaXRLBVZg"
@@ -289,7 +303,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     }
   },
   "ports": {
-    "ip": "184.26.127.138",
+    "ip": "184.26.127.144",
     "open": []
   },
   "https": {
@@ -355,11 +369,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260821134819",
+      "not_after": "20261119134818"
     }
   },
-  "elapsed_s": 5.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403,
+    "ptr": [
+      "a184-26-127-144.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 4.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

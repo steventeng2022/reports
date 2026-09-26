@@ -7,12 +7,12 @@
 | Target | https://yadi.sk/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | yadi.sk |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:02 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
+Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,6 +26,8 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 | 8 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 9 | low | CK4 | Session-like cookie without HttpOnly | CWE-1004 |
 | 10 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 11 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 12 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -94,6 +96,18 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 - **Detail:** robots.txt lists 27 disallow path(s), e.g. /pay/, /activation_failed, /cfg, /folder, /copy
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 11. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 87.250.250.50 carries PTR disk-front.stable.qloud-b.yandex.net. for yadi.sk.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 12. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: none flagged
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -114,8 +128,8 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
     ],
     "spf": [
       "_globalsign-domain-verification=ZIE7lnBAHKRRAGoG_hFijsNTqp_so1pEzNwsMUA4xI",
-      "45e3b7565dc5130458f2bead528f8f6000d78f2b5fd904b06355c19f0cd3e4f",
-      "96ecd6928cf6313019cf2d11dc11d6fa945e5d808fcd391ce076bcd6968aa39"
+      "96ecd6928cf6313019cf2d11dc11d6fa945e5d808fcd391ce076bcd6968aa39",
+      "45e3b7565dc5130458f2bead528f8f6000d78f2b5fd904b06355c19f0cd3e4f"
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -269,7 +283,13 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
     "/api/": 200
   },
   "subdomains": {
-    "status": "ct-pending"
+    "source": "certspotter",
+    "count": 2,
+    "notable": [],
+    "sample": [
+      "www.yadi.sk",
+      "yadi.sk"
+    ]
   },
   "apex_txt": [
     "_globalsign-domain-verification=ZIE7lnBAHKRRAGoG_hFijsNTqp_so1pEzNwsMUA4xI"
@@ -283,7 +303,9 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260901151616",
+      "not_after": "20270301205959"
     }
   },
   "http2": {
@@ -305,8 +327,14 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
       "/monitoring.txt"
     ]
   },
-  "elapsed_s": 34.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "disk-front.stable.qloud-b.yandex.net."
+    ]
+  },
+  "elapsed_s": 36.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

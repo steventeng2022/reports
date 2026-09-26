@@ -7,12 +7,12 @@
 | Target | https://walmart.com/ |
 | Bug bounty program | Walmart Corporation |
 | Listed scope domain | walmart.com |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -117,7 +118,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-5vz2bt=GhKF4NMESyKswHJGVanZVBEtB; openai-domain-verification=dv-IDGFBjh74ycOf2e4vrXwBZtv; _globalsign-domain-verification=AXcfQAoG3in-mjLnMOJPhp1CNvUTsRkCaLo60rR5hG
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-5vz2bt=GhKF4NMESyKswHJGVanZVBEtB; _globalsign-domain-verification=AXcfQAoG3in-mjLnMOJPhp1CNvUTsRkCaLo60rR5hG; globalsign-domain-verification=2AD27E3A206DB3231BAD817BD5A21F7A
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -138,6 +139,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - **Detail:** robots.txt lists 57 disallow path(s), e.g. /0/, /55875582/walmart-us/catalog/, /account/, /api/, /collection/api/logger
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.209.216.193 carries PTR a23-209-216-193.deploy.static.akamaitechnologies.com. for walmart.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -145,45 +152,45 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "domain": "walmart.com",
   "dns": {
     "a": [
-      "104.89.104.39"
+      "23.209.216.193"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxb-000c7201.gslb.pphosted.com (pref 10)",
-      "mxa-000c7201.gslb.pphosted.com (pref 10)"
+      "mxa-000c7201.gslb.pphosted.com (pref 10)",
+      "mxb-000c7201.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "a8-66.akam.net.",
+      "pdnswm3.ultradns.org.",
+      "a22-67.akam.net.",
+      "pdnswm1.ultradns.net.",
       "a10-66.akam.net.",
+      "a3-64.akam.net.",
+      "pdnswm6.ultradns.co.uk.",
       "pdnswm2.ultradns.net.",
-      "a5-65.akam.net.",
       "pdnswm4.ultradns.org.",
       "a1-185.akam.net.",
-      "pdnswm3.ultradns.org.",
-      "pdnswm1.ultradns.net.",
       "pdnswm5.ultradns.info.",
-      "a3-64.akam.net.",
-      "a22-67.akam.net.",
-      "pdnswm6.ultradns.co.uk."
+      "a5-65.akam.net.",
+      "a8-66.akam.net."
     ],
     "spf": [
       "anthropic-domain-verification-5vz2bt=GhKF4NMESyKswHJGVanZVBEtB",
-      "openai-domain-verification=dv-IDGFBjh74ycOf2e4vrXwBZtv",
-      "+wnQWce020VDWuXiDkLvV2jJXOlN5tNAzGyHFjMbBg0=",
       "_globalsign-domain-verification=AXcfQAoG3in-mjLnMOJPhp1CNvUTsRkCaLo60rR5hG",
-      "_globalsign-domain-verification=9-Ef1Ps_FbIDDK9OPPGU3ju471Ap4_xAPV4pacA3ht",
-      "_globalsign-domain-verification=0UV9-mABi984W6oReb-NIqLZE4wxFn0Z_HZqReFlfx",
-      "twilio-domain-verification=19bf2f50450a9dec2b6ea8d18ab9114f",
-      "canva-site-verification=jcrBOlbl254ia6gsPJNFCg",
-      "slack-domain-verification=Ic5IE8asOH1Bg6b1To8CGfWytCkVfywFsAJRZvUm",
-      "_globalsign-domain-verification=E0XnB_4FxsbzvD6MDzvAQoSFChcy4XTb2vlMqtUc5k",
-      "globalsign-domain-verification=290297CC7AD18787782E80BFF88B354B",
-      "infoblox-domain-mastery=cbdbcb7b4ccda409b4d353af156079955dc262a3bd4566aae2a9afba1d3d43e5c2",
+      "+wnQWce020VDWuXiDkLvV2jJXOlN5tNAzGyHFjMbBg0=",
       "globalsign-domain-verification=2AD27E3A206DB3231BAD817BD5A21F7A",
+      "openai-domain-verification=dv-IDGFBjh74ycOf2e4vrXwBZtv",
       "_globalsign-domain-verification=tYy2ZDIHUuR-3NGTeWDgC5Bs1vAYAyL7kZK8HpVwNg",
+      "globalsign-domain-verification=290297CC7AD18787782E80BFF88B354B",
+      "_globalsign-domain-verification=0UV9-mABi984W6oReb-NIqLZE4wxFn0Z_HZqReFlfx",
+      "infoblox-domain-mastery=cbdbcb7b4ccda409b4d353af156079955dc262a3bd4566aae2a9afba1d3d43e5c2",
+      "canva-site-verification=jcrBOlbl254ia6gsPJNFCg",
       "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com include:_netblocks.walmart.com include:_vspf1.walmart.com include:_vspf2.walmart.com include:_vspf3.walmart.com ip4:161.170.248.0/24 ip4:161.170.244.0/24 ip4:161.170.241.16/30 ip4:161.170.245.0/24 ip4:16",
-      "1.170.249.0/24 ~all"
+      "1.170.249.0/24 ~all",
+      "twilio-domain-verification=19bf2f50450a9dec2b6ea8d18ab9114f",
+      "_globalsign-domain-verification=9-Ef1Ps_FbIDDK9OPPGU3ju471Ap4_xAPV4pacA3ht",
+      "slack-domain-verification=Ic5IE8asOH1Bg6b1To8CGfWytCkVfywFsAJRZvUm",
+      "_globalsign-domain-verification=E0XnB_4FxsbzvD6MDzvAQoSFChcy4XTb2vlMqtUc5k"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -218,7 +225,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     }
   },
   "ports": {
-    "ip": "104.89.104.39",
+    "ip": "23.209.216.193",
     "open": []
   },
   "https": {
@@ -276,10 +283,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   },
   "apex_txt": [
     "anthropic-domain-verification-5vz2bt=GhKF4NMESyKswHJGVanZVBEtB",
-    "openai-domain-verification=dv-IDGFBjh74ycOf2e4vrXwBZtv",
     "_globalsign-domain-verification=AXcfQAoG3in-mjLnMOJPhp1CNvUTsRkCaLo60rR5hG",
-    "_globalsign-domain-verification=9-Ef1Ps_FbIDDK9OPPGU3ju471Ap4_xAPV4pacA3ht",
-    "_globalsign-domain-verification=0UV9-mABi984W6oReb-NIqLZE4wxFn0Z_HZqReFlfx"
+    "globalsign-domain-verification=2AD27E3A206DB3231BAD817BD5A21F7A",
+    "openai-domain-verification=dv-IDGFBjh74ycOf2e4vrXwBZtv",
+    "_globalsign-domain-verification=tYy2ZDIHUuR-3NGTeWDgC5Bs1vAYAyL7kZK8HpVwNg"
   ],
   "tls2": {
     "alpn": "",
@@ -290,7 +297,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260727095801",
+      "not_after": "20270211095801"
     }
   },
   "http2": {
@@ -312,8 +321,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "/cservice/ya_index.gsp"
     ]
   },
-  "elapsed_s": 7.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "a23-209-216-193.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 7.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

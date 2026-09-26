@@ -7,12 +7,12 @@
 | Target | https://giphy.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | giphy.com |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,8 +31,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 16 | info | CT1 | 25 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 17 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 16 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 17 | info | CT1 | 25 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 18 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -112,7 +113,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=Fii0eNOZHns9TIAc; atlassian-domain-verification=2ZiBk8nroSamkeHuamMoEH9zYMfA1R0XO1ZWlq1mnt3E02TV0e; google-site-verification=wWrXYq5cDpNdZjgDPtJ30mM87mlOArvOCGrkEVndkko
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=Fii0eNOZHns9TIAc; openai-domain-verification=dv-Sagm5Hc2GH6IccoTx7kqsIPO; atlassian-domain-verification=2ZiBk8nroSamkeHuamMoEH9zYMfA1R0XO1ZWlq1mnt3E02TV0e
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -133,13 +134,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** robots.txt lists 2 disallow path(s), e.g. /gifs, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 16. [INFO] 25 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 16. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://giphy.com/ carries Cache-Control: public, s-maxage=30, max-age=0, must-revalidate; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 17. [INFO] 25 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.giphy.com, beta.giphy.com, blog.giphy.com, dev.giphy.com, media.giphy.com, status.giphy.com, support.giphy.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 17. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 18. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: beta.giphy.com, dev.giphy.com; content may still be served via virtual-host fallback.
@@ -152,37 +159,37 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "giphy.com",
   "dns": {
     "a": [
-      "151.101.1.55",
-      "151.101.193.55",
       "151.101.65.55",
+      "151.101.193.55",
+      "151.101.1.55",
       "151.101.129.55"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "aspmx2.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "aspmx2.googlemail.com (pref 10)"
     ],
     "ns": [
-      "ns-1507.awsdns-60.org.",
+      "ns-8.awsdns-01.com.",
       "ns-1872.awsdns-42.co.uk.",
-      "ns-688.awsdns-22.net.",
-      "ns-8.awsdns-01.com."
+      "ns-1507.awsdns-60.org.",
+      "ns-688.awsdns-22.net."
     ],
     "spf": [
       "apple-domain-verification=Fii0eNOZHns9TIAc",
+      "openai-domain-verification=dv-Sagm5Hc2GH6IccoTx7kqsIPO",
       "atlassian-domain-verification=2ZiBk8nroSamkeHuamMoEH9zYMfA1R0XO1ZWlq1mnt3E02TV0eaz56swmTVIdMH3",
-      "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC1eUbX0WlXcwRefEWDxiZRQI59QABCL+n7ynL/9jASPtr4Nhlqff+AbbImJ7OgWkd6viDUk5RNsafT5dhtjGZTRLooTp2C1UWev9vIM5VBU4MIcW9ZGHuhTNrKPwiLS/TxJAFSE1lGWHmBp0+21XmdMbF/kF8k9WioazM093qmHwIDAQAB",
+      "status-page-domain-verification=9qs86qrhsgnd",
       "TAILSCALE-S8njngbH6JUB9eUyI3hA",
       "google-site-verification=wWrXYq5cDpNdZjgDPtJ30mM87mlOArvOCGrkEVndkko",
-      "openai-domain-verification=dv-Sagm5Hc2GH6IccoTx7kqsIPO",
-      "v=spf1 include:sendgrid.net include:_spf.google.com include:_spf.mailgun.org include:_spf.eu.mailgun.org include:servers.mcsv.net exists:%{i}._spf.mta.salesforce.com -all",
-      "status-page-domain-verification=9qs86qrhsgnd",
       "00D1U000000q2bj=1TBWj00000001gr",
       "google-site-verification=m6PPLfObSkbjxTzE2TMYuB8ep11oITy1i3O2GqkEQ3A",
-      "google-site-verification=84mKsZZUB9XYo-Ci3C6ODMErVHAtxe317JWYTbUQjFw"
+      "v=spf1 include:sendgrid.net include:_spf.google.com include:_spf.mailgun.org include:_spf.eu.mailgun.org include:servers.mcsv.net exists:%{i}._spf.mta.salesforce.com -all",
+      "google-site-verification=84mKsZZUB9XYo-Ci3C6ODMErVHAtxe317JWYTbUQjFw",
+      "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC1eUbX0WlXcwRefEWDxiZRQI59QABCL+n7ynL/9jASPtr4Nhlqff+AbbImJ7OgWkd6viDUk5RNsafT5dhtjGZTRLooTp2C1UWev9vIM5VBU4MIcW9ZGHuhTNrKPwiLS/TxJAFSE1lGWHmBp0+21XmdMbF/kF8k9WioazM093qmHwIDAQAB"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:add78bd9e2@rua.easydmarc.us,mailto:dmarc@giphy.com; ruf=mailto:dmarc-reports@shutterstock.com; rf=afrf"
@@ -212,7 +219,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "151.101.1.55",
+    "ip": "151.101.65.55",
     "open": []
   },
   "https": {
@@ -299,10 +306,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   },
   "apex_txt": [
     "apple-domain-verification=Fii0eNOZHns9TIAc",
-    "atlassian-domain-verification=2ZiBk8nroSamkeHuamMoEH9zYMfA1R0XO1ZWlq1mnt3E02TV0e",
-    "google-site-verification=wWrXYq5cDpNdZjgDPtJ30mM87mlOArvOCGrkEVndkko",
     "openai-domain-verification=dv-Sagm5Hc2GH6IccoTx7kqsIPO",
-    "status-page-domain-verification=9qs86qrhsgnd"
+    "atlassian-domain-verification=2ZiBk8nroSamkeHuamMoEH9zYMfA1R0XO1ZWlq1mnt3E02TV0e",
+    "status-page-domain-verification=9qs86qrhsgnd",
+    "google-site-verification=wWrXYq5cDpNdZjgDPtJ30mM87mlOArvOCGrkEVndkko"
   ],
   "tls2": {
     "alpn": "",
@@ -313,7 +320,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260425230315",
+      "not_after": "20261110220315"
     }
   },
   "http2": {
@@ -322,8 +331,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/"
     ]
   },
-  "elapsed_s": 17.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 17.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

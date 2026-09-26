@@ -7,12 +7,12 @@
 | Target | https://constantcontact.com/ |
 | Bug bounty program | Constant Contact |
 | Listed scope domain | constantcontact.com |
-| Test date | 2026-09-26 17:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 16 | low | RED10 | Host header reflected into redirect Location | CWE-601 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -119,7 +121,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=S0PJ1RSXkRxVn-okVzPY9Lzeghej1eIywqeTx0o2MKE; duo_sso_verification=7HPXqXi0wOuCX7DdMLeu09LySVwMqymRiBWo3e5f1J9JumDaZTfzYPxfcpn; globalsign-domain-verification=5C905CAD6161760D48FA250433C2EEF9
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=5lHEZKPh-_wYKf6iPhatHRpXj2l0R9NmPQ9wSWIAQag; google-site-verification=9SlseBmCRNaS8PoCIcXUBYR18HWP6RBX9HyD3R5R5Ls; google-site-verification=GEYwmfZ7RuvBcI7BT6xQnrNfn1z7gWUKLfVIalnwqeA
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -146,6 +148,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** robots.txt lists 10 disallow path(s), e.g. /blog/event/?*, /blog/events/?*, /blog/page/*/?s=, /blog/?s=, /blog/search/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 18. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://constantcontact.com/ carries Cache-Control: max-age=0; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 208.75.122.14 carries PTR www.constantcontact.com. for constantcontact.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -162,62 +176,62 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "edgemail2.constantcontact.com (pref 20)"
     ],
     "ns": [
-      "dns3.p01.nsone.net.",
-      "dns1.p01.nsone.net.",
       "dns2.p01.nsone.net.",
-      "dns4.p01.nsone.net."
+      "dns1.p01.nsone.net.",
+      "dns4.p01.nsone.net.",
+      "dns3.p01.nsone.net."
     ],
     "spf": [
-      "google-site-verification=S0PJ1RSXkRxVn-okVzPY9Lzeghej1eIywqeTx0o2MKE",
-      "docusign=d814c280-26f9-41c7-aa92-a03b59e6fd58",
-      "spf2.0/pra ip4:208.75.120.0/22 ip4:205.207.104.0/22 include:_ext.constantcontact.com include:_spf.salesforce.com include:_spf.google.com ~all",
-      "MS=ms18093078",
-      "duo_sso_verification=7HPXqXi0wOuCX7DdMLeu09LySVwMqymRiBWo3e5f1J9JumDaZTfzYPxfcpnbQCRi",
-      "MS=91FCD146A8340927C3F9723C8F3DC44A5AE57414",
-      "globalsign-domain-verification=5C905CAD6161760D48FA250433C2EEF9",
-      "ps-cd-verification=3e13eeb0-a25b-41af-a9d1-d5c8cca8082a",
-      "logmein-verification-code=491874e6-5c3b-4b37-b19e-f523d7d74473",
-      "stripe-verification=685340051470B5606798FED265AD82838FDC4D525047AEBAC6F8577B731D91CA",
-      "google-site-verification=lMXxJuCIadZI6yIKv7z5_Va70POuM19qU81NU0tmaxI",
-      "reachdesk-verification=1CmlRrcJcF7N7kW8ionhhGt21vydYDeiaGjRKoFAJHCsTyxLVFHOcdUBxBeUrt3H",
-      "jamf-site-verification=aFdwoWd1sPeHAeoixINgyw",
-      "SFMC-nnhzrK01oLNsym2xcDKcUEXUlbm8OIrlrUxoOGdS",
-      "atlassian-domain-verification=fMjaVWKHpJhM3aAlDYkNe5/yuAOUIOva2QexA9BN3WIHOkZmfqX9AWdaOicLtJYr",
-      "kF4qrcASQQx6dXlhtT5OqM1QkLhxmOFd9TIEk0+L+Hg=.",
-      "canva-site-verification=ZyZ5z6fQIoIHCDU_U8K6YQ",
-      "google-site-verification=GEYwmfZ7RuvBcI7BT6xQnrNfn1z7gWUKLfVIalnwqeA",
       "meltwater_sso_20260521_triton-36710",
-      "anthropic-domain-verification-y2453z=RP4EoX2XlEAObiHw4Qyfxyif2",
+      "google-site-verification=5lHEZKPh-_wYKf6iPhatHRpXj2l0R9NmPQ9wSWIAQag",
+      "google-site-verification=9SlseBmCRNaS8PoCIcXUBYR18HWP6RBX9HyD3R5R5Ls",
+      "google-site-verification=GEYwmfZ7RuvBcI7BT6xQnrNfn1z7gWUKLfVIalnwqeA",
+      "docusign=d814c280-26f9-41c7-aa92-a03b59e6fd58",
+      "SFMC-nnhzrK01oLNsym2xcDKcUEXUlbm8OIrlrUxoOGdS",
+      "globalsign-domain-verification=1FF9A93F847B1EB612F7EB378BFA8F2F",
+      "facebook-domain-verification=9wo9l62thl595soh1wjzolqfv3ao8c",
+      "v=spf1 ip4:208.75.120.0/22 ip4:205.207.104.0/22 include:_ext.constantcontact.com include:_spf.salesforce.com include:_spf.google.com ~all",
+      "logmein-verification-code=491874e6-5c3b-4b37-b19e-f523d7d74473",
+      "google-site-verification=lMXxJuCIadZI6yIKv7z5_Va70POuM19qU81NU0tmaxI",
+      "globalsign-domain-verification=1FF969BDF7F6D9B06243EFA8042CBDE7",
+      "v0IqpOXySDIxu292XtWFBWVQ2T3C/MLnpiy5EKsfKWg=.",
+      "atlassian-domain-verification=fMjaVWKHpJhM3aAlDYkNe5/yuAOUIOva2QexA9BN3WIHOkZmfqX9AWdaOicLtJYr",
+      "ZOOM_verify_lz7Vk7Mf3ZEzuB6jwtCEVv",
+      "canva-site-verification=ZyZ5z6fQIoIHCDU_U8K6YQ",
+      "validate.onetrust-domain-verification=8c431f2bfba744d99f5df0ee4ef55df1",
+      "globalsign-domain-verification=6FFE99D6D65D30A44C49A374C5143D87",
+      "validity-domain-monitoring=lWgicWp5GPvLfdEoFXdAYpMXV",
+      "jamf-site-verification=aFdwoWd1sPeHAeoixINgyw",
+      "google-site-verification=Gp7Hv6yLosjKQ_t7gHJROnXoAYK7wlz1XLOBHt_J7HE",
+      "spf2.0/pra ip4:208.75.120.0/22 ip4:205.207.104.0/22 include:_ext.constantcontact.com include:_spf.salesforce.com include:_spf.google.com ~all",
+      "globalsign-domain-verification=607B2BE93D2B60F139751C389A14C13B",
+      "cisco-ci-domain-verification=2bd65a16476143d0aebade20fdf9ca88de20694b28dbd9a7630bd6a72c690a63",
+      "globalsign-domain-verification=83DF7D9B4CADBA9AB6D6ED1792F009A4",
+      "globalsign-domain-verification=D5A7AFA31C2BFA6174B52F0F9E90C9DF",
+      "TAILSCALE-WN5I3ZooiwxJsVakFdjs",
+      "cursor-domain-verification-fad4vy=0NZxtFJAF9pFISdFqx3nMzNyk",
+      "globalsign-domain-verification=C385682A22F86586CCE2465D9544AA1C",
+      "ps-cd-verification=3e13eeb0-a25b-41af-a9d1-d5c8cca8082a",
+      "google-site-verification=RMx0cdA4nEA6nAg48o0lsv4eb29EbVafa7weQBnSNJQ",
+      "google-site-verification=JtNhbwEnbIVid2N5wO0kF9kJ5jfx_ttYqfleBTqKZJY",
+      "pendo-domain-verification=n9rM3WLge63EWPA3kOPW1OUEcXg",
+      "MS=91FCD146A8340927C3F9723C8F3DC44A5AE57414",
       "globalsign-domain-verification=A899C94328AC5076D4198E6055E9C6E1",
       "MS=ms76971383",
-      "globalsign-domain-verification=1FF9A93F847B1EB612F7EB378BFA8F2F",
-      "pendo-domain-verification=n9rM3WLge63EWPA3kOPW1OUEcXg",
-      "cursor-domain-verification-fad4vy=0NZxtFJAF9pFISdFqx3nMzNyk",
-      "globalsign-domain-verification=FA2D0568288440FE444CE3BEE2B3FD88",
-      "v0IqpOXySDIxu292XtWFBWVQ2T3C/MLnpiy5EKsfKWg=.",
-      "openai-domain-verification=dv-tjo2gRJDV0e90MlGZWURanbs",
-      "google-site-verification=JtNhbwEnbIVid2N5wO0kF9kJ5jfx_ttYqfleBTqKZJY",
-      "google-site-verification=9SlseBmCRNaS8PoCIcXUBYR18HWP6RBX9HyD3R5R5Ls",
-      "globalsign-domain-verification=6FFE99D6D65D30A44C49A374C5143D87",
-      "google-site-verification=ALoYvB9LP05aK7ddKNWCSrNKI4QPPh647yXxmNq1rJ4",
-      "validity-domain-monitoring=lWgicWp5GPvLfdEoFXdAYpMXV",
-      "globalsign-domain-verification=C385682A22F86586CCE2465D9544AA1C",
-      "ZOOM_verify_lz7Vk7Mf3ZEzuB6jwtCEVv",
-      "globalsign-domain-verification=1FF969BDF7F6D9B06243EFA8042CBDE7",
-      "facebook-domain-verification=9wo9l62thl595soh1wjzolqfv3ao8c",
-      "Cb20W914dVUL9V8ziCkX1Qo",
-      "v=spf1 ip4:208.75.120.0/22 ip4:205.207.104.0/22 include:_ext.constantcontact.com include:_spf.salesforce.com include:_spf.google.com ~all",
-      "globalsign-domain-verification=F1462C7038793BEEB6A1FCE7B31E06B7",
-      "TAILSCALE-WN5I3ZooiwxJsVakFdjs",
-      "validate.onetrust-domain-verification=8c431f2bfba744d99f5df0ee4ef55df1",
-      "cisco-ci-domain-verification=2bd65a16476143d0aebade20fdf9ca88de20694b28dbd9a7630bd6a72c690a63",
-      "google-site-verification=5lHEZKPh-_wYKf6iPhatHRpXj2l0R9NmPQ9wSWIAQag",
       "tgXS6TJ3fVTnME8cpaIfgd9fe2rkAsn8kgSVRi/Af/c=",
-      "globalsign-domain-verification=83DF7D9B4CADBA9AB6D6ED1792F009A4",
-      "globalsign-domain-verification=607B2BE93D2B60F139751C389A14C13B",
-      "globalsign-domain-verification=D5A7AFA31C2BFA6174B52F0F9E90C9DF",
-      "google-site-verification=RMx0cdA4nEA6nAg48o0lsv4eb29EbVafa7weQBnSNJQ",
-      "google-site-verification=Gp7Hv6yLosjKQ_t7gHJROnXoAYK7wlz1XLOBHt_J7HE"
+      "anthropic-domain-verification-y2453z=RP4EoX2XlEAObiHw4Qyfxyif2",
+      "duo_sso_verification=7HPXqXi0wOuCX7DdMLeu09LySVwMqymRiBWo3e5f1J9JumDaZTfzYPxfcpnbQCRi",
+      "kF4qrcASQQx6dXlhtT5OqM1QkLhxmOFd9TIEk0+L+Hg=.",
+      "google-site-verification=ALoYvB9LP05aK7ddKNWCSrNKI4QPPh647yXxmNq1rJ4",
+      "google-site-verification=S0PJ1RSXkRxVn-okVzPY9Lzeghej1eIywqeTx0o2MKE",
+      "globalsign-domain-verification=FA2D0568288440FE444CE3BEE2B3FD88",
+      "globalsign-domain-verification=5C905CAD6161760D48FA250433C2EEF9",
+      "reachdesk-verification=1CmlRrcJcF7N7kW8ionhhGt21vydYDeiaGjRKoFAJHCsTyxLVFHOcdUBxBeUrt3H",
+      "MS=ms18093078",
+      "stripe-verification=685340051470B5606798FED265AD82838FDC4D525047AEBAC6F8577B731D91CA",
+      "openai-domain-verification=dv-tjo2gRJDV0e90MlGZWURanbs",
+      "Cb20W914dVUL9V8ziCkX1Qo",
+      "globalsign-domain-verification=F1462C7038793BEEB6A1FCE7B31E06B7"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:tk0syg54@ag.dmarcian.com,mailto:dmarc_agg@vali.email; ruf=mailto:tk0syg54@fr.dmarcian.com; rf=afrf;"
@@ -338,11 +352,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=S0PJ1RSXkRxVn-okVzPY9Lzeghej1eIywqeTx0o2MKE",
-    "duo_sso_verification=7HPXqXi0wOuCX7DdMLeu09LySVwMqymRiBWo3e5f1J9JumDaZTfzYPxfcpn",
-    "globalsign-domain-verification=5C905CAD6161760D48FA250433C2EEF9",
-    "ps-cd-verification=3e13eeb0-a25b-41af-a9d1-d5c8cca8082a",
-    "logmein-verification-code=491874e6-5c3b-4b37-b19e-f523d7d74473"
+    "google-site-verification=5lHEZKPh-_wYKf6iPhatHRpXj2l0R9NmPQ9wSWIAQag",
+    "google-site-verification=9SlseBmCRNaS8PoCIcXUBYR18HWP6RBX9HyD3R5R5Ls",
+    "google-site-verification=GEYwmfZ7RuvBcI7BT6xQnrNfn1z7gWUKLfVIalnwqeA",
+    "globalsign-domain-verification=1FF9A93F847B1EB612F7EB378BFA8F2F",
+    "facebook-domain-verification=9wo9l62thl595soh1wjzolqfv3ao8c"
   ],
   "tls2": {
     "alpn": "",
@@ -353,7 +367,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251110165448",
+      "not_after": "20261212165447"
     }
   },
   "http2": {
@@ -370,8 +386,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/pricing.v1.json"
     ]
   },
-  "elapsed_s": 29.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "www.constantcontact.com."
+    ]
+  },
+  "elapsed_s": 29.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

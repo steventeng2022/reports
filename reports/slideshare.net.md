@@ -7,8 +7,8 @@
 | Target | https://slideshare.net/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | slideshare.net |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -134,13 +134,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 ### 15. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (fq8uhpm5qg81vw.slideshare.net and uszqvfpj3l9cfa.slideshare.net) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (b4oeq9ubsphqkt.slideshare.net and lcwlb1ov318pqc.slideshare.net) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=z0MToYwj_eTkwEHlRGUDGpmnY2kWd92EL11Wn8bw2t0; google-site-verification=Q5_zzFNm5OGFcyL3lnV44cVoJjo6KbEH3PeIKcg9mGU; google-site-verification=GMw4f3bXpsJI74PMG4IBfWz1w3_DUsvriSlEjKbXyKo
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=z0MToYwj_eTkwEHlRGUDGpmnY2kWd92EL11Wn8bw2t0; google-site-verification=GMw4f3bXpsJI74PMG4IBfWz1w3_DUsvriSlEjKbXyKo; google-site-verification=Q5_zzFNm5OGFcyL3lnV44cVoJjo6KbEH3PeIKcg9mGU
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -162,10 +162,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
   "domain": "slideshare.net",
   "dns": {
     "a": [
-      "151.101.130.152",
-      "151.101.2.152",
       "151.101.194.152",
-      "151.101.66.152"
+      "151.101.66.152",
+      "151.101.130.152",
+      "151.101.2.152"
     ],
     "aaaa": [],
     "cname": null,
@@ -173,18 +173,18 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
       "smtp.google.com (pref 1)"
     ],
     "ns": [
-      "ns-1650.awsdns-14.co.uk.",
-      "ns-178.awsdns-22.com.",
       "ns-802.awsdns-36.net.",
+      "ns-178.awsdns-22.com.",
+      "ns-1650.awsdns-14.co.uk.",
       "ns-1225.awsdns-25.org."
     ],
     "spf": [
       "google-site-verification=z0MToYwj_eTkwEHlRGUDGpmnY2kWd92EL11Wn8bw2t0",
-      "google-site-verification=Q5_zzFNm5OGFcyL3lnV44cVoJjo6KbEH3PeIKcg9mGU",
-      "0b2ca37a856d424fa0188c4908cacf6c",
-      "google-site-verification=GMw4f3bXpsJI74PMG4IBfWz1w3_DUsvriSlEjKbXyKo",
       "533115289-1138720",
-      "v=spf1 ip4:34.216.216.60 ip4:34.216.216.61 ip4:52.39.56.161 ip4:52.43.64.76  ip4:192.174.84.0/28 ip4:147.253.223.25 ip4:147.253.223.26 ~all"
+      "google-site-verification=GMw4f3bXpsJI74PMG4IBfWz1w3_DUsvriSlEjKbXyKo",
+      "v=spf1 ip4:34.216.216.60 ip4:34.216.216.61 ip4:52.39.56.161 ip4:52.43.64.76  ip4:192.174.84.0/28 ip4:147.253.223.25 ip4:147.253.223.26 ~all",
+      "google-site-verification=Q5_zzFNm5OGFcyL3lnV44cVoJjo6KbEH3PeIKcg9mGU",
+      "0b2ca37a856d424fa0188c4908cacf6c"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc@slideshare.com; ruf=mailto:dmarc@slideshare.com"
@@ -214,7 +214,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
     }
   },
   "ports": {
-    "ip": "151.101.130.152",
+    "ip": "151.101.194.152",
     "open": []
   },
   "https": {
@@ -271,8 +271,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
   "wildcard_dns": true,
   "apex_txt": [
     "google-site-verification=z0MToYwj_eTkwEHlRGUDGpmnY2kWd92EL11Wn8bw2t0",
-    "google-site-verification=Q5_zzFNm5OGFcyL3lnV44cVoJjo6KbEH3PeIKcg9mGU",
-    "google-site-verification=GMw4f3bXpsJI74PMG4IBfWz1w3_DUsvriSlEjKbXyKo"
+    "google-site-verification=GMw4f3bXpsJI74PMG4IBfWz1w3_DUsvriSlEjKbXyKo",
+    "google-site-verification=Q5_zzFNm5OGFcyL3lnV44cVoJjo6KbEH3PeIKcg9mGU"
   ],
   "tls2": {
     "alpn": "",
@@ -283,14 +283,19 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260907135812",
+      "not_after": "20261206135811"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
-  "elapsed_s": 11.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 11.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

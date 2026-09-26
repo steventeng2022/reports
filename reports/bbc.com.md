@@ -7,12 +7,12 @@
 | Target | https://bbc.com/ |
 | Bug bounty program | BBC |
 | Listed scope domain | bbc.com |
-| Test date | 2026-09-26 17:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
+Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,7 +32,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | CT1 | 89 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 17 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 18 | info | CT1 | 89 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -125,7 +126,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: airtable-verification=b1a394c872dd6721d39a1d91cc96080d; jamf-site-verification=28Mn3O6rTBSXkL5w6c911A; slack-domain-verification=hza4gfkmctQ7A7BpMhGNVOZVZcKTFC8OC5ewDFVA
+- **Detail:** Apex TXT records with verification/token content: jamf-site-verification=28Mn3O6rTBSXkL5w6c911A; atlassian-sending-domain-verification=da3721b6-1d2c-4c32-bf01-b792667aeb4d; _globalsign-domain-verification=PpIYEptb1-AaatNRPoS2XiWRmxR7zAT1MR52dvDNzx
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -140,7 +141,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 - **Detail:** robots.txt lists 88 disallow path(s), e.g. /asset/, /backstage/bbc-login-help/, /backstage/bbc-login-help$, /bitesize/search$, /bitesize/search/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 17. [INFO] 89 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 17. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://bbc.com/ carries Cache-Control: public,max-age=604800,stale-while-revalidate=3600,stale-if-error=3600; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 18. [INFO] 89 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: account-api.api.bbc.com, activity.api.bbc.com, activity.int.api.bbc.com, activity.stage.api.bbc.com, activity.test.api.bbc.com, af-dummy-ui-1.test.api.bbc.com, amservice.api.bbc.com, amservice.int.api.bbc.com, amservice.stage.api.bbc.com, amservice.test.api.bbc.com
@@ -154,47 +161,47 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
   "dns": {
     "a": [
       "151.101.0.81",
-      "151.101.192.81",
       "151.101.64.81",
+      "151.101.192.81",
       "151.101.128.81"
     ],
     "aaaa": [
+      "2a04:4e42:400::81",
       "2a04:4e42:600::81",
-      "2a04:4e42::81",
       "2a04:4e42:200::81",
-      "2a04:4e42:400::81"
+      "2a04:4e42::81"
     ],
     "cname": null,
     "mx": [
-      "cluster8.eu.messagelabs.com (pref 10)",
-      "cluster8a.eu.messagelabs.com (pref 20)"
+      "cluster8a.eu.messagelabs.com (pref 20)",
+      "cluster8.eu.messagelabs.com (pref 10)"
     ],
     "ns": [
-      "ddns0.bbc.co.uk.",
+      "dns1.bbc.co.uk.",
       "dns0.bbc.com.",
       "ddns1.bbc.co.uk.",
+      "dns1.bbc.com.",
       "ddns1.bbc.com.",
-      "dns1.bbc.co.uk.",
-      "ddns0.bbc.com.",
+      "ddns0.bbc.co.uk.",
       "dns0.bbc.co.uk.",
-      "dns1.bbc.com."
+      "ddns0.bbc.com."
     ],
     "spf": [
-      "airtable-verification=b1a394c872dd6721d39a1d91cc96080d",
       "jamf-site-verification=28Mn3O6rTBSXkL5w6c911A",
-      "xoCARoExwkNhLPdKaaxv",
       "docusign=57499c1f-9099-463b-a5bd-cb7583816d78",
-      "slack-domain-verification=hza4gfkmctQ7A7BpMhGNVOZVZcKTFC8OC5ewDFVA",
-      "adobe-idp-site-verification=c3a16fcb00ac5365e4ea125d5e59d4be11936f768b3020c4d81b4232019604a2",
-      "docker-verification=f89691bb-7bdd-4bc1-9673-57454d6d9c42",
-      "Validity-Domain-Verification=TYXJnAeGHNF4DGlOgE4vdoDT3a0=",
-      "atlassian-domain-verification=SQsgJ5h/FqwMTXuSG/G4Nd1Gx6uX2keREOsZSa22D5XT46EsEuyaic8Aej4cR4Tr",
-      "dropbox-domain-verification=mtgv0f2pudoz",
       "atlassian-sending-domain-verification=da3721b6-1d2c-4c32-bf01-b792667aeb4d",
       "_globalsign-domain-verification=PpIYEptb1-AaatNRPoS2XiWRmxR7zAT1MR52dvDNzx",
+      "docker-verification=f89691bb-7bdd-4bc1-9673-57454d6d9c42",
+      "xoCARoExwkNhLPdKaaxv",
       "docusign=75217687-3ba0-49bb-bb3b-482d888493af",
+      "slack-domain-verification=hza4gfkmctQ7A7BpMhGNVOZVZcKTFC8OC5ewDFVA",
+      "atlassian-domain-verification=SQsgJ5h/FqwMTXuSG/G4Nd1Gx6uX2keREOsZSa22D5XT46EsEuyaic8Aej4cR4Tr",
+      "adobe-idp-site-verification=c3a16fcb00ac5365e4ea125d5e59d4be11936f768b3020c4d81b4232019604a2",
+      "dropbox-domain-verification=mtgv0f2pudoz",
+      "v=spf1 ip4:212.58.224.0/19 ip4:132.185.0.0/16 +include:spf.messagelabs.com ~all",
+      "airtable-verification=b1a394c872dd6721d39a1d91cc96080d",
       "google-site-verification=mTy-FoNnG0yetpI3-0e9AXctAkUCcWGc_K3BcMfioFI",
-      "v=spf1 ip4:212.58.224.0/19 ip4:132.185.0.0/16 +include:spf.messagelabs.com ~all"
+      "Validity-Domain-Verification=TYXJnAeGHNF4DGlOgE4vdoDT3a0="
     ],
     "dmarc": [
       "v=DMARC1;p=reject;aspf=s;adkim=s;pct=100;fo=0;ri=86400; rua=mailto:dmarc_agg@vali.email;"
@@ -337,11 +344,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     ]
   },
   "apex_txt": [
-    "airtable-verification=b1a394c872dd6721d39a1d91cc96080d",
     "jamf-site-verification=28Mn3O6rTBSXkL5w6c911A",
-    "slack-domain-verification=hza4gfkmctQ7A7BpMhGNVOZVZcKTFC8OC5ewDFVA",
-    "adobe-idp-site-verification=c3a16fcb00ac5365e4ea125d5e59d4be11936f768b3020c4d81b",
-    "docker-verification=f89691bb-7bdd-4bc1-9673-57454d6d9c42"
+    "atlassian-sending-domain-verification=da3721b6-1d2c-4c32-bf01-b792667aeb4d",
+    "_globalsign-domain-verification=PpIYEptb1-AaatNRPoS2XiWRmxR7zAT1MR52dvDNzx",
+    "docker-verification=f89691bb-7bdd-4bc1-9673-57454d6d9c42",
+    "slack-domain-verification=hza4gfkmctQ7A7BpMhGNVOZVZcKTFC8OC5ewDFVA"
   ],
   "tls2": {
     "alpn": "",
@@ -352,7 +359,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260821113202",
+      "not_after": "20270124054623"
     }
   },
   "http2": {
@@ -375,8 +384,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "/chwilio?"
     ]
   },
-  "elapsed_s": 12.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 14.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

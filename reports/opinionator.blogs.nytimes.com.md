@@ -7,12 +7,12 @@
 | Target | https://opinionator.blogs.nytimes.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | opinionator.blogs.nytimes.com |
-| Test date | 2026-09-26 17:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
+Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | CK5 | Cookie scoped to parent domain (.nytimes.com) | CWE-200 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -112,7 +113,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 ### 12. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (g1fjpq29ja1hin.opinionator.blogs.nytimes.com and r44406pfd6fqdm.opinionator.blogs.nytimes.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (rt1i839esnkz3v.opinionator.blogs.nytimes.com and hs3tytw5gwawt4.opinionator.blogs.nytimes.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -133,6 +134,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 - **Detail:** robots.txt lists 150 disallow path(s), e.g. /ads/, /adx/bin/, /athletic/wp/wp-admin/, /athletic/async-*, /athletic/search/*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 16. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://opinionator.blogs.nytimes.com/ carries Cache-Control: public, max-age=900; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -140,10 +147,10 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
   "domain": "opinionator.blogs.nytimes.com",
   "dns": {
     "a": [
-      "151.101.65.164",
-      "151.101.129.164",
       "151.101.193.164",
-      "151.101.1.164"
+      "151.101.1.164",
+      "151.101.65.164",
+      "151.101.129.164"
     ],
     "aaaa": [],
     "cname": "blogs.nytimes.com.",
@@ -203,7 +210,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
     }
   },
   "ports": {
-    "ip": "151.101.65.164",
+    "ip": "151.101.193.164",
     "open": []
   },
   "https": {
@@ -276,7 +283,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260902000000",
+      "not_after": "20270319235959"
     }
   },
   "http2": {
@@ -299,8 +308,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "/athletic/report/"
     ]
   },
-  "elapsed_s": 28.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 28.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

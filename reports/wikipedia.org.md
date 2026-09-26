@@ -7,12 +7,12 @@
 | Target | https://wikipedia.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | wikipedia.org |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
+Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -132,6 +133,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 - **Detail:** robots.txt lists 460 disallow path(s), e.g. /, /, User-agent:, #, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 103.102.166.224 carries PTR text-lb.eqsin.wikimedia.org. for wikipedia.org.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -146,17 +153,17 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     ],
     "cname": null,
     "mx": [
-      "mx-in2001.wikimedia.org (pref 10)",
-      "mx-in1001.wikimedia.org (pref 10)"
+      "mx-in1001.wikimedia.org (pref 10)",
+      "mx-in2001.wikimedia.org (pref 10)"
     ],
     "ns": [
-      "ns1.wikimedia.org.",
       "ns2.wikimedia.org.",
-      "ns0.wikimedia.org."
+      "ns0.wikimedia.org.",
+      "ns1.wikimedia.org."
     ],
     "spf": [
-      "yandex-verification: 35c08d23099dc863",
       "v=spf1 include:_cidrs.wikimedia.org ~all",
+      "yandex-verification: 35c08d23099dc863",
       "google-site-verification=AMHkgs-4ViEvIJf5znZle-BSE2EPNFqM1nDJGRyn2qk"
     ],
     "dmarc": [
@@ -306,7 +313,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260805191541",
+      "not_after": "20261103191540"
     }
   },
   "http2": {
@@ -329,8 +338,14 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "/"
     ]
   },
-  "elapsed_s": 19.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "text-lb.eqsin.wikimedia.org."
+    ]
+  },
+  "elapsed_s": 11.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

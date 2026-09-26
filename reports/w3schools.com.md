@@ -7,12 +7,12 @@
 | Target | https://w3schools.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | w3schools.com |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -125,7 +126,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5; google-site-verification=9Wi0rp8KXQ3oB2KWvpcLIbwMdqFvyZe8QmOH0YnON4g; apple-domain-verification=iGza4rmAk4yMj4vi
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=9Wi0rp8KXQ3oB2KWvpcLIbwMdqFvyZe8QmOH0YnON4g; apple-domain-verification=iGza4rmAk4yMj4vi; linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -140,6 +141,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - **Detail:** robots.txt lists 5 disallow path(s), e.g. /images, /asp/demo_db_edit.asp, *.aspx$, /code/, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 13.248.240.135 carries PTR ab2c03c0cf361bdb8.awsglobalaccelerator.com. for w3schools.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -147,33 +154,33 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "domain": "w3schools.com",
   "dns": {
     "a": [
-      "76.223.115.82",
-      "13.248.240.135"
+      "13.248.240.135",
+      "76.223.115.82"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "alt1.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
       "feedback-smtp.eu-west-1.amazonses.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-1939.awsdns-50.co.uk.",
       "ns-1409.awsdns-48.org.",
-      "ns-769.awsdns-32.net.",
-      "ns-314.awsdns-39.com."
+      "ns-1939.awsdns-50.co.uk.",
+      "ns-314.awsdns-39.com.",
+      "ns-769.awsdns-32.net."
     ],
     "spf": [
-      "Sendinblue-code:c1cb221c990a3b197b84632af64eb12a",
-      "linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5",
+      "MS=338A1134735F428FF6729DDF746385742F152781",
+      "amazonses:9O9JMU+QwMbQv3k+hYpAmauno4fuJMUcWephofXN0yc=",
       "google-site-verification=9Wi0rp8KXQ3oB2KWvpcLIbwMdqFvyZe8QmOH0YnON4g",
       "apple-domain-verification=iGza4rmAk4yMj4vi",
-      "amazonses:9O9JMU+QwMbQv3k+hYpAmauno4fuJMUcWephofXN0yc=",
-      "MS=338A1134735F428FF6729DDF746385742F152781",
-      "v=spf1 include:_spf.google.com include:amazonses.com include:spf.sendinblue.com include:shops.shopify.com include:mail.zendesk.com ip4:148.122.215.227 -all"
+      "v=spf1 include:_spf.google.com include:amazonses.com include:spf.sendinblue.com include:shops.shopify.com include:mail.zendesk.com ip4:148.122.215.227 -all",
+      "Sendinblue-code:c1cb221c990a3b197b84632af64eb12a",
+      "linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:postmaster@w3schools.com; pct=100; adkim=r; aspf=s"
@@ -202,7 +209,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     }
   },
   "ports": {
-    "ip": "76.223.115.82",
+    "ip": "13.248.240.135",
     "open": []
   },
   "https": {
@@ -255,9 +262,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5",
     "google-site-verification=9Wi0rp8KXQ3oB2KWvpcLIbwMdqFvyZe8QmOH0YnON4g",
-    "apple-domain-verification=iGza4rmAk4yMj4vi"
+    "apple-domain-verification=iGza4rmAk4yMj4vi",
+    "linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5"
   ],
   "tls2": {
     "alpn": "",
@@ -268,7 +275,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260131000000",
+      "not_after": "20270228235959"
     }
   },
   "http2": {
@@ -280,8 +289,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "/"
     ]
   },
-  "elapsed_s": 32.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ab2c03c0cf361bdb8.awsglobalaccelerator.com."
+    ]
+  },
+  "elapsed_s": 33.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

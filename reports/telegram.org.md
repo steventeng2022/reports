@@ -7,8 +7,8 @@
 | Target | https://telegram.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | telegram.org |
-| Test date | 2026-09-26 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:00 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -102,13 +102,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 ### 11. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (phuknnktjbtrit.telegram.org and k886dp0jc8ayqp.telegram.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (zl0m9xeztheus4.telegram.org and xddpxdffszbxzx.telegram.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=hAtj8VzR8lGDcv80yGd0ST-pMHU8WNU0lkswaau3v2w; yahoo-verification-key=NRNCv6/IcZMkSv28KI97E4zgZVMkk4PejCwNSh8So2k=; google-site-verification=R-3XYX47JUVHva3pnhnyjx5D72PtSnjtLMLj_tymTAc
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=R-3XYX47JUVHva3pnhnyjx5D72PtSnjtLMLj_tymTAc; google-site-verification=hAtj8VzR8lGDcv80yGd0ST-pMHU8WNU0lkswaau3v2w; yahoo-verification-key=NRNCv6/IcZMkSv28KI97E4zgZVMkk4PejCwNSh8So2k=
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -131,20 +131,20 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     ],
     "cname": null,
     "mx": [
-      "mx110.telegram.org (pref 15)",
-      "mx101.telegram.org (pref 10)"
+      "mx101.telegram.org (pref 10)",
+      "mx110.telegram.org (pref 15)"
     ],
     "ns": [
       "ns-cloud-b4.googledomains.com.",
-      "ns-cloud-b1.googledomains.com.",
+      "ns-cloud-b2.googledomains.com.",
       "ns-cloud-b3.googledomains.com.",
-      "ns-cloud-b2.googledomains.com."
+      "ns-cloud-b1.googledomains.com."
     ],
     "spf": [
+      "google-site-verification=R-3XYX47JUVHva3pnhnyjx5D72PtSnjtLMLj_tymTAc",
       "v=spf1 ip4:95.161.64.0/28 ip4:95.161.64.16/30 ip4:149.154.160.0/20 ip4:149.154.162.125/32 ip4:149.154.162.247/32 -all",
       "google-site-verification=hAtj8VzR8lGDcv80yGd0ST-pMHU8WNU0lkswaau3v2w",
-      "yahoo-verification-key=NRNCv6/IcZMkSv28KI97E4zgZVMkk4PejCwNSh8So2k=",
-      "google-site-verification=R-3XYX47JUVHva3pnhnyjx5D72PtSnjtLMLj_tymTAc"
+      "yahoo-verification-key=NRNCv6/IcZMkSv28KI97E4zgZVMkk4PejCwNSh8So2k="
     ],
     "dmarc": [
       "v=DMARC1; p=reject; aspf=r; sp=reject; rua=mailto:dmarc@telegram.org"
@@ -232,9 +232,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   },
   "wildcard_dns": true,
   "apex_txt": [
+    "google-site-verification=R-3XYX47JUVHva3pnhnyjx5D72PtSnjtLMLj_tymTAc",
     "google-site-verification=hAtj8VzR8lGDcv80yGd0ST-pMHU8WNU0lkswaau3v2w",
-    "yahoo-verification-key=NRNCv6/IcZMkSv28KI97E4zgZVMkk4PejCwNSh8So2k=",
-    "google-site-verification=R-3XYX47JUVHva3pnhnyjx5D72PtSnjtLMLj_tymTAc"
+    "yahoo-verification-key=NRNCv6/IcZMkSv28KI97E4zgZVMkk4PejCwNSh8So2k="
   ],
   "tls2": {
     "alpn": "",
@@ -245,14 +245,19 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260825152305",
+      "not_after": "20270311152305"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
-  "elapsed_s": 24.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 25.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

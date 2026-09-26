@@ -7,12 +7,12 @@
 | Target | https://allmusic.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | allmusic.com |
-| Test date | 2026-09-26 17:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
+Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,7 +28,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 | 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 13 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 13 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 14 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -107,7 +108,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 - **Detail:** robots.txt lists 153 disallow path(s), e.g. /, /, /, /, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 13. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 13. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of allmusic.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 14. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -129,20 +136,20 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     ],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 20)",
-      "alt3.aspmx.l.google.com (pref 30)",
+      "alt4.aspmx.l.google.com (pref 30)",
       "alt2.aspmx.l.google.com (pref 20)",
+      "alt3.aspmx.l.google.com (pref 30)",
       "aspmx.l.google.com (pref 10)",
-      "alt4.aspmx.l.google.com (pref 30)"
+      "alt1.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
-      "nora.ns.cloudflare.com.",
-      "dan.ns.cloudflare.com."
+      "dan.ns.cloudflare.com.",
+      "nora.ns.cloudflare.com."
     ],
     "spf": [
-      "v=spf1 mx include:_spf.google.com include:sendgrid.net -all",
       "google-site-verification=6GNE5e0BzbutdX7OHhVlS4PpUi9sJx3rBzIRofkP_u0",
-      "google-site-verification=Tk8zvymrmbrGMQcdADh_P8XodD9EITZAsvp15ADX6S0"
+      "google-site-verification=Tk8zvymrmbrGMQcdADh_P8XodD9EITZAsvp15ADX6S0",
+      "v=spf1 mx include:_spf.google.com include:sendgrid.net -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:dmarc-agg@allmusic.com"
@@ -245,7 +252,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260825094113",
+      "not_after": "20261123094112"
     }
   },
   "http2": {
@@ -267,8 +276,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
       "/"
     ]
   },
-  "elapsed_s": 7.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 9.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

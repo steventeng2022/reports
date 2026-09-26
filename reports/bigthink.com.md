@@ -7,8 +7,8 @@
 | Target | https://bigthink.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | bigthink.com |
-| Test date | 2026-09-26 17:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -153,7 +153,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 18. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: brave-ledger-verification=91274b2f4b86d4e567f1bfac3af2939e17f3789e9149f42a54e22b; atlassian-domain-verification=Sy2DdmSX6vjBKYnPktlBtM0HVxilSLu427CbTKyytLpHVd9daK; _globalsign-domain-verification=1bIUeFQan6DwxRMFkfSsKamrhvJLH8zU49c1PDyHi5
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-3yr2nb=R61RWTRp7eKATMAWS6ysnSgTL; apple-domain-verification=Y0jnqEg4a6CbdYpz; _globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 19. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -184,9 +184,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     ],
     "cname": null,
     "mx": [
-      "aspmx2.googlemail.com (pref 30)",
-      "aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx.l.google.com (pref 10)",
+      "aspmx2.googlemail.com (pref 30)",
       "alt1.aspmx.l.google.com (pref 20)",
       "aspmx3.googlemail.com (pref 30)"
     ],
@@ -195,22 +195,22 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "frank.ns.cloudflare.com."
     ],
     "spf": [
-      "e4bo424u3f58fnv2geanpla4r5",
-      "brave-ledger-verification=91274b2f4b86d4e567f1bfac3af2939e17f3789e9149f42a54e22b6c6a4ddfa5",
-      "MS=ms59457489",
-      "v=spf1 a mx include:servers.mcsv.net include:_spf.google.com include:mailgun.org -all",
-      "atlassian-domain-verification=Sy2DdmSX6vjBKYnPktlBtM0HVxilSLu427CbTKyytLpHVd9daKw3DMdjJ0ZLLP4V",
-      "_globalsign-domain-verification=1bIUeFQan6DwxRMFkfSsKamrhvJLH8zU49c1PDyHi5",
-      "google-site-verification=IQ0Q3-snTXtmIPmqxY4XEk-ucnIk9H_LTPldZQ384-o",
-      "_globalsign-domain-verification=oQMq_G3Amhi22taxA9iFT-dk_zHARxA27Z0jygBZzo",
-      "facebook-domain-verification=imnsr6iaawlgvto58dd99ywxgdfkmr",
       "p6wbgj4mp14fnw67x42pd3bjjtk60ppk",
       "anthropic-domain-verification-3yr2nb=R61RWTRp7eKATMAWS6ysnSgTL",
-      "google-site-verification=mrT_skiiLc7lMHOIVrlqYIfL_7dqokcf255Bv4E7Dqg",
-      "ZOOM_verify_skjT3dzGm8H9XEy1EOhYI2",
-      "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
+      "MS=ms59457489",
+      "e4bo424u3f58fnv2geanpla4r5",
       "apple-domain-verification=Y0jnqEg4a6CbdYpz",
-      "google-site-verification=Ag1fG5O40z3867zln2At8HXynDGkVy-PFYrn4TV43n8"
+      "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
+      "brave-ledger-verification=91274b2f4b86d4e567f1bfac3af2939e17f3789e9149f42a54e22b6c6a4ddfa5",
+      "google-site-verification=IQ0Q3-snTXtmIPmqxY4XEk-ucnIk9H_LTPldZQ384-o",
+      "atlassian-domain-verification=Sy2DdmSX6vjBKYnPktlBtM0HVxilSLu427CbTKyytLpHVd9daKw3DMdjJ0ZLLP4V",
+      "_globalsign-domain-verification=oQMq_G3Amhi22taxA9iFT-dk_zHARxA27Z0jygBZzo",
+      "google-site-verification=Ag1fG5O40z3867zln2At8HXynDGkVy-PFYrn4TV43n8",
+      "_globalsign-domain-verification=1bIUeFQan6DwxRMFkfSsKamrhvJLH8zU49c1PDyHi5",
+      "ZOOM_verify_skjT3dzGm8H9XEy1EOhYI2",
+      "v=spf1 a mx include:servers.mcsv.net include:_spf.google.com include:mailgun.org -all",
+      "google-site-verification=mrT_skiiLc7lMHOIVrlqYIfL_7dqokcf255Bv4E7Dqg",
+      "facebook-domain-verification=imnsr6iaawlgvto58dd99ywxgdfkmr"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:dmarc@bigthink.com"
@@ -298,11 +298,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "anthropic-domain-verification-3yr2nb=R61RWTRp7eKATMAWS6ysnSgTL",
+    "apple-domain-verification=Y0jnqEg4a6CbdYpz",
+    "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
     "brave-ledger-verification=91274b2f4b86d4e567f1bfac3af2939e17f3789e9149f42a54e22b",
-    "atlassian-domain-verification=Sy2DdmSX6vjBKYnPktlBtM0HVxilSLu427CbTKyytLpHVd9daK",
-    "_globalsign-domain-verification=1bIUeFQan6DwxRMFkfSsKamrhvJLH8zU49c1PDyHi5",
-    "google-site-verification=IQ0Q3-snTXtmIPmqxY4XEk-ucnIk9H_LTPldZQ384-o",
-    "_globalsign-domain-verification=oQMq_G3Amhi22taxA9iFT-dk_zHARxA27Z0jygBZzo"
+    "google-site-verification=IQ0Q3-snTXtmIPmqxY4XEk-ucnIk9H_LTPldZQ384-o"
   ],
   "tls2": {
     "alpn": "",
@@ -313,7 +313,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260812045557",
+      "not_after": "20261110055537"
     }
   },
   "http2": {
@@ -321,8 +323,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "Sitemap:"
     ]
   },
-  "elapsed_s": 18.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 19.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

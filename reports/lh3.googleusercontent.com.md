@@ -7,12 +7,12 @@
 | Target | https://lh3.googleusercontent.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | lh3.googleusercontent.com |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,7 +31,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 13 | info | P8 | Missing security.txt | CWE-1038 |
 | 14 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 16 | info | CT1 | 1 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | info | CT1 | 1 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
 
 ## Detailed findings
 
@@ -126,7 +127,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (kx3q4x1o2d8oi5.lh3.googleusercontent.com and h8rmfzqi54clws.lh3.googleusercontent.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (j9o65tz8zzkz7p.lh3.googleusercontent.com and uaddhfcg4qlbnv.lh3.googleusercontent.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -135,7 +136,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - **Detail:** Certificate of lh3.googleusercontent.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 16. [INFO] 1 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 142.251.170.132 carries PTR tc-in-f132.1e100.net. for lh3.googleusercontent.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 17. [INFO] 1 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -148,10 +155,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "domain": "lh3.googleusercontent.com",
   "dns": {
     "a": [
-      "142.250.192.129"
+      "142.251.170.132"
     ],
     "aaaa": [
-      "2404:6800:4008:c03::84"
+      "2404:6800:4008:c19::84"
     ],
     "cname": "googlehosted.l.googleusercontent.com.",
     "mx": [],
@@ -166,9 +173,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=*.googleusercontent.com",
-    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
-    "notBefore": "Sep 10 19:23:17 2026 GMT",
-    "notAfter": "Dec  3 19:23:16 2026 GMT",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
+    "notBefore": "Sep 10 19:23:26 2026 GMT",
+    "notAfter": "Dec  3 19:23:25 2026 GMT",
     "san": [
       "*.googleusercontent.com",
       "commondatastorage.googleapis.com",
@@ -334,7 +341,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     }
   },
   "ports": {
-    "ip": "142.250.192.129",
+    "ip": "142.251.170.132",
     "open": []
   },
   "https": {
@@ -399,15 +406,23 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "tls_ver": "TLSv1.3",
     "subject": "None",
     "cert": {
-      "sig_oid": "1.2.840.113549.1.1.11",
+      "sig_oid": "1.2.840.10045.4.3.2",
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192326",
+      "not_after": "20261203192325"
     }
   },
-  "elapsed_s": 3.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 400,
+    "ptr": [
+      "tc-in-f132.1e100.net."
+    ]
+  },
+  "elapsed_s": 3.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

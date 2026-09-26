@@ -7,8 +7,8 @@
 | Target | https://buzzfeednews.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | buzzfeednews.com |
-| Test date | 2026-09-26 17:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -142,7 +142,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=kiZVY__GkjzXSHENpRzCiQqEsTl1tKKN__t-cesn4Tk; _globalsign-domain-verification=rxc48ocR2PhwobuGALz3D9ljNu6LWDgGmlBkqwbt5g; globalsign-domain-verification=-Q7umwx2mj164XwLa0PsoUaWe2HBhta50GjggsT98f
+- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=rxc48ocR2PhwobuGALz3D9ljNu6LWDgGmlBkqwbt5g; knowbe4-site-verification=874a4c20e9e2aa7b3811f96fed08f4ad; globalsign-domain-verification=-Q7umwx2mj164XwLa0PsoUaWe2HBhta50GjggsT98f
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -171,31 +171,31 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   "dns": {
     "a": [
       "151.101.194.114",
-      "151.101.2.114",
+      "151.101.130.114",
       "151.101.66.114",
-      "151.101.130.114"
+      "151.101.2.114"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)",
-      "aspmx3.googlemail.com (pref 10)"
+      "aspmx.l.google.com (pref 1)",
+      "aspmx3.googlemail.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-1695.awsdns-19.co.uk.",
-      "ns-1029.awsdns-00.org.",
       "ns-595.awsdns-10.net.",
-      "ns-118.awsdns-14.com."
+      "ns-118.awsdns-14.com.",
+      "ns-1695.awsdns-19.co.uk.",
+      "ns-1029.awsdns-00.org."
     ],
     "spf": [
-      "google-site-verification=kiZVY__GkjzXSHENpRzCiQqEsTl1tKKN__t-cesn4Tk",
       "_globalsign-domain-verification=rxc48ocR2PhwobuGALz3D9ljNu6LWDgGmlBkqwbt5g",
+      "knowbe4-site-verification=874a4c20e9e2aa7b3811f96fed08f4ad",
       "v=spf1 include:_spf.google.com include:shops.shopify.com include:mail.zendesk.com include:boldapps.net -all",
       "globalsign-domain-verification=-Q7umwx2mj164XwLa0PsoUaWe2HBhta50GjggsT98f",
-      "knowbe4-site-verification=874a4c20e9e2aa7b3811f96fed08f4ad",
+      "google-site-verification=kiZVY__GkjzXSHENpRzCiQqEsTl1tKKN__t-cesn4Tk",
       "facebook-domain-verification=nzw0i4aqkjxa2km4qy9uwiuk040nl0"
     ],
     "dmarc": [
@@ -308,10 +308,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     ]
   },
   "apex_txt": [
-    "google-site-verification=kiZVY__GkjzXSHENpRzCiQqEsTl1tKKN__t-cesn4Tk",
     "_globalsign-domain-verification=rxc48ocR2PhwobuGALz3D9ljNu6LWDgGmlBkqwbt5g",
-    "globalsign-domain-verification=-Q7umwx2mj164XwLa0PsoUaWe2HBhta50GjggsT98f",
     "knowbe4-site-verification=874a4c20e9e2aa7b3811f96fed08f4ad",
+    "globalsign-domain-verification=-Q7umwx2mj164XwLa0PsoUaWe2HBhta50GjggsT98f",
+    "google-site-verification=kiZVY__GkjzXSHENpRzCiQqEsTl1tKKN__t-cesn4Tk",
     "facebook-domain-verification=nzw0i4aqkjxa2km4qy9uwiuk040nl0"
   ],
   "tls2": {
@@ -323,7 +323,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260903130841",
+      "not_after": "20270321120841"
     }
   },
   "http2": {
@@ -345,8 +347,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "/category/*.xml$"
     ]
   },
-  "elapsed_s": 12.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 14.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 
