@@ -7,12 +7,12 @@
 | Target | https://makeuseof.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | makeuseof.com |
-| Test date | 2026-09-26 22:10 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:32 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
+Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 | 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 
 ## Detailed findings
 
@@ -102,7 +103,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=2cno1kK27wks5ACgpcGEBVNW4nqk88HwgZyOyvcYBmQ; google-site-verification=HstUOQsM5p9HxuVTYeVe79TJC10DsjRLp9vkXi4dTdU; google-site-verification=YU-A4nWOzc_7_BXIASILHngCcOsOKQHNcFMkpo_SCT4
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=YU-A4nWOzc_7_BXIASILHngCcOsOKQHNcFMkpo_SCT4; pinterest-site-verification=1f3676d8e31ceb74da001978566feaef; google-site-verification=HstUOQsM5p9HxuVTYeVe79TJC10DsjRLp9vkXi4dTdU
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -135,6 +136,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 - **Detail:** 54.157.137.27 carries PTR ec2-54-157-137-27.compute-1.amazonaws.com. for makeuseof.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
+### 17. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on makeuseof.com lists 43 <loc> URL(s) across 44 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -148,40 +155,40 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     "cname": null,
     "mx": [
       "aspmx.l.google.com (pref 10)",
-      "aspmx3.googlemail.com (pref 30)",
-      "alt2.aspmx.l.google.com (pref 20)",
       "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx2.googlemail.com (pref 30)"
+      "aspmx2.googlemail.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx3.googlemail.com (pref 30)"
     ],
     "ns": [
-      "ns14.dnsmadeeasy.com.",
       "ns11.dnsmadeeasy.com.",
-      "ns13.dnsmadeeasy.com.",
+      "ns14.dnsmadeeasy.com.",
       "ns12.dnsmadeeasy.com.",
-      "ns10.dnsmadeeasy.com.",
-      "ns15.dnsmadeeasy.com."
+      "ns15.dnsmadeeasy.com.",
+      "ns13.dnsmadeeasy.com.",
+      "ns10.dnsmadeeasy.com."
     ],
     "caa": [
       "0 issue \"amazonaws.com\"",
-      "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
       "0 issue \"amazontrust.com\"",
       "0 issue \"amazon.com\"",
-      "0 issuewild \"letsencrypt.org\"",
       "0 issuewild \"amazontrust.com\"",
-      "0 issue \"letsencrypt.org\"",
+      "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issuewild \"amazonaws.com\"",
       "0 issuewild \"amazon.com\"",
-      "0 issuewild \"amazonaws.com\""
+      "0 issue \"letsencrypt.org\""
     ],
     "spf": [
-      "google-site-verification=2cno1kK27wks5ACgpcGEBVNW4nqk88HwgZyOyvcYBmQ",
-      "google-site-verification=HstUOQsM5p9HxuVTYeVe79TJC10DsjRLp9vkXi4dTdU",
       "google-site-verification=YU-A4nWOzc_7_BXIASILHngCcOsOKQHNcFMkpo_SCT4",
-      "v=spf1 include:_spf.google.com include:amazonses.com include:one.zoho.com ~all",
-      "google-site-verification=CAxaugD_nFh8lAwBX0_fm-0rheocNki0ZTiwESP--Kw",
       "pinterest-site-verification=1f3676d8e31ceb74da001978566feaef",
-      "google-site-verification=ZwHXQlySYIBTJb0yfB1PfKNyUyk2cbBXO4Bx8NWkzqU",
+      "google-site-verification=HstUOQsM5p9HxuVTYeVe79TJC10DsjRLp9vkXi4dTdU",
+      "v=spf1 include:_spf.google.com include:amazonses.com include:one.zoho.com ~all",
+      "facebook-domain-verification=vfni2281oyr62lwycezyspzglls69v",
+      "google-site-verification=CAxaugD_nFh8lAwBX0_fm-0rheocNki0ZTiwESP--Kw",
+      "google-site-verification=2cno1kK27wks5ACgpcGEBVNW4nqk88HwgZyOyvcYBmQ",
       "7gx0896dqyj4wpkrjw6hltxrzz44wzhm",
-      "facebook-domain-verification=vfni2281oyr62lwycezyspzglls69v"
+      "google-site-verification=ZwHXQlySYIBTJb0yfB1PfKNyUyk2cbBXO4Bx8NWkzqU"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; adkim=r; aspf=r"
@@ -203,7 +210,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "makeuseof.com",
       "muo.com"
     ],
-    "days_left": 73,
+    "days_left": 72,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -266,11 +273,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=2cno1kK27wks5ACgpcGEBVNW4nqk88HwgZyOyvcYBmQ",
-    "google-site-verification=HstUOQsM5p9HxuVTYeVe79TJC10DsjRLp9vkXi4dTdU",
     "google-site-verification=YU-A4nWOzc_7_BXIASILHngCcOsOKQHNcFMkpo_SCT4",
-    "google-site-verification=CAxaugD_nFh8lAwBX0_fm-0rheocNki0ZTiwESP--Kw",
-    "pinterest-site-verification=1f3676d8e31ceb74da001978566feaef"
+    "pinterest-site-verification=1f3676d8e31ceb74da001978566feaef",
+    "google-site-verification=HstUOQsM5p9HxuVTYeVe79TJC10DsjRLp9vkXi4dTdU",
+    "facebook-domain-verification=vfni2281oyr62lwycezyspzglls69v",
+    "google-site-verification=CAxaugD_nFh8lAwBX0_fm-0rheocNki0ZTiwESP--Kw"
   ],
   "tls2": {
     "alpn": "",
@@ -282,6 +289,15 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
+      "serial": 511608333668206969432399843609456384433752,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://ye1.c.lencr.org/89.crl"
+      ],
+      "subject_dn": "311630140603550403130d6d616b657573656f662e636f6d",
+      "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303594531",
       "not_before": "20260909230342",
       "not_after": "20261208230341"
     }
@@ -322,8 +338,20 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 32.4,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "hsts": "max-age=31536000; includeSubDomains; preload",
+    "sitemap": {
+      "urls": 43,
+      "indexes": 44
+    },
+    "crl": {
+      "url": "http://ye1.c.lencr.org/89.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 35.8,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -334,4 +362,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

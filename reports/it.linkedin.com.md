@@ -7,12 +7,12 @@
 | Target | https://it.linkedin.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | it.linkedin.com |
-| Test date | 2026-09-26 22:09 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:31 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
+Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 | 17 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
 | 18 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 19 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 20 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 21 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
+| 22 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
 
 ## Detailed findings
 
@@ -147,7 +150,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 ### 18. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkmt4v1rpdep01.html -> 404; error page/headers match: Cloudflare.
+- **Detail:** GET /xke6yd5xr1n14s.html -> 404; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 19. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -155,6 +158,24 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 - **CWE:** CWE-200
 - **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on it.linkedin.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
 - **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 20. [LOW] HSTS does not cover subdomains (`H21`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security on it.linkedin.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of it.linkedin.com.
+- **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
+
+### 21. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+
+- **CWE:** CWE-345
+- **Detail:** Root document of it.linkedin.com loads 2 cross-origin script(s) without an integrity attribute, e.g. https://static.licdn.com/aero-v1/sc/h/azyj0u7xl6tpxe5fn3t3djk7p, https://static.licdn.com/aero-v1/sc/h/26g24klhu4k9p8zgtz6fs4k01; a compromise of any such third-party host can inject code.
+- **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
+
+### 22. [INFO] security.txt published with a contact address (`SEC1`)
+
+- **CWE:** CWE-1038
+- **Detail:** /.well-known/security.txt on it.linkedin.com is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
+- **Recommendation:** Confirm the published contact is current and monitored (RFC 9116).
 
 ## Evidence (raw response observations)
 
@@ -373,6 +394,16 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.digicert.com",
+      "serial": 14044888442965581883900269217953572259,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
+        "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
+      ],
+      "subject_dn": "310b3009060355040613025553311330110603550408130a43616c69666f726e6961311230100603550407130953756e6e7976616c65311d301b060355040a13144c696e6b6564696e20436f72706f726174696f6e311830160603550403130f65702e6c696e6b6564696e2e636f6d",
+      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
       "not_before": "20260903000000",
       "not_after": "20270303235959"
     },
@@ -415,8 +446,17 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 14.3,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "hsts": "max-age=31536000",
+    "security_txt": "/.well-known/security.txt",
+    "crl": {
+      "url": "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 16.4,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -427,4 +467,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

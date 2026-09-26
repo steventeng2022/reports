@@ -7,12 +7,12 @@
 | Target | https://about.fb.com/ |
 | Bug bounty program | Facebook |
 | Listed scope domain | about.fb.com |
-| Test date | 2026-09-26 21:56 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,14 +26,15 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 9 | info | H6 | Server technology disclosure | CWE-200 |
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
-| 11 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
-| 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 14 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
-| 15 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
-| 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 17 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
-| 18 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 13 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
+| 14 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 15 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 16 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 17 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 18 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 19 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -105,49 +106,55 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 11. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
-
-- **CWE:** CWE-603
-- **Detail:** OCSP check via http://ocsp.digicert.com -> http-200
-- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
-
-### 12. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but about.fb.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 13. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 2 disallow path(s), e.g. /*/search/, Sitemap:
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 14. [LOW] HTTPS root redirects to a different domain (`RD2`)
+### 13. [LOW] HTTPS root redirects to a different domain (`RD2`)
 
 - **CWE:** CWE-200
 - **Detail:** https://about.fb.com/ answered 301 with Location: https://about.facebook.com/ (cross-domain handoff at the entry point).
 - **Recommendation:** Review the cross-domain redirect; it discloses the real entry point and can be abused in open-redirect-style flows.
 
-### 15. [INFO] Error-page technology fingerprint (`ERR1`)
+### 14. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkbxkqyboegnmd.html -> 404; error page/headers match: Nginx, WordPress.
+- **Detail:** GET /xk5dmeyz247cov.html -> 404; error page/headers match: Nginx, WordPress.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
-### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 15. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for about.fb.com; apex fb.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 17. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+### 16. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
 
 - **CWE:** CWE-298
 - **Detail:** The about.fb.com certificate lists an AIA OCSP responder (http://ocsp.digicert.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
-### 18. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 17. [LOW] HSTS does not cover subdomains (`H21`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security on about.fb.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of about.fb.com.
+- **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
+
+### 18. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on about.fb.com lists 1001 <loc> URL(s); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
+### 19. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -267,10 +274,20 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.digicert.com",
+      "serial": 20863568580843548251780658779184956746,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
+        "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
+      ],
+      "subject_dn": "310b3009060355040613025553311330110603550408130a43616c69666f726e6961311330110603550407130a4d656e6c6f205061726b311d301b060355040a13144d65746120506c6174666f726d732c20496e632e311530130603550403130c61626f75742e66622e636f6d",
+      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
       "not_before": "20260601000000",
       "not_after": "20261216235959"
     },
-    "ocsp": "http-200"
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -293,8 +310,20 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 27.3,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "hsts": "max-age=31536000",
+    "sitemap": {
+      "urls": 1001,
+      "indexes": 0
+    },
+    "crl": {
+      "url": "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 28.1,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -305,4 +334,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

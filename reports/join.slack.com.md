@@ -7,12 +7,12 @@
 | Target | https://join.slack.com/ |
 | Bug bounty program | Slack |
 | Listed scope domain | join.slack.com |
-| Test date | 2026-09-26 22:09 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:31 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
+Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 | 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 18 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 19 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 20 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
+| 21 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 
 ## Detailed findings
 
@@ -127,7 +129,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (m4er7pgsgjaftp.join.slack.com and b2685z465r31og.join.slack.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (k6xd3zsxaqs84z.join.slack.com and 549kzt4khcyk46.join.slack.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -145,13 +147,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 52.196.128.139 carries PTR ec2-52-196-128-139.ap-northeast-1.compute.amazonaws.com. for join.slack.com.
+- **Detail:** 52.192.46.121 carries PTR ec2-52-192-46-121.ap-northeast-1.compute.amazonaws.com. for join.slack.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 18. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkwla2rdwb7jg4.html -> 404; error page/headers match: Apache.
+- **Detail:** GET /xkhuz3ck9jqp82.html -> 404; error page/headers match: Apache.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 19. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -160,6 +162,18 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 - **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on join.slack.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
 - **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
+### 20. [INFO] security.txt published with a contact address (`SEC1`)
+
+- **CWE:** CWE-1038
+- **Detail:** /.well-known/security.txt on join.slack.com is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
+- **Recommendation:** Confirm the published contact is current and monitored (RFC 9116).
+
+### 21. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on join.slack.com lists 13 <loc> URL(s) across 14 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -167,10 +181,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
   "domain": "join.slack.com",
   "dns": {
     "a": [
-      "52.196.128.139",
-      "35.74.58.174",
+      "52.192.46.121",
       "35.73.126.78",
-      "52.192.46.121"
+      "52.196.128.139",
+      "35.74.58.174"
     ],
     "aaaa": [],
     "cname": null,
@@ -210,7 +224,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     }
   },
   "ports": {
-    "ip": "52.196.128.139",
+    "ip": "52.192.46.121",
     "open": []
   },
   "https": {
@@ -273,6 +287,15 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": null,
+      "serial": 588923964239081973910202102210404652615259,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://yr1.c.lencr.org/92.crl"
+      ],
+      "subject_dn": "3112301006035504031309736c61636b2e636f6d",
+      "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303595231",
       "not_before": "20260806093339",
       "not_after": "20261104093338"
     }
@@ -299,7 +322,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
   "x12": {
     "status": 302,
     "ptr": [
-      "ec2-52-196-128-139.ap-northeast-1.compute.amazonaws.com."
+      "ec2-52-192-46-121.ap-northeast-1.compute.amazonaws.com."
     ]
   },
   "x13": {
@@ -317,8 +340,20 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 24.9,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 302,
+    "security_txt": "/.well-known/security.txt",
+    "sitemap": {
+      "urls": 13,
+      "indexes": 14
+    },
+    "crl": {
+      "url": "http://yr1.c.lencr.org/92.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 26.8,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -329,4 +364,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

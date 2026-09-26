@@ -7,12 +7,12 @@
 | Target | https://accessify.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | accessify.com |
-| Test date | 2026-09-26 21:56 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
+Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,7 +37,10 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 | 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 20 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 21 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 22 | info | CT1 | 5 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 22 | info | SRV1 | Server header discloses a product version | CWE-200 |
+| 23 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
+| 24 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 25 | info | CT1 | 5 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -166,7 +169,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 ### 20. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkbvuk5qpkkv7l.html -> 404; error page/headers match: Nginx.
+- **Detail:** GET /xkiabf38va21el.html -> 404; error page/headers match: Nginx.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 21. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -175,7 +178,25 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 - **Detail:** No CAA record found for accessify.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 22. [INFO] 5 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 22. [INFO] Server header discloses a product version (`SRV1`)
+
+- **CWE:** CWE-200
+- **Detail:** Server header on accessify.com is 'nginx/1.14.1' and includes a version number, which narrows targeted vulnerability research.
+- **Recommendation:** Serve a generic Server value without the version.
+
+### 23. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+
+- **CWE:** CWE-345
+- **Detail:** Root document of accessify.com loads 1 cross-origin script(s) without an integrity attribute, e.g. https://www.googletagmanager.com/gtag/js?id=G-R4VP192LMQ; a compromise of any such third-party host can inject code.
+- **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
+
+### 24. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on accessify.com lists 25 <loc> URL(s) across 26 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
+### 25. [INFO] 5 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: cdn.accessify.com
@@ -311,6 +332,15 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": null,
+      "serial": 576587579520467159497883827505288646382672,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://yr1.c.lencr.org/81.crl"
+      ],
+      "subject_dn": "311630140603550403130d6163636573736966792e636f6d",
+      "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303595231",
       "not_before": "20260820011249",
       "not_after": "20261118011248"
     }
@@ -343,8 +373,19 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 28.0,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "sitemap": {
+      "urls": 25,
+      "indexes": 26
+    },
+    "crl": {
+      "url": "http://yr1.c.lencr.org/81.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 30.2,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -355,4 +396,5 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

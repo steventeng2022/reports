@@ -7,12 +7,12 @@
 | Target | https://news.mit.edu/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | news.mit.edu |
-| Test date | 2026-09-26 22:11 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:34 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,7 +31,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 15 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 16 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 16 | info | HTML3 | Third-party <iframe> embedded in root document | CWE-643 |
+| 17 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 18 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -132,7 +134,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - **Detail:** No CAA record found for news.mit.edu; apex mit.edu, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 16. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] Third-party <iframe> embedded in root document (`HTML3`)
+
+- **CWE:** CWE-643
+- **Detail:** Root document of news.mit.edu embeds 1 cross-origin iframe(s), e.g. https://www.googletagmanager.com/ns.html?id=GTM-KDTCBZD; embedded origins are framed inside the page with its trust context.
+- **Recommendation:** Review embedded origins and consider sandbox attributes.
+
+### 17. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on news.mit.edu lists 17 <loc> URL(s) across 18 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
+### 18. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: news.mit.edu
@@ -148,8 +162,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "23.185.0.4"
     ],
     "aaaa": [
-      "2620:12a:8001::4",
-      "2620:12a:8000::4"
+      "2620:12a:8000::4",
+      "2620:12a:8001::4"
     ],
     "cname": null,
     "mx": [],
@@ -260,6 +274,15 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": null,
+      "serial": 487455108378490359465795743372571013343846,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://yr1.c.lencr.org/103.crl"
+      ],
+      "subject_dn": "311830160603550403130f6e6577732d72632e6d69742e656475",
+      "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303595231",
       "not_before": "20260917235724",
       "not_after": "20261216235723"
     }
@@ -296,8 +319,20 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 33.2,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "hsts": "max-age=300",
+    "sitemap": {
+      "urls": 17,
+      "indexes": 18
+    },
+    "crl": {
+      "url": "http://yr1.c.lencr.org/103.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 34.8,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -308,4 +343,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

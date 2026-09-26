@@ -7,12 +7,12 @@
 | Target | https://meet.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | meet.google.com |
-| Test date | 2026-09-26 22:10 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:32 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
+Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
 | 10 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 | 11 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 | 12 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 13 | low | H21 | HSTS does not cover subdomains | CWE-319 |
 
 ## Detailed findings
 
@@ -106,6 +107,12 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
 - **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on meet.google.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
 - **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
+### 13. [LOW] HSTS does not cover subdomains (`H21`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security on meet.google.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of meet.google.com.
+- **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
+
 ## Evidence (raw response observations)
 
 ```json
@@ -113,24 +120,24 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
   "domain": "meet.google.com",
   "dns": {
     "a": [
+      "142.251.154.5",
+      "142.251.151.5",
+      "142.251.153.5",
+      "142.251.150.5",
       "142.251.152.5",
       "142.251.155.5",
-      "142.251.157.5",
-      "142.251.150.5",
-      "142.251.153.5",
-      "142.251.151.5",
-      "142.251.154.5",
-      "142.251.156.5"
+      "142.251.156.5",
+      "142.251.157.5"
     ],
     "aaaa": [
+      "2001:4860:482c:500::",
+      "2001:4860:4826:500::",
+      "2001:4860:482d:500::",
+      "2001:4860:4827:500::",
       "2001:4860:4829:500::",
       "2001:4860:482a:500::",
-      "2001:4860:482b:500::",
-      "2001:4860:4826:500::",
-      "2001:4860:482c:500::",
       "2001:4860:4828:500::",
-      "2001:4860:482d:500::",
-      "2001:4860:4827:500::"
+      "2001:4860:482b:500::"
     ],
     "cname": null,
     "mx": [],
@@ -146,9 +153,9 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=*.google.com",
-    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
-    "notBefore": "Sep 10 19:21:53 2026 GMT",
-    "notAfter": "Dec  3 19:21:52 2026 GMT",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
+    "notBefore": "Sep 10 19:22:01 2026 GMT",
+    "notAfter": "Dec  3 19:22:00 2026 GMT",
     "san": [
       "*.google.com",
       "*.appengine.google.com",
@@ -226,7 +233,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
     }
   },
   "ports": {
-    "ip": "142.251.152.5",
+    "ip": "142.251.154.5",
     "open": []
   },
   "https": {
@@ -293,6 +300,15 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
+      "serial": 91374321421071198902268481174050507237,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://c.pki.goog/wr2/oQ6nyr8F0m0.crl"
+      ],
+      "subject_dn": "3115301306035504030c0c2a2e676f6f676c652e636f6d",
+      "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303575232",
       "not_before": "20260910192153",
       "not_after": "20261203192152"
     }
@@ -321,8 +337,16 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 5.3,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 302,
+    "hsts": "max-age=31536000",
+    "crl": {
+      "url": "http://c.pki.goog/wr2/oQ6nyr8F0m0.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 5.5,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -333,4 +357,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

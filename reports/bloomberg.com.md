@@ -7,12 +7,12 @@
 | Target | https://bloomberg.com/ |
 | Bug bounty program | Bloomberg |
 | Listed scope domain | bloomberg.com |
-| Test date | 2026-09-26 21:59 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:20 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
+Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 14 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 15 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 16 | info | SRV1 | Server header discloses a product version | CWE-200 |
 
 ## Detailed findings
 
@@ -95,7 +97,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=vH_zs-JrwvXxkyuUqmeN9t3iMYZqyt1-BJUsoyN3ca8; airtable-verification=15d4376d6d99cc906abbcb295b4245da; jamf-site-verification=VJNRhgJ90SmyugkIPAdfCQ
+- **Detail:** Apex TXT records with verification/token content: parallels-domain-verification=47460854911b478da11221dc20e8cc0340a92adf1e6b4ff08a; airtable-verification=15d4376d6d99cc906abbcb295b4245da; lutron-domain-verification-p8wzsk=PQcs5tfle6vYve4ulSshxyMYi
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -113,7 +115,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 ### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 3.33.146.110 carries PTR aa2f66099ca87b6fe.awsglobalaccelerator.com. for bloomberg.com.
+- **Detail:** 15.197.146.156 carries PTR aa2f66099ca87b6fe.awsglobalaccelerator.com. for bloomberg.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 14. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
@@ -122,6 +124,18 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 - **Detail:** The bloomberg.com certificate lists an AIA OCSP responder (http://ocsp.digicert.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
+### 15. [LOW] HSTS does not cover subdomains (`H21`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security on bloomberg.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of bloomberg.com.
+- **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
+
+### 16. [INFO] Server header discloses a product version (`SRV1`)
+
+- **CWE:** CWE-200
+- **Detail:** Server header on bloomberg.com is 'awselb/2.0' and includes a version number, which narrows targeted vulnerability research.
+- **Recommendation:** Serve a generic Server value without the version.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -129,56 +143,56 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
   "domain": "bloomberg.com",
   "dns": {
     "a": [
-      "3.33.146.110",
-      "15.197.146.156"
+      "15.197.146.156",
+      "3.33.146.110"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mgcnj1.bloomberg.com (pref 0)",
-      "mgcnj2.bloomberg.com (pref 0)",
       "mgcny2.bloomberg.com (pref 0)",
-      "mgcny1.bloomberg.com (pref 0)"
+      "mgcnj2.bloomberg.com (pref 0)",
+      "mgcny1.bloomberg.com (pref 0)",
+      "mgcnj1.bloomberg.com (pref 0)"
     ],
     "ns": [
-      "pdns3.ultradns.org.",
-      "dns2.p01.nsone.net.",
-      "dns1.p01.nsone.net.",
       "pdns1.ultradns.net.",
-      "dns3.p01.nsone.net.",
+      "pdns3.ultradns.org.",
+      "pdns5.ultradns.info.",
+      "dns1.p01.nsone.net.",
       "dns4.p01.nsone.net.",
-      "pdns5.ultradns.info."
+      "dns2.p01.nsone.net.",
+      "dns3.p01.nsone.net."
     ],
     "caa": [
-      "0 iodef \"mailto:reportvuln@bloomberg.net\"",
-      "0 issue \"digicert.com\"",
       "0 issue \"amazon.com\"",
-      "0 issuewild \"digicert.com\""
+      "0 issuewild \"digicert.com\"",
+      "0 issue \"digicert.com\"",
+      "0 iodef \"mailto:reportvuln@bloomberg.net\""
     ],
     "spf": [
-      "google-site-verification=vH_zs-JrwvXxkyuUqmeN9t3iMYZqyt1-BJUsoyN3ca8",
-      "Ymxvb21iZXJn",
-      "airtable-verification=15d4376d6d99cc906abbcb295b4245da",
-      "jamf-site-verification=VJNRhgJ90SmyugkIPAdfCQ",
-      "v=spf1 ip4:69.184.0.0/13 ip4:199.172.169.0/24 ip4:208.22.56.0/24 ip4:69.191.241.124 -all",
-      "ZOOM_verify_rl-mcFScS8W6864E30mlZg",
-      "apple-domain-verification=9cs9hMRccEtbVb8h",
       "parallels-domain-verification=47460854911b478da11221dc20e8cc0340a92adf1e6b4ff08a5e941f5379c267",
-      "google-gws-recovery-domain-verification=72311760",
-      "OSSRH-64276",
-      "cursor-domain-verification-asb77c=D43c1zjGqO3rTemQvZ121NSfi",
-      "MS=ms99943004",
-      "MS=ms33692690",
       "2smsverify=08qXd7f0aUa5IPq0N4ETgQ",
-      "F2QdzLTE6LTOyOQ7pQzoSY2pnwVM5pnfiqY3zOoYvS3LoVmIUr0J3op5vQI8Tg8VQwt24UK8v7oFWfbrCBWYYw==",
-      "lutron-domain-verification-p8wzsk=PQcs5tfle6vYve4ulSshxyMYi",
+      "OSSRH-64276",
       "QnH3utpbwmcXnxwnErM2by/pp37P7fYtF9si0rMmb9FgwB98zU8UAzdl1GbyQMdyNFLKobFRdX6FfLlH/LG+og==",
-      "atlassian-domain-verification=gK9LJEftkavNAe/keDgXDWOhGwUV02GQTz9BbfKLplkTTtpciOH5eL1W6u7BRfVR",
-      "openai-domain-verification=dv-XaK3IjuwWpMmfss9VYKwn0eY",
+      "airtable-verification=15d4376d6d99cc906abbcb295b4245da",
+      "lutron-domain-verification-p8wzsk=PQcs5tfle6vYve4ulSshxyMYi",
+      "cursor-domain-verification-asb77c=D43c1zjGqO3rTemQvZ121NSfi",
+      "apple-domain-verification=9cs9hMRccEtbVb8h",
+      "Ymxvb21iZXJn",
+      "google-site-verification=vH_zs-JrwvXxkyuUqmeN9t3iMYZqyt1-BJUsoyN3ca8",
+      "MS=ms33692690",
+      "jamf-site-verification=VJNRhgJ90SmyugkIPAdfCQ",
+      "F2QdzLTE6LTOyOQ7pQzoSY2pnwVM5pnfiqY3zOoYvS3LoVmIUr0J3op5vQI8Tg8VQwt24UK8v7oFWfbrCBWYYw==",
+      "v=spf1 ip4:69.184.0.0/13 ip4:199.172.169.0/24 ip4:208.22.56.0/24 ip4:69.191.241.124 -all",
       "google-site-verification=CI2IKDBbk_gcKk_9CFFUrF-ZLZToKXQ7SAJ96fjqZ_I",
-      "google-site-verification=ClT3QBQ-Rd4b3AAq2gmQ-u_94EliZRmC2e-Kb4t9zEo",
+      "openai-domain-verification=dv-XaK3IjuwWpMmfss9VYKwn0eY",
       "ZOOM_verify_8UDWCiGoiAVgGEuiZNG9Ld",
-      "extensis-domain-verification=707df5b4-0868-499f-af75-51718e082698"
+      "google-gws-recovery-domain-verification=72311760",
+      "atlassian-domain-verification=gK9LJEftkavNAe/keDgXDWOhGwUV02GQTz9BbfKLplkTTtpciOH5eL1W6u7BRfVR",
+      "ZOOM_verify_rl-mcFScS8W6864E30mlZg",
+      "extensis-domain-verification=707df5b4-0868-499f-af75-51718e082698",
+      "google-site-verification=ClT3QBQ-Rd4b3AAq2gmQ-u_94EliZRmC2e-Kb4t9zEo",
+      "MS=ms99943004"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; adkim=r; aspf=r; ruf=mailto:dmarc-ruf@dmarc-bloomberg.com; fo=1; rua=mailto:dmarc-rua@dmarc-bloomberg.com"
@@ -257,7 +271,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
     }
   },
   "ports": {
-    "ip": "3.33.146.110",
+    "ip": "15.197.146.156",
     "open": []
   },
   "https": {
@@ -310,11 +324,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=vH_zs-JrwvXxkyuUqmeN9t3iMYZqyt1-BJUsoyN3ca8",
+    "parallels-domain-verification=47460854911b478da11221dc20e8cc0340a92adf1e6b4ff08a",
     "airtable-verification=15d4376d6d99cc906abbcb295b4245da",
-    "jamf-site-verification=VJNRhgJ90SmyugkIPAdfCQ",
-    "apple-domain-verification=9cs9hMRccEtbVb8h",
-    "parallels-domain-verification=47460854911b478da11221dc20e8cc0340a92adf1e6b4ff08a"
+    "lutron-domain-verification-p8wzsk=PQcs5tfle6vYve4ulSshxyMYi",
+    "cursor-domain-verification-asb77c=D43c1zjGqO3rTemQvZ121NSfi",
+    "apple-domain-verification=9cs9hMRccEtbVb8h"
   ],
   "tls2": {
     "alpn": "",
@@ -326,6 +340,16 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.digicert.com",
+      "serial": 4176607975525079089845331021555329356,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
+        "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
+      ],
+      "subject_dn": "310b30090603550406130255533111300f060355040813084e657720596f726b3111300f060355040713084e657720596f726b31153013060355040a130c426c6f6f6d62657267204c50312330210603550403131a776d6b74312e6369727275732e626c6f6f6d626572672e636f6d",
+      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
       "not_before": "20260723000000",
       "not_after": "20270129235959"
     },
@@ -368,8 +392,16 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 25.1,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "hsts": "max-age=31536000",
+    "crl": {
+      "url": "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 27.6,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -380,4 +412,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

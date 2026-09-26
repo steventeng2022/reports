@@ -7,12 +7,12 @@
 | Target | https://cancerresearchuk.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | cancerresearchuk.org |
-| Test date | 2026-09-26 22:00 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:21 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
+Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,8 +35,10 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 | 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
-| 20 | info | CT1 | 328 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 21 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 20 | info | SRV1 | Server header discloses a product version | CWE-200 |
+| 21 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 22 | info | CT1 | 328 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 23 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -130,7 +132,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=IGJmYB4ReQOvnh8C421oNRDVuu5D-eZofJf6Y97qPBU; facebook-domain-verification=4hzy2r2nmzkhsj084cd7fki46jeaa3; google-site-verification=c1Vsqct8unmvZEnNTtoZZ_dDsq-qejygwotuVnfoupY
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=ZIfJE9Gth65P2EaS; apple-domain-verification=IGJmYB4ReQOvnh8C421oNRDVuu5D-eZofJf6Y97qPBU; facebook-domain-verification=4hzy2r2nmzkhsj084cd7fki46jeaa3
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -148,7 +150,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 18.133.42.18 carries PTR ec2-18-133-42-18.eu-west-2.compute.amazonaws.com. for cancerresearchuk.org.
+- **Detail:** 18.132.167.245 carries PTR ec2-18-132-167-245.eu-west-2.compute.amazonaws.com. for cancerresearchuk.org.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -163,13 +165,25 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 - **Detail:** The cancerresearchuk.org certificate lists an AIA OCSP responder (http://ocsp.r2m04.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
-### 20. [INFO] 328 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 20. [INFO] Server header discloses a product version (`SRV1`)
+
+- **CWE:** CWE-200
+- **Detail:** Server header on cancerresearchuk.org is 'awselb/2.0' and includes a version number, which narrows targeted vulnerability research.
+- **Recommendation:** Serve a generic Server value without the version.
+
+### 21. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on cancerresearchuk.org lists 2 <loc> URL(s) across 3 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
+### 22. [INFO] 328 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: admin.events.cancerresearchuk.org, admin.fundraise.cancerresearchuk.org, api.activities.cancerresearchuk.org, api.activity.cancerresearchuk.org, api.discounts.cancerresearchuk.org, api.events.cancerresearchuk.org, api.fundraise.cancerresearchuk.org, assets.cancerchat.cancerresearchuk.org, assets.fundraise.cancerresearchuk.org, auth.activities.cancerresearchuk.org
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 21. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 23. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: api.activity.cancerresearchuk.org; content may still be served via virtual-host fallback.
@@ -182,8 +196,8 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
   "domain": "cancerresearchuk.org",
   "dns": {
     "a": [
-      "18.133.42.18",
       "18.132.167.245",
+      "18.133.42.18",
       "18.171.47.200"
     ],
     "aaaa": [],
@@ -193,80 +207,80 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
     ],
     "ns": [
       "ns-33.awsdns-04.com.",
-      "ns-885.awsdns-46.net.",
+      "ns-1410.awsdns-48.org.",
       "ns-1773.awsdns-29.co.uk.",
-      "ns-1410.awsdns-48.org."
+      "ns-885.awsdns-46.net."
     ],
     "caa": [],
     "spf": [
-      "v1n0kqhknmzc5fsg2zf7tsn4780hmj1m",
-      "3rl4ld7tjl4sbpy967j2cr7y48vbxcxn",
-      "26m8th96q9myjm4zz46h7r7cvbwbwjh4",
-      "7msqnpj5xr4y5syw9g44m95dfl44hjgx",
-      "khdfh0nr2q0wr7563tcm7b5pfq068q5y",
-      "bd66lyr72y3lq95qw2314t8vcy16lwps",
-      "5cfht3mshcf3trp03bh7jrkqcv6ddg69",
-      "f9w7nn10vpy421nnf3pqmfsgth5pq3hq",
-      "ss0bz7586fsg4xxdmsyjqt8jcgyg8zrx",
-      "m1rh31jnyk8f4zy25vlb01nmv62x0l9p",
+      "apple-domain-verification=ZIfJE9Gth65P2EaS",
+      "g07kykmlvhp2d8vfzjxm1shy9n35w7nv",
       "fn1b7vvmlhfpmf35rchfpz383tm1bndy",
+      "vc6k1223ptdlchvpy3s18lq144xv1slj",
+      "m1rh31jnyk8f4zy25vlb01nmv62x0l9p",
+      "_ly5k70e1l8gd1shizgsvpgha4v9m2ut",
+      "f9w7nn10vpy421nnf3pqmfsgth5pq3hq",
+      "wf7338jyn6pqbdzrjwlwtb841r6dh0hd",
+      "mzm32j62qpf6tkkydk6p0ph763nnjhsp",
+      "v1n0kqhknmzc5fsg2zf7tsn4780hmj1m",
+      "apple-domain-verification=IGJmYB4ReQOvnh8C421oNRDVuu5D-eZofJf6Y97qPBU",
+      "hpc5sj1r9xplb20nd3q43m1bzdhpb85j",
+      "cglw6w22gnjt39h39kgr4wf62r05rt02",
+      "facebook-domain-verification=4hzy2r2nmzkhsj084cd7fki46jeaa3",
+      "wpv0g4gkpbw0kqrlm6jlrb2bxw3zd0v0",
+      "_wlakz6emublsj5fvgjt8dl2i84ycrmq",
+      "zdcmc5v22rdy0s5tc80j5xwl1ygcbf6g",
+      "m1gfkdpv7rscd8mr64mw9wcxtsrxh0ds",
+      "s50n3srkhkz08lqgjwt4zj6zrjsxnbn4",
+      "5cfht3mshcf3trp03bh7jrkqcv6ddg69",
+      "bnslp7wjbc8v3n5wkdr8hxl5l8fxr2hl",
+      "bv1by0fvhbpznqy9xqmzr6z10lghjjgg",
+      "24zprsdb1b3ync7ywmsypc3vvn70cb95",
+      "dr0t5jj72k4t61lk8ffs081fj6rghv6n",
+      "_exbcbqu4yx5x3py9lyawkwfuxanm7sj",
+      "y9ncngdcvrvk16m4gljshc7gvhhxh8lc",
+      "facebook-domain-verification=61rl1f9boyjhytks0jdex0hncnayfr",
+      "g1fh5zpwprcz6cn2rq5gblvsb7lwx2t7",
+      "x54b24q04j1j22dz1mvbjqzv9r9pk876",
+      "d4tgqmcxcgtg2plddnyjvcqtpdyypf12",
       "rm_verify=b5ea71cdcf",
+      "google-site-verification=PHwtSX75UKqvpzyPHmk4bGBzczkPu71eNXBD-GyiKbw",
+      "ss0bz7586fsg4xxdmsyjqt8jcgyg8zrx",
+      "x1whvwl6r9qqx6y8z1dnvk64lkbbzfqx",
+      "6sqc01vxxxwzn49y5jd2p6wxdq5f7z3q",
       "s4bfybvmkvmrjl1lnmbtl3khph6h0vvb",
-      "zzhv3bsz0x6y1hglhy4wxp3pvz2rw432",
+      "26m8th96q9myjm4zz46h7r7cvbwbwjh4",
+      "bd66lyr72y3lq95qw2314t8vcy16lwps",
+      "y468410l6rk4ybc5dnyrqnr1ycsmr58j",
+      "40z41kzn43jd310vq6v9k622x3v9fxkx",
+      "_lvx2syhktdeoxcx6mo6b51u3h1usqwx",
       "MS=ms18612172",
+      "hgyx98b9cc79ztr03qm7h7qlsgl7wlyr",
+      "1tn2p2x86m2jvp6wjvh9n8kf197vtmmd",
+      "1ly9mvl98241ksqyw929gldgyy46f27c",
+      "khdfh0nr2q0wr7563tcm7b5pfq068q5y",
+      "nnp90zxqqzmkn93bwvhdl46dwvfp0v3y",
+      "zzhv3bsz0x6y1hglhy4wxp3pvz2rw432",
       "6q77047g56cblw7j2h9j1bgxdfth47fl",
       "0v1c9bt4vwkdmptx84wzz413s3xsc990",
-      "y9ncngdcvrvk16m4gljshc7gvhhxh8lc",
-      "45qbtsvh8vd17n794pf4cpj7z8zwk0tj",
-      "_wlakz6emublsj5fvgjt8dl2i84ycrmq",
-      "1ly9mvl98241ksqyw929gldgyy46f27c",
-      "1tn2p2x86m2jvp6wjvh9n8kf197vtmmd",
-      "_lvx2syhktdeoxcx6mo6b51u3h1usqwx",
-      "vxqr9nqtmryh46zfq0jqwjx316764nsk",
-      "apple-domain-verification=IGJmYB4ReQOvnh8C421oNRDVuu5D-eZofJf6Y97qPBU",
       "ww43j1bp5rmj9lgjwr0x73qbpl0mj8yf",
-      "_e8bqk4zyvefuarzhyy6hu9bizyu1ny7",
-      "dr0t5jj72k4t61lk8ffs081fj6rghv6n",
       "v=spf1 include:em9792.cancerresearchuk.org include:spf.protection.outlook.com include:amazonses.com -all",
-      "facebook-domain-verification=4hzy2r2nmzkhsj084cd7fki46jeaa3",
-      "d4tgqmcxcgtg2plddnyjvcqtpdyypf12",
-      "_ly5k70e1l8gd1shizgsvpgha4v9m2ut",
       "_qydnb71cn3lqycnc1mtenmuxez97jlp",
-      "hpc5sj1r9xplb20nd3q43m1bzdhpb85j",
-      "bv1by0fvhbpznqy9xqmzr6z10lghjjgg",
-      "s50n3srkhkz08lqgjwt4zj6zrjsxnbn4",
-      "40z41kzn43jd310vq6v9k622x3v9fxkx",
-      "bnslp7wjbc8v3n5wkdr8hxl5l8fxr2hl",
-      "7g4q3fqrptyjf17dzs4js241j4v67c6t",
-      "g07kykmlvhp2d8vfzjxm1shy9n35w7nv",
-      "_gu3tif2ur9nnozx0ckdgutzqdo8p38j",
-      "vc6k1223ptdlchvpy3s18lq144xv1slj",
-      "nnp90zxqqzmkn93bwvhdl46dwvfp0v3y",
-      "vnm8g3svr0c67s4xmgld8q209cc68364S",
-      "wpv0g4gkpbw0kqrlm6jlrb2bxw3zd0v0",
-      "m1gfkdpv7rscd8mr64mw9wcxtsrxh0ds",
-      "x54b24q04j1j22dz1mvbjqzv9r9pk876",
-      "google-site-verification=c1Vsqct8unmvZEnNTtoZZ_dDsq-qejygwotuVnfoupY",
-      "mzm32j62qpf6tkkydk6p0ph763nnjhsp",
-      "facebook-domain-verification=61rl1f9boyjhytks0jdex0hncnayfr",
-      "_i6zwxvcptwz9qmphgqpvbhyog72fmuo",
-      "6sqc01vxxxwzn49y5jd2p6wxdq5f7z3q",
-      "wf7338jyn6pqbdzrjwlwtb841r6dh0hd",
-      "zdcmc5v22rdy0s5tc80j5xwl1ygcbf6g",
-      "_6vt5j2zihy4gglxz8kvsmr9pq7h2a4c",
-      "cglw6w22gnjt39h39kgr4wf62r05rt02",
-      "6b7bv6ky1d5gbp66fgqkqhcdj7n4z04l",
-      "hgyx98b9cc79ztr03qm7h7qlsgl7wlyr",
-      "x1whvwl6r9qqx6y8z1dnvk64lkbbzfqx",
-      "y468410l6rk4ybc5dnyrqnr1ycsmr58j",
-      "g1fh5zpwprcz6cn2rq5gblvsb7lwx2t7",
-      "_exbcbqu4yx5x3py9lyawkwfuxanm7sj",
-      "apple-domain-verification=ZIfJE9Gth65P2EaS",
-      "_w8opp2p377zo21qi6gh2zwgfe2bmmpa",
-      "google-site-verification=PHwtSX75UKqvpzyPHmk4bGBzczkPu71eNXBD-GyiKbw",
-      "24zprsdb1b3ync7ywmsypc3vvn70cb95",
       "7d705306nddqnj1fppb3btq58hrlrjtx",
-      "np13rn98h5lpgjbndhr5gn31363b8xy0"
+      "6b7bv6ky1d5gbp66fgqkqhcdj7n4z04l",
+      "_e8bqk4zyvefuarzhyy6hu9bizyu1ny7",
+      "3rl4ld7tjl4sbpy967j2cr7y48vbxcxn",
+      "7msqnpj5xr4y5syw9g44m95dfl44hjgx",
+      "google-site-verification=c1Vsqct8unmvZEnNTtoZZ_dDsq-qejygwotuVnfoupY",
+      "_w8opp2p377zo21qi6gh2zwgfe2bmmpa",
+      "_i6zwxvcptwz9qmphgqpvbhyog72fmuo",
+      "_6vt5j2zihy4gglxz8kvsmr9pq7h2a4c",
+      "7g4q3fqrptyjf17dzs4js241j4v67c6t",
+      "vnm8g3svr0c67s4xmgld8q209cc68364S",
+      "_gu3tif2ur9nnozx0ckdgutzqdo8p38j",
+      "np13rn98h5lpgjbndhr5gn31363b8xy0",
+      "45qbtsvh8vd17n794pf4cpj7z8zwk0tj",
+      "vxqr9nqtmryh46zfq0jqwjx316764nsk"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:65fc433b5864b@ag.dmarcly.com; fo=1"
@@ -298,7 +312,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
     }
   },
   "ports": {
-    "ip": "18.133.42.18",
+    "ip": "18.132.167.245",
     "open": []
   },
   "https": {
@@ -394,11 +408,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
     ]
   },
   "apex_txt": [
+    "apple-domain-verification=ZIfJE9Gth65P2EaS",
     "apple-domain-verification=IGJmYB4ReQOvnh8C421oNRDVuu5D-eZofJf6Y97qPBU",
     "facebook-domain-verification=4hzy2r2nmzkhsj084cd7fki46jeaa3",
-    "google-site-verification=c1Vsqct8unmvZEnNTtoZZ_dDsq-qejygwotuVnfoupY",
     "facebook-domain-verification=61rl1f9boyjhytks0jdex0hncnayfr",
-    "apple-domain-verification=ZIfJE9Gth65P2EaS"
+    "google-site-verification=PHwtSX75UKqvpzyPHmk4bGBzczkPu71eNXBD-GyiKbw"
   ],
   "tls2": {
     "alpn": "",
@@ -410,6 +424,15 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
+      "serial": 7753095356988335536171050034728758678,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.r2m04.amazontrust.com/r2m04.crl"
+      ],
+      "subject_dn": "3121301f060355040313187777772e63616e6365727265736561726368756b2e6f7267",
+      "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3034",
       "not_before": "20260813000000",
       "not_after": "20270226235959"
     },
@@ -437,7 +460,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-18-133-42-18.eu-west-2.compute.amazonaws.com."
+      "ec2-18-132-167-245.eu-west-2.compute.amazonaws.com."
     ]
   },
   "x13": {
@@ -452,8 +475,19 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 32.3,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "sitemap": {
+      "urls": 2,
+      "indexes": 3
+    },
+    "crl": {
+      "url": "http://crl.r2m04.amazontrust.com/r2m04.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 35.4,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -464,4 +498,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

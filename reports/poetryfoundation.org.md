@@ -7,12 +7,12 @@
 | Target | https://poetryfoundation.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | poetryfoundation.org |
-| Test date | 2026-09-26 22:13 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:36 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
+Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,7 +36,9 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 | 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 20 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
-| 21 | info | CT1 | 3 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 21 | info | SRV1 | Server header discloses a product version | CWE-200 |
+| 22 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 23 | info | CT1 | 3 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -136,7 +138,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=olQtGIpSFT1Y5GdAxgSXi_p3l1RH2L9qfYmxFTbdWls; google-site-verification=4xFMdUDqRnAFruznet6_KIrelXUko-ciSliz09zOOsg; facebook-domain-verification=i9rzaba80zh4tl9c9h9v09z9v1w9or
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=i9rzaba80zh4tl9c9h9v09z9v1w9or; google-site-verification=olQtGIpSFT1Y5GdAxgSXi_p3l1RH2L9qfYmxFTbdWls; google-site-verification=4xFMdUDqRnAFruznet6_KIrelXUko-ciSliz09zOOsg
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -154,7 +156,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 ### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 77.113.16.118 carries PTR ec2-77-113-16-118.us-east-2.compute.amazonaws.com. for poetryfoundation.org.
+- **Detail:** 18.227.36.81 carries PTR ec2-18-227-36-81.us-east-2.compute.amazonaws.com. for poetryfoundation.org.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -169,7 +171,19 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - **Detail:** The poetryfoundation.org certificate lists an AIA OCSP responder (http://ocsp.r2m04.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
-### 21. [INFO] 3 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 21. [INFO] Server header discloses a product version (`SRV1`)
+
+- **CWE:** CWE-200
+- **Detail:** Server header on poetryfoundation.org is 'awselb/2.0' and includes a version number, which narrows targeted vulnerability research.
+- **Recommendation:** Serve a generic Server value without the version.
+
+### 22. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on poetryfoundation.org lists 40 <loc> URL(s) across 41 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
+### 23. [INFO] 3 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -182,33 +196,33 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
   "domain": "poetryfoundation.org",
   "dns": {
     "a": [
+      "18.227.36.81",
       "77.113.16.118",
-      "3.128.1.19",
-      "18.227.36.81"
+      "3.128.1.19"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "aspmx.l.google.com (pref 1)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)"
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-165.awsdns-20.com.",
+      "ns-1755.awsdns-27.co.uk.",
       "ns-1321.awsdns-37.org.",
-      "ns-824.awsdns-39.net.",
-      "ns-1755.awsdns-27.co.uk."
+      "ns-165.awsdns-20.com.",
+      "ns-824.awsdns-39.net."
     ],
     "caa": [],
     "spf": [
-      "google-site-verification=olQtGIpSFT1Y5GdAxgSXi_p3l1RH2L9qfYmxFTbdWls",
+      "facebook-domain-verification=i9rzaba80zh4tl9c9h9v09z9v1w9or",
       "bw=j6Kd57nORwxoXMWVvcMgMSKzv7ziiu7TXppCAuaR6FeO",
       "asv=98955e3c11a7baa9d0e6c14305c8c69a",
+      "google-site-verification=olQtGIpSFT1Y5GdAxgSXi_p3l1RH2L9qfYmxFTbdWls",
       "google-site-verification=4xFMdUDqRnAFruznet6_KIrelXUko-ciSliz09zOOsg",
-      "v=spf1 include:_spf.google.com include:mailgun.org include:servers.mcsv.net -all",
-      "facebook-domain-verification=i9rzaba80zh4tl9c9h9v09z9v1w9or"
+      "v=spf1 include:_spf.google.com include:mailgun.org include:servers.mcsv.net -all"
     ],
     "dmarc": [
       "v=DMARC1; p=none;"
@@ -241,7 +255,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     }
   },
   "ports": {
-    "ip": "77.113.16.118",
+    "ip": "18.227.36.81",
     "open": []
   },
   "https": {
@@ -301,9 +315,9 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     ]
   },
   "apex_txt": [
+    "facebook-domain-verification=i9rzaba80zh4tl9c9h9v09z9v1w9or",
     "google-site-verification=olQtGIpSFT1Y5GdAxgSXi_p3l1RH2L9qfYmxFTbdWls",
-    "google-site-verification=4xFMdUDqRnAFruznet6_KIrelXUko-ciSliz09zOOsg",
-    "facebook-domain-verification=i9rzaba80zh4tl9c9h9v09z9v1w9or"
+    "google-site-verification=4xFMdUDqRnAFruznet6_KIrelXUko-ciSliz09zOOsg"
   ],
   "tls2": {
     "alpn": "",
@@ -315,6 +329,15 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
+      "serial": 8818996289116345410626691213187733789,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.r2m04.amazontrust.com/r2m04.crl"
+      ],
+      "subject_dn": "311d301b06035504031314706f65747279666f756e646174696f6e2e6f7267",
+      "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3034",
       "not_before": "20260608000000",
       "not_after": "20261222235959"
     },
@@ -335,7 +358,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-77-113-16-118.us-east-2.compute.amazonaws.com."
+      "ec2-18-227-36-81.us-east-2.compute.amazonaws.com."
     ]
   },
   "x13": {
@@ -350,8 +373,19 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 38.1,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "sitemap": {
+      "urls": 40,
+      "indexes": 41
+    },
+    "crl": {
+      "url": "http://crl.r2m04.amazontrust.com/r2m04.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 40.5,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -362,4 +396,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

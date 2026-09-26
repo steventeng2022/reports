@@ -7,12 +7,12 @@
 | Target | https://irs.gov/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | irs.gov |
-| Test date | 2026-09-26 22:09 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:31 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 | 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 17 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 18 | low | H21 | HSTS does not cover subdomains | CWE-319 |
 
 ## Detailed findings
 
@@ -146,6 +147,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 - **Detail:** The irs.gov certificate lists an AIA OCSP responder (http://ocsp.sectigo.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
+### 18. [LOW] HSTS does not cover subdomains (`H21`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security on irs.gov has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of irs.gov.
+- **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
+
 ## Evidence (raw response observations)
 
 ```json
@@ -157,13 +164,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "152.216.11.110"
     ],
     "aaaa": [
-      "2610:30:2000:402::110",
-      "2610:30:4000:402::110"
+      "2610:30:4000:402::110",
+      "2610:30:2000:402::110"
     ],
     "cname": null,
     "mx": [
-      "emge.irs.gov (pref 10)",
       "emgw.irs.gov (pref 20)",
+      "emge.irs.gov (pref 10)",
       "emgc.irs.gov (pref 10)"
     ],
     "ns": [
@@ -172,9 +179,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     ],
     "caa": [],
     "spf": [
+      "v=spf1 ip4:152.216.0.0/20 ip6:2610:30::/32 -all",
       "google-site-verification=GsJzgbUY39iE6wPNlPdZCPGWwyhYpWwxpVxaU8g-Aa4",
-      "kiro-site-verification=30924362-d3a8-4ebd-a33e-55d29bc6452b",
-      "v=spf1 ip4:152.216.0.0/20 ip6:2610:30::/32 -all"
+      "kiro-site-verification=30924362-d3a8-4ebd-a33e-55d29bc6452b"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-agg-feed@ofdp.irs.gov,mailto:reports@dmarc.cyber.dhs.gov; ruf=mailto:dmarc-for-feed@ofdp.irs.gov; fo=1"
@@ -270,6 +277,15 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "key_bits": 4096,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.sectigo.com",
+      "serial": 164598243368300385750331450120958573778,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.sectigo.com/EntrustOVTLSIssuingRSACA2.crl"
+      ],
+      "subject_dn": "310b3009060355040613025553311d301b060355040813144469737472696374206f6620436f6c756d626961311f301d060355040a13164465706172746d656e74206f662054726561737572793110300e060355040313076972732e676f76",
+      "issuer_dn": "310b300906035504061302434131183016060355040a130f456e7472757374204c696d69746564312830260603550403131f456e7472757374204f5620544c532049737375696e67205253412043412032",
       "not_before": "20260812000000",
       "not_after": "20270226235959"
     },
@@ -293,8 +309,16 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 42.5,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "hsts": "max-age=31536000",
+    "crl": {
+      "url": "http://crl.sectigo.com/EntrustOVTLSIssuingRSACA2.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 46.5,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -305,4 +329,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://kraken.com/ |
 | Bug bounty program | Kraken |
 | Listed scope domain | kraken.com |
-| Test date | 2026-09-26 22:09 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:31 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
+Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 | 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 17 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 18 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 
 ## Detailed findings
 
@@ -45,13 +46,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.17.189.205:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.17.185.205:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.17.189.205:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.17.185.205:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -118,7 +119,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: status-page-domain-verification=zvdwk97f78sw; lovable_verification=yrJSzJCXE2IlVOsGopmj; onetrust-domain-verification=ef58037d66994387a249e260b49da885
+- **Detail:** Apex TXT records with verification/token content: loom-site-verification=0994d1d30bec445bb94dee2ca26c6672; cursor-domain-verification-1q4veq=T4badkQWyIFP5sdGc2ZdZO5hH; borderless-ai-domain-verification-891kzp=imAYYfgCNhUvxixCG9xeLErS7
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -145,6 +146,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 - **Detail:** Live JSON at /.well-known/assetlinks.json on kraken.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
 - **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
+### 18. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on kraken.com lists 3385 <loc> URL(s); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -152,11 +159,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
   "domain": "kraken.com",
   "dns": {
     "a": [
-      "104.17.189.205",
       "104.17.185.205",
+      "104.17.189.205",
+      "104.17.187.205",
       "104.17.188.205",
-      "104.17.186.205",
-      "104.17.187.205"
+      "104.17.186.205"
     ],
     "aaaa": [],
     "cname": null,
@@ -164,49 +171,49 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "smtp.google.com (pref 1)"
     ],
     "ns": [
-      "kim.ns.cloudflare.com.",
-      "art.ns.cloudflare.com."
+      "art.ns.cloudflare.com.",
+      "kim.ns.cloudflare.com."
     ],
     "caa": [
-      "0 issue \"digicert.com\"",
-      "0 iodef \"mailto:certificate-abuse@kraken.com\"",
+      "0 issue \"pki.goog\"",
       "0 issue \"amazonaws.com\"",
-      "0 issue \"pki.goog\""
+      "0 iodef \"mailto:certificate-abuse@kraken.com\"",
+      "0 issue \"digicert.com\""
     ],
     "spf": [
-      "status-page-domain-verification=zvdwk97f78sw",
-      "MS=ms92323866",
-      "lovable_verification=yrJSzJCXE2IlVOsGopmj",
-      "onetrust-domain-verification=ef58037d66994387a249e260b49da885",
-      "google-site-verification=XPT9uOe0jA_sa1A9KO2KHlflVyytnnJI6c51vXL7Th0",
+      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:mailgun.org -all",
+      "loom-site-verification=0994d1d30bec445bb94dee2ca26c6672",
+      "cursor-domain-verification-1q4veq=T4badkQWyIFP5sdGc2ZdZO5hH",
       "mixpanel-domain-verify=8d24704c-eebf-4a86-bc1d-5facea16d192",
-      "TSW_MTk2M3RlcmFzd2l0Y2g=",
-      "linear-domain-verification=z4df5eemibyi",
-      "yahoo-verification-key=vaBi9VRY3fC1ePDJDKbb3JeKZkVxdHdNNS2ehnZfPNs=",
-      "tenderly-domain-verification-h41x4t=Xb51eXZGQ6C9IlZJXexoZnSkh",
-      "openai-domain-verification=dv-dzZ4sOyX0NcWC0W69R0SsmoJ",
-      "docusign=df1e68ac-ef17-4239-a91c-ddc63bbf37a0",
-      "sinch-domain-verification=f784f03b-c2b8-4acc-8790-30b91c091d49",
+      "borderless-ai-domain-verification-891kzp=imAYYfgCNhUvxixCG9xeLErS7",
+      "MS=ms92323866",
+      "onetrust-domain-verification=ef58037d66994387a249e260b49da885",
+      "facebook-domain-verification=aoubhu5uh89ja6n8x12q5rwgxjy4qk",
       "chain-patrol-domain-verification-d32dw1=6Bi2nOcSd80VwhhSb1ieNE23u",
       "hubspot-domain-verification=ZDNhOWZkYmMtZjU0Yi00NjM0LTg0YTYtOWI3ZmM3ZDE1MTMx",
-      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:mailgun.org -all",
-      "have-i-been-pwned-verification=dweb_htjuxmmxivpa7y21mu12mq4f",
-      "google-site-verification=Pn6aFNBpXpjjEwQiBhV2w86qkmACWSj6bSWf6iq93N4",
-      "jamf-site-verification=s7-zemXlw9o875MwP_jHJQ",
-      "cursor-domain-verification-1q4veq=T4badkQWyIFP5sdGc2ZdZO5hH",
-      "facebook-domain-verification=aoubhu5uh89ja6n8x12q5rwgxjy4qk",
-      "atlassian-domain-verification=4jtiW1tiUQSTvJZESUb2w2e6bDUeZnwV3HuW4EKB8Dnj7wVDMzFFvtXm/mFgKiq/",
-      "apple-domain-verification=jhXlcC3333rByj6_TIRCWS8depzse4Zg_PA2TAA8MvY",
-      "anthropic-domain-verification-qq6f4e=yMnhINbeoqj341dPhfek46Gvw",
-      "borderless-ai-domain-verification-891kzp=imAYYfgCNhUvxixCG9xeLErS7",
-      "apple-domain-verification=GxkQnQWBDwHc5Lwo",
-      "verification_token=YEulsvbYjUK5ARSNvSKChCvak",
-      "loom-site-verification=0994d1d30bec445bb94dee2ca26c6672",
-      "attio-domain-verification=2PW6H5PPEKZJ5NZ536X46U9D",
-      "hubspot-domain-verification=YzE0ZGQ3MDYtYzc0ZC00MjhjLTg1MzktNWFhOWY0MGVmN2Uy",
+      "yahoo-verification-key=vaBi9VRY3fC1ePDJDKbb3JeKZkVxdHdNNS2ehnZfPNs=",
       "slack-domain-verification=xF9FoS5YecfnIOdXDAWxjJlBJeTP4k0x4XVUDcBm",
+      "docusign=df1e68ac-ef17-4239-a91c-ddc63bbf37a0",
+      "atlassian-domain-verification=4jtiW1tiUQSTvJZESUb2w2e6bDUeZnwV3HuW4EKB8Dnj7wVDMzFFvtXm/mFgKiq/",
+      "tenderly-domain-verification-h41x4t=Xb51eXZGQ6C9IlZJXexoZnSkh",
+      "lovable_verification=yrJSzJCXE2IlVOsGopmj",
+      "google-site-verification=XPT9uOe0jA_sa1A9KO2KHlflVyytnnJI6c51vXL7Th0",
+      "jamf-site-verification=s7-zemXlw9o875MwP_jHJQ",
+      "applause-verification=475eb036-5381-4119-9100-5293e2ce0ba8",
+      "apple-domain-verification=GxkQnQWBDwHc5Lwo",
+      "sinch-domain-verification=f784f03b-c2b8-4acc-8790-30b91c091d49",
+      "TSW_MTk2M3RlcmFzd2l0Y2g=",
+      "anthropic-domain-verification-qq6f4e=yMnhINbeoqj341dPhfek46Gvw",
+      "verification_token=YEulsvbYjUK5ARSNvSKChCvak",
+      "hubspot-domain-verification=YzE0ZGQ3MDYtYzc0ZC00MjhjLTg1MzktNWFhOWY0MGVmN2Uy",
+      "google-site-verification=Pn6aFNBpXpjjEwQiBhV2w86qkmACWSj6bSWf6iq93N4",
+      "openai-domain-verification=dv-dzZ4sOyX0NcWC0W69R0SsmoJ",
+      "have-i-been-pwned-verification=dweb_htjuxmmxivpa7y21mu12mq4f",
+      "attio-domain-verification=2PW6H5PPEKZJ5NZ536X46U9D",
+      "linear-domain-verification=z4df5eemibyi",
+      "status-page-domain-verification=zvdwk97f78sw",
       "docusign=9c156ad3-ca07-455a-ac23-4b069bff0cfc",
-      "applause-verification=475eb036-5381-4119-9100-5293e2ce0ba8"
+      "apple-domain-verification=jhXlcC3333rByj6_TIRCWS8depzse4Zg_PA2TAA8MvY"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; pct=100; adkim=r; aspf=s; fo=1; rua=mailto:dmarc-rua@kraken.com; ruf=mailto:dmarc-ruf@kraken.com"
@@ -235,7 +242,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     }
   },
   "ports": {
-    "ip": "104.17.189.205",
+    "ip": "104.17.185.205",
     "open": [
       8080,
       8443
@@ -292,11 +299,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "status-page-domain-verification=zvdwk97f78sw",
-    "lovable_verification=yrJSzJCXE2IlVOsGopmj",
+    "loom-site-verification=0994d1d30bec445bb94dee2ca26c6672",
+    "cursor-domain-verification-1q4veq=T4badkQWyIFP5sdGc2ZdZO5hH",
+    "borderless-ai-domain-verification-891kzp=imAYYfgCNhUvxixCG9xeLErS7",
     "onetrust-domain-verification=ef58037d66994387a249e260b49da885",
-    "google-site-verification=XPT9uOe0jA_sa1A9KO2KHlflVyytnnJI6c51vXL7Th0",
-    "linear-domain-verification=z4df5eemibyi"
+    "facebook-domain-verification=aoubhu5uh89ja6n8x12q5rwgxjy4qk"
   ],
   "tls2": {
     "alpn": "",
@@ -308,6 +315,15 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
+      "serial": 319958278746486737394848725957220561982,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://c.pki.goog/we1/ftiTB_lHppk.crl"
+      ],
+      "subject_dn": "311330110603550403130a6b72616b656e2e636f6d",
+      "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
       "not_before": "20260830105716",
       "not_after": "20261128115712"
     }
@@ -335,8 +351,20 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 4.8,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "hsts": "max-age=31536000; includeSubDomains; preload",
+    "sitemap": {
+      "urls": 3385,
+      "indexes": 0
+    },
+    "crl": {
+      "url": "http://c.pki.goog/we1/ftiTB_lHppk.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 7.0,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -347,4 +375,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,8 +7,8 @@
 | Target | https://skfb.ly/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | skfb.ly |
-| Test date | 2026-09-26 22:15 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:38 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -145,7 +145,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 54.192.248.119 carries PTR server-54-192-248-119.tpe53.r.cloudfront.net. for skfb.ly.
+- **Detail:** 54.192.248.123 carries PTR server-54-192-248-123.tpe53.r.cloudfront.net. for skfb.ly.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -161,25 +161,25 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   "domain": "skfb.ly",
   "dns": {
     "a": [
-      "54.192.248.119",
+      "54.192.248.123",
       "54.192.248.88",
-      "54.192.248.90",
-      "54.192.248.123"
+      "54.192.248.119",
+      "54.192.248.90"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt3.aspmx.l.google.com (pref 10)",
-      "alt4.aspmx.l.google.com (pref 10)",
-      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "aspmx.l.google.com (pref 1)",
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-1345.awsdns-40.org.",
       "ns-876.awsdns-45.net.",
-      "ns-479.awsdns-59.com.",
-      "ns-1605.awsdns-08.co.uk."
+      "ns-1605.awsdns-08.co.uk.",
+      "ns-1345.awsdns-40.org.",
+      "ns-479.awsdns-59.com."
     ],
     "caa": [],
     "spf": [
@@ -218,7 +218,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     }
   },
   "ports": {
-    "ip": "54.192.248.119",
+    "ip": "54.192.248.123",
     "open": []
   },
   "https": {
@@ -248,21 +248,21 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     "location": "https://sketchfab.com:443/s/"
   },
   "redir_probes": [
-    "/redirect?url=https://evil-auditor.example/x -> 301",
-    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/redirect?url=https://evil-auditor.example/x -> 202",
+    "/redirect?next=https://evil-auditor.example/x -> 202",
     "/go?url=https://evil-auditor.example/x -> 202",
     "/url?url=https://evil-auditor.example/x -> 202"
   ],
   "paths": {
-    "/robots.txt": 301,
+    "/robots.txt": 202,
     "/sitemap.xml": 202,
     "/.well-known/security.txt": 202,
     "/security.txt": 202,
-    "/.git/HEAD": 202,
+    "/.git/HEAD": 301,
     "/.git/config": 202,
     "/.env": 202,
     "/.htaccess": 202,
-    "/wp-login.php": 202,
+    "/wp-login.php": 301,
     "/phpmyadmin/index.php": 202,
     "/server-status": 202,
     "/api/": 202
@@ -283,6 +283,15 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
+      "serial": 4668690091836610622412946246206374285,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.r2m04.amazontrust.com/r2m04.crl"
+      ],
+      "subject_dn": "311630140603550403130d736b657463686661622e636f6d",
+      "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3034",
       "not_before": "20251217000000",
       "not_after": "20270115235959"
     },
@@ -291,7 +300,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   "x12": {
     "status": 202,
     "ptr": [
-      "server-54-192-248-119.tpe53.r.cloudfront.net."
+      "server-54-192-248-123.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -305,8 +314,15 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 6.7,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 202,
+    "crl": {
+      "url": "http://crl.r2m04.amazontrust.com/r2m04.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 7.2,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -317,4 +333,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

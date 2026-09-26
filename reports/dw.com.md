@@ -7,12 +7,12 @@
 | Target | https://dw.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | dw.com |
-| Test date | 2026-09-26 22:03 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:24 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
+Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,7 +35,8 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 | 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
-| 20 | info | CT1 | 17 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 20 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 21 | info | CT1 | 17 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -128,7 +129,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=dd7ac996-1443-4180-9755-342404d53a4c; teamviewer-sso-verification=57fb36a8398445fc808d31a8bee8edca; miro-verification=5b57a1504272050f14683cddfb29af797bfa1133
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=71lMwTH6feCf0VJS; miro-verification=5b57a1504272050f14683cddfb29af797bfa1133; jamf-site-verification=VzImhW6bKsbg86C4ZMCWfg
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -161,7 +162,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 - **Detail:** The dw.com certificate lists an AIA OCSP responder (http://status.thawte.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
-### 20. [INFO] 17 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 20. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on dw.com lists 217 <loc> URL(s) across 218 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
+### 21. [INFO] 17 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: jobs.dw.com
@@ -183,25 +190,25 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "dw-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "dns5.netcologne.de.",
-      "voltaire.dwelle.de.",
       "dns3.netcologne.de.",
-      "dns4.netcologne.de."
+      "dns4.netcologne.de.",
+      "dns5.netcologne.de.",
+      "voltaire.dwelle.de."
     ],
     "caa": [],
     "spf": [
-      "adobe-idp-site-verification=dd7ac996-1443-4180-9755-342404d53a4c",
-      "MS=ms20961559",
-      "teamviewer-sso-verification=57fb36a8398445fc808d31a8bee8edca",
-      "KewQ0sSdpaTF58pY71mtuZuuRhTip0nkIZQXczy8YI3flbo0X0MX2ymCjtQSHysSX/tHB691GLsOAB4ob9g+rA==",
-      "miro-verification=5b57a1504272050f14683cddfb29af797bfa1133",
-      "amazonses:NcKjDbDrJqvaflTjJpYU24E8SwJhcD8L4P8f0UYl7rQ=",
-      "apple-domain-verification=vBdShnLUGnPMCvIg",
-      "apple-domain-verification=71lMwTH6feCf0VJS",
       "v=spf1 ip4:194.55.30.155 ip4:194.55.30.156 ip4:194.55.26.155 ip4:194.55.26.156 ip4:81.209.250.80 ip4:81.209.250.76 ip4:81.209.250.78 ip4:83.133.243.211 ip4:185.17.245.132 ip4:185.17.245.28",
       " include:spf.umantis.com include:spf.de.umantis.com include:spf.protection.outlook.com",
       " include:spf1.checkinserver.com include:spf.vizito.be include:spf.send.business-beat.eu -all",
-      "jamf-site-verification=VzImhW6bKsbg86C4ZMCWfg"
+      "KewQ0sSdpaTF58pY71mtuZuuRhTip0nkIZQXczy8YI3flbo0X0MX2ymCjtQSHysSX/tHB691GLsOAB4ob9g+rA==",
+      "apple-domain-verification=71lMwTH6feCf0VJS",
+      "miro-verification=5b57a1504272050f14683cddfb29af797bfa1133",
+      "jamf-site-verification=VzImhW6bKsbg86C4ZMCWfg",
+      "apple-domain-verification=vBdShnLUGnPMCvIg",
+      "adobe-idp-site-verification=dd7ac996-1443-4180-9755-342404d53a4c",
+      "amazonses:NcKjDbDrJqvaflTjJpYU24E8SwJhcD8L4P8f0UYl7rQ=",
+      "teamviewer-sso-verification=57fb36a8398445fc808d31a8bee8edca",
+      "MS=ms20961559"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;ruf=mailto:dmarc-report@dw.com"
@@ -304,11 +311,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
     ]
   },
   "apex_txt": [
-    "adobe-idp-site-verification=dd7ac996-1443-4180-9755-342404d53a4c",
-    "teamviewer-sso-verification=57fb36a8398445fc808d31a8bee8edca",
+    "apple-domain-verification=71lMwTH6feCf0VJS",
     "miro-verification=5b57a1504272050f14683cddfb29af797bfa1133",
+    "jamf-site-verification=VzImhW6bKsbg86C4ZMCWfg",
     "apple-domain-verification=vBdShnLUGnPMCvIg",
-    "apple-domain-verification=71lMwTH6feCf0VJS"
+    "adobe-idp-site-verification=dd7ac996-1443-4180-9755-342404d53a4c"
   ],
   "tls2": {
     "alpn": "",
@@ -320,6 +327,15 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://status.thawte.com",
+      "serial": 5506956044106855774014526473209337907,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://cdp.thawte.com/ThawteTLSRSACAG1.crl"
+      ],
+      "subject_dn": "310b3009060355040613024445311c301a060355040813134e6f7264726865696e2d5765737466616c656e310d300b06035504071304426f6e6e31173015060355040a130e44657574736368652057656c6c653111300f06035504030c082a2e64772e636f6d",
+      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e6331193017060355040b13107777772e64696769636572742e636f6d311d301b0603550403131454686177746520544c5320525341204341204731",
       "not_before": "20260217000000",
       "not_after": "20270320235959"
     },
@@ -362,8 +378,19 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 44.7,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "sitemap": {
+      "urls": 217,
+      "indexes": 218
+    },
+    "crl": {
+      "url": "http://cdp.thawte.com/ThawteTLSRSACAG1.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 46.8,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -374,4 +401,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

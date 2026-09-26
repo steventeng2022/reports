@@ -7,8 +7,8 @@
 | Target | https://drift.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | drift.com |
-| Test date | 2026-09-26 22:03 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:24 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -128,13 +128,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (ckz4x7xlv2ow52.drift.com and hfpl31edefn2eg.drift.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (ycmhxpnb4xfdzv.drift.com and ax201rnkmb6bj2.drift.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=rTkFvWKmmNOAbgIzQTn8_n-FLHW34IOsl_I02BJwe-o; google-site-verification=EXb4VABeG7RDBygZaviPE5EEm43o7Law1aGs_JPWr1I; status-page-domain-verification=vxfhhw8y9980
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=Oz2hq_0Q1TnZkKGf2y3ju_gVKpIQzAm2-c0gKV_-IHg; google-site-verification=TXlp5hH6h0vO7YBSaqaiHcnvO7t37m2xp5pykbieAIA; google-site-verification=K-eBDZ2a4JrdklKBnqe2cFaBkEhF1jAJ0i3TjH9Bt3M
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -173,48 +173,48 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt4.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)"
+      "aspmx.l.google.com (pref 1)",
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-808.awsdns-37.net.",
-      "ns-466.awsdns-58.com.",
+      "ns-1960.awsdns-53.co.uk.",
       "ns-1271.awsdns-30.org.",
-      "ns-1960.awsdns-53.co.uk."
+      "ns-466.awsdns-58.com.",
+      "ns-808.awsdns-37.net."
     ],
     "caa": [],
     "spf": [
-      "google-site-verification=rTkFvWKmmNOAbgIzQTn8_n-FLHW34IOsl_I02BJwe-o",
-      "google-site-verification=EXb4VABeG7RDBygZaviPE5EEm43o7Law1aGs_JPWr1I",
-      "status-page-domain-verification=vxfhhw8y9980",
-      "apple-domain-verification=D9CdpC9KtRb2SU67",
-      "jwF+NotcU8L1uVCcbRt9T9TQknJ+J7zcCzTC9Ce1oZI=",
       "google-site-verification=Oz2hq_0Q1TnZkKGf2y3ju_gVKpIQzAm2-c0gKV_-IHg",
-      "docusign=d2419350-d082-40c3-88b7-a362b7dde6d6",
-      "google-site-verification=WBts36f15QIx_SHhtQqJQmPN4udrRODidRIQXPi2FXA",
-      "bugcrowd-verification=dab931f75202b157a31593fc7c0b5959",
-      "atlassian-domain-verification=cXu9R09NLHAY+K7dTK1SXLMXAx9vcXr4Cpp1VAIbvjJCJ2dZ0g4rTWzyhUadykZ0",
-      "google-site-verification=43nlxX--h0jQ5cSmfjXsnSnZLCdkw-_tdB1ArWsDmx4",
-      "miro-verification=aed7e2c2c984c8243ee35435d2c86c041ddd2d73",
-      "google-site-verification=FDRrp3PiBSjA9M9oxffVx1rEVTnoBMk9UbFWLQnhvis",
       "google-site-verification=TXlp5hH6h0vO7YBSaqaiHcnvO7t37m2xp5pykbieAIA",
-      "atlassian-domain-verification=IK4vQZrJAZuDOM2zNyGYPNXnd4z5wvPTZSUGq0l8uOywrhDgX7D2FjUgj6tttYty",
-      "google-site-verification=prz0gOLypp4g-rvgvts13UHLmKmQPR-NUmBZ7svLWDA",
-      "google-site-verification=ryKNMbLSr2_ShC67c8PeREDk5u5L-Tqb1Qt3SMZl3bw",
-      "v=spf1 ip4:199.15.215.69 include:spf1.drift.com include:spf3.drift.com include:_spf.google.com include:sendgrid.net include:amazonses.com include:spf-0038ba01.pphosted.com -all",
       "asv=d105e8b7dc7943f129ed561be48cb964",
-      "google-site-verification=FeoHJ-gYBb4Do22PZknzteLMDiNHad1o_4n4_qbtk4Q",
-      "amazonses:8VA52IIvc5L0tiPo2dTPk95Ix2Fe8fGZ6mOgmlWj1mU=",
-      "google-site-verification=_E3k51OOYCLniiFQOJDxBb7YeUTZsRsnS9obKBOWIBM",
-      "google-site-verification=qb-I0lESyGU3sA7pewDjqWhPLv19DxO6DcpdV5mJzqU",
-      "atlassian-domain-verification=eovY2DLWsxOhMcSetCZItREJgqvTapcaJkxT7T3r5NPqZr6BncV5EKM8bpfQYLxL",
-      "google-site-verification=cIfqvzYUI06fvgbYARw5UlD9kA9UWn2N9oqCt69ce7Y",
-      "google-site-verification=F39d3BrG_GMyTPfgS9BmAOoutEZVSxYNBBeyx1mUnEo",
       "google-site-verification=K-eBDZ2a4JrdklKBnqe2cFaBkEhF1jAJ0i3TjH9Bt3M",
-      "zoom-domain-verification = c3bf7571-f003-4704-84be-10ccb4cf6973"
+      "miro-verification=aed7e2c2c984c8243ee35435d2c86c041ddd2d73",
+      "atlassian-domain-verification=cXu9R09NLHAY+K7dTK1SXLMXAx9vcXr4Cpp1VAIbvjJCJ2dZ0g4rTWzyhUadykZ0",
+      "google-site-verification=ryKNMbLSr2_ShC67c8PeREDk5u5L-Tqb1Qt3SMZl3bw",
+      "google-site-verification=prz0gOLypp4g-rvgvts13UHLmKmQPR-NUmBZ7svLWDA",
+      "bugcrowd-verification=dab931f75202b157a31593fc7c0b5959",
+      "google-site-verification=WBts36f15QIx_SHhtQqJQmPN4udrRODidRIQXPi2FXA",
+      "google-site-verification=cIfqvzYUI06fvgbYARw5UlD9kA9UWn2N9oqCt69ce7Y",
+      "status-page-domain-verification=vxfhhw8y9980",
+      "google-site-verification=EXb4VABeG7RDBygZaviPE5EEm43o7Law1aGs_JPWr1I",
+      "google-site-verification=rTkFvWKmmNOAbgIzQTn8_n-FLHW34IOsl_I02BJwe-o",
+      "google-site-verification=43nlxX--h0jQ5cSmfjXsnSnZLCdkw-_tdB1ArWsDmx4",
+      "atlassian-domain-verification=IK4vQZrJAZuDOM2zNyGYPNXnd4z5wvPTZSUGq0l8uOywrhDgX7D2FjUgj6tttYty",
+      "google-site-verification=FDRrp3PiBSjA9M9oxffVx1rEVTnoBMk9UbFWLQnhvis",
+      "v=spf1 ip4:199.15.215.69 include:spf1.drift.com include:spf3.drift.com include:_spf.google.com include:sendgrid.net include:amazonses.com include:spf-0038ba01.pphosted.com -all",
+      "google-site-verification=qb-I0lESyGU3sA7pewDjqWhPLv19DxO6DcpdV5mJzqU",
+      "amazonses:8VA52IIvc5L0tiPo2dTPk95Ix2Fe8fGZ6mOgmlWj1mU=",
+      "google-site-verification=F39d3BrG_GMyTPfgS9BmAOoutEZVSxYNBBeyx1mUnEo",
+      "jwF+NotcU8L1uVCcbRt9T9TQknJ+J7zcCzTC9Ce1oZI=",
+      "google-site-verification=_E3k51OOYCLniiFQOJDxBb7YeUTZsRsnS9obKBOWIBM",
+      "google-site-verification=FeoHJ-gYBb4Do22PZknzteLMDiNHad1o_4n4_qbtk4Q",
+      "zoom-domain-verification = c3bf7571-f003-4704-84be-10ccb4cf6973",
+      "atlassian-domain-verification=eovY2DLWsxOhMcSetCZItREJgqvTapcaJkxT7T3r5NPqZr6BncV5EKM8bpfQYLxL",
+      "apple-domain-verification=D9CdpC9KtRb2SU67",
+      "docusign=d2419350-d082-40c3-88b7-a362b7dde6d6"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:compliance+driftrua@salesloft.com; ruf=mailto:compliance+driftruf@salesloft.com"
@@ -297,11 +297,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=rTkFvWKmmNOAbgIzQTn8_n-FLHW34IOsl_I02BJwe-o",
-    "google-site-verification=EXb4VABeG7RDBygZaviPE5EEm43o7Law1aGs_JPWr1I",
-    "status-page-domain-verification=vxfhhw8y9980",
-    "apple-domain-verification=D9CdpC9KtRb2SU67",
-    "google-site-verification=Oz2hq_0Q1TnZkKGf2y3ju_gVKpIQzAm2-c0gKV_-IHg"
+    "google-site-verification=Oz2hq_0Q1TnZkKGf2y3ju_gVKpIQzAm2-c0gKV_-IHg",
+    "google-site-verification=TXlp5hH6h0vO7YBSaqaiHcnvO7t37m2xp5pykbieAIA",
+    "google-site-verification=K-eBDZ2a4JrdklKBnqe2cFaBkEhF1jAJ0i3TjH9Bt3M",
+    "miro-verification=aed7e2c2c984c8243ee35435d2c86c041ddd2d73",
+    "atlassian-domain-verification=cXu9R09NLHAY+K7dTK1SXLMXAx9vcXr4Cpp1VAIbvjJCJ2dZ0g"
   ],
   "tls2": {
     "alpn": "",
@@ -313,6 +313,15 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": null,
+      "serial": 452304791382756562456942581766482057473222,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://yr2.c.lencr.org/71.crl"
+      ],
+      "subject_dn": "311230100603550403130964726966742e636f6d",
+      "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303595232",
       "not_before": "20260904075736",
       "not_after": "20261203075735"
     }
@@ -331,8 +340,16 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 19.8,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "hsts": "max-age=300",
+    "crl": {
+      "url": "http://yr2.c.lencr.org/71.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 23.2,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -343,4 +360,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

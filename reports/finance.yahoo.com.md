@@ -7,12 +7,12 @@
 | Target | https://finance.yahoo.com/ |
 | Bug bounty program | Yahoo! |
 | Listed scope domain | finance.yahoo.com |
-| Test date | 2026-09-26 22:05 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:26 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
+Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,9 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 | 10 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 11 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 12 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 13 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 14 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
+| 15 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
 
 ## Detailed findings
 
@@ -104,6 +107,24 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 - **CWE:** CWE-200
 - **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on finance.yahoo.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
 - **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 13. [LOW] HSTS does not cover subdomains (`H21`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security on finance.yahoo.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of finance.yahoo.com.
+- **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
+
+### 14. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+
+- **CWE:** CWE-345
+- **Detail:** Root document of finance.yahoo.com loads 7 cross-origin script(s) without an integrity attribute, e.g. https://s.yimg.com/aaq/f10d509c/d3lm64ch1c76ug.js, https://s.yimg.com/du/benji/benji-2.3.411.js, https://consent.cmp.oath.com/version/7.0.2/cmp.js; a compromise of any such third-party host can inject code.
+- **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
+
+### 15. [INFO] security.txt published with a contact address (`SEC1`)
+
+- **CWE:** CWE-1038
+- **Detail:** /.well-known/security.txt on finance.yahoo.com is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
+- **Recommendation:** Confirm the published contact is current and monitored (RFC 9116).
 
 ## Evidence (raw response observations)
 
@@ -297,6 +318,16 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": "http://ocsp.digicert.com",
+      "serial": 11541986385098640127728216962996985633,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
+        "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
+      ],
+      "subject_dn": "310b30090603550406130255533111300f060355040813084e657720596f726b3111300f060355040713084e657720596f726b311c301a060355040a13135961686f6f20486f6c64696e677320496e632e3118301606035504030c0f2a2e7777772e7961686f6f2e636f6d",
+      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
       "not_before": "20260817000000",
       "not_after": "20261007235959"
     },
@@ -342,8 +373,17 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 13.5,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "hsts": "max-age=31536000",
+    "security_txt": "/.well-known/security.txt",
+    "crl": {
+      "url": "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 14.7,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -354,4 +394,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

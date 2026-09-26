@@ -7,12 +7,12 @@
 | Target | https://untappd.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | untappd.com |
-| Test date | 2026-09-26 22:17 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:40 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
+Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 | 14 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 | 15 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 17 | info | HTML1 | Security policy set via <meta http-equiv> | CWE-1021 |
 
 ## Detailed findings
 
@@ -50,13 +51,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.20.44.111:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.66.163.79:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.20.44.111:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.66.163.79:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -107,7 +108,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=_5-to4lYBCcN4DBHN_M4Z6ST5Nle5AGkGXkzWWUZPEY; status-page-domain-verification=vjh1rqfvh6cq; 1password-site-verification=JJRHU5XGONHORHDBBN5MLCHZ54
+- **Detail:** Apex TXT records with verification/token content: rippling-domain-verification=414dd4dc53702337; 1password-site-verification=JJRHU5XGONHORHDBBN5MLCHZ54; google-site-verification=_5-to4lYBCcN4DBHN_M4Z6ST5Nle5AGkGXkzWWUZPEY
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -125,7 +126,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 ### 15. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xk28shnk5up31d.html -> 403; error page/headers match: Cloudflare.
+- **Detail:** GET /xk6qy5tzoe9f0q.html -> 403; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -134,6 +135,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 - **Detail:** No CAA record found for untappd.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
+### 17. [INFO] Security policy set via <meta http-equiv> (`HTML1`)
+
+- **CWE:** CWE-1021
+- **Detail:** HTML root of untappd.com declares via meta tags: content-security-policy; meta-set policies have limited browser support and are easier to override than response headers.
+- **Recommendation:** Prefer response headers and keep any meta declarations consistent with them.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -141,20 +148,20 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
   "domain": "untappd.com",
   "dns": {
     "a": [
-      "104.20.44.111",
-      "172.66.163.79"
+      "172.66.163.79",
+      "104.20.44.111"
     ],
     "aaaa": [
-      "2606:4700:10::ac42:a34f",
-      "2606:4700:10::6814:2c6f"
+      "2606:4700:10::6814:2c6f",
+      "2606:4700:10::ac42:a34f"
     ],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx2.googlemail.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx3.googlemail.com (pref 10)",
-      "aspmx.l.google.com (pref 1)"
+      "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx2.googlemail.com (pref 1)"
     ],
     "ns": [
       "uma.ns.cloudflare.com.",
@@ -162,26 +169,26 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     ],
     "caa": [],
     "spf": [
-      "google-site-verification=_5-to4lYBCcN4DBHN_M4Z6ST5Nle5AGkGXkzWWUZPEY",
       "v=spf1 include:mailgun.org include:_spf.google.com include:8657325.spf07.hubspotemail.net ~all",
-      "pardot1078002=4b8f9c144c87c116c1071cad3b0a99a99e0c2e7cec52634a8fbd659ea5ff58b5",
-      "MS=ms78757206",
-      "status-page-domain-verification=vjh1rqfvh6cq",
-      "1password-site-verification=JJRHU5XGONHORHDBBN5MLCHZ54",
       "sending_domain1077992=e57882e11e995d0077009d5d51ac38c75e7fa092881dbc81d4f01ea6f4aba37a",
-      "pardot1077992=c1d537bb2ce30942a74c659492f30bf3c6e8d7958a88a0fb799a5024fe9346e2",
-      "anthropic-domain-verification-fnjqmj=U1ukT7Sxor44FIU8UxQ826TP6",
-      "apple-domain-verification=PzeSkiU5Qi5suyUq",
-      "google-site-verification=G_VXSVRR3bpfmWTa1aoZiBQpbMC3OAR11uMRvdGlgU8",
-      "sending_domain1078002=0f34bbdfe8ce8fde994ca2d6751686e81dcabaca24039a259f7683f01bc399b7",
-      "Wbvu8ty9C2PBSYUZ",
-      "B99CA8E742",
-      "00D1U000000yGXd=1TBVN0000000B57",
       "rippling-domain-verification=414dd4dc53702337",
+      "MS=ms78757206",
+      "1password-site-verification=JJRHU5XGONHORHDBBN5MLCHZ54",
       "sending_domain1078002=7f3e88ab1ef815c42d93beacb80905d8e91477f133a45a0063997731dee78b8e",
+      "google-site-verification=_5-to4lYBCcN4DBHN_M4Z6ST5Nle5AGkGXkzWWUZPEY",
+      "anthropic-domain-verification-fnjqmj=U1ukT7Sxor44FIU8UxQ826TP6",
+      "Wbvu8ty9C2PBSYUZ",
+      "pardot1077992=c1d537bb2ce30942a74c659492f30bf3c6e8d7958a88a0fb799a5024fe9346e2",
+      "B99CA8E742",
+      "status-page-domain-verification=vjh1rqfvh6cq",
+      "facebook-domain-verification=huzlzmhksif1ge62wip9zvpb312rwt",
+      "00D1U000000yGXd=1TBVN0000000B57",
       "google-site-verification=uht-ZR-lbkbuuO9L45_oKL6jtqgJYaY3vNPODTutZLo",
       "oe1a0rcj1t86545ob3bk2ng9ml",
-      "facebook-domain-verification=huzlzmhksif1ge62wip9zvpb312rwt"
+      "google-site-verification=G_VXSVRR3bpfmWTa1aoZiBQpbMC3OAR11uMRvdGlgU8",
+      "pardot1078002=4b8f9c144c87c116c1071cad3b0a99a99e0c2e7cec52634a8fbd659ea5ff58b5",
+      "sending_domain1078002=0f34bbdfe8ce8fde994ca2d6751686e81dcabaca24039a259f7683f01bc399b7",
+      "apple-domain-verification=PzeSkiU5Qi5suyUq"
     ],
     "dmarc": [
       "v=DMARC1; p=none; sp=none; rua=mailto:re+5cfc1e8a3ff9@inbound.dmarcdigests.com; pct=100"
@@ -211,7 +218,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     }
   },
   "ports": {
-    "ip": "104.20.44.111",
+    "ip": "172.66.163.79",
     "open": [
       8080,
       8443
@@ -268,11 +275,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=_5-to4lYBCcN4DBHN_M4Z6ST5Nle5AGkGXkzWWUZPEY",
-    "status-page-domain-verification=vjh1rqfvh6cq",
+    "rippling-domain-verification=414dd4dc53702337",
     "1password-site-verification=JJRHU5XGONHORHDBBN5MLCHZ54",
+    "google-site-verification=_5-to4lYBCcN4DBHN_M4Z6ST5Nle5AGkGXkzWWUZPEY",
     "anthropic-domain-verification-fnjqmj=U1ukT7Sxor44FIU8UxQ826TP6",
-    "apple-domain-verification=PzeSkiU5Qi5suyUq"
+    "status-page-domain-verification=vjh1rqfvh6cq"
   ],
   "tls2": {
     "alpn": "",
@@ -284,6 +291,15 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
+      "serial": 195666005780322969773840889316630984364,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://c.pki.goog/we1/OwdV0_9lhbI.crl"
+      ],
+      "subject_dn": "311430120603550403130b756e74617070642e636f6d",
+      "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
       "not_before": "20260923163200",
       "not_after": "20261222173146"
     }
@@ -301,8 +317,15 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 5.6,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 403,
+    "crl": {
+      "url": "http://c.pki.goog/we1/OwdV0_9lhbI.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 5.7,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -313,4 +336,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

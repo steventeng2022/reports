@@ -7,8 +7,8 @@
 | Target | https://imdb.com/ |
 | Bug bounty program | IMDB |
 | Listed scope domain | imdb.com |
-| Test date | 2026-09-26 22:08 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:30 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -120,7 +120,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: canva-site-verification=knObS_jT07ww5BsgiACF8g; adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2a; kahoot-domain-verification=044996899c64fcdf913eed0ad14e1f19c79bdd590a762d537a2ee
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=f3PqOeHGPuPaaRAkAPJ4bSO-O8bDQOohrmdwxtJAIIM; adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2a; cisco-ci-domain-verification=5b0cade9b99903b93ec19495d546a72dbb24ecf17c3670b02bb
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -138,7 +138,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 98.82.155.134 carries PTR ec2-98-82-155-134.compute-1.amazonaws.com. for imdb.com.
+- **Detail:** 44.215.137.99 carries PTR ec2-44-215-137-99.compute-1.amazonaws.com. for imdb.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -160,9 +160,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "domain": "imdb.com",
   "dns": {
     "a": [
+      "44.215.137.99",
       "98.82.155.134",
-      "98.82.158.179",
-      "44.215.137.99"
+      "98.82.158.179"
     ],
     "aaaa": [],
     "cname": null,
@@ -170,33 +170,33 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "amazon-smtp.amazon.com (pref 10)"
     ],
     "ns": [
-      "ns1.amzndns.net.",
       "ns2.amzndns.com.",
-      "ns2.amzndns.co.uk.",
-      "ns2.amzndns.org.",
+      "ns1.amzndns.com.",
+      "ns1.amzndns.net.",
       "ns2.amzndns.net.",
-      "ns1.amzndns.org.",
+      "ns2.amzndns.org.",
       "ns1.amzndns.co.uk.",
-      "ns1.amzndns.com."
+      "ns1.amzndns.org.",
+      "ns2.amzndns.co.uk."
     ],
     "caa": [],
     "spf": [
-      "v=spf1 include:amazon.com -all",
-      "canva-site-verification=knObS_jT07ww5BsgiACF8g",
-      "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814",
-      "kahoot-domain-verification=044996899c64fcdf913eed0ad14e1f19c79bdd590a762d537a2eeeac7c1ba6c0",
-      "TS1760027",
       "google-site-verification=f3PqOeHGPuPaaRAkAPJ4bSO-O8bDQOohrmdwxtJAIIM",
-      "MS=ms74462343",
-      "apple-domain-verification=0jFtlxygq-YPBzUgTNd2qDiTxb6TpG8Hf1qJcLlFb_w",
-      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
-      "docker-verification=800fa4c1-614f-4e2c-9ee5-c43ea1dc7831",
       "MS=ms55779356",
-      "google-site-verification=uL7Y3ZHRGFE5c6a05OXtn2S2Vq6LfrtqsYlwszK0yl8",
+      "TS1760027",
+      "MS=ms74462343",
+      "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814",
       "IPROTA_D66964-XXX",
-      "box-domain-verification=ffea95cd0e0d61c302198367155b07e74fd534fa1d867662dc9bf9969b6f535d",
       "cisco-ci-domain-verification=5b0cade9b99903b93ec19495d546a72dbb24ecf17c3670b02bbf706bb9ba552a",
-      "bluebeam-verification=jcnffcdt5x1u0ay5kp1ds2xctgv0jj"
+      "v=spf1 include:amazon.com -all",
+      "apple-domain-verification=0jFtlxygq-YPBzUgTNd2qDiTxb6TpG8Hf1qJcLlFb_w",
+      "docker-verification=800fa4c1-614f-4e2c-9ee5-c43ea1dc7831",
+      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
+      "kahoot-domain-verification=044996899c64fcdf913eed0ad14e1f19c79bdd590a762d537a2eeeac7c1ba6c0",
+      "bluebeam-verification=jcnffcdt5x1u0ay5kp1ds2xctgv0jj",
+      "box-domain-verification=ffea95cd0e0d61c302198367155b07e74fd534fa1d867662dc9bf9969b6f535d",
+      "google-site-verification=uL7Y3ZHRGFE5c6a05OXtn2S2Vq6LfrtqsYlwszK0yl8",
+      "canva-site-verification=knObS_jT07ww5BsgiACF8g"
     ],
     "dmarc": [
       "v=DMARC1;",
@@ -238,7 +238,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     }
   },
   "ports": {
-    "ip": "98.82.155.134",
+    "ip": "44.215.137.99",
     "open": []
   },
   "https": {
@@ -291,11 +291,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "canva-site-verification=knObS_jT07ww5BsgiACF8g",
-    "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2a",
-    "kahoot-domain-verification=044996899c64fcdf913eed0ad14e1f19c79bdd590a762d537a2ee",
     "google-site-verification=f3PqOeHGPuPaaRAkAPJ4bSO-O8bDQOohrmdwxtJAIIM",
-    "apple-domain-verification=0jFtlxygq-YPBzUgTNd2qDiTxb6TpG8Hf1qJcLlFb_w"
+    "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2a",
+    "cisco-ci-domain-verification=5b0cade9b99903b93ec19495d546a72dbb24ecf17c3670b02bb",
+    "apple-domain-verification=0jFtlxygq-YPBzUgTNd2qDiTxb6TpG8Hf1qJcLlFb_w",
+    "docker-verification=800fa4c1-614f-4e2c-9ee5-c43ea1dc7831"
   ],
   "tls2": {
     "alpn": "",
@@ -307,6 +307,15 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
+      "serial": 14692579966667459564971032829998311614,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.r2m04.amazontrust.com/r2m04.crl"
+      ],
+      "subject_dn": "311730150603550403130e75732e64642e696d64622e636f6d",
+      "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3034",
       "not_before": "20260805000000",
       "not_after": "20270218235959"
     },
@@ -335,7 +344,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "x12": {
     "status": 302,
     "ptr": [
-      "ec2-98-82-155-134.compute-1.amazonaws.com."
+      "ec2-44-215-137-99.compute-1.amazonaws.com."
     ]
   },
   "x13": {
@@ -350,8 +359,16 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 33.5,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 302,
+    "hsts": "max-age=47474747; includeSubDomains; preload",
+    "crl": {
+      "url": "http://crl.r2m04.amazontrust.com/r2m04.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 37.7,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -362,4 +379,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

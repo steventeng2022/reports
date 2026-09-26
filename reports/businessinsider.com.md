@@ -7,12 +7,12 @@
 | Target | https://businessinsider.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | businessinsider.com |
-| Test date | 2026-09-26 21:59 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:20 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
+Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,8 +34,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 18 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
-| 19 | info | CT1 | 37 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 20 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 19 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 20 | info | CT1 | 37 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 21 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -122,7 +123,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=jz79wu26i92i5zpxpqra4s1p1ois9j; lucidlink-verification=H13VJ94S9GRFM6ZX539Q5EB8MG; atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXlTSpjt
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=HA4gcc-DAPuEX5Z3gfg-LTrtafWTIr40orlRHKZSLy0; google-site-verification=dsTQoEYtkhKJUiHaf7NXBGBP5wRxmQ2ia56y9UnTeZc; zapier-domain-verification-challenge=e10fad84-5944-470d-ae77-5d7697d0af05
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -155,13 +156,19 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - **Detail:** The businessinsider.com certificate lists an AIA OCSP responder (http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2026q1) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
-### 19. [INFO] 37 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 19. [LOW] HSTS does not cover subdomains (`H21`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security on businessinsider.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of businessinsider.com.
+- **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
+
+### 20. [INFO] 37 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: gcp.businessinsider.com, it.businessinsider.com, my.businessinsider.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 20. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 21. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: gcp.businessinsider.com; content may still be served via virtual-host fallback.
@@ -175,58 +182,58 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   "dns": {
     "a": [
       "151.101.193.171",
-      "151.101.1.171",
       "151.101.129.171",
+      "151.101.1.171",
       "151.101.65.171"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "aspmx3.googlemail.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx2.googlemail.com (pref 10)"
+      "aspmx3.googlemail.com (pref 10)",
+      "aspmx2.googlemail.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "dns3.p03.nsone.net.",
-      "ns11.constellix.com.",
-      "dns4.p03.nsone.net.",
-      "ns21.constellix.com.",
-      "dns2.p03.nsone.net.",
-      "ns31.constellix.com.",
-      "ns41.constellix.net.",
       "ns51.constellix.net.",
+      "dns2.p03.nsone.net.",
+      "ns41.constellix.net.",
+      "ns31.constellix.com.",
+      "ns11.constellix.com.",
+      "ns61.constellix.net.",
+      "dns3.p03.nsone.net.",
+      "dns4.p03.nsone.net.",
       "dns1.p03.nsone.net.",
-      "ns61.constellix.net."
+      "ns21.constellix.com."
     ],
     "caa": [],
     "spf": [
-      "facebook-domain-verification=jz79wu26i92i5zpxpqra4s1p1ois9j",
-      "lucidlink-verification=H13VJ94S9GRFM6ZX539Q5EB8MG",
-      "atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXlTSpjtg1iNnMasAJ3GsD",
-      "slack-domain-verification=p1y98UQQ7JwUhAuHWXgLsJqM1VDqn56eErx227bu",
-      "asv=4f7bed0ed9307319569dca0dc413d303",
-      "google-site-verification=hVwc4FIT_C_8DNSPQSBmv84brU443LMUlfiyDqrByVA",
-      "zapier-domain-verification-challenge=e10fad84-5944-470d-ae77-5d7697d0af05",
-      "google-site-verification=MeuJIyKOrXf6e1Foju5Tqkzoms8KH0IoP01G5KhB-m8",
-      "00Dd0000000cyqM=1TBQK00000000rF",
-      "canva-site-verification=yOD8mjIYFWLM6qJQW-rwgg",
-      "openai-domain-verification=dv-jTz4KfMtiA6SiWiVpka2QDFr",
-      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:_spf.salesforce.com ~all",
-      "google-site-verification=dsTQoEYtkhKJUiHaf7NXBGBP5wRxmQ2ia56y9UnTeZc",
-      "ZOOM_verify_BiuNcpuc03G4NjRCC8crLr",
-      "_globalsign-domain-verification=O81xyb7YxpdGeHWkniit_VBT4vTXz9__NFrNMoTwFg",
-      "apple-domain-verification=G59n_HIhMNvtkyEDlx0g1LdxhRL8neVCOkZ-NcIa0cQ",
       "google-site-verification=HA4gcc-DAPuEX5Z3gfg-LTrtafWTIr40orlRHKZSLy0",
+      "MS=49384EFC2AA5C920CC726E72850EA7250E18356F",
+      "google-site-verification=dsTQoEYtkhKJUiHaf7NXBGBP5wRxmQ2ia56y9UnTeZc",
+      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:_spf.salesforce.com ~all",
+      "zapier-domain-verification-challenge=e10fad84-5944-470d-ae77-5d7697d0af05",
+      "facebook-domain-verification=jz79wu26i92i5zpxpqra4s1p1ois9j",
+      "_globalsign-domain-verification=O81xyb7YxpdGeHWkniit_VBT4vTXz9__NFrNMoTwFg",
+      "slack-domain-verification=p1y98UQQ7JwUhAuHWXgLsJqM1VDqn56eErx227bu",
+      "atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXlTSpjtg1iNnMasAJ3GsD",
       "google-site-verification=5khzg7Aljjht1XobmkoQeX_2L4E5UJO9C1Z9_zfFTYs",
       "globalsign-domain-verification=qhllLTVNbc63_k7N_0u2VjkgHnq48qKQ8gKVvHWkHI",
-      "MS=49384EFC2AA5C920CC726E72850EA7250E18356F",
-      "openai-domain-verification=dv-gEVeLfZWhh8fDqhgX7be0VGh",
-      "google-site-verification=E4A9jU1go8SQoOYqjwybQIyUhIqPRDUF2Fu5nYC77oM",
+      "google-site-verification=hVwc4FIT_C_8DNSPQSBmv84brU443LMUlfiyDqrByVA",
+      "apple-domain-verification=G59n_HIhMNvtkyEDlx0g1LdxhRL8neVCOkZ-NcIa0cQ",
       "atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXITSpjtg1iNnMasAJ3GsD",
+      "google-site-verification=6siIDX8Eh0aPCTSxDF2-GFuuFff1H1aPGm3SfPvP7aI",
+      "ZOOM_verify_BiuNcpuc03G4NjRCC8crLr",
+      "google-site-verification=E4A9jU1go8SQoOYqjwybQIyUhIqPRDUF2Fu5nYC77oM",
+      "00Dd0000000cyqM=1TBQK00000000rF",
+      "openai-domain-verification=dv-gEVeLfZWhh8fDqhgX7be0VGh",
+      "lucidlink-verification=H13VJ94S9GRFM6ZX539Q5EB8MG",
       "google-site-verification=lhkw5_yE2VpatfjtNqFeTXshSdHOmye2FSHCz4_IZwE",
-      "google-site-verification=6siIDX8Eh0aPCTSxDF2-GFuuFff1H1aPGm3SfPvP7aI"
+      "google-site-verification=MeuJIyKOrXf6e1Foju5Tqkzoms8KH0IoP01G5KhB-m8",
+      "canva-site-verification=yOD8mjIYFWLM6qJQW-rwgg",
+      "openai-domain-verification=dv-jTz4KfMtiA6SiWiVpka2QDFr",
+      "asv=4f7bed0ed9307319569dca0dc413d303"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-reports@insider.com; ruf=mailto:dmarc-reports@insider.com"
@@ -339,11 +346,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     ]
   },
   "apex_txt": [
+    "google-site-verification=HA4gcc-DAPuEX5Z3gfg-LTrtafWTIr40orlRHKZSLy0",
+    "google-site-verification=dsTQoEYtkhKJUiHaf7NXBGBP5wRxmQ2ia56y9UnTeZc",
+    "zapier-domain-verification-challenge=e10fad84-5944-470d-ae77-5d7697d0af05",
     "facebook-domain-verification=jz79wu26i92i5zpxpqra4s1p1ois9j",
-    "lucidlink-verification=H13VJ94S9GRFM6ZX539Q5EB8MG",
-    "atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXlTSpjt",
-    "slack-domain-verification=p1y98UQQ7JwUhAuHWXgLsJqM1VDqn56eErx227bu",
-    "google-site-verification=hVwc4FIT_C_8DNSPQSBmv84brU443LMUlfiyDqrByVA"
+    "_globalsign-domain-verification=O81xyb7YxpdGeHWkniit_VBT4vTXz9__NFrNMoTwFg"
   ],
   "tls2": {
     "alpn": "",
@@ -355,6 +362,15 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2026q1",
+      "serial": 2067354918998838162204996436775261511,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.globalsign.com/ca/gsatlasr3dvtlsca2026q1.crl"
+      ],
+      "subject_dn": "311c301a06035504030c13627573696e657373696e73696465722e636f6d",
+      "issuer_dn": "310b300906035504061302424531193017060355040a1310476c6f62616c5369676e206e762d7361312e302c06035504031325476c6f62616c5369676e2041746c617320523320445620544c532043412032303236205131",
       "not_before": "20260211190025",
       "not_after": "20270315190024"
     },
@@ -394,8 +410,16 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 26.6,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "hsts": "max-age=31536000",
+    "crl": {
+      "url": "http://crl.globalsign.com/ca/gsatlasr3dvtlsca2026q1.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 33.9,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -406,4 +430,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

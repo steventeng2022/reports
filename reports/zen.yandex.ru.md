@@ -7,8 +7,8 @@
 | Target | https://zen.yandex.ru/ |
 | Bug bounty program | Yandex |
 | Listed scope domain | zen.yandex.ru |
-| Test date | 2026-09-26 22:18 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:42 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -136,7 +136,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 7, Info: 14)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=3j25o2dnvau5xoluquutgkewnd2321; mailru-verification: 74012169191518f4; google-site-verification=GuJk1T5z2NlhKlN-pHwdtqiFEFJmvjm4pDu-lbj4g5A
+- **Detail:** Apex TXT records with verification/token content: mailru-verification: 74012169191518f4; google-site-verification=pS5x1twac3BzKk3hE85gZ3nDua-pdHnqwmamk-XtxP0; google-site-verification=GuJk1T5z2NlhKlN-pHwdtqiFEFJmvjm4pDu-lbj4g5A
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] Cookie scoped to parent domain (.yandex.ru) (`CK5`)
@@ -197,12 +197,12 @@ Total findings: **21** (High: 0, Medium: 0, Low: 7, Info: 14)
     ],
     "caa": [],
     "spf": [
-      "facebook-domain-verification=3j25o2dnvau5xoluquutgkewnd2321",
       "mailru-verification: 74012169191518f4",
-      "v=spf1 include:_spf.yandex-team.ru include:mail.zendesk.com",
-      "google-site-verification=GuJk1T5z2NlhKlN-pHwdtqiFEFJmvjm4pDu-lbj4g5A",
       "google-site-verification=pS5x1twac3BzKk3hE85gZ3nDua-pdHnqwmamk-XtxP0",
-      "yandex-verification: adcf799d964be8a8"
+      "google-site-verification=GuJk1T5z2NlhKlN-pHwdtqiFEFJmvjm4pDu-lbj4g5A",
+      "facebook-domain-verification=3j25o2dnvau5xoluquutgkewnd2321",
+      "yandex-verification: adcf799d964be8a8",
+      "v=spf1 include:_spf.yandex-team.ru include:mail.zendesk.com"
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -342,10 +342,10 @@ Total findings: **21** (High: 0, Medium: 0, Low: 7, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "facebook-domain-verification=3j25o2dnvau5xoluquutgkewnd2321",
     "mailru-verification: 74012169191518f4",
-    "google-site-verification=GuJk1T5z2NlhKlN-pHwdtqiFEFJmvjm4pDu-lbj4g5A",
     "google-site-verification=pS5x1twac3BzKk3hE85gZ3nDua-pdHnqwmamk-XtxP0",
+    "google-site-verification=GuJk1T5z2NlhKlN-pHwdtqiFEFJmvjm4pDu-lbj4g5A",
+    "facebook-domain-verification=3j25o2dnvau5xoluquutgkewnd2321",
     "yandex-verification: adcf799d964be8a8"
   ],
   "tls2": {
@@ -358,6 +358,15 @@ Total findings: **21** (High: 0, Medium: 0, Low: 7, Info: 14)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.globalsign.com/gsgccr46ovtlsca2025",
+      "serial": 28998704483691655699238527808,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.globalsign.com/gsgccr46ovtlsca2025.crl"
+      ],
+      "subject_dn": "310b3009060355040613025255310f300d060355040813064d6f73636f77310f300d060355040713064d6f73636f7731133011060355040a130a59414e444558204c4c433118301606035504030c0f2a2e7a656e2e79616e6465782e7275",
+      "issuer_dn": "310b300906035504061302424531193017060355040a1310476c6f62616c5369676e206e762d7361312a302806035504031321476c6f62616c5369676e2047434320523436204f5620544c532043412032303235",
       "not_before": "20260727211409",
       "not_after": "20270125205959"
     },
@@ -400,8 +409,15 @@ Total findings: **21** (High: 0, Medium: 0, Low: 7, Info: 14)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 55.0,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 302,
+    "crl": {
+      "url": "http://crl.globalsign.com/gsgccr46ovtlsca2025.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 61.7,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -412,4 +428,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 7, Info: 14)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

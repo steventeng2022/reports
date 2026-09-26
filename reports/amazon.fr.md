@@ -7,8 +7,8 @@
 | Target | https://amazon.fr/ |
 | Bug bounty program | Amazon |
 | Listed scope domain | amazon.fr |
-| Test date | 2026-09-26 21:57 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:18 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -130,7 +130,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=pkqx4a7mquzleeunwoog6hv56rny8w; google-site-verification=NkoFxShJGME_teW9sIj1QzZ7gbyG-HWJvLtFhIfqHnc; liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo
+- **Detail:** Apex TXT records with verification/token content: kahoot-domain-verification=b62357d8cf9c76c6d5bf6888b63b9f1a6a65ebb3755210709a16c; docker-verification=64c0e1f7-ccdf-4192-8eaa-8eb129095d13; google-site-verification=NkoFxShJGME_teW9sIj1QzZ7gbyG-HWJvLtFhIfqHnc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -148,7 +148,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 3.254.237.67 carries PTR ec2-3-254-237-67.eu-west-1.compute.amazonaws.com. for amazon.fr.
+- **Detail:** 3.254.236.66 carries PTR ec2-3-254-236-66.eu-west-1.compute.amazonaws.com. for amazon.fr.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 18. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -182,9 +182,9 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
   "domain": "amazon.fr",
   "dns": {
     "a": [
-      "3.254.237.67",
       "3.254.236.66",
-      "3.253.169.23"
+      "3.253.169.23",
+      "3.254.237.67"
     ],
     "aaaa": [],
     "cname": null,
@@ -192,45 +192,45 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "amazon-smtp.amazon.com (pref 10)"
     ],
     "ns": [
-      "ns2.amzndns.co.uk.",
-      "ns2.amzndns.com.",
-      "ns2.amzndns.org.",
-      "ns1.amzndns.org.",
       "ns1.amzndns.com.",
       "ns1.amzndns.net.",
+      "ns2.amzndns.org.",
+      "ns2.amzndns.com.",
+      "ns2.amzndns.co.uk.",
       "ns2.amzndns.net.",
+      "ns1.amzndns.org.",
       "ns1.amzndns.co.uk."
     ],
     "caa": [],
     "spf": [
-      "facebook-domain-verification=pkqx4a7mquzleeunwoog6hv56rny8w",
-      "google-site-verification=NkoFxShJGME_teW9sIj1QzZ7gbyG-HWJvLtFhIfqHnc",
-      "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
-      "v=spf1 include:spf.mandrillapp.com include:amazon.com -all",
-      "google-site-verification=vmQPE7p4uYTNHVtaQmytT-CZayW8ruLXycMsEBl_kIo",
+      "sending_domain1003771=d9728424f2813de308b9887cb13c87f9400c6172e727dca7b3feca1cb4437055",
+      "kahoot-domain-verification=b62357d8cf9c76c6d5bf6888b63b9f1a6a65ebb3755210709a16ce752b3253f6",
+      "docker-verification=64c0e1f7-ccdf-4192-8eaa-8eb129095d13",
       "sending_domain229492=583de145d75ff66143e88dca273460447d95061a4213307f4d320600a3c1dcaa",
-      "autodesk-domain-verification=N5Zg6KZwXQDo-pudDkME",
-      "bluebeam-verification=aoc2ya9tkhh2drq1723kaba2yui1nd",
-      "MS=ms46743318",
-      "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814",
-      "google-site-verification=U3inbmCLfS-MnCQvnNkeCB2aPKsmqeS9Ly54tfJJR50",
+      "MS=ms18995963",
+      "google-site-verification=NkoFxShJGME_teW9sIj1QzZ7gbyG-HWJvLtFhIfqHnc",
+      "google-gws-recovery-domain-verification=70440556",
+      "ZOOM_verify_uzXEpZoIQGsNdrlphjJ59I",
       "sending_domain229492=5ff0ab96243078b774f045d24b65144988a46f4578e8c0116d7eb099b14cc13c",
       "box-domain-verification=ffea95cd0e0d61c302198367155b07e74fd534fa1d867662dc9bf9969b6f535d",
-      "canva-site-verification=bFpVPinHHZos3PY6CD0Tbw",
-      "spf2.0/pra include:spf.mandrillapp.com include:amazon.com -all",
-      "docker-verification=64c0e1f7-ccdf-4192-8eaa-8eb129095d13",
-      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
-      "google-gws-recovery-domain-verification=68064248",
-      "MS=ms18995963",
-      "cisco-ci-domain-verification=74d02efdae2201a6a42b1c6e1068a47e69dda71fbd4defef5a70e23d800da1fd",
       "sending_domain608861=cf2a0d867c19a529fea9d2246519da0b618b935a8d64efb744ea49ef76b52869",
-      "google-gws-recovery-domain-verification=70440556",
+      "cisco-ci-domain-verification=74d02efdae2201a6a42b1c6e1068a47e69dda71fbd4defef5a70e23d800da1fd",
+      "v=spf1 include:spf.mandrillapp.com include:amazon.com -all",
+      "google-gws-recovery-domain-verification=68064248",
+      "google-site-verification=U3inbmCLfS-MnCQvnNkeCB2aPKsmqeS9Ly54tfJJR50",
       "sending_domain608861=73515280138a29820094c17699cd6051561cd16b1b60c732ed4860cad0b96480",
+      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
+      "bluebeam-verification=aoc2ya9tkhh2drq1723kaba2yui1nd",
+      "autodesk-domain-verification=N5Zg6KZwXQDo-pudDkME",
+      "google-site-verification=vmQPE7p4uYTNHVtaQmytT-CZayW8ruLXycMsEBl_kIo",
+      "MS=ms46743318",
+      "canva-site-verification=bFpVPinHHZos3PY6CD0Tbw",
       "cisco-ci-domain-verification=13ba27e01f786cffd46142fb80e6f2ec6a8523fe86a66d591b101401dc4d6b8c",
+      "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814",
+      "facebook-domain-verification=pkqx4a7mquzleeunwoog6hv56rny8w",
       "sending_domain1003771=3267c0d73b632f4cc5acb58bc0f3b77915039677c23eb7d503d89928b10cbbe2",
-      "sending_domain1003771=d9728424f2813de308b9887cb13c87f9400c6172e727dca7b3feca1cb4437055",
-      "ZOOM_verify_uzXEpZoIQGsNdrlphjJ59I",
-      "kahoot-domain-verification=b62357d8cf9c76c6d5bf6888b63b9f1a6a65ebb3755210709a16ce752b3253f6"
+      "spf2.0/pra include:spf.mandrillapp.com include:amazon.com -all",
+      "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo"
     ],
     "dmarc": [
       "v=DMARC1;",
@@ -271,7 +271,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     }
   },
   "ports": {
-    "ip": "3.254.237.67",
+    "ip": "3.254.236.66",
     "open": []
   },
   "https": {
@@ -353,11 +353,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     ]
   },
   "apex_txt": [
-    "facebook-domain-verification=pkqx4a7mquzleeunwoog6hv56rny8w",
+    "kahoot-domain-verification=b62357d8cf9c76c6d5bf6888b63b9f1a6a65ebb3755210709a16c",
+    "docker-verification=64c0e1f7-ccdf-4192-8eaa-8eb129095d13",
     "google-site-verification=NkoFxShJGME_teW9sIj1QzZ7gbyG-HWJvLtFhIfqHnc",
-    "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
-    "google-site-verification=vmQPE7p4uYTNHVtaQmytT-CZayW8ruLXycMsEBl_kIo",
-    "autodesk-domain-verification=N5Zg6KZwXQDo-pudDkME"
+    "google-gws-recovery-domain-verification=70440556",
+    "box-domain-verification=ffea95cd0e0d61c302198367155b07e74fd534fa1d867662dc9bf996"
   ],
   "tls2": {
     "alpn": "",
@@ -369,6 +369,15 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
+      "serial": 13617426469572814899382478727835414315,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.r2m01.amazontrust.com/r2m01.crl"
+      ],
+      "subject_dn": "3119301706035504030c102a2e637a2e7065672e61327a2e636f6d",
+      "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3031",
       "not_before": "20260804000000",
       "not_after": "20270217235959"
     },
@@ -396,7 +405,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-3-254-237-67.eu-west-1.compute.amazonaws.com."
+      "ec2-3-254-236-66.eu-west-1.compute.amazonaws.com."
     ]
   },
   "x13": {
@@ -414,8 +423,15 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 32.6,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "crl": {
+      "url": "http://crl.r2m01.amazontrust.com/r2m01.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 38.0,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -426,4 +442,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://www.ietf.org/ |
 | Bug bounty program | IETF |
 | Listed scope domain | www.ietf.org |
-| Test date | 2026-09-26 22:18 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:41 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
+Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 | 15 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
 | 16 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 18 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 
 ## Detailed findings
 
@@ -45,13 +46,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.44.99:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.45.99:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.44.99:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.45.99:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -134,7 +135,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 ### 16. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkxsns722w95bv.html -> 404; error page/headers match: Cloudflare.
+- **Detail:** GET /xkcza51477d4b1.html -> 404; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -143,6 +144,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - **Detail:** No CAA record found for www.ietf.org; apex ietf.org, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
+### 18. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on www.ietf.org lists 989 <loc> URL(s); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -150,12 +157,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
   "domain": "www.ietf.org",
   "dns": {
     "a": [
-      "104.16.44.99",
-      "104.16.45.99"
+      "104.16.45.99",
+      "104.16.44.99"
     ],
     "aaaa": [
-      "2606:4700::6810:2d63",
-      "2606:4700::6810:2c63"
+      "2606:4700::6810:2c63",
+      "2606:4700::6810:2d63"
     ],
     "cname": null,
     "mx": [],
@@ -188,7 +195,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     }
   },
   "ports": {
-    "ip": "104.16.44.99",
+    "ip": "104.16.45.99",
     "open": [
       8080,
       8443
@@ -262,6 +269,15 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
+      "serial": 446857124908084371468557068649186777568178,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://ye2.c.lencr.org/51.crl"
+      ],
+      "subject_dn": "3111300f06035504031308696574662e6f7267",
+      "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303594532",
       "not_before": "20260904194639",
       "not_after": "20261203194638"
     }
@@ -285,8 +301,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 10.9,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "sitemap": {
+      "urls": 989,
+      "indexes": 0
+    },
+    "crl": {
+      "url": "http://ye2.c.lencr.org/51.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 11.2,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -297,4 +324,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

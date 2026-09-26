@@ -7,12 +7,12 @@
 | Target | https://hbo.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | hbo.com |
-| Test date | 2026-09-26 22:07 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:29 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
+Total findings: **22** (High: 0, Medium: 0, Low: 7, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,6 +37,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 | 19 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 20 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 21 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 22 | low | H21 | HSTS does not cover subdomains | CWE-319 |
 
 ## Detailed findings
 
@@ -150,7 +151,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: cisco-ci-domain-verification=fa33a8661bbf3b1f9dff9344e3ac17f37de9632597126eda4eb; google-site-verification=FyHIYNMYtacdeYPK7CFQexzcTapnqZU223BTKsahsXE; google-site-verification=zJEFSVfAzkOwA37-wHGgRsKEnQYAmOfW1nFrIRQ3dws
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=kihnMTsj1roc6QOJ3MtRzKmVcznr4-J7gra1tCchVo0; _globalsign-domain-verification=G6rAn-5s3I6Ukt7EpylRLtWbglxplS_gS1j_JEGoEy; google-site-verification=PPKvhksy5y9BY98aJv-Pbt5KEaBx56J97MhUGW2wp90
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -177,6 +178,12 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 - **Detail:** No CAA record found for hbo.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
+### 22. [LOW] HSTS does not cover subdomains (`H21`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security on hbo.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of hbo.com.
+- **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
+
 ## Evidence (raw response observations)
 
 ```json
@@ -184,10 +191,10 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
   "domain": "hbo.com",
   "dns": {
     "a": [
-      "151.101.65.55",
-      "151.101.129.55",
+      "151.101.193.55",
       "151.101.1.55",
-      "151.101.193.55"
+      "151.101.65.55",
+      "151.101.129.55"
     ],
     "aaaa": [],
     "cname": null,
@@ -195,46 +202,46 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
       "hbo-com.mail.protection.outlook.com (pref 5)"
     ],
     "ns": [
+      "ns-1217.awsdns-24.org.",
       "ns-1897.awsdns-45.co.uk.",
       "ns-662.awsdns-18.net.",
-      "ns-1217.awsdns-24.org.",
       "ns-63.awsdns-07.com."
     ],
     "caa": [],
     "spf": [
-      "884fdb9d-6da8-42a2-ab0b-c90ac2dba754",
-      "cisco-ci-domain-verification=fa33a8661bbf3b1f9dff9344e3ac17f37de9632597126eda4eb6a2cd852097f",
-      "google-site-verification=FyHIYNMYtacdeYPK7CFQexzcTapnqZU223BTKsahsXE",
-      "google-site-verification=zJEFSVfAzkOwA37-wHGgRsKEnQYAmOfW1nFrIRQ3dws",
-      "google-site-verification=6NTd9bZvlQzGGYhk9F5NDpFYjzntMcPyZTQAmYXxbLE",
-      "adobe-idp-site-verification=6b91c48785893991cc3cf88c073dbc3e4d101443ffbcd2859010727b0575e17e",
-      "_globalsign-domain-verification=y5vdurCbC4j5d7MV9vSxuv8uVCkhT1nhaj_gcfDJTR",
-      "9b04608n3lxylrbgzmmzhpzngmryfdkz",
-      "adobe-sign-verification=851df024b8fb3cd18463f3ca49e0a382",
       "671988175-12122548",
-      "google-site-verification=YVE1XQiIPhIXOxPkAvqsaJPqfCHXQoqZrhwuwl9eXiI",
-      "cloudhealth=7bffbad9-cff4-4761-add2-9e8d2702fe83",
       "google-site-verification=kihnMTsj1roc6QOJ3MtRzKmVcznr4-J7gra1tCchVo0",
-      "_globalsign-domain-verification=Nm83aY0luFmKaEsROwWuFmSDG1GpsRXe6rrIHF_-PB",
-      "v=spf1 include:hbo.com._nspf.vali.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
-      "postman-domain-verification=cd813d70bf99ae7071a4652b4a8f93ffcb1a7952d9302be5102db2bca5281afb185b50a44d8ea4ef88eb9092168407c1d8c551047b166900fff966b0092b3770",
-      "facebook-domain-verification=ikjv2tsvtbdjby9jzmndvqnh5eu3df",
-      "canva-site-verification=nTHHCJWAZx0su5nbZTwRJw",
-      "anthropic-domain-verification-y7w1sm=ph88E7qdbFJUeSPIyiHPupVQ7",
-      "google-site-verification=9gePLUf80rMHYDmuPpE-ZwLjGvzkukgY49yjTOfnDtM",
-      "miro-verification=1e01f8da769be1241fceefd9abf2c317dcd68323",
-      "google-site-verification=kHBF6A_fqUd4bpgDkjBQSpi14Qvcv1BokGGHcIIsY1s",
-      "MS=ms69642137",
-      "atlassian-domain-verification=joqe6L8dNi+aisGbB1XHQa0pDc53V2l0GQQRUtLEcr2997x0+rtrAA5Zw+UgQw3u",
       "_globalsign-domain-verification=G6rAn-5s3I6Ukt7EpylRLtWbglxplS_gS1j_JEGoEy",
-      "smartsheet-site-validation.hbo.com=hDWT+iX//NWjhnuIwn6p0ABkODcnRz2ZFxti5GgtCjY=",
+      "google-site-verification=PPKvhksy5y9BY98aJv-Pbt5KEaBx56J97MhUGW2wp90",
       "PKFS/m8wm6RASUf1vmbVzuTnJMsxg522xk09UfzsaVhKKPqzeiqul7GeuCxDRWLRSkOO8lSEhPfChRa2/DMV/A==",
-      "GM2s0rl8m2M8+aduzPSrdSx+Qov8kBguD3ScwDO3hssN091zF49gk1A7AMbBb/+XZe3Uwp06eTpym28ZmMvOmA==",
-      "lucidchart-verification=fv33o3sxxpyg83fkwnl1",
-      "apple-domain-verification=5lqzlq9YCMRcc6Nc",
-      "_globalsign-domain-verification=gKLyHVs2-A8jjJCtFFMvdQQaGDVdh8ohZU0SmsDmAy",
+      "google-site-verification=9gePLUf80rMHYDmuPpE-ZwLjGvzkukgY49yjTOfnDtM",
+      "google-site-verification=kHBF6A_fqUd4bpgDkjBQSpi14Qvcv1BokGGHcIIsY1s",
       "_globalsign-domain-verification=ZFOw8Gt29vHTv6SXbYvBumUzxAjlLsM150n6cu_sl8",
-      "google-site-verification=PPKvhksy5y9BY98aJv-Pbt5KEaBx56J97MhUGW2wp90"
+      "anthropic-domain-verification-y7w1sm=ph88E7qdbFJUeSPIyiHPupVQ7",
+      "apple-domain-verification=5lqzlq9YCMRcc6Nc",
+      "google-site-verification=FyHIYNMYtacdeYPK7CFQexzcTapnqZU223BTKsahsXE",
+      "884fdb9d-6da8-42a2-ab0b-c90ac2dba754",
+      "adobe-sign-verification=851df024b8fb3cd18463f3ca49e0a382",
+      "miro-verification=1e01f8da769be1241fceefd9abf2c317dcd68323",
+      "postman-domain-verification=cd813d70bf99ae7071a4652b4a8f93ffcb1a7952d9302be5102db2bca5281afb185b50a44d8ea4ef88eb9092168407c1d8c551047b166900fff966b0092b3770",
+      "canva-site-verification=nTHHCJWAZx0su5nbZTwRJw",
+      "MS=ms69642137",
+      "google-site-verification=YVE1XQiIPhIXOxPkAvqsaJPqfCHXQoqZrhwuwl9eXiI",
+      "adobe-idp-site-verification=6b91c48785893991cc3cf88c073dbc3e4d101443ffbcd2859010727b0575e17e",
+      "cloudhealth=7bffbad9-cff4-4761-add2-9e8d2702fe83",
+      "lucidchart-verification=fv33o3sxxpyg83fkwnl1",
+      "smartsheet-site-validation.hbo.com=hDWT+iX//NWjhnuIwn6p0ABkODcnRz2ZFxti5GgtCjY=",
+      "_globalsign-domain-verification=Nm83aY0luFmKaEsROwWuFmSDG1GpsRXe6rrIHF_-PB",
+      "facebook-domain-verification=ikjv2tsvtbdjby9jzmndvqnh5eu3df",
+      "_globalsign-domain-verification=y5vdurCbC4j5d7MV9vSxuv8uVCkhT1nhaj_gcfDJTR",
+      "atlassian-domain-verification=joqe6L8dNi+aisGbB1XHQa0pDc53V2l0GQQRUtLEcr2997x0+rtrAA5Zw+UgQw3u",
+      "_globalsign-domain-verification=gKLyHVs2-A8jjJCtFFMvdQQaGDVdh8ohZU0SmsDmAy",
+      "google-site-verification=zJEFSVfAzkOwA37-wHGgRsKEnQYAmOfW1nFrIRQ3dws",
+      "v=spf1 include:hbo.com._nspf.vali.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
+      "9b04608n3lxylrbgzmmzhpzngmryfdkz",
+      "cisco-ci-domain-verification=fa33a8661bbf3b1f9dff9344e3ac17f37de9632597126eda4eb6a2cd852097f",
+      "google-site-verification=6NTd9bZvlQzGGYhk9F5NDpFYjzntMcPyZTQAmYXxbLE",
+      "GM2s0rl8m2M8+aduzPSrdSx+Qov8kBguD3ScwDO3hssN091zF49gk1A7AMbBb/+XZe3Uwp06eTpym28ZmMvOmA=="
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@vali.email,mailto:dmarc@hbo.com; ruf=mailto:MTI3@ruf.vali.email,mailto:dmarc@hbo.com"
@@ -263,7 +270,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
     }
   },
   "ports": {
-    "ip": "151.101.65.55",
+    "ip": "151.101.193.55",
     "open": []
   },
   "https": {
@@ -329,11 +336,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "cisco-ci-domain-verification=fa33a8661bbf3b1f9dff9344e3ac17f37de9632597126eda4eb",
-    "google-site-verification=FyHIYNMYtacdeYPK7CFQexzcTapnqZU223BTKsahsXE",
-    "google-site-verification=zJEFSVfAzkOwA37-wHGgRsKEnQYAmOfW1nFrIRQ3dws",
-    "google-site-verification=6NTd9bZvlQzGGYhk9F5NDpFYjzntMcPyZTQAmYXxbLE",
-    "adobe-idp-site-verification=6b91c48785893991cc3cf88c073dbc3e4d101443ffbcd2859010"
+    "google-site-verification=kihnMTsj1roc6QOJ3MtRzKmVcznr4-J7gra1tCchVo0",
+    "_globalsign-domain-verification=G6rAn-5s3I6Ukt7EpylRLtWbglxplS_gS1j_JEGoEy",
+    "google-site-verification=PPKvhksy5y9BY98aJv-Pbt5KEaBx56J97MhUGW2wp90",
+    "google-site-verification=9gePLUf80rMHYDmuPpE-ZwLjGvzkukgY49yjTOfnDtM",
+    "google-site-verification=kHBF6A_fqUd4bpgDkjBQSpi14Qvcv1BokGGHcIIsY1s"
   ],
   "tls2": {
     "alpn": "",
@@ -345,6 +352,15 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2026q1",
+      "serial": 2005217483259575983192283361378749896,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.globalsign.com/ca/gsatlasr3dvtlsca2026q1.crl"
+      ],
+      "subject_dn": "3110300e06035504030c0768626f2e636f6d",
+      "issuer_dn": "310b300906035504061302424531193017060355040a1310476c6f62616c5369676e206e762d7361312e302c06035504031325476c6f62616c5369676e2041746c617320523320445620544c532043412032303236205131",
       "not_before": "20260122172515",
       "not_after": "20270223172514"
     },
@@ -370,8 +386,16 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 19.2,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 308,
+    "hsts": "max-age=31536000;",
+    "crl": {
+      "url": "http://crl.globalsign.com/ca/gsatlasr3dvtlsca2026q1.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 22.0,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -382,4 +406,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

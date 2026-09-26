@@ -7,8 +7,8 @@
 | Target | https://aliexpress.com/ |
 | Bug bounty program | Alibaba |
 | Listed scope domain | aliexpress.com |
-| Test date | 2026-09-26 21:57 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -167,13 +167,13 @@ Total findings: **24** (High: 0, Medium: 0, Low: 8, Info: 16)
 ### 19. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (fs8asiyuncn3sc.aliexpress.com and q5tfb8fjyzvpcc.aliexpress.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (zazitmzkh5dbgq.aliexpress.com and 13729h5vqpxu04.aliexpress.com) both resolve to distinct addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 20. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=qipEZ2Q9JVgKJxvS-0G3nvAh729OMkjaAouGkcSxVBE; google-site-verification=GCJUnSbd3EWW3g7cRvHi57DLpGuR6CEJHzkk6-SOjAs; mailru-verification: c9feb214b705f911
+- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=yhVu_dlmWJNswki9B4Za7HtMd7ihnDDIzpm-RM7nMR; google-site-verification=GCJUnSbd3EWW3g7cRvHi57DLpGuR6CEJHzkk6-SOjAs; google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 21. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -207,8 +207,8 @@ Total findings: **24** (High: 0, Medium: 0, Low: 8, Info: 16)
   "domain": "aliexpress.com",
   "dns": {
     "a": [
-      "47.246.111.53",
-      "47.246.75.137"
+      "47.246.75.137",
+      "47.246.111.53"
     ],
     "aaaa": [],
     "cname": null,
@@ -216,23 +216,23 @@ Total findings: **24** (High: 0, Medium: 0, Low: 8, Info: 16)
       "mx2.mail.aliyun.com (pref 10)"
     ],
     "ns": [
-      "ns1.alibabadns.com.",
-      "ns2.alibabadns.com."
+      "ns2.alibabadns.com.",
+      "ns1.alibabadns.com."
     ],
     "caa": [],
     "spf": [
-      "tnz9gvzzksy8l6y5jcmz0slnjk3yxbgm",
-      "apple-domain-verification=qipEZ2Q9JVgKJxvS-0G3nvAh729OMkjaAouGkcSxVBE",
-      "cloudflare-verify.aliexpress.com=366647249-1105276800",
-      "google-site-verification=GCJUnSbd3EWW3g7cRvHi57DLpGuR6CEJHzkk6-SOjAs",
-      "v=BIMI1;l=https://bimi.entrust.net/aliexpress.com/logo.svg;a=https://bimi.entrust.net/aliexpress.com/certchain.pem",
-      "mailru-verification: c9feb214b705f911",
-      "v=spf1 include:spf1.service.alibaba.com include:spf2.service.alibaba.com include:spf2.ocm.aliyun.com -all",
-      "f6t8k5j81d8psl001ddncwt7zd1v0rr4",
-      "Validity-Domain-Verification=yidvO17A1k5rojYMFX81UL2y7Cw=",
-      "google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw",
       "_globalsign-domain-verification=yhVu_dlmWJNswki9B4Za7HtMd7ihnDDIzpm-RM7nMR",
-      "8rlnys07lnz6xvr7wsr4zg0kkz8yd6d5"
+      "google-site-verification=GCJUnSbd3EWW3g7cRvHi57DLpGuR6CEJHzkk6-SOjAs",
+      "google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw",
+      "mailru-verification: c9feb214b705f911",
+      "tnz9gvzzksy8l6y5jcmz0slnjk3yxbgm",
+      "cloudflare-verify.aliexpress.com=366647249-1105276800",
+      "f6t8k5j81d8psl001ddncwt7zd1v0rr4",
+      "8rlnys07lnz6xvr7wsr4zg0kkz8yd6d5",
+      "v=BIMI1;l=https://bimi.entrust.net/aliexpress.com/logo.svg;a=https://bimi.entrust.net/aliexpress.com/certchain.pem",
+      "apple-domain-verification=qipEZ2Q9JVgKJxvS-0G3nvAh729OMkjaAouGkcSxVBE",
+      "v=spf1 include:spf1.service.alibaba.com include:spf2.service.alibaba.com include:spf2.ocm.aliyun.com -all",
+      "Validity-Domain-Verification=yidvO17A1k5rojYMFX81UL2y7Cw="
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-ap@service.alibaba.com; ruf=mailto:dmarc-ap@service.alibaba.com"
@@ -352,7 +352,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 8, Info: 16)
     }
   },
   "ports": {
-    "ip": "47.246.111.53",
+    "ip": "47.246.75.137",
     "open": []
   },
   "https": {
@@ -410,11 +410,11 @@ Total findings: **24** (High: 0, Medium: 0, Low: 8, Info: 16)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "apple-domain-verification=qipEZ2Q9JVgKJxvS-0G3nvAh729OMkjaAouGkcSxVBE",
+    "_globalsign-domain-verification=yhVu_dlmWJNswki9B4Za7HtMd7ihnDDIzpm-RM7nMR",
     "google-site-verification=GCJUnSbd3EWW3g7cRvHi57DLpGuR6CEJHzkk6-SOjAs",
+    "google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw",
     "mailru-verification: c9feb214b705f911",
-    "Validity-Domain-Verification=yidvO17A1k5rojYMFX81UL2y7Cw=",
-    "google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw"
+    "apple-domain-verification=qipEZ2Q9JVgKJxvS-0G3nvAh729OMkjaAouGkcSxVBE"
   ],
   "tls2": {
     "alpn": "",
@@ -426,6 +426,15 @@ Total findings: **24** (High: 0, Medium: 0, Low: 8, Info: 16)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": "http://ocsp.globalsign.com/gsgccr3ovtlsca2024",
+      "serial": 12717430077425794861561581047,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.globalsign.com/gsgccr3ovtlsca2024.crl"
+      ],
+      "subject_dn": "310b300906035504061302434e3111300f060355040813085a68654a69616e673111300f0603550407130848616e675a686f75312d302b060355040a1324416c696261626120284368696e612920546563686e6f6c6f677920436f2e2c204c74642e3119301706035504030c102a2e616c69657870726573732e636f6d",
+      "issuer_dn": "310b300906035504061302424531193017060355040a1310476c6f62616c5369676e206e762d73613129302706035504031320476c6f62616c5369676e20474343205233204f5620544c532043412032303234",
       "not_before": "20260518112202",
       "not_after": "20261203111615"
     },
@@ -467,8 +476,15 @@ Total findings: **24** (High: 0, Medium: 0, Low: 8, Info: 16)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 21.8,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "crl": {
+      "url": "http://crl.globalsign.com/gsgccr3ovtlsca2024.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 23.5,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -479,4 +495,5 @@ Total findings: **24** (High: 0, Medium: 0, Low: 8, Info: 16)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

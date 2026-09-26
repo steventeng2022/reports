@@ -7,12 +7,12 @@
 | Target | https://ncbi.nlm.nih.gov/ |
 | Bug bounty program | U.S. Dept of Health & Human Services (HHS) |
 | Listed scope domain | ncbi.nlm.nih.gov |
-| Test date | 2026-09-26 22:11 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:33 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
+Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 | 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 17 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 18 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 19 | info | TLS20 | Short certificate serial number (< 64 bits) | CWE-347 |
 
 ## Detailed findings
 
@@ -141,7 +142,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 ### 17. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xked1usjj5h0gd.html -> 404; error page/headers match: Apache.
+- **Detail:** GET /xkt8cng9db305z.html -> 404; error page/headers match: Apache.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 18. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
@@ -149,6 +150,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 - **CWE:** CWE-298
 - **Detail:** The ncbi.nlm.nih.gov certificate lists an AIA OCSP responder (http://ocsp.godaddy.com/) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
+### 19. [INFO] Short certificate serial number (< 64 bits) (`TLS20`)
+
+- **CWE:** CWE-347
+- **Detail:** Leaf certificate of ncbi.nlm.nih.gov carries a 63-bit serial (0x52bc2b3569b00076); serials under 64 bits make collision attacks (2008 CERTEX) feasible and are no longer recommended by the CA/B Forum.
+- **Recommendation:** Request certificates with 128-bit serial numbers.
 
 ## Evidence (raw response observations)
 
@@ -164,38 +171,38 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
     ],
     "cname": null,
     "mx": [
-      "nihcesxway4.hub.nih.gov (pref 10)",
+      "nihcesxway.hub.nih.gov (pref 10)",
       "nihcesxway2.hub.nih.gov (pref 10)",
-      "nihcesxway5.hub.nih.gov (pref 10)",
+      "nihcesxway4.hub.nih.gov (pref 10)",
       "nihcesxway3.hub.nih.gov (pref 10)",
-      "nihcesxway.hub.nih.gov (pref 10)"
+      "nihcesxway5.hub.nih.gov (pref 10)"
     ],
     "ns": [
-      "dns1-ncbi.ncbi.nlm.nih.gov.",
       "ns2.nih.gov.",
-      "ns3.nih.gov.",
-      "dns2-ncbi.ncbi.nlm.nih.gov.",
       "lhcns2.nlm.nih.gov.",
-      "ns.nih.gov.",
-      "lhcns1.nlm.nih.gov."
+      "dns1-ncbi.ncbi.nlm.nih.gov.",
+      "lhcns1.nlm.nih.gov.",
+      "dns2-ncbi.ncbi.nlm.nih.gov.",
+      "ns3.nih.gov.",
+      "ns.nih.gov."
     ],
     "caa": [
+      "0 issuewild \"godaddy.com\"",
       "0 issue \"letsencrypt.org\"",
-      "0 issuewild \"letsencrypt.org\"",
       "0 issue \"godaddy.com\"",
-      "0 issuewild \"godaddy.com\""
+      "0 issuewild \"letsencrypt.org\""
     ],
     "spf": [
-      "64ae187888c443b49126410c89e19f91",
-      "6ochlmevf91qg4f4aq6bo33ofk",
-      "+UYkiJ9LhpTEGd+XduX0MaAclYq9qoJF4Ls5FJaAwl6LRx4aozocl8ZRea9MKMRaquSBJaZC52liuRb0rkxAMA==",
-      "21mn4fyhz69y985h80bcyrf4vjqjl0ln",
       "google-site-verification=r_gJSAUUa9jLHjrDalVHx6YDW-U-bIXvV5RAq4l1BEI",
       "v=spf1 ip4:130.14.26.0/25 ip4:165.112.9.132 ip4:130.14.19.0/24 ip4:130.14.28.0/24 ip4:10.65.8.60 ip4:130.14.22.0/24 ip4:128.231.90.64/26 ip4:165.112.13.0/26 ip6:2607:f220:0404:8104::0/64 ip6:2607:f220:402:1a01::0/64 ",
       "ip4:63.150.153.0/28 ip4:63.236.109.192/28 ip4:63.236.97.64/27 ip4:66.77.66.64/26 ip4:63.236.105.192/28 ip4:63.236.106.128/27 ip4:68.177.111.128/26 ip4:156.40.79.128/25 ip4:165.112.194.0/25 ",
       "ip6:2607:f220:041e:4260::41/64 ip6:2607:f220:041e:4260::42/64 ip6:2607:f220:041e:4260::15/64 ip6:2607:f220:041e:4260::16/64 ip6:2607:f220:41f:4260::132/64 include:nih.gov -all",
+      "21mn4fyhz69y985h80bcyrf4vjqjl0ln",
       "5ongv773afed7ghag3eubs9v6c",
-      "google-site-verification=nMmA8DdB_FATP9hChkks7To1ndl-jGwVn624WV03SJg"
+      "google-site-verification=nMmA8DdB_FATP9hChkks7To1ndl-jGwVn624WV03SJg",
+      "64ae187888c443b49126410c89e19f91",
+      "+UYkiJ9LhpTEGd+XduX0MaAclYq9qoJF4Ls5FJaAwl6LRx4aozocl8ZRea9MKMRaquSBJaZC52liuRb0rkxAMA==",
+      "6ochlmevf91qg4f4aq6bo33ofk"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:8idhoybh@ag.us.dmarcian.com,mailto:reports@dmarc.cyber.dhs.gov; ruf=mailto:8idhoybh@fr.us.dmarcian.com; fo=1;"
@@ -291,6 +298,15 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.godaddy.com/",
+      "serial": 5961687515138097270,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.godaddy.com/gdr1v1dv_s1-14.crl"
+      ],
+      "subject_dn": "311b301906035504030c122a2e6e6362692e6e6c6d2e6e69682e676f76",
+      "issuer_dn": "310b300906035504061302555331143012060355040a130b476f44616464792e636f6d312e302c06035504031325476f446164647920544c5320496e7465726d656469617465204341204456202d2052317631",
       "not_before": "20260828163119",
       "not_after": "20270314163119"
     },
@@ -332,8 +348,17 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 36.0,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "serial_bits": 63,
+    "root_status": 200,
+    "hsts": "max-age=31536000; includeSubDomains; preload",
+    "crl": {
+      "url": "http://crl.godaddy.com/gdr1v1dv_s1-14.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 45.4,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -344,4 +369,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

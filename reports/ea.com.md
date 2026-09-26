@@ -7,8 +7,8 @@
 | Target | https://ea.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ea.com |
-| Test date | 2026-09-26 22:03 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:25 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -168,7 +168,7 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
 ### 19. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=AYQE6OxMih12JCzk; tiktok-developers-site-verification=gZsAdTrtYEO38BFg51P9NCZxK5vsqpvh; google-site-verification=069b0lSxMIobzf7rJTBnXqb1KDTmfFhsJMm8mP9xnBU
+- **Detail:** Apex TXT records with verification/token content: ms-domain-verification=28dc05d9-f0d5-48a8-b161-eff7735d41ae; logmein-verification-code=a02f93d4-a3af-4666-9eac-1b942a06a775; tiktok-developers-site-verification=VcYwjcEIoOmPFODSYEQjCUP09jElnNkn
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 20. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -225,84 +225,84 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
       "ea-com.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "a6-65.akam.net.",
-      "a4-64.akam.net.",
       "a8-67.akam.net.",
-      "a13-67.akam.net.",
+      "a4-64.akam.net.",
       "a1-164.akam.net.",
+      "a13-67.akam.net.",
+      "a6-65.akam.net.",
       "a7-66.akam.net."
     ],
     "caa": [],
     "spf": [
+      "ms-domain-verification=28dc05d9-f0d5-48a8-b161-eff7735d41ae",
+      "60c96f47dd6a7488b6dd38d5ae33efc370ebc531b96579f91f",
+      "logmein-verification-code=a02f93d4-a3af-4666-9eac-1b942a06a775",
+      "tiktok-developers-site-verification=VcYwjcEIoOmPFODSYEQjCUP09jElnNkn",
+      "Console2714e2e7-3fa3-4b34-8693-c09b1d9986c6",
+      "smartsheet-site-validation=2s81-L1kix0MAeJQmj44rEehwVlCUIYV",
+      "openai-domain-verification=dv-YrfF7OlR2a17O78uKEgzshRW",
+      "atlassian-domain-verification=TcMmJBl8jkffKRnLX0s82TVPAOBmzFE8N1xCvCg42ehCFfU8nxO1rMZcSCLdiIMh",
+      "pendo-domain-verification=b222077a-2e50-4ff3-ad90-fa75f5dca758",
+      "coda-domain-verification=5a85c362ac0b72f3424ca33c00d23799dce6bdf8ba8f7229063d19b5e44b05c3",
+      "google-site-verification=HYdRtN3xk_TxaVDfhAVQb-Qbav7wj57E01Pci8x3oOg",
+      "adobe-idp-site-verification=b36e2eb4-d986-4903-a5be-15e3651396cf",
+      "snowflake-verification=71ba1450-019f-1000-8718-000000000413",
+      "yahoo-verification-key=2gylAaYUd1O/rISrcuKML5pponu0SGJJe5E1QavbBNU=",
+      "lovable_verification=wZkgBHNGXK1sMxUCtqNt",
+      "google-site-verification=dSC8gq7vptNeGVIDEpGQZ0xE8s-5BBIbc1r6R3_PwT0",
+      "google-site-verification=W_cWHGmP5RqmA9hYnm8inTTb9Sau7q1Ro911CH4SrZ8",
+      "favro-verification=ZZeXG7b1hCYDjKGawUWpxK5LA1IhkTZux_oDE7q5Uml",
+      "amazonses:h4cXsZhHgq6fK4DGoUQgriYwSeE6hO5aJ+h6wHnx/fk=",
+      "openai-domain-verification=dv-zKMivwPHrBsP7kgvIdS6GaY4",
+      "amazonses:mgCkNYnAkmnZtXK6zLrZW+THRSUyJZGJnSOBdj+isYU=",
+      "google-site-verification=VtxQaj7j_j013LXYPxlTV644QBxazMYipfG1USdvrOk",
+      "anthropic-domain-verification-ydnsfp=iJGHDaz3zCSt83Oek8kGxETGm",
+      "google-site-verification=GYuY8XAe8jdr6Wr-IFTvC75N3UOWel-PJ3LB55n0f4Q",
+      "30d0e455-f274-4c0b-b606-9a835bf5974e.falcon.ea.com",
+      "QfGw4p+QlBkLTkHaJRQrTAHpN+ZgoZENi4uAnKBoQVVKGMBBhCzqeTpmndH2fHvajdi9FWSCrdQrPwQ7hzZMDA==",
+      "amazonses:9QIPnjs+UD8ZuYiSqjVTy4qGcBR9TIvB3HD52irZPjk=",
       "v=DKIM1;k=rsa;",
       "p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDUejllw7R9wJvQ8LoCS5LwXo3xq+ReQWBUMQvktXNmX43LZyDQr0H9dHKuoFsDHwo0nZJk3JAJs610H9dQF+SZyeVL0Pv5Jiq3dSLs/+tyxIBCou20Gy/7b+y6gUvqvMbZWM/fFHfpZgh/3E0vHJXGob/3XxqcW2BtIgxVSf+HTwIDAQAB",
-      "apple-domain-verification=AYQE6OxMih12JCzk",
-      "tiktok-developers-site-verification=gZsAdTrtYEO38BFg51P9NCZxK5vsqpvh",
-      "google-site-verification=069b0lSxMIobzf7rJTBnXqb1KDTmfFhsJMm8mP9xnBU",
-      "amazonses:mgCkNYnAkmnZtXK6zLrZW+THRSUyJZGJnSOBdj+isYU=",
-      "unity-sso-verification=aac6dbce-432e-47c8-b84b-3e2b17bdbbe6",
-      "docker-verification=4bfce2f1-7d0f-474e-a43b-d60d18b35182",
-      "pendo-domain-verification=b222077a-2e50-4ff3-ad90-fa75f5dca758",
-      "facebook-domain-verification=oq80s5pdyo1d8huizochkuyscyewf2",
-      "tiktok-developers-site-verification=UWDwy70DCmMmCerrJX6oV1pRGABPapRe",
-      "smartsheet-site-validation=2s81-L1kix0MAeJQmj44rEehwVlCUIYV",
-      "MS=ms19667016",
+      "AagMut9FoA4ka4DYvu3QvUa5FRJCN4esFVQ3RG6RdGAjA8hTAlxLXme7sSHZnFDNX7XAPe5BIIbg1G23k2oVow==",
+      "parsec-domain-verification=td_2PekalqDxqm3NIcvbo3Megt72X9",
+      "anthropic-domain-verification-g53wq8=Hgm9Dc1mrdVQjGxnZWm4CSgri",
+      "lookingglassweb.azurewebsites.net",
+      "adobe-sign-verification=c3b24a9842e8e22172e2568873e4ed3b",
+      "google-site-verification=JPqUmrL51cf3BGW7dM_RP70SaOhgCQpfVmfEWE4JWS0",
+      "amazonses:SMeDjsim2TRE1HOX7bQmJJhBjV2DZPdakNXVtC1U5QA=",
       "v=DMARC1;",
       "p=none;",
       "fo=1;",
       "rua=mailto:yesmail@rua.agari.com;",
       "ruf=mailto:yesmail@ruf.agari.com",
-      "yahoo-verification-key=2gylAaYUd1O/rISrcuKML5pponu0SGJJe5E1QavbBNU=",
-      "Dynatrace-site-verification=54000376-a605-40b6-955d-7db46b6afc4c__lbfps854cgctskgenckqfr2962",
-      "cisco-ci-domain-verification=4cb82531e58e0b3c12afb359f5142eb4d461e0e589eefa3603a9af7317a8afd2",
-      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email include:spf.protection.outlook.com ~all",
-      "google-site-verification=HYdRtN3xk_TxaVDfhAVQb-Qbav7wj57E01Pci8x3oOg",
-      "tiktok-developers-site-verification=VcYwjcEIoOmPFODSYEQjCUP09jElnNkn",
-      "adobe-idp-site-verification=b36e2eb4-d986-4903-a5be-15e3651396cf",
-      "google-site-verification=JPqUmrL51cf3BGW7dM_RP70SaOhgCQpfVmfEWE4JWS0",
-      "google-site-verification=QO6a-pP_siI7I6KAzi6Lj_GMmKik10qnGpIa-qDiaSs",
-      "ms-domain-verification=2658d552-c7d7-4822-a256-16eb09a6a432",
-      "anthropic-domain-verification-g53wq8=Hgm9Dc1mrdVQjGxnZWm4CSgri",
-      "google-site-verification=W_cWHGmP5RqmA9hYnm8inTTb9Sau7q1Ro911CH4SrZ8",
-      "lovable_verification=wZkgBHNGXK1sMxUCtqNt",
-      "ms-domain-verification=28dc05d9-f0d5-48a8-b161-eff7735d41ae",
-      "01E6D34C64F24201EE75D6BB52FD49ECA8E7F05E57CFC5D9963DFE28F5DD793B",
-      "favro-verification=ZZeXG7b1hCYDjKGawUWpxK5LA1IhkTZux_oDE7q5Uml",
-      "amazonses:h4cXsZhHgq6fK4DGoUQgriYwSeE6hO5aJ+h6wHnx/fk=",
-      "amazonses:f11tLfH2vr9OwsWpUEXnb+wXe8KNcen1j3Lk5fK4W7U=",
-      "google-site-verification=T8NmTlNnB0xPkycfop5hMmOAVQSivlmA4d8Y7--2x6U",
-      "QfGw4p+QlBkLTkHaJRQrTAHpN+ZgoZENi4uAnKBoQVVKGMBBhCzqeTpmndH2fHvajdi9FWSCrdQrPwQ7hzZMDA==",
-      "openai-domain-verification=dv-YrfF7OlR2a17O78uKEgzshRW",
       "mongodb-site-verification=cPx4xoyitTn3W8MmDPht4i7jYkP8v55b",
-      "google-site-verification=VtxQaj7j_j013LXYPxlTV644QBxazMYipfG1USdvrOk",
-      "tiktok-developers-site-verification=C3JxOQdbxqWHFTDQe4NxjsoVILVmkWNz",
-      "anthropic-domain-verification-ydnsfp=iJGHDaz3zCSt83Oek8kGxETGm",
-      "coda-domain-verification=5a85c362ac0b72f3424ca33c00d23799dce6bdf8ba8f7229063d19b5e44b05c3",
-      "logmein-verification-code=a02f93d4-a3af-4666-9eac-1b942a06a775",
-      "google-site-verification=GYuY8XAe8jdr6Wr-IFTvC75N3UOWel-PJ3LB55n0f4Q",
-      "openai-domain-verification=dv-gHyy52y9q0nsS0u2VTHOjT1o",
-      "jamf-site-verification=S-CTq123ci-Nj6fX_h7xLA",
-      "work-accounts-domain-verification=yeSmLL1AKrKom6NYUJRpBGBjrmRkCD",
-      "amazonses:9QIPnjs+UD8ZuYiSqjVTy4qGcBR9TIvB3HD52irZPjk=",
-      "adobe-sign-verification=c3b24a9842e8e22172e2568873e4ed3b",
-      "atlassian-domain-verification=rPC6tgQBbotGCUJc2KCnOxlbxW4GeR54VPwPc8fVfQpr0y2k2HrSY7PUx+yZZAl1",
-      "snowflake-verification=71ba1450-019f-1000-8718-000000000413",
-      "AagMut9FoA4ka4DYvu3QvUa5FRJCN4esFVQ3RG6RdGAjA8hTAlxLXme7sSHZnFDNX7XAPe5BIIbg1G23k2oVow==",
-      "google-site-verification=dSC8gq7vptNeGVIDEpGQZ0xE8s-5BBIbc1r6R3_PwT0",
-      "30d0e455-f274-4c0b-b606-9a835bf5974e.falcon.ea.com",
-      "parsec-domain-verification=td_2PekalqDxqm3NIcvbo3Megt72X9",
-      "amazonses:SMeDjsim2TRE1HOX7bQmJJhBjV2DZPdakNXVtC1U5QA=",
-      "Console2714e2e7-3fa3-4b34-8693-c09b1d9986c6",
-      "lookingglassweb.azurewebsites.net",
+      "tiktok-developers-site-verification=gZsAdTrtYEO38BFg51P9NCZxK5vsqpvh",
+      "amazonses:f11tLfH2vr9OwsWpUEXnb+wXe8KNcen1j3Lk5fK4W7U=",
+      "unity-sso-verification=aac6dbce-432e-47c8-b84b-3e2b17bdbbe6",
       "3OmNQBavww/twjq0qhOd4N4Iq1nVxlwZIn7++1Ax/cGPh4tRz1V1Vwg1f/TiE2Fno+6l4BykGENz65LMtiRKPQ==",
-      "atlassian-domain-verification=TcMmJBl8jkffKRnLX0s82TVPAOBmzFE8N1xCvCg42ehCFfU8nxO1rMZcSCLdiIMh",
+      "atlassian-domain-verification=rPC6tgQBbotGCUJc2KCnOxlbxW4GeR54VPwPc8fVfQpr0y2k2HrSY7PUx+yZZAl1",
+      "jamf-site-verification=S-CTq123ci-Nj6fX_h7xLA",
+      "apple-domain-verification=AYQE6OxMih12JCzk",
+      "facebook-domain-verification=oq80s5pdyo1d8huizochkuyscyewf2",
       "ms-domain-verification=3e25dee7-ae46-448e-b9b9-20a6490f7af8",
-      "60c96f47dd6a7488b6dd38d5ae33efc370ebc531b96579f91f",
       "267F68C89F9174C1DE93BE4BD20990BB09014EE6355582AA62F1CA95FC962B2C",
-      "openai-domain-verification=dv-zKMivwPHrBsP7kgvIdS6GaY4",
-      "globalsign-domain-verification=jpcnVg6kuHYyEz5op6ZzxI2E53gePoVqca7RgL0aNq",
+      "shopify-verification-code=oarXm8VVyw5BycTVUZS53HSydl24Ba",
       "google-site-verification=OuARkQv2V73oYiiZVk88KR1JF5-dQ9Coy1ZRLl6sCsc",
-      "shopify-verification-code=oarXm8VVyw5BycTVUZS53HSydl24Ba"
+      "ms-domain-verification=2658d552-c7d7-4822-a256-16eb09a6a432",
+      "MS=ms19667016",
+      "google-site-verification=069b0lSxMIobzf7rJTBnXqb1KDTmfFhsJMm8mP9xnBU",
+      "globalsign-domain-verification=jpcnVg6kuHYyEz5op6ZzxI2E53gePoVqca7RgL0aNq",
+      "cisco-ci-domain-verification=4cb82531e58e0b3c12afb359f5142eb4d461e0e589eefa3603a9af7317a8afd2",
+      "01E6D34C64F24201EE75D6BB52FD49ECA8E7F05E57CFC5D9963DFE28F5DD793B",
+      "google-site-verification=T8NmTlNnB0xPkycfop5hMmOAVQSivlmA4d8Y7--2x6U",
+      "docker-verification=4bfce2f1-7d0f-474e-a43b-d60d18b35182",
+      "tiktok-developers-site-verification=C3JxOQdbxqWHFTDQe4NxjsoVILVmkWNz",
+      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email include:spf.protection.outlook.com ~all",
+      "google-site-verification=QO6a-pP_siI7I6KAzi6Lj_GMmKik10qnGpIa-qDiaSs",
+      "Dynatrace-site-verification=54000376-a605-40b6-955d-7db46b6afc4c__lbfps854cgctskgenckqfr2962",
+      "work-accounts-domain-verification=yeSmLL1AKrKom6NYUJRpBGBjrmRkCD",
+      "tiktok-developers-site-verification=UWDwy70DCmMmCerrJX6oV1pRGABPapRe",
+      "openai-domain-verification=dv-gHyy52y9q0nsS0u2VTHOjT1o"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc_agg@vali.email,mailto:it-messaging-dmarc-alerts@ea.com; ruf=mailto:it-messaging-dmarc-alerts@ea.com; fo=1"
@@ -534,11 +534,11 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
     ]
   },
   "apex_txt": [
-    "apple-domain-verification=AYQE6OxMih12JCzk",
-    "tiktok-developers-site-verification=gZsAdTrtYEO38BFg51P9NCZxK5vsqpvh",
-    "google-site-verification=069b0lSxMIobzf7rJTBnXqb1KDTmfFhsJMm8mP9xnBU",
-    "unity-sso-verification=aac6dbce-432e-47c8-b84b-3e2b17bdbbe6",
-    "docker-verification=4bfce2f1-7d0f-474e-a43b-d60d18b35182"
+    "ms-domain-verification=28dc05d9-f0d5-48a8-b161-eff7735d41ae",
+    "logmein-verification-code=a02f93d4-a3af-4666-9eac-1b942a06a775",
+    "tiktok-developers-site-verification=VcYwjcEIoOmPFODSYEQjCUP09jElnNkn",
+    "openai-domain-verification=dv-YrfF7OlR2a17O78uKEgzshRW",
+    "atlassian-domain-verification=TcMmJBl8jkffKRnLX0s82TVPAOBmzFE8N1xCvCg42ehCFfU8nx"
   ],
   "tls2": {
     "alpn": "",
@@ -550,6 +550,16 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.digicert.com",
+      "serial": 10121077189511301222740088265264893005,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
+        "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
+      ],
+      "subject_dn": "310b3009060355040613025553311330110603550408130a43616c69666f726e6961311530130603550407130c526564776f6f642043697479311d301b060355040a1314456c656374726f6e6963204172747320496e632e3121301f0603550403131873746172776172737371756164726f6e67616d652e636f6d",
+      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
       "not_before": "20251124000000",
       "not_after": "20261225235959"
     },
@@ -573,8 +583,16 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 8.0,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "hsts": "max-age=15768000",
+    "crl": {
+      "url": "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 8.6,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -585,4 +603,5 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

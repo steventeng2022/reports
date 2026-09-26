@@ -7,12 +7,12 @@
 | Target | https://homedepot.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | homedepot.com |
-| Test date | 2026-09-26 22:08 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:29 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
+Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,9 +32,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 | 14 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 17 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 20 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 21 | info | SRV1 | Server header discloses a product version | CWE-200 |
 
 ## Detailed findings
 
@@ -140,26 +142,38 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: onetrust-domain-verification=9be9c479e03f424d939ac18286224476; google-site-verification=wpZpi9YRPHBYFY7AfQOaVZSOnXuiN_LYpOsuCJRiEyQ; Dynatrace-site-verification=5218cc8f-b799-466b-81e2-151902ea9493__b7hius6gka10pc
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=dtvgbq00CxnP6nJC7dgLEOVtLcoKKXtdj90AImFCbuM; onetrust-domain-verification=9be9c479e03f424d939ac18286224476; adobe-idp-site-verification=3fbd7a09e2fe24031aad0a4a8c68e8242e227010cef9e40aeebc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 17. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
+
+- **CWE:** CWE-603
+- **Detail:** OCSP check via http://ocsp.digicert.com -> http-200
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
+
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 35.201.95.83 carries PTR 83.95.201.35.bc.googleusercontent.com. for homedepot.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for homedepot.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 19. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+### 20. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
 
 - **CWE:** CWE-298
 - **Detail:** The homedepot.com certificate lists an AIA OCSP responder (http://ocsp.digicert.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
+### 21. [INFO] Server header discloses a product version (`SRV1`)
+
+- **CWE:** CWE-200
+- **Detail:** Server header on homedepot.com is 'nginx/1.31.1' and includes a version number, which narrows targeted vulnerability research.
+- **Recommendation:** Serve a generic Server value without the version.
 
 ## Evidence (raw response observations)
 
@@ -173,47 +187,47 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "exchanger1.homedepot.com (pref 30)",
       "exchanger2.homedepot.com (pref 30)",
-      "mx0b-000e6608.pphosted.com (pref 20)",
+      "exchanger1.homedepot.com (pref 30)",
+      "mx0a-000e6608.pphosted.com (pref 20)",
       "mxa-000e6608.gslb.pphosted.com (pref 10)",
-      "mxb-000e6608.gslb.pphosted.com (pref 10)",
-      "mx0a-000e6608.pphosted.com (pref 20)"
+      "mx0b-000e6608.pphosted.com (pref 20)",
+      "mxb-000e6608.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "a1-27.akam.net.",
-      "a18-67.akam.net.",
-      "a3-64.akam.net.",
       "a7-66.akam.net.",
+      "a6-65.akam.net.",
+      "a18-67.akam.net.",
+      "a1-27.akam.net.",
       "a16-66.akam.net.",
-      "a6-65.akam.net."
+      "a3-64.akam.net."
     ],
     "caa": [],
     "spf": [
-      "onetrust-domain-verification=9be9c479e03f424d939ac18286224476",
-      "18aa0eb980e5432c9ac85035050b628",
-      "pardot757373=218869be8ba439583983ba0ae0f7bfe67956ead606a3deb3f20bdfc1fd42b8cd",
-      "google-site-verification=wpZpi9YRPHBYFY7AfQOaVZSOnXuiN_LYpOsuCJRiEyQ",
-      "Dynatrace-site-verification=5218cc8f-b799-466b-81e2-151902ea9493__b7hius6gka10pcd61m5vcgio0c",
-      "vmware-cloud-verification-e1ffc876-3a8b-4242-94c1-9e8db12d03f1",
-      "bv-domain-verification=e51f90f4244f97973230f42f1a8485fc03995b331b6a856ee883e72624c85d3d",
-      "hj-ownership=a4r4Ms7CqBFe1WU",
-      "google-site-verification=94tM-sDACvy_JNGSU6fp8GOaI6k5OuzXZN8PPYCtdRI",
-      "ciscocidomainverification=2a19d56e7ed441cd6cd10c84d904c0f8828fba1455df76c984284b5d85fa5c2e",
-      "smartsheet-site-validation=UQZXQ9whIKMhr-lD3a9QxQbUGhnacn2o",
       "google-site-verification=dtvgbq00CxnP6nJC7dgLEOVtLcoKKXtdj90AImFCbuM",
-      "astro-domain-verification=cmqshn0vh1hv101nynj90s660",
-      "ms-domain-verification=1851d99d-d9bb-4eb8-b800-8e86a71b0fcc",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ip4:148.163.149.217 ip4:148.163.153.207 include:mail.zendesk.com ~all",
-      "pendo-domain-verification=6163daa5-67e0-4c5d-9607-d97d6a0c9ab4",
-      "mk-org-sso-967a2df0-7b8d-405b-b414-4627a3d6311e",
-      "google-site-verification=3NvwcCmI2tiaqvhxEx918MCg-AfY9OOwxB3NpSQwTjw.",
-      "atlassian-domain-verification=xqfqkDq+B7CyObHlKTiLqquR1QTlpKQeek64YJoRwFWeUm0Tihwqz8GA0enUIHSs",
+      "onetrust-domain-verification=9be9c479e03f424d939ac18286224476",
       "adobe-idp-site-verification=3fbd7a09e2fe24031aad0a4a8c68e8242e227010cef9e40aeebcf4bc7addb8a0",
-      "b93b75bb-c0c7-445c-89eb-8560cef8dba9",
+      "smartsheet-site-validation=UQZXQ9whIKMhr-lD3a9QxQbUGhnacn2o",
+      "astro-domain-verification=cmqshn0vh1hv101nynj90s660",
+      "hj-ownership=a4r4Ms7CqBFe1WU",
+      "ciscocidomainverification=2a19d56e7ed441cd6cd10c84d904c0f8828fba1455df76c984284b5d85fa5c2e",
+      "google-site-verification=wpZpi9YRPHBYFY7AfQOaVZSOnXuiN_LYpOsuCJRiEyQ",
+      "pendo-domain-verification=6163daa5-67e0-4c5d-9607-d97d6a0c9ab4",
+      "OSIAGENTREGURL=https://mdm.homedepot.com/athena/enrollment/athenaiosenroll.aspx",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ip4:148.163.149.217 ip4:148.163.153.207 include:mail.zendesk.com ~all",
+      "google-site-verification=3NvwcCmI2tiaqvhxEx918MCg-AfY9OOwxB3NpSQwTjw.",
+      "ms-domain-verification=1851d99d-d9bb-4eb8-b800-8e86a71b0fcc",
+      "google-site-verification=94tM-sDACvy_JNGSU6fp8GOaI6k5OuzXZN8PPYCtdRI",
+      "bv-domain-verification=e51f90f4244f97973230f42f1a8485fc03995b331b6a856ee883e72624c85d3d",
+      "vmware-cloud-verification-e1ffc876-3a8b-4242-94c1-9e8db12d03f1",
+      "pardot757373=218869be8ba439583983ba0ae0f7bfe67956ead606a3deb3f20bdfc1fd42b8cd",
+      "atlassian-domain-verification=xqfqkDq+B7CyObHlKTiLqquR1QTlpKQeek64YJoRwFWeUm0Tihwqz8GA0enUIHSs",
       "ms-domain-verification=3a3a542a-71c8-45ad-ab04-7152bfba2a64",
+      "Dynatrace-site-verification=5218cc8f-b799-466b-81e2-151902ea9493__b7hius6gka10pcd61m5vcgio0c",
+      "b93b75bb-c0c7-445c-89eb-8560cef8dba9",
+      "18aa0eb980e5432c9ac85035050b628",
       "liveramp-site-verification=C7ahcr0qXYCzwhdiK-pcYbtLNhwzEvcgbvbgjovyRy0",
-      "OSIAGENTREGURL=https://mdm.homedepot.com/athena/enrollment/athenaiosenroll.aspx"
+      "mk-org-sso-967a2df0-7b8d-405b-b414-4627a3d6311e"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com;"
@@ -295,11 +309,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "google-site-verification=dtvgbq00CxnP6nJC7dgLEOVtLcoKKXtdj90AImFCbuM",
     "onetrust-domain-verification=9be9c479e03f424d939ac18286224476",
-    "google-site-verification=wpZpi9YRPHBYFY7AfQOaVZSOnXuiN_LYpOsuCJRiEyQ",
-    "Dynatrace-site-verification=5218cc8f-b799-466b-81e2-151902ea9493__b7hius6gka10pc",
-    "vmware-cloud-verification-e1ffc876-3a8b-4242-94c1-9e8db12d03f1",
-    "bv-domain-verification=e51f90f4244f97973230f42f1a8485fc03995b331b6a856ee883e7262"
+    "adobe-idp-site-verification=3fbd7a09e2fe24031aad0a4a8c68e8242e227010cef9e40aeebc",
+    "astro-domain-verification=cmqshn0vh1hv101nynj90s660",
+    "ciscocidomainverification=2a19d56e7ed441cd6cd10c84d904c0f8828fba1455df76c984284b"
   ],
   "tls2": {
     "alpn": "",
@@ -311,10 +325,20 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.digicert.com",
+      "serial": 16840587046700445931263230830957993881,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
+        "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
+      ],
+      "subject_dn": "310b30090603550406130255533110300e0603550408130747656f726769613110300e0603550407130741746c616e7461311d301b060355040a131454686520486f6d65204465706f742c20496e632e311630140603550403130d686f6d656465706f742e636f6d",
+      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
       "not_before": "20260403000000",
       "not_after": "20261018235959"
     },
-    "ocsp": "explicit-status"
+    "ocsp": "http-200"
   },
   "x12": {
     "status": 301,
@@ -334,8 +358,15 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 15.7,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "crl": {
+      "url": "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 17.3,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -346,4 +377,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

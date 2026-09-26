@@ -7,12 +7,12 @@
 | Target | https://ameblo.jp/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ameblo.jp |
-| Test date | 2026-09-26 21:57 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:18 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,7 +29,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 | 11 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 12 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 13 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
-| 14 | info | CT1 | 17 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 14 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
+| 15 | info | HTML3 | Third-party <iframe> embedded in root document | CWE-643 |
+| 16 | info | CT1 | 17 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -89,7 +91,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 ### 9. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (msrzfasl86wj46.ameblo.jp and 2kt9535431tiwv.ameblo.jp) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (tql9546lq7361p.ameblo.jp and hjo0h381xtzwln.ameblo.jp) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
@@ -116,7 +118,19 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - **Detail:** The ameblo.jp certificate lists an AIA OCSP responder (http://status.geotrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
-### 14. [INFO] 17 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 14. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+
+- **CWE:** CWE-345
+- **Detail:** Root document of ameblo.jp loads 15 cross-origin script(s) without an integrity attribute, e.g. https://stat100.ameba.jp/ameblo/portal/20260909-2992e4f/_next/static/chunks/polyfills-c67a75d1b6f99dc8.js, https://stat100.ameba.jp/ameblo/portal/20260909-2992e4f/_next/static/chunks/webpack-1f1763916cd62cef.js, https://stat100.ameba.jp/ameblo/portal/20260909-2992e4f/_next/static/chunks/framework-24fda4117f092221.js; a compromise of any such third-party host can inject code.
+- **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
+
+### 15. [INFO] Third-party <iframe> embedded in root document (`HTML3`)
+
+- **CWE:** CWE-643
+- **Detail:** Root document of ameblo.jp embeds 1 cross-origin iframe(s), e.g. https://www.googletagmanager.com/ns.html?id=GTM-N49WWL; embedded origins are framed inside the page with its trust context.
+- **Recommendation:** Review embedded origins and consider sandbox attributes.
+
+### 16. [INFO] 17 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: dev.ameblo.jp, image.portal.ameblo.jp
@@ -129,8 +143,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
   "domain": "ameblo.jp",
   "dns": {
     "a": [
-      "199.232.214.133",
-      "199.232.210.133"
+      "199.232.210.133",
+      "199.232.214.133"
     ],
     "aaaa": [],
     "cname": null,
@@ -139,30 +153,30 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     ],
     "ns": [
       "ns-2038.awsdns-62.co.uk.",
-      "ns-124.awsdns-15.com.",
       "ns-863.awsdns-43.net.",
+      "ns-124.awsdns-15.com.",
       "ns-1218.awsdns-24.org."
     ],
     "caa": [
-      "0 issue \"globalsign.com\"",
-      "0 issue \"amazon.com\"",
       "0 iodef \"mailto:ameba_tools+crt@cyberagent.co.jp\"",
-      "0 issue \"cybertrust.ne.jp\"",
+      "0 issue \"amazon.com\"",
       "0 issue \"certainly.com\"",
+      "0 issue \"globalsign.com\"",
+      "0 issue \"cybertrust.ne.jp\"",
       "0 issue \"letsencrypt.org\"",
       "0 issue \"digicert.com; cansignhttpexchanges=yes\""
     ],
     "spf": [
-      "fastly-domain-delegation-nfkcslan-542735-2022-10-31",
-      "UHgEILc96z9sKmvYTwgZYiwusQbyqI",
-      "google-site-verification=26Ps67bWgQGjeNkTT6hV9VEgczhnzjN78yCdM33v-eo",
-      "fastly-domain-delegation-@X7yV19EoO6Y-2023-06-30",
       "_mnobpm3nakzeekpqy6i72p451qgv326",
+      "fastly-domain-delegation-@X7yV19EoO6Y-2023-06-30",
+      "google-site-verification=26Ps67bWgQGjeNkTT6hV9VEgczhnzjN78yCdM33v-eo",
+      "cPu1ZpFdt7xvQjanmhmE12k4AmF0MH",
       "v=spf1 ip4:216.255.232.136/32 include:spf-a.ameba.jp include:spf.repica.jp -all",
       "_gmqf0w3hsh1pqlogfw1gkg05zhs88zx",
       "tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa9778f5ed1c8d42",
-      "cPu1ZpFdt7xvQjanmhmE12k4AmF0MH",
-      "google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8"
+      "fastly-domain-delegation-nfkcslan-542735-2022-10-31",
+      "google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8",
+      "UHgEILc96z9sKmvYTwgZYiwusQbyqI"
     ],
     "dmarc": [
       "v=DMARC1; p=none"
@@ -192,7 +206,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     }
   },
   "ports": {
-    "ip": "199.232.214.133",
+    "ip": "199.232.210.133",
     "open": []
   },
   "https": {
@@ -281,6 +295,15 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://status.geotrust.com",
+      "serial": 3344827574341032750824536969024721884,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://cdp.geotrust.com/GeoTrustTLSRSACAG1.crl"
+      ],
+      "subject_dn": "310b3009060355040613024a50310e300c06035504081305546f6b796f311330110603550407130a536869627579612d6b7531193017060355040a131043796265724167656e742c20496e632e3114301206035504030c0b2a2e616d65626c6f2e6a70",
+      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e6331193017060355040b13107777772e64696769636572742e636f6d311f301d0603550403131647656f547275737420544c5320525341204341204731",
       "not_before": "20260803000000",
       "not_after": "20270216235959"
     },
@@ -322,8 +345,15 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 37.2,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "crl": {
+      "url": "http://cdp.geotrust.com/GeoTrustTLSRSACAG1.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 39.3,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -334,4 +364,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://postmates.com/ |
 | Bug bounty program | Postmates |
 | Listed scope domain | postmates.com |
-| Test date | 2026-09-26 22:13 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:36 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
+Total findings: **27** (High: 0, Medium: 0, Low: 4, Info: 23)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -39,6 +39,10 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
 | 21 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 22 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 23 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 24 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 25 | low | XFO1 | Deprecated X-Frame-Options: ALLOW-FROM in use | CWE-643 |
+| 26 | info | HTML1 | Security policy set via <meta http-equiv> | CWE-1021 |
+| 27 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
 
 ## Detailed findings
 
@@ -51,13 +55,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.36.195.2:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 69.48.218.2:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.36.195.2:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 69.48.218.2:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [LOW] Mixed content: HTTP resources referenced from HTTPS page (`MIX1`)
@@ -128,7 +132,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba65; facebook-domain-verification=lanbzff5xfbystm65ipwykm0arewgy; status-page-domain-verification=vbzgm2f4x75m
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=2Ilvgbr78yRVip_eIEMEDS5i2w9I8WqlkC5MGwtT9mc; facebook-domain-verification=lanbzff5xfbystm65ipwykm0arewgy; google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -170,7 +174,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
 ### 21. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkhfvvfjftwjge.html -> 404; error page/headers match: Cloudflare.
+- **Detail:** GET /xktldbo1vq8c9g.html -> 404; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 22. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -185,6 +189,30 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
 - **Detail:** No CAA record found for postmates.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
+### 24. [LOW] HSTS does not cover subdomains (`H21`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security on postmates.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of postmates.com.
+- **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
+
+### 25. [LOW] Deprecated X-Frame-Options: ALLOW-FROM in use (`XFO1`)
+
+- **CWE:** CWE-643
+- **Detail:** Root document of postmates.com uses X-Frame-Options: ALLOW-FROM https://www.nimblerx.com; modern browsers ignore ALLOW-FROM, so this is effectively no clickjacking protection.
+- **Recommendation:** Use DENY/SAMEORIGIN or CSP frame-ancestors instead.
+
+### 26. [INFO] Security policy set via <meta http-equiv> (`HTML1`)
+
+- **CWE:** CWE-1021
+- **Detail:** HTML root of postmates.com declares via meta tags: content-security-policy; meta-set policies have limited browser support and are easier to override than response headers.
+- **Recommendation:** Prefer response headers and keep any meta declarations consistent with them.
+
+### 27. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+
+- **CWE:** CWE-345
+- **Detail:** Root document of postmates.com loads 1 cross-origin script(s) without an integrity attribute, e.g. https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit; a compromise of any such third-party host can inject code.
+- **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -192,36 +220,36 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
   "domain": "postmates.com",
   "dns": {
     "a": [
-      "104.36.195.2"
+      "69.48.218.2"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx5.googlemail.com (pref 10)",
-      "aspmx.l.google.com (pref 1)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx4.googlemail.com (pref 10)",
+      "aspmx2.googlemail.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
       "aspmx3.googlemail.com (pref 10)",
-      "aspmx2.googlemail.com (pref 10)"
+      "aspmx.l.google.com (pref 1)",
+      "aspmx5.googlemail.com (pref 10)"
     ],
     "ns": [
-      "dns4.p04.nsone.net.",
-      "dns1.p04.nsone.net.",
-      "dns3.p04.nsone.net.",
-      "dns2.p04.nsone.net."
+      "edns126.ultradns.net.",
+      "edns126.ultradns.org.",
+      "edns126.ultradns.biz.",
+      "edns126.ultradns.com."
     ],
     "caa": [],
     "spf": [
-      "hkjvwlbv3sdq8x3n7k7xg6814fktgwt9",
-      "fhtfbm1hh3v7nwps06d0t8410d5r93tc",
-      "stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba6578d6",
-      "facebook-domain-verification=lanbzff5xfbystm65ipwykm0arewgy",
-      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
-      "ZOOM_verify_38TrrxQgRki7d9IxN3-DPw",
-      "status-page-domain-verification=vbzgm2f4x75m",
       "google-site-verification=2Ilvgbr78yRVip_eIEMEDS5i2w9I8WqlkC5MGwtT9mc",
-      "google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4"
+      "facebook-domain-verification=lanbzff5xfbystm65ipwykm0arewgy",
+      "fhtfbm1hh3v7nwps06d0t8410d5r93tc",
+      "google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4",
+      "stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba6578d6",
+      "ZOOM_verify_38TrrxQgRki7d9IxN3-DPw",
+      "hkjvwlbv3sdq8x3n7k7xg6814fktgwt9",
+      "status-page-domain-verification=vbzgm2f4x75m",
+      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc_agg@vali.email"
@@ -251,7 +279,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
     }
   },
   "ports": {
-    "ip": "104.36.195.2",
+    "ip": "69.48.218.2",
     "open": [
       8080,
       8443
@@ -340,11 +368,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba65",
-    "facebook-domain-verification=lanbzff5xfbystm65ipwykm0arewgy",
-    "status-page-domain-verification=vbzgm2f4x75m",
     "google-site-verification=2Ilvgbr78yRVip_eIEMEDS5i2w9I8WqlkC5MGwtT9mc",
-    "google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4"
+    "facebook-domain-verification=lanbzff5xfbystm65ipwykm0arewgy",
+    "google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4",
+    "stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba65",
+    "status-page-domain-verification=vbzgm2f4x75m"
   ],
   "tls2": {
     "alpn": "",
@@ -356,6 +384,15 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
+      "serial": 533724036155839767805495037800584104219971,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://ye2.c.lencr.org/68.crl"
+      ],
+      "subject_dn": "311630140603550403130d706f73746d617465732e636f6d",
+      "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303594532",
       "not_before": "20260924021606",
       "not_after": "20261223021605"
     }
@@ -396,8 +433,16 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 20.1,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "hsts": "max-age=31536000",
+    "crl": {
+      "url": "http://ye2.c.lencr.org/68.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 19.7,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -408,4 +453,5 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

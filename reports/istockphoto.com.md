@@ -7,8 +7,8 @@
 | Target | https://istockphoto.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | istockphoto.com |
-| Test date | 2026-09-26 22:09 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:31 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -138,13 +138,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 54.192.248.91 carries PTR server-54-192-248-91.tpe53.r.cloudfront.net. for istockphoto.com.
+- **Detail:** 54.192.248.113 carries PTR server-54-192-248-113.tpe53.r.cloudfront.net. for istockphoto.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 17. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xklnk2o7rardm7.html -> 403; error page/headers match: CloudFront.
+- **Detail:** GET /xkcpg6f1wn0zia.html -> 403; error page/headers match: CloudFront.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ## Evidence (raw response observations)
@@ -154,10 +154,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "istockphoto.com",
   "dns": {
     "a": [
-      "54.192.248.91",
+      "54.192.248.113",
       "54.192.248.56",
       "54.192.248.52",
-      "54.192.248.113"
+      "54.192.248.91"
     ],
     "aaaa": [],
     "cname": null,
@@ -166,41 +166,41 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "us-smtp-inbound-2.mimecast.com (pref 10)"
     ],
     "ns": [
-      "ns-692.awsdns-22.net.",
       "ns-1269.awsdns-30.org.",
-      "ns-194.awsdns-24.com.",
-      "ns-1600.awsdns-08.co.uk."
+      "ns-692.awsdns-22.net.",
+      "ns-1600.awsdns-08.co.uk.",
+      "ns-194.awsdns-24.com."
     ],
     "caa": [
-      "0 iodef \"mailto:dnsadmins@gettyimages.com\"",
-      "0 issue \"amazon.com\"",
-      "0 issue \"digicert.com\"",
       "0 issue \"globalsign.com\"",
-      "0 issue \"godaddy.com\"",
-      "0 issue \"letsencrypt.org\"",
-      "0 issue \"pki.goog\"",
+      "0 issue \"amazon.com\"",
+      "0 issuewild \"godaddy.com\"",
       "0 issue \"sectigo.com\"",
+      "0 issuewild \"globalsign.com\"",
+      "0 issue \"pki.goog\"",
       "0 issuewild \"amazon.com\"",
       "0 issuewild \"digicert.com\"",
-      "0 issuewild \"globalsign.com\"",
-      "0 issuewild \"godaddy.com\""
+      "0 issue \"godaddy.com\"",
+      "0 issue \"digicert.com\"",
+      "0 iodef \"mailto:dnsadmins@gettyimages.com\"",
+      "0 issue \"letsencrypt.org\""
     ],
     "spf": [
-      "iblvsbv3q12clku4odkv5q2kns",
-      "google-site-verification=Kxr9iK44cHpakxQbI3si0Gt0rTaKT-P-ldoGPvB8u8c",
       "0OX00lOBevmMwBKqx+i4VEYt3Hh4BSEqvj5eywR4LcmQZA7wJO2GOeAy63AfjOZCwJ13Jk8zSgWKEqa4B3xXsw==",
       "v=spf1 include:_spf1.gettyimages.com include:_spf2.gettyimages.com include:_spf3.gettyimages.com ~all",
-      "70aheif64ef26ttmml0v1s8u44",
-      "v=msv1 t=56E21521-0012-4C74-BAF5-371A005951A8",
-      "imtrdblip7oaja1eqnsm5vv1da",
-      "ozECEJCtCPL1buHkf0i1XhVu9bUhJxFEZX3QRAZp41iUI+YlumJIhPc9Uhxj/m7yJspJ0sy3Is3V1stL5vDijw==",
+      "google-site-verification=Kxr9iK44cHpakxQbI3si0Gt0rTaKT-P-ldoGPvB8u8c",
       "mApBQbj",
-      "6gndatn3ep6iuuuj60pnavq47b",
-      "gcrarlo4jnuv6jucvsu25us37t",
-      "nqSz5i7",
+      "iblvsbv3q12clku4odkv5q2kns",
       "CVimwsmxpGLA8Zz848NLFIp4MJqMzgn0K2DiVr0Rv7TrsCMNn9xjh2L71nEXuXKriJGVfu67jJpAzqQxns8TOg==",
+      "70aheif64ef26ttmml0v1s8u44",
+      "gcrarlo4jnuv6jucvsu25us37t",
+      "v=msv1 t=56E21521-0012-4C74-BAF5-371A005951A8",
+      "ozECEJCtCPL1buHkf0i1XhVu9bUhJxFEZX3QRAZp41iUI+YlumJIhPc9Uhxj/m7yJspJ0sy3Is3V1stL5vDijw==",
+      "imtrdblip7oaja1eqnsm5vv1da",
       "rZ82I61",
-      "facebook-domain-verification=4cqoes9ia3bfzqzq69xntb7iar6mkr"
+      "nqSz5i7",
+      "facebook-domain-verification=4cqoes9ia3bfzqzq69xntb7iar6mkr",
+      "6gndatn3ep6iuuuj60pnavq47b"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:46b8708e09fb858@rep.dmarcanalyzer.com; ruf=mailto:46b8708e09fb858@for.dmarcanalyzer.com; fo=1"
@@ -244,7 +244,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "54.192.248.91",
+    "ip": "54.192.248.113",
     "open": []
   },
   "https": {
@@ -310,6 +310,15 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
+      "serial": 12882967960375401106833936717919662092,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.r2m01.amazontrust.com/r2m01.crl"
+      ],
+      "subject_dn": "311c301a060355040313137777772e6973746f636b70686f746f2e636f6d",
+      "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3031",
       "not_before": "20260617000000",
       "not_after": "20261231235959"
     },
@@ -318,7 +327,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "x12": {
     "status": 403,
     "ptr": [
-      "server-54-192-248-91.tpe53.r.cloudfront.net."
+      "server-54-192-248-113.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -332,8 +341,15 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 9.3,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 403,
+    "crl": {
+      "url": "http://crl.r2m01.amazontrust.com/r2m01.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 4.1,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -344,4 +360,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

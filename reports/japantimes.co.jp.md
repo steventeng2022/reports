@@ -7,12 +7,12 @@
 | Target | https://japantimes.co.jp/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | japantimes.co.jp |
-| Test date | 2026-09-26 22:09 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:31 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
+Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 | 14 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 | 15 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 17 | info | HTML1 | Security policy set via <meta http-equiv> | CWE-1021 |
 
 ## Detailed findings
 
@@ -107,7 +108,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=OVsEXNIYtD3q7DB4ONtD6aIgxQJxn1_iCfDUwvNUfKc; google-site-verification=1FA9Fq43BnO-e1rRm5_NUzT0udJpr1FYuEkyMxgIhQ4; facebook-domain-verification=5pcy0pvd7m24zu1w4ubtyeknqyfuje
+- **Detail:** Apex TXT records with verification/token content: seculio-domain-verification-code=cced926da9a967819c54899c6b1c1e9b767853dbb371fd2; facebook-domain-verification=r8gah1byp39t4nahiwxnot4u53yqkq; facebook-domain-verification=5pcy0pvd7m24zu1w4ubtyeknqyfuje
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -125,7 +126,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 15. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkny7v6x7lw5i2.html -> 403; error page/headers match: Cloudflare.
+- **Detail:** GET /xklwna53894sml.html -> 403; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -133,6 +134,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for japantimes.co.jp; apex co.jp, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 17. [INFO] Security policy set via <meta http-equiv> (`HTML1`)
+
+- **CWE:** CWE-1021
+- **Detail:** HTML root of japantimes.co.jp declares via meta tags: content-security-policy; meta-set policies have limited browser support and are easier to override than response headers.
+- **Recommendation:** Prefer response headers and keep any meta declarations consistent with them.
 
 ## Evidence (raw response observations)
 
@@ -146,41 +153,41 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "104.26.2.3"
     ],
     "aaaa": [
-      "2606:4700:20::681a:203",
       "2606:4700:20::681a:303",
+      "2606:4700:20::681a:203",
       "2606:4700:20::ac43:447d"
     ],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 30)",
-      "aspmx4.googlemail.com (pref 30)",
-      "aspmx2.googlemail.com (pref 30)",
-      "aspmx5.googlemail.com (pref 30)",
       "alt2.aspmx.l.google.com (pref 20)",
       "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx.l.google.com (pref 10)"
+      "aspmx2.googlemail.com (pref 30)",
+      "aspmx4.googlemail.com (pref 30)",
+      "aspmx.l.google.com (pref 10)",
+      "aspmx3.googlemail.com (pref 30)",
+      "aspmx5.googlemail.com (pref 30)"
     ],
     "ns": [
-      "elly.ns.cloudflare.com.",
-      "jobs.ns.cloudflare.com."
+      "jobs.ns.cloudflare.com.",
+      "elly.ns.cloudflare.com."
     ],
     "caa": [],
     "spf": [
-      "google-site-verification=OVsEXNIYtD3q7DB4ONtD6aIgxQJxn1_iCfDUwvNUfKc",
-      "amazonses:89wQUYQh+QnyoMv88QVXR9JAEsUpPhSpuVbRMSzQorc=",
-      "amazonses:H0epEk/2RCbxjGx9LYL76J+SVsW3rElYTcoRKLqpEkk=",
-      "google-site-verification=1FA9Fq43BnO-e1rRm5_NUzT0udJpr1FYuEkyMxgIhQ4",
+      "seculio-domain-verification-code=cced926da9a967819c54899c6b1c1e9b767853dbb371fd25ceccef303a2f4a48",
+      "facebook-domain-verification=r8gah1byp39t4nahiwxnot4u53yqkq",
       "facebook-domain-verification=5pcy0pvd7m24zu1w4ubtyeknqyfuje",
+      "google-site-verification=JNsW-oJ2eTFMcjLBuoEFm8uIDiIFV4HLfcn1qW2RVc4",
       "google-site-verification=1215qpicd1-TYtNffu-BXSUiKYlcsFdF-Spoth0OrPo",
-      "amazonses:qy3myq3Na6f6laO4ymQ6wTBbEeNbYwzl8OEZ/AQ7KvE=",
       "v=spf1  +ip4:52.199.201.172 +ip4:54.65.41.140 +ip4:50.56.113.200 +ip4:52.192.48.178 +ip4:52.198.58.73 +ip4:54.92.1.143 +ip4:153.127.53.24 +ip4:54.150.202.78 +ip4:54.248.16.180 +ip4:54.238.200.210 +ip4:54.178.143.1 +ip4:210.158.219.147 include:_spf.google.",
       "com include:spf.japan",
       "times.co.jp ~all",
-      "seculio-domain-verification-code=cced926da9a967819c54899c6b1c1e9b767853dbb371fd25ceccef303a2f4a48",
-      "facebook-domain-verification=r8gah1byp39t4nahiwxnot4u53yqkq",
-      "google-site-verification=JNsW-oJ2eTFMcjLBuoEFm8uIDiIFV4HLfcn1qW2RVc4",
+      "MS=ms30674565",
+      "google-site-verification=OVsEXNIYtD3q7DB4ONtD6aIgxQJxn1_iCfDUwvNUfKc",
+      "amazonses:89wQUYQh+QnyoMv88QVXR9JAEsUpPhSpuVbRMSzQorc=",
+      "amazonses:H0epEk/2RCbxjGx9LYL76J+SVsW3rElYTcoRKLqpEkk=",
+      "amazonses:qy3myq3Na6f6laO4ymQ6wTBbEeNbYwzl8OEZ/AQ7KvE=",
       "amazonses:Um3JNqgFvpbJ0RMzxm6MUYFQGggi7E1t8AMQnI9s2rg=",
-      "MS=ms30674565"
+      "google-site-verification=1FA9Fq43BnO-e1rRm5_NUzT0udJpr1FYuEkyMxgIhQ4"
     ],
     "dmarc": [
       "v=DMARC1; p=none"
@@ -267,11 +274,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=OVsEXNIYtD3q7DB4ONtD6aIgxQJxn1_iCfDUwvNUfKc",
-    "google-site-verification=1FA9Fq43BnO-e1rRm5_NUzT0udJpr1FYuEkyMxgIhQ4",
+    "seculio-domain-verification-code=cced926da9a967819c54899c6b1c1e9b767853dbb371fd2",
+    "facebook-domain-verification=r8gah1byp39t4nahiwxnot4u53yqkq",
     "facebook-domain-verification=5pcy0pvd7m24zu1w4ubtyeknqyfuje",
-    "google-site-verification=1215qpicd1-TYtNffu-BXSUiKYlcsFdF-Spoth0OrPo",
-    "seculio-domain-verification-code=cced926da9a967819c54899c6b1c1e9b767853dbb371fd2"
+    "google-site-verification=JNsW-oJ2eTFMcjLBuoEFm8uIDiIFV4HLfcn1qW2RVc4",
+    "google-site-verification=1215qpicd1-TYtNffu-BXSUiKYlcsFdF-Spoth0OrPo"
   ],
   "tls2": {
     "alpn": "",
@@ -283,6 +290,15 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
+      "serial": 243105117608652837445338535948169281338,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://c.pki.goog/we1/4GA79upiEbo.crl"
+      ],
+      "subject_dn": "31193017060355040313106a6170616e74696d65732e636f2e6a70",
+      "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
       "not_before": "20260801002741",
       "not_after": "20261030012737"
     }
@@ -300,8 +316,15 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 10.0,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 403,
+    "crl": {
+      "url": "http://c.pki.goog/we1/4GA79upiEbo.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 5.4,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -312,4 +335,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

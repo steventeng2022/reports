@@ -7,12 +7,12 @@
 | Target | https://adwords.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | adwords.google.com |
-| Test date | 2026-09-26 21:57 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
+Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,6 +36,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 | 18 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 | 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 20 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
+| 21 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -155,7 +156,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 ### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 64.233.189.138 carries PTR tl-in-f138.1e100.net. for adwords.google.com.
+- **Detail:** 64.233.189.102 carries PTR tl-in-f102.1e100.net. for adwords.google.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 20. [LOW] HTTPS root redirects to a different domain (`RD2`)
@@ -164,6 +165,12 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 - **Detail:** https://adwords.google.com/ answered 302 with Location: https://ads.google.com/intl/en_TW/home/ (cross-domain handoff at the entry point).
 - **Recommendation:** Review the cross-domain redirect; it discloses the real entry point and can be abused in open-redirect-style flows.
 
+### 21. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: none flagged
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -171,28 +178,28 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   "domain": "adwords.google.com",
   "dns": {
     "a": [
-      "64.233.189.138",
       "64.233.189.102",
       "64.233.189.139",
       "64.233.189.100",
+      "64.233.189.138",
       "64.233.189.113",
       "64.233.189.101"
     ],
     "aaaa": [
-      "2404:6800:4008:c07::65",
       "2404:6800:4008:c07::8b",
-      "2404:6800:4008:c07::71",
-      "2404:6800:4008:c07::64"
+      "2404:6800:4008:c07::65",
+      "2404:6800:4008:c07::64",
+      "2404:6800:4008:c07::71"
     ],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 30)",
-      "aspmx5.googlemail.com (pref 30)",
-      "alt2.aspmx.l.google.com (pref 20)",
-      "aspmx2.googlemail.com (pref 30)",
-      "aspmx.l.google.com (pref 10)",
       "aspmx4.googlemail.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)"
+      "aspmx5.googlemail.com (pref 30)",
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx2.googlemail.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx.l.google.com (pref 10)",
+      "aspmx3.googlemail.com (pref 30)"
     ],
     "ns": [],
     "caa": [],
@@ -345,7 +352,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     }
   },
   "ports": {
-    "ip": "64.233.189.138",
+    "ip": "64.233.189.102",
     "open": []
   },
   "https": {
@@ -403,7 +410,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     "/api/": 302
   },
   "subdomains": {
-    "status": "ct-pending"
+    "source": "certspotter",
+    "count": 2,
+    "notable": [],
+    "sample": [
+      "adwords.google.com",
+      "www.adwords.google.com"
+    ]
   },
   "apex_txt": [
     "facebook-domain-verification=zgc5az6ty903nxj39jxl6irm320fqt"
@@ -418,6 +431,15 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
+      "serial": 328910581424925938302779572642116985987,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://c.pki.goog/we2/Gt0Gl6QoGAU.crl"
+      ],
+      "subject_dn": "311b3019060355040313126164776f7264732e676f6f676c652e636f6d",
+      "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574532",
       "not_before": "20260910192326",
       "not_after": "20261203192325"
     }
@@ -433,7 +455,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   "x12": {
     "status": 302,
     "ptr": [
-      "tl-in-f138.1e100.net."
+      "tl-in-f102.1e100.net."
     ]
   },
   "x13": {
@@ -447,8 +469,15 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 10.3,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 302,
+    "crl": {
+      "url": "http://c.pki.goog/we2/Gt0Gl6QoGAU.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 10.7,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -459,4 +488,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

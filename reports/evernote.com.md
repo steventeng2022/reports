@@ -7,12 +7,12 @@
 | Target | https://evernote.com/ |
 | Bug bounty program | Evernote |
 | Listed scope domain | evernote.com |
-| Test date | 2026-09-26 22:05 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:26 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
+Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,8 +33,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 18 | info | CT1 | 94 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 19 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 18 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
+| 19 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 20 | info | CT1 | 94 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 21 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -120,7 +122,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=tOVXqvuSdF7wH9xBOcTHifwIEfXQX6XGoTgtPxe46s5sqCLZax; google-site-verification=dswNJSKs6qzI6U2FgFv5SFInM8oRSAUctV4g7cVTnfs; google-site-verification=TphACNeqZxSVjMZlu6C2OemNCLCtbP2yMJMm1eornp4
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=746Vk94H7agHphG-MN3o0ZF82RRnvaVH9WWtpmD2G5o; canva-site-verification=_a7Hc12U89xMaVt0CzG-mw; notion-domain-verification=PjXoSWSCXGi4euHbeppuaTYLWO7vhUdn5u9oEzzyt3X
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -147,13 +149,25 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - **Detail:** No CAA record found for evernote.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 18. [INFO] 94 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+
+- **CWE:** CWE-345
+- **Detail:** Root document of evernote.com loads 1 cross-origin script(s) without an integrity attribute, e.g. https://js.hcaptcha.com/1/api.js; a compromise of any such third-party host can inject code.
+- **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
+
+### 19. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on evernote.com lists 216 <loc> URL(s) across 217 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
+### 20. [INFO] 94 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.evernote.com, api.preprod3.evernote.com, api.production.gateways.evernote.com, api.stage.evernote.com, api.staging.evernote.com, api.staging.gateways.evernote.com, api.testing.evernote.com, api.testing.gateways.evernote.com, app.preprod3.evernote.com, auth.production.gateways.evernote.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 19. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 21. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: api.production.gateways.evernote.com; content may still be served via virtual-host fallback.
@@ -171,42 +185,42 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx4.googlemail.com (pref 30)",
+      "aspmx2.googlemail.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 20)",
       "aspmx3.googlemail.com (pref 30)",
-      "aspmx2.googlemail.com (pref 30)",
-      "aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 20)",
-      "aspmx5.googlemail.com (pref 30)"
+      "aspmx5.googlemail.com (pref 30)",
+      "aspmx4.googlemail.com (pref 30)"
     ],
     "ns": [
-      "ns-cloud-a3.googledomains.com.",
+      "ns-cloud-a4.googledomains.com.",
       "ns-cloud-a2.googledomains.com.",
-      "ns-cloud-a1.googledomains.com.",
-      "ns-cloud-a4.googledomains.com."
+      "ns-cloud-a3.googledomains.com.",
+      "ns-cloud-a1.googledomains.com."
     ],
     "caa": [],
     "spf": [
-      "v=spf1 ip4:119.254.30.0/26 ip4:204.154.94.0/23 ip4:167.89.16.0/24 include:_spf.google.com include:mail.zendesk.com include:mailsenders.netsuite.com include:_spf.sparkpostmail.com -all",
-      "atlassian-domain-verification=tOVXqvuSdF7wH9xBOcTHifwIEfXQX6XGoTgtPxe46s5sqCLZax9yh7Ms46Uuns0N",
-      "5hg44l7nrl4tfsqj45zfp34qxqnx6129",
-      "google-site-verification=dswNJSKs6qzI6U2FgFv5SFInM8oRSAUctV4g7cVTnfs",
-      "google-site-verification=TphACNeqZxSVjMZlu6C2OemNCLCtbP2yMJMm1eornp4",
-      "asv=9d228dc836a5edcac89e69ce0b2ab4cc",
-      "lc7kqxfd8kpr7hwptf9msfg60vg19wll",
-      "docusign=1724c740-d62f-4f0e-b956-0e8787843ef0",
-      "adobe-idp-site-verification=453e072a-bf19-40ff-a370-146e1459ffd0",
-      "notion-domain-verification=PjXoSWSCXGi4euHbeppuaTYLWO7vhUdn5u9oEzzyt3X",
       "google-site-verification=746Vk94H7agHphG-MN3o0ZF82RRnvaVH9WWtpmD2G5o",
       "canva-site-verification=_a7Hc12U89xMaVt0CzG-mw",
-      "central-8812",
-      "google-site-verification=-tROSeCW72D2qJrtgHAu2XtmEUdNg0pVK7JgXQc5FZI",
-      "facebook-domain-verification=ald97r41mq52lyt3zyn7iipmy75y93",
-      "docker-verification=d4449a7e-12da-4006-be0c-cb9c965031f5",
-      "_lbrr2xccc7tfxjp5xf77af22poxe4w5",
-      "rippling-domain-verification=217697edd61756fc",
+      "notion-domain-verification=PjXoSWSCXGi4euHbeppuaTYLWO7vhUdn5u9oEzzyt3X",
+      "docusign=1724c740-d62f-4f0e-b956-0e8787843ef0",
+      "google-site-verification=dswNJSKs6qzI6U2FgFv5SFInM8oRSAUctV4g7cVTnfs",
       "apple-domain-verification=yJzU0JcusoBfuohM",
-      "h1-domain-verification=RRP11TgYbS83xtxg31xb8StneabT5XQ7Uo6eiS44odH8iLvJ"
+      "lc7kqxfd8kpr7hwptf9msfg60vg19wll",
+      "atlassian-domain-verification=tOVXqvuSdF7wH9xBOcTHifwIEfXQX6XGoTgtPxe46s5sqCLZax9yh7Ms46Uuns0N",
+      "v=spf1 ip4:119.254.30.0/26 ip4:204.154.94.0/23 ip4:167.89.16.0/24 include:_spf.google.com include:mail.zendesk.com include:mailsenders.netsuite.com include:_spf.sparkpostmail.com -all",
+      "adobe-idp-site-verification=453e072a-bf19-40ff-a370-146e1459ffd0",
+      "_lbrr2xccc7tfxjp5xf77af22poxe4w5",
+      "central-8812",
+      "asv=9d228dc836a5edcac89e69ce0b2ab4cc",
+      "5hg44l7nrl4tfsqj45zfp34qxqnx6129",
+      "facebook-domain-verification=ald97r41mq52lyt3zyn7iipmy75y93",
+      "rippling-domain-verification=217697edd61756fc",
+      "google-site-verification=TphACNeqZxSVjMZlu6C2OemNCLCtbP2yMJMm1eornp4",
+      "google-site-verification=-tROSeCW72D2qJrtgHAu2XtmEUdNg0pVK7JgXQc5FZI",
+      "h1-domain-verification=RRP11TgYbS83xtxg31xb8StneabT5XQ7Uo6eiS44odH8iLvJ",
+      "docker-verification=d4449a7e-12da-4006-be0c-cb9c965031f5"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:reports@dmarc.bendingspoons.com; sp=reject;"
@@ -225,7 +239,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "san": [
       "evernote.com"
     ],
-    "days_left": 44,
+    "days_left": 43,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -337,11 +351,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     ]
   },
   "apex_txt": [
-    "atlassian-domain-verification=tOVXqvuSdF7wH9xBOcTHifwIEfXQX6XGoTgtPxe46s5sqCLZax",
+    "google-site-verification=746Vk94H7agHphG-MN3o0ZF82RRnvaVH9WWtpmD2G5o",
+    "canva-site-verification=_a7Hc12U89xMaVt0CzG-mw",
+    "notion-domain-verification=PjXoSWSCXGi4euHbeppuaTYLWO7vhUdn5u9oEzzyt3X",
     "google-site-verification=dswNJSKs6qzI6U2FgFv5SFInM8oRSAUctV4g7cVTnfs",
-    "google-site-verification=TphACNeqZxSVjMZlu6C2OemNCLCtbP2yMJMm1eornp4",
-    "adobe-idp-site-verification=453e072a-bf19-40ff-a370-146e1459ffd0",
-    "notion-domain-verification=PjXoSWSCXGi4euHbeppuaTYLWO7vhUdn5u9oEzzyt3X"
+    "apple-domain-verification=yJzU0JcusoBfuohM"
   ],
   "tls2": {
     "alpn": "",
@@ -353,6 +367,15 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": null,
+      "serial": 36812890420040079179874286216000156647,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://c.pki.goog/wr3/-3YewytAhug.crl"
+      ],
+      "subject_dn": "311530130603550403130c657665726e6f74652e636f6d",
+      "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303575233",
       "not_before": "20260811220259",
       "not_after": "20261109225854"
     }
@@ -378,8 +401,19 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 48.1,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 200,
+    "sitemap": {
+      "urls": 216,
+      "indexes": 217
+    },
+    "crl": {
+      "url": "http://c.pki.goog/wr3/-3YewytAhug.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 37.7,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -390,4 +424,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

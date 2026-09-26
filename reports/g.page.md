@@ -7,12 +7,12 @@
 | Target | https://g.page/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | g.page |
-| Test date | 2026-09-26 22:06 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:27 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
+Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 | 12 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 | 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 14 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
+| 15 | low | H21 | HSTS does not cover subdomains | CWE-319 |
 
 ## Detailed findings
 
@@ -87,7 +88,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 ### 9. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (rv2ced0h73b2sp.g.page and sdcicar98ilbxz.g.page) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (9bnlvmz4wrxmwn.g.page and glx23fxb8twf8a.g.page) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -120,6 +121,12 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - **Detail:** https://g.page/ answered 302 with Location: https://business.google.com (cross-domain handoff at the entry point).
 - **Recommendation:** Review the cross-domain redirect; it discloses the real entry point and can be abused in open-redirect-style flows.
 
+### 15. [LOW] HSTS does not cover subdomains (`H21`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security on g.page has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of g.page.
+- **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
+
 ## Evidence (raw response observations)
 
 ```json
@@ -135,10 +142,10 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     "cname": null,
     "mx": [],
     "ns": [
-      "ns4.zdns.google.",
+      "ns3.zdns.google.",
       "ns2.zdns.google.",
-      "ns1.zdns.google.",
-      "ns3.zdns.google."
+      "ns4.zdns.google.",
+      "ns1.zdns.google."
     ],
     "caa": [
       "0 issue \"pki.goog\""
@@ -157,9 +164,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=misc-sni.google.com",
-    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
-    "notBefore": "Sep 10 19:22:23 2026 GMT",
-    "notAfter": "Dec  3 19:22:22 2026 GMT",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
+    "notBefore": "Sep 10 19:22:34 2026 GMT",
+    "notAfter": "Dec  3 19:22:33 2026 GMT",
     "san": [
       "misc-sni.google.com",
       "*.aiplatform-notebook.cloud.google.com",
@@ -558,13 +565,22 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     "tls_ver": "TLSv1.3",
     "subject": "None",
     "cert": {
-      "sig_oid": "1.2.840.113549.1.1.11",
+      "sig_oid": "1.2.840.10045.4.3.2",
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
-      "not_before": "20260910192223",
-      "not_after": "20261203192222"
+      "serial": 277117696272052674691383779427389564511,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://c.pki.goog/we2/xuzt3PU9F_w.crl"
+      ],
+      "subject_dn": "311c301a060355040313136d6973632d736e692e676f6f676c652e636f6d",
+      "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574532",
+      "not_before": "20260910192234",
+      "not_after": "20261203192233"
     }
   },
   "http2": {
@@ -587,8 +603,16 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 6.0,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 302,
+    "hsts": "max-age=31536000",
+    "crl": {
+      "url": "http://c.pki.goog/we2/xuzt3PU9F_w.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 7.3,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -599,4 +623,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

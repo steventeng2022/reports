@@ -7,12 +7,12 @@
 | Target | https://addthis.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | addthis.com |
-| Test date | 2026-09-26 21:56 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
+Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,12 +30,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
-| 16 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
-| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 18 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
-| 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 20 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 15 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 19 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -132,37 +131,31 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 - **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=Wq9iztGUzQcBBi1OLrEOlXtefwOzX7yfvhbsw-CVdo
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
-
-- **CWE:** CWE-603
-- **Detail:** OCSP check via http://ocsp.digicert.com -> http-200
-- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
-
-### 16. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+### 15. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
 
 - **CWE:** CWE-922
 - **Detail:** Response for https://addthis.com/ carries Cache-Control: max-age=0; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
-### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 23.210.215.129 carries PTR a23-210-215-129.deploy.static.akamaitechnologies.com. for addthis.com.
+- **Detail:** 23.210.215.122 carries PTR a23-210-215-122.deploy.static.akamaitechnologies.com. for addthis.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 18. [LOW] HTTPS root redirects to a different domain (`RD2`)
+### 17. [LOW] HTTPS root redirects to a different domain (`RD2`)
 
 - **CWE:** CWE-200
 - **Detail:** https://addthis.com/ answered 301 with Location: https://www.oracle.com/ (cross-domain handoff at the entry point).
 - **Recommendation:** Review the cross-domain redirect; it discloses the real entry point and can be abused in open-redirect-style flows.
 
-### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for addthis.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 20. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 19. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -175,8 +168,8 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   "domain": "addthis.com",
   "dns": {
     "a": [
-      "23.210.215.129",
-      "23.210.215.122"
+      "23.210.215.122",
+      "23.210.215.129"
     ],
     "aaaa": [
       "2600:1417:76::17d2:d7d9",
@@ -184,23 +177,23 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     ],
     "cname": null,
     "mx": [
-      "mxb-00069f01.gslb.pphosted.com (pref 20)",
-      "mxa-00069f01.gslb.pphosted.com (pref 20)"
+      "mxa-00069f01.gslb.pphosted.com (pref 20)",
+      "mxb-00069f01.gslb.pphosted.com (pref 20)"
     ],
     "ns": [
-      "a11-66.akam.net.",
-      "a13-65.akam.net.",
       "a1-160.akam.net.",
+      "a13-65.akam.net.",
+      "a11-66.akam.net.",
       "a18-67.akam.net."
     ],
     "caa": [],
     "spf": [
       "prz8n91rvkmbyl171kwgx2wvwxbt8sg4",
+      "pardot_92742_*=ec3c667bac55ced29c06395c567c68e2ddd44611bd74798e5c7ac890cc4c244a",
       "sj0v1trxt209h3xvhhjhky7jzb4ygxcy",
       "_gx4rm5gnquvvvcpxwfpgkdvy4f0646y",
       "globalsign-domain-verification=Wq9iztGUzQcBBi1OLrEOlXtefwOzX7yfvhbsw-CVdo",
       "v=spf1 -all",
-      "pardot_92742_*=ec3c667bac55ced29c06395c567c68e2ddd44611bd74798e5c7ac890cc4c244a",
       "bzs3z25smxyylvxfjkr6vqmgp2tbgw42"
     ],
     "dmarc": [
@@ -267,7 +260,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     }
   },
   "ports": {
-    "ip": "23.210.215.129",
+    "ip": "23.210.215.122",
     "open": []
   },
   "https": {
@@ -338,15 +331,25 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": "http://ocsp.digicert.com",
+      "serial": 17452050948878818569778369695207311261,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl3.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl",
+        "http://crl4.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl"
+      ],
+      "subject_dn": "310b3009060355040613025553311330110603550408130a43616c69666f726e6961311530130603550407130c526564776f6f642043697479311b3019060355040a13124f7261636c6520436f72706f726174696f6e3120301e060355040313177777772d6c65676163792d352e6f7261636c652e636f6d",
+      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473320544c532045434320534841333834203230323020434131",
       "not_before": "20260626000000",
       "not_after": "20270110235959"
     },
-    "ocsp": "http-200"
+    "ocsp": "explicit-status"
   },
   "x12": {
     "status": 301,
     "ptr": [
-      "a23-210-215-129.deploy.static.akamaitechnologies.com."
+      "a23-210-215-122.deploy.static.akamaitechnologies.com."
     ]
   },
   "x13": {
@@ -361,8 +364,15 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 5.5,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "crl": {
+      "url": "http://crl3.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 5.3,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -373,4 +383,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

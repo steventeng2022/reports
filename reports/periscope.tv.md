@@ -7,12 +7,12 @@
 | Target | https://periscope.tv/ |
 | Bug bounty program | Twitter |
 | Listed scope domain | periscope.tv |
-| Test date | 2026-09-26 22:12 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:35 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 | 14 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 15 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 16 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 17 | low | XFO1 | Deprecated X-Frame-Options: ALLOW-FROM in use | CWE-643 |
 
 ## Detailed findings
 
@@ -90,7 +91,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 9. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=6kBkaW7FmkNGKpx5HESNfvXncfwY-h7vzBhEJpXRovg; globalsign-domain-verification=TQFwNXX-22Rp3iu0w0iSSZOGHlgyojpElPrhqwzgaH; globalsign-domain-verification=Q0uJZ5kDAwKey4N1aE8T3tvQqG7x8qbGJezt5INRzO
+- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=TQFwNXX-22Rp3iu0w0iSSZOGHlgyojpElPrhqwzgaH; google-site-verification=6kBkaW7FmkNGKpx5HESNfvXncfwY-h7vzBhEJpXRovg; globalsign-domain-verification=Q0uJZ5kDAwKey4N1aE8T3tvQqG7x8qbGJezt5INRzO
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 10. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -114,7 +115,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 52.193.140.7 carries PTR ec2-52-193-140-7.ap-northeast-1.compute.amazonaws.com. for periscope.tv.
+- **Detail:** 3.113.35.109 carries PTR ec2-3-113-35-109.ap-northeast-1.compute.amazonaws.com. for periscope.tv.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 14. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -135,6 +136,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - **Detail:** The periscope.tv certificate lists an AIA OCSP responder (http://ocsp.r2m01.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
+### 17. [LOW] Deprecated X-Frame-Options: ALLOW-FROM in use (`XFO1`)
+
+- **CWE:** CWE-643
+- **Detail:** Root document of periscope.tv uses X-Frame-Options: ALLOW-FROM https://twitter.com/; modern browsers ignore ALLOW-FROM, so this is effectively no clickjacking protection.
+- **Recommendation:** Use DENY/SAMEORIGIN or CSP frame-ancestors instead.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -142,31 +149,31 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
   "domain": "periscope.tv",
   "dns": {
     "a": [
-      "52.193.140.7",
-      "3.113.35.109"
+      "3.113.35.109",
+      "52.193.140.7"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 10)",
-      "aspmx2.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx2.googlemail.com (pref 10)",
+      "aspmx3.googlemail.com (pref 10)"
     ],
     "ns": [
-      "ns-1733.awsdns-24.co.uk.",
-      "ns-1323.awsdns-37.org.",
       "ns-506.awsdns-63.com.",
-      "ns-599.awsdns-10.net."
+      "ns-1733.awsdns-24.co.uk.",
+      "ns-599.awsdns-10.net.",
+      "ns-1323.awsdns-37.org."
     ],
     "caa": [],
     "spf": [
-      "gg38l5npbb4kqfrvp12tzgb8f95cv2p9",
-      "google-site-verification=6kBkaW7FmkNGKpx5HESNfvXncfwY-h7vzBhEJpXRovg",
       "globalsign-domain-verification=TQFwNXX-22Rp3iu0w0iSSZOGHlgyojpElPrhqwzgaH",
-      "globalsign-domain-verification=Q0uJZ5kDAwKey4N1aE8T3tvQqG7x8qbGJezt5INRzO",
-      "v=spf1 a mx include:spf.mtasv.net ~all"
+      "gg38l5npbb4kqfrvp12tzgb8f95cv2p9",
+      "v=spf1 a mx include:spf.mtasv.net ~all",
+      "google-site-verification=6kBkaW7FmkNGKpx5HESNfvXncfwY-h7vzBhEJpXRovg",
+      "globalsign-domain-verification=Q0uJZ5kDAwKey4N1aE8T3tvQqG7x8qbGJezt5INRzO"
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -194,7 +201,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     }
   },
   "ports": {
-    "ip": "52.193.140.7",
+    "ip": "3.113.35.109",
     "open": []
   },
   "https": {
@@ -244,8 +251,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=6kBkaW7FmkNGKpx5HESNfvXncfwY-h7vzBhEJpXRovg",
     "globalsign-domain-verification=TQFwNXX-22Rp3iu0w0iSSZOGHlgyojpElPrhqwzgaH",
+    "google-site-verification=6kBkaW7FmkNGKpx5HESNfvXncfwY-h7vzBhEJpXRovg",
     "globalsign-domain-verification=Q0uJZ5kDAwKey4N1aE8T3tvQqG7x8qbGJezt5INRzO"
   ],
   "tls2": {
@@ -258,6 +265,15 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
+      "serial": 1794488794003220954149914727345127836,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.r2m01.amazontrust.com/r2m01.crl"
+      ],
+      "subject_dn": "3117301506035504030c0e2a2e7065726973636f70652e7476",
+      "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3031",
       "not_before": "20260112000000",
       "not_after": "20270210235959"
     },
@@ -275,7 +291,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
   "x12": {
     "status": 302,
     "ptr": [
-      "ec2-52-193-140-7.ap-northeast-1.compute.amazonaws.com."
+      "ec2-3-113-35-109.ap-northeast-1.compute.amazonaws.com."
     ]
   },
   "x13": {
@@ -293,8 +309,16 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 25.1,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 302,
+    "hsts": "max-age=10886400000; includeSubDomains; preload",
+    "crl": {
+      "url": "http://crl.r2m01.amazontrust.com/r2m01.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 28.1,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -305,4 +329,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://walmart.com/ |
 | Bug bounty program | Walmart Corporation |
 | Listed scope domain | walmart.com |
-| Test date | 2026-09-26 22:17 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:40 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | low | H21 | HSTS does not cover subdomains | CWE-319 |
 
 ## Detailed findings
 
@@ -117,7 +118,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: canva-site-verification=jcrBOlbl254ia6gsPJNFCg; _globalsign-domain-verification=tYy2ZDIHUuR-3NGTeWDgC5Bs1vAYAyL7kZK8HpVwNg; slack-domain-verification=Ic5IE8asOH1Bg6b1To8CGfWytCkVfywFsAJRZvUm
+- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=AXcfQAoG3in-mjLnMOJPhp1CNvUTsRkCaLo60rR5hG; _globalsign-domain-verification=E0XnB_4FxsbzvD6MDzvAQoSFChcy4XTb2vlMqtUc5k; openai-domain-verification=dv-IDGFBjh74ycOf2e4vrXwBZtv
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -135,8 +136,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 104.89.104.39 carries PTR a104-89-104-39.deploy.static.akamaitechnologies.com. for walmart.com.
+- **Detail:** 23.209.216.193 carries PTR a23-209-216-193.deploy.static.akamaitechnologies.com. for walmart.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 17. [LOW] HSTS does not cover subdomains (`H21`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security on walmart.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of walmart.com.
+- **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
 
 ## Evidence (raw response observations)
 
@@ -145,7 +152,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "domain": "walmart.com",
   "dns": {
     "a": [
-      "104.89.104.39"
+      "23.209.216.193"
     ],
     "aaaa": [],
     "cname": null,
@@ -154,41 +161,41 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "mxb-000c7201.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "a22-67.akam.net.",
-      "a1-185.akam.net.",
-      "pdnswm3.ultradns.org.",
-      "a10-66.akam.net.",
-      "a8-66.akam.net.",
-      "pdnswm5.ultradns.info.",
-      "pdnswm2.ultradns.net.",
-      "a5-65.akam.net.",
+      "pdnswm4.ultradns.org.",
       "a3-64.akam.net.",
       "pdnswm1.ultradns.net.",
-      "pdnswm4.ultradns.org.",
-      "pdnswm6.ultradns.co.uk."
+      "a1-185.akam.net.",
+      "pdnswm6.ultradns.co.uk.",
+      "a8-66.akam.net.",
+      "pdnswm5.ultradns.info.",
+      "a10-66.akam.net.",
+      "a22-67.akam.net.",
+      "pdnswm2.ultradns.net.",
+      "a5-65.akam.net.",
+      "pdnswm3.ultradns.org."
     ],
     "caa": [
-      "0 issue \"globalsign.com\"",
       "0 issue \"digicert.com\"",
+      "0 issue \"globalsign.com\"",
       "0 issue \"amazon.com\""
     ],
     "spf": [
+      "_globalsign-domain-verification=AXcfQAoG3in-mjLnMOJPhp1CNvUTsRkCaLo60rR5hG",
+      "_globalsign-domain-verification=E0XnB_4FxsbzvD6MDzvAQoSFChcy4XTb2vlMqtUc5k",
+      "openai-domain-verification=dv-IDGFBjh74ycOf2e4vrXwBZtv",
       "canva-site-verification=jcrBOlbl254ia6gsPJNFCg",
       "_globalsign-domain-verification=tYy2ZDIHUuR-3NGTeWDgC5Bs1vAYAyL7kZK8HpVwNg",
-      "infoblox-domain-mastery=cbdbcb7b4ccda409b4d353af156079955dc262a3bd4566aae2a9afba1d3d43e5c2",
+      "anthropic-domain-verification-5vz2bt=GhKF4NMESyKswHJGVanZVBEtB",
       "slack-domain-verification=Ic5IE8asOH1Bg6b1To8CGfWytCkVfywFsAJRZvUm",
+      "_globalsign-domain-verification=0UV9-mABi984W6oReb-NIqLZE4wxFn0Z_HZqReFlfx",
       "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com include:_netblocks.walmart.com include:_vspf1.walmart.com include:_vspf2.walmart.com include:_vspf3.walmart.com ip4:161.170.248.0/24 ip4:161.170.244.0/24 ip4:161.170.241.16/30 ip4:161.170.245.0/24 ip4:16",
       "1.170.249.0/24 ~all",
-      "globalsign-domain-verification=2AD27E3A206DB3231BAD817BD5A21F7A",
-      "_globalsign-domain-verification=AXcfQAoG3in-mjLnMOJPhp1CNvUTsRkCaLo60rR5hG",
-      "globalsign-domain-verification=290297CC7AD18787782E80BFF88B354B",
-      "twilio-domain-verification=19bf2f50450a9dec2b6ea8d18ab9114f",
-      "_globalsign-domain-verification=E0XnB_4FxsbzvD6MDzvAQoSFChcy4XTb2vlMqtUc5k",
       "+wnQWce020VDWuXiDkLvV2jJXOlN5tNAzGyHFjMbBg0=",
-      "_globalsign-domain-verification=0UV9-mABi984W6oReb-NIqLZE4wxFn0Z_HZqReFlfx",
-      "openai-domain-verification=dv-IDGFBjh74ycOf2e4vrXwBZtv",
+      "infoblox-domain-mastery=cbdbcb7b4ccda409b4d353af156079955dc262a3bd4566aae2a9afba1d3d43e5c2",
+      "globalsign-domain-verification=2AD27E3A206DB3231BAD817BD5A21F7A",
+      "globalsign-domain-verification=290297CC7AD18787782E80BFF88B354B",
       "_globalsign-domain-verification=9-Ef1Ps_FbIDDK9OPPGU3ju471Ap4_xAPV4pacA3ht",
-      "anthropic-domain-verification-5vz2bt=GhKF4NMESyKswHJGVanZVBEtB"
+      "twilio-domain-verification=19bf2f50450a9dec2b6ea8d18ab9114f"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -223,7 +230,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     }
   },
   "ports": {
-    "ip": "104.89.104.39",
+    "ip": "23.209.216.193",
     "open": []
   },
   "https": {
@@ -280,11 +287,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "_globalsign-domain-verification=AXcfQAoG3in-mjLnMOJPhp1CNvUTsRkCaLo60rR5hG",
+    "_globalsign-domain-verification=E0XnB_4FxsbzvD6MDzvAQoSFChcy4XTb2vlMqtUc5k",
+    "openai-domain-verification=dv-IDGFBjh74ycOf2e4vrXwBZtv",
     "canva-site-verification=jcrBOlbl254ia6gsPJNFCg",
-    "_globalsign-domain-verification=tYy2ZDIHUuR-3NGTeWDgC5Bs1vAYAyL7kZK8HpVwNg",
-    "slack-domain-verification=Ic5IE8asOH1Bg6b1To8CGfWytCkVfywFsAJRZvUm",
-    "globalsign-domain-verification=2AD27E3A206DB3231BAD817BD5A21F7A",
-    "_globalsign-domain-verification=AXcfQAoG3in-mjLnMOJPhp1CNvUTsRkCaLo60rR5hG"
+    "_globalsign-domain-verification=tYy2ZDIHUuR-3NGTeWDgC5Bs1vAYAyL7kZK8HpVwNg"
   ],
   "tls2": {
     "alpn": "",
@@ -296,6 +303,15 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": "http://ocsp.globalsign.com/gsgcce46ovtlsca2025",
+      "serial": 27121310723762650179181494782,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.globalsign.com/gsgcce46ovtlsca2025.crl"
+      ],
+      "subject_dn": "310b30090603550406130255533111300f0603550408130841726b616e736173311430120603550407130b42656e746f6e76696c6c6531153013060355040a130c57616c6d61727420496e632e311830160603550403130f7777772e77616c6d6172742e636f6d",
+      "issuer_dn": "310b300906035504061302424531193017060355040a1310476c6f62616c5369676e206e762d7361312a302806035504031321476c6f62616c5369676e2047434320453436204f5620544c532043412032303235",
       "not_before": "20260727095801",
       "not_after": "20270211095801"
     },
@@ -323,7 +339,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "x12": {
     "status": 301,
     "ptr": [
-      "a104-89-104-39.deploy.static.akamaitechnologies.com."
+      "a23-209-216-193.deploy.static.akamaitechnologies.com."
     ]
   },
   "x13": {
@@ -338,8 +354,16 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 8.9,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "hsts": "max-age=31536000",
+    "crl": {
+      "url": "http://crl.globalsign.com/gsgcce46ovtlsca2025.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 8.8,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -350,4 +374,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

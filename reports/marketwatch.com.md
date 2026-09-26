@@ -7,12 +7,12 @@
 | Target | https://marketwatch.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | marketwatch.com |
-| Test date | 2026-09-26 22:10 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 23:32 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
+Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 20 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 
 ## Detailed findings
 
@@ -134,7 +135,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=nnn1LRQtO0v0X_DpMDGX_xZmSwTZqOaMaD0e6NDZvdA; google-site-verification=zbCAdHPPQU1MVv0UikjwLoiAgCLikxMKJ1h64y226-g; adobe-idp-site-verification=7ef638bb68822798685f96e436bfc87a6f79319dd86369e447b8
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=zbCAdHPPQU1MVv0UikjwLoiAgCLikxMKJ1h64y226-g; mongodb-site-verification=3NjKxTnfMRjvs5GmXZrJcJDqqu8GCjDz; atlassian-domain-verification=uNoIhBXurxzVlQa0FvK2t9Yld5byfvXbFRQaMToGvrieKjBdyl
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -152,7 +153,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 65.9.180.107 carries PTR server-65-9-180-107.tpe53.r.cloudfront.net. for marketwatch.com.
+- **Detail:** 65.9.180.59 carries PTR server-65-9-180-59.tpe53.r.cloudfront.net. for marketwatch.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -161,6 +162,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - **Detail:** No CAA record found for marketwatch.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
+### 20. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+
+- **CWE:** CWE-200
+- **Detail:** /sitemap.xml on marketwatch.com lists 811 <loc> URL(s); the public URL inventory helps passive reconnaissance.
+- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -168,43 +175,43 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   "domain": "marketwatch.com",
   "dns": {
     "a": [
-      "65.9.180.107",
+      "65.9.180.59",
       "65.9.180.27",
-      "65.9.180.125",
-      "65.9.180.59"
+      "65.9.180.107",
+      "65.9.180.125"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxa-00596a01.gslb.pphosted.com (pref 10)",
-      "mxb-00596a01.gslb.pphosted.com (pref 10)"
+      "mxb-00596a01.gslb.pphosted.com (pref 10)",
+      "mxa-00596a01.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns-705.awsdns-24.net.",
       "ns-450.awsdns-56.com.",
+      "ns-1588.awsdns-06.co.uk.",
       "ns-1291.awsdns-33.org.",
-      "ns-1588.awsdns-06.co.uk."
+      "ns-705.awsdns-24.net."
     ],
     "caa": [],
     "spf": [
-      "google-site-verification=nnn1LRQtO0v0X_DpMDGX_xZmSwTZqOaMaD0e6NDZvdA",
       "google-site-verification=zbCAdHPPQU1MVv0UikjwLoiAgCLikxMKJ1h64y226-g",
-      "datadome-domain-verify=mBXJ0OcsBIxmEYtkepO9rBwdPNmfTk5Q",
-      "adobe-idp-site-verification=7ef638bb68822798685f96e436bfc87a6f79319dd86369e447b84bb8ea9c6f68",
-      "miro-verification=fc4f542b1bf4fc981e2f11e463246349bde0a8d0",
-      "knowbe4-site-verification=0694ce74005828dc4bb8b7299bfb6f61",
-      "ValidationTokenValue=aa1d350e-32a6-4129-b29a-0a17a8fbe63c",
+      "mongodb-site-verification=3NjKxTnfMRjvs5GmXZrJcJDqqu8GCjDz",
       "v=spf1 ip4:68.232.128.0/19 ip4:63.240.26.0/24 ip4:205.203.130.22 ip4:205.203.130.101 ip4:205.203.130.102 ip4:205.203.136.101 ip4:205.203.136.102 include:spf-1.dowjones.com ",
       "include:_spf.google.com include:spf-00596a01.pphosted.com include:aspmx.sailthru.com include:spf-00596a03.pphosted.com -all",
-      "google-site-verification=uYFppydFtsdAeVh-4zcS07cMFtUdZHp_QZz-ACw_AHg",
-      "google-site-verification=EGDlBNSsQnx5i-6-IAjm0Q9pykD3Bqwiesucz8hZwuw",
       "atlassian-domain-verification=uNoIhBXurxzVlQa0FvK2t9Yld5byfvXbFRQaMToGvrieKjBdylMs8jcSXRKQKqao",
-      "google-site-verification=9D2VzJi-QCek9CtqC2XV8G4VYkTiiDYYTmkM5152ad8",
       "figma-domain-verification=b411f1d2852c2c7e057a2d6d70fb22896f37ccc1412d1e1bb4f9da14e2b78ad9-1769000244",
-      "docker-verification=2b229513-3448-4073-9530-e57440f198d5",
+      "google-site-verification=9D2VzJi-QCek9CtqC2XV8G4VYkTiiDYYTmkM5152ad8",
       "google-site-verification=g1arhZY9MX2Af0YQgBFVYh8WTDUG-WtEE55qEGH6hsU",
-      "mongodb-site-verification=3NjKxTnfMRjvs5GmXZrJcJDqqu8GCjDz",
-      "openai-domain-verification=dv-Z1O5z6g6UeNwdxBpVlxRw8J6"
+      "openai-domain-verification=dv-Z1O5z6g6UeNwdxBpVlxRw8J6",
+      "ValidationTokenValue=aa1d350e-32a6-4129-b29a-0a17a8fbe63c",
+      "google-site-verification=nnn1LRQtO0v0X_DpMDGX_xZmSwTZqOaMaD0e6NDZvdA",
+      "datadome-domain-verify=mBXJ0OcsBIxmEYtkepO9rBwdPNmfTk5Q",
+      "knowbe4-site-verification=0694ce74005828dc4bb8b7299bfb6f61",
+      "adobe-idp-site-verification=7ef638bb68822798685f96e436bfc87a6f79319dd86369e447b84bb8ea9c6f68",
+      "google-site-verification=uYFppydFtsdAeVh-4zcS07cMFtUdZHp_QZz-ACw_AHg",
+      "miro-verification=fc4f542b1bf4fc981e2f11e463246349bde0a8d0",
+      "google-site-verification=EGDlBNSsQnx5i-6-IAjm0Q9pykD3Bqwiesucz8hZwuw",
+      "docker-verification=2b229513-3448-4073-9530-e57440f198d5"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -234,7 +241,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     }
   },
   "ports": {
-    "ip": "65.9.180.107",
+    "ip": "65.9.180.59",
     "open": []
   },
   "https": {
@@ -287,11 +294,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=nnn1LRQtO0v0X_DpMDGX_xZmSwTZqOaMaD0e6NDZvdA",
     "google-site-verification=zbCAdHPPQU1MVv0UikjwLoiAgCLikxMKJ1h64y226-g",
-    "adobe-idp-site-verification=7ef638bb68822798685f96e436bfc87a6f79319dd86369e447b8",
-    "miro-verification=fc4f542b1bf4fc981e2f11e463246349bde0a8d0",
-    "knowbe4-site-verification=0694ce74005828dc4bb8b7299bfb6f61"
+    "mongodb-site-verification=3NjKxTnfMRjvs5GmXZrJcJDqqu8GCjDz",
+    "atlassian-domain-verification=uNoIhBXurxzVlQa0FvK2t9Yld5byfvXbFRQaMToGvrieKjBdyl",
+    "figma-domain-verification=b411f1d2852c2c7e057a2d6d70fb22896f37ccc1412d1e1bb4f9da",
+    "google-site-verification=9D2VzJi-QCek9CtqC2XV8G4VYkTiiDYYTmkM5152ad8"
   ],
   "tls2": {
     "alpn": "",
@@ -303,6 +310,15 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
+      "serial": 6138179660280917770703123075345496738,
+      "cert_version": 3,
+      "bc_ca": null,
+      "bc_pathlen": null,
+      "crl_urls": [
+        "http://crl.r2m04.amazontrust.com/r2m04.crl"
+      ],
+      "subject_dn": "311830160603550403130f6d61726b657477617463682e636f6d",
+      "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3034",
       "not_before": "20260125000000",
       "not_after": "20270222235959"
     },
@@ -330,7 +346,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   "x12": {
     "status": 301,
     "ptr": [
-      "server-65-9-180-107.tpe53.r.cloudfront.net."
+      "server-65-9-180-59.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -345,8 +361,19 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "note": "deferred (vantage drops udp/443)"
     }
   },
-  "elapsed_s": 11.7,
-  "rechecked": "2026-09-26 21:56 UTC"
+  "x14": {
+    "root_status": 301,
+    "sitemap": {
+      "urls": 811,
+      "indexes": 0
+    },
+    "crl": {
+      "url": "http://crl.r2m04.amazontrust.com/r2m04.crl",
+      "status": 200
+    }
+  },
+  "elapsed_s": 12.6,
+  "rechecked": "2026-09-26 23:16 UTC"
 }
 ```
 
@@ -357,4 +384,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
+- re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - Findings are reported against the public program scope; submission through the program tracker is pending.
