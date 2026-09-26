@@ -1,8 +1,17 @@
-Total findings across all sites: 5738
 # Bounty Hunt - Findings Index
 
-Hunt dates: 2026-09-24 to 2026-09-25 (Asia/Taipei). This repository combines the original scan results with the 2026-09-25 **passive / non-intrusive re-audit**. Passive checks used TLS, HTTP headers, cookie attributes, redirects, well-known files, DNS, and certificate SAN data without parameter injection, form submission, or authenticated sessions. Where a passive report replaced an active scan, the latest pre-merge active report is preserved in a collapsible appendix.
+Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the original scan results with the 2026-09-25 **passive / non-intrusive re-audit**. Passive checks used TLS, HTTP headers, cookie attributes, redirects, well-known files, DNS, and certificate SAN data without parameter injection, form submission, or authenticated sessions. Where a passive report replaced an active scan, the latest pre-merge active report is preserved in a collapsible appendix.
 
+**Indexed reports: 590**
+
+**Total primary findings across all sites: 5851** (High: 2, Medium: 42, Low: 1715, Info: 4092)
+
+| Site | Findings | High | Med | Low | Info | Program |
+|---|---:|---:|---:|---:|---:|---|
+| 1.bp.blogspot.com | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
+| 1.usa.gov | 9 | 0 | 0 | 1 | 8 | [TTS Bug Bounty](https://hackerone.com/tts) |
+| 1drv.ms | 14 | 0 | 0 | 3 | 11 | top-websites gist (no active program match) |
+| 2.bp.blogspot.com | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
 | 3.bp.blogspot.com | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
 | 4.bp.blogspot.com | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
 | 7-zip.org | 9 | 0 | 0 | 4 | 5 | top-websites gist (no active program match) |
@@ -139,7 +148,7 @@ Hunt dates: 2026-09-24 to 2026-09-25 (Asia/Taipei). This repository combines the
 | connect.facebook.net | 10 | 0 | 0 | 1 | 9 | top-websites gist (no active program match) |
 | constantcontact.com | 11 | 0 | 0 | 2 | 9 | [Constant Contact](https://bugcrowd.com/constantcontact) |
 | copyright.gov | 7 | 0 | 0 | 1 | 6 | top-websites gist (no active program match) |
-| coursera.org | 8 | 0 | 0 | 1 | 7 | [Coursera](https://hackerone.com/coursera) |
+| coursera.org | 22 | 0 | 4 | 9 | 9 | [Coursera](https://hackerone.com/coursera) |
 | createspace.com | 12 | 0 | 0 | 3 | 9 | top-websites gist (no active program match) |
 | creativecommons.org | 11 | 0 | 0 | 4 | 7 | top-websites gist (no active program match) |
 | creativemarket.com | 6 | 0 | 0 | 1 | 5 | top-websites gist (no active program match) |
@@ -176,13 +185,13 @@ Hunt dates: 2026-09-24 to 2026-09-25 (Asia/Taipei). This repository combines the
 | drift.com | 6 | 0 | 0 | 1 | 5 | top-websites gist (no active program match) |
 | drive.google.com | 8 | 0 | 0 | 1 | 7 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | dropbox.com | 10 | 0 | 0 | 4 | 6 | [DropBox](https://bugcrowd.com/dropbox) |
-| drupal.org | 8 | 0 | 0 | 2 | 6 | top-websites gist (no active program match) |
+| drupal.org | 13 | 0 | 0 | 8 | 5 | top-websites gist (no active program match) |
 | dx.doi.org | 8 | 0 | 0 | 3 | 5 | top-websites gist (no active program match) |
 | ea.com | 15 | 0 | 0 | 4 | 11 | top-websites gist (no active program match) |
 | earth.google.com | 8 | 0 | 0 | 2 | 6 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | ec.europa.eu | 9 | 0 | 0 | 1 | 8 | [European Central Bank](https://www.ecb.europa.eu/services/responsible-disclosure/html/index.nl.html) |
 | economist.com | 8 | 0 | 0 | 3 | 5 | top-websites gist (no active program match) |
-| edx.org | 1 | 0 | 0 | 0 | 1 | top-websites gist (no active program match) |
+| edx.org | 24 | 0 | 4 | 13 | 7 | top-websites gist (no active program match) |
 | eepurl.com | 12 | 0 | 0 | 4 | 8 | top-websites gist (no active program match) |
 | eff.org | 8 | 0 | 0 | 2 | 6 | [EFF](https://www.eff.org/security/) |
 | elmundo.es | 10 | 0 | 0 | 5 | 5 | top-websites gist (no active program match) |
@@ -319,7 +328,7 @@ Hunt dates: 2026-09-24 to 2026-09-25 (Asia/Taipei). This repository combines the
 | jstor.org | 12 | 0 | 0 | 5 | 7 | top-websites gist (no active program match) |
 | justgiving.com | 8 | 0 | 0 | 4 | 4 | top-websites gist (no active program match) |
 | keep.google.com | 7 | 0 | 0 | 0 | 7 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
-| khanacademy.org | 14 | 0 | 0 | 6 | 8 | [Khan Academy](https://hackerone.com/khanacademy) |
+| khanacademy.org | 27 | 0 | 4 | 13 | 10 | [Khan Academy](https://hackerone.com/khanacademy) |
 | kiva.org | 6 | 0 | 0 | 1 | 5 | top-websites gist (no active program match) |
 | kobo.com | 8 | 0 | 0 | 3 | 5 | top-websites gist (no active program match) |
 | kraken.com | 7 | 0 | 0 | 3 | 4 | [Kraken](https://www.kraken.com/en-us/features/security/bug-bounty) |
@@ -585,3 +594,7 @@ Hunt dates: 2026-09-24 to 2026-09-25 (Asia/Taipei). This repository combines the
 | zen.yandex.ru | 12 | 0 | 0 | 2 | 10 | [Yandex](https://yandex.com/bugbounty/index) |
 | zillow.com | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
 | zoom.us | 15 | 0 | 0 | 4 | 11 | [Zoom](https://explore.zoom.us/docs/ent/h1.html) |
+| owasp.org | 8 | 0 | 3 | 4 | 1 | top-websites gist (no active program match) |
+| apache.org | 23 | 0 | 1 | 7 | 15 | top-websites gist (no active program match) |
+| go.dev | 13 | 0 | 1 | 8 | 4 | Google |
+| freecodecamp.org | 19 | 2 | 13 | 4 | 0 | top-websites gist (no active program match) |
