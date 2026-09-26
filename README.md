@@ -8,6 +8,7 @@ Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---:|---:|---:|---:|---:|---|
+| chrisjdavis.org | 36 | 0 | 8 | 25 | 3 | top-websites gist (no active program match) |
 | lh3.googleusercontent.com | 13 | 0 | 0 | 3 | 10 | Google |
 | t.ly | 5 | 0 | 0 | 4 | 1 | top-websites gist (no active program match) |
 | meta.wikimedia.org | 25 | 2 | 1 | 20 | 2 | top-websites gist (no active program match) |
