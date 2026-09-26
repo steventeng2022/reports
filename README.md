@@ -2,9 +2,9 @@
 
 Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the original scan results with the 2026-09-25 **passive / non-intrusive re-audit**. Passive checks used TLS, HTTP headers, cookie attributes, redirects, well-known files, DNS, and certificate SAN data without parameter injection, form submission, or authenticated sessions. Where a passive report replaced an active scan, the latest pre-merge active report is preserved in a collapsible appendix.
 
-**Indexed reports: 590**
+**Indexed reports: 614**
 
-**Total primary findings across all sites: 5851** (High: 2, Medium: 42, Low: 1715, Info: 4092)
+**Total primary findings across all sites: 6185** (High: 63, Medium: 74, Low: 1891, Info: 4157)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---:|---:|---:|---:|---:|---|
