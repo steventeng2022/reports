@@ -2,9 +2,9 @@
 
 Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the original scan results with the 2026-09-25 **passive / non-intrusive re-audit**. Passive checks used TLS, HTTP headers, cookie attributes, redirects, well-known files, DNS, and certificate SAN data without parameter injection, form submission, or authenticated sessions. Where a passive report replaced an active scan, the latest pre-merge active report is preserved in a collapsible appendix.
 
-**Indexed reports: 614**
+**Indexed reports: 615**
 
-**Total primary findings across all sites: 6185** (High: 63, Medium: 74, Low: 1891, Info: 4157)
+**Total primary findings across all sites: 6196** (High: 63, Medium: 74, Low: 1894, Info: 4165)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---:|---:|---:|---:|---:|---|
@@ -622,3 +622,4 @@ Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the
 | zen.yandex.ru | 12 | 0 | 0 | 2 | 10 | [Yandex](https://yandex.com/bugbounty/index) |
 | zillow.com | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
 | zoom.us | 15 | 0 | 0 | 4 | 11 | [Zoom](https://explore.zoom.us/docs/ent/h1.html) |
+| www.ietf.org | 11 | 0 | 0 | 3 | 8 | IETF |
