@@ -8,6 +8,7 @@ Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---:|---:|---:|---:|---:|---|
+| meta.wikimedia.org | 25 | 2 | 1 | 20 | 2 | top-websites gist (no active program match) |
 | geni.us | 34 | 26 | 1 | 4 | 3 | top-websites gist (no active program match) |
 | fiverr.com | 12 | 0 | 2 | 6 | 4 | top-websites gist (no active program match) |
 | business.linkedin.com | 6 | 2 | 0 | 3 | 1 | top-websites gist (no active program match) |
