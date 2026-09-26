@@ -7,12 +7,12 @@
 | Target | https://line.me/ |
 | Bug bounty program | LINE |
 | Listed scope domain | line.me |
-| Test date | 2026-09-26 18:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:09 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,9 +30,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -125,26 +126,32 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=Ri-G6bf49-iTkhhxR6TAWnk0_yfslPvcvsQrPa8Usvc; facebook-domain-verification=35wnsqkba1tqtxca6q5xlxrxcul4qd
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=35wnsqkba1tqtxca6q5xlxrxcul4qd; google-site-verification=Ri-G6bf49-iTkhhxR6TAWnk0_yfslPvcvsQrPa8Usvc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of line.me has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 15. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but line.me is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 17. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 15 disallow path(s), e.g. *, /app/, /cs/, /R/, /ti/
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 17. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on line.me; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for line.me, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
 ## Evidence (raw response observations)
 
@@ -158,21 +165,22 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mx3-common.line-apps.com (pref 100)",
-      "mx2-common.line-apps.com (pref 100)",
       "mx-common.line-apps.com (pref 10)",
-      "mx1-common.line-apps.com (pref 100)"
+      "mx3-common.line-apps.com (pref 100)",
+      "mx1-common.line-apps.com (pref 100)",
+      "mx2-common.line-apps.com (pref 100)"
     ],
     "ns": [
-      "ans1.linecorp.com.",
-      "ans2.linecorp.com.",
+      "ns1.naver.jp.",
       "ns2.naver.jp.",
-      "ns1.naver.jp."
+      "ans1.linecorp.com.",
+      "ans2.linecorp.com."
     ],
+    "caa": [],
     "spf": [
-      "google-site-verification=Ri-G6bf49-iTkhhxR6TAWnk0_yfslPvcvsQrPa8Usvc",
+      "facebook-domain-verification=35wnsqkba1tqtxca6q5xlxrxcul4qd",
       "v=spf1 include:naver.com include:spf.naver.jp ip4:203.104.136.0/24 ip4:147.92.128.0/17 include:_spfblock_ext.line.me include:bulk-spf.yahoo.co.jp ~all",
-      "facebook-domain-verification=35wnsqkba1tqtxca6q5xlxrxcul4qd"
+      "google-site-verification=Ri-G6bf49-iTkhhxR6TAWnk0_yfslPvcvsQrPa8Usvc"
     ],
     "dmarc": [
       "v=DMARC1; p=none; fo=s; rua=mailto:dl_dmarc@linecorp.com; pct=100"
@@ -255,8 +263,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=Ri-G6bf49-iTkhhxR6TAWnk0_yfslPvcvsQrPa8Usvc",
-    "facebook-domain-verification=35wnsqkba1tqtxca6q5xlxrxcul4qd"
+    "facebook-domain-verification=35wnsqkba1tqtxca6q5xlxrxcul4qd",
+    "google-site-verification=Ri-G6bf49-iTkhhxR6TAWnk0_yfslPvcvsQrPa8Usvc"
   ],
   "tls2": {
     "alpn": "",
@@ -267,10 +275,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.globalsign.com/gsgccr46ovtlsca2025",
       "not_before": "20260814010631",
       "not_after": "20270301010631"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -294,8 +303,24 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "x12": {
     "status": 302
   },
-  "elapsed_s": 7.1,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 302,
+    "root_location": "https://www.line.me/en/",
+    "http_status": 301,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 8.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -305,4 +330,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

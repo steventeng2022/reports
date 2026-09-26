@@ -7,12 +7,12 @@
 | Target | https://youtube.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | youtube.com |
-| Test date | 2026-09-26 19:02 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:18 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
+Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 | 13 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 | 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 16 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 
 ## Detailed findings
 
@@ -88,7 +89,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 ### 9. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=QtQWEwHWM8tHiJ4s-jJWzEQrD_fF3luPnpzNDH-Nw-w; facebook-domain-verification=64jdes7le4h7e7lfpi22rijygx58j1
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=64jdes7le4h7e7lfpi22rijygx58j1; google-site-verification=QtQWEwHWM8tHiJ4s-jJWzEQrD_fF3luPnpzNDH-Nw-w
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -127,6 +128,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 - **Detail:** 142.250.196.206 carries PTR nctsaa-ac-in-f14.1e100.net. for youtube.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
+### 16. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/assetlinks.json on youtube.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -144,15 +151,18 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
       "smtp.google.com (pref 0)"
     ],
     "ns": [
-      "ns2.google.com.",
-      "ns4.google.com.",
       "ns3.google.com.",
+      "ns4.google.com.",
+      "ns2.google.com.",
       "ns1.google.com."
     ],
+    "caa": [
+      "0 issue \"pki.goog\""
+    ],
     "spf": [
-      "google-site-verification=QtQWEwHWM8tHiJ4s-jJWzEQrD_fF3luPnpzNDH-Nw-w",
+      "facebook-domain-verification=64jdes7le4h7e7lfpi22rijygx58j1",
       "v=spf1 include:google.com mx -all",
-      "facebook-domain-verification=64jdes7le4h7e7lfpi22rijygx58j1"
+      "google-site-verification=QtQWEwHWM8tHiJ4s-jJWzEQrD_fF3luPnpzNDH-Nw-w"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:mailauth-reports@google.com"
@@ -235,7 +245,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
       "android.clients.google.com",
       "*.aistudio.google.com"
     ],
-    "days_left": 68,
+    "days_left": 67,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -303,8 +313,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=QtQWEwHWM8tHiJ4s-jJWzEQrD_fF3luPnpzNDH-Nw-w",
-    "facebook-domain-verification=64jdes7le4h7e7lfpi22rijygx58j1"
+    "facebook-domain-verification=64jdes7le4h7e7lfpi22rijygx58j1",
+    "google-site-verification=QtQWEwHWM8tHiJ4s-jJWzEQrD_fF3luPnpzNDH-Nw-w"
   ],
   "tls2": {
     "alpn": "",
@@ -346,8 +356,22 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
       "nctsaa-ac-in-f14.1e100.net."
     ]
   },
-  "elapsed_s": 3.9,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.youtube.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "wellknown": [
+      "/.well-known/assetlinks.json"
+    ],
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 4.1,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -357,4 +381,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

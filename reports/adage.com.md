@@ -7,12 +7,12 @@
 | Target | https://adage.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | adage.com |
-| Test date | 2026-09-26 18:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 19 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 21 | info | CT1 | 41 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -132,7 +135,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=uWzYibDTuhjliXGRiMnMEthKIS6O5mnJViVhGIOvK28; anthropic-domain-verification-pg50pw=UwO6bTKI23RICT2yieNZizAJB; lucidlink-verification=J1CHE4K03BM1Q64NFPMW63KC24
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-pg50pw=UwO6bTKI23RICT2yieNZizAJB; lucidlink-verification=J1CHE4K03BM1Q64NFPMW63KC24; google-site-verification=uWzYibDTuhjliXGRiMnMEthKIS6O5mnJViVhGIOvK28
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -150,8 +153,26 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 184.26.127.144 carries PTR a184-26-127-144.deploy.static.akamaitechnologies.com. for adage.com.
+- **Detail:** 23.219.172.59 carries PTR a23-219-172-59.deploy.static.akamaitechnologies.com. for adage.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 19. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xk1s04nbkan72q.html -> 403; error page/headers match: Akamai.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for adage.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 21. [INFO] 41 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: cdn.adage.com, checkout.adage.com, checkout.arcxp-stage.adage.com, help.adage.com, jwt-api.drupal.stage.adage.com, login.adage.com, pelcro.stage.adage.com, store.adage.com
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
 ## Evidence (raw response observations)
 
@@ -160,12 +181,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "adage.com",
   "dns": {
     "a": [
-      "184.26.127.144",
-      "184.26.127.138"
+      "23.219.172.59",
+      "23.2.16.210"
     ],
     "aaaa": [
-      "2001:b034:1c:200::d247:e348",
-      "2001:b034:1c:200::d247:e338"
+      "2001:b034:1c:200::d247:e338",
+      "2001:b034:1c:200::d247:e348"
     ],
     "cname": null,
     "mx": [
@@ -173,16 +194,17 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "usb-smtp-inbound-1.mimecast.com (pref 10)"
     ],
     "ns": [
-      "kurt.ns.cloudflare.com.",
-      "connie.ns.cloudflare.com."
+      "connie.ns.cloudflare.com.",
+      "kurt.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
-      "MS=ms52345011",
-      "v=spf1 include:spf.crain.com include:_spf.clickshare.com include:aspmx.pardot.com include:usb._netblocks.mimecast.com ~all",
-      "google-site-verification=uWzYibDTuhjliXGRiMnMEthKIS6O5mnJViVhGIOvK28",
-      "bw=A0toi1iKzrmRS2jxukTxOo6KI3d7V7eoIzDw5G7ubw5s",
       "anthropic-domain-verification-pg50pw=UwO6bTKI23RICT2yieNZizAJB",
       "lucidlink-verification=J1CHE4K03BM1Q64NFPMW63KC24",
+      "google-site-verification=uWzYibDTuhjliXGRiMnMEthKIS6O5mnJViVhGIOvK28",
+      "bw=A0toi1iKzrmRS2jxukTxOo6KI3d7V7eoIzDw5G7ubw5s",
+      "v=spf1 include:spf.crain.com include:_spf.clickshare.com include:aspmx.pardot.com include:usb._netblocks.mimecast.com ~all",
+      "MS=ms52345011",
       "google-site-verification=69bymnCN1yRQSpHf-DQz5sLMlqQ0GuCspakaXRLBVZg"
     ],
     "dmarc": [
@@ -303,7 +325,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "184.26.127.144",
+    "ip": "23.219.172.59",
     "open": []
   },
   "https": {
@@ -352,12 +374,45 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "/api/": 403
   },
   "subdomains": {
-    "status": "ct-pending"
+    "source": "certspotter",
+    "count": 41,
+    "notable": [
+      "cdn.adage.com",
+      "checkout.adage.com",
+      "checkout.arcxp-stage.adage.com",
+      "help.adage.com",
+      "jwt-api.drupal.stage.adage.com",
+      "login.adage.com",
+      "pelcro.stage.adage.com",
+      "store.adage.com"
+    ],
+    "sample": [
+      "a220.adage.com",
+      "adage.com",
+      "answers.adage.com",
+      "answers.arcxp-stage.adage.com",
+      "arcxp-dev.adage.com",
+      "arcxp-sandbox.adage.com",
+      "arcxp-stage.adage.com",
+      "arcxp-stage1.adage.com",
+      "c2.adage.com",
+      "cdn.adage.com",
+      "checkout.adage.com",
+      "checkout.arcxp-stage.adage.com",
+      "drupal.pelcro.adage.com",
+      "drupal.piano.adage.com",
+      "help.adage.com",
+      "home-tmp.adage.com",
+      "home.adage.com",
+      "issue.adage.com",
+      "jwt-api.adage.com",
+      "jwt-api.arcxp-dev.adage.com"
+    ]
   },
   "apex_txt": [
-    "google-site-verification=uWzYibDTuhjliXGRiMnMEthKIS6O5mnJViVhGIOvK28",
     "anthropic-domain-verification-pg50pw=UwO6bTKI23RICT2yieNZizAJB",
     "lucidlink-verification=J1CHE4K03BM1Q64NFPMW63KC24",
+    "google-site-verification=uWzYibDTuhjliXGRiMnMEthKIS6O5mnJViVhGIOvK28",
     "google-site-verification=69bymnCN1yRQSpHf-DQz5sLMlqQ0GuCspakaXRLBVZg"
   ],
   "tls2": {
@@ -377,11 +432,21 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "x12": {
     "status": 403,
     "ptr": [
-      "a184-26-127-144.deploy.static.akamaitechnologies.com."
+      "a23-219-172-59.deploy.static.akamaitechnologies.com."
     ]
   },
-  "elapsed_s": 4.5,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 403,
+    "http_status": 403,
+    "p404_status": 403,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 5.7,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -391,4 +456,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://eepurl.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | eepurl.com |
-| Test date | 2026-09-26 18:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:04 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,9 +29,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
 | 12 | low | MAIL9 | DMARC enforces (p=reject) but has no reporting address (rua) | CWE-285 |
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 15 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
-| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 16 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -122,23 +123,29 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - **Detail:** Apex TXT records with verification/token content: spycloud-domain-verification=2127e2b7-da8a-44df-95f5-c77882a949b1
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of eepurl.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 15. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+### 14. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
 
 - **CWE:** CWE-922
 - **Detail:** Response for https://eepurl.com/ carries Cache-Control: max-age=300; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
-### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 23.50.227.124 carries PTR a23-50-227-124.deploy.static.akamaitechnologies.com. for eepurl.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 16. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xk5bluj180akyg.html -> 403; error page/headers match: Akamai.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for eepurl.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
 ## Evidence (raw response observations)
 
@@ -153,20 +160,21 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     "cname": null,
     "mx": [],
     "ns": [
-      "a4-65.akam.net.",
+      "a6-66.akam.net.",
       "a14-66.akam.net.",
       "a5-65.akam.net.",
       "a1-205.akam.net.",
-      "a6-66.akam.net.",
-      "a7-66.akam.net."
+      "a7-66.akam.net.",
+      "a4-65.akam.net."
     ],
+    "caa": [],
     "spf": [
-      "95hl48p0xjbqydr7xyzz8ptmksl1334w",
-      "_8hkh7i00e0luex039dp6fsfjhs4bk8u",
-      "_lgool0gg7wzos9kz40nbb40e86izja0",
-      "_72ru7fr8c0ncfmjg71hyedfisw40m4h",
       "spycloud-domain-verification=2127e2b7-da8a-44df-95f5-c77882a949b1",
       "524t8ygzcd8l07x0v7bhq882qj55dgsw",
+      "_72ru7fr8c0ncfmjg71hyedfisw40m4h",
+      "_8hkh7i00e0luex039dp6fsfjhs4bk8u",
+      "_lgool0gg7wzos9kz40nbb40e86izja0",
+      "95hl48p0xjbqydr7xyzz8ptmksl1334w",
       "_z0wc6vmvjbvcm5fp3gts295gq1nqf8d"
     ],
     "dmarc": [
@@ -289,10 +297,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.digicert.com",
       "not_before": "20260416000000",
       "not_after": "20261031235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "x12": {
     "status": 403,
@@ -300,8 +309,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "a23-50-227-124.deploy.static.akamaitechnologies.com."
     ]
   },
-  "elapsed_s": 6.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 403,
+    "http_status": 403,
+    "p404_status": 403,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 7.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -311,4 +331,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

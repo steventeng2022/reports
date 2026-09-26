@@ -7,12 +7,12 @@
 | Target | https://imgur.com/ |
 | Bug bounty program | Imgur |
 | Listed scope domain | imgur.com |
-| Test date | 2026-09-26 18:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:08 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
+Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,10 +31,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 17 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 19 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 19 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 21 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -128,38 +130,50 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (m9cnyq3omhkp5j.imgur.com and z5mblz9e5jz3l1.imgur.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (2vzux5ymz8vjdj.imgur.com and wpp37oxyu63xma.imgur.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=jZetkGMTS63ZvRLFkjDNglMVkFkR-cZYwysKhIcg1S4; google-site-verification=Kh_iAw1AcwclD3rmGP7pOJp0zBgCwcW1V-L-mUXHMls; postman-domain-verification=45da7b179f25335b9e65a9b8d26d2fcd0739b9a1bf830b954c8a
+- **Detail:** Apex TXT records with verification/token content: 1password-site-verification=BSXZBGRLX5ETBE6LCXUXT3ZACE; postman-domain-verification=45da7b179f25335b9e65a9b8d26d2fcd0739b9a1bf830b954c8a; atlassian-domain-verification=zBnQjyxIXRiBvnX39OwQsQjQ0NHRTT8z7jLkSYoDwQI0LDJEbk
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of imgur.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 17. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but imgur.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 17. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 9 disallow path(s), e.g. /account/, /delete/, /download/, /logout/, /removalrequest/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 19. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+### 18. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
 
 - **CWE:** CWE-922
 - **Detail:** Response for https://imgur.com/ carries Cache-Control: max-age=60, stale-while-revalidate=600, stale-if-error=86400, public (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 19. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/assetlinks.json on imgur.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for imgur.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 21. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The imgur.com certificate lists an AIA OCSP responder (http://ocsp.sectigo.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -175,33 +189,34 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "cname": null,
     "mx": [
       "aspmx2.googlemail.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "aspmx3.googlemail.com (pref 10)"
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx3.googlemail.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-457.awsdns-57.com.",
       "ns-1198.awsdns-21.org.",
+      "ns-457.awsdns-57.com.",
       "ns-577.awsdns-08.net.",
       "ns-1677.awsdns-17.co.uk."
     ],
+    "caa": [],
     "spf": [
-      "mixpanel-domain-verify=877fb4f7-e334-4b13-9770-1bec2610bf63",
-      "v=spf1 ip4:54.198.157.21 include:mailgun.org include:amazonses.com include:_spf.google.com include:mail.zendesk.com -all",
-      "google-site-verification=jZetkGMTS63ZvRLFkjDNglMVkFkR-cZYwysKhIcg1S4",
-      "google-site-verification=Kh_iAw1AcwclD3rmGP7pOJp0zBgCwcW1V-L-mUXHMls",
-      "xf6t3vb8tjqqgypgpbw0bdmk98z49dk9",
-      "ZOOM_verify_7qYn368TOF6Au0Hn7KWJ2P",
-      "postman-domain-verification=45da7b179f25335b9e65a9b8d26d2fcd0739b9a1bf830b954c8abffd4acdb020707de3ddae662ed12ce411cce3357a6bd5a50c30c82bf4c481e40632f12d6ba6",
-      "perplexity-ai-domain-verification-rcshp6=bIjE0TyYQyGqn2X0tjlqweDO0",
-      "google-site-verification=lkg-LO7WaYRV1KFiztrPou_kY0KNS_h7c2nuhfia-ko",
-      "d2jm6zv3c45cb6.cloudfront.net",
-      "BSI106497997089",
-      "1password-site-verification=BSXZBGRLX5ETBE6LCXUXT3ZACE",
-      "google-site-verification=BzDTAgIuFjEqDFJFvpiwwNkX9LD8RuDq_8VrW1DFJQc",
       "MS=ms20045453",
-      "atlassian-domain-verification=zBnQjyxIXRiBvnX39OwQsQjQ0NHRTT8z7jLkSYoDwQI0LDJEbkHtP50JXc/nBUSm"
+      "1password-site-verification=BSXZBGRLX5ETBE6LCXUXT3ZACE",
+      "postman-domain-verification=45da7b179f25335b9e65a9b8d26d2fcd0739b9a1bf830b954c8abffd4acdb020707de3ddae662ed12ce411cce3357a6bd5a50c30c82bf4c481e40632f12d6ba6",
+      "mixpanel-domain-verify=877fb4f7-e334-4b13-9770-1bec2610bf63",
+      "atlassian-domain-verification=zBnQjyxIXRiBvnX39OwQsQjQ0NHRTT8z7jLkSYoDwQI0LDJEbkHtP50JXc/nBUSm",
+      "ZOOM_verify_7qYn368TOF6Au0Hn7KWJ2P",
+      "google-site-verification=Kh_iAw1AcwclD3rmGP7pOJp0zBgCwcW1V-L-mUXHMls",
+      "BSI106497997089",
+      "google-site-verification=lkg-LO7WaYRV1KFiztrPou_kY0KNS_h7c2nuhfia-ko",
+      "google-site-verification=BzDTAgIuFjEqDFJFvpiwwNkX9LD8RuDq_8VrW1DFJQc",
+      "xf6t3vb8tjqqgypgpbw0bdmk98z49dk9",
+      "v=spf1 ip4:54.198.157.21 include:mailgun.org include:amazonses.com include:_spf.google.com include:mail.zendesk.com -all",
+      "perplexity-ai-domain-verification-rcshp6=bIjE0TyYQyGqn2X0tjlqweDO0",
+      "d2jm6zv3c45cb6.cloudfront.net",
+      "google-site-verification=jZetkGMTS63ZvRLFkjDNglMVkFkR-cZYwysKhIcg1S4"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc@imgur.com"
@@ -289,10 +304,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=jZetkGMTS63ZvRLFkjDNglMVkFkR-cZYwysKhIcg1S4",
-    "google-site-verification=Kh_iAw1AcwclD3rmGP7pOJp0zBgCwcW1V-L-mUXHMls",
+    "1password-site-verification=BSXZBGRLX5ETBE6LCXUXT3ZACE",
     "postman-domain-verification=45da7b179f25335b9e65a9b8d26d2fcd0739b9a1bf830b954c8a",
-    "perplexity-ai-domain-verification-rcshp6=bIjE0TyYQyGqn2X0tjlqweDO0",
+    "atlassian-domain-verification=zBnQjyxIXRiBvnX39OwQsQjQ0NHRTT8z7jLkSYoDwQI0LDJEbk",
+    "google-site-verification=Kh_iAw1AcwclD3rmGP7pOJp0zBgCwcW1V-L-mUXHMls",
     "google-site-verification=lkg-LO7WaYRV1KFiztrPou_kY0KNS_h7c2nuhfia-ko"
   ],
   "tls2": {
@@ -304,10 +319,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.sectigo.com",
       "not_before": "20260213000000",
       "not_after": "20270215235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -325,8 +341,22 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 23.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 301,
+    "wellknown": [
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 31.5,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -336,4 +366,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://weebly.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | weebly.com |
-| Test date | 2026-09-26 19:01 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
+Total findings: **26** (High: 0, Medium: 0, Low: 6, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -40,6 +40,8 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
 | 22 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 23 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 24 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 25 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 26 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -58,13 +60,13 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 74.115.51.7:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 74.115.51.6:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 74.115.51.7:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 74.115.51.6:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -172,13 +174,13 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
 ### 20. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (lmzfzwqogoinht.weebly.com and yyvsfo3m4ctsfv.weebly.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (rud3jk2lj87253.weebly.com and bx89lkbq2j0e97.weebly.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 21. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=TZ4zEVLWw4gmABVLLvmfhXKRj-zP8yV_Llo38JMHGyc; facebook-domain-verification=pgcgq3ulxdr0q5k8130ihxgsfgajtx; postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda553
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=pgcgq3ulxdr0q5k8130ihxgsfgajtx; postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda553; google-site-verification=TZ4zEVLWw4gmABVLLvmfhXKRj-zP8yV_Llo38JMHGyc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 22. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -196,8 +198,20 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
 ### 24. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 74.115.51.7 carries PTR www.weebly.com. for weebly.com.
+- **Detail:** 74.115.51.6 carries PTR www.weebly.com. for weebly.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 25. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on weebly.com indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 26. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for weebly.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
 ## Evidence (raw response observations)
 
@@ -206,30 +220,31 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
   "domain": "weebly.com",
   "dns": {
     "a": [
-      "74.115.51.7",
-      "74.115.51.6"
+      "74.115.51.6",
+      "74.115.51.7"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx2.googlemail.com (pref 20)",
       "aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 20)",
-      "aspmx3.googlemail.com (pref 20)",
-      "aspmx2.googlemail.com (pref 20)"
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx3.googlemail.com (pref 20)"
     ],
     "ns": [
       "ns-1500.awsdns-59.org.",
-      "ns-123.awsdns-15.com.",
       "ns-1797.awsdns-32.co.uk.",
+      "ns-123.awsdns-15.com.",
       "ns-646.awsdns-16.net."
     ],
+    "caa": [],
     "spf": [
+      "facebook-domain-verification=pgcgq3ulxdr0q5k8130ihxgsfgajtx",
+      "postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda5530224a7661f91528b27485bc875c9c71d37bd628267264a247a929ad63752883379e313d91a3a",
       "v=spf1 include:_spf.google.com include:mail.zendesk.com include:_netblocks.sparkpostmail.com include:sendgrid.net ip4:74.115.48.0/22 ip6:2620:11c::/44 mx ~all",
       "google-site-verification=TZ4zEVLWw4gmABVLLvmfhXKRj-zP8yV_Llo38JMHGyc",
-      "facebook-domain-verification=pgcgq3ulxdr0q5k8130ihxgsfgajtx",
-      "78e4ad1ec37ca38d4dbe035e01fa3a0533ccacc4f8e2083013d13571e5904ef9",
-      "postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda5530224a7661f91528b27485bc875c9c71d37bd628267264a247a929ad63752883379e313d91a3a"
+      "78e4ad1ec37ca38d4dbe035e01fa3a0533ccacc4f8e2083013d13571e5904ef9"
     ],
     "dmarc": [
       "v=DMARC1; p=none;"
@@ -249,7 +264,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
       "*.weebly.com",
       "weebly.com"
     ],
-    "days_left": 41,
+    "days_left": 40,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -259,7 +274,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
     }
   },
   "ports": {
-    "ip": "74.115.51.7",
+    "ip": "74.115.51.6",
     "open": [
       8080,
       8443
@@ -325,9 +340,9 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=TZ4zEVLWw4gmABVLLvmfhXKRj-zP8yV_Llo38JMHGyc",
     "facebook-domain-verification=pgcgq3ulxdr0q5k8130ihxgsfgajtx",
-    "postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda553"
+    "postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda553",
+    "google-site-verification=TZ4zEVLWw4gmABVLLvmfhXKRj-zP8yV_Llo38JMHGyc"
   ],
   "tls2": {
     "alpn": "",
@@ -368,8 +383,19 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
       "www.weebly.com."
     ]
   },
-  "elapsed_s": 13.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 302,
+    "root_location": "https://www.weebly.com/",
+    "http_status": 302,
+    "p404_status": 302,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 14.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -379,4 +405,5 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

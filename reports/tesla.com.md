@@ -7,12 +7,12 @@
 | Target | https://tesla.com/ |
 | Bug bounty program | Tesla |
 | Listed scope domain | tesla.com |
-| Test date | 2026-09-26 19:00 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:16 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -125,7 +127,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: teamviewer-sso-verification=2fc989f75b19494fab5eb0e2c22dd625; google-site-verification=f1YoSQ3nrxPHwlfkwT9Mj_7M_rzQ2RqCPBYHJ9CQNlY  ; onetrust-domain-verification=480735b10e124e23916192d7e4321902
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=Y7lbse5bSatjXaqSBOWXjsit4mOp9cQzfLDpnQUSZlg; docker-verification=74d1ec4e-a7a6-48a7-9568-9bd0faac833f; apple-domain-verification=CHZ8RLPKu4dlRxlaNa_nR9oA2MjZ1n2fiE9s0QlbRO8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -143,8 +145,20 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 23.7.244.207 carries PTR a23-7-244-207.deploy.static.akamaitechnologies.com. for tesla.com.
+- **Detail:** 23.40.100.207 carries PTR a23-40-100-207.deploy.static.akamaitechnologies.com. for tesla.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 18. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xk6n6hgj61ot85.html -> 403; error page/headers match: Akamai.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for tesla.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
 ## Evidence (raw response observations)
 
@@ -153,16 +167,16 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "domain": "tesla.com",
   "dns": {
     "a": [
-      "23.7.244.207",
-      "2.18.50.207",
-      "2.18.54.207",
       "23.40.100.207",
-      "2.18.48.207",
-      "2.18.51.207",
       "2.18.52.207",
+      "2.18.48.207",
+      "2.18.49.207",
+      "2.18.54.207",
       "2.18.53.207",
       "2.18.55.207",
-      "2.18.49.207"
+      "2.18.50.207",
+      "23.7.244.207",
+      "2.18.51.207"
     ],
     "aaaa": [],
     "cname": null,
@@ -170,55 +184,56 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "tesla-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "a12-64.akam.net.",
-      "a10-67.akam.net.",
-      "edns69.ultradns.com.",
       "a7-66.akam.net.",
-      "a1-12.akam.net.",
+      "a9-67.akam.net.",
+      "edns69.ultradns.com.",
+      "a12-64.akam.net.",
       "a28-65.akam.net.",
-      "a9-67.akam.net."
+      "a1-12.akam.net.",
+      "a10-67.akam.net."
     ],
+    "caa": [],
     "spf": [
-      "_i88zzpi9e3jr0xglot953efk0ui36y5",
-      "teamviewer-sso-verification=2fc989f75b19494fab5eb0e2c22dd625",
-      "google-site-verification=f1YoSQ3nrxPHwlfkwT9Mj_7M_rzQ2RqCPBYHJ9CQNlY  ",
-      "_owlpg4menxk5zjwee9xclui989imwbl",
-      "T0E0S29854",
-      "onetrust-domain-verification=480735b10e124e23916192d7e4321902",
-      "cloudflare_dashboard_sso=5c0b681b716d2de0666f5a564a4d9c0d",
       "google-site-verification=Y7lbse5bSatjXaqSBOWXjsit4mOp9cQzfLDpnQUSZlg",
+      "MS=ms22358213",
+      "docker-verification=74d1ec4e-a7a6-48a7-9568-9bd0faac833f",
+      "apple-domain-verification=CHZ8RLPKu4dlRxlaNa_nR9oA2MjZ1n2fiE9s0QlbRO8",
+      "traction-guest=c8bad9fc-4b36-4f6d-944e-783ed41b34b7",
+      "traction-guest=b4f7ad59-bf17-4b3c-8b36-9c2d28f1de32",
+      "_w19nckjurfa4aldim48vtbrxsq1phnv",
+      "domain-verification=0f075f7f33bd0e577c0a56c5bb071f9eedadba45f32da11304913c6afd4b99c7",
       "apple-domain-verification=C9J7eOtEbm7Dqr88",
+      "onetrust-domain-verification=480735b10e124e23916192d7e4321902",
+      "google-site-verification=Xg2DEUg2oCz1q9RMx8gh2htHK16_GG9cZXY_eyeSf6w",
       "adobe-sign-verification=efb2da198047b7a154bd604d2721038b",
+      "atlassian-domain-verification=FuJL8qfcWp7BKpnaomRV1Vmay09Vt0rdhikq9Gh/CwPYjsvTIwkrhaVAX1idqUMl",
+      "T0E0S29854",
+      "SFMC-qkAv7SvlQaslp7NEALX8t68s_AZWOQB6ThKQS5l5",
+      "zapier-domain-verification-challenge=64e810e8-0fe1-4de0-b104-229592811c5b",
+      "atlassian-domain-verification=U31RjXDO5NBJROoOVpVEsKJ7daGpXuXPDF8HeqlmvXUKOtTao652TOMtejHrohKB",
+      "cursor-domain-verification-6kgt2s=sxbxrRmk2tNjItWtmh1swmBM0",
       "ms-domain-verification=820e4be7-563e-4f52-b73a-5c9ecdd2fda4",
       "_f32sd18rpksw3zh1hgbhaulpv016hoh",
-      "onetrust-domain-verification=79a1328740f44bc48dd97ab52c0c3377",
-      "docker-verification=74d1ec4e-a7a6-48a7-9568-9bd0faac833f",
-      "domain-verification=0f075f7f33bd0e577c0a56c5bb071f9eedadba45f32da11304913c6afd4b99c7",
-      "traction-guest=b4f7ad59-bf17-4b3c-8b36-9c2d28f1de32",
-      "apple-domain-verification=CHZ8RLPKu4dlRxlaNa_nR9oA2MjZ1n2fiE9s0QlbRO8",
-      "logmein-verification-code=JFAnsPovogeJ4IeW5MXCU3r0C",
-      "55zNJIDU0xk94IfGJtL+Hh+wje5JzOS6GY+ntggZF908AUsx0LBKgr+Nln3CgZEUifxSuN09M05jYpdbd6+cpw==",
-      "adobe-idp-site-verification=321c026a-3a8c-4206-a1fa-391a59585c54",
-      "atlassian-domain-verification=FuJL8qfcWp7BKpnaomRV1Vmay09Vt0rdhikq9Gh/CwPYjsvTIwkrhaVAX1idqUMl",
+      "jamf-site-verification=u4x3LuqSfpoLn5nJ0zMd5g",
+      "dell-technologies-domain-verification=tesla.com_c363f56d-9650-430a-82d3-04ac2257c64a_1756487968",
+      "bugcrowd-verification=40bd5dd89a6e4073ca9bc76feac3a47b",
       "v=spf1 ip4:54.240.84.225/32 ip4:54.240.84.226/31 ip4:54.240.84.228/30 ip4:54.240.84.232/29 ip4:54.240.84.240/29 ip4:54.240.84.248/30 ip4:54.240.84.252/32 ip4:44.239.249.139 ip4:52.24.70.112 ip4:34.223.204.78 ip4:213.244.145.203 ip4:213.244.145.219 ip4:213",
       ".244.145.204 ip4:213.244.145.220 ip4:8.47.24.203 ip4:8.47.24.219 ip4:8.47.24.204 ip4:8.47.24.220 ip4:8.45.124.203 ip4:8.45.124.219 ip4:8.45.124.204 ip4:8.45.124.220 ip4:8.21.14.203 ip4:8.21.14.219 ip4:8.21.14.204 ip4:8.21.14.220 ip4:8.21.14.194 ip4:8.21.1",
       "4.211 ip4:212.49.145.0/24 ip4:91.103.52.0/22 ip4:168.245.123.10 ip4:216.81.144.165 ip4:149.72.247.52 ip4:149.72.134.64 ip4:149.72.152.236 ip4:149.72.163.58 ip4:149.72.172.170 ip4:167.89.90.62 ip4:158.228.129.79 ip4:216.81.144.165 ip4:117.50.14.178 ip4:117",
       ".50.35.199 ip4:54.240.42.110 ip4:54.240.42.111 ip4:199.71.239.178 ip4:67.216.183.10 ip4:8.43.178.222 ip4:64.95.144.196 ip4:199.71.239.52 include:u13494342.wl093.sendgrid.net include:spf.protection.outlook.com include:mail.zendesk.com include:_spfsn.teslam",
       "otors.com include:_spf.qualtrics.com include:_spf.ultipro.com include:_spf.psm.knowbe4.com include:spf1.sendcloud.org include:spf2.sendcloud.org -all",
-      "SFMC-qkAv7SvlQaslp7NEALX8t68s_AZWOQB6ThKQS5l5",
-      "_quuerjb9mywulmdygnzgnt9awyzm15c",
-      "atlassian-domain-verification=U31RjXDO5NBJROoOVpVEsKJ7daGpXuXPDF8HeqlmvXUKOtTao652TOMtejHrohKB",
-      "jamf-site-verification=u4x3LuqSfpoLn5nJ0zMd5g",
+      "google-site-verification=f1YoSQ3nrxPHwlfkwT9Mj_7M_rzQ2RqCPBYHJ9CQNlY  ",
+      "cloudflare_dashboard_sso=5c0b681b716d2de0666f5a564a4d9c0d",
+      "55zNJIDU0xk94IfGJtL+Hh+wje5JzOS6GY+ntggZF908AUsx0LBKgr+Nln3CgZEUifxSuN09M05jYpdbd6+cpw==",
+      "_owlpg4menxk5zjwee9xclui989imwbl",
+      "adobe-idp-site-verification=321c026a-3a8c-4206-a1fa-391a59585c54",
       "ms-domain-verification=e335cec9-0ff5-4a54-b8bc-8966a8d146db",
-      "google-site-verification=Xg2DEUg2oCz1q9RMx8gh2htHK16_GG9cZXY_eyeSf6w",
-      "zapier-domain-verification-challenge=64e810e8-0fe1-4de0-b104-229592811c5b",
-      "bugcrowd-verification=40bd5dd89a6e4073ca9bc76feac3a47b",
+      "onetrust-domain-verification=79a1328740f44bc48dd97ab52c0c3377",
+      "teamviewer-sso-verification=2fc989f75b19494fab5eb0e2c22dd625",
+      "logmein-verification-code=JFAnsPovogeJ4IeW5MXCU3r0C",
+      "_i88zzpi9e3jr0xglot953efk0ui36y5",
       "logmein-domain-confirmation=9zxwVn2buGWrLtU24J88",
-      "MS=ms22358213",
-      "cursor-domain-verification-6kgt2s=sxbxrRmk2tNjItWtmh1swmBM0",
-      "dell-technologies-domain-verification=tesla.com_c363f56d-9650-430a-82d3-04ac2257c64a_1756487968",
-      "traction-guest=c8bad9fc-4b36-4f6d-944e-783ed41b34b7",
-      "_w19nckjurfa4aldim48vtbrxsq1phnv"
+      "_quuerjb9mywulmdygnzgnt9awyzm15c"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:n2ju30bc@ag.dmarcian.com; ruf=mailto:n2ju30bc@fr.dmarcian.com; fo=1"
@@ -237,7 +252,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "san": [
       "tesla.com"
     ],
-    "days_left": 49,
+    "days_left": 48,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -247,7 +262,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     }
   },
   "ports": {
-    "ip": "23.7.244.207",
+    "ip": "23.40.100.207",
     "open": []
   },
   "https": {
@@ -299,10 +314,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "teamviewer-sso-verification=2fc989f75b19494fab5eb0e2c22dd625",
-    "google-site-verification=f1YoSQ3nrxPHwlfkwT9Mj_7M_rzQ2RqCPBYHJ9CQNlY  ",
-    "onetrust-domain-verification=480735b10e124e23916192d7e4321902",
     "google-site-verification=Y7lbse5bSatjXaqSBOWXjsit4mOp9cQzfLDpnQUSZlg",
+    "docker-verification=74d1ec4e-a7a6-48a7-9568-9bd0faac833f",
+    "apple-domain-verification=CHZ8RLPKu4dlRxlaNa_nR9oA2MjZ1n2fiE9s0QlbRO8",
+    "domain-verification=0f075f7f33bd0e577c0a56c5bb071f9eedadba45f32da11304913c6afd4b",
     "apple-domain-verification=C9J7eOtEbm7Dqr88"
   ],
   "tls2": {
@@ -322,11 +337,21 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "x12": {
     "status": 403,
     "ptr": [
-      "a23-7-244-207.deploy.static.akamaitechnologies.com."
+      "a23-40-100-207.deploy.static.akamaitechnologies.com."
     ]
   },
-  "elapsed_s": 49.1,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 403,
+    "http_status": 403,
+    "p404_status": 403,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 8.7,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -336,4 +361,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

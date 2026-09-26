@@ -7,12 +7,12 @@
 | Target | https://pexels.com/ |
 | Bug bounty program | Pexels |
 | Listed scope domain | pexels.com |
-| Test date | 2026-09-26 18:57 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:13 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
+Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -47,13 +48,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.67.220:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.66.220:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.67.220:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.66.220:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -146,7 +147,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=bFwzZtmqEKvOMCqiqev954T3qUnHfEeu3gBLuNE7K0o; google-site-verification=e8gXPLwSyQ03OThjJnOddlKA1p1w2hT02UdOJfcq7NU; google-site-verification=pjVt80LseSzxnAV6xwI-MzfuNv-I1yg20Dt2VMaj98w
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=e8gXPLwSyQ03OThjJnOddlKA1p1w2hT02UdOJfcq7NU; google-site-verification=pjVt80LseSzxnAV6xwI-MzfuNv-I1yg20Dt2VMaj98w; google-site-verification=UpD2YY9c_0BCZQLOxrY8j-TFWyVT0QLileVTkQHSbyU
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -161,6 +162,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - **Detail:** robots.txt lists 110 disallow path(s), e.g. */likes, *orientation=*, *size=*, *color=*, *people_count=*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for pexels.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -168,8 +175,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "domain": "pexels.com",
   "dns": {
     "a": [
-      "104.18.67.220",
-      "104.18.66.220"
+      "104.18.66.220",
+      "104.18.67.220"
     ],
     "aaaa": [
       "2606:4700::6812:42dc",
@@ -184,16 +191,17 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "jill.ns.cloudflare.com.",
-      "jake.ns.cloudflare.com."
+      "jake.ns.cloudflare.com.",
+      "jill.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
-      "google-site-verification=bFwzZtmqEKvOMCqiqev954T3qUnHfEeu3gBLuNE7K0o",
       "google-site-verification=e8gXPLwSyQ03OThjJnOddlKA1p1w2hT02UdOJfcq7NU",
-      "google-site-verification=pjVt80LseSzxnAV6xwI-MzfuNv-I1yg20Dt2VMaj98w",
       "v=spf1 include:mailgun.org include:_spf.google.com include:mail.zendesk.com ~all",
-      "google-site-verification=yCXDlRaeGLlz4jQ7aoPtfaSfcIw9NOseWUHKrYL5mlk",
+      "google-site-verification=pjVt80LseSzxnAV6xwI-MzfuNv-I1yg20Dt2VMaj98w",
       "google-site-verification=UpD2YY9c_0BCZQLOxrY8j-TFWyVT0QLileVTkQHSbyU",
+      "google-site-verification=yCXDlRaeGLlz4jQ7aoPtfaSfcIw9NOseWUHKrYL5mlk",
+      "google-site-verification=bFwzZtmqEKvOMCqiqev954T3qUnHfEeu3gBLuNE7K0o",
       "google-site-verification=4ooEzF_6e1SmBjJfLnG85LUc30jwKv6RojoRUAn-AhI"
     ],
     "dmarc": [
@@ -225,7 +233,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     }
   },
   "ports": {
-    "ip": "104.18.67.220",
+    "ip": "104.18.66.220",
     "open": [
       8080,
       8443
@@ -282,11 +290,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=bFwzZtmqEKvOMCqiqev954T3qUnHfEeu3gBLuNE7K0o",
     "google-site-verification=e8gXPLwSyQ03OThjJnOddlKA1p1w2hT02UdOJfcq7NU",
     "google-site-verification=pjVt80LseSzxnAV6xwI-MzfuNv-I1yg20Dt2VMaj98w",
+    "google-site-verification=UpD2YY9c_0BCZQLOxrY8j-TFWyVT0QLileVTkQHSbyU",
     "google-site-verification=yCXDlRaeGLlz4jQ7aoPtfaSfcIw9NOseWUHKrYL5mlk",
-    "google-site-verification=UpD2YY9c_0BCZQLOxrY8j-TFWyVT0QLileVTkQHSbyU"
+    "google-site-verification=bFwzZtmqEKvOMCqiqev954T3qUnHfEeu3gBLuNE7K0o"
   ],
   "tls2": {
     "alpn": "",
@@ -324,8 +332,19 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 5.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.pexels.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 5.5,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -335,4 +354,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

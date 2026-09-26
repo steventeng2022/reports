@@ -7,12 +7,12 @@
 | Target | https://arstechnica.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | arstechnica.com |
-| Test date | 2026-09-26 18:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,11 +25,14 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 | 7 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
 | 8 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 9 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 10 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 13 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 | 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 15 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 17 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -42,7 +45,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 18.190.166.196:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 77.112.68.204:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [LOW] Weak HSTS (max-age < 1 year) (`H1b`)
@@ -82,20 +85,20 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 ### 8. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (qc9gmfgbrimtge.arstechnica.com and t9p697osyo6xeh.arstechnica.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (1k2dkapcmzvlhb.arstechnica.com and q9lv926hdo2y1g.arstechnica.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 9. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=Xt1q2fpVK6qREDXADvlLz2O5pvmUz9G_xxoGdeEnrH0; google-site-verification=HdFEloOqFNJZvQWa7SK2BRmWVt8aVnPuagqXZ-C2U5U; google-site-verification=XuFuLW59WRoAbzeQ-wsF0JwpaeYwtdzRmtiktfi3Pmc
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=HdFEloOqFNJZvQWa7SK2BRmWVt8aVnPuagqXZ-C2U5U; google-site-verification=OtVm0j4Rqs4y10N827uQ_n8ZnMtO0vfqw1k5NCzaJvo; facebook-domain-verification=qptjyerza2q11uv3fe6aay6hbsncr8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 10. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of arstechnica.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m04.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
@@ -118,8 +121,26 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 ### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 18.190.166.196 carries PTR ec2-18-190-166-196.us-east-2.compute.amazonaws.com. for arstechnica.com.
+- **Detail:** 77.112.68.204 carries PTR ec2-77-112-68-204.us-east-2.compute.amazonaws.com. for arstechnica.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 15. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkgq67lrwsopv2.html -> 404; error page/headers match: WordPress.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for arstechnica.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 17. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The arstechnica.com certificate lists an AIA OCSP responder (http://ocsp.r2m04.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -128,33 +149,34 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
   "domain": "arstechnica.com",
   "dns": {
     "a": [
-      "18.190.166.196",
-      "77.112.68.204"
+      "77.112.68.204",
+      "3.21.188.169"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "alt3.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
       "alt4.aspmx.l.google.com (pref 10)",
+      "alt3.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
+      "ns-2008.awsdns-59.co.uk.",
       "ns-1285.awsdns-32.org.",
       "ns-783.awsdns-33.net.",
-      "ns-2008.awsdns-59.co.uk.",
       "ns-493.awsdns-61.com."
     ],
+    "caa": [],
     "spf": [
-      "google-site-verification=Xt1q2fpVK6qREDXADvlLz2O5pvmUz9G_xxoGdeEnrH0",
-      "v=spf1 include:_u.arstechnica.com._spf.smart.ondmarc.com ~all",
       "google-site-verification=HdFEloOqFNJZvQWa7SK2BRmWVt8aVnPuagqXZ-C2U5U",
-      "google-site-verification=XuFuLW59WRoAbzeQ-wsF0JwpaeYwtdzRmtiktfi3Pmc",
-      "yahoo-verification-key=bP+HO9s82IBxbotbnF/O1nN4Jo4VfFXq5JNFAPCK8+o=",
-      "google-site-verification=nso4GHYIGZwo4gB6AoUxzJWkxOUdx83kbGeREAxnv3A",
       "google-site-verification=OtVm0j4Rqs4y10N827uQ_n8ZnMtO0vfqw1k5NCzaJvo",
       "facebook-domain-verification=qptjyerza2q11uv3fe6aay6hbsncr8",
+      "yahoo-verification-key=bP+HO9s82IBxbotbnF/O1nN4Jo4VfFXq5JNFAPCK8+o=",
+      "google-site-verification=XuFuLW59WRoAbzeQ-wsF0JwpaeYwtdzRmtiktfi3Pmc",
+      "v=spf1 include:_u.arstechnica.com._spf.smart.ondmarc.com ~all",
+      "google-site-verification=Xt1q2fpVK6qREDXADvlLz2O5pvmUz9G_xxoGdeEnrH0",
+      "google-site-verification=nso4GHYIGZwo4gB6AoUxzJWkxOUdx83kbGeREAxnv3A",
       "loaderio=2fd6086b1c3ba926ae36db37131123f7"
     ],
     "dmarc": [
@@ -185,7 +207,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     }
   },
   "ports": {
-    "ip": "18.190.166.196",
+    "ip": "77.112.68.204",
     "open": [
       8080
     ]
@@ -238,11 +260,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=Xt1q2fpVK6qREDXADvlLz2O5pvmUz9G_xxoGdeEnrH0",
     "google-site-verification=HdFEloOqFNJZvQWa7SK2BRmWVt8aVnPuagqXZ-C2U5U",
-    "google-site-verification=XuFuLW59WRoAbzeQ-wsF0JwpaeYwtdzRmtiktfi3Pmc",
+    "google-site-verification=OtVm0j4Rqs4y10N827uQ_n8ZnMtO0vfqw1k5NCzaJvo",
+    "facebook-domain-verification=qptjyerza2q11uv3fe6aay6hbsncr8",
     "yahoo-verification-key=bP+HO9s82IBxbotbnF/O1nN4Jo4VfFXq5JNFAPCK8+o=",
-    "google-site-verification=nso4GHYIGZwo4gB6AoUxzJWkxOUdx83kbGeREAxnv3A"
+    "google-site-verification=XuFuLW59WRoAbzeQ-wsF0JwpaeYwtdzRmtiktfi3Pmc"
   ],
   "tls2": {
     "alpn": "",
@@ -253,10 +275,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
       "not_before": "20260625000000",
       "not_after": "20270108235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -280,11 +303,22 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
   "x12": {
     "status": 200,
     "ptr": [
-      "ec2-18-190-166-196.us-east-2.compute.amazonaws.com."
+      "ec2-77-112-68-204.us-east-2.compute.amazonaws.com."
     ]
   },
-  "elapsed_s": 37.7,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 48.8,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -294,4 +328,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

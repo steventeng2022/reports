@@ -7,12 +7,12 @@
 | Target | https://join.slack.com/ |
 | Bug bounty program | Slack |
 | Listed scope domain | join.slack.com |
-| Test date | 2026-09-26 18:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:09 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
+Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 19 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 
 ## Detailed findings
 
@@ -125,7 +127,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (wfb8nw14gm030c.join.slack.com and p43gobn8qxcfk3.join.slack.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (m4er7pgsgjaftp.join.slack.com and b2685z465r31og.join.slack.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -146,6 +148,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
 - **Detail:** 52.196.128.139 carries PTR ec2-52-196-128-139.ap-northeast-1.compute.amazonaws.com. for join.slack.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
+### 18. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkwla2rdwb7jg4.html -> 404; error page/headers match: Apache.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 19. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on join.slack.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -154,8 +168,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
   "dns": {
     "a": [
       "52.196.128.139",
-      "35.73.126.78",
       "35.74.58.174",
+      "35.73.126.78",
       "52.192.46.121"
     ],
     "aaaa": [],
@@ -164,6 +178,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
       "inbound-smtp.us-east-1.amazonaws.com (pref 10)"
     ],
     "ns": [],
+    "caa": [],
     "spf": [
       "v=spf1 -all"
     ],
@@ -287,8 +302,23 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
       "ec2-52-196-128-139.ap-northeast-1.compute.amazonaws.com."
     ]
   },
-  "elapsed_s": 21.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 302,
+    "root_location": "https://slack.com/",
+    "http_status": 301,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 24.9,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -298,4 +328,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

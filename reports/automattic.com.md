@@ -7,12 +7,12 @@
 | Target | https://automattic.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | automattic.com |
-| Test date | 2026-09-26 18:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,7 +32,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 16 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
-| 17 | info | CT1 | 15 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 17 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 18 | info | CT1 | 15 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
 
 ## Detailed findings
 
@@ -105,13 +106,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 11. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (j8v53hg0xsa6a2.automattic.com and h7z4dmy27g5qlj.automattic.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (018etmeiwxdhc4.automattic.com and qp7hc5eh32j2ef.automattic.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: yahoo-verification-key=8dNdxvmgAf9M2eCeh79q5CpzcsN5GkkT9db3Z5Rr3Sk=; google-site-verification=l3pF3D6Nfuk18StNUFWXaEEIVTjBWWHvvZYP9sXEAcc; google-site-verification=F4jw0P5BvBnjqDSVJEhYv3LEU2WLuqChlBLJEYA2SO0
+- **Detail:** Apex TXT records with verification/token content: gradle-verification=1AG8E2HVI4P8EOH4BK5URAEO6JVML; yahoo-verification-key=8dNdxvmgAf9M2eCeh79q5CpzcsN5GkkT9db3Z5Rr3Sk=; atlassian-domain-verification=HLvi8VknRfLwuOZ7TmiaKM8GgOgai45SxxeWZddVaOBMgWielc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -135,10 +136,16 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 16. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
 
 - **CWE:** CWE-922
-- **Detail:** Response for https://automattic.com/ carries Cache-Control: max-age=289, must-revalidate (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Detail:** Response for https://automattic.com/ carries Cache-Control: max-age=286, must-revalidate (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
-### 17. [INFO] 15 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 17. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkklza5tm200j0.html -> 404; error page/headers match: Nginx, WordPress.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 18. [INFO] 15 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -151,8 +158,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "automattic.com",
   "dns": {
     "a": [
-      "192.0.78.25",
-      "192.0.78.24"
+      "192.0.78.24",
+      "192.0.78.25"
     ],
     "aaaa": [],
     "cname": null,
@@ -162,20 +169,23 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     ],
     "ns": [
       "ns2.automattic.com.",
-      "ns4.automattic.com.",
       "ns1.automattic.com.",
-      "ns3.automattic.com."
+      "ns3.automattic.com.",
+      "ns4.automattic.com."
+    ],
+    "caa": [
+      "0 issue \"letsencrypt.org\""
     ],
     "spf": [
-      "spf2.0/mfrom a mx ?all",
+      "gradle-verification=1AG8E2HVI4P8EOH4BK5URAEO6JVML",
+      "v=spf1 include:_spf.automattic.com include:mail.zendesk.com include:mg-spf.greenhouse.io include:sendgrid.net include:39653948.spf04.hubspotemail.net ~all",
       "yahoo-verification-key=8dNdxvmgAf9M2eCeh79q5CpzcsN5GkkT9db3Z5Rr3Sk=",
-      "google-site-verification=l3pF3D6Nfuk18StNUFWXaEEIVTjBWWHvvZYP9sXEAcc",
+      "atlassian-domain-verification=HLvi8VknRfLwuOZ7TmiaKM8GgOgai45SxxeWZddVaOBMgWielcwit/LmLXXPJm6G",
       "google-site-verification=F4jw0P5BvBnjqDSVJEhYv3LEU2WLuqChlBLJEYA2SO0",
       "anthropic-domain-verification-q5pmy9=Tj43pQ6DCN1JcMx95QuvpbFG3",
-      "v=spf1 include:_spf.automattic.com include:mail.zendesk.com include:mg-spf.greenhouse.io include:sendgrid.net include:39653948.spf04.hubspotemail.net ~all",
-      "figma-domain-verification=a2e41510ac6b0c5745595c76770385bfd602709c6d04e80ef830c9c482fc9e20-1768211767",
-      "atlassian-domain-verification=HLvi8VknRfLwuOZ7TmiaKM8GgOgai45SxxeWZddVaOBMgWielcwit/LmLXXPJm6G",
-      "gradle-verification=1AG8E2HVI4P8EOH4BK5URAEO6JVML"
+      "spf2.0/mfrom a mx ?all",
+      "google-site-verification=l3pF3D6Nfuk18StNUFWXaEEIVTjBWWHvvZYP9sXEAcc",
+      "figma-domain-verification=a2e41510ac6b0c5745595c76770385bfd602709c6d04e80ef830c9c482fc9e20-1768211767"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:0bqp2jnw@ag.dmarcian.com; ruf=mailto:0bqp2jnw@fr.dmarcian.com;"
@@ -195,7 +205,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "*.automattic.com",
       "automattic.com"
     ],
-    "days_left": 43,
+    "days_left": 42,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -205,7 +215,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "192.0.78.25",
+    "ip": "192.0.78.24",
     "open": []
   },
   "https": {
@@ -278,11 +288,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   },
   "wildcard_dns": true,
   "apex_txt": [
+    "gradle-verification=1AG8E2HVI4P8EOH4BK5URAEO6JVML",
     "yahoo-verification-key=8dNdxvmgAf9M2eCeh79q5CpzcsN5GkkT9db3Z5Rr3Sk=",
-    "google-site-verification=l3pF3D6Nfuk18StNUFWXaEEIVTjBWWHvvZYP9sXEAcc",
+    "atlassian-domain-verification=HLvi8VknRfLwuOZ7TmiaKM8GgOgai45SxxeWZddVaOBMgWielc",
     "google-site-verification=F4jw0P5BvBnjqDSVJEhYv3LEU2WLuqChlBLJEYA2SO0",
-    "anthropic-domain-verification-q5pmy9=Tj43pQ6DCN1JcMx95QuvpbFG3",
-    "figma-domain-verification=a2e41510ac6b0c5745595c76770385bfd602709c6d04e80ef830c9"
+    "anthropic-domain-verification-q5pmy9=Tj43pQ6DCN1JcMx95QuvpbFG3"
   ],
   "tls2": {
     "alpn": "",
@@ -315,8 +325,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 20.4,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 22.4,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -326,4 +346,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

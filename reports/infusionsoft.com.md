@@ -7,12 +7,12 @@
 | Target | https://infusionsoft.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | infusionsoft.com |
-| Test date | 2026-09-26 18:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:08 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
+Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 20 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 21 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -47,13 +49,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.7.143:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.6.143:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.7.143:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.6.143:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -146,7 +148,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=8PGA7REJ-oOUYtQ1kt1K-Qb_Zf1y0m2b6LcQgkmENcs; google-site-verification=qJt8cbk9zo_KURgheieYf9dmNvIsH4EobNqLCTg6RmQ; google-site-verification=Y9y0pmN9qgudD_i6qiD7EfKVyHr2M_ID4OZHaeCYI8g
+- **Detail:** Apex TXT records with verification/token content: slack-domain-verification=yqhK2KmKgxxjIp4PfZUH1nyIouasR8pVx7w5NIJO; google-site-verification=XVUWj8ew581HogPA2mtBUF86np4dAEi5byYIxaG_7iI; google-site-verification=f4fZ5SCboZNZoBmJCqcx9r2XLOo3ZGRuS-AhTXsxQdo
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -161,6 +163,18 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - **Detail:** robots.txt lists 8 disallow path(s), e.g. /resources/thank-you, /resources/thank-you/*, /subscribe/thank-you, /infusionsoft/resources/thank-you, /infusionsoft/resources/thank-you/*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 20. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on infusionsoft.com indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 21. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for infusionsoft.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -168,8 +182,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   "domain": "infusionsoft.com",
   "dns": {
     "a": [
-      "104.18.7.143",
-      "104.18.6.143"
+      "104.18.6.143",
+      "104.18.7.143"
     ],
     "aaaa": [
       "2606:4700::6812:68f",
@@ -177,43 +191,44 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     ],
     "cname": null,
     "mx": [
-      "esa1.hc5632-20.iphmx.com (pref 0)",
-      "esa2.hc5632-20.iphmx.com (pref 10)"
+      "esa2.hc5632-20.iphmx.com (pref 10)",
+      "esa1.hc5632-20.iphmx.com (pref 0)"
     ],
     "ns": [
       "dina.ns.cloudflare.com.",
       "alan.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
-      "google-site-verification=8PGA7REJ-oOUYtQ1kt1K-Qb_Zf1y0m2b6LcQgkmENcs",
-      "kiqose9doghqntt26sntbtq0rb",
-      "google-site-verification=qJt8cbk9zo_KURgheieYf9dmNvIsH4EobNqLCTg6RmQ",
-      "lgu1e2j4g4a4j6lhd9h0g6c07o",
-      "google-site-verification=Y9y0pmN9qgudD_i6qiD7EfKVyHr2M_ID4OZHaeCYI8g",
-      "_globalsign-domain-verification=Zv6aPQO0CFgBxwOk23uUOkmdLjhc9qmcz-UnQcgXkA",
-      "if1d65ukc54m5s6i74bqfe025f",
-      "cisco-ci-domain-verification=75c979906e7b5e9bbf5b674256c43265e545aa031bb6682c75414e290689d078",
+      "slack-domain-verification=yqhK2KmKgxxjIp4PfZUH1nyIouasR8pVx7w5NIJO",
+      "google-site-verification=XVUWj8ew581HogPA2mtBUF86np4dAEi5byYIxaG_7iI",
+      "google-site-verification=f4fZ5SCboZNZoBmJCqcx9r2XLOo3ZGRuS-AhTXsxQdo",
       "v=spf1 ip4:70.166.203.170/31 ip4:70.166.203.172/31 ip4:208.76.24.0/22 ip4:70.166.189.64/29 ip4:167.216.128.0/22 ip4:64.89.44.0/23 ip4:207.211.31.0/25 ip4:208.46.212.0/23 ip4:52.38.191.241",
       " ip4:35.227.130.3 ip4:35.227.130.4/31 include:mktomail.com include:mg-spf.greenhouse.io -all",
-      "apple-domain-verification=b0zfyw1tbvYfts6I",
       "google-site-verification=bEBY3Ylxn8q-_fRzVYwAR9JXNm40sKgOzGs_9TGLzoY",
-      "MS=ms82281616",
-      "google-site-verification=nkj81hcbyLz-I-SSFuGa2SjEOK50Ad6OEzr7vIUS0kI",
-      "google-site-verification=XVUWj8ew581HogPA2mtBUF86np4dAEi5byYIxaG_7iI",
-      "google-site-verification=WftUye_dldiVZJVLg52xTBYm5DxirQYS22c_QTjHxFE",
-      "google-site-verification=Z8uiYpXNoz6cu19xv6_rJ7GPC0S0ES41FuwA-H4dth4",
-      "google-site-verification=ecBOxw10e0n8-B8D35IhyVwkRNhRKrx4wSg36211ySw",
-      "457585744-6110905",
-      "google-site-verification=aQaRJ7JbSTnc_uFnrueKHNHnkYCYWC4VR5NQmc4nb6o",
-      "atlassian-domain-verification=x4AH7fTPG/rMtCvfeaTpcXEW1xxb7P7EU6OgtJogxYDpxaCU8G8y/uTfFrcnND/F",
-      "google-site-verification=f4fZ5SCboZNZoBmJCqcx9r2XLOo3ZGRuS-AhTXsxQdo",
+      "apple-domain-verification=b0zfyw1tbvYfts6I",
       "google-site-verification=DertqkC0npNIXrj_ag69XBc2Fu_9_qTB0y0uQp1-D7k",
-      "MS=ms27114486",
-      "google-site-verification=FcoWnWR2MEyLrhy3x0Zkdq_kDaSuLKCkwGYqtOHwOKU",
-      "ajde87b8tq24b4lj2l6q3u6dk4",
       "google-site-verification=fTsSyDSrHoZk7j9c7SjtCrD9Z1X0E9euuiDd8XomOp4",
+      "atlassian-domain-verification=x4AH7fTPG/rMtCvfeaTpcXEW1xxb7P7EU6OgtJogxYDpxaCU8G8y/uTfFrcnND/F",
+      "MS=ms27114486",
+      "google-site-verification=aQaRJ7JbSTnc_uFnrueKHNHnkYCYWC4VR5NQmc4nb6o",
+      "google-site-verification=WftUye_dldiVZJVLg52xTBYm5DxirQYS22c_QTjHxFE",
       "google-site-verification=s-1DswNLnBGEVvlFB5WFaF5MJx0lmUV1C0rK722XUS4",
-      "slack-domain-verification=yqhK2KmKgxxjIp4PfZUH1nyIouasR8pVx7w5NIJO"
+      "google-site-verification=FcoWnWR2MEyLrhy3x0Zkdq_kDaSuLKCkwGYqtOHwOKU",
+      "google-site-verification=ecBOxw10e0n8-B8D35IhyVwkRNhRKrx4wSg36211ySw",
+      "google-site-verification=nkj81hcbyLz-I-SSFuGa2SjEOK50Ad6OEzr7vIUS0kI",
+      "457585744-6110905",
+      "google-site-verification=8PGA7REJ-oOUYtQ1kt1K-Qb_Zf1y0m2b6LcQgkmENcs",
+      "cisco-ci-domain-verification=75c979906e7b5e9bbf5b674256c43265e545aa031bb6682c75414e290689d078",
+      "google-site-verification=Z8uiYpXNoz6cu19xv6_rJ7GPC0S0ES41FuwA-H4dth4",
+      "lgu1e2j4g4a4j6lhd9h0g6c07o",
+      "_globalsign-domain-verification=Zv6aPQO0CFgBxwOk23uUOkmdLjhc9qmcz-UnQcgXkA",
+      "kiqose9doghqntt26sntbtq0rb",
+      "google-site-verification=qJt8cbk9zo_KURgheieYf9dmNvIsH4EobNqLCTg6RmQ",
+      "if1d65ukc54m5s6i74bqfe025f",
+      "google-site-verification=Y9y0pmN9qgudD_i6qiD7EfKVyHr2M_ID4OZHaeCYI8g",
+      "MS=ms82281616",
+      "ajde87b8tq24b4lj2l6q3u6dk4"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; rua=mailto:dmarcreports@infusionsoft.com,mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarcreports-fr@infusionsoft.com,mailto:dmarc_ruf@emaildefense.proofpoint.com; pct=100; fo=1"
@@ -243,7 +258,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     }
   },
   "ports": {
-    "ip": "104.18.7.143",
+    "ip": "104.18.6.143",
     "open": [
       8080,
       8443
@@ -305,11 +320,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=8PGA7REJ-oOUYtQ1kt1K-Qb_Zf1y0m2b6LcQgkmENcs",
-    "google-site-verification=qJt8cbk9zo_KURgheieYf9dmNvIsH4EobNqLCTg6RmQ",
-    "google-site-verification=Y9y0pmN9qgudD_i6qiD7EfKVyHr2M_ID4OZHaeCYI8g",
-    "_globalsign-domain-verification=Zv6aPQO0CFgBxwOk23uUOkmdLjhc9qmcz-UnQcgXkA",
-    "cisco-ci-domain-verification=75c979906e7b5e9bbf5b674256c43265e545aa031bb6682c754"
+    "slack-domain-verification=yqhK2KmKgxxjIp4PfZUH1nyIouasR8pVx7w5NIJO",
+    "google-site-verification=XVUWj8ew581HogPA2mtBUF86np4dAEi5byYIxaG_7iI",
+    "google-site-verification=f4fZ5SCboZNZoBmJCqcx9r2XLOo3ZGRuS-AhTXsxQdo",
+    "google-site-verification=bEBY3Ylxn8q-_fRzVYwAR9JXNm40sKgOzGs_9TGLzoY",
+    "apple-domain-verification=b0zfyw1tbvYfts6I"
   ],
   "tls2": {
     "alpn": "",
@@ -340,8 +355,19 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 10.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.infusionsoft.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 9.5,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -351,4 +377,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

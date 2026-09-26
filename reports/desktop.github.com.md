@@ -7,8 +7,8 @@
 | Target | https://desktop.github.com/ |
 | Bug bounty program | GitHub |
 | Listed scope domain | desktop.github.com |
-| Test date | 2026-09-26 18:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:02 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -116,7 +116,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 ### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 185.199.111.153 carries PTR cdn-185-199-111-153.github.com. for desktop.github.com.
+- **Detail:** 185.199.110.153 carries PTR cdn-185-199-110-153.github.com. for desktop.github.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
@@ -126,20 +126,28 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   "domain": "desktop.github.com",
   "dns": {
     "a": [
-      "185.199.111.153",
       "185.199.110.153",
-      "185.199.109.153",
-      "185.199.108.153"
+      "185.199.108.153",
+      "185.199.111.153",
+      "185.199.109.153"
     ],
     "aaaa": [
-      "2606:50c0:8002::153",
       "2606:50c0:8003::153",
+      "2606:50c0:8000::153",
       "2606:50c0:8001::153",
-      "2606:50c0:8000::153"
+      "2606:50c0:8002::153"
     ],
     "cname": "github.github.io.",
     "mx": [],
     "ns": [],
+    "caa": [
+      "0 issuewild \"digicert.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issue \"sectigo.com\"",
+      "0 issue \"digicert.com\"",
+      "0 issuewild \"sectigo.com\""
+    ],
     "spf": [],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -171,7 +179,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     }
   },
   "ports": {
-    "ip": "185.199.111.153",
+    "ip": "185.199.110.153",
     "open": []
   },
   "https": {
@@ -243,11 +251,22 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   "x12": {
     "status": 301,
     "ptr": [
-      "cdn-185-199-111-153.github.com."
+      "cdn-185-199-110-153.github.com."
     ]
   },
-  "elapsed_s": 25.5,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://github.com/apps/desktop",
+    "http_status": 301,
+    "p404_status": 404,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 26.3,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -257,4 +276,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

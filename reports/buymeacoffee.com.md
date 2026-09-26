@@ -7,12 +7,12 @@
 | Target | https://buymeacoffee.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | buymeacoffee.com |
-| Test date | 2026-09-26 18:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:00 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
+Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 | 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 19 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 20 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 
 ## Detailed findings
 
@@ -139,7 +140,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=Fn2a1Bqwf6vLSjrwNWeC0o9Jg2wTqr7vmLWO4erTNhE; facebook-domain-verification=uowjjaddqox3ne3zo53s8y2pt6p1pv; google-site-verification=JsoWgaqx0JNxka54pxwpHThXrmnQlN7-XIxgPQnlFhY
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=QDPWgc777mEpYLh-P8xkDhrZ7eTgFM-Wu1FRxvZN8WU; google-site-verification=Fn2a1Bqwf6vLSjrwNWeC0o9Jg2wTqr7vmLWO4erTNhE; stripe-verification=95acda8ff8a80c42943efa2c7448080559bbc484c590986e6de261e0be32
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -160,6 +161,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 - **Detail:** Response for https://buymeacoffee.com/ carries Cache-Control: public, max-age=31536000, s-maxage=86400 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
+### 20. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xk37k2d3mfhsv2.html -> 404; error page/headers match: Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -168,38 +175,54 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
   "dns": {
     "a": [
       "104.26.2.199",
-      "104.26.3.199",
-      "172.67.75.15"
+      "172.67.75.15",
+      "104.26.3.199"
     ],
     "aaaa": [
-      "2606:4700:20::ac43:4b0f",
+      "2606:4700:20::681a:3c7",
       "2606:4700:20::681a:2c7",
-      "2606:4700:20::681a:3c7"
+      "2606:4700:20::ac43:4b0f"
     ],
     "cname": null,
     "mx": [
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "alt3.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
       "ruth.ns.cloudflare.com.",
       "alexis.ns.cloudflare.com."
     ],
+    "caa": [
+      "0 issuewild \"amazonaws.com\"",
+      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issue \"comodoca.com\"",
+      "0 issuewild \"ssl.com\"",
+      "0 issuewild \"awstrust.com\"",
+      "0 issuewild \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issuewild \"amazontrust.com\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issue \"ssl.com\"",
+      "0 issuewild \"amazon.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issuewild \"comodoca.com\""
+    ],
     "spf": [
-      "google-site-verification=Fn2a1Bqwf6vLSjrwNWeC0o9Jg2wTqr7vmLWO4erTNhE",
-      "facebook-domain-verification=uowjjaddqox3ne3zo53s8y2pt6p1pv",
-      "google-site-verification=JsoWgaqx0JNxka54pxwpHThXrmnQlN7-XIxgPQnlFhY",
-      "v=spf1 include:mlrcloud.com include:_spf.google.com include:amazonses.com include:spf.mtasv.net -all",
-      "google-site-verification=hyCVJ8W7SxMjC8KmEMHKG8-wW5xmxKjXeEmXJrzpExA",
-      "stripe-verification=95acda8ff8a80c42943efa2c7448080559bbc484c590986e6de261e0be32886e",
-      "google-site-verification=TIGAwXGV7VUvZMvzZIjonnusU0xoWFxrVdQsHpXoOmM",
-      "google-site-verification=ifeov4jZgnjj51jCdnmTbFvdqQqsgdDp_Gp0On-pkrY",
       "google-site-verification=QDPWgc777mEpYLh-P8xkDhrZ7eTgFM-Wu1FRxvZN8WU",
+      "google-site-verification=Fn2a1Bqwf6vLSjrwNWeC0o9Jg2wTqr7vmLWO4erTNhE",
+      "stripe-verification=95acda8ff8a80c42943efa2c7448080559bbc484c590986e6de261e0be32886e",
+      "google-site-verification=ifeov4jZgnjj51jCdnmTbFvdqQqsgdDp_Gp0On-pkrY",
+      "yahoo-verification-key=XyesRIG5Fcz2JwspA3lVgCvQXOvyCJVBJXRkyQ9dV04=",
+      "google-site-verification=JsoWgaqx0JNxka54pxwpHThXrmnQlN7-XIxgPQnlFhY",
+      "google-site-verification=hyCVJ8W7SxMjC8KmEMHKG8-wW5xmxKjXeEmXJrzpExA",
       "google-site-verification=Gk69bY-P6pmMA4wl0KEDuG1Dzfn75oftGeS7yRq3q64",
-      "yahoo-verification-key=XyesRIG5Fcz2JwspA3lVgCvQXOvyCJVBJXRkyQ9dV04="
+      "v=spf1 include:mlrcloud.com include:_spf.google.com include:amazonses.com include:spf.mtasv.net -all",
+      "facebook-domain-verification=uowjjaddqox3ne3zo53s8y2pt6p1pv",
+      "google-site-verification=TIGAwXGV7VUvZMvzZIjonnusU0xoWFxrVdQsHpXoOmM"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:re+htmwrakxmmn@dmarc.postmarkapp.com,mailto:dmarc@mlrcloud.com; sp=none; ruf=mailto:dmarc@mlrcloud.com"
@@ -286,11 +309,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "google-site-verification=QDPWgc777mEpYLh-P8xkDhrZ7eTgFM-Wu1FRxvZN8WU",
     "google-site-verification=Fn2a1Bqwf6vLSjrwNWeC0o9Jg2wTqr7vmLWO4erTNhE",
-    "facebook-domain-verification=uowjjaddqox3ne3zo53s8y2pt6p1pv",
-    "google-site-verification=JsoWgaqx0JNxka54pxwpHThXrmnQlN7-XIxgPQnlFhY",
-    "google-site-verification=hyCVJ8W7SxMjC8KmEMHKG8-wW5xmxKjXeEmXJrzpExA",
-    "stripe-verification=95acda8ff8a80c42943efa2c7448080559bbc484c590986e6de261e0be32"
+    "stripe-verification=95acda8ff8a80c42943efa2c7448080559bbc484c590986e6de261e0be32",
+    "google-site-verification=ifeov4jZgnjj51jCdnmTbFvdqQqsgdDp_Gp0On-pkrY",
+    "yahoo-verification-key=XyesRIG5Fcz2JwspA3lVgCvQXOvyCJVBJXRkyQ9dV04="
   ],
   "tls2": {
     "alpn": "",
@@ -314,8 +337,18 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 10.9,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 17.1,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -325,4 +358,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

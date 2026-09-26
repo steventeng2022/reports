@@ -7,12 +7,12 @@
 | Target | https://netflix.com/ |
 | Bug bounty program | Netflix |
 | Listed scope domain | netflix.com |
-| Test date | 2026-09-26 18:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:11 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,12 +28,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
 | 11 | low | MAIL12 | MTA-STS TXT published but policy file unreachable | CWE-285 |
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 17 | info | CT1 | 91 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 18 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 16 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 17 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 18 | info | CT1 | 91 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 19 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -114,40 +115,46 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=Wn4h4x_Gf8Zs5qiw88ZingFRjLUNzga-zJXts2UPics; google-site-verification=VQKoV3pv-QYIDfbQa1N4r97x8W07veRTK6JhWUavIuc; lucidlink-verification=8XRGA7HR9S7XZ469MR70GSABB0
+- **Detail:** Apex TXT records with verification/token content: docker-verification=5f9a055c-22b9-4d40-be7f-5af4171e1e71; notion-domain-verification=MHmHAv2mrRGxVuA3rhIRmz6vwrsAEbsqCR6yRIycSoj; tiktok-domain-verification=e8242b26316716e951678da03b794de5a838482929d5b62ea2e0a
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of netflix.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 14. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 13. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but netflix.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 133 disallow path(s), e.g. /, /accountstatus, /AccountStatus, /aui/inbound, /authenticate
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 44.237.234.25 carries PTR ec2-44-237-234-25.us-west-2.compute.amazonaws.com. for netflix.com.
+- **Detail:** 52.38.7.83 carries PTR ec2-52-38-7-83.us-west-2.compute.amazonaws.com. for netflix.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 17. [INFO] 91 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/assetlinks.json on netflix.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 17. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The netflix.com certificate lists an AIA OCSP responder (http://ocsp.digicert.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
+### 18. [INFO] 91 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: ablaze.test.netflix.com, advertising.staging.netflix.com, cdn.nxtgms.netflix.com, cdn.sand.nxtgms.netflix.com, cdn.tech.nxtgms.netflix.com, cms.obiwan.stage.netflix.com, control.tls.develop.test.cloud.netflix.com, develop.staging.ssic.netflix.com, help.netflix.com, help.stage.netflix.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 18. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 19. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: cdn.nxtgms.netflix.com, cdn.sand.nxtgms.netflix.com, cdn.tech.nxtgms.netflix.com; content may still be served via virtual-host fallback.
@@ -160,79 +167,84 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "netflix.com",
   "dns": {
     "a": [
-      "44.237.234.25",
-      "44.234.232.238",
-      "44.242.60.85"
+      "52.38.7.83",
+      "44.242.13.161",
+      "44.240.158.19"
     ],
     "aaaa": [
-      "2600:1f14:62a:de80:69a8:7b12:8e5f:855d",
-      "2600:1f14:62a:de82:822d:a423:9e4c:da8d",
-      "2600:1f14:62a:de81:b848:82ee:2416:447e"
+      "2600:1f14:62a:de83:c61a:d6e:18b0:65f7",
+      "2600:1f14:62a:de85:d7:e7a1:8f7d:f6f5",
+      "2600:1f14:62a:de84:880a:88cc:a16:5423"
     ],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx3.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)",
-      "aspmx.l.google.com (pref 1)"
+      "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
+      "aspmx3.googlemail.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-1372.awsdns-43.org.",
-      "ns-1984.awsdns-56.co.uk.",
+      "ns-81.awsdns-10.com.",
       "ns-659.awsdns-18.net.",
-      "ns-81.awsdns-10.com."
+      "ns-1372.awsdns-43.org.",
+      "ns-1984.awsdns-56.co.uk."
+    ],
+    "caa": [
+      "0 issue \"digicert.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"pki.goog\""
     ],
     "spf": [
-      "google-site-verification=Wn4h4x_Gf8Zs5qiw88ZingFRjLUNzga-zJXts2UPics",
-      "google-site-verification=VQKoV3pv-QYIDfbQa1N4r97x8W07veRTK6JhWUavIuc",
-      "lucidlink-verification=8XRGA7HR9S7XZ469MR70GSABB0",
-      "anthropic-domain-verification-vxqysx=XDtJHKRTpvy6QvuMuyVMXbMxT",
-      "notion-domain-verification=MHmHAv2mrRGxVuA3rhIRmz6vwrsAEbsqCR6yRIycSoj",
-      "klaviyo-site-verification=UM4UEX",
       "docker-verification=5f9a055c-22b9-4d40-be7f-5af4171e1e71",
-      "canva-site-verification=DW6T-OKEapKu9QB9ChMocw",
-      "docusign=f3d36bef-ec7d-42e5-9334-626611acb127",
-      "luma-ai-domain-verification-340eet=BLdaj62h2qtpk2yvLLYFNuMA9",
-      "elevenlabs=yhxq_JyMuzy2_pQ5B-M4HJ8sZaFLLiQGelMOuBcTWE4",
-      "logmein-verification-code=4FVB4FQ17eVMyHCC7RAApS4Zp",
-      "1password-site-verification=BXCRTZRWNVG4PFLIYFIBWSYHX4",
-      "5f5a7676-2a28-4400-a64e-465626e5ff6b",
-      "appspace-domain-verification=59cd40985507690b0ac0e2c83d24dd6dfa24c7d7571f00b7401e01d5c12332af",
-      "e6060ec6-b362-4acb-9a1f-b80e99d17753",
-      "bluebeam-verification=ivn6qi30eug84iz4njykvb8jenp2wm",
-      "klaviyo-site-verification=WwbqJa",
-      "loom-verification=0004053852",
-      "google-site-verification=9DgwSKXMlFzcnW-HuGWef6aVVHWDCQNehxHTq0Ps9IA",
-      "facebook-domain-verification=k65vedr09b2tp2q144ho1zewp3xsc6",
-      "asv=4853f01b1e9226ed9d0031284948059f",
-      "zapier-domain-verification-challenge=d740d03c-47a4-491c-934d-c61bdba6099e",
-      "lucidlink-verification=GSM5VV6S2T2DZADV5JM8WPBYZM",
-      "deepl-domain-verification=f6610dd4c1414006bd6382c115542467",
-      "docusign=f249396f-8150-48f8-8bd2-705be6e03826",
-      "atlassian-domain-verification=TX0Efjn8bXAu0o9GAHyYowM0mcu4oDPHFf10cqaDXFCvU9tRB7R/A9oeQcDmEAD8",
-      "apple-domain-verification=Ohlo8qLyb9N4JaIm",
-      "miro-verification=9ac407d6774b2ec4313b004d40204399e37f3b48",
-      "logmein-verification-code=905b1ed4-1c2e-466f-b24c-756e6ca39eb5",
       "v=spf1 include:_spf_ipv4.netflix.com include:_spf.google.com include:amazonses.com include:servers.mcsv.net include:_spf.salesforce.com include:_spf.createsend.com -all",
-      "h1-domain-verification=AYCqXFtcqVzAhHLWr58GvY2WrbTfkGeMsijza2jPS2E1qcn1",
-      "unity-sso-verification=46eb4cbd-e316-4691-84c2-4f4bce784d84",
-      "infoblox-domain-mastery=83433630723145c8e700674aa65ad12bf58d7cd22434a5527c383d131ccc354a77",
-      "apple-domain-verification=U1j_Aj0pS5fid78Cag85YGM14jHrzxM-S2ICXc8rGxg",
-      "neat-pulse-domain-verification-6X6Z7kX=56aa4659-fdcc-42df-802e-f1cce082b1ea",
-      "google-site-verification=nCi1QdlMabPJOvtQNCo5KaPyDfwog9pDr3d8IN767YA",
-      "8cd468d7d5994fcc9d350683a8cb07a1",
-      "google-site-verification=YVxAf7gFR4vFk1RkUwiYt3pzl2AVUP6aPdBgV1qtwcw",
-      "sso-domain-verification-7wfrk6=LfxRM5a023zTb2jO6QWeDcZ9e",
-      "google-site-verification=F6fRKDfeR1Uqz8qJvmH3HmQQxpu9JYY9GJUFeV3hU3Y",
-      "freepik-domain-verification=eeb4ee5ff6237e57ea15d2369b574c68",
+      "notion-domain-verification=MHmHAv2mrRGxVuA3rhIRmz6vwrsAEbsqCR6yRIycSoj",
       "tiktok-domain-verification=e8242b26316716e951678da03b794de5a838482929d5b62ea2e0a3b4baf843f3",
-      "lucidlink-verification=BC5DTMP5YWAJHDNPRF5ASW8QA0",
-      "google-site-verification=a8Lak2UwVjIlmH1xRYU3mJ6nSQ7rJnyf2VKWtH4nKZI",
-      "jamf-site-verification=vqjVdHx1f_q52DK-WclChA",
-      "lucidlink-verification=TZFHBCZT2MG33J59D4FB3W9EKG",
+      "deepl-domain-verification=f6610dd4c1414006bd6382c115542467",
+      "neat-pulse-domain-verification-6X6Z7kX=56aa4659-fdcc-42df-802e-f1cce082b1ea",
+      "8cd468d7d5994fcc9d350683a8cb07a1",
+      "lucidlink-verification=8XRGA7HR9S7XZ469MR70GSABB0",
+      "5f5a7676-2a28-4400-a64e-465626e5ff6b",
+      "google-site-verification=F6fRKDfeR1Uqz8qJvmH3HmQQxpu9JYY9GJUFeV3hU3Y",
+      "google-site-verification=VQKoV3pv-QYIDfbQa1N4r97x8W07veRTK6JhWUavIuc",
+      "infoblox-domain-mastery=83433630723145c8e700674aa65ad12bf58d7cd22434a5527c383d131ccc354a77",
+      "klaviyo-site-verification=UM4UEX",
+      "sso-domain-verification-7wfrk6=LfxRM5a023zTb2jO6QWeDcZ9e",
+      "freepik-domain-verification=eeb4ee5ff6237e57ea15d2369b574c68",
+      "facebook-domain-verification=k65vedr09b2tp2q144ho1zewp3xsc6",
+      "apple-domain-verification=U1j_Aj0pS5fid78Cag85YGM14jHrzxM-S2ICXc8rGxg",
+      "luma-ai-domain-verification-340eet=BLdaj62h2qtpk2yvLLYFNuMA9",
       "smartsheet-site-validation=zZPtdlBFlbl-n54tmRUUcd6Bd8lllpAR",
-      "dropbox-domain-verification=htwo11xk2yl1"
+      "anthropic-domain-verification-vxqysx=XDtJHKRTpvy6QvuMuyVMXbMxT",
+      "dropbox-domain-verification=htwo11xk2yl1",
+      "elevenlabs=yhxq_JyMuzy2_pQ5B-M4HJ8sZaFLLiQGelMOuBcTWE4",
+      "logmein-verification-code=905b1ed4-1c2e-466f-b24c-756e6ca39eb5",
+      "appspace-domain-verification=59cd40985507690b0ac0e2c83d24dd6dfa24c7d7571f00b7401e01d5c12332af",
+      "jamf-site-verification=vqjVdHx1f_q52DK-WclChA",
+      "logmein-verification-code=4FVB4FQ17eVMyHCC7RAApS4Zp",
+      "canva-site-verification=DW6T-OKEapKu9QB9ChMocw",
+      "google-site-verification=YVxAf7gFR4vFk1RkUwiYt3pzl2AVUP6aPdBgV1qtwcw",
+      "atlassian-domain-verification=TX0Efjn8bXAu0o9GAHyYowM0mcu4oDPHFf10cqaDXFCvU9tRB7R/A9oeQcDmEAD8",
+      "zapier-domain-verification-challenge=d740d03c-47a4-491c-934d-c61bdba6099e",
+      "miro-verification=9ac407d6774b2ec4313b004d40204399e37f3b48",
+      "google-site-verification=Wn4h4x_Gf8Zs5qiw88ZingFRjLUNzga-zJXts2UPics",
+      "lucidlink-verification=TZFHBCZT2MG33J59D4FB3W9EKG",
+      "e6060ec6-b362-4acb-9a1f-b80e99d17753",
+      "loom-verification=0004053852",
+      "lucidlink-verification=BC5DTMP5YWAJHDNPRF5ASW8QA0",
+      "1password-site-verification=BXCRTZRWNVG4PFLIYFIBWSYHX4",
+      "docusign=f3d36bef-ec7d-42e5-9334-626611acb127",
+      "klaviyo-site-verification=WwbqJa",
+      "asv=4853f01b1e9226ed9d0031284948059f",
+      "unity-sso-verification=46eb4cbd-e316-4691-84c2-4f4bce784d84",
+      "h1-domain-verification=AYCqXFtcqVzAhHLWr58GvY2WrbTfkGeMsijza2jPS2E1qcn1",
+      "bluebeam-verification=ivn6qi30eug84iz4njykvb8jenp2wm",
+      "google-site-verification=a8Lak2UwVjIlmH1xRYU3mJ6nSQ7rJnyf2VKWtH4nKZI",
+      "apple-domain-verification=Ohlo8qLyb9N4JaIm",
+      "docusign=f249396f-8150-48f8-8bd2-705be6e03826",
+      "google-site-verification=9DgwSKXMlFzcnW-HuGWef6aVVHWDCQNehxHTq0Ps9IA",
+      "google-site-verification=nCi1QdlMabPJOvtQNCo5KaPyDfwog9pDr3d8IN767YA",
+      "lucidlink-verification=GSM5VV6S2T2DZADV5JM8WPBYZM"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:netflix@rua.netcraft.com,mailto:dmarcreports@netflix.com,mailto:dmarc_agg@dmarc.250ok.net;ruf=mailto:netflix@ruf.netcraft.com,mailto:dmarcreports@netflix.com,mailto:dmarc_fr@dmarc.250ok.net"
@@ -265,7 +277,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "www2.netflix.com",
       "www3.netflix.com"
     ],
-    "days_left": 145,
+    "days_left": 144,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -275,7 +287,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "44.237.234.25",
+    "ip": "52.38.7.83",
     "open": []
   },
   "https": {
@@ -385,11 +397,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     ]
   },
   "apex_txt": [
-    "google-site-verification=Wn4h4x_Gf8Zs5qiw88ZingFRjLUNzga-zJXts2UPics",
-    "google-site-verification=VQKoV3pv-QYIDfbQa1N4r97x8W07veRTK6JhWUavIuc",
-    "lucidlink-verification=8XRGA7HR9S7XZ469MR70GSABB0",
-    "anthropic-domain-verification-vxqysx=XDtJHKRTpvy6QvuMuyVMXbMxT",
-    "notion-domain-verification=MHmHAv2mrRGxVuA3rhIRmz6vwrsAEbsqCR6yRIycSoj"
+    "docker-verification=5f9a055c-22b9-4d40-be7f-5af4171e1e71",
+    "notion-domain-verification=MHmHAv2mrRGxVuA3rhIRmz6vwrsAEbsqCR6yRIycSoj",
+    "tiktok-domain-verification=e8242b26316716e951678da03b794de5a838482929d5b62ea2e0a",
+    "deepl-domain-verification=f6610dd4c1414006bd6382c115542467",
+    "neat-pulse-domain-verification-6X6Z7kX=56aa4659-fdcc-42df-802e-f1cce082b1ea"
   ],
   "tls2": {
     "alpn": "",
@@ -400,10 +412,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.digicert.com",
       "not_before": "20260218000000",
       "not_after": "20270218214148"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -427,11 +440,26 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-44-237-234-25.us-west-2.compute.amazonaws.com."
+      "ec2-52-38-7-83.us-west-2.compute.amazonaws.com."
     ]
   },
-  "elapsed_s": 21.5,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.netflix.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "wellknown": [
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 30.3,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -441,4 +469,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

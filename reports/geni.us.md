@@ -7,12 +7,12 @@
 | Target | https://geni.us/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | geni.us |
-| Test date | 2026-09-26 18:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:06 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,8 +31,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 16 | info | CT1 | 40 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 17 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 18 | info | CT1 | 40 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 19 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -124,7 +126,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=tyexc4pj94jtntzlgetkc9h6qlxaj7; status-page-domain-verification=px3r907b3k7k; google-site-verification=mpRbKoQ7OleZ5yhUF-NSmdN9RhrbGisKciCwo4ufIE4
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=mpRbKoQ7OleZ5yhUF-NSmdN9RhrbGisKciCwo4ufIE4; facebook-domain-verification=tyexc4pj94jtntzlgetkc9h6qlxaj7; status-page-domain-verification=px3r907b3k7k
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -133,13 +135,25 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** Certificate of geni.us has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 16. [INFO] 40 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 172.105.69.103 carries PTR haproxyfe1-production.fra.linode.georiot.com. for geni.us.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for geni.us, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 18. [INFO] 40 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.geni.us, blog.geni.us, cdn.geni.us, chums.api.geni.us, fmtc.api.geni.us, help.geni.us, kit.api.geni.us, status.geni.us
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 17. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 19. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: chums.api.geni.us; content may still be served via virtual-host fallback.
@@ -152,29 +166,30 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "geni.us",
   "dns": {
     "a": [
-      "174.138.117.212"
+      "172.105.69.103"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 30)",
-      "aspmx2.googlemail.com (pref 30)",
       "aspmx.l.google.com (pref 10)",
+      "aspmx2.googlemail.com (pref 30)",
       "alt2.aspmx.l.google.com (pref 20)",
-      "alt1.aspmx.l.google.com (pref 20)"
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx3.googlemail.com (pref 30)"
     ],
     "ns": [
-      "ns3.geniuslink.com.",
       "ns5.geniuslink.com.",
+      "ns3.geniuslink.com.",
+      "ns6.geniuslink.com.",
       "ns2.geniuslink.com.",
       "ns4.geniuslink.com.",
-      "ns1.geniuslink.com.",
-      "ns6.geniuslink.com."
+      "ns1.geniuslink.com."
     ],
+    "caa": [],
     "spf": [
+      "google-site-verification=mpRbKoQ7OleZ5yhUF-NSmdN9RhrbGisKciCwo4ufIE4",
       "facebook-domain-verification=tyexc4pj94jtntzlgetkc9h6qlxaj7",
       "status-page-domain-verification=px3r907b3k7k",
-      "google-site-verification=mpRbKoQ7OleZ5yhUF-NSmdN9RhrbGisKciCwo4ufIE4",
       "v=spf1 redirect=geni.us.hosted.spf-report.com"
     ],
     "dmarc": [
@@ -213,7 +228,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "174.138.117.212",
+    "ip": "172.105.69.103",
     "open": []
   },
   "https": {
@@ -302,9 +317,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     ]
   },
   "apex_txt": [
+    "google-site-verification=mpRbKoQ7OleZ5yhUF-NSmdN9RhrbGisKciCwo4ufIE4",
     "facebook-domain-verification=tyexc4pj94jtntzlgetkc9h6qlxaj7",
-    "status-page-domain-verification=px3r907b3k7k",
-    "google-site-verification=mpRbKoQ7OleZ5yhUF-NSmdN9RhrbGisKciCwo4ufIE4"
+    "status-page-domain-verification=px3r907b3k7k"
   ],
   "tls2": {
     "alpn": "",
@@ -321,10 +336,23 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "x12": {
-    "status": 429
+    "status": 429,
+    "ptr": [
+      "haproxyfe1-production.fra.linode.georiot.com."
+    ]
   },
-  "elapsed_s": 18.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 429,
+    "http_status": 301,
+    "p404_status": 429,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 22.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -334,4 +362,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

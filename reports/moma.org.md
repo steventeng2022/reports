@@ -7,12 +7,12 @@
 | Target | https://moma.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | moma.org |
-| Test date | 2026-09-26 18:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:10 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 | 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 16 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 17 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -44,13 +46,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.9.51:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.8.51:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.9.51:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.8.51:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -107,7 +109,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=96ykiggrug8zd9zhq3ejj0o2xjaa5a; google-site-verification=3vrESLJUNQb4JqQa8uIUtVm0gkEsm5oafDbFFb-Gmfg; have-i-been-pwned-verification=3bd956232b1c0dad85b7b5242f3720df
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=3vrESLJUNQb4JqQa8uIUtVm0gkEsm5oafDbFFb-Gmfg; adobe-idp-site-verification=0c9cf8b4135f0a8731823b237d8cf4a91045693c783f74dbce5f; anthropic-domain-verification-5jmb3h=HkL8hTUNs7yxLr4I6dZEQ6iau
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -134,6 +136,18 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - **Detail:** Content-Security-Policy of moma.org permits unsafe-inline, unsafe-eval; inline script injection still executes.
 - **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
+### 17. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkpk1fpd8ve923.html -> 403; error page/headers match: Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for moma.org, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -141,40 +155,41 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
   "domain": "moma.org",
   "dns": {
     "a": [
-      "104.18.9.51",
-      "104.18.8.51"
+      "104.18.8.51",
+      "104.18.9.51"
     ],
     "aaaa": [
-      "2606:4700::6812:833",
-      "2606:4700::6812:933"
+      "2606:4700::6812:933",
+      "2606:4700::6812:833"
     ],
     "cname": null,
     "mx": [
-      "mxa-004c0e03.gslb.pphosted.com (pref 0)",
-      "mxb-004c0e03.gslb.pphosted.com (pref 0)"
+      "mxb-004c0e03.gslb.pphosted.com (pref 0)",
+      "mxa-004c0e03.gslb.pphosted.com (pref 0)"
     ],
     "ns": [
-      "logan.ns.cloudflare.com.",
-      "wren.ns.cloudflare.com."
+      "wren.ns.cloudflare.com.",
+      "logan.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
-      "MS=9B2FE3DB81DB00D53D1BFA0F1D9897DCB7619E42",
-      "dptqjki8g3tpucjbno6bv0r3ed",
-      "facebook-domain-verification=96ykiggrug8zd9zhq3ejj0o2xjaa5a",
+      "6c7i0ouo1f4lfseov2dnbc1di4",
+      "google-site-verification=3vrESLJUNQb4JqQa8uIUtVm0gkEsm5oafDbFFb-Gmfg",
+      "adobe-idp-site-verification=0c9cf8b4135f0a8731823b237d8cf4a91045693c783f74dbce5f0a469f13a3a6",
+      "anthropic-domain-verification-5jmb3h=HkL8hTUNs7yxLr4I6dZEQ6iau",
+      "apple-domain-verification=30ovqro8hjqtAhgr",
+      "asv=5af33c11b29472a1d1f53d055ae36eb5",
       "v=spf1 include:_spf.google.com ip4:63.117.124.0/24 ip4:65.211.53.131 ip4:38.125.15.118 ip4:107.20.210.250 ip4:52.1.14.157 ip4:23.253.211.221/32 ip4:184.106.16.5/32 ip4:52.36.126.62/32 ip4:35.163.139.47/32 ip4:69.164.65.171 include:mail.zendesk.com include",
       ":_spf.ultipro.com include:spf-004c0e03.pphosted.com include:docebosaas.com ~all",
-      "google-site-verification=3vrESLJUNQb4JqQa8uIUtVm0gkEsm5oafDbFFb-Gmfg",
-      "have-i-been-pwned-verification=3bd956232b1c0dad85b7b5242f3720df",
-      "apple-domain-verification=30ovqro8hjqtAhgr",
       "google-site-verification=Y-uTmVZnxgZVfkpYVvi7X3qlAYSc1xdliEpLwZoIFao",
-      "4c0pp3f0d6bo3int3c8jkj2fjs",
       "google-site-verification=Pr3kjMN9vtOp3O8BqAWWYoelYopZAUO7Q8eqYosiMTI",
-      "adobe-idp-site-verification=0c9cf8b4135f0a8731823b237d8cf4a91045693c783f74dbce5f0a469f13a3a6",
+      "4c0pp3f0d6bo3int3c8jkj2fjs",
       "goodnotes-verification=94d9f771-8767-4f8d-a3c3-4c17bf561900",
-      "asv=5af33c11b29472a1d1f53d055ae36eb5",
-      "6c7i0ouo1f4lfseov2dnbc1di4",
-      "anthropic-domain-verification-5jmb3h=HkL8hTUNs7yxLr4I6dZEQ6iau",
-      "jamf-site-verification=6kUWqIVkyYyYgf0RoJ_ZHQ"
+      "MS=9B2FE3DB81DB00D53D1BFA0F1D9897DCB7619E42",
+      "jamf-site-verification=6kUWqIVkyYyYgf0RoJ_ZHQ",
+      "dptqjki8g3tpucjbno6bv0r3ed",
+      "have-i-been-pwned-verification=3bd956232b1c0dad85b7b5242f3720df",
+      "facebook-domain-verification=96ykiggrug8zd9zhq3ejj0o2xjaa5a"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:x0bskx3o@ag.dmarcian.com"
@@ -204,7 +219,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     }
   },
   "ports": {
-    "ip": "104.18.9.51",
+    "ip": "104.18.8.51",
     "open": [
       8080,
       8443
@@ -261,9 +276,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "facebook-domain-verification=96ykiggrug8zd9zhq3ejj0o2xjaa5a",
     "google-site-verification=3vrESLJUNQb4JqQa8uIUtVm0gkEsm5oafDbFFb-Gmfg",
-    "have-i-been-pwned-verification=3bd956232b1c0dad85b7b5242f3720df",
+    "adobe-idp-site-verification=0c9cf8b4135f0a8731823b237d8cf4a91045693c783f74dbce5f",
+    "anthropic-domain-verification-5jmb3h=HkL8hTUNs7yxLr4I6dZEQ6iau",
     "apple-domain-verification=30ovqro8hjqtAhgr",
     "google-site-verification=Y-uTmVZnxgZVfkpYVvi7X3qlAYSc1xdliEpLwZoIFao"
   ],
@@ -303,8 +318,18 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
   "x12": {
     "status": 403
   },
-  "elapsed_s": 6.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 403,
+    "http_status": 301,
+    "p404_status": 403,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 7.9,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -314,4 +339,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

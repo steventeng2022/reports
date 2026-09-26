@@ -7,12 +7,12 @@
 | Target | https://fastcompany.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | fastcompany.com |
-| Test date | 2026-09-26 18:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:05 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
+Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,9 +28,10 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 | 10 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 13 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 15 | info | CT1 | 25 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 15 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 16 | info | CT1 | 25 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -110,14 +111,14 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=eO1qsJOo2gALpVdcso2IuN6exMycZNqDOO1XpeqTC_A; _globalsign-domain-verification=3Z8bdt8iCWVQuFZDQkoKYwCoWBX6gyXdBAZWw1GzmI; _globalsign-domain-verification=klUJkI4MZw-0elRtIBbVGs7d-e1CPM16mbnrVrKORw
+- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=klUJkI4MZw-0elRtIBbVGs7d-e1CPM16mbnrVrKORw; google-site-verification=W3-NcdnZXk2Yl4BinFIa3fKWuwJXgC4x-7a7LuiRLHI; _globalsign-domain-verification=vgLXYEFUoOerT8uIZkhvA3Un5juG_KyzM_4G3EFw0_
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 13. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of fastcompany.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2026q2 -> http-400
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
@@ -125,7 +126,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 - **Detail:** robots.txt lists 38 disallow path(s), e.g. /rest, /rest, /rest, /rest, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 15. [INFO] 25 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 15. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for fastcompany.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 16. [INFO] 25 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: auth.fastcompany.com
@@ -138,10 +145,10 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
   "domain": "fastcompany.com",
   "dns": {
     "a": [
-      "151.101.193.54",
-      "151.101.129.54",
       "151.101.1.54",
-      "151.101.65.54"
+      "151.101.193.54",
+      "151.101.65.54",
+      "151.101.129.54"
     ],
     "aaaa": [],
     "cname": null,
@@ -150,29 +157,30 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "mx1-us1.ppe-hosted.com (pref 5)"
     ],
     "ns": [
-      "ns-1872.awsdns-42.co.uk.",
       "ns-1515.awsdns-61.org.",
-      "ns-27.awsdns-03.com.",
-      "ns-715.awsdns-25.net."
+      "ns-1872.awsdns-42.co.uk.",
+      "ns-715.awsdns-25.net.",
+      "ns-27.awsdns-03.com."
     ],
+    "caa": [],
     "spf": [
-      "ca3-e2ea934ff9d1486f9910f9c81761fa99 MS=EA6BD12E4042FBE98C6039D238059CE6AE1E347F",
-      "google-site-verification=eO1qsJOo2gALpVdcso2IuN6exMycZNqDOO1XpeqTC_A",
-      "_globalsign-domain-verification=3Z8bdt8iCWVQuFZDQkoKYwCoWBX6gyXdBAZWw1GzmI",
       "_globalsign-domain-verification=klUJkI4MZw-0elRtIBbVGs7d-e1CPM16mbnrVrKORw",
-      "YixrMKRsWOSKfzWgsRRi6NVmxyB4qG17n1iLIxsXxfXzkNFJKBVZXwdtDiU+ZorIZaJZCL/qpzsHemJdhnHfSw==",
-      "_globalsign-domain-verification=UNpHzsP3DfgbAxW7_LaHmV-0basWFjytZ3uVL4DUzq",
+      "ca3-05cc9f378ce24610b09ea1bd36527e63",
+      "google-site-verification=W3-NcdnZXk2Yl4BinFIa3fKWuwJXgC4x-7a7LuiRLHI",
+      "_globalsign-domain-verification=vgLXYEFUoOerT8uIZkhvA3Un5juG_KyzM_4G3EFw0_",
       "v=spf1 a:dispatch-us.ppe-hosted.com include:_spf.google.com include:spf.mandrillapp.com include:amazonses.com include:spf.protection.outlook.com include:mail.zendesk.com ~all",
       "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
-      "google-site-verification=PY9DET9Or1b_mkw2Xkgs3TBQaPEHmumzBTOk3_QaZ18",
-      "buu/MrJiTMBBRF3W3ASumwqjDif644jK3TX5YPk+D5g=",
+      "YixrMKRsWOSKfzWgsRRi6NVmxyB4qG17n1iLIxsXxfXzkNFJKBVZXwdtDiU+ZorIZaJZCL/qpzsHemJdhnHfSw==",
+      "tollbit-domain-verification=96220e3137d5f1dc634856c5e2b7a7ba5f57096a7179bf1fdaa43239646c5108",
       "ZOOM_verify_3AkoDfohygJsFa5Q70IqZB",
       "Fastly-322681-041220-2816749",
+      "google-site-verification=PY9DET9Or1b_mkw2Xkgs3TBQaPEHmumzBTOk3_QaZ18",
       "MS=ms42877241",
-      "ca3-05cc9f378ce24610b09ea1bd36527e63",
-      "tollbit-domain-verification=96220e3137d5f1dc634856c5e2b7a7ba5f57096a7179bf1fdaa43239646c5108",
-      "google-site-verification=W3-NcdnZXk2Yl4BinFIa3fKWuwJXgC4x-7a7LuiRLHI",
-      "_globalsign-domain-verification=vgLXYEFUoOerT8uIZkhvA3Un5juG_KyzM_4G3EFw0_"
+      "ca3-e2ea934ff9d1486f9910f9c81761fa99 MS=EA6BD12E4042FBE98C6039D238059CE6AE1E347F",
+      "buu/MrJiTMBBRF3W3ASumwqjDif644jK3TX5YPk+D5g=",
+      "_globalsign-domain-verification=UNpHzsP3DfgbAxW7_LaHmV-0basWFjytZ3uVL4DUzq",
+      "_globalsign-domain-verification=3Z8bdt8iCWVQuFZDQkoKYwCoWBX6gyXdBAZWw1GzmI",
+      "google-site-verification=eO1qsJOo2gALpVdcso2IuN6exMycZNqDOO1XpeqTC_A"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc@fastcompany.com; ruf=mailto:dmarc@fastcompany.com; aspf=s;"
@@ -222,7 +230,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
     }
   },
   "ports": {
-    "ip": "151.101.193.54",
+    "ip": "151.101.1.54",
     "open": []
   },
   "https": {
@@ -301,11 +309,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
     ]
   },
   "apex_txt": [
-    "google-site-verification=eO1qsJOo2gALpVdcso2IuN6exMycZNqDOO1XpeqTC_A",
-    "_globalsign-domain-verification=3Z8bdt8iCWVQuFZDQkoKYwCoWBX6gyXdBAZWw1GzmI",
     "_globalsign-domain-verification=klUJkI4MZw-0elRtIBbVGs7d-e1CPM16mbnrVrKORw",
-    "_globalsign-domain-verification=UNpHzsP3DfgbAxW7_LaHmV-0basWFjytZ3uVL4DUzq",
-    "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3"
+    "google-site-verification=W3-NcdnZXk2Yl4BinFIa3fKWuwJXgC4x-7a7LuiRLHI",
+    "_globalsign-domain-verification=vgLXYEFUoOerT8uIZkhvA3Un5juG_KyzM_4G3EFw0_",
+    "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
+    "tollbit-domain-verification=96220e3137d5f1dc634856c5e2b7a7ba5f57096a7179bf1fdaa4"
   ],
   "tls2": {
     "alpn": "",
@@ -316,10 +324,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2026q2",
       "not_before": "20260715193145",
       "not_after": "20270130183145"
-    }
+    },
+    "ocsp": "http-400"
   },
   "http2": {
     "robots_disallow": [
@@ -343,8 +352,20 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 14.7,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.fastcompany.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 17.7,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -354,4 +375,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

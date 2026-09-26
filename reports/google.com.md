@@ -7,12 +7,12 @@
 | Target | https://google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | google.com |
-| Test date | 2026-09-26 18:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:07 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,7 +32,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 15 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 17 | info | CT1 | 47 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 17 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 18 | info | CT1 | 47 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -112,7 +113,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: onetrust-domain-verification=6d685f1d41a94696ad7ef771f68993e0; arcules-domain-verification=2R4t5G7nI6tRCo61lpxxbLksPYstxhGmtV75cpr8x9K; google-site-verification=4ibFUgB-wXLQ_S7vsXVomSTVamuOXBiVAzpR5IZ87D0
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=22rm551cu4k0ab0bxsw536tlds4h95; google-site-verification=TV9-DBe4R80X4v0M4U_bd_J9cpOJM0nikft0jAgjmsQ; work-accounts-domain-verification=Tcj6JjIMZOw2KsSEw2Nt2rLae89tN6
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -136,10 +137,16 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 142.250.196.206 carries PTR nctsaa-ac-in-f14.1e100.net. for google.com.
+- **Detail:** 142.250.77.206 carries PTR lctsaa-ah-in-f14.1e100.net., del11s08-in-f14.1e100.net. for google.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 17. [INFO] 47 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 17. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/assetlinks.json on google.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 18. [INFO] 47 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: console.au.cloud.google.com, console.ca.cloud.google.com, console.ch.cloud.google.com, console.eu.cloud.google.com, console.il.cloud.google.com, console.in.cloud.google.com, console.it.cloud.google.com, console.jp.cloud.google.com, console.sa.cloud.google.com, console.uk.cloud.google.com
@@ -152,7 +159,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "domain": "google.com",
   "dns": {
     "a": [
-      "142.250.196.206"
+      "142.250.77.206"
     ],
     "aaaa": [
       "2404:6800:4012:6::200e"
@@ -162,29 +169,32 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "smtp.google.com (pref 10)"
     ],
     "ns": [
-      "ns3.google.com.",
-      "ns1.google.com.",
       "ns2.google.com.",
-      "ns4.google.com."
+      "ns4.google.com.",
+      "ns1.google.com.",
+      "ns3.google.com."
+    ],
+    "caa": [
+      "0 issue \"pki.goog\""
     ],
     "spf": [
-      "docusign=05958488-4752-4ef2-95eb-aa7ba8a3bd0e",
-      "onetrust-domain-verification=6d685f1d41a94696ad7ef771f68993e0",
-      "docusign=1b0a6754-49b1-4db5-8540-d2c12664b289",
-      "arcules-domain-verification=2R4t5G7nI6tRCo61lpxxbLksPYstxhGmtV75cpr8x9K",
-      "google-site-verification=4ibFUgB-wXLQ_S7vsXVomSTVamuOXBiVAzpR5IZ87D0",
+      "facebook-domain-verification=22rm551cu4k0ab0bxsw536tlds4h95",
       "google-site-verification=TV9-DBe4R80X4v0M4U_bd_J9cpOJM0nikft0jAgjmsQ",
-      "apple-domain-verification=30afIBcvSuDV2PLX",
-      "google-site-verification=wD8N7i1JTNTkezJ49swvWW48f8_9xveREV4oB-0Hf5o",
+      "_r4rd1pvwyrpi7sw4a3hzmw8e51yh9td",
       "work-accounts-domain-verification=Tcj6JjIMZOw2KsSEw2Nt2rLae89tN6",
       "v=spf1 include:_spf.google.com ~all",
-      "facebook-domain-verification=22rm551cu4k0ab0bxsw536tlds4h95",
+      "google-site-verification=4ibFUgB-wXLQ_S7vsXVomSTVamuOXBiVAzpR5IZ87D0",
       "onetrust-domain-verification=0d477fe608074e6f9c12bca7826035cc",
-      "_r4rd1pvwyrpi7sw4a3hzmw8e51yh9td",
-      "cisco-ci-domain-verification=47c38bc8c4b74b7233e9053220c1bbe76bcc1cd33c7acf7acd36cd6a5332004b",
+      "docusign=1b0a6754-49b1-4db5-8540-d2c12664b289",
       "Z29vZ2xl",
+      "cisco-ci-domain-verification=47c38bc8c4b74b7233e9053220c1bbe76bcc1cd33c7acf7acd36cd6a5332004b",
+      "onetrust-domain-verification=6d685f1d41a94696ad7ef771f68993e0",
+      "apple-domain-verification=30afIBcvSuDV2PLX",
+      "arcules-domain-verification=2R4t5G7nI6tRCo61lpxxbLksPYstxhGmtV75cpr8x9K",
       "globalsign-smime-dv=CDYX+XFHUw2wml6/Gb8+59BsH31KzUr6c1l2BPvqKX8=",
-      "MS=E4A68B9AB2BB9670BCE15412F62916164C0B20BB"
+      "google-site-verification=wD8N7i1JTNTkezJ49swvWW48f8_9xveREV4oB-0Hf5o",
+      "MS=E4A68B9AB2BB9670BCE15412F62916164C0B20BB",
+      "docusign=05958488-4752-4ef2-95eb-aa7ba8a3bd0e"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:mailauth-reports@google.com"
@@ -267,7 +277,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "android.clients.google.com",
       "*.aistudio.google.com"
     ],
-    "days_left": 68,
+    "days_left": 67,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -277,7 +287,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     }
   },
   "ports": {
-    "ip": "142.250.196.206",
+    "ip": "142.250.77.206",
     "open": []
   },
   "https": {
@@ -370,11 +380,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     ]
   },
   "apex_txt": [
-    "onetrust-domain-verification=6d685f1d41a94696ad7ef771f68993e0",
-    "arcules-domain-verification=2R4t5G7nI6tRCo61lpxxbLksPYstxhGmtV75cpr8x9K",
-    "google-site-verification=4ibFUgB-wXLQ_S7vsXVomSTVamuOXBiVAzpR5IZ87D0",
+    "facebook-domain-verification=22rm551cu4k0ab0bxsw536tlds4h95",
     "google-site-verification=TV9-DBe4R80X4v0M4U_bd_J9cpOJM0nikft0jAgjmsQ",
-    "apple-domain-verification=30afIBcvSuDV2PLX"
+    "work-accounts-domain-verification=Tcj6JjIMZOw2KsSEw2Nt2rLae89tN6",
+    "google-site-verification=4ibFUgB-wXLQ_S7vsXVomSTVamuOXBiVAzpR5IZ87D0",
+    "onetrust-domain-verification=0d477fe608074e6f9c12bca7826035cc"
   ],
   "tls2": {
     "alpn": "",
@@ -412,11 +422,26 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "x12": {
     "status": 301,
     "ptr": [
-      "nctsaa-ac-in-f14.1e100.net."
+      "lctsaa-ah-in-f14.1e100.net.",
+      "del11s08-in-f14.1e100.net."
     ]
   },
-  "elapsed_s": 4.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.google.com/",
+    "http_status": 301,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/assetlinks.json"
+    ],
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 11.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -426,4 +451,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

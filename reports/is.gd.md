@@ -7,12 +7,12 @@
 | Target | https://is.gd/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | is.gd |
-| Test date | 2026-09-26 18:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:09 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
+Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,9 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 | 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 13 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 14 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 15 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -105,6 +108,24 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 - **Detail:** Content-Security-Policy of is.gd permits unsafe-inline, unsafe-eval; inline script injection still executes.
 - **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
+### 13. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on is.gd indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 14. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkdkjpanqcstm5.html -> 404; error page/headers match: Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 15. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for is.gd, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -113,26 +134,27 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
   "dns": {
     "a": [
       "172.67.83.132",
-      "104.25.234.53",
-      "104.25.233.53"
+      "104.25.233.53",
+      "104.25.234.53"
     ],
     "aaaa": [
-      "2606:4700:20::ac43:5384",
       "2606:4700:20::6819:e935",
+      "2606:4700:20::ac43:5384",
       "2606:4700:20::6819:ea35"
     ],
     "cname": null,
     "mx": [
-      "alt3.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "alt4.aspmx.l.google.com (pref 10)",
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "jerry.ns.cloudflare.com.",
-      "gwen.ns.cloudflare.com."
+      "gwen.ns.cloudflare.com.",
+      "jerry.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
       "google-site-verification=DfMNV5p3KeMmSRMGAc0XtF4iRYfjlaE4VsPgat9073E"
     ],
@@ -243,8 +265,18 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
   "x12": {
     "status": 403
   },
-  "elapsed_s": 7.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 403,
+    "http_status": 301,
+    "p404_status": 404,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 8.4,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -254,4 +286,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

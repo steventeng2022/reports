@@ -7,12 +7,12 @@
 | Target | https://blog.hubspot.com/ |
 | Bug bounty program | HubSpot |
 | Listed scope domain | blog.hubspot.com |
-| Test date | 2026-09-26 18:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 1, Info: 16)
+Total findings: **19** (High: 0, Medium: 0, Low: 1, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,12 +27,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 1, Info: 16)
 | 9 | info | P8 | Missing security.txt | CWE-1038 |
 | 10 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
-| 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
-| 16 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
-| 17 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 15 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 16 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 17 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 18 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -106,41 +108,53 @@ Total findings: **17** (High: 0, Medium: 0, Low: 1, Info: 16)
 - **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
 - **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
 
-### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
-
-- **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-gws-recovery-domain-verification=49109286
-- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
-
-### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
 
 - **CWE:** CWE-603
 - **Detail:** Certificate of blog.hubspot.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 13. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 79 disallow path(s), e.g. /wt-assets/static-files/mktg-analytics, /_hcms/iplookup, /_hcms/perf, *?portalId=, *?inpageEditorUI=
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 15. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+### 14. [LOW] CSP present but still allows unsafe directives (`CSP1`)
 
 - **CWE:** CWE-1021
 - **Detail:** Content-Security-Policy of blog.hubspot.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
 - **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
-### 16. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+### 15. [INFO] CSP reporting endpoint disclosed (`CSP2`)
 
 - **CWE:** CWE-200
 - **Detail:** CSP of blog.hubspot.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
 - **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
 
-### 17. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+### 16. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
 
 - **CWE:** CWE-922
 - **Detail:** Response for https://blog.hubspot.com/ carries Cache-Control: s-maxage=36000, max-age=5 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 17. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on blog.hubspot.com indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 18. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkw4srbcs7pm4i.html -> 404; error page/headers match: Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for blog.hubspot.com; apex hubspot.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
 ## Evidence (raw response observations)
 
@@ -153,19 +167,20 @@ Total findings: **17** (High: 0, Medium: 0, Low: 1, Info: 16)
       "172.64.154.108"
     ],
     "aaaa": [
-      "2606:4700:4407::6812:2194",
-      "2606:4700:440a::ac40:9a6c"
+      "2606:4700:440a::ac40:9a6c",
+      "2606:4700:4407::6812:2194"
     ],
     "cname": null,
     "mx": [
       "smtp.google.com (pref 1)"
     ],
     "ns": [
-      "rosalyn.ns.cloudflare.com.",
-      "archer.ns.cloudflare.com."
+      "archer.ns.cloudflare.com.",
+      "rosalyn.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
-      "google-gws-recovery-domain-verification=49109286"
+      "v=spf1 -all"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;pct=100;rua=mailto:dmarc-groups@hubspot.com;ruf=mailto:dmarc-groups@hubspot.com"
@@ -256,9 +271,6 @@ Total findings: **17** (High: 0, Medium: 0, Low: 1, Info: 16)
   "subdomains": {
     "status": "ct-pending"
   },
-  "apex_txt": [
-    "google-gws-recovery-domain-verification=49109286"
-  ],
   "tls2": {
     "alpn": "",
     "tls_ver": "TLSv1.3",
@@ -296,8 +308,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 1, Info: 16)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 12.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 25.8,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -307,4 +329,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 1, Info: 16)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

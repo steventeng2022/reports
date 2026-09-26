@@ -7,12 +7,12 @@
 | Target | https://vine.co/ |
 | Bug bounty program | Twitter |
 | Listed scope domain | vine.co |
-| Test date | 2026-09-26 19:01 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
+Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -23,13 +23,15 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 | 5 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 6 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 7 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
-| 8 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 8 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 9 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 10 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 11 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 | 12 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 | 13 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 15 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 16 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -78,11 +80,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 - **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
 - **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
 
-### 8. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 8. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of vine.co has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m04.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 9. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
@@ -120,6 +122,18 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 - **Detail:** 52.36.139.111 carries PTR ec2-52-36-139-111.us-west-2.compute.amazonaws.com. for vine.co.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
+### 15. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for vine.co, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 16. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The vine.co certificate lists an AIA OCSP responder (http://ocsp.r2m04.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -133,21 +147,22 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)",
+      "alt2.aspmx.l.google.com (pref 20)",
       "aspmx.l.google.com (pref 10)",
-      "aspmx2.googlemail.com (pref 30)",
-      "alt2.aspmx.l.google.com (pref 20)"
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx3.googlemail.com (pref 30)",
+      "aspmx2.googlemail.com (pref 30)"
     ],
     "ns": [
-      "ns-326.awsdns-40.com.",
-      "ns-2008.awsdns-59.co.uk.",
       "ns-1085.awsdns-07.org.",
-      "ns-686.awsdns-21.net."
+      "ns-686.awsdns-21.net.",
+      "ns-2008.awsdns-59.co.uk.",
+      "ns-326.awsdns-40.com."
     ],
+    "caa": [],
     "spf": [
-      "_rfdyhtedqy5qg5y9hggyt1hw6jv92sz",
       "szx8zgqr7z21hl52tn15k2crj3jb0zp3",
+      "_rfdyhtedqy5qg5y9hggyt1hw6jv92sz",
       "xvbl4tx5lcwqgq09rr064s5vbmq6l651",
       "e1f309c26fa846978a92ccebb75c7833"
     ],
@@ -236,10 +251,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
       "not_before": "20260106000000",
       "not_after": "20270203235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -252,8 +268,19 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
       "ec2-52-36-139-111.us-west-2.compute.amazonaws.com."
     ]
   },
-  "elapsed_s": 24.5,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 32.2,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -263,4 +290,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

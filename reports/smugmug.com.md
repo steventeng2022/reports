@@ -7,12 +7,12 @@
 | Target | https://smugmug.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | smugmug.com |
-| Test date | 2026-09-26 18:59 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:15 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,8 +31,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -126,26 +128,38 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (encm33wuqyhlun.smugmug.com and x0menxknpjnbd6.smugmug.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (l7xpi84jg4puur.smugmug.com and r0sz3o16a0g06q.smugmug.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: miro-verification=57e9f2368bcc8d66648f3d731cb9a81eda2d084b; anthropic-domain-verification-ytcjx3=3JXEHEGUIDVMUMf0uDxrNCHeS; status-page-domain-verification=2z6n94xyr5tj
+- **Detail:** Apex TXT records with verification/token content: status-page-domain-verification=2z6n94xyr5tj; google-site-verification=-nck5ImlodD2x9hVKFtLY2lgmH0nTzkkhqrYMGTbATQ; anthropic-domain-verification-ytcjx3=3JXEHEGUIDVMUMf0uDxrNCHeS
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 16. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of smugmug.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m01.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 100.52.94.3 carries PTR ec2-100-52-94-3.compute-1.amazonaws.com. for smugmug.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for smugmug.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 19. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The smugmug.com certificate lists an AIA OCSP responder (http://ocsp.r2m01.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -162,31 +176,32 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "cname": null,
     "mx": [
       "aspmx.l.google.com (pref 1)",
+      "alt3.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "alt3.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
       "ns-1488.awsdns-58.org.",
+      "ns-160.awsdns-20.com.",
       "ns-798.awsdns-35.net.",
-      "ns-1569.awsdns-04.co.uk.",
-      "ns-160.awsdns-20.com."
+      "ns-1569.awsdns-04.co.uk."
     ],
+    "caa": [],
     "spf": [
-      "docusign=db2c269a-ec4f-4e67-ae5f-1ef42b248990",
-      "miro-verification=57e9f2368bcc8d66648f3d731cb9a81eda2d084b",
-      "anthropic-domain-verification-ytcjx3=3JXEHEGUIDVMUMf0uDxrNCHeS",
       "status-page-domain-verification=2z6n94xyr5tj",
-      "TAILSCALE-2SnWDnM6RXvoBqRCJXyE",
-      "h1-domain-verification=WGuGC3hnnTu7E31Y7R7KZfvJtMDib9GK1dfYdJ3Uko1oBnKJ",
       "v=spf1 include:_spf.smugmug_com._d.easydmarc.pro ~all",
-      "lovable_verification=mUkuMoOCniK09G3hpvMK",
       "google-site-verification=-nck5ImlodD2x9hVKFtLY2lgmH0nTzkkhqrYMGTbATQ",
-      "easydmarc-verification:c41a276a-ac1c-4df4-afb0-24d13abb4082",
+      "anthropic-domain-verification-ytcjx3=3JXEHEGUIDVMUMf0uDxrNCHeS",
+      "h1-domain-verification=WGuGC3hnnTu7E31Y7R7KZfvJtMDib9GK1dfYdJ3Uko1oBnKJ",
+      "atlassian-domain-verification=TgOLLHFpQq2Vo30Hxzddllz1ji7PkMt0vV2E5B3rUCP2ICBlTYaOx4ns/CDzkVnf",
+      "miro-verification=57e9f2368bcc8d66648f3d731cb9a81eda2d084b",
       "h1-domain-verification=VswTbgZa19ikLScJDExi1oP55pEEtqbzNnXMsNAbRLGQ5pwf",
+      "easydmarc-verification:c41a276a-ac1c-4df4-afb0-24d13abb4082",
       "asv=b9dfbae46b15612f6607a68ae19a7e2e",
-      "atlassian-domain-verification=TgOLLHFpQq2Vo30Hxzddllz1ji7PkMt0vV2E5B3rUCP2ICBlTYaOx4ns/CDzkVnf"
+      "docusign=db2c269a-ec4f-4e67-ae5f-1ef42b248990",
+      "lovable_verification=mUkuMoOCniK09G3hpvMK",
+      "TAILSCALE-2SnWDnM6RXvoBqRCJXyE"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;rua=mailto:c707497ded@rua.easydmarc.us;ruf=mailto:c707497ded@ruf.easydmarc.us;fo=1;"
@@ -271,11 +286,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "miro-verification=57e9f2368bcc8d66648f3d731cb9a81eda2d084b",
-    "anthropic-domain-verification-ytcjx3=3JXEHEGUIDVMUMf0uDxrNCHeS",
     "status-page-domain-verification=2z6n94xyr5tj",
+    "google-site-verification=-nck5ImlodD2x9hVKFtLY2lgmH0nTzkkhqrYMGTbATQ",
+    "anthropic-domain-verification-ytcjx3=3JXEHEGUIDVMUMf0uDxrNCHeS",
     "h1-domain-verification=WGuGC3hnnTu7E31Y7R7KZfvJtMDib9GK1dfYdJ3Uko1oBnKJ",
-    "lovable_verification=mUkuMoOCniK09G3hpvMK"
+    "atlassian-domain-verification=TgOLLHFpQq2Vo30Hxzddllz1ji7PkMt0vV2E5B3rUCP2ICBlTY"
   ],
   "tls2": {
     "alpn": "",
@@ -286,10 +301,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
       "not_before": "20251127000000",
       "not_after": "20261225235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "x12": {
     "status": 502,
@@ -297,8 +313,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "ec2-100-52-94-3.compute-1.amazonaws.com."
     ]
   },
-  "elapsed_s": 30.9,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 502,
+    "http_status": 502,
+    "p404_status": 502,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 32.4,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -308,4 +335,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

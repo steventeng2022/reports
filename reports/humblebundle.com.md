@@ -7,12 +7,12 @@
 | Target | https://humblebundle.com/ |
 | Bug bounty program | Humble Bundle |
 | Listed scope domain | humblebundle.com |
-| Test date | 2026-09-26 18:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:08 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 19 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -139,7 +141,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=cd8dab640ab786a9457c8757f4188cd682dd687a694d1d9c251e; airtable-verification=1437f276d8460af3a52ac49067a34ac5; facebook-domain-verification=wdm0otx2q7qvw96ccu1owi6jskfcfc
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-gc83va=tK3mN2nye0g8jjMswcPA6kRII; google-site-verification=cwvfG5J-CLZHt57KuTqTcqxInEvu9iIYvyuQSth2L7U; google-site-verification=W9_zrs_kg4u4rMv2jE-9dyMSq-yMqvsWvja142BoeyY
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -153,6 +155,18 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 13 disallow path(s), e.g. /?key*, /?s=thanks, /emailhelper, /delete-key, /download-lister
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 19. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on humblebundle.com indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for humblebundle.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
 ## Evidence (raw response observations)
 
@@ -168,35 +182,36 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "cname": null,
     "mx": [
       "alt4.aspmx.l.google.com (pref 10)",
-      "aspmx.l.google.com (pref 1)",
-      "alt3.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "aspmx.l.google.com (pref 1)",
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
       "mary.ns.cloudflare.com.",
       "todd.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
-      "adobe-idp-site-verification=cd8dab640ab786a9457c8757f4188cd682dd687a694d1d9c251e9ef54140a0ec",
-      "airtable-verification=1437f276d8460af3a52ac49067a34ac5",
-      "MS=ms63769922",
-      "facebook-domain-verification=wdm0otx2q7qvw96ccu1owi6jskfcfc",
-      "docusign=ce585a69-7a3c-45d9-b457-6883634525a7",
-      "stripe-verification=c2842c33f8fc5e720f16a4bb16e1b87ca4f882d9b69859b43b7e8d5402b3e871",
-      "onetrust-domain-verification=cb1b850aa57c4e15892be12da4bf7a12",
-      "google-site-verification=Jmxtf21HtWxcN5_rNf8s9vfKFavPVve4Wn8f0B5WKSY",
-      "docker-verification=b71517e6-ec41-4428-9b08-868900eb670f",
-      "adobe-idp-site-verification=13cfb5c99c1f82bcb8ede2dffbe417f301a9d9d0974e2d74f96237e450346dd6",
-      "google-site-verification=cwvfG5J-CLZHt57KuTqTcqxInEvu9iIYvyuQSth2L7U",
-      "tollbit-domain-verification=8297291091d8421385402c9ecc91341273a40e67ee0bfde027abd79c643f079e",
-      "google-site-verification=W9_zrs_kg4u4rMv2jE-9dyMSq-yMqvsWvja142BoeyY",
-      "atlassian-domain-verification=QUsZX4LdPWTYZgx09JhShFot27EJnUl/5CyxXFsiGebXl2QD8Fh3zzfkYZJe42Ic",
       "anthropic-domain-verification-gc83va=tK3mN2nye0g8jjMswcPA6kRII",
+      "google-site-verification=cwvfG5J-CLZHt57KuTqTcqxInEvu9iIYvyuQSth2L7U",
+      "MS=ms63769922",
+      "google-site-verification=W9_zrs_kg4u4rMv2jE-9dyMSq-yMqvsWvja142BoeyY",
+      "airtable-verification=1437f276d8460af3a52ac49067a34ac5",
+      "tollbit-domain-verification=8297291091d8421385402c9ecc91341273a40e67ee0bfde027abd79c643f079e",
+      "wrike-verification=NjM1NTEyNjo2NTcwNTk4ODI3NmI0YjliYzRiOGQyYjgwMWQ2NTg4NGIwMjFjOWJjYWUyMzY1NGRiNGYzMzM5NmJlNTk2NzM4",
       "ZOOM_verify_BSJTEHAWrFKP2r4NfFxgHg",
+      "adobe-idp-site-verification=13cfb5c99c1f82bcb8ede2dffbe417f301a9d9d0974e2d74f96237e450346dd6",
+      "stripe-verification=c2842c33f8fc5e720f16a4bb16e1b87ca4f882d9b69859b43b7e8d5402b3e871",
       "google-site-verification=IfUeqKHD-u_nuMQAmbpn8lmad9EhutZPomxSbD-W_GQ",
+      "docusign=ce585a69-7a3c-45d9-b457-6883634525a7",
       "v=spf1 include:_spf.smtp.com include:_spf.google.com include:mail.zendesk.com ~all",
-      "wrike-verification=NjM1NTEyNjo2NTcwNTk4ODI3NmI0YjliYzRiOGQyYjgwMWQ2NTg4NGIwMjFjOWJjYWUyMzY1NGRiNGYzMzM5NmJlNTk2NzM4"
+      "google-site-verification=Jmxtf21HtWxcN5_rNf8s9vfKFavPVve4Wn8f0B5WKSY",
+      "facebook-domain-verification=wdm0otx2q7qvw96ccu1owi6jskfcfc",
+      "docker-verification=b71517e6-ec41-4428-9b08-868900eb670f",
+      "onetrust-domain-verification=cb1b850aa57c4e15892be12da4bf7a12",
+      "atlassian-domain-verification=QUsZX4LdPWTYZgx09JhShFot27EJnUl/5CyxXFsiGebXl2QD8Fh3zzfkYZJe42Ic",
+      "adobe-idp-site-verification=cd8dab640ab786a9457c8757f4188cd682dd687a694d1d9c251e9ef54140a0ec"
     ],
     "dmarc": [
       "v=DMARC1;p=quarantine;rua=mailto:92c8b0dae606447ab9d13d7bfdd784bd@dmarc-reports.cloudflare.net,mailto:re+vf3a3qbvt4u@dmarc.postmarkapp.com,mailto:088836b424@rua.easydmarc.us;"
@@ -288,11 +303,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "adobe-idp-site-verification=cd8dab640ab786a9457c8757f4188cd682dd687a694d1d9c251e",
+    "anthropic-domain-verification-gc83va=tK3mN2nye0g8jjMswcPA6kRII",
+    "google-site-verification=cwvfG5J-CLZHt57KuTqTcqxInEvu9iIYvyuQSth2L7U",
+    "google-site-verification=W9_zrs_kg4u4rMv2jE-9dyMSq-yMqvsWvja142BoeyY",
     "airtable-verification=1437f276d8460af3a52ac49067a34ac5",
-    "facebook-domain-verification=wdm0otx2q7qvw96ccu1owi6jskfcfc",
-    "stripe-verification=c2842c33f8fc5e720f16a4bb16e1b87ca4f882d9b69859b43b7e8d5402b3",
-    "onetrust-domain-verification=cb1b850aa57c4e15892be12da4bf7a12"
+    "tollbit-domain-verification=8297291091d8421385402c9ecc91341273a40e67ee0bfde027ab"
   ],
   "tls2": {
     "alpn": "",
@@ -328,8 +343,19 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 8.1,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.humblebundle.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 7.9,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -339,4 +365,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

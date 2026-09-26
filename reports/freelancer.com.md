@@ -7,12 +7,12 @@
 | Target | https://freelancer.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | freelancer.com |
-| Test date | 2026-09-26 18:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:06 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
+Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,11 +30,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 13 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 19 | info | CT1 | 36 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 20 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 21 | info | CT1 | 36 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -121,20 +123,20 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (fuqmasz5esorat.freelancer.com and qkn7g2hq28y4u3.freelancer.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (j49kcj62fvdu15.freelancer.com and 4bezm53t0zivzj.freelancer.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK; globalsign-domain-verification=WkLv9MyE6hoZ2g9h5eP3fBXm0FAfqv5X8L-J8iPmGe; cursor-domain-verification-1c4pg9=RSGYjeGSZhXVJg4djpmBMSxjy
+- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=WkLv9MyE6hoZ2g9h5eP3fBXm0FAfqv5X8L-J8iPmGe; openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK; twilio-domain-verification=e6bbec233a8c9e43fe0548ee6c530dfe
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of freelancer.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m01.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
@@ -151,10 +153,22 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 34.197.165.66 carries PTR ec2-34-197-165-66.compute-1.amazonaws.com. for freelancer.com.
+- **Detail:** 54.221.62.44 carries PTR ec2-54-221-62-44.compute-1.amazonaws.com. for freelancer.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 19. [INFO] 36 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for freelancer.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 20. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The freelancer.com certificate lists an AIA OCSP responder (http://ocsp.r2m01.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
+### 21. [INFO] 36 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: git.freelancer.com, my.freelancer.com, news.freelancer.com, www.my.freelancer.com
@@ -167,37 +181,38 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "domain": "freelancer.com",
   "dns": {
     "a": [
-      "34.197.165.66",
       "54.221.62.44",
-      "52.86.196.209"
+      "52.86.196.209",
+      "34.197.165.66"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx5.googlemail.com (pref 30)",
+      "aspmx3.googlemail.com (pref 30)",
       "aspmx2.googlemail.com (pref 30)",
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 20)",
-      "aspmx4.googlemail.com (pref 30)",
-      "aspmx.l.google.com (pref 10)"
+      "aspmx4.googlemail.com (pref 30)"
     ],
     "ns": [
-      "ns-1363.awsdns-42.org.",
       "ns-549.awsdns-04.net.",
-      "ns-470.awsdns-58.com.",
-      "ns-1780.awsdns-30.co.uk."
+      "ns-1780.awsdns-30.co.uk.",
+      "ns-1363.awsdns-42.org.",
+      "ns-470.awsdns-58.com."
     ],
+    "caa": [],
     "spf": [
-      "openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK",
-      "globalsign-domain-verification=WkLv9MyE6hoZ2g9h5eP3fBXm0FAfqv5X8L-J8iPmGe",
-      "cursor-domain-verification-1c4pg9=RSGYjeGSZhXVJg4djpmBMSxjy",
-      "anthropic-domain-verification-zmrkrz=BWcvNIhdz7pRP5S3gNSKur2wW",
-      "MS=ms24738001",
-      "ahrefs-site-verification_d3c10f66e1e45dd0ba44ea9e87972068ada4cc55399000cd0bf2dd68a7338a46",
-      "v=spf1 include:_spf1.freelancer.com include:_spf2.freelancer.com include:_spf.google.com -all",
       "ZOOM_verify_MucGMGVCBb0sY18bpTcobR",
-      "twilio-domain-verification=e6bbec233a8c9e43fe0548ee6c530dfe"
+      "v=spf1 include:_spf1.freelancer.com include:_spf2.freelancer.com include:_spf.google.com -all",
+      "globalsign-domain-verification=WkLv9MyE6hoZ2g9h5eP3fBXm0FAfqv5X8L-J8iPmGe",
+      "openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK",
+      "MS=ms24738001",
+      "twilio-domain-verification=e6bbec233a8c9e43fe0548ee6c530dfe",
+      "ahrefs-site-verification_d3c10f66e1e45dd0ba44ea9e87972068ada4cc55399000cd0bf2dd68a7338a46",
+      "anthropic-domain-verification-zmrkrz=BWcvNIhdz7pRP5S3gNSKur2wW",
+      "cursor-domain-verification-1c4pg9=RSGYjeGSZhXVJg4djpmBMSxjy"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; rua=mailto:y4fb8gcr@ag.au.dmarcian.com,mailto:61597d2f@mxtoolbox.dmarc-report.com,mailto:a68db7279cf8db37fa9c3e812a3543a8-t@dmarc.report-uri.com,mailto:dmarc+rua@freelancer.com;"
@@ -227,7 +242,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     }
   },
   "ports": {
-    "ip": "34.197.165.66",
+    "ip": "54.221.62.44",
     "open": []
   },
   "https": {
@@ -310,11 +325,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK",
     "globalsign-domain-verification=WkLv9MyE6hoZ2g9h5eP3fBXm0FAfqv5X8L-J8iPmGe",
-    "cursor-domain-verification-1c4pg9=RSGYjeGSZhXVJg4djpmBMSxjy",
-    "anthropic-domain-verification-zmrkrz=BWcvNIhdz7pRP5S3gNSKur2wW",
-    "ahrefs-site-verification_d3c10f66e1e45dd0ba44ea9e87972068ada4cc55399000cd0bf2dd6"
+    "openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK",
+    "twilio-domain-verification=e6bbec233a8c9e43fe0548ee6c530dfe",
+    "ahrefs-site-verification_d3c10f66e1e45dd0ba44ea9e87972068ada4cc55399000cd0bf2dd6",
+    "anthropic-domain-verification-zmrkrz=BWcvNIhdz7pRP5S3gNSKur2wW"
   ],
   "tls2": {
     "alpn": "",
@@ -325,10 +340,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
       "not_before": "20260829000000",
       "not_after": "20270314235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -352,11 +368,23 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-34-197-165-66.compute-1.amazonaws.com."
+      "ec2-54-221-62-44.compute-1.amazonaws.com."
     ]
   },
-  "elapsed_s": 27.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.freelancer.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 36.7,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -366,4 +394,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

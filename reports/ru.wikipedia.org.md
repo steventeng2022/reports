@@ -7,12 +7,12 @@
 | Target | https://ru.wikipedia.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ru.wikipedia.org |
-| Test date | 2026-09-26 18:58 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:14 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
+Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 | 11 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 12 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 14 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 15 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 
 ## Detailed findings
 
@@ -41,7 +43,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 ### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** Detected: Server: mw-web.eqiad.main-5fb6d6bf94-ncx2g
+- **Detail:** Detected: Server: mw-web.eqiad.main-5fb6d6bf94-pl29h
 - **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
 ### 3. [LOW] Missing CSP header (`H2`)
@@ -82,7 +84,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 ### 8. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** Header reveals: mw-web.eqiad.main-5fb6d6bf94-ncx2g
+- **Detail:** Header reveals: mw-web.eqiad.main-5fb6d6bf94-pl29h
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
@@ -116,6 +118,18 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 - **Detail:** 103.102.166.224 carries PTR text-lb.eqsin.wikimedia.org. for ru.wikipedia.org.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
+### 14. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkvc6l3cbl1eo9.html -> 404; error page/headers match: PHP.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 15. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on ru.wikipedia.org; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -131,6 +145,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
     "cname": "dyna.wikimedia.org.",
     "mx": [],
     "ns": [],
+    "caa": [],
     "spf": [],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -187,7 +202,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
       "wiktionary.org",
       "wmfusercontent.org"
     ],
-    "days_left": 38,
+    "days_left": 37,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -207,7 +222,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
   },
   "mixed_content": [],
   "tech": [
-    "Server: mw-web.eqiad.main-5fb6d6bf94-ncx2g"
+    "Server: mw-web.eqiad.main-5fb6d6bf94-pl29h"
   ],
   "cookies": [
     {},
@@ -310,8 +325,23 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
       "text-lb.eqsin.wikimedia.org."
     ]
   },
-  "elapsed_s": 12.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://ru.wikipedia.org/wiki/%D0%97%D0%B0%D0%B3%D0%BB%D0%B0%D0%B2%D0%BD%D0%B0%D1%8F_%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0",
+    "http_status": 301,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 15.7,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -321,4 +351,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://accounts.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | accounts.google.com |
-| Test date | 2026-09-26 18:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
+Total findings: **21** (High: 0, Medium: 0, Low: 2, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 | 17 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 | 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 20 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 21 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -155,8 +157,20 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 ### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 108.177.97.84 carries PTR tm-in-f84.1e100.net. for accounts.google.com.
+- **Detail:** 108.177.125.84 carries PTR tp-in-f84.1e100.net. for accounts.google.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 20. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/assetlinks.json on accounts.google.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 21. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: none flagged
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
 ## Evidence (raw response observations)
 
@@ -165,20 +179,21 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
   "domain": "accounts.google.com",
   "dns": {
     "a": [
-      "108.177.97.84"
+      "108.177.125.84"
     ],
     "aaaa": [
       "2404:6800:4008:c04::54"
     ],
     "cname": null,
     "mx": [
-      "alt2.gmr-smtp-in.l.google.com (pref 20)",
-      "gmr-smtp-in.l.google.com (pref 5)",
       "alt1.gmr-smtp-in.l.google.com (pref 10)",
-      "alt3.gmr-smtp-in.l.google.com (pref 30)",
-      "alt4.gmr-smtp-in.l.google.com (pref 40)"
+      "alt2.gmr-smtp-in.l.google.com (pref 20)",
+      "alt4.gmr-smtp-in.l.google.com (pref 40)",
+      "gmr-smtp-in.l.google.com (pref 5)",
+      "alt3.gmr-smtp-in.l.google.com (pref 30)"
     ],
     "ns": [],
+    "caa": [],
     "spf": [
       "google-site-verification=vK4ovh56lkrEBc4GqA6djmGEyFWtcujz3MuRk-wO9cc",
       "v=spf1 redirect=_spf.google.com"
@@ -202,7 +217,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
       "*.partner.android.com",
       "mtls.accounts.google.com"
     ],
-    "days_left": 68,
+    "days_left": 67,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -212,7 +227,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
     }
   },
   "ports": {
-    "ip": "108.177.97.84",
+    "ip": "108.177.125.84",
     "open": []
   },
   "https": {
@@ -264,7 +279,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
     "/api/": 404
   },
   "subdomains": {
-    "status": "ct-pending"
+    "source": "certspotter",
+    "count": 2,
+    "notable": [],
+    "sample": [
+      "accounts.google.com",
+      "mtls.accounts.google.com"
+    ]
   },
   "apex_txt": [
     "google-site-verification=vK4ovh56lkrEBc4GqA6djmGEyFWtcujz3MuRk-wO9cc"
@@ -297,11 +318,25 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
   "x12": {
     "status": 302,
     "ptr": [
-      "tm-in-f84.1e100.net."
+      "tp-in-f84.1e100.net."
     ]
   },
-  "elapsed_s": 4.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 302,
+    "root_location": "https://accounts.google.com/ServiceLogin?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2F&followup=https%3A%2F%2Faccounts.google.com%2F",
+    "http_status": 302,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/assetlinks.json"
+    ],
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 4.5,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -311,4 +346,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

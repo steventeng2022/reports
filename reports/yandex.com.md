@@ -7,12 +7,12 @@
 | Target | https://yandex.com/ |
 | Bug bounty program | Yandex |
 | Listed scope domain | yandex.com |
-| Test date | 2026-09-26 19:02 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:18 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,12 +26,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 | 8 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
 | 9 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 14 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
-| 15 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
-| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 13 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 14 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 16 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 17 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -90,50 +91,56 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 9. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (hue0ftevtrnkmk.yandex.com and zrey5qf2ce290a.yandex.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (kokzpqmhg7v5ij.yandex.com and uo076k2dgzs5zw.yandex.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l; google-site-verification=FVk3gum7zZLdkqi96ypScROFMew0wMetq1Gpu4rkzPI; facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=gy3xj2e9mxu0vtcdgqcznoaxoaiv63; _globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l; google-site-verification=FVk3gum7zZLdkqi96ypScROFMew0wMetq1Gpu4rkzPI
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of yandex.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 12. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but yandex.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 13. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 618 disallow path(s), e.g. /?, /403.html, /404.html, /500.html, /about.html
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 14. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+### 13. [LOW] CSP present but still allows unsafe directives (`CSP1`)
 
 - **CWE:** CWE-1021
 - **Detail:** Content-Security-Policy of yandex.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
 - **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
-### 15. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+### 14. [INFO] CSP reporting endpoint disclosed (`CSP2`)
 
 - **CWE:** CWE-200
 - **Detail:** CSP of yandex.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
 - **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
 
-### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 77.88.55.88 carries PTR yandex.ru. for yandex.com.
+- **Detail:** 5.255.255.77 carries PTR yandex.ru. for yandex.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 16. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on yandex.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 17. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The yandex.com certificate lists an AIA OCSP responder (http://ocsp.globalsign.com/gseccovsslca2018) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -142,9 +149,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
   "domain": "yandex.com",
   "dns": {
     "a": [
+      "5.255.255.77",
       "77.88.55.88",
-      "77.88.44.55",
-      "5.255.255.77"
+      "77.88.44.55"
     ],
     "aaaa": [
       "2a02:6b8:a::a"
@@ -154,15 +161,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "mx.yandex.ru (pref 10)"
     ],
     "ns": [
-      "ns2.yandex.net.",
-      "ns1.yandex.net."
+      "ns1.yandex.net.",
+      "ns2.yandex.net."
+    ],
+    "caa": [
+      "0 issue \"globalsign.com\"",
+      "0 issuewild \"globalsign.com\""
     ],
     "spf": [
+      "facebook-domain-verification=gy3xj2e9mxu0vtcdgqcznoaxoaiv63",
+      "5849d1f0fc8a9e73d82dfed9f2c33931",
       "_globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l",
       "google-site-verification=FVk3gum7zZLdkqi96ypScROFMew0wMetq1Gpu4rkzPI",
-      "5849d1f0fc8a9e73d82dfed9f2c33931",
       "facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a",
-      "facebook-domain-verification=gy3xj2e9mxu0vtcdgqcznoaxoaiv63",
       "v=spf1 redirect=_spf.yandex.ru"
     ],
     "dmarc": [
@@ -233,7 +244,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "*.yandex.az",
       "yandex.tr"
     ],
-    "days_left": 94,
+    "days_left": 93,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -243,7 +254,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     }
   },
   "ports": {
-    "ip": "77.88.55.88",
+    "ip": "5.255.255.77",
     "open": []
   },
   "https": {
@@ -339,10 +350,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
   },
   "wildcard_dns": true,
   "apex_txt": [
+    "facebook-domain-verification=gy3xj2e9mxu0vtcdgqcznoaxoaiv63",
     "_globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l",
     "google-site-verification=FVk3gum7zZLdkqi96ypScROFMew0wMetq1Gpu4rkzPI",
-    "facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a",
-    "facebook-domain-verification=gy3xj2e9mxu0vtcdgqcznoaxoaiv63"
+    "facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a"
   ],
   "tls2": {
     "alpn": "",
@@ -353,10 +364,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.globalsign.com/gseccovsslca2018",
       "not_before": "20260701145410",
       "not_after": "20261229205959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -383,8 +395,23 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "yandex.ru."
     ]
   },
-  "elapsed_s": 40.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 50.3,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -394,4 +421,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

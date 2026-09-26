@@ -7,12 +7,12 @@
 | Target | https://aliexpress.com/ |
 | Bug bounty program | Alibaba |
 | Listed scope domain | aliexpress.com |
-| Test date | 2026-09-26 18:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
+Total findings: **24** (High: 0, Medium: 0, Low: 8, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,8 +36,10 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
 | 18 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 19 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 20 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 21 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 22 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 21 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 22 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 23 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 24 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -165,26 +167,38 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
 ### 19. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (59sh3v9ilyg7cc.aliexpress.com and g3nn8tf0svn97r.aliexpress.com) both resolve to distinct addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (fs8asiyuncn3sc.aliexpress.com and q5tfb8fjyzvpcc.aliexpress.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 20. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=qipEZ2Q9JVgKJxvS-0G3nvAh729OMkjaAouGkcSxVBE; mailru-verification: c9feb214b705f911; google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=qipEZ2Q9JVgKJxvS-0G3nvAh729OMkjaAouGkcSxVBE; google-site-verification=GCJUnSbd3EWW3g7cRvHi57DLpGuR6CEJHzkk6-SOjAs; mailru-verification: c9feb214b705f911
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 21. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of aliexpress.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 22. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 21. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 69 disallow path(s), e.g. */aeglodetailweb/api/msite/item?productId*, /items/*, /bin/*, /search/*, /productdetail/*
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 22. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/assetlinks.json on aliexpress.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 23. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for aliexpress.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 24. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The aliexpress.com certificate lists an AIA OCSP responder (http://ocsp.globalsign.com/gsgccr3ovtlsca2024) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -205,19 +219,20 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
       "ns1.alibabadns.com.",
       "ns2.alibabadns.com."
     ],
+    "caa": [],
     "spf": [
+      "tnz9gvzzksy8l6y5jcmz0slnjk3yxbgm",
       "apple-domain-verification=qipEZ2Q9JVgKJxvS-0G3nvAh729OMkjaAouGkcSxVBE",
+      "cloudflare-verify.aliexpress.com=366647249-1105276800",
+      "google-site-verification=GCJUnSbd3EWW3g7cRvHi57DLpGuR6CEJHzkk6-SOjAs",
       "v=BIMI1;l=https://bimi.entrust.net/aliexpress.com/logo.svg;a=https://bimi.entrust.net/aliexpress.com/certchain.pem",
       "mailru-verification: c9feb214b705f911",
-      "8rlnys07lnz6xvr7wsr4zg0kkz8yd6d5",
+      "v=spf1 include:spf1.service.alibaba.com include:spf2.service.alibaba.com include:spf2.ocm.aliyun.com -all",
+      "f6t8k5j81d8psl001ddncwt7zd1v0rr4",
+      "Validity-Domain-Verification=yidvO17A1k5rojYMFX81UL2y7Cw=",
       "google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw",
       "_globalsign-domain-verification=yhVu_dlmWJNswki9B4Za7HtMd7ihnDDIzpm-RM7nMR",
-      "cloudflare-verify.aliexpress.com=366647249-1105276800",
-      "f6t8k5j81d8psl001ddncwt7zd1v0rr4",
-      "v=spf1 include:spf1.service.alibaba.com include:spf2.service.alibaba.com include:spf2.ocm.aliyun.com -all",
-      "Validity-Domain-Verification=yidvO17A1k5rojYMFX81UL2y7Cw=",
-      "tnz9gvzzksy8l6y5jcmz0slnjk3yxbgm",
-      "google-site-verification=GCJUnSbd3EWW3g7cRvHi57DLpGuR6CEJHzkk6-SOjAs"
+      "8rlnys07lnz6xvr7wsr4zg0kkz8yd6d5"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-ap@service.alibaba.com; ruf=mailto:dmarc-ap@service.alibaba.com"
@@ -396,10 +411,10 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
   "wildcard_dns": true,
   "apex_txt": [
     "apple-domain-verification=qipEZ2Q9JVgKJxvS-0G3nvAh729OMkjaAouGkcSxVBE",
+    "google-site-verification=GCJUnSbd3EWW3g7cRvHi57DLpGuR6CEJHzkk6-SOjAs",
     "mailru-verification: c9feb214b705f911",
-    "google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw",
-    "_globalsign-domain-verification=yhVu_dlmWJNswki9B4Za7HtMd7ihnDDIzpm-RM7nMR",
-    "Validity-Domain-Verification=yidvO17A1k5rojYMFX81UL2y7Cw="
+    "Validity-Domain-Verification=yidvO17A1k5rojYMFX81UL2y7Cw=",
+    "google-site-verification=qEklE0sH9vZShePC5G6cOdQOThPhxwacj-wZuXXuMVw"
   ],
   "tls2": {
     "alpn": "",
@@ -410,10 +425,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.globalsign.com/gsgccr3ovtlsca2024",
       "not_before": "20260518112202",
       "not_after": "20261203111615"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -437,8 +453,22 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 15.4,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 301,
+    "wellknown": [
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 21.8,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -448,4 +478,5 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

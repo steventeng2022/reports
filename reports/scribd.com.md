@@ -7,12 +7,12 @@
 | Target | https://scribd.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | scribd.com |
-| Test date | 2026-09-26 18:58 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:14 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
+Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 15 | info | SEC2 | security.txt published without a contact address | CWE-1038 |
+| 16 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 
 ## Detailed findings
 
@@ -117,7 +118,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: stripe-verification=33707726fea82073ff209aaaeea9f178ca9acdffeb4077b12e4903f92fb9; github-verification=yRBhv3c3EK2QxM9aeLKy8TT2E4NuSZPuGRSCROOP; anthropic-domain-verification-npy3tx=XrE3YAnz8zeSAImkTUoc1n9eY
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-npy3tx=XrE3YAnz8zeSAImkTUoc1n9eY; cursor-domain-verification-50y66e=D8Uwu2yc3eEBkRMlwCQjSf2gN; facebook-domain-verification=svgb7p4y0mkb2o8bjoufff7qvp8f10
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -132,6 +133,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 - **Detail:** /.well-known/security.txt returns 200 but contains no mailto:/URL contact.
 - **Recommendation:** Add a Contact: field per RFC 9116.
 
+### 16. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on scribd.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -139,10 +146,10 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
   "domain": "scribd.com",
   "dns": {
     "a": [
-      "151.101.130.152",
-      "151.101.2.152",
       "151.101.194.152",
-      "151.101.66.152"
+      "151.101.66.152",
+      "151.101.2.152",
+      "151.101.130.152"
     ],
     "aaaa": [],
     "cname": null,
@@ -151,38 +158,44 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "mxb-00957a01.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
+      "ns-2000.awsdns-58.co.uk.",
       "ns-630.awsdns-14.net.",
       "ns-1449.awsdns-53.org.",
-      "ns-474.awsdns-59.com.",
-      "ns-2000.awsdns-58.co.uk."
+      "ns-474.awsdns-59.com."
+    ],
+    "caa": [
+      "0 issuewild \"amazon.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"amazon.com\"",
+      "0 issuewild \"letsencrypt.org\""
     ],
     "spf": [
-      "docusign=fd9b486a-4340-4798-abab-26ce168b0f1b",
-      "stripe-verification=33707726fea82073ff209aaaeea9f178ca9acdffeb4077b12e4903f92fb9a984",
-      "github-verification=yRBhv3c3EK2QxM9aeLKy8TT2E4NuSZPuGRSCROOP",
-      "ZOOM_verify_qVwNF9TlQp6oTxlx4v4GaA",
-      "MS=ms82626852",
+      "d726596f-b232-406c-8660-a7b13b279ffa",
       "anthropic-domain-verification-npy3tx=XrE3YAnz8zeSAImkTUoc1n9eY",
+      "MS=ms82626852",
+      "cursor-domain-verification-50y66e=D8Uwu2yc3eEBkRMlwCQjSf2gN",
+      "facebook-domain-verification=svgb7p4y0mkb2o8bjoufff7qvp8f10",
+      "mixpanel-domain-verify=aedfc989-2797-4ab3-99e3-ba642eda5fe9",
+      "google-site-verification=Ouatu7eN_H_KCzvQGZ-_XLCABWvFM1Ofb4b4hd6ERlg",
+      "google-site-verification=Bys0QJsmUcCJ_qCpq6KaSZc2gravmyYLN_EUFENpitg",
+      "spacelift-domain-verification=sjdhfkj3dew",
+      "an2A85lK4eCI+OVQMZRFZ92bkimP99x1WRAzoj7qp/4=",
+      "apple-domain-verification=eURIxHjDOv6GMt8T",
+      "mgverify=0ab08701ae09a23d0bc2c38fae847d8f307797fcb1697237391f8128a9640651",
+      "stripe-verification=07e715389ac4f3434a3223a1e6cd2b7680d193d73de136cde05634188cfdf939",
+      "docusign=fd9b486a-4340-4798-abab-26ce168b0f1b",
+      "ZOOM_verify_qVwNF9TlQp6oTxlx4v4GaA",
+      "segment-site-verification=EJ46G3zd9xfa1md1S3RxDcsZ9olNj7hf",
+      "v=spf2.0/mfrom v=spf1 include:_s00992988.autospf.email include:mailgun.org ~all",
+      "openai-domain-verification=dv-JENRwA8a0uUEogtGOcdZfVk8",
+      "globalsign-domain-verification=Bo6R5k9s2Zwdk5OoeybGk6L2EHx_oV1TqLgGiMR4IQ",
       "google-site-verification=GggGFvM_T09I1X94IiW555WcOjp5NmcZm-GVh406J44",
       "stripe-verification=27d898303b37a8f26350e9d801f6ad3fa671bfd01b2b4f8951e6f1c90ead34e3",
-      "facebook-domain-verification=svgb7p4y0mkb2o8bjoufff7qvp8f10",
-      "openai-domain-verification=dv-eOTOMtNqRWMP9Hwl6UWrtzxb",
-      "google-site-verification=Ouatu7eN_H_KCzvQGZ-_XLCABWvFM1Ofb4b4hd6ERlg",
-      "apple-domain-verification=eURIxHjDOv6GMt8T",
-      "mixpanel-domain-verify=aedfc989-2797-4ab3-99e3-ba642eda5fe9",
-      "segment-site-verification=EJ46G3zd9xfa1md1S3RxDcsZ9olNj7hf",
-      "v=spf1 include:_s00992988.autospf.email include:mailgun.org ~all",
-      "stripe-verification=07e715389ac4f3434a3223a1e6cd2b7680d193d73de136cde05634188cfdf939",
       "atlassian-domain-verification=suO/cHhqQzi2PxMPyb8WEZvFWrAq3fuOv1RfohRyRATHt6P05jFpTBAt9kXV8bVw",
-      "google-site-verification=Bys0QJsmUcCJ_qCpq6KaSZc2gravmyYLN_EUFENpitg",
-      "openai-domain-verification=dv-JENRwA8a0uUEogtGOcdZfVk8",
-      "d726596f-b232-406c-8660-a7b13b279ffa",
-      "mgverify=0ab08701ae09a23d0bc2c38fae847d8f307797fcb1697237391f8128a9640651",
-      "an2A85lK4eCI+OVQMZRFZ92bkimP99x1WRAzoj7qp/4=",
-      "globalsign-domain-verification=Bo6R5k9s2Zwdk5OoeybGk6L2EHx_oV1TqLgGiMR4IQ",
-      "v=spf2.0/mfrom v=spf1 include:_s00992988.autospf.email include:mailgun.org ~all",
-      "spacelift-domain-verification=sjdhfkj3dew",
-      "cursor-domain-verification-50y66e=D8Uwu2yc3eEBkRMlwCQjSf2gN"
+      "v=spf1 include:_s00992988.autospf.email include:mailgun.org ~all",
+      "openai-domain-verification=dv-eOTOMtNqRWMP9Hwl6UWrtzxb",
+      "stripe-verification=33707726fea82073ff209aaaeea9f178ca9acdffeb4077b12e4903f92fb9a984",
+      "github-verification=yRBhv3c3EK2QxM9aeLKy8TT2E4NuSZPuGRSCROOP"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc_agg@dmarc.250ok.net; ruf=mailto:dmarc_fr@dmarc.250ok.net; fo=1; pct=100; rf=afrf"
@@ -212,7 +225,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     }
   },
   "ports": {
-    "ip": "151.101.130.152",
+    "ip": "151.101.194.152",
     "open": []
   },
   "https": {
@@ -270,11 +283,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "stripe-verification=33707726fea82073ff209aaaeea9f178ca9acdffeb4077b12e4903f92fb9",
-    "github-verification=yRBhv3c3EK2QxM9aeLKy8TT2E4NuSZPuGRSCROOP",
     "anthropic-domain-verification-npy3tx=XrE3YAnz8zeSAImkTUoc1n9eY",
-    "google-site-verification=GggGFvM_T09I1X94IiW555WcOjp5NmcZm-GVh406J44",
-    "stripe-verification=27d898303b37a8f26350e9d801f6ad3fa671bfd01b2b4f8951e6f1c90ead"
+    "cursor-domain-verification-50y66e=D8Uwu2yc3eEBkRMlwCQjSf2gN",
+    "facebook-domain-verification=svgb7p4y0mkb2o8bjoufff7qvp8f10",
+    "google-site-verification=Ouatu7eN_H_KCzvQGZ-_XLCABWvFM1Ofb4b4hd6ERlg",
+    "google-site-verification=Bys0QJsmUcCJ_qCpq6KaSZc2gravmyYLN_EUFENpitg"
   ],
   "tls2": {
     "alpn": "",
@@ -296,8 +309,23 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
   "x12": {
     "status": 302
   },
-  "elapsed_s": 13.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 302,
+    "root_location": "https://www.scribd.com/",
+    "http_status": 301,
+    "p404_status": 302,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 16.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -307,4 +335,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

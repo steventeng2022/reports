@@ -7,12 +7,12 @@
 | Target | https://slate.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | slate.com |
-| Test date | 2026-09-26 18:59 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:15 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
+Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,8 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 | 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 13 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 14 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -85,7 +87,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 ### 9. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=h1bqpgb101ufjdlpv4m8n6js8pjbde; anthropic-domain-verification-c0vb92=wY93HN3anBHD2OlT4k2zb6uxk; yahoo-verification-key=ogjPBpuuDDUAAigNW0C+1x8mbNmcXH/fwMxATyGt1B4=
+- **Detail:** Apex TXT records with verification/token content: yahoo-verification-key=ogjPBpuuDDUAAigNW0C+1x8mbNmcXH/fwMxATyGt1B4=; google-site-verification=uArxK1vn-yOFkOmDQ2CSIPUjMlYZVXsYoMi3YdoMUB8; apple-domain-verification=sZMSDmtoSKwsMe0p
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -106,6 +108,18 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 - **Detail:** robots.txt lists 12 disallow path(s), e.g. /search, /comments/, /_, /, /search
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 13. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on slate.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 14. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for slate.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -113,37 +127,38 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
   "domain": "slate.com",
   "dns": {
     "a": [
-      "151.101.65.55",
       "151.101.193.55",
-      "151.101.129.55",
-      "151.101.1.55"
+      "151.101.65.55",
+      "151.101.1.55",
+      "151.101.129.55"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "alt4.aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-1786.awsdns-31.co.uk.",
-      "ns-625.awsdns-14.net.",
       "ns-259.awsdns-32.com.",
-      "ns-1512.awsdns-61.org."
+      "ns-1512.awsdns-61.org.",
+      "ns-1786.awsdns-31.co.uk.",
+      "ns-625.awsdns-14.net."
     ],
+    "caa": [],
     "spf": [
-      "facebook-domain-verification=h1bqpgb101ufjdlpv4m8n6js8pjbde",
-      "MS=ms80887413",
-      "anthropic-domain-verification-c0vb92=wY93HN3anBHD2OlT4k2zb6uxk",
-      "yahoo-verification-key=ogjPBpuuDDUAAigNW0C+1x8mbNmcXH/fwMxATyGt1B4=",
       "0Rzz3Kx9ec13bCErlJnYMmfVDdoBx/Ia5ft9GkYWliQoqA6yBu19ikpGi5TA/I6AI4oBnFMAHGVZ1+cPRgzoIg==",
-      "google-site-verification=uArxK1vn-yOFkOmDQ2CSIPUjMlYZVXsYoMi3YdoMUB8",
+      "MS=ms80887413",
+      "yahoo-verification-key=ogjPBpuuDDUAAigNW0C+1x8mbNmcXH/fwMxATyGt1B4=",
       "v=spf1 include:aspmx.sailthru.com include:_spf.google.com include:spf.mandrillapp.com a mx ~all",
-      "brave-ledger-verification=5afa57fd13cda982bccc0b089e0ec3a815cdaa816111719c9561464e072ca8a6",
+      "google-site-verification=uArxK1vn-yOFkOmDQ2CSIPUjMlYZVXsYoMi3YdoMUB8",
+      "apple-domain-verification=sZMSDmtoSKwsMe0p",
       "atlassian-domain-verification=RtXv6uaEMMbRyleHa5jMbQmiUCVy0CxH4Qf3lF/s3fImwTlXN0Cda4AoqkamJwM2",
-      "apple-domain-verification=sZMSDmtoSKwsMe0p"
+      "brave-ledger-verification=5afa57fd13cda982bccc0b089e0ec3a815cdaa816111719c9561464e072ca8a6",
+      "anthropic-domain-verification-c0vb92=wY93HN3anBHD2OlT4k2zb6uxk",
+      "facebook-domain-verification=h1bqpgb101ufjdlpv4m8n6js8pjbde"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; ri=3600; rua=mailto:iyu10eqj@ag.us.dmarcian.com; ruf=mailto:dmarc_ruf@slate.com;"
@@ -162,7 +177,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
     "san": [
       "slate.com"
     ],
-    "days_left": 79,
+    "days_left": 78,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -172,7 +187,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
     }
   },
   "ports": {
-    "ip": "151.101.65.55",
+    "ip": "151.101.193.55",
     "open": []
   },
   "https": {
@@ -231,10 +246,10 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "facebook-domain-verification=h1bqpgb101ufjdlpv4m8n6js8pjbde",
-    "anthropic-domain-verification-c0vb92=wY93HN3anBHD2OlT4k2zb6uxk",
     "yahoo-verification-key=ogjPBpuuDDUAAigNW0C+1x8mbNmcXH/fwMxATyGt1B4=",
     "google-site-verification=uArxK1vn-yOFkOmDQ2CSIPUjMlYZVXsYoMi3YdoMUB8",
+    "apple-domain-verification=sZMSDmtoSKwsMe0p",
+    "atlassian-domain-verification=RtXv6uaEMMbRyleHa5jMbQmiUCVy0CxH4Qf3lF/s3fImwTlXN0",
     "brave-ledger-verification=5afa57fd13cda982bccc0b089e0ec3a815cdaa816111719c956146"
   ],
   "tls2": {
@@ -270,8 +285,22 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 21.2,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 20.2,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -281,4 +310,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

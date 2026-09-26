@@ -7,8 +7,8 @@
 | Target | https://mlb.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | mlb.com |
-| Test date | 2026-09-26 18:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:10 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -119,7 +119,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: onetrust-domain-verification=dd8aecd72e714036a95ea068cfe6f2e7; twilio-domain-verification=5450879a5dddd10b96b14397eb242d58; apple-domain-verification=6IYQq9hakr4CM8uN
+- **Detail:** Apex TXT records with verification/token content: onetrust-domain-verification=b65699a512a948ec984777b9ad7d28f7; yahoo-verification-key=/7YvIV9kTBbJETYphs2ydo2GBj6XuhvO4P1H1M6dh+o=; apple-domain-verification=6IYQq9hakr4CM8uN
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -161,46 +161,55 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "mlb-com.mail.protection.outlook.com (pref 1)"
     ],
     "ns": [
+      "ns-1370.awsdns-43.org.",
+      "ns-cloud-b1.googledomains.com.",
+      "ns-cloud-b2.googledomains.com.",
       "ns-1997.awsdns-57.co.uk.",
       "ns-204.awsdns-25.com.",
-      "ns-cloud-b3.googledomains.com.",
-      "ns-cloud-b4.googledomains.com.",
       "ns-976.awsdns-58.net.",
-      "ns-1370.awsdns-43.org.",
-      "ns-cloud-b2.googledomains.com.",
-      "ns-cloud-b1.googledomains.com."
+      "ns-cloud-b4.googledomains.com.",
+      "ns-cloud-b3.googledomains.com."
+    ],
+    "caa": [
+      "128 issuewild \"digicert.com\"",
+      "128 issue \"letsencrypt.org\"",
+      "128 issue \"amazon.com\"",
+      "128 issue \"digicert.com\"",
+      "128 issue \"pki.goog\"",
+      "128 issue \"sectigo.com\"",
+      "128 iodef \"mailto:tls_security@mlb.com\""
     ],
     "spf": [
-      "smartsheet-site-validation=oaC-Jj1jFnvmweM2PoQJUhOQtun7sj3s",
-      "mgverify=4486080ee27dbe9c532d7c06bd6416c0594bdb2747dc01acfb5e97721389f1c9",
-      "mandrill_verify.Ug0KyLxAlKlJFADUoUKazw",
-      "onetrust-domain-verification=dd8aecd72e714036a95ea068cfe6f2e7",
-      "twilio-domain-verification=5450879a5dddd10b96b14397eb242d58",
-      "apple-domain-verification=6IYQq9hakr4CM8uN",
-      "cloudflare_dashboard_sso=99d69311be411f4639d09940caef8875",
-      "e2ma-verification=0x5bb",
-      "atlassian-domain-verification=g2T53fLDVGlvthuuEp+3tHYaHRCtRg7YE0c6muK0q1eRZToBwzYMwLOUVBbImxpM",
-      "adobe-idp-site-verification=48421df2-6edd-4d7a-9a50-5d6b7ac37140",
-      "google-site-verification=xLIe2kvVf_RIlRbMuNhQfxu5QhOj38hG38eCHOVRI-Q",
-      "_71zjwgnt0xvgl1emmv7hgs83q8v0jd4",
-      "7zvy2rtgl87v1529vvz467263ttxv00w",
-      "MS=ms85676836",
-      "anthropic-domain-verification-w0tddh=eUI1DrzYqtNfrirT3GQDfShYK",
-      "google-site-verification=ecWDspflVGxmZOFfl5U-feFA50MZguqCygpZH-fHvw0",
-      "yahoo-verification-key=/7YvIV9kTBbJETYphs2ydo2GBj6XuhvO4P1H1M6dh+o=",
-      "cursor-domain-verification-ghqnyw=dHOe7fY7Ygl1Al61QPw1JMNrX",
-      "postman-domain-verification=9e8cbf6e58c180aceab032d7f85e916683a73fc5f9dceed2fec8ceba7ca719dddf7b8799b8b78e0153cc9769218729171dd7425c1092c8b14967492e31672762",
-      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email include:mailgun.org ~all",
-      "6cai8ssdT8bfglT/gt8kwoKyhyAgPcWDuCGhXf6NRtlGOxnCwCVxvE0gV8MARuqkl340xHdWjJtLgFXFk4XOtQ==",
-      "paloaltonetworks-site-verification=7be9535bc2affb742cb82ebe821a04088380fb53981671210a413b185923dafc",
       "onetrust-domain-verification=b65699a512a948ec984777b9ad7d28f7",
+      "_71zjwgnt0xvgl1emmv7hgs83q8v0jd4",
+      "yahoo-verification-key=/7YvIV9kTBbJETYphs2ydo2GBj6XuhvO4P1H1M6dh+o=",
+      "7zvy2rtgl87v1529vvz467263ttxv00w",
+      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email include:mailgun.org ~all",
+      "apple-domain-verification=6IYQq9hakr4CM8uN",
+      "smartsheet-site-validation=oaC-Jj1jFnvmweM2PoQJUhOQtun7sj3s",
+      "postman-domain-verification=9e8cbf6e58c180aceab032d7f85e916683a73fc5f9dceed2fec8ceba7ca719dddf7b8799b8b78e0153cc9769218729171dd7425c1092c8b14967492e31672762",
+      "6cai8ssdT8bfglT/gt8kwoKyhyAgPcWDuCGhXf6NRtlGOxnCwCVxvE0gV8MARuqkl340xHdWjJtLgFXFk4XOtQ==",
+      "facebook-domain-verification=6l9n1mpxxnvj1l19nmitlu3e5t9qgu",
       "asv=f4d8b04afc0fa2a21f4e5156ec6c2789",
       "e2ma-verification=m4j3",
-      "facebook-domain-verification=6l9n1mpxxnvj1l19nmitlu3e5t9qgu",
-      "google-site-verification=XOnG1KFFRFfMJeUU7-uEnjQPrJ5bgfSKLU3n-ddA5o0",
+      "mgverify=4486080ee27dbe9c532d7c06bd6416c0594bdb2747dc01acfb5e97721389f1c9",
+      "anthropic-domain-verification-w0tddh=eUI1DrzYqtNfrirT3GQDfShYK",
+      "twilio-domain-verification=5450879a5dddd10b96b14397eb242d58",
+      "adobe-idp-site-verification=48421df2-6edd-4d7a-9a50-5d6b7ac37140",
       "MS=ms69694204",
-      "google-site-verification=ewYCvyU3ZIlPv8GRbEfttW-iXf6Rvo4C1lzUgfi2W4k",
+      "google-site-verification=xLIe2kvVf_RIlRbMuNhQfxu5QhOj38hG38eCHOVRI-Q",
+      "atlassian-domain-verification=g2T53fLDVGlvthuuEp+3tHYaHRCtRg7YE0c6muK0q1eRZToBwzYMwLOUVBbImxpM",
+      "mandrill_verify.Ug0KyLxAlKlJFADUoUKazw",
       "openai-domain-verification=dv-D9zatZspLcySUfsBz3ytGnq9",
+      "cursor-domain-verification-ghqnyw=dHOe7fY7Ygl1Al61QPw1JMNrX",
+      "e2ma-verification=0x5bb",
+      "paloaltonetworks-site-verification=7be9535bc2affb742cb82ebe821a04088380fb53981671210a413b185923dafc",
+      "google-site-verification=ecWDspflVGxmZOFfl5U-feFA50MZguqCygpZH-fHvw0",
+      "onetrust-domain-verification=dd8aecd72e714036a95ea068cfe6f2e7",
+      "google-site-verification=XOnG1KFFRFfMJeUU7-uEnjQPrJ5bgfSKLU3n-ddA5o0",
+      "cloudflare_dashboard_sso=99d69311be411f4639d09940caef8875",
+      "google-site-verification=ewYCvyU3ZIlPv8GRbEfttW-iXf6Rvo4C1lzUgfi2W4k",
+      "MS=ms85676836",
       "docusign=dd0cbf68-020f-4af4-9785-638db04566ef"
     ],
     "dmarc": [
@@ -280,11 +289,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "onetrust-domain-verification=dd8aecd72e714036a95ea068cfe6f2e7",
-    "twilio-domain-verification=5450879a5dddd10b96b14397eb242d58",
+    "onetrust-domain-verification=b65699a512a948ec984777b9ad7d28f7",
+    "yahoo-verification-key=/7YvIV9kTBbJETYphs2ydo2GBj6XuhvO4P1H1M6dh+o=",
     "apple-domain-verification=6IYQq9hakr4CM8uN",
-    "e2ma-verification=0x5bb",
-    "atlassian-domain-verification=g2T53fLDVGlvthuuEp+3tHYaHRCtRg7YE0c6muK0q1eRZToBwz"
+    "postman-domain-verification=9e8cbf6e58c180aceab032d7f85e916683a73fc5f9dceed2fec8",
+    "facebook-domain-verification=6l9n1mpxxnvj1l19nmitlu3e5t9qgu"
   ],
   "tls2": {
     "alpn": "",
@@ -325,8 +334,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "158.163.102.34.bc.googleusercontent.com."
     ]
   },
-  "elapsed_s": 9.7,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.mlb.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 10.7,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -336,4 +356,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

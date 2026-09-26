@@ -7,12 +7,12 @@
 | Target | https://sophos.com/ |
 | Bug bounty program | Sophos |
 | Listed scope domain | sophos.com |
-| Test date | 2026-09-26 18:59 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:15 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
+Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 15 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -109,7 +110,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=yGw28l7QRDvcaSLmkM/aMTlngetgzc7rNRrMFeA/iwxi6AoGLU; _globalsign-domain-verification=C05a5k5-Y296XYz_gRGPOfxEkNeRr5aUxtPVZOA0LR; openai-domain-verification=dv-ziQBcZtypxlBQk0anqgGA2kV
+- **Detail:** Apex TXT records with verification/token content: vmware-cloud-verification-22c2ef74-7090-455a-a617-841a0f1f8d5b; sophos-domain-verification=3982f63bedcff7ccd4ef51ba54d39b4d14ae1c3a; miro-verification=27ceec0b31a177e34cf8d5befad732294ab707c1
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -121,8 +122,14 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 ### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 23.210.215.152 carries PTR a23-210-215-152.deploy.static.akamaitechnologies.com. for sophos.com.
+- **Detail:** 23.210.215.216 carries PTR a23-210-215-216.deploy.static.akamaitechnologies.com. for sophos.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 15. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for sophos.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
 ## Evidence (raw response observations)
 
@@ -131,8 +138,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
   "domain": "sophos.com",
   "dns": {
     "a": [
-      "23.210.215.152",
-      "23.210.215.216"
+      "23.210.215.216",
+      "23.210.215.152"
     ],
     "aaaa": [
       "2600:1417:76::17d2:d7d8",
@@ -140,70 +147,71 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
     ],
     "cname": null,
     "mx": [
-      "mx-01-eu-west-1.prod.hydra.sophos.com (pref 10)",
-      "mx-02-eu-west-1.prod.hydra.sophos.com (pref 10)"
+      "mx-02-eu-west-1.prod.hydra.sophos.com (pref 10)",
+      "mx-01-eu-west-1.prod.hydra.sophos.com (pref 10)"
     ],
     "ns": [
-      "a9-65.akam.net.",
-      "a18-64.akam.net.",
+      "a1-100.akam.net.",
       "a14-67.akam.net.",
       "a11-66.akam.net.",
       "a10-65.akam.net.",
-      "a1-100.akam.net."
+      "a18-64.akam.net.",
+      "a9-65.akam.net."
     ],
+    "caa": [],
     "spf": [
-      "atlassian-domain-verification=yGw28l7QRDvcaSLmkM/aMTlngetgzc7rNRrMFeA/iwxi6AoGLUVF9lfC9ZJXwcPw",
+      "vmware-cloud-verification-22c2ef74-7090-455a-a617-841a0f1f8d5b",
+      "sophos-domain-verification=3982f63bedcff7ccd4ef51ba54d39b4d14ae1c3a",
+      "miro-verification=27ceec0b31a177e34cf8d5befad732294ab707c1",
+      "cloudhealth=30a3e90e-bf54-4e23-8a07-50d20631d7c7",
+      "_f1a9kf91a5ksktt14czu26jj992sy70",
+      "MS=ms20777252",
+      "aline-domain-verification-1j2324=omzScvZJaszchZh413GWALRdg",
+      "drift-domain-verification=ac53b25173908b0a36aeac6b99ddc02b6f606859e2b6b8878c0d8f3503666331",
+      "docker-verification=6e3a01d0-a79a-42dc-a6ef-8f5d1a5809e9",
+      "b1cab410c2cd4c1ba415ff35d5df0ee0",
+      "apple-domain-verification=2Fy8bFXuDV8Wohcz",
+      "6z6zg07kf5yqbgx9k28zgx7pbzyk4tqv",
+      "drift-domain-verification=1190d60eec406b5bb9fbd5c0b991664c89480bf53d8586c85f47f6e1e92b4194",
+      "yqSChZpEwgPNHna2bdAZhr6ASFb82MxruOD00tp0NEc=",
+      "_eb0avl1j1pmnomqfy7mg16rzj4xeofk",
+      "drift-domain-verification=19e95e7c5f04ec70ad60395ef64d1d5f0fd975f23bd3d60cb9b8fa25882318b9",
       "_globalsign-domain-verification=C05a5k5-Y296XYz_gRGPOfxEkNeRr5aUxtPVZOA0LR",
-      "S0bXs6uppeiOgIHjU7++zYBrJdO/lto8F+lutV6shoM=",
+      "NI+GrCnazEEzN/8Sthq9Gsv1drLkK3CMmK8mgLop7FBCj1MBeZrJJYenxQDp9/soSLBrjL8zmvQmfc4t3Ay0Kw==",
+      "SlL66Pe6+pzghTfp9TqupnOauqPcYMVnc2pdpFE/1Bc=",
+      "drift-domain-verification=244bf919d29f6e74ac0c52978f5cf28015cb7cb169f306a95a5ae1e08f3adc49",
+      "openai-domain-verification=dv-RuJLc7us6Nv0F8LDFDKAc7uw",
+      "smartsheet-site-validation=zMtI30Z_7BcFJrKZw2iBeQtMCrTV-V76",
+      "cvja4aPXWZ5uq4VxbmCcPmw12cJhfTX6F0ZWoGfRbBNmCUf1v6xHgleSWnXb65AJV3e6Ii5Qp8YnROIFYF+tAA==",
+      "drift-domain-verification=e20214575377f71bf2d2dfde7f181305a85e78cd4d298a62cc27511e00cfbf2d",
+      "8XnBlZqV5LM6S3WAyE4hFKvJhkx9pb52O9HKScFHlGw=",
+      "censys-domain-verification=aV3Fk9juFo3K4z0zZqvVOtRY-bgyef_YRSODYMZP82xN",
+      "drift-domain-verification=49154060112759b8163b0b1d710afdc93baf7a1924c169c4f607693b96e00d1c",
+      "atlassian-sending-domain-verification=b1c8568f-2e3b-4c13-bbad-b0875980471a",
+      "google-site-verification=Oc8MKdnVS9zYeJAG_DhDTp4iqXaBhuyBzgYGK6KzHnM",
+      "atlassian-domain-verification=yGw28l7QRDvcaSLmkM/aMTlngetgzc7rNRrMFeA/iwxi6AoGLUVF9lfC9ZJXwcPw",
+      "_cbc-idp-site-verification-b51e45=363de791496d5b55ec143df32f41673e0017799ceee75317498ca36d9c1253f3",
+      "drift-domain-verification=33ee4934494487d5fd3103d23e43be36abe49fd4e594c3da6da4df4cd6d75a04",
+      "nKB8VtcYTnBVg9VjdPOQFKkeyp6YxWb4YE8p3XZmDUE=",
+      "successfactors-site-verification=Yzk4ZmFhMmY4ZjU4NTgxMWE4Yjk0MTliN2Y1MjBiZTkzZjVlN2E4N2VlYWU3NzEyM2FlYjdjM2Q5MGJkN2ZhNA==",
+      "cursor-domain-verification-hrtcqr=rmEeK8UvFTDWoWCbPe4W48MjS",
+      "/gbE6SOtgWszrbftvjWRktjABSHim5ssJdPQdJiUFLo=",
+      "v=spf1 redirect=sophos.com.spf.sophosdmarc.net",
+      "drift-domain-verification=fc2b61befbd0e7d1ea38a099c21522e6c485b69c00e2ffa3cf08971046f19ae3",
+      "1password-site-verification=QASQSNF7TZGBTLBYSIMHRRDUJY",
+      "anthropic-domain-verification-6yf00s=Ye5rWegH81UZ1ONGj1gmTft8O",
       "openai-domain-verification=dv-ziQBcZtypxlBQk0anqgGA2kV",
       "drift-domain-verification=20e3140bc5cd2b4cdef1fd9f3ed9298e9e0d31747509233b49da413a5bb43ee8",
-      "google-site-verification=Oc8MKdnVS9zYeJAG_DhDTp4iqXaBhuyBzgYGK6KzHnM",
       "06x71m1wfychwzb068j6rw0vgt96pp8m",
-      "cvja4aPXWZ5uq4VxbmCcPmw12cJhfTX6F0ZWoGfRbBNmCUf1v6xHgleSWnXb65AJV3e6Ii5Qp8YnROIFYF+tAA==",
-      "drift-domain-verification=49154060112759b8163b0b1d710afdc93baf7a1924c169c4f607693b96e00d1c",
-      "yqSChZpEwgPNHna2bdAZhr6ASFb82MxruOD00tp0NEc=",
-      "_cbc-idp-site-verification-b51e45=363de791496d5b55ec143df32f41673e0017799ceee75317498ca36d9c1253f3",
-      "successfactors-site-verification=Yzk4ZmFhMmY4ZjU4NTgxMWE4Yjk0MTliN2Y1MjBiZTkzZjVlN2E4N2VlYWU3NzEyM2FlYjdjM2Q5MGJkN2ZhNA==",
-      "nKB8VtcYTnBVg9VjdPOQFKkeyp6YxWb4YE8p3XZmDUE=",
-      "miro-verification=27ceec0b31a177e34cf8d5befad732294ab707c1",
-      "apple-domain-verification=2Fy8bFXuDV8Wohcz",
-      "drift-domain-verification=e20214575377f71bf2d2dfde7f181305a85e78cd4d298a62cc27511e00cfbf2d",
-      "drift-domain-verification=1190d60eec406b5bb9fbd5c0b991664c89480bf53d8586c85f47f6e1e92b4194",
-      "openai-domain-verification=dv-RuJLc7us6Nv0F8LDFDKAc7uw",
-      "_eb0avl1j1pmnomqfy7mg16rzj4xeofk",
-      "drift-domain-verification=33ee4934494487d5fd3103d23e43be36abe49fd4e594c3da6da4df4cd6d75a04",
-      "google-site-verification=UbmZT8AVCxe8ajII1pukSvwqRnCbDaTKJuXzpKACEao",
-      "smartsheet-site-validation=zMtI30Z_7BcFJrKZw2iBeQtMCrTV-V76",
-      "drift-domain-verification=fc2b61befbd0e7d1ea38a099c21522e6c485b69c00e2ffa3cf08971046f19ae3",
-      "drift-domain-verification=0146cf28092efe02d9b245bc034a49ee101121324faab085d4dc39bfe8a668e2",
-      "8XnBlZqV5LM6S3WAyE4hFKvJhkx9pb52O9HKScFHlGw=",
-      "google-site-verification=A4IvAx3bsimlNuuaij7KW4YsWI65V04qIRDfyGsFSsI",
-      "docusign=d6465c58-dca5-44f2-a22d-62be8d4e1549",
-      "cloudhealth=30a3e90e-bf54-4e23-8a07-50d20631d7c7",
-      "drift-domain-verification=ac53b25173908b0a36aeac6b99ddc02b6f606859e2b6b8878c0d8f3503666331",
-      "b1cab410c2cd4c1ba415ff35d5df0ee0",
-      "vmware-cloud-verification-22c2ef74-7090-455a-a617-841a0f1f8d5b",
-      "drift-domain-verification=244bf919d29f6e74ac0c52978f5cf28015cb7cb169f306a95a5ae1e08f3adc49",
-      "SlL66Pe6+pzghTfp9TqupnOauqPcYMVnc2pdpFE/1Bc=",
-      "_f1a9kf91a5ksktt14czu26jj992sy70",
-      "drift-domain-verification=19e95e7c5f04ec70ad60395ef64d1d5f0fd975f23bd3d60cb9b8fa25882318b9",
-      "cursor-domain-verification-hrtcqr=rmEeK8UvFTDWoWCbPe4W48MjS",
-      "aline-domain-verification-1j2324=omzScvZJaszchZh413GWALRdg",
-      "NI+GrCnazEEzN/8Sthq9Gsv1drLkK3CMmK8mgLop7FBCj1MBeZrJJYenxQDp9/soSLBrjL8zmvQmfc4t3Ay0Kw==",
-      "drift-domain-verification=cf8ef47a8b657b331173804c5189d62dfed3eefb03f4144a1b4cbf031a9b9fee",
       "z08yq9grj0sygqd4vq7mhgqgbmd7r6xd",
-      "atlassian-sending-domain-verification=b1c8568f-2e3b-4c13-bbad-b0875980471a",
-      "6z6zg07kf5yqbgx9k28zgx7pbzyk4tqv",
-      "v=spf1 redirect=sophos.com.spf.sophosdmarc.net",
+      "google-site-verification=A4IvAx3bsimlNuuaij7KW4YsWI65V04qIRDfyGsFSsI",
+      "S0bXs6uppeiOgIHjU7++zYBrJdO/lto8F+lutV6shoM=",
       "sz0tpkq215zbcjsnrghfx0p3ksctty81",
-      "censys-domain-verification=aV3Fk9juFo3K4z0zZqvVOtRY-bgyef_YRSODYMZP82xN",
-      "1password-site-verification=QASQSNF7TZGBTLBYSIMHRRDUJY",
-      "docker-verification=6e3a01d0-a79a-42dc-a6ef-8f5d1a5809e9",
-      "anthropic-domain-verification-6yf00s=Ye5rWegH81UZ1ONGj1gmTft8O",
-      "MS=ms20777252",
+      "drift-domain-verification=cf8ef47a8b657b331173804c5189d62dfed3eefb03f4144a1b4cbf031a9b9fee",
       "pendo-domain-verification=IkagvqgdNFxKHKUChcptstdLpx0",
-      "sophos-domain-verification=3982f63bedcff7ccd4ef51ba54d39b4d14ae1c3a",
-      "/gbE6SOtgWszrbftvjWRktjABSHim5ssJdPQdJiUFLo="
+      "google-site-verification=UbmZT8AVCxe8ajII1pukSvwqRnCbDaTKJuXzpKACEao",
+      "docusign=d6465c58-dca5-44f2-a22d-62be8d4e1549",
+      "drift-domain-verification=0146cf28092efe02d9b245bc034a49ee101121324faab085d4dc39bfe8a668e2"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; fo=0:s; rua=mailto:a.z2zesduo@reports.sophosdmarc.net,mailto:dmarc_rua@sophos.com; ruf=mailto:dmarc_ruf@sophos.com"
@@ -258,7 +266,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
     }
   },
   "ports": {
-    "ip": "23.210.215.152",
+    "ip": "23.210.215.216",
     "open": []
   },
   "https": {
@@ -312,11 +320,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "atlassian-domain-verification=yGw28l7QRDvcaSLmkM/aMTlngetgzc7rNRrMFeA/iwxi6AoGLU",
-    "_globalsign-domain-verification=C05a5k5-Y296XYz_gRGPOfxEkNeRr5aUxtPVZOA0LR",
-    "openai-domain-verification=dv-ziQBcZtypxlBQk0anqgGA2kV",
-    "drift-domain-verification=20e3140bc5cd2b4cdef1fd9f3ed9298e9e0d31747509233b49da41",
-    "google-site-verification=Oc8MKdnVS9zYeJAG_DhDTp4iqXaBhuyBzgYGK6KzHnM"
+    "vmware-cloud-verification-22c2ef74-7090-455a-a617-841a0f1f8d5b",
+    "sophos-domain-verification=3982f63bedcff7ccd4ef51ba54d39b4d14ae1c3a",
+    "miro-verification=27ceec0b31a177e34cf8d5befad732294ab707c1",
+    "aline-domain-verification-1j2324=omzScvZJaszchZh413GWALRdg",
+    "drift-domain-verification=ac53b25173908b0a36aeac6b99ddc02b6f606859e2b6b8878c0d8f"
   ],
   "tls2": {
     "alpn": "",
@@ -338,11 +346,22 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
   "x12": {
     "status": 301,
     "ptr": [
-      "a23-210-215-152.deploy.static.akamaitechnologies.com."
+      "a23-210-215-216.deploy.static.akamaitechnologies.com."
     ]
   },
-  "elapsed_s": 5.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.sophos.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 5.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -352,4 +371,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

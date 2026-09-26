@@ -7,12 +7,12 @@
 | Target | https://ncbi.nlm.nih.gov/ |
 | Bug bounty program | U.S. Dept of Health & Human Services (HHS) |
 | Listed scope domain | ncbi.nlm.nih.gov |
-| Test date | 2026-09-26 18:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:11 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
+Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,10 +28,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 | 10 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 13 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 18 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -109,14 +111,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=nMmA8DdB_FATP9hChkks7To1ndl-jGwVn624WV03SJg; google-site-verification=r_gJSAUUa9jLHjrDalVHx6YDW-U-bIXvV5RAq4l1BEI
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=r_gJSAUUa9jLHjrDalVHx6YDW-U-bIXvV5RAq4l1BEI; google-site-verification=nMmA8DdB_FATP9hChkks7To1ndl-jGwVn624WV03SJg
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 13. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of ncbi.nlm.nih.gov has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.godaddy.com/ -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 14. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
@@ -136,6 +138,18 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 - **Detail:** 34.107.134.59 carries PTR 59.134.107.34.bc.googleusercontent.com. for ncbi.nlm.nih.gov.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
+### 17. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xked1usjj5h0gd.html -> 404; error page/headers match: Apache.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 18. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The ncbi.nlm.nih.gov certificate lists an AIA OCSP responder (http://ocsp.godaddy.com/) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -151,31 +165,37 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     "cname": null,
     "mx": [
       "nihcesxway4.hub.nih.gov (pref 10)",
-      "nihcesxway5.hub.nih.gov (pref 10)",
       "nihcesxway2.hub.nih.gov (pref 10)",
+      "nihcesxway5.hub.nih.gov (pref 10)",
       "nihcesxway3.hub.nih.gov (pref 10)",
       "nihcesxway.hub.nih.gov (pref 10)"
     ],
     "ns": [
-      "lhcns1.nlm.nih.gov.",
-      "dns2-ncbi.ncbi.nlm.nih.gov.",
+      "dns1-ncbi.ncbi.nlm.nih.gov.",
       "ns2.nih.gov.",
+      "ns3.nih.gov.",
+      "dns2-ncbi.ncbi.nlm.nih.gov.",
       "lhcns2.nlm.nih.gov.",
       "ns.nih.gov.",
-      "dns1-ncbi.ncbi.nlm.nih.gov.",
-      "ns3.nih.gov."
+      "lhcns1.nlm.nih.gov."
+    ],
+    "caa": [
+      "0 issue \"letsencrypt.org\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issue \"godaddy.com\"",
+      "0 issuewild \"godaddy.com\""
     ],
     "spf": [
-      "+UYkiJ9LhpTEGd+XduX0MaAclYq9qoJF4Ls5FJaAwl6LRx4aozocl8ZRea9MKMRaquSBJaZC52liuRb0rkxAMA==",
       "64ae187888c443b49126410c89e19f91",
-      "5ongv773afed7ghag3eubs9v6c",
       "6ochlmevf91qg4f4aq6bo33ofk",
-      "google-site-verification=nMmA8DdB_FATP9hChkks7To1ndl-jGwVn624WV03SJg",
+      "+UYkiJ9LhpTEGd+XduX0MaAclYq9qoJF4Ls5FJaAwl6LRx4aozocl8ZRea9MKMRaquSBJaZC52liuRb0rkxAMA==",
       "21mn4fyhz69y985h80bcyrf4vjqjl0ln",
       "google-site-verification=r_gJSAUUa9jLHjrDalVHx6YDW-U-bIXvV5RAq4l1BEI",
       "v=spf1 ip4:130.14.26.0/25 ip4:165.112.9.132 ip4:130.14.19.0/24 ip4:130.14.28.0/24 ip4:10.65.8.60 ip4:130.14.22.0/24 ip4:128.231.90.64/26 ip4:165.112.13.0/26 ip6:2607:f220:0404:8104::0/64 ip6:2607:f220:402:1a01::0/64 ",
       "ip4:63.150.153.0/28 ip4:63.236.109.192/28 ip4:63.236.97.64/27 ip4:66.77.66.64/26 ip4:63.236.105.192/28 ip4:63.236.106.128/27 ip4:68.177.111.128/26 ip4:156.40.79.128/25 ip4:165.112.194.0/25 ",
-      "ip6:2607:f220:041e:4260::41/64 ip6:2607:f220:041e:4260::42/64 ip6:2607:f220:041e:4260::15/64 ip6:2607:f220:041e:4260::16/64 ip6:2607:f220:41f:4260::132/64 include:nih.gov -all"
+      "ip6:2607:f220:041e:4260::41/64 ip6:2607:f220:041e:4260::42/64 ip6:2607:f220:041e:4260::15/64 ip6:2607:f220:041e:4260::16/64 ip6:2607:f220:41f:4260::132/64 include:nih.gov -all",
+      "5ongv773afed7ghag3eubs9v6c",
+      "google-site-verification=nMmA8DdB_FATP9hChkks7To1ndl-jGwVn624WV03SJg"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:8idhoybh@ag.us.dmarcian.com,mailto:reports@dmarc.cyber.dhs.gov; ruf=mailto:8idhoybh@fr.us.dmarcian.com; fo=1;"
@@ -258,8 +278,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=nMmA8DdB_FATP9hChkks7To1ndl-jGwVn624WV03SJg",
-    "google-site-verification=r_gJSAUUa9jLHjrDalVHx6YDW-U-bIXvV5RAq4l1BEI"
+    "google-site-verification=r_gJSAUUa9jLHjrDalVHx6YDW-U-bIXvV5RAq4l1BEI",
+    "google-site-verification=nMmA8DdB_FATP9hChkks7To1ndl-jGwVn624WV03SJg"
   ],
   "tls2": {
     "alpn": "",
@@ -270,10 +290,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.godaddy.com/",
       "not_before": "20260828163119",
       "not_after": "20270314163119"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -300,8 +321,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "59.134.107.34.bc.googleusercontent.com."
     ]
   },
-  "elapsed_s": 31.4,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 36.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -311,4 +343,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

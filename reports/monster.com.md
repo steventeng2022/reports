@@ -7,12 +7,12 @@
 | Target | https://monster.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | monster.com |
-| Test date | 2026-09-26 18:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:10 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
+Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -21,7 +21,9 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
 | 3 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 4 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 5 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 6 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 6 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
+| 7 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 8 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -52,14 +54,26 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
 ### 5. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: onetrust-domain-verification=0ec2972887414a679d57a96ccc29b5b0; dell-technologies-domain-verification=monster.com_14b47215-d44f-4358-908e-2b7892; ciscocidomainverification=460719eb94004fbc3ffceb58ee7a94d0e45e14d1d224b3f193f0d1
+- **Detail:** Apex TXT records with verification/token content: knowbe4-site-verification=37422bc6f9a6ff24d631677404b331b8; google-site-verification=bAK2I4sWt6ICJa5zMkJcjbMr-wR8Qzk_TpJCFmvmaCc; onetrust-domain-verification=0ec2972887414a679d57a96ccc29b5b0
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 6. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 6. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of monster.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.godaddy.com/ -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
+
+### 7. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for monster.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 8. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The monster.com certificate lists an AIA OCSP responder (http://ocsp.godaddy.com/) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -68,52 +82,53 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
   "domain": "monster.com",
   "dns": {
     "a": [
-      "166.117.15.191",
-      "166.117.209.20"
+      "166.117.209.20",
+      "166.117.15.191"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "ALT3.ASPMX.L.GOOGLE.com (pref 10)",
-      "ALT1.ASPMX.L.GOOGLE.com (pref 5)",
       "ALT2.ASPMX.L.GOOGLE.com (pref 5)",
       "ALT4.ASPMX.L.GOOGLE.com (pref 10)",
+      "ALT1.ASPMX.L.GOOGLE.com (pref 5)",
+      "ALT3.ASPMX.L.GOOGLE.com (pref 10)",
       "ASPMX.L.GOOGLE.com (pref 1)"
     ],
     "ns": [
-      "ns1.tmpw.net.",
-      "ns2.tmpw.net."
+      "ns2.tmpw.net.",
+      "ns1.tmpw.net."
     ],
+    "caa": [],
     "spf": [
+      "knowbe4-site-verification=37422bc6f9a6ff24d631677404b331b8",
+      "google-site-verification=bAK2I4sWt6ICJa5zMkJcjbMr-wR8Qzk_TpJCFmvmaCc",
+      "oeIe2rwXtpnwFPKPFBl9AUpQpm1iDrxNx4NI18LFyR6cWwoIYsvRYfHhkxLg8PNGDw2IPkdD3q6w0cDi5wRxgA==",
+      "onetrust-domain-verification=0ec2972887414a679d57a96ccc29b5b0",
+      "GOytBs9lVe7A6ONbpEz1H+ouv1k8wnclMo3W48PX7mnZBaxXqJpJxTR5cdRPkUnunTbWui64V/PCEOOZDZsEXg==",
+      "google-site-verification=h1591ugHHOFsWchw3mvQFe_l7qR4iinHtA4sDlxmwRE",
+      "google-site-verification=rRq11A1dCsb5_qBT_3Fs9Sag5f8Wm5t58e05wQAESa0",
+      "yahoo-verification-key=E3zIMY4vqEPbyoGg80CV/bYPK0gmAjYeuPtCA+b20To=",
+      "google-site-verification=zXNA4jzGldUrb4WTfbWVyylyVgZRuVjpzS94ul_sr4g",
+      "cloudhealth=471ef53e-b947-4d03-adf9-ca29bb43a8c3",
+      "webexdomainverification.=d6c0c09e-1efb-4b83-ac2c-c8b15118cc48",
+      "9uhsn2f7lot7574rnlm4ercqpb",
+      "atlassian-domain-verification=bKSyyEicgY0Nu7x4asJ5ja9ueF/q8H55gAcyMZfz2XKzDvu5sZaC96LCfSoibq82",
       "v=spf1 mx ip4:220.226.205.66/32 ip4:208.71.192.0/21 ip4:193.164.143.0/24 ip4:64.127.116.65/26 ip4:64.127.121.0/27 ip4:98.174.21.153 ip4:69.25.33.0/24 include:spf.protection.outlook.com include:amazonses.com include:zgateway.zuora.com include:_spf.google.c",
       "om include:_spf.salesforce.com ip4:34.237.212.16/32 ip4:18.136.40.242/32 ip4:44.238.220.251/32  ~all",
-      "_emotuf3vawbotgg5omeu1cvo2jhxdvu",
-      "onetrust-domain-verification=0ec2972887414a679d57a96ccc29b5b0",
-      "_gkbtqbmmu4k082wtt6q501wxlf0r48a",
-      "dell-technologies-domain-verification=monster.com_14b47215-d44f-4358-908e-2b7892392b4c_1722463976",
-      "ciscocidomainverification=460719eb94004fbc3ffceb58ee7a94d0e45e14d1d224b3f193f0d122a6bdfbae",
-      "apple-domain-verification=jHHEM7KcSPaadK20",
-      "datadome-domain-verify=B3KUK3qaB3COSjvTsFb9ZlUuVKr8F0ZJ",
-      "oeIe2rwXtpnwFPKPFBl9AUpQpm1iDrxNx4NI18LFyR6cWwoIYsvRYfHhkxLg8PNGDw2IPkdD3q6w0cDi5wRxgA==",
-      "google-site-verification=zXNA4jzGldUrb4WTfbWVyylyVgZRuVjpzS94ul_sr4g",
       "ZOOM_verify_943D2iGtnuDRLVbiPRdQdz",
-      "google-site-verification=ecvdyQLuC440qHVOKlQG9McMXmlqn5oJzuskNAFssDk",
-      "google-site-verification=bAK2I4sWt6ICJa5zMkJcjbMr-wR8Qzk_TpJCFmvmaCc",
-      "google-site-verification=h1591ugHHOFsWchw3mvQFe_l7qR4iinHtA4sDlxmwRE",
-      "9uhsn2f7lot7574rnlm4ercqpb",
-      "facebook-domain-verification=nxqqu1usearteri105exfg33t1yyos",
-      "google-site-verification=rRq11A1dCsb5_qBT_3Fs9Sag5f8Wm5t58e05wQAESa0",
-      "webexdomainverification.=d6c0c09e-1efb-4b83-ac2c-c8b15118cc48",
-      "MS=ms50474575",
-      "cloudhealth=471ef53e-b947-4d03-adf9-ca29bb43a8c3",
-      "GOytBs9lVe7A6ONbpEz1H+ouv1k8wnclMo3W48PX7mnZBaxXqJpJxTR5cdRPkUnunTbWui64V/PCEOOZDZsEXg==",
+      "apple-domain-verification=jHHEM7KcSPaadK20",
+      "ciscocidomainverification=460719eb94004fbc3ffceb58ee7a94d0e45e14d1d224b3f193f0d122a6bdfbae",
       "ifl513ibj8j0v63nhvkhlf0e61",
-      "atlassian-domain-verification=CWJ0Dn5MkEJB1/e3h2WmOicez83C/W3RnqnrJoaAL66tcIf5yhDV0YTRrf4QVnxn",
-      "knowbe4-site-verification=37422bc6f9a6ff24d631677404b331b8",
-      "yahoo-verification-key=E3zIMY4vqEPbyoGg80CV/bYPK0gmAjYeuPtCA+b20To=",
+      "datadome-domain-verify=B3KUK3qaB3COSjvTsFb9ZlUuVKr8F0ZJ",
+      "amazonses:gceEoeOqKvtfdmPp+y52S86QwEM6SHc4QH3ekZE3bpQ=",
       "adobe-idp-site-verification=7452b219-e19d-43c7-b5fb-a381f17b01e6",
-      "atlassian-domain-verification=bKSyyEicgY0Nu7x4asJ5ja9ueF/q8H55gAcyMZfz2XKzDvu5sZaC96LCfSoibq82",
-      "amazonses:gceEoeOqKvtfdmPp+y52S86QwEM6SHc4QH3ekZE3bpQ="
+      "dell-technologies-domain-verification=monster.com_14b47215-d44f-4358-908e-2b7892392b4c_1722463976",
+      "MS=ms50474575",
+      "_emotuf3vawbotgg5omeu1cvo2jhxdvu",
+      "_gkbtqbmmu4k082wtt6q501wxlf0r48a",
+      "facebook-domain-verification=nxqqu1usearteri105exfg33t1yyos",
+      "google-site-verification=ecvdyQLuC440qHVOKlQG9McMXmlqn5oJzuskNAFssDk",
+      "atlassian-domain-verification=CWJ0Dn5MkEJB1/e3h2WmOicez83C/W3RnqnrJoaAL66tcIf5yhDV0YTRrf4QVnxn"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com;ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -176,7 +191,7 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
     }
   },
   "ports": {
-    "ip": "166.117.15.191",
+    "ip": "166.117.209.20",
     "open": []
   },
   "https": {
@@ -198,11 +213,11 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "knowbe4-site-verification=37422bc6f9a6ff24d631677404b331b8",
+    "google-site-verification=bAK2I4sWt6ICJa5zMkJcjbMr-wR8Qzk_TpJCFmvmaCc",
     "onetrust-domain-verification=0ec2972887414a679d57a96ccc29b5b0",
-    "dell-technologies-domain-verification=monster.com_14b47215-d44f-4358-908e-2b7892",
-    "ciscocidomainverification=460719eb94004fbc3ffceb58ee7a94d0e45e14d1d224b3f193f0d1",
-    "apple-domain-verification=jHHEM7KcSPaadK20",
-    "google-site-verification=zXNA4jzGldUrb4WTfbWVyylyVgZRuVjpzS94ul_sr4g"
+    "google-site-verification=h1591ugHHOFsWchw3mvQFe_l7qR4iinHtA4sDlxmwRE",
+    "google-site-verification=rRq11A1dCsb5_qBT_3Fs9Sag5f8Wm5t58e05wQAESa0"
   ],
   "tls2": {
     "alpn": "",
@@ -213,10 +228,11 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.godaddy.com/",
       "not_before": "20260204183908",
       "not_after": "20270204183908"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "error": "root GET failed"
@@ -224,8 +240,18 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
   "x12": {
     "error": "SSLError(MaxRetryError(\"HTTPSConnectionPool(host='monster.com', port=443): Max r"
   },
-  "elapsed_s": 13.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_error": "SSLError(MaxRetryError(\"HTTPSConnectionPool(host='monster.com', port=443): Max r",
+    "http_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 21.9,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -235,4 +261,5 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

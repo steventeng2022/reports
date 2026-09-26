@@ -7,12 +7,12 @@
 | Target | https://cell.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | cell.com |
-| Test date | 2026-09-26 18:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:00 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,7 +31,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 | 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
-| 16 | info | CT1 | 14 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 16 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 18 | info | CT1 | 14 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -100,7 +102,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: miro-verification=edd5a54fc20add96505c5c718975977b28f370a9; anthropic-domain-verification-ssq6py=6YMLbUb5ERHhYY7Heuk7JKNHt; atlassian-domain-verification=2ckcJUmjEfh8TAauQPrWb9eLXpM1UyNHPk+6SmzC3X0tqBzJKZ
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=2ckcJUmjEfh8TAauQPrWb9eLXpM1UyNHPk+6SmzC3X0tqBzJKZ; adobe-idp-site-verification=fd4fae74b683e6e22ef9b491871ae9f0faf7856b8a8588d267e2; pendo-domain-verification=f1e205fa-06f4-4a13-a73a-3e0f82e7f104
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -127,7 +129,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - **Detail:** Content-Security-Policy of cell.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
 - **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
-### 16. [INFO] 14 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkya7aujaj9cub.html -> 403; error page/headers match: Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for cell.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 18. [INFO] 14 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: staging.www.cell.com
@@ -149,23 +163,24 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "cell-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns3.reedelsevier.com.",
+      "ns1.reedelsevier.com.",
       "ns2.reedelsevier.com.",
-      "ns1.reedelsevier.com."
+      "ns3.reedelsevier.com."
     ],
+    "caa": [],
     "spf": [
-      "miro-verification=edd5a54fc20add96505c5c718975977b28f370a9",
-      "anthropic-domain-verification-ssq6py=6YMLbUb5ERHhYY7Heuk7JKNHt",
       "atlassian-domain-verification=2ckcJUmjEfh8TAauQPrWb9eLXpM1UyNHPk+6SmzC3X0tqBzJKZFYmm9rbKXfVm0v",
-      "pendo-domain-verification=f1e205fa-06f4-4a13-a73a-3e0f82e7f104",
       "adobe-idp-site-verification=fd4fae74b683e6e22ef9b491871ae9f0faf7856b8a8588d267e24565628d2dbd",
-      "onetrust-domain-verification=509af418dcce43c5a6330cd2128ee529",
-      "MS=ms13784580",
+      "pendo-domain-verification=f1e205fa-06f4-4a13-a73a-3e0f82e7f104",
+      "miro-verification=edd5a54fc20add96505c5c718975977b28f370a9",
       "ZOOM_verify_W4AuTEx9ROGD4kK_ePkcBA",
+      "MS=ms13784580",
       "onetrust-domain-verification=703cad9baa55456ab0ed05c40cd00445",
       "v=spf1 include:spf.protection.outlook.com include:519224.spf06.hubspotemail.net ip4:202.54.185.101 ip4:210.18.134.82 ip4:202.54.183.83 ip4:203.129.255.210 ip4:122.187.94.54 ip4:115.110.117.138 ip4:103.130.89.242 ip4:47.247.140.234 ip4:47.247.140.230",
       " include:rnmk.com -all",
-      "NNaG7DvrFpIe+hqV6axdB2BDDbaBT5OUuQ8dl5fRyvYVFnuNb39lU9OREInFizJw5B3FZ91RQjKgRLOa+7BJXA=="
+      "anthropic-domain-verification-ssq6py=6YMLbUb5ERHhYY7Heuk7JKNHt",
+      "NNaG7DvrFpIe+hqV6axdB2BDDbaBT5OUuQ8dl5fRyvYVFnuNb39lU9OREInFizJw5B3FZ91RQjKgRLOa+7BJXA==",
+      "onetrust-domain-verification=509af418dcce43c5a6330cd2128ee529"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:reed-elsevier@rua.agari.com,mailto:dmarc-a@elsevier.com; ruf=mailto:reed-elsevier@ruf.agari.com"
@@ -184,7 +199,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     "san": [
       "cell.com"
     ],
-    "days_left": 40,
+    "days_left": 39,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -271,11 +286,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     ]
   },
   "apex_txt": [
-    "miro-verification=edd5a54fc20add96505c5c718975977b28f370a9",
-    "anthropic-domain-verification-ssq6py=6YMLbUb5ERHhYY7Heuk7JKNHt",
     "atlassian-domain-verification=2ckcJUmjEfh8TAauQPrWb9eLXpM1UyNHPk+6SmzC3X0tqBzJKZ",
+    "adobe-idp-site-verification=fd4fae74b683e6e22ef9b491871ae9f0faf7856b8a8588d267e2",
     "pendo-domain-verification=f1e205fa-06f4-4a13-a73a-3e0f82e7f104",
-    "adobe-idp-site-verification=fd4fae74b683e6e22ef9b491871ae9f0faf7856b8a8588d267e2"
+    "miro-verification=edd5a54fc20add96505c5c718975977b28f370a9",
+    "onetrust-domain-verification=703cad9baa55456ab0ed05c40cd00445"
   ],
   "tls2": {
     "alpn": "",
@@ -313,8 +328,18 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
   "x12": {
     "status": 403
   },
-  "elapsed_s": 8.5,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 403,
+    "http_status": 301,
+    "p404_status": 403,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 7.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -324,4 +349,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

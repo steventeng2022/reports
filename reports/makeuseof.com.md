@@ -7,8 +7,8 @@
 | Target | https://makeuseof.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | makeuseof.com |
-| Test date | 2026-09-26 18:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:10 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -102,7 +102,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=YU-A4nWOzc_7_BXIASILHngCcOsOKQHNcFMkpo_SCT4; google-site-verification=2cno1kK27wks5ACgpcGEBVNW4nqk88HwgZyOyvcYBmQ; facebook-domain-verification=vfni2281oyr62lwycezyspzglls69v
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=2cno1kK27wks5ACgpcGEBVNW4nqk88HwgZyOyvcYBmQ; google-site-verification=HstUOQsM5p9HxuVTYeVe79TJC10DsjRLp9vkXi4dTdU; google-site-verification=YU-A4nWOzc_7_BXIASILHngCcOsOKQHNcFMkpo_SCT4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -147,30 +147,41 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx2.googlemail.com (pref 30)",
       "aspmx.l.google.com (pref 10)",
       "aspmx3.googlemail.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)",
       "alt1.aspmx.l.google.com (pref 20)",
-      "alt2.aspmx.l.google.com (pref 20)"
+      "aspmx2.googlemail.com (pref 30)"
     ],
     "ns": [
-      "ns12.dnsmadeeasy.com.",
       "ns14.dnsmadeeasy.com.",
-      "ns13.dnsmadeeasy.com.",
-      "ns15.dnsmadeeasy.com.",
       "ns11.dnsmadeeasy.com.",
-      "ns10.dnsmadeeasy.com."
+      "ns13.dnsmadeeasy.com.",
+      "ns12.dnsmadeeasy.com.",
+      "ns10.dnsmadeeasy.com.",
+      "ns15.dnsmadeeasy.com."
+    ],
+    "caa": [
+      "0 issue \"amazonaws.com\"",
+      "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issue \"amazontrust.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issuewild \"amazontrust.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issuewild \"amazon.com\"",
+      "0 issuewild \"amazonaws.com\""
     ],
     "spf": [
-      "7gx0896dqyj4wpkrjw6hltxrzz44wzhm",
-      "v=spf1 include:_spf.google.com include:amazonses.com include:one.zoho.com ~all",
-      "google-site-verification=YU-A4nWOzc_7_BXIASILHngCcOsOKQHNcFMkpo_SCT4",
       "google-site-verification=2cno1kK27wks5ACgpcGEBVNW4nqk88HwgZyOyvcYBmQ",
-      "facebook-domain-verification=vfni2281oyr62lwycezyspzglls69v",
       "google-site-verification=HstUOQsM5p9HxuVTYeVe79TJC10DsjRLp9vkXi4dTdU",
-      "google-site-verification=ZwHXQlySYIBTJb0yfB1PfKNyUyk2cbBXO4Bx8NWkzqU",
+      "google-site-verification=YU-A4nWOzc_7_BXIASILHngCcOsOKQHNcFMkpo_SCT4",
+      "v=spf1 include:_spf.google.com include:amazonses.com include:one.zoho.com ~all",
       "google-site-verification=CAxaugD_nFh8lAwBX0_fm-0rheocNki0ZTiwESP--Kw",
-      "pinterest-site-verification=1f3676d8e31ceb74da001978566feaef"
+      "pinterest-site-verification=1f3676d8e31ceb74da001978566feaef",
+      "google-site-verification=ZwHXQlySYIBTJb0yfB1PfKNyUyk2cbBXO4Bx8NWkzqU",
+      "7gx0896dqyj4wpkrjw6hltxrzz44wzhm",
+      "facebook-domain-verification=vfni2281oyr62lwycezyspzglls69v"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; adkim=r; aspf=r"
@@ -255,11 +266,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=YU-A4nWOzc_7_BXIASILHngCcOsOKQHNcFMkpo_SCT4",
     "google-site-verification=2cno1kK27wks5ACgpcGEBVNW4nqk88HwgZyOyvcYBmQ",
-    "facebook-domain-verification=vfni2281oyr62lwycezyspzglls69v",
     "google-site-verification=HstUOQsM5p9HxuVTYeVe79TJC10DsjRLp9vkXi4dTdU",
-    "google-site-verification=ZwHXQlySYIBTJb0yfB1PfKNyUyk2cbBXO4Bx8NWkzqU"
+    "google-site-verification=YU-A4nWOzc_7_BXIASILHngCcOsOKQHNcFMkpo_SCT4",
+    "google-site-verification=CAxaugD_nFh8lAwBX0_fm-0rheocNki0ZTiwESP--Kw",
+    "pinterest-site-verification=1f3676d8e31ceb74da001978566feaef"
   ],
   "tls2": {
     "alpn": "",
@@ -300,8 +311,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "ec2-54-157-137-27.compute-1.amazonaws.com."
     ]
   },
-  "elapsed_s": 29.5,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.makeuseof.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 32.4,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -311,4 +333,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://pitchfork.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | pitchfork.com |
-| Test date | 2026-09-26 18:57 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:13 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
+Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,10 +29,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 | 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 14 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 17 | info | CT1 | 23 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 17 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 19 | info | CT1 | 23 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -117,14 +119,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=c-RpedAWGD_CbtK-EJNEYYOIRhFayA5yVpVpqKBl2Xo; google-site-verification=rly-FCqs-7DEamfGFHyChSbo3XjeYaYpIwQ4erMjNK4; google-site-verification=skZv1iZ9lBH5Pkpkfm8ZRvpYndxMV7QemrV3ac53EBM
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=rly-FCqs-7DEamfGFHyChSbo3XjeYaYpIwQ4erMjNK4; adobe-idp-site-verification=c2108b9dbc0fc05ff0794006df1c41b6c945bd2c8a904bef754e; zapier-domain-verification-challenge=dc65028f-9ed1-47f3-be62-e1e5422261ee
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 14. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of pitchfork.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m01.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
@@ -135,10 +137,22 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 65.9.180.66 carries PTR server-65-9-180-66.tpe53.r.cloudfront.net. for pitchfork.com.
+- **Detail:** 65.9.180.7 carries PTR server-65-9-180-7.tpe53.r.cloudfront.net. for pitchfork.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 17. [INFO] 23 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 17. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xk1k4v5lpu8jvk.html -> 404; error page/headers match: CloudFront.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for pitchfork.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 19. [INFO] 23 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: cdn.pitchfork.com, media.pitchfork.com, wf.cdn.pitchfork.com
@@ -151,51 +165,52 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
   "domain": "pitchfork.com",
   "dns": {
     "a": [
-      "65.9.180.66",
       "65.9.180.7",
-      "65.9.180.128",
-      "65.9.180.63"
+      "65.9.180.66",
+      "65.9.180.63",
+      "65.9.180.128"
     ],
     "aaaa": [
-      "2600:9000:202b:3400:1a:1603:8940:93a1",
-      "2600:9000:202b:6e00:1a:1603:8940:93a1",
-      "2600:9000:202b:2800:1a:1603:8940:93a1",
-      "2600:9000:202b:9e00:1a:1603:8940:93a1",
-      "2600:9000:202b:3800:1a:1603:8940:93a1",
-      "2600:9000:202b:3000:1a:1603:8940:93a1",
-      "2600:9000:202b:1000:1a:1603:8940:93a1",
-      "2600:9000:202b:1e00:1a:1603:8940:93a1"
+      "2600:9000:202b:c600:1a:1603:8940:93a1",
+      "2600:9000:202b:b600:1a:1603:8940:93a1",
+      "2600:9000:202b:6a00:1a:1603:8940:93a1",
+      "2600:9000:202b:3200:1a:1603:8940:93a1",
+      "2600:9000:202b:5600:1a:1603:8940:93a1",
+      "2600:9000:202b:dc00:1a:1603:8940:93a1",
+      "2600:9000:202b:d800:1a:1603:8940:93a1",
+      "2600:9000:202b:cc00:1a:1603:8940:93a1"
     ],
     "cname": null,
     "mx": [
+      "aspmx.l.google.com (pref 1)",
       "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt4.aspmx.l.google.com (pref 10)",
-      "aspmx.l.google.com (pref 1)"
+      "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-836.awsdns-40.net.",
       "ns-1935.awsdns-49.co.uk.",
+      "ns-28.awsdns-03.com.",
       "ns-1116.awsdns-11.org.",
-      "ns-28.awsdns-03.com."
+      "ns-836.awsdns-40.net."
     ],
+    "caa": [],
     "spf": [
-      "google-site-verification=c-RpedAWGD_CbtK-EJNEYYOIRhFayA5yVpVpqKBl2Xo",
       "google-site-verification=rly-FCqs-7DEamfGFHyChSbo3XjeYaYpIwQ4erMjNK4",
-      "google-site-verification=skZv1iZ9lBH5Pkpkfm8ZRvpYndxMV7QemrV3ac53EBM",
-      "yahoo-verification-key=knY++Cbo7zkxhNoKSUgrT47Sp0ALKjyChizJEXKjA30=",
-      "google-site-verification=WUsKOTtUHxPzCx_YTDIKePAJKwKEXMEPWIWn852-EVE",
-      "google-site-verification=lWObIgNhx6XiG8Z3M8M1-k_roaEfWLeqdI2CfRj4K3w",
-      "ZOOM_verify_eNt9zJgJTzuD2aeCF3ngWg",
       "adobe-idp-site-verification=c2108b9dbc0fc05ff0794006df1c41b6c945bd2c8a904bef754ec850a7c6873f",
       "zapier-domain-verification-challenge=dc65028f-9ed1-47f3-be62-e1e5422261ee",
-      "google-site-verification=2KOUBsZpmToiGPqcmMBkEgTV2BH6XDJaXmn1bMVG61k",
-      "v=include:aspmx.sailthru.com ~all",
+      "google-site-verification=lWObIgNhx6XiG8Z3M8M1-k_roaEfWLeqdI2CfRj4K3w",
       "google-site-verification=k8LYtVnKqGVmyd7ZLkoTCeKRHxWKIgL7Hhxhk0X0VqI",
+      "v=include:aspmx.sailthru.com ~all",
+      "MS=ms69053021",
+      "yahoo-verification-key=knY++Cbo7zkxhNoKSUgrT47Sp0ALKjyChizJEXKjA30=",
       "v=spf1 include:_u.pitchfork.com._spf.smart.ondmarc.com ~all",
-      "atlassian-domain-verification=mYtQWl3namqmk5ikMKT48XVnS+XdjdbkLlkWMcNyvsddK2JDAib+9a8MJCXTDMyJ",
-      "MS=ms69053021"
+      "google-site-verification=WUsKOTtUHxPzCx_YTDIKePAJKwKEXMEPWIWn852-EVE",
+      "ZOOM_verify_eNt9zJgJTzuD2aeCF3ngWg",
+      "google-site-verification=2KOUBsZpmToiGPqcmMBkEgTV2BH6XDJaXmn1bMVG61k",
+      "google-site-verification=c-RpedAWGD_CbtK-EJNEYYOIRhFayA5yVpVpqKBl2Xo",
+      "google-site-verification=skZv1iZ9lBH5Pkpkfm8ZRvpYndxMV7QemrV3ac53EBM",
+      "atlassian-domain-verification=mYtQWl3namqmk5ikMKT48XVnS+XdjdbkLlkWMcNyvsddK2JDAib+9a8MJCXTDMyJ"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; sp=reject; rua=mailto:a6816915@inbox.ondmarc.com; ruf=mailto:a6816915@inbox.ondmarc.com; adkim=r; aspf=r; fo=1; rf=afrf; ri=3600"
@@ -225,7 +240,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     }
   },
   "ports": {
-    "ip": "65.9.180.66",
+    "ip": "65.9.180.7",
     "open": []
   },
   "https": {
@@ -329,11 +344,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     ]
   },
   "apex_txt": [
-    "google-site-verification=c-RpedAWGD_CbtK-EJNEYYOIRhFayA5yVpVpqKBl2Xo",
     "google-site-verification=rly-FCqs-7DEamfGFHyChSbo3XjeYaYpIwQ4erMjNK4",
-    "google-site-verification=skZv1iZ9lBH5Pkpkfm8ZRvpYndxMV7QemrV3ac53EBM",
-    "yahoo-verification-key=knY++Cbo7zkxhNoKSUgrT47Sp0ALKjyChizJEXKjA30=",
-    "google-site-verification=WUsKOTtUHxPzCx_YTDIKePAJKwKEXMEPWIWn852-EVE"
+    "adobe-idp-site-verification=c2108b9dbc0fc05ff0794006df1c41b6c945bd2c8a904bef754e",
+    "zapier-domain-verification-challenge=dc65028f-9ed1-47f3-be62-e1e5422261ee",
+    "google-site-verification=lWObIgNhx6XiG8Z3M8M1-k_roaEfWLeqdI2CfRj4K3w",
+    "google-site-verification=k8LYtVnKqGVmyd7ZLkoTCeKRHxWKIgL7Hhxhk0X0VqI"
   ],
   "tls2": {
     "alpn": "",
@@ -344,10 +359,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
       "not_before": "20260824000000",
       "not_after": "20270309235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -369,11 +385,22 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
   "x12": {
     "status": 200,
     "ptr": [
-      "server-65-9-180-66.tpe53.r.cloudfront.net."
+      "server-65-9-180-7.tpe53.r.cloudfront.net."
     ]
   },
-  "elapsed_s": 21.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 20.7,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -383,4 +410,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

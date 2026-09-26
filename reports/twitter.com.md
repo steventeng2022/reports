@@ -7,12 +7,12 @@
 | Target | https://twitter.com/ |
 | Bug bounty program | Twitter |
 | Listed scope domain | twitter.com |
-| Test date | 2026-09-26 19:00 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,10 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 13 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 14 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 15 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
+| 16 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -92,7 +96,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: stripe-verification=46F7B88485621DC18923B43D12E90E6CDBCE232F2FEBCF084E6EFA91F6BA; adobe-idp-site-verification=a2ff8fc40c434d1d6f02f68b0b1a683e400572ab8c1f2c180c71; miro-verification=6e1ca9ad6d0c2cd2e4186141265f23ed618cfe37
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=j6u0o1PTkobCXC84uEF/sWpIPtaZURBVYqKzmTvT8wugLcHT1v; slack-domain-verification=9oO8P4Glf4252QJDOg4rHGs6KlSkBuI5ZVmWRO8d; google-site-verification=q1ghWjGLX9Ba-Gy_B4n_pAgC_mQYzWmQpOD8CMWl_Hw
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -113,6 +117,30 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 - **Detail:** Content-Security-Policy of twitter.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
 - **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
+### 14. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on twitter.com indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 15. [LOW] HTTPS root redirects to a different domain (`RD2`)
+
+- **CWE:** CWE-200
+- **Detail:** https://twitter.com/ answered 301 with Location: https://x.com/ (cross-domain handoff at the entry point).
+- **Recommendation:** Review the cross-domain redirect; it discloses the real entry point and can be abused in open-redirect-style flows.
+
+### 16. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on twitter.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for twitter.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -125,47 +153,48 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt3.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)",
-      "aspmx.l.google.com (pref 1)"
+      "aspmx.l.google.com (pref 1)",
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "c.r06.twtrdns.net.",
       "d.u06.twtrdns.net.",
+      "b.r06.twtrdns.net.",
+      "b.u06.twtrdns.net.",
+      "c.r06.twtrdns.net.",
+      "a.u06.twtrdns.net.",
       "a.r06.twtrdns.net.",
       "c.u06.twtrdns.net.",
-      "a.u06.twtrdns.net.",
-      "b.u06.twtrdns.net.",
-      "b.r06.twtrdns.net.",
       "d.r06.twtrdns.net."
     ],
+    "caa": [],
     "spf": [
-      "stripe-verification=46F7B88485621DC18923B43D12E90E6CDBCE232F2FEBCF084E6EFA91F6BA707D",
-      "mixpanel-domain-verify=164dda91-31f4-41e8-a816-0f59b38fea30",
-      "adobe-idp-site-verification=a2ff8fc40c434d1d6f02f68b0b1a683e400572ab8c1f2c180c71c3d985b9270a",
-      "MS=BEE202D20C326867290BDEFA2DDDF4594B5D6860",
-      "miro-verification=6e1ca9ad6d0c2cd2e4186141265f23ed618cfe37",
-      "apple-domain-verification=zd1iHoEO9LILEQIq",
-      "v=spf1 ip4:199.16.156.0/22 ip4:199.59.148.0/22 ip4:8.25.194.0/23 ip4:8.25.196.0/23 ip4:204.92.114.203 ip4:204.92.114.204/31 include:_spf.google.com include:_thirdparty.twitter.com -all",
-      "canva-site-verification=lMnZ3wMh7c1uqZqa-cxZTg",
-      "wrike-verification=MjU4MTA5MjoyN2UzNDc1MjU3MDZiZTY4NjBiNzliNDQ2OTUwNWY3NmM5NDgyMTBlYzFkNTcwYTE2YWNmZDdkNTY2ZmE4Yzlh",
-      "notion-domain-verification=uKi5TAGxlhWMHG9uHKHkDY3cVc6zraAE1I44bILENlB",
-      "google-site-verification=TNhAkfLUeIbzzzSgPNxS5aEkKMf3aUcpPmCK1_kmIvU",
-      "linear-domain-verification=t5iq7e7nbw5w",
-      "google-site-verification=P9-NRZ0gaRKRGNDOXOjct5XETPtr3P9D-XA8HnlbAy4",
-      "atlassian-domain-verification=j6u0o1PTkobCXC84uEF/sWpIPtaZURBVYqKzmTvT8wugLcHT1vvrzzA63iP1qSLN",
       "traction-guest=a4d0248d-fe01-4222-8fcc-33f68323e667",
-      "google-site-verification=600dQ0pZYsH2xOFt4hYmf5f5NpjCbWE_qk5Y04dErYM",
+      "atlassian-domain-verification=j6u0o1PTkobCXC84uEF/sWpIPtaZURBVYqKzmTvT8wugLcHT1vvrzzA63iP1qSLN",
+      "slack-domain-verification=9oO8P4Glf4252QJDOg4rHGs6KlSkBuI5ZVmWRO8d",
+      "v=spf1 ip4:199.16.156.0/22 ip4:199.59.148.0/22 ip4:8.25.194.0/23 ip4:8.25.196.0/23 ip4:204.92.114.203 ip4:204.92.114.204/31 include:_spf.google.com include:_thirdparty.twitter.com -all",
       "traction-guest=6882b04e-4188-4ff9-8bb4-bff5a3d358e6",
-      "bj6sbt5xqs9hw9jrfvz7hplrg0l680sb",
-      "google-site-verification=h6dJIv0HXjLOkGAotLAWEzvoi9SxqP4vjpx98vrCvvQ",
-      "loom-site-verification=638c6bc173b9458997f64d305bf42499",
-      "0a8c0fc6-bfa5-4ea7-b09b-87f2989022d6",
-      "google-site-verification=F2uUiLUsD6kQlpUVQzxUM3PHa0uPo5GBS84SCG8QwXI",
       "google-site-verification=q1ghWjGLX9Ba-Gy_B4n_pAgC_mQYzWmQpOD8CMWl_Hw",
-      "slack-domain-verification=9oO8P4Glf4252QJDOg4rHGs6KlSkBuI5ZVmWRO8d"
+      "adobe-idp-site-verification=a2ff8fc40c434d1d6f02f68b0b1a683e400572ab8c1f2c180c71c3d985b9270a",
+      "stripe-verification=46F7B88485621DC18923B43D12E90E6CDBCE232F2FEBCF084E6EFA91F6BA707D",
+      "MS=BEE202D20C326867290BDEFA2DDDF4594B5D6860",
+      "linear-domain-verification=t5iq7e7nbw5w",
+      "google-site-verification=600dQ0pZYsH2xOFt4hYmf5f5NpjCbWE_qk5Y04dErYM",
+      "google-site-verification=P9-NRZ0gaRKRGNDOXOjct5XETPtr3P9D-XA8HnlbAy4",
+      "google-site-verification=h6dJIv0HXjLOkGAotLAWEzvoi9SxqP4vjpx98vrCvvQ",
+      "google-site-verification=TNhAkfLUeIbzzzSgPNxS5aEkKMf3aUcpPmCK1_kmIvU",
+      "miro-verification=6e1ca9ad6d0c2cd2e4186141265f23ed618cfe37",
+      "bj6sbt5xqs9hw9jrfvz7hplrg0l680sb",
+      "0a8c0fc6-bfa5-4ea7-b09b-87f2989022d6",
+      "wrike-verification=MjU4MTA5MjoyN2UzNDc1MjU3MDZiZTY4NjBiNzliNDQ2OTUwNWY3NmM5NDgyMTBlYzFkNTcwYTE2YWNmZDdkNTY2ZmE4Yzlh",
+      "apple-domain-verification=zd1iHoEO9LILEQIq",
+      "canva-site-verification=lMnZ3wMh7c1uqZqa-cxZTg",
+      "loom-site-verification=638c6bc173b9458997f64d305bf42499",
+      "mixpanel-domain-verify=164dda91-31f4-41e8-a816-0f59b38fea30",
+      "notion-domain-verification=uKi5TAGxlhWMHG9uHKHkDY3cVc6zraAE1I44bILENlB",
+      "google-site-verification=F2uUiLUsD6kQlpUVQzxUM3PHa0uPo5GBS84SCG8QwXI"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:d3omt-8484@rua.dmarc.emailanalyst.com; ruf=mailto:d3omt-8484@ruf.dmarc.emailanalyst.com; fo=1"
@@ -273,11 +302,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "stripe-verification=46F7B88485621DC18923B43D12E90E6CDBCE232F2FEBCF084E6EFA91F6BA",
+    "atlassian-domain-verification=j6u0o1PTkobCXC84uEF/sWpIPtaZURBVYqKzmTvT8wugLcHT1v",
+    "slack-domain-verification=9oO8P4Glf4252QJDOg4rHGs6KlSkBuI5ZVmWRO8d",
+    "google-site-verification=q1ghWjGLX9Ba-Gy_B4n_pAgC_mQYzWmQpOD8CMWl_Hw",
     "adobe-idp-site-verification=a2ff8fc40c434d1d6f02f68b0b1a683e400572ab8c1f2c180c71",
-    "miro-verification=6e1ca9ad6d0c2cd2e4186141265f23ed618cfe37",
-    "apple-domain-verification=zd1iHoEO9LILEQIq",
-    "canva-site-verification=lMnZ3wMh7c1uqZqa-cxZTg"
+    "stripe-verification=46F7B88485621DC18923B43D12E90E6CDBCE232F2FEBCF084E6EFA91F6BA"
   ],
   "tls2": {
     "alpn": "",
@@ -316,8 +345,23 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 7.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://x.com/",
+    "http_status": 520,
+    "p404_status": 301,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 8.8,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -327,4 +371,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,8 +7,8 @@
 | Target | https://code.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | code.google.com |
-| Test date | 2026-09-26 18:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -120,7 +120,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 ### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 173.194.174.139 carries PTR td-in-f139.1e100.net. for code.google.com.
+- **Detail:** 142.250.198.78 carries PTR lctsaa-ab-in-f14.1e100.net. for code.google.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
@@ -130,22 +130,15 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
   "domain": "code.google.com",
   "dns": {
     "a": [
-      "173.194.174.139",
-      "173.194.174.101",
-      "173.194.174.113",
-      "173.194.174.138",
-      "173.194.174.102",
-      "173.194.174.100"
+      "142.250.198.78"
     ],
     "aaaa": [
-      "2404:6800:4008:c1b::66",
-      "2404:6800:4008:c1b::71",
-      "2404:6800:4008:c1b::65",
-      "2404:6800:4008:c1b::64"
+      "2404:6800:4012:8::200e"
     ],
     "cname": "code.l.google.com.",
     "mx": [],
     "ns": [],
+    "caa": [],
     "spf": [],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -156,9 +149,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=*.google.com",
-    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
-    "notBefore": "Sep 10 19:22:01 2026 GMT",
-    "notAfter": "Dec  3 19:22:00 2026 GMT",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
+    "notBefore": "Sep 10 19:21:53 2026 GMT",
+    "notAfter": "Dec  3 19:21:52 2026 GMT",
     "san": [
       "*.google.com",
       "*.appengine.google.com",
@@ -226,7 +219,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
       "android.clients.google.com",
       "*.aistudio.google.com"
     ],
-    "days_left": 68,
+    "days_left": 67,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -236,7 +229,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
     }
   },
   "ports": {
-    "ip": "173.194.174.139",
+    "ip": "142.250.198.78",
     "open": []
   },
   "https": {
@@ -295,13 +288,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
     "tls_ver": "TLSv1.3",
     "subject": "None",
     "cert": {
-      "sig_oid": "1.2.840.10045.4.3.2",
+      "sig_oid": "1.2.840.113549.1.1.11",
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
-      "not_before": "20260910192201",
-      "not_after": "20261203192200"
+      "not_before": "20260910192153",
+      "not_after": "20261203192152"
     }
   },
   "http2": {
@@ -321,11 +314,21 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
   "x12": {
     "status": 200,
     "ptr": [
-      "td-in-f139.1e100.net."
+      "lctsaa-ab-in-f14.1e100.net."
     ]
   },
-  "elapsed_s": 3.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 200,
+    "p404_status": 404,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 4.2,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -335,4 +338,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

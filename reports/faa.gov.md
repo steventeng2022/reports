@@ -7,8 +7,8 @@
 | Target | https://faa.gov/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | faa.gov |
-| Test date | 2026-09-26 18:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:05 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -33,8 +33,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 | 15 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 16 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -149,20 +149,20 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=u6VDYAQzYrOfivbe; adobe-sign-verification=d9b517c45c4c2b0277445e0d9d7eac344dcb02519394a0ea08faee8c; adobe-idp-site-verification=2d36c88877f2772ad0e628e64e865a3a225928ef49b2967f35ec
+- **Detail:** Apex TXT records with verification/token content: google-gws-recovery-domain-verification=61134742; apple-domain-verification=qtgRthDvinDxfuZb; apple-domain-verification=u6VDYAQzYrOfivbe
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of faa.gov has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 155.178.201.85 carries PTR faa.gov. for faa.gov.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 19. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The faa.gov certificate lists an AIA OCSP responder (http://ocsp.digicert.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -178,43 +178,49 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     ],
     "cname": null,
     "mx": [
+      "amcrelay3.faa.gov (pref 5)",
       "relay1.faa.gov (pref 5)",
+      "relay3.faa.gov (pref 5)",
+      "amcrelay4.faa.gov (pref 5)",
       "amcrelay1.faa.gov (pref 5)",
       "relay2.faa.gov (pref 5)",
-      "relay4.faa.gov (pref 5)",
-      "amcrelay4.faa.gov (pref 5)",
-      "amcrelay3.faa.gov (pref 5)",
-      "relay3.faa.gov (pref 5)",
-      "amcrelay2.faa.gov (pref 5)"
+      "amcrelay2.faa.gov (pref 5)",
+      "relay4.faa.gov (pref 5)"
     ],
     "ns": [
-      "a11-65.akam.net.",
-      "a12-64.akam.net.",
-      "faa-ct-egm1.faa.gov.",
-      "a1-97.akam.net.",
+      "a5-65.akam.net.",
       "a24-64.akam.net.",
+      "a1-97.akam.net.",
+      "faa-ct-egm1.faa.gov.",
+      "a11-65.akam.net.",
       "faa-mc-egm1.faa.gov.",
       "a14-64.akam.net.",
-      "a5-65.akam.net."
+      "a12-64.akam.net."
+    ],
+    "caa": [
+      "128 issue \"amazon.com\"",
+      "128 issue \"digicert.com\"",
+      "0 issue \"globalsign.com\"",
+      "128 iodef \"mailto:9-ait-arin-abuse@faa.gov\""
     ],
     "spf": [
-      "docusign=080db4e4-218c-443b-ad76-1963743f3157",
-      "apple-domain-verification=u6VDYAQzYrOfivbe",
-      "docusign=36a52596-5d8b-4aa8-a3ea-fd823a641d7b",
-      "adobe-sign-verification=d9b517c45c4c2b0277445e0d9d7eac344dcb02519394a0ea08faee8c40d85dc3",
-      "adobe-idp-site-verification=2d36c88877f2772ad0e628e64e865a3a225928ef49b2967f35ece163e84ae203",
-      "_mhp0ohi7rqkhwe0s2sd2wz626zbzq50",
-      "box-domain-verification=6e6d49a46237d2f704840481289b15d3e7a02a41723fe3cdfd9341b6f52df150",
-      "google-gws-recovery-domain-verification=61134742",
-      "apple-domain-verification=qtgRthDvinDxfuZb",
       "_m0b4vf6qhrh5scrrxosrx9nlq687irj",
-      "atlassian-domain-verification=wtYpZOBvqKwb5ZROaraY6fshROjgQ0TOYLAGTZnDsOuoqJCyjOey552col60ndzg",
-      "zy861l2r0qc6nqjqkwprs8w047f6m44n",
-      "smartsheet-gov-site-validation=mIkWyNAOEJecACv9-NJtfYQNvPNPrAKB",
       "_dxoevfz55dgcr8btzsrr2zg588vrpy7",
+      "google-gws-recovery-domain-verification=61134742",
+      "docusign=080db4e4-218c-443b-ad76-1963743f3157",
+      "apple-domain-verification=qtgRthDvinDxfuZb",
       "_j0jnoq89nb5odruj97i87etsntvpfoc",
+      "zy861l2r0qc6nqjqkwprs8w047f6m44n",
+      "docusign=36a52596-5d8b-4aa8-a3ea-fd823a641d7b",
+      "apple-domain-verification=u6VDYAQzYrOfivbe",
+      "box-domain-verification=6e6d49a46237d2f704840481289b15d3e7a02a41723fe3cdfd9341b6f52df150",
+      "v=spf1 include:faa.gov._nspf.valigov.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.valigov.email ~all",
+      "atlassian-domain-verification=wtYpZOBvqKwb5ZROaraY6fshROjgQ0TOYLAGTZnDsOuoqJCyjOey552col60ndzg",
+      "smartsheet-gov-site-validation=mIkWyNAOEJecACv9-NJtfYQNvPNPrAKB",
+      "_mhp0ohi7rqkhwe0s2sd2wz626zbzq50",
       "airtable-verification=980f49ddafd00c06f4e37be0a0e74d83",
-      "v=spf1 include:faa.gov._nspf.valigov.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.valigov.email ~all"
+      "adobe-sign-verification=d9b517c45c4c2b0277445e0d9d7eac344dcb02519394a0ea08faee8c40d85dc3",
+      "adobe-idp-site-verification=2d36c88877f2772ad0e628e64e865a3a225928ef49b2967f35ece163e84ae203"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@valigov.email,mailto:9-AIF-340-DMARC-REPORTS@faa.gov,mailto:reports@dmarc.cyber.dhs.gov; ruf=mailto:9-AIF-340-DMARC-REPORTS@faa.gov"
@@ -296,11 +302,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "google-gws-recovery-domain-verification=61134742",
+    "apple-domain-verification=qtgRthDvinDxfuZb",
     "apple-domain-verification=u6VDYAQzYrOfivbe",
-    "adobe-sign-verification=d9b517c45c4c2b0277445e0d9d7eac344dcb02519394a0ea08faee8c",
-    "adobe-idp-site-verification=2d36c88877f2772ad0e628e64e865a3a225928ef49b2967f35ec",
     "box-domain-verification=6e6d49a46237d2f704840481289b15d3e7a02a41723fe3cdfd9341b6",
-    "google-gws-recovery-domain-verification=61134742"
+    "atlassian-domain-verification=wtYpZOBvqKwb5ZROaraY6fshROjgQ0TOYLAGTZnDsOuoqJCyjO"
   ],
   "tls2": {
     "alpn": "",
@@ -311,10 +317,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.digicert.com",
       "not_before": "20260511000000",
       "not_after": "20261125235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "x12": {
     "status": 302,
@@ -322,8 +329,20 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "faa.gov."
     ]
   },
-  "elapsed_s": 36.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 302,
+    "root_location": "http://www.faa.gov/",
+    "http_status": 302,
+    "p404_status": 302,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 45.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -333,4 +352,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

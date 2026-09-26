@@ -7,8 +7,8 @@
 | Target | https://bloomberg.com/ |
 | Bug bounty program | Bloomberg |
 | Listed scope domain | bloomberg.com |
-| Test date | 2026-09-26 18:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -26,10 +26,10 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 | 8 | low | MAIL12 | MTA-STS TXT published but policy file unreachable | CWE-285 |
 | 9 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 14 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -95,32 +95,32 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: airtable-verification=15d4376d6d99cc906abbcb295b4245da; atlassian-domain-verification=gK9LJEftkavNAe/keDgXDWOhGwUV02GQTz9BbfKLplkTTtpciO; extensis-domain-verification=707df5b4-0868-499f-af75-51718e082698
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=vH_zs-JrwvXxkyuUqmeN9t3iMYZqyt1-BJUsoyN3ca8; airtable-verification=15d4376d6d99cc906abbcb295b4245da; jamf-site-verification=VJNRhgJ90SmyugkIPAdfCQ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of bloomberg.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 12. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but bloomberg.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 13. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 130 disallow path(s), e.g. /polska, /account/*, /tosv*.html, /search, /company/search/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 3.33.146.110 carries PTR aa2f66099ca87b6fe.awsglobalaccelerator.com. for bloomberg.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 14. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The bloomberg.com certificate lists an AIA OCSP responder (http://ocsp.digicert.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -135,44 +135,50 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mgcny2.bloomberg.com (pref 0)",
-      "mgcnj2.bloomberg.com (pref 0)",
       "mgcnj1.bloomberg.com (pref 0)",
+      "mgcnj2.bloomberg.com (pref 0)",
+      "mgcny2.bloomberg.com (pref 0)",
       "mgcny1.bloomberg.com (pref 0)"
     ],
     "ns": [
+      "pdns3.ultradns.org.",
+      "dns2.p01.nsone.net.",
       "dns1.p01.nsone.net.",
       "pdns1.ultradns.net.",
-      "pdns3.ultradns.org.",
-      "dns4.p01.nsone.net.",
       "dns3.p01.nsone.net.",
-      "pdns5.ultradns.info.",
-      "dns2.p01.nsone.net."
+      "dns4.p01.nsone.net.",
+      "pdns5.ultradns.info."
+    ],
+    "caa": [
+      "0 iodef \"mailto:reportvuln@bloomberg.net\"",
+      "0 issue \"digicert.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issuewild \"digicert.com\""
     ],
     "spf": [
-      "v=spf1 ip4:69.184.0.0/13 ip4:199.172.169.0/24 ip4:208.22.56.0/24 ip4:69.191.241.124 -all",
-      "airtable-verification=15d4376d6d99cc906abbcb295b4245da",
-      "atlassian-domain-verification=gK9LJEftkavNAe/keDgXDWOhGwUV02GQTz9BbfKLplkTTtpciOH5eL1W6u7BRfVR",
+      "google-site-verification=vH_zs-JrwvXxkyuUqmeN9t3iMYZqyt1-BJUsoyN3ca8",
       "Ymxvb21iZXJn",
-      "QnH3utpbwmcXnxwnErM2by/pp37P7fYtF9si0rMmb9FgwB98zU8UAzdl1GbyQMdyNFLKobFRdX6FfLlH/LG+og==",
-      "ZOOM_verify_8UDWCiGoiAVgGEuiZNG9Ld",
-      "ZOOM_verify_rl-mcFScS8W6864E30mlZg",
-      "extensis-domain-verification=707df5b4-0868-499f-af75-51718e082698",
-      "openai-domain-verification=dv-XaK3IjuwWpMmfss9VYKwn0eY",
-      "MS=ms33692690",
-      "F2QdzLTE6LTOyOQ7pQzoSY2pnwVM5pnfiqY3zOoYvS3LoVmIUr0J3op5vQI8Tg8VQwt24UK8v7oFWfbrCBWYYw==",
+      "airtable-verification=15d4376d6d99cc906abbcb295b4245da",
       "jamf-site-verification=VJNRhgJ90SmyugkIPAdfCQ",
+      "v=spf1 ip4:69.184.0.0/13 ip4:199.172.169.0/24 ip4:208.22.56.0/24 ip4:69.191.241.124 -all",
+      "ZOOM_verify_rl-mcFScS8W6864E30mlZg",
       "apple-domain-verification=9cs9hMRccEtbVb8h",
+      "parallels-domain-verification=47460854911b478da11221dc20e8cc0340a92adf1e6b4ff08a5e941f5379c267",
       "google-gws-recovery-domain-verification=72311760",
-      "MS=ms99943004",
       "OSSRH-64276",
       "cursor-domain-verification-asb77c=D43c1zjGqO3rTemQvZ121NSfi",
-      "google-site-verification=vH_zs-JrwvXxkyuUqmeN9t3iMYZqyt1-BJUsoyN3ca8",
+      "MS=ms99943004",
+      "MS=ms33692690",
+      "2smsverify=08qXd7f0aUa5IPq0N4ETgQ",
+      "F2QdzLTE6LTOyOQ7pQzoSY2pnwVM5pnfiqY3zOoYvS3LoVmIUr0J3op5vQI8Tg8VQwt24UK8v7oFWfbrCBWYYw==",
       "lutron-domain-verification-p8wzsk=PQcs5tfle6vYve4ulSshxyMYi",
+      "QnH3utpbwmcXnxwnErM2by/pp37P7fYtF9si0rMmb9FgwB98zU8UAzdl1GbyQMdyNFLKobFRdX6FfLlH/LG+og==",
+      "atlassian-domain-verification=gK9LJEftkavNAe/keDgXDWOhGwUV02GQTz9BbfKLplkTTtpciOH5eL1W6u7BRfVR",
+      "openai-domain-verification=dv-XaK3IjuwWpMmfss9VYKwn0eY",
       "google-site-verification=CI2IKDBbk_gcKk_9CFFUrF-ZLZToKXQ7SAJ96fjqZ_I",
-      "parallels-domain-verification=47460854911b478da11221dc20e8cc0340a92adf1e6b4ff08a5e941f5379c267",
       "google-site-verification=ClT3QBQ-Rd4b3AAq2gmQ-u_94EliZRmC2e-Kb4t9zEo",
-      "2smsverify=08qXd7f0aUa5IPq0N4ETgQ"
+      "ZOOM_verify_8UDWCiGoiAVgGEuiZNG9Ld",
+      "extensis-domain-verification=707df5b4-0868-499f-af75-51718e082698"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; adkim=r; aspf=r; ruf=mailto:dmarc-ruf@dmarc-bloomberg.com; fo=1; rua=mailto:dmarc-rua@dmarc-bloomberg.com"
@@ -304,11 +310,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "google-site-verification=vH_zs-JrwvXxkyuUqmeN9t3iMYZqyt1-BJUsoyN3ca8",
     "airtable-verification=15d4376d6d99cc906abbcb295b4245da",
-    "atlassian-domain-verification=gK9LJEftkavNAe/keDgXDWOhGwUV02GQTz9BbfKLplkTTtpciO",
-    "extensis-domain-verification=707df5b4-0868-499f-af75-51718e082698",
-    "openai-domain-verification=dv-XaK3IjuwWpMmfss9VYKwn0eY",
-    "jamf-site-verification=VJNRhgJ90SmyugkIPAdfCQ"
+    "jamf-site-verification=VJNRhgJ90SmyugkIPAdfCQ",
+    "apple-domain-verification=9cs9hMRccEtbVb8h",
+    "parallels-domain-verification=47460854911b478da11221dc20e8cc0340a92adf1e6b4ff08a"
   ],
   "tls2": {
     "alpn": "",
@@ -319,10 +325,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.digicert.com",
       "not_before": "20260723000000",
       "not_after": "20270129235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -349,8 +356,20 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "aa2f66099ca87b6fe.awsglobalaccelerator.com."
     ]
   },
-  "elapsed_s": 17.9,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.bloomberg.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 25.1,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -360,4 +379,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

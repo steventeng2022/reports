@@ -7,12 +7,12 @@
 | Target | https://ca.linkedin.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ca.linkedin.com |
-| Test date | 2026-09-26 18:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:00 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
+Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,14 +25,16 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 | 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 9 | info | H6 | Server technology disclosure | CWE-200 |
-| 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 12 | low | CK4 | Session-like cookie without HttpOnly | CWE-1004 |
-| 13 | info | CK5 | Cookie scoped to parent domain (linkedin.com) | CWE-200 |
-| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
-| 16 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
-| 17 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 10 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 11 | low | CK4 | Session-like cookie without HttpOnly | CWE-1004 |
+| 12 | info | CK5 | Cookie scoped to parent domain (linkedin.com) | CWE-200 |
+| 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 15 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 16 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 17 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 18 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 19 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -45,13 +47,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.41.41:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.64.146.215:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.41.41:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.64.146.215:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -94,49 +96,61 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
-### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of ca.linkedin.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 10. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but ca.linkedin.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 12. [LOW] Session-like cookie without HttpOnly (`CK4`)
+### 11. [LOW] Session-like cookie without HttpOnly (`CK4`)
 
 - **CWE:** CWE-1004
 - **Detail:** Cookie 'JSESSIONID' looks session-related and has no HttpOnly attribute.
 - **Recommendation:** Set HttpOnly on session cookies.
 
-### 13. [INFO] Cookie scoped to parent domain (linkedin.com) (`CK5`)
+### 12. [INFO] Cookie scoped to parent domain (linkedin.com) (`CK5`)
 
 - **CWE:** CWE-200
 - **Detail:** Set-Cookie Domain attribute is broader than the request host ca.linkedin.com.
 - **Recommendation:** Confirm the wider cookie scope is intended.
 
-### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 13. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 4398 disallow path(s), e.g. /addContacts*, /addressBookExport*, /ambry, /analytics/, /answers*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 15. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+### 14. [LOW] CSP present but still allows unsafe directives (`CSP1`)
 
 - **CWE:** CWE-1021
 - **Detail:** Content-Security-Policy of ca.linkedin.com permits unsafe-inline; inline script injection still executes.
 - **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
-### 16. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+### 15. [INFO] CSP reporting endpoint disclosed (`CSP2`)
 
 - **CWE:** CWE-200
 - **Detail:** CSP of ca.linkedin.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
 - **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
 
-### 17. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on ca.linkedin.com indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 17. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkc0m9w60seevl.html -> 404; error page/headers match: Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 18. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on ca.linkedin.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 19. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -149,16 +163,17 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
   "domain": "ca.linkedin.com",
   "dns": {
     "a": [
-      "104.18.41.41",
-      "172.64.146.215"
+      "172.64.146.215",
+      "104.18.41.41"
     ],
     "aaaa": [
-      "2a06:98c1:310b::ac40:92d7",
-      "2a06:98c1:3109::6812:2929"
+      "2a06:98c1:3109::6812:2929",
+      "2a06:98c1:310b::ac40:92d7"
     ],
     "cname": "cctld.linkedin.com.",
     "mx": [],
     "ns": [],
+    "caa": [],
     "spf": [],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -261,7 +276,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     }
   },
   "ports": {
-    "ip": "104.18.41.41",
+    "ip": "172.64.146.215",
     "open": [
       8080,
       8443
@@ -362,10 +377,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.digicert.com",
       "not_before": "20260903000000",
       "not_after": "20270303235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -389,8 +405,23 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 11.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/apple-app-site-association",
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 13.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -400,4 +431,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

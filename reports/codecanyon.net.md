@@ -7,12 +7,12 @@
 | Target | https://codecanyon.net/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | codecanyon.net |
-| Test date | 2026-09-26 18:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,7 +30,10 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 | 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
-| 15 | info | CT1 | 3 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 15 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 16 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 18 | info | CT1 | 3 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -43,13 +46,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.153.11:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.34.245:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.153.11:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.34.245:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [LOW] Mixed content: HTTP resources referenced from HTTPS page (`MIX1`)
@@ -122,7 +125,25 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 - **Detail:** Response for https://codecanyon.net/ carries Cache-Control: max-age=1800, public, stale-while-revalidate=300, stale-if-error=28800 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
-### 15. [INFO] 3 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 15. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on codecanyon.net indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 16. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkurtgkq2dn97o.html -> 404; error page/headers match: WordPress, Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for codecanyon.net, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 18. [INFO] 3 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -135,8 +156,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
   "domain": "codecanyon.net",
   "dns": {
     "a": [
-      "172.64.153.11",
-      "104.18.34.245"
+      "104.18.34.245",
+      "172.64.153.11"
     ],
     "aaaa": [],
     "cname": null,
@@ -145,10 +166,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "fred.ns.cloudflare.com.",
       "emma.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
       "yandex-verification: b4b01b75b3d86324",
-      "v=spf1 -all",
       "google-site-verification=feUSO0Lms1Fa93pYglTFjzdeTJAx4b8dPBt-TYElDhc",
+      "v=spf1 -all",
       "google-site-verification=ySMLIcaqfTCKUQXId6VeFcoNA-sxWaBZk4VSsTyfj9g"
     ],
     "dmarc": [
@@ -178,7 +200,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
     }
   },
   "ports": {
-    "ip": "172.64.153.11",
+    "ip": "104.18.34.245",
     "open": [
       8080,
       8443
@@ -290,8 +312,18 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 8.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 9.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -301,4 +333,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

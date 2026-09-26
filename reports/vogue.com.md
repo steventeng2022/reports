@@ -7,12 +7,12 @@
 | Target | https://vogue.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | vogue.com |
-| Test date | 2026-09-26 19:01 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,10 +30,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 18 | info | CT1 | 39 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 20 | info | CT1 | 39 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -127,14 +129,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=Zg2QYDSkRzso69ytr0XEOkPovxRiyUzmaxpLG6cmvho; google-site-verification=zcD6BQv00vEAHz7gR-RM32XcQ6viddAOiZ1r5DNkQgo; facebook-domain-verification=6x1dytzup5zmced9tfbjt53v381sd5
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=Zg2QYDSkRzso69ytr0XEOkPovxRiyUzmaxpLG6cmvho; google-site-verification=0rCw3th8Nz8zUpLrjnI5ddz-wT-iv-IfYFYE4W434Pw; google-site-verification=TotKJyzGHFh-Cx9RPOCylr-TeWAhHQW4-wx-m09MA0w
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of vogue.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m04.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
@@ -145,10 +147,22 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 52.223.6.210 carries PTR aeed6796a0f5c0317.awsglobalaccelerator.com. for vogue.com.
+- **Detail:** 166.117.251.134 carries PTR aeed6796a0f5c0317.awsglobalaccelerator.com. for vogue.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 18. [INFO] 39 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for vogue.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 19. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The vogue.com certificate lists an AIA OCSP responder (http://ocsp.r2m04.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
+### 20. [INFO] 39 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.vogue.com, app.link.vogue.com, app.vogue.com, assets.vogue.com, my.vogue.com, shop.vogue.com
@@ -161,47 +175,48 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "vogue.com",
   "dns": {
     "a": [
-      "52.223.6.210",
-      "166.117.251.134"
+      "166.117.251.134",
+      "52.223.6.210"
     ],
     "aaaa": [
-      "2600:9000:a707:a46c:560f:b721:9702:d75e",
-      "2600:9000:a41b:ef95:eff:32b3:411c:f36c"
+      "2600:9000:a41b:ef95:eff:32b3:411c:f36c",
+      "2600:9000:a707:a46c:560f:b721:9702:d75e"
     ],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
-      "alt3.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "aspmx.l.google.com (pref 1)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-1116.awsdns-11.org.",
       "ns-1935.awsdns-49.co.uk.",
       "ns-28.awsdns-03.com.",
+      "ns-1116.awsdns-11.org.",
       "ns-836.awsdns-40.net."
     ],
+    "caa": [],
     "spf": [
-      "fastly-domain-delegation-grdt7uboiyaqqtgjenzi-789661-2024-07-19",
-      "google-site-verification=Zg2QYDSkRzso69ytr0XEOkPovxRiyUzmaxpLG6cmvho",
-      "MS=ms23179707",
-      "google-site-verification=zcD6BQv00vEAHz7gR-RM32XcQ6viddAOiZ1r5DNkQgo",
-      "facebook-domain-verification=6x1dytzup5zmced9tfbjt53v381sd5",
-      "ZOOM_verify_kdyAdyAMRLmIhWagXSIIAg",
-      "google-site-verification=TotKJyzGHFh-Cx9RPOCylr-TeWAhHQW4-wx-m09MA0w",
-      "v=spf1 include:_u.vogue.com._spf.smart.ondmarc.com -all",
-      "zapier-domain-verification-challenge=9acd95dc-f346-4b72-acb0-ceb88d996ba4",
-      "google-site-verification=75Jd5pu9q9ASOY0VZggn-TZZGwGsVXex4POiiGCUKJc",
-      "google-site-verification=KC8kypqWuXMriWr2c1yLNvTa_h8Lj3u3Ls7utthC3dQ",
-      "google-site-verification=0rCw3th8Nz8zUpLrjnI5ddz-wT-iv-IfYFYE4W434Pw",
-      "atlassian-domain-verification=mYtQWl3namqmk5ikMKT48XVnS+XdjdbkLlkWMcNyvsddK2JDAib+9a8MJCXTDMyJ",
-      "xt2rbt7mdy4gk53hgy2mf3sx8j9f22v8",
       "MS=ms95711702",
-      "adobe-idp-site-verification=c2108b9dbc0fc05ff0794006df1c41b6c945bd2c8a904bef754ec850a7c6873f",
+      "v=spf1 include:_u.vogue.com._spf.smart.ondmarc.com -all",
+      "google-site-verification=Zg2QYDSkRzso69ytr0XEOkPovxRiyUzmaxpLG6cmvho",
+      "google-site-verification=0rCw3th8Nz8zUpLrjnI5ddz-wT-iv-IfYFYE4W434Pw",
+      "google-site-verification=TotKJyzGHFh-Cx9RPOCylr-TeWAhHQW4-wx-m09MA0w",
+      "zapier-domain-verification-challenge=9acd95dc-f346-4b72-acb0-ceb88d996ba4",
+      "MS=ms23179707",
+      "google-site-verification=KC8kypqWuXMriWr2c1yLNvTa_h8Lj3u3Ls7utthC3dQ",
+      "facebook-domain-verification=6x1dytzup5zmced9tfbjt53v381sd5",
+      "xt2rbt7mdy4gk53hgy2mf3sx8j9f22v8",
+      "ZOOM_verify_kdyAdyAMRLmIhWagXSIIAg",
       "yahoo-verification-key=wNK397wYlhUjvNegBd2B9l5tgqbgfLIRT0BSY2zQ910=",
+      "adobe-idp-site-verification=c2108b9dbc0fc05ff0794006df1c41b6c945bd2c8a904bef754ec850a7c6873f",
       "fastly-domain-delegation-LRX8J5E7-877731-20250130",
-      "pinterest-site-verification=079bd01e42d8f0eaa5422e8618a6c6d4"
+      "google-site-verification=75Jd5pu9q9ASOY0VZggn-TZZGwGsVXex4POiiGCUKJc",
+      "pinterest-site-verification=079bd01e42d8f0eaa5422e8618a6c6d4",
+      "atlassian-domain-verification=mYtQWl3namqmk5ikMKT48XVnS+XdjdbkLlkWMcNyvsddK2JDAib+9a8MJCXTDMyJ",
+      "google-site-verification=zcD6BQv00vEAHz7gR-RM32XcQ6viddAOiZ1r5DNkQgo",
+      "fastly-domain-delegation-grdt7uboiyaqqtgjenzi-789661-2024-07-19"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; sp=reject; rua=mailto:a6816915@inbox.ondmarc.com; ruf=mailto:a6816915@inbox.ondmarc.com; adkim=r; aspf=r; fo=1; rf=afrf; ri=3600"
@@ -321,7 +336,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "52.223.6.210",
+    "ip": "166.117.251.134",
     "open": []
   },
   "https": {
@@ -406,10 +421,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   },
   "apex_txt": [
     "google-site-verification=Zg2QYDSkRzso69ytr0XEOkPovxRiyUzmaxpLG6cmvho",
-    "google-site-verification=zcD6BQv00vEAHz7gR-RM32XcQ6viddAOiZ1r5DNkQgo",
-    "facebook-domain-verification=6x1dytzup5zmced9tfbjt53v381sd5",
+    "google-site-verification=0rCw3th8Nz8zUpLrjnI5ddz-wT-iv-IfYFYE4W434Pw",
     "google-site-verification=TotKJyzGHFh-Cx9RPOCylr-TeWAhHQW4-wx-m09MA0w",
-    "zapier-domain-verification-challenge=9acd95dc-f346-4b72-acb0-ceb88d996ba4"
+    "zapier-domain-verification-challenge=9acd95dc-f346-4b72-acb0-ceb88d996ba4",
+    "google-site-verification=KC8kypqWuXMriWr2c1yLNvTa_h8Lj3u3Ls7utthC3dQ"
   ],
   "tls2": {
     "alpn": "",
@@ -420,10 +435,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
       "not_before": "20251023000000",
       "not_after": "20261121235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -450,8 +466,20 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "aeed6796a0f5c0317.awsglobalaccelerator.com."
     ]
   },
-  "elapsed_s": 8.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.vogue.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 14.4,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -461,4 +489,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

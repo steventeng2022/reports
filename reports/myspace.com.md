@@ -7,12 +7,12 @@
 | Target | https://myspace.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | myspace.com |
-| Test date | 2026-09-26 18:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:11 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
+Total findings: **24** (High: 0, Medium: 0, Low: 8, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -39,6 +39,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
 | 21 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 22 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 23 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 24 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -160,7 +161,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
 ### 18. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (v45eyqkh0t25pt.myspace.com and olfuj3z8nre5o4.myspace.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (8gnky3evegxkfa.myspace.com and 4dfjww1htvvjaa.myspace.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 19. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
@@ -193,6 +194,12 @@ Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
 - **Detail:** 34.111.176.156 carries PTR 156.176.111.34.bc.googleusercontent.com. for myspace.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
+### 24. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for myspace.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -209,24 +216,25 @@ Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
       "mxb-00ac0e01.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns-cloud-a4.googledomains.com.",
+      "ns-cloud-a2.googledomains.com.",
       "ns-cloud-a1.googledomains.com.",
-      "ns-cloud-a3.googledomains.com.",
-      "ns-cloud-a2.googledomains.com."
+      "ns-cloud-a4.googledomains.com.",
+      "ns-cloud-a3.googledomains.com."
     ],
+    "caa": [],
     "spf": [
+      "qpdYoeakhlmAxsnmxgAVFmJgUSibqb/y+Eu6GGn8pdmLf+mFGIB3jhRAxIC5KObsPMES9MW2c+oOrpOo/lCQVw==",
+      "cr40m536tje9on1slld9bi81bg",
+      "MS=ms89904786",
+      "google-site-verification=q0iWqpcfOBclAJaCeWh83v62QQ4uCgbWObQ08p37qgU",
+      "oZ19a+EOIwWVDPJ7POj14UAGBfzk9xcJMmsTUAMUy7H82sDuVCxvw9rZqdg3znFrdTH04+49zd1djhEAt0ooiA==",
+      "al4upe6q5cl13sg4srvfivflvg",
       "v=spf1 mx ip4:159.183.178.108 ip4:168.245.30.211 ip4:63.208.226.34 ip4:204.16.32.0/22 ip4:67.134.143.0/24 ip4:216.205.243.0/24 ip4:34.85.156.5/32 ip4:35.245.108.108/32 ip4:34.86.129.193/32 ip4:34.86.134.94/32 ",
       "ip4:34.85.222.234/32 ip4:34.86.176.234/32 ip4:34.86.125.212/32 ip4:34.85.224.60/32 ip4:34.86.160.49/32 ip4:35.245.64.166/32 ip4:35.188.226.11/32 ",
       "ip4:34.86.208.228/32 ip4:34.85.216.144/32 ip4:35.221.22.153/32 ip4:34.86.137.108/32 ip4:34.86.51.35/32 ip4:34.150.221.40/32 ip4:34.85.216.70/32 ip4:34.86.37.191/32 ip4:34.85.214.215/32 ",
       "ip4:35.236.234.82/32 ip4:34.86.161.241/32 ip4:216.32.181.16 ip4:216.178.32.0/20 ip4:168.235.224.0/24 include:_netblocks.mimecast.com -all",
-      "cj65vjpq0s1v9u7vfo020c6rel",
-      "oZ19a+EOIwWVDPJ7POj14UAGBfzk9xcJMmsTUAMUy7H82sDuVCxvw9rZqdg3znFrdTH04+49zd1djhEAt0ooiA==",
-      "al4upe6q5cl13sg4srvfivflvg",
-      "qpdYoeakhlmAxsnmxgAVFmJgUSibqb/y+Eu6GGn8pdmLf+mFGIB3jhRAxIC5KObsPMES9MW2c+oOrpOo/lCQVw==",
-      "cr40m536tje9on1slld9bi81bg",
-      "google-site-verification=q0iWqpcfOBclAJaCeWh83v62QQ4uCgbWObQ08p37qgU",
-      "MS=ms89904786",
-      "google-site-verification=eu-3gW1JePvsGRRCaEvH17YUOTFJNofm4lnz2Pk0LTc"
+      "google-site-verification=eu-3gW1JePvsGRRCaEvH17YUOTFJNofm4lnz2Pk0LTc",
+      "cj65vjpq0s1v9u7vfo020c6rel"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:postmaster@myspace.com"
@@ -246,7 +254,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
       "myspace.com",
       "*.myspace.com"
     ],
-    "days_left": 50,
+    "days_left": 49,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -312,7 +320,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
     "/.htaccess": 404,
     "/wp-login.php": 404,
     "/phpmyadmin/index.php": 404,
-    "/server-status": 0,
+    "/server-status": 200,
     "/api/": 200
   },
   "subdomains": {
@@ -362,8 +370,18 @@ Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
       "156.176.111.34.bc.googleusercontent.com."
     ]
   },
-  "elapsed_s": 40.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 40.2,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -373,4 +391,5 @@ Total findings: **23** (High: 0, Medium: 0, Low: 8, Info: 15)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

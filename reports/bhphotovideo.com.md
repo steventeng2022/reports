@@ -7,12 +7,12 @@
 | Target | https://bhphotovideo.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | bhphotovideo.com |
-| Test date | 2026-09-26 18:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
+Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,10 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 | 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 11 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 12 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 13 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 14 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 15 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -40,13 +44,13 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.39.228:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.64.148.28:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.39.228:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.64.148.28:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -85,7 +89,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 ### 9. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=LN8XS_zvsH-V5jCNXi_d-_fyopmv6JjmSQ9CRHURBC0; google-site-verification=cJbRUei5-m9qImSL5Naf_cWSpJi65F5ggoACxJs2u4g; _globalsign-domain-verification=BahbT-Pu-HaLP9bBimZ0MGe-4CPc4Z_MXqKNUajBmF
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=cJbRUei5-m9qImSL5Naf_cWSpJi65F5ggoACxJs2u4g; google-site-verification=qgODUbyk6LIKg-AeUH2caD_Hz-8_t5nfT6PaW2IjKKo; google-site-verification=LN8XS_zvsH-V5jCNXi_d-_fyopmv6JjmSQ9CRHURBC0
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -106,6 +110,30 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 - **Detail:** Content-Security-Policy of bhphotovideo.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
 - **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
+### 13. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on bhphotovideo.com indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 14. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xka54o7zjlhwt7.html -> 403; error page/headers match: Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 15. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association on bhphotovideo.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for bhphotovideo.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -113,8 +141,8 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
   "domain": "bhphotovideo.com",
   "dns": {
     "a": [
-      "104.18.39.228",
-      "172.64.148.28"
+      "172.64.148.28",
+      "104.18.39.228"
     ],
     "aaaa": [],
     "cname": null,
@@ -123,29 +151,30 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "mx0b-001d5301.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns5.bhphoto.com.",
-      "ns4.bhphoto.com.",
       "ns6.bhphoto.com.",
       "ns58.ultradns2.com.",
+      "ns5.bhphoto.com.",
+      "ns4.bhphoto.com.",
       "ns58.ultradns2.org."
     ],
+    "caa": [],
     "spf": [
-      "uvit5+LeMJNCTo/NbM5kJDyINuEboKF/sGOhyft+iwjzHeLj0RQS87bjlku+5IWErITOZ1XYT8cEHz3t7lIcMA==",
       "4FVT4g7h1qNuvYP+SBrngIiVGT3vwF/OssfteNeqLJy48hgiJfzbHnQx8J0PXj2DbJ5C8DfQxHE7ZElzMtTKNg==",
       "_p91m5ct32bxkskk05tezadqdj5xxgku",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
-      "google-site-verification=LN8XS_zvsH-V5jCNXi_d-_fyopmv6JjmSQ9CRHURBC0",
       "google-site-verification=cJbRUei5-m9qImSL5Naf_cWSpJi65F5ggoACxJs2u4g",
-      "_globalsign-domain-verification=BahbT-Pu-HaLP9bBimZ0MGe-4CPc4Z_MXqKNUajBmF",
-      "qqb1j1puxasmaw8ycweiwswma",
-      "google-site-verification=SjDM75L0fi5kfL9bFa6osbV0j55yZYMz0kJf3dXmGXI",
       "8957003",
+      "5075stzl3wouco6iqqwkusc40k",
+      "3w1ub9htry2qes2ygskuii6u0w",
       "google-site-verification=qgODUbyk6LIKg-AeUH2caD_Hz-8_t5nfT6PaW2IjKKo",
       "3tctgcxzdy0qwcwgauo2gqami6",
+      "uvit5+LeMJNCTo/NbM5kJDyINuEboKF/sGOhyft+iwjzHeLj0RQS87bjlku+5IWErITOZ1XYT8cEHz3t7lIcMA==",
       "MS=ms36611676",
-      "3w1ub9htry2qes2ygskuii6u0w",
-      "5075stzl3wouco6iqqwkusc40k",
-      "2xlblhcctcqoyaaqwmwuki4k8m"
+      "qqb1j1puxasmaw8ycweiwswma",
+      "google-site-verification=LN8XS_zvsH-V5jCNXi_d-_fyopmv6JjmSQ9CRHURBC0",
+      "_globalsign-domain-verification=BahbT-Pu-HaLP9bBimZ0MGe-4CPc4Z_MXqKNUajBmF",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
+      "2xlblhcctcqoyaaqwmwuki4k8m",
+      "google-site-verification=SjDM75L0fi5kfL9bFa6osbV0j55yZYMz0kJf3dXmGXI"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; adkim=s; aspf=r; fo=1; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -175,7 +204,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
     }
   },
   "ports": {
-    "ip": "104.18.39.228",
+    "ip": "172.64.148.28",
     "open": [
       8080,
       8443
@@ -237,11 +266,11 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=LN8XS_zvsH-V5jCNXi_d-_fyopmv6JjmSQ9CRHURBC0",
     "google-site-verification=cJbRUei5-m9qImSL5Naf_cWSpJi65F5ggoACxJs2u4g",
+    "google-site-verification=qgODUbyk6LIKg-AeUH2caD_Hz-8_t5nfT6PaW2IjKKo",
+    "google-site-verification=LN8XS_zvsH-V5jCNXi_d-_fyopmv6JjmSQ9CRHURBC0",
     "_globalsign-domain-verification=BahbT-Pu-HaLP9bBimZ0MGe-4CPc4Z_MXqKNUajBmF",
-    "google-site-verification=SjDM75L0fi5kfL9bFa6osbV0j55yZYMz0kJf3dXmGXI",
-    "google-site-verification=qgODUbyk6LIKg-AeUH2caD_Hz-8_t5nfT6PaW2IjKKo"
+    "google-site-verification=SjDM75L0fi5kfL9bFa6osbV0j55yZYMz0kJf3dXmGXI"
   ],
   "tls2": {
     "alpn": "",
@@ -279,8 +308,21 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
   "x12": {
     "status": 403
   },
-  "elapsed_s": 5.2,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 403,
+    "http_status": 301,
+    "p404_status": 403,
+    "wellknown": [
+      "/.well-known/apple-app-site-association"
+    ],
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 5.8,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -290,4 +332,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

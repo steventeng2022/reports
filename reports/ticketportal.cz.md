@@ -7,12 +7,12 @@
 | Target | https://ticketportal.cz/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ticketportal.cz |
-| Test date | 2026-09-26 19:00 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:16 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
+Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,6 +36,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 | 18 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 19 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 20 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 21 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -154,13 +155,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 ### 18. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (8ipdxxy71ingd5.ticketportal.cz and vpwgbh36dyjtzx.ticketportal.cz) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (naoc7hr7vwwq0e.ticketportal.cz and imkjkum26opotr.ticketportal.cz) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 19. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=mwAZIzAR9lJl5tzbx4fEzHNqC27472KcfbdBjHYFmmQ; google-site-verification=pmPjhB3MwtvGa4Cnu9OiMKw7j5kxfpjnpEbHtXaFSv8; openai-domain-verification=dv-pEi0oIn9tEXy4E1JmrCEmGfQ
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=pmPjhB3MwtvGa4Cnu9OiMKw7j5kxfpjnpEbHtXaFSv8; openai-domain-verification=dv-nOIh2ZoJdrqoLQLPmaNsxwIB; openai-domain-verification=dv-pEi0oIn9tEXy4E1JmrCEmGfQ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 20. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -168,6 +169,12 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 - **CWE:** CWE-603
 - **Detail:** Certificate of ticketportal.cz has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 21. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for ticketportal.cz, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
 ## Evidence (raw response observations)
 
@@ -188,17 +195,18 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "alfred.ns.cloudflare.com.",
       "irena.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
-      "google-site-verification=mwAZIzAR9lJl5tzbx4fEzHNqC27472KcfbdBjHYFmmQ",
+      "google-site-verification=pmPjhB3MwtvGa4Cnu9OiMKw7j5kxfpjnpEbHtXaFSv8",
       "MS=ms25692022",
       "MS=ms18067497",
-      "google-site-verification=pmPjhB3MwtvGa4Cnu9OiMKw7j5kxfpjnpEbHtXaFSv8",
+      "openai-domain-verification=dv-nOIh2ZoJdrqoLQLPmaNsxwIB",
       "openai-domain-verification=dv-pEi0oIn9tEXy4E1JmrCEmGfQ",
+      "google-site-verification=mwAZIzAR9lJl5tzbx4fEzHNqC27472KcfbdBjHYFmmQ",
+      "MS=ms16199301",
       "v=spf1 mx a ip4:194.79.55.92 ip4:194.228.62.41 ip4:194.228.62.42 ip4:194.228.62.43 ip4:194.228.62.44 ip4:194.228.63.178 ip4:194.228.63.179 a:darmas.denax.sk ip4:185.17.119.232 include:spf.mandrillapp.com include:sparkpostmail.com ip4:185.17.118.144/28 a:m",
       "x1.mafra.cz a:plgmta1.infra.tpapp.cz i",
-      "nclude:spf.protection.outlook.com include:mail.zendesk.com -all",
-      "MS=ms16199301",
-      "openai-domain-verification=dv-nOIh2ZoJdrqoLQLPmaNsxwIB"
+      "nclude:spf.protection.outlook.com include:mail.zendesk.com -all"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:mailauth-reports@ticketportal.cz; ruf=mailto:mailauth-reports@ticketportal.cz"
@@ -218,7 +226,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "*.ticketportal.cz",
       "ticketportal.cz"
     ],
-    "days_left": 71,
+    "days_left": 70,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -286,10 +294,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=mwAZIzAR9lJl5tzbx4fEzHNqC27472KcfbdBjHYFmmQ",
     "google-site-verification=pmPjhB3MwtvGa4Cnu9OiMKw7j5kxfpjnpEbHtXaFSv8",
+    "openai-domain-verification=dv-nOIh2ZoJdrqoLQLPmaNsxwIB",
     "openai-domain-verification=dv-pEi0oIn9tEXy4E1JmrCEmGfQ",
-    "openai-domain-verification=dv-nOIh2ZoJdrqoLQLPmaNsxwIB"
+    "google-site-verification=mwAZIzAR9lJl5tzbx4fEzHNqC27472KcfbdBjHYFmmQ"
   ],
   "tls2": {
     "alpn": "",
@@ -308,8 +316,19 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
   "x12": {
     "status": 302
   },
-  "elapsed_s": 16.3,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 302,
+    "root_location": "https://www.ticketportal.cz/",
+    "http_status": 302,
+    "p404_status": 302,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 17.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -319,4 +338,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

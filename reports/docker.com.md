@@ -7,8 +7,8 @@
 | Target | https://docker.com/ |
 | Bug bounty program | Docker |
 | Listed scope domain | docker.com |
-| Test date | 2026-09-26 18:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:03 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -125,7 +125,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: airtable-verification=7f122efe7db6b16848108e469042c39c; google-site-verification=GjEZ_3KyjpDbmRzGdMUtqMeuXdh7HCSc8uRsPGYL-I0; jamf-site-verification=jqNgc5MzMp4UnSANweyyEQ
+- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=a8d1a71d0cba44c2521bcb451d9dc708ee20d93c7b5b04791f69; cursor-domain-verification-pkwbtp=KD6kIrkeudCadzeviiVJgEWnd; astro-domain-verification=cljrj1fgz00hm01lvtaq65gnn
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -150,55 +150,64 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "23.185.0.4"
     ],
     "aaaa": [
-      "2620:12a:8001::4",
-      "2620:12a:8000::4"
+      "2620:12a:8000::4",
+      "2620:12a:8001::4"
     ],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-1289.awsdns-33.org.",
-      "ns-207.awsdns-25.com.",
       "ns-1981.awsdns-55.co.uk.",
-      "ns-568.awsdns-07.net."
+      "ns-1289.awsdns-33.org.",
+      "ns-568.awsdns-07.net.",
+      "ns-207.awsdns-25.com."
+    ],
+    "caa": [
+      "0 issue \"amazon.com\"",
+      "0 iodef \"mailto:infra+caa-iodef@docker.com\"",
+      "0 issue \"sectigo.com\"",
+      "0 issue \"digicert.com\"",
+      "0 issue \"pki.goog\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"comodoca.com\""
     ],
     "spf": [
-      "airtable-verification=7f122efe7db6b16848108e469042c39c",
-      "google-site-verification=GjEZ_3KyjpDbmRzGdMUtqMeuXdh7HCSc8uRsPGYL-I0",
-      "jamf-site-verification=jqNgc5MzMp4UnSANweyyEQ",
-      "d0vcwvtyam",
-      "openai-domain-verification=dv-tj9VEsgExQvdNl9SCOa2Awju",
-      "cursor-domain-verification-pkwbtp=KD6kIrkeudCadzeviiVJgEWnd",
-      "docker-verification=4b72827b-32c1-4fe6-a843-2256c0df8a31",
-      "sonatype-domain-verification=OSSRH-62474",
-      "google-site-verification=i6hYWAXRYCtHNnyiQAYXiy_4StkAMJQiNCfH-3olY-I",
-      "opine-verification=14d8ea53-d8ae-406f-93b0-76dc879d9b46",
-      "stripe-verification=804359af3a919b4a46343227e384abdf33e10ad5bb81ea9f1d17ed4e74486ab4",
-      "v=spf1 include:_spf.google.com include:spf.tipalti.com include:_spf.salesforce.com include:mktomail.com include:mail.zendesk.com -all",
-      "apple-domain-verification=S580UenDqcwy2I1X",
-      "MS=ms42223923",
-      "anthropic-domain-verification-p1ks1q=BmUzJzzDzqNXVWLXmZVoEvTr3",
-      "google-site-verification=Nyiwo5q4kkaD5V-sEiXsW74HXyVRtKVyxYFfZuFLG7M",
-      "google-site-verification=rCKOZlVmB_xuu9DiT-urSmmXAEUGn5RI8PxdyCW5LJg",
-      "atlassian-domain-verification=I1f5bgOm9sPUEcK/2JTD6weNlWt+Wwsyo5dwvJe1fGjf9V+x3kyqxZRrl9z7ILEK",
-      "miro-verification=116f0987438eb5a48c070e080a68e7d7b3087e5f",
-      "astro-domain-verification=cljrj1fgz00hm01lvtaq65gnn",
-      "zapier-domain-verification-challenge=c3e7ddaf-20bf-40ca-9374-1a917b16be06",
-      "onetrust-domain-verification=fb12882ae6344670a7b91077bd57c0f1",
-      "MS=ms98031138",
-      "google-site-verification=CFmV0geNs1hCxK0mBEpjWaDoNwBIiDxIRjTvt3YGRDM",
-      "google-site-verification=VbuWA5NflxQMko2x9BJFIPVYrbuxHQll4UP4gZ4Fm08",
       "adobe-idp-site-verification=a8d1a71d0cba44c2521bcb451d9dc708ee20d93c7b5b04791f699d128bbe6ec2",
-      "google-site-verification=5e33xBJIwW1XU49IqmIYtN7yi2Iq0GNnWwN4ujn4G_M",
-      "google-site-verification=4PyKLfy_lowkc_qcu-byUkmF1kxAUT7tfho7ZiP353s",
-      "sinch-domain-verification=d8a66194-44cf-49c3-96ab-74325ad6e7be",
       "docusign=aeb25cd4-f743-4efc-b6fb-b8bc5dd1d0e8",
-      "detectify-verification=87a64c3bf3301354588d90672bd1b74e"
+      "cursor-domain-verification-pkwbtp=KD6kIrkeudCadzeviiVJgEWnd",
+      "astro-domain-verification=cljrj1fgz00hm01lvtaq65gnn",
+      "google-site-verification=Nyiwo5q4kkaD5V-sEiXsW74HXyVRtKVyxYFfZuFLG7M",
+      "google-site-verification=4PyKLfy_lowkc_qcu-byUkmF1kxAUT7tfho7ZiP353s",
+      "airtable-verification=7f122efe7db6b16848108e469042c39c",
+      "openai-domain-verification=dv-tj9VEsgExQvdNl9SCOa2Awju",
+      "apple-domain-verification=S580UenDqcwy2I1X",
+      "google-site-verification=5e33xBJIwW1XU49IqmIYtN7yi2Iq0GNnWwN4ujn4G_M",
+      "miro-verification=116f0987438eb5a48c070e080a68e7d7b3087e5f",
+      "onetrust-domain-verification=fb12882ae6344670a7b91077bd57c0f1",
+      "opine-verification=14d8ea53-d8ae-406f-93b0-76dc879d9b46",
+      "MS=ms98031138",
+      "v=spf1 include:_spf.google.com include:spf.tipalti.com include:_spf.salesforce.com include:mktomail.com include:mail.zendesk.com -all",
+      "detectify-verification=87a64c3bf3301354588d90672bd1b74e",
+      "jamf-site-verification=jqNgc5MzMp4UnSANweyyEQ",
+      "MS=ms42223923",
+      "sinch-domain-verification=d8a66194-44cf-49c3-96ab-74325ad6e7be",
+      "anthropic-domain-verification-p1ks1q=BmUzJzzDzqNXVWLXmZVoEvTr3",
+      "sonatype-domain-verification=OSSRH-62474",
+      "atlassian-domain-verification=I1f5bgOm9sPUEcK/2JTD6weNlWt+Wwsyo5dwvJe1fGjf9V+x3kyqxZRrl9z7ILEK",
+      "google-site-verification=VbuWA5NflxQMko2x9BJFIPVYrbuxHQll4UP4gZ4Fm08",
+      "stripe-verification=804359af3a919b4a46343227e384abdf33e10ad5bb81ea9f1d17ed4e74486ab4",
+      "google-site-verification=CFmV0geNs1hCxK0mBEpjWaDoNwBIiDxIRjTvt3YGRDM",
+      "google-site-verification=GjEZ_3KyjpDbmRzGdMUtqMeuXdh7HCSc8uRsPGYL-I0",
+      "docker-verification=4b72827b-32c1-4fe6-a843-2256c0df8a31",
+      "google-site-verification=i6hYWAXRYCtHNnyiQAYXiy_4StkAMJQiNCfH-3olY-I",
+      "d0vcwvtyam",
+      "zapier-domain-verification-challenge=c3e7ddaf-20bf-40ca-9374-1a917b16be06",
+      "google-site-verification=rCKOZlVmB_xuu9DiT-urSmmXAEUGn5RI8PxdyCW5LJg"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; rua=mailto:q1xwnepx@ag.dmarcian.com; ruf=mailto:q1xwnepx@fr.dmarcian.com;"
@@ -281,11 +290,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "airtable-verification=7f122efe7db6b16848108e469042c39c",
-    "google-site-verification=GjEZ_3KyjpDbmRzGdMUtqMeuXdh7HCSc8uRsPGYL-I0",
-    "jamf-site-verification=jqNgc5MzMp4UnSANweyyEQ",
-    "openai-domain-verification=dv-tj9VEsgExQvdNl9SCOa2Awju",
-    "cursor-domain-verification-pkwbtp=KD6kIrkeudCadzeviiVJgEWnd"
+    "adobe-idp-site-verification=a8d1a71d0cba44c2521bcb451d9dc708ee20d93c7b5b04791f69",
+    "cursor-domain-verification-pkwbtp=KD6kIrkeudCadzeviiVJgEWnd",
+    "astro-domain-verification=cljrj1fgz00hm01lvtaq65gnn",
+    "google-site-verification=Nyiwo5q4kkaD5V-sEiXsW74HXyVRtKVyxYFfZuFLG7M",
+    "google-site-verification=4PyKLfy_lowkc_qcu-byUkmF1kxAUT7tfho7ZiP353s"
   ],
   "tls2": {
     "alpn": "",
@@ -323,8 +332,18 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 23.1,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_error": "ConnectionError(ProtocolError('Connection aborted.', ConnectionResetError(10054,",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 25.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -334,4 +353,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

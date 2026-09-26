@@ -7,8 +7,8 @@
 | Target | https://verizon.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | verizon.com |
-| Test date | 2026-09-26 19:01 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -28,8 +28,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 | 10 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 14 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -110,20 +110,20 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: flexera-domain-verification-kqnfpwapzjwcdtjl; flexera-domain-verification-ffgblppxwzuqqveo; airtable-verification=c7ec519ab4f7b83da45d01617d013506
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-dh9nvq=MZi3jVJdupvG2ZzJKBbuDIzF8; Dynatrace-site-verification=9b5e8c85-ffc6-4ee3-80a4-01c14607d287__pdi80imbksqp54; flexera-domain-verification-ffgblppxwzuqqveo
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of verizon.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 23.206.63.107 carries PTR a23-206-63-107.deploy.static.akamaitechnologies.com. for verizon.com.
+- **Detail:** 23.206.61.108 carries PTR a23-206-61-108.deploy.static.akamaitechnologies.com. for verizon.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 14. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The verizon.com certificate lists an AIA OCSP responder (http://ocsp.digicert.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -132,16 +132,16 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
   "domain": "verizon.com",
   "dns": {
     "a": [
-      "23.206.63.107",
+      "23.206.61.108",
       "23.206.60.108",
-      "23.206.62.107",
-      "23.53.5.117",
+      "23.206.56.116",
       "23.206.59.110",
       "23.206.57.108",
-      "23.206.56.116",
+      "23.206.63.107",
+      "23.53.5.117",
+      "23.40.244.108",
       "23.206.58.110",
-      "23.206.61.108",
-      "23.40.244.108"
+      "23.206.62.107"
     ],
     "aaaa": [],
     "cname": null,
@@ -150,63 +150,68 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "mxb-0024a201.gslb.pphosted.com (pref 15)"
     ],
     "ns": [
-      "a12-65.akam.net.",
-      "a13-67.akam.net.",
-      "a24-66.akam.net.",
-      "a1-18.akam.net.",
       "a9-67.akam.net.",
-      "a26-67.akam.net."
+      "a1-18.akam.net.",
+      "a13-67.akam.net.",
+      "a26-67.akam.net.",
+      "a24-66.akam.net.",
+      "a12-65.akam.net."
+    ],
+    "caa": [
+      "0 issue \"digicert.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issue \"letsencrypt.org\""
     ],
     "spf": [
-      "flexera-domain-verification-kqnfpwapzjwcdtjl",
-      "00DWH000005xk2L=1TBWH0000000M3l",
-      "_xbcq1ksf5g26csqvs958k3ig1ovtwtt",
-      "flexera-domain-verification-ffgblppxwzuqqveo",
-      "_q8n9oay9918jw5gr4o497lxper8vgf9",
-      "VaI7HAA7sB1/Nj9AfhmIpdfZyiwqm7N7pf9UApsrhO0=",
-      "docusign=9f9bf7a4-31a7-42bd-989d-b177ae520342",
-      "b8fwzdt99dt8btdysj12gnnjpkz146y3",
-      "airtable-verification=c7ec519ab4f7b83da45d01617d013506",
-      "g0s1gq156v9thvrtvmg4smn6fhgcxqnl",
-      "atlassian-domain-verification=aj1ES5iXBorxgboMWU4jPaWG8ufdkUqPAZ98L4Z4FxPtlETrOSCwWPopYp326Boi",
-      "00Dfn00000BO1uH=1TBaJ00000008Yf",
-      "MS=ms87778762",
       "anthropic-domain-verification-dh9nvq=MZi3jVJdupvG2ZzJKBbuDIzF8",
-      "zv5q0hfc968n8pzr19b9vzqk5w75dcr2",
-      "_w6n6znye04ehtb3ugsmxtzhvkvu4h66",
-      "5bldj12kt4tpxl03yr7wcq4999ldkl6c",
-      "ct55qq4v9hkbzvr613bg3nj4zqs82410",
-      "_v5t56ssq25ktk2khlhxdq84ct19wha1",
-      "00DWH000005k5zV=1TBWH0000000M29",
-      "zfk8y8l5fh15lrg8dsk27ks1j51869tw",
-      "flexera-domain-verification-bpuabamsmujihlzs",
-      "Precisely-domain-verification",
-      "v=spf1 include:verizonwireless.com ~all",
-      "hpe-greenlake-domain-verification=3571596b4878766d77676479514571517876467a537974492d50464663743858",
-      "adobe-sign-verification=5c72a7e0c328f6774716059ec6fb7da6049813116d899e3483577d0896e7544c",
-      "docusign=4a19cd69-5db5-4663-b70e-6600f177dae2",
-      "docker-verification=e63249f1-5c89-419c-8b2a-928c81b87800",
-      "70nhs2k6yktgpq4blv65k8416dwfwtds",
-      "_60467rwxiajhlol2lvhpvkdp6849tto",
-      "google-site-verification=Y3Q2T99tU_-XF206jqXW_UugVEHCvpzvPnIk5hYL2Bk",
-      "_lva6pf2y06r966zjnmczto8aoqtyhsj",
-      "quickbase-site-verification-922ae18c23918d07de301f714e7747cabad0e6ce",
-      "airtable-verification=72cbbd275f6f706ba31aaca8586b013f",
-      "2emAY6c1D+CgmANq0s7xHidy8qnyE6WStN33LPNuG/hd0aBm9xBLt6ZeIl7bfQR1VIMPYtYt3FlRkIcNWId/+A==",
-      "q5c6fp9dz62p3yxbgjrfsmr9d0wm705p",
-      "google-site-verification=tZDve57pSHTO7eOO90j3R3wUIdpqq9pCrPCCauMcfbc",
-      "_87362fr0avm39qsoglpth1t9iocx3h0",
-      "dwpv611b3xgfp7ymnj2yd18kvdfc93lm",
-      "miro-verification=cb4542e8a7b94284a46cef7263ff93a0a8981ccc",
-      "0gydk8ylzblmdk89rrh71z6vq8csbd4j",
       "Dynatrace-site-verification=9b5e8c85-ffc6-4ee3-80a4-01c14607d287__pdi80imbksqp54emrr20d3gph8",
+      "flexera-domain-verification-ffgblppxwzuqqveo",
       "smartsheet-gov-site-validation=wO9Aq-yUnfO-HMmw3WBsMSiP212HgHB4",
-      "EFrYNbG8uzynGvptGZk9HtN4Lm3prlj/zxlKEuFuGuCT614NJoj7M8m3YoFYzfpafIrQATFeKoHKqZOCDzKt/w==",
-      "google-site-verification=KC5CJC5e0rzcxlINJHJcTM5U4b5Pr211cGU8diogsKI",
+      "00Dfn00000BO1uH=1TBaJ00000008Yf",
       "mongodb-site-verification=6vBJxn6M8ujjAATlYkC5bRNXjD4sUiRf",
-      "facebook-domain-verification=jzt3ysrggr1qi89a0c46h6hnmtu0l4",
+      "flexera-domain-verification-bpuabamsmujihlzs",
+      "flexera-domain-verification-kqnfpwapzjwcdtjl",
+      "v=spf1 include:verizonwireless.com ~all",
+      "_60467rwxiajhlol2lvhpvkdp6849tto",
+      "airtable-verification=c7ec519ab4f7b83da45d01617d013506",
+      "Precisely-domain-verification",
+      "_lva6pf2y06r966zjnmczto8aoqtyhsj",
+      "google-site-verification=KC5CJC5e0rzcxlINJHJcTM5U4b5Pr211cGU8diogsKI",
+      "airtable-verification=72cbbd275f6f706ba31aaca8586b013f",
+      "MS=ms87778762",
+      "g0s1gq156v9thvrtvmg4smn6fhgcxqnl",
+      "_w6n6znye04ehtb3ugsmxtzhvkvu4h66",
+      "adobe-sign-verification=5c72a7e0c328f6774716059ec6fb7da6049813116d899e3483577d0896e7544c",
+      "EFrYNbG8uzynGvptGZk9HtN4Lm3prlj/zxlKEuFuGuCT614NJoj7M8m3YoFYzfpafIrQATFeKoHKqZOCDzKt/w==",
+      "5bldj12kt4tpxl03yr7wcq4999ldkl6c",
+      "2emAY6c1D+CgmANq0s7xHidy8qnyE6WStN33LPNuG/hd0aBm9xBLt6ZeIl7bfQR1VIMPYtYt3FlRkIcNWId/+A==",
+      "70nhs2k6yktgpq4blv65k8416dwfwtds",
+      "zfk8y8l5fh15lrg8dsk27ks1j51869tw",
       "docker-verification=f22a41ee-7281-4719-a023-ff82e56fd556",
-      "Dynatrace-site-verification=6219e2d6-0d4c-42b0-aa3f-bf137c76e0ef__lc47bag6133ot2qms6uqkhqmkg"
+      "b8fwzdt99dt8btdysj12gnnjpkz146y3",
+      "atlassian-domain-verification=aj1ES5iXBorxgboMWU4jPaWG8ufdkUqPAZ98L4Z4FxPtlETrOSCwWPopYp326Boi",
+      "google-site-verification=Y3Q2T99tU_-XF206jqXW_UugVEHCvpzvPnIk5hYL2Bk",
+      "docker-verification=e63249f1-5c89-419c-8b2a-928c81b87800",
+      "q5c6fp9dz62p3yxbgjrfsmr9d0wm705p",
+      "dwpv611b3xgfp7ymnj2yd18kvdfc93lm",
+      "docusign=4a19cd69-5db5-4663-b70e-6600f177dae2",
+      "0gydk8ylzblmdk89rrh71z6vq8csbd4j",
+      "00DWH000005k5zV=1TBWH0000000M29",
+      "00DWH000005xk2L=1TBWH0000000M3l",
+      "Dynatrace-site-verification=6219e2d6-0d4c-42b0-aa3f-bf137c76e0ef__lc47bag6133ot2qms6uqkhqmkg",
+      "google-site-verification=tZDve57pSHTO7eOO90j3R3wUIdpqq9pCrPCCauMcfbc",
+      "_q8n9oay9918jw5gr4o497lxper8vgf9",
+      "facebook-domain-verification=jzt3ysrggr1qi89a0c46h6hnmtu0l4",
+      "docusign=9f9bf7a4-31a7-42bd-989d-b177ae520342",
+      "VaI7HAA7sB1/Nj9AfhmIpdfZyiwqm7N7pf9UApsrhO0=",
+      "zv5q0hfc968n8pzr19b9vzqk5w75dcr2",
+      "miro-verification=cb4542e8a7b94284a46cef7263ff93a0a8981ccc",
+      "ct55qq4v9hkbzvr613bg3nj4zqs82410",
+      "_xbcq1ksf5g26csqvs958k3ig1ovtwtt",
+      "_87362fr0avm39qsoglpth1t9iocx3h0",
+      "_v5t56ssq25ktk2khlhxdq84ct19wha1",
+      "hpe-greenlake-domain-verification=3571596b4878766d77676479514571517876467a537974492d50464663743858",
+      "quickbase-site-verification-922ae18c23918d07de301f714e7747cabad0e6ce"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=quarantine; rua=mailto:dmarc_agg@auth.returnpath.net; ruf=mailto:dmarc_afrf@auth.returnpath.net; rf=afrf; pct=100"
@@ -240,7 +245,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     }
   },
   "ports": {
-    "ip": "23.206.63.107",
+    "ip": "23.206.61.108",
     "open": []
   },
   "https": {
@@ -289,11 +294,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "flexera-domain-verification-kqnfpwapzjwcdtjl",
+    "anthropic-domain-verification-dh9nvq=MZi3jVJdupvG2ZzJKBbuDIzF8",
+    "Dynatrace-site-verification=9b5e8c85-ffc6-4ee3-80a4-01c14607d287__pdi80imbksqp54",
     "flexera-domain-verification-ffgblppxwzuqqveo",
-    "airtable-verification=c7ec519ab4f7b83da45d01617d013506",
-    "atlassian-domain-verification=aj1ES5iXBorxgboMWU4jPaWG8ufdkUqPAZ98L4Z4FxPtlETrOS",
-    "anthropic-domain-verification-dh9nvq=MZi3jVJdupvG2ZzJKBbuDIzF8"
+    "mongodb-site-verification=6vBJxn6M8ujjAATlYkC5bRNXjD4sUiRf",
+    "flexera-domain-verification-bpuabamsmujihlzs"
   ],
   "tls2": {
     "alpn": "",
@@ -304,19 +309,31 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.digicert.com",
       "not_before": "20251209000000",
       "not_after": "20261208235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "x12": {
     "status": 403,
     "ptr": [
-      "a23-206-63-107.deploy.static.akamaitechnologies.com."
+      "a23-206-61-108.deploy.static.akamaitechnologies.com."
     ]
   },
-  "elapsed_s": 22.9,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 403,
+    "http_status": 403,
+    "p404_status": 403,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 12.6,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -326,4 +343,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://boredpanda.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | boredpanda.com |
-| Test date | 2026-09-26 18:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
+Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,10 +32,12 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 | 14 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 20 | info | CT1 | 44 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 21 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 22 | info | CT1 | 44 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -143,14 +145,14 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: trustpilot-one-time-verification-id=9eb08d90-b03e-4784-821f-4256acbae37d; apple-domain-verification=hops-EdsP_znUZ0tgSnyMFqx9WcQ6J6CLUlLwNJuseY; google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=hops-EdsP_znUZ0tgSnyMFqx9WcQ6J6CLUlLwNJuseY; facebook-domain-verification=fgwdxllanmj6qtcuvmke1si9ec60ia; trustpilot-one-time-verification-id=9eb08d90-b03e-4784-821f-4256acbae37d
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 17. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of boredpanda.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m04.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
@@ -161,10 +163,22 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 ### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 44.220.98.194 carries PTR ec2-44-220-98-194.compute-1.amazonaws.com. for boredpanda.com.
+- **Detail:** 54.204.103.197 carries PTR ec2-54-204-103-197.compute-1.amazonaws.com. for boredpanda.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 20. [INFO] 44 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for boredpanda.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 21. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The boredpanda.com certificate lists an AIA OCSP responder (http://ocsp.r2m04.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
+
+### 22. [INFO] 44 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: 2.stage.boredpanda.com, api.backbone.boredpanda.com, api.boredpanda.com, api.ideas.boredpanda.com, assets.boredpanda.com, growthbook-api.internal.boredpanda.com, growthbook.internal.boredpanda.com, img.boredpanda.com, img.stage.boredpanda.com, jobs.boredpanda.com
@@ -177,10 +191,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
   "domain": "boredpanda.com",
   "dns": {
     "a": [
+      "54.204.103.197",
       "44.220.98.194",
       "35.168.213.86",
-      "44.221.107.254",
-      "54.204.103.197"
+      "44.221.107.254"
     ],
     "aaaa": [],
     "cname": null,
@@ -190,24 +204,25 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
     "ns": [
       "ns-1985.awsdns-56.co.uk.",
       "ns-972.awsdns-57.net.",
-      "ns-173.awsdns-21.com.",
-      "ns-1425.awsdns-50.org."
+      "ns-1425.awsdns-50.org.",
+      "ns-173.awsdns-21.com."
     ],
+    "caa": [],
     "spf": [
-      "MS=E04C457D679181C1054598D9F097241502D2B900",
-      "trustpilot-one-time-verification-id=9eb08d90-b03e-4784-821f-4256acbae37d",
       "apple-domain-verification=hops-EdsP_znUZ0tgSnyMFqx9WcQ6J6CLUlLwNJuseY",
-      "google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM",
-      "MS=ms42183495",
-      "v=spf1 a mx include:_spf.mlsend.com include:_spf.google.com include:spf.mailjet.com ~all",
-      "google-site-verification=MxIMpuiT8s52Vltu5GksnMWb3AmEfjHaawL4ii8SD_Q",
-      "google-site-verification=XuF5a9eahvWOgNLrh7WkeiFQpnIjdbpEgbWPZ0a1oYY",
-      "google-site-verification=KIIUiAJna3_1-eDilP2A9ENUy2oiWftdyHXyCMhnz3s",
-      "brevo-code:59ddf176bd2029a7dea7a297ba5967ef",
       "facebook-domain-verification=fgwdxllanmj6qtcuvmke1si9ec60ia",
+      "trustpilot-one-time-verification-id=9eb08d90-b03e-4784-821f-4256acbae37d",
+      "google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM",
+      "google-site-verification=XuF5a9eahvWOgNLrh7WkeiFQpnIjdbpEgbWPZ0a1oYY",
       "anthropic-domain-verification-qp0t5e=qyjWbKPmD6hTz77lb10rBJ2hi",
+      "google-site-verification=KIIUiAJna3_1-eDilP2A9ENUy2oiWftdyHXyCMhnz3s",
+      "MS=E04C457D679181C1054598D9F097241502D2B900",
+      "google-site-verification=MxIMpuiT8s52Vltu5GksnMWb3AmEfjHaawL4ii8SD_Q",
+      "google-site-verification=QyUw3s4mkxY3wZMMy4oMT3yHhdCqtiBuusYhmvAdgVM",
+      "brevo-code:59ddf176bd2029a7dea7a297ba5967ef",
+      "MS=ms42183495",
       "google-site-verification=E-VWzamHJVxn2aKoEbD2dNX18GG_rEuHAJIAcsZ9JQY",
-      "google-site-verification=QyUw3s4mkxY3wZMMy4oMT3yHhdCqtiBuusYhmvAdgVM"
+      "v=spf1 a mx include:_spf.mlsend.com include:_spf.google.com include:spf.mailjet.com ~all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:ipm7lrx@ar.glockapps.com,mailto:ipm5swv@ar.glockapps.com,mailto:dmarc_agg@vali.email; ruf=mailto:ipm7lrx@fr.glockapps.com,mailto:ipm5swv@fr.glockapps.com; fo=1;"
@@ -239,7 +254,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
     }
   },
   "ports": {
-    "ip": "44.220.98.194",
+    "ip": "54.204.103.197",
     "open": []
   },
   "https": {
@@ -331,10 +346,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
     ]
   },
   "apex_txt": [
-    "trustpilot-one-time-verification-id=9eb08d90-b03e-4784-821f-4256acbae37d",
     "apple-domain-verification=hops-EdsP_znUZ0tgSnyMFqx9WcQ6J6CLUlLwNJuseY",
+    "facebook-domain-verification=fgwdxllanmj6qtcuvmke1si9ec60ia",
+    "trustpilot-one-time-verification-id=9eb08d90-b03e-4784-821f-4256acbae37d",
     "google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM",
-    "google-site-verification=MxIMpuiT8s52Vltu5GksnMWb3AmEfjHaawL4ii8SD_Q",
     "google-site-verification=XuF5a9eahvWOgNLrh7WkeiFQpnIjdbpEgbWPZ0a1oYY"
   ],
   "tls2": {
@@ -346,10 +361,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
       "not_before": "20260130000000",
       "not_after": "20270227235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "robots_disallow": [
@@ -369,11 +385,23 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-44-220-98-194.compute-1.amazonaws.com."
+      "ec2-54-204-103-197.compute-1.amazonaws.com."
     ]
   },
-  "elapsed_s": 35.1,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "http://www.boredpanda.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 45.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -383,4 +411,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

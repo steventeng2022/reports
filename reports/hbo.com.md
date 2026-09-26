@@ -7,12 +7,12 @@
 | Target | https://hbo.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | hbo.com |
-| Test date | 2026-09-26 18:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:07 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
+Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,9 +33,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 | 15 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 16 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 18 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 19 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 20 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 21 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -149,14 +150,14 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=6b91c48785893991cc3cf88c073dbc3e4d101443ffbcd2859010; google-site-verification=FyHIYNMYtacdeYPK7CFQexzcTapnqZU223BTKsahsXE; google-site-verification=6NTd9bZvlQzGGYhk9F5NDpFYjzntMcPyZTQAmYXxbLE
+- **Detail:** Apex TXT records with verification/token content: cisco-ci-domain-verification=fa33a8661bbf3b1f9dff9344e3ac17f37de9632597126eda4eb; google-site-verification=FyHIYNMYtacdeYPK7CFQexzcTapnqZU223BTKsahsXE; google-site-verification=zJEFSVfAzkOwA37-wHGgRsKEnQYAmOfW1nFrIRQ3dws
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 18. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of hbo.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2026q1 -> http-400
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 19. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
@@ -170,6 +171,12 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. /content/*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 21. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for hbo.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -177,10 +184,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
   "domain": "hbo.com",
   "dns": {
     "a": [
-      "151.101.1.55",
-      "151.101.193.55",
       "151.101.65.55",
-      "151.101.129.55"
+      "151.101.129.55",
+      "151.101.1.55",
+      "151.101.193.55"
     ],
     "aaaa": [],
     "cname": null,
@@ -189,44 +196,45 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
     ],
     "ns": [
       "ns-1897.awsdns-45.co.uk.",
-      "ns-63.awsdns-07.com.",
       "ns-662.awsdns-18.net.",
-      "ns-1217.awsdns-24.org."
+      "ns-1217.awsdns-24.org.",
+      "ns-63.awsdns-07.com."
     ],
+    "caa": [],
     "spf": [
-      "adobe-idp-site-verification=6b91c48785893991cc3cf88c073dbc3e4d101443ffbcd2859010727b0575e17e",
-      "9b04608n3lxylrbgzmmzhpzngmryfdkz",
-      "671988175-12122548",
-      "google-site-verification=FyHIYNMYtacdeYPK7CFQexzcTapnqZU223BTKsahsXE",
-      "google-site-verification=6NTd9bZvlQzGGYhk9F5NDpFYjzntMcPyZTQAmYXxbLE",
-      "google-site-verification=9gePLUf80rMHYDmuPpE-ZwLjGvzkukgY49yjTOfnDtM",
-      "MS=ms69642137",
-      "google-site-verification=PPKvhksy5y9BY98aJv-Pbt5KEaBx56J97MhUGW2wp90",
-      "v=spf1 include:hbo.com._nspf.vali.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
-      "smartsheet-site-validation.hbo.com=hDWT+iX//NWjhnuIwn6p0ABkODcnRz2ZFxti5GgtCjY=",
-      "google-site-verification=YVE1XQiIPhIXOxPkAvqsaJPqfCHXQoqZrhwuwl9eXiI",
-      "atlassian-domain-verification=joqe6L8dNi+aisGbB1XHQa0pDc53V2l0GQQRUtLEcr2997x0+rtrAA5Zw+UgQw3u",
-      "lucidchart-verification=fv33o3sxxpyg83fkwnl1",
-      "cisco-ci-domain-verification=fa33a8661bbf3b1f9dff9344e3ac17f37de9632597126eda4eb6a2cd852097f",
-      "anthropic-domain-verification-y7w1sm=ph88E7qdbFJUeSPIyiHPupVQ7",
-      "postman-domain-verification=cd813d70bf99ae7071a4652b4a8f93ffcb1a7952d9302be5102db2bca5281afb185b50a44d8ea4ef88eb9092168407c1d8c551047b166900fff966b0092b3770",
-      "_globalsign-domain-verification=G6rAn-5s3I6Ukt7EpylRLtWbglxplS_gS1j_JEGoEy",
-      "canva-site-verification=nTHHCJWAZx0su5nbZTwRJw",
-      "facebook-domain-verification=ikjv2tsvtbdjby9jzmndvqnh5eu3df",
-      "adobe-sign-verification=851df024b8fb3cd18463f3ca49e0a382",
-      "google-site-verification=zJEFSVfAzkOwA37-wHGgRsKEnQYAmOfW1nFrIRQ3dws",
-      "_globalsign-domain-verification=Nm83aY0luFmKaEsROwWuFmSDG1GpsRXe6rrIHF_-PB",
-      "GM2s0rl8m2M8+aduzPSrdSx+Qov8kBguD3ScwDO3hssN091zF49gk1A7AMbBb/+XZe3Uwp06eTpym28ZmMvOmA==",
       "884fdb9d-6da8-42a2-ab0b-c90ac2dba754",
-      "apple-domain-verification=5lqzlq9YCMRcc6Nc",
+      "cisco-ci-domain-verification=fa33a8661bbf3b1f9dff9344e3ac17f37de9632597126eda4eb6a2cd852097f",
+      "google-site-verification=FyHIYNMYtacdeYPK7CFQexzcTapnqZU223BTKsahsXE",
+      "google-site-verification=zJEFSVfAzkOwA37-wHGgRsKEnQYAmOfW1nFrIRQ3dws",
+      "google-site-verification=6NTd9bZvlQzGGYhk9F5NDpFYjzntMcPyZTQAmYXxbLE",
+      "adobe-idp-site-verification=6b91c48785893991cc3cf88c073dbc3e4d101443ffbcd2859010727b0575e17e",
       "_globalsign-domain-verification=y5vdurCbC4j5d7MV9vSxuv8uVCkhT1nhaj_gcfDJTR",
-      "google-site-verification=kHBF6A_fqUd4bpgDkjBQSpi14Qvcv1BokGGHcIIsY1s",
-      "PKFS/m8wm6RASUf1vmbVzuTnJMsxg522xk09UfzsaVhKKPqzeiqul7GeuCxDRWLRSkOO8lSEhPfChRa2/DMV/A==",
-      "miro-verification=1e01f8da769be1241fceefd9abf2c317dcd68323",
+      "9b04608n3lxylrbgzmmzhpzngmryfdkz",
+      "adobe-sign-verification=851df024b8fb3cd18463f3ca49e0a382",
+      "671988175-12122548",
+      "google-site-verification=YVE1XQiIPhIXOxPkAvqsaJPqfCHXQoqZrhwuwl9eXiI",
       "cloudhealth=7bffbad9-cff4-4761-add2-9e8d2702fe83",
+      "google-site-verification=kihnMTsj1roc6QOJ3MtRzKmVcznr4-J7gra1tCchVo0",
+      "_globalsign-domain-verification=Nm83aY0luFmKaEsROwWuFmSDG1GpsRXe6rrIHF_-PB",
+      "v=spf1 include:hbo.com._nspf.vali.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
+      "postman-domain-verification=cd813d70bf99ae7071a4652b4a8f93ffcb1a7952d9302be5102db2bca5281afb185b50a44d8ea4ef88eb9092168407c1d8c551047b166900fff966b0092b3770",
+      "facebook-domain-verification=ikjv2tsvtbdjby9jzmndvqnh5eu3df",
+      "canva-site-verification=nTHHCJWAZx0su5nbZTwRJw",
+      "anthropic-domain-verification-y7w1sm=ph88E7qdbFJUeSPIyiHPupVQ7",
+      "google-site-verification=9gePLUf80rMHYDmuPpE-ZwLjGvzkukgY49yjTOfnDtM",
+      "miro-verification=1e01f8da769be1241fceefd9abf2c317dcd68323",
+      "google-site-verification=kHBF6A_fqUd4bpgDkjBQSpi14Qvcv1BokGGHcIIsY1s",
+      "MS=ms69642137",
+      "atlassian-domain-verification=joqe6L8dNi+aisGbB1XHQa0pDc53V2l0GQQRUtLEcr2997x0+rtrAA5Zw+UgQw3u",
+      "_globalsign-domain-verification=G6rAn-5s3I6Ukt7EpylRLtWbglxplS_gS1j_JEGoEy",
+      "smartsheet-site-validation.hbo.com=hDWT+iX//NWjhnuIwn6p0ABkODcnRz2ZFxti5GgtCjY=",
+      "PKFS/m8wm6RASUf1vmbVzuTnJMsxg522xk09UfzsaVhKKPqzeiqul7GeuCxDRWLRSkOO8lSEhPfChRa2/DMV/A==",
+      "GM2s0rl8m2M8+aduzPSrdSx+Qov8kBguD3ScwDO3hssN091zF49gk1A7AMbBb/+XZe3Uwp06eTpym28ZmMvOmA==",
+      "lucidchart-verification=fv33o3sxxpyg83fkwnl1",
+      "apple-domain-verification=5lqzlq9YCMRcc6Nc",
       "_globalsign-domain-verification=gKLyHVs2-A8jjJCtFFMvdQQaGDVdh8ohZU0SmsDmAy",
       "_globalsign-domain-verification=ZFOw8Gt29vHTv6SXbYvBumUzxAjlLsM150n6cu_sl8",
-      "google-site-verification=kihnMTsj1roc6QOJ3MtRzKmVcznr4-J7gra1tCchVo0"
+      "google-site-verification=PPKvhksy5y9BY98aJv-Pbt5KEaBx56J97MhUGW2wp90"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@vali.email,mailto:dmarc@hbo.com; ruf=mailto:MTI3@ruf.vali.email,mailto:dmarc@hbo.com"
@@ -255,7 +263,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
     }
   },
   "ports": {
-    "ip": "151.101.1.55",
+    "ip": "151.101.65.55",
     "open": []
   },
   "https": {
@@ -321,11 +329,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "adobe-idp-site-verification=6b91c48785893991cc3cf88c073dbc3e4d101443ffbcd2859010",
+    "cisco-ci-domain-verification=fa33a8661bbf3b1f9dff9344e3ac17f37de9632597126eda4eb",
     "google-site-verification=FyHIYNMYtacdeYPK7CFQexzcTapnqZU223BTKsahsXE",
+    "google-site-verification=zJEFSVfAzkOwA37-wHGgRsKEnQYAmOfW1nFrIRQ3dws",
     "google-site-verification=6NTd9bZvlQzGGYhk9F5NDpFYjzntMcPyZTQAmYXxbLE",
-    "google-site-verification=9gePLUf80rMHYDmuPpE-ZwLjGvzkukgY49yjTOfnDtM",
-    "google-site-verification=PPKvhksy5y9BY98aJv-Pbt5KEaBx56J97MhUGW2wp90"
+    "adobe-idp-site-verification=6b91c48785893991cc3cf88c073dbc3e4d101443ffbcd2859010"
   ],
   "tls2": {
     "alpn": "",
@@ -336,10 +344,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2026q1",
       "not_before": "20260122172515",
       "not_after": "20270223172514"
-    }
+    },
+    "ocsp": "http-400"
   },
   "http2": {
     "robots_disallow": [
@@ -349,8 +358,20 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
   "x12": {
     "status": 308
   },
-  "elapsed_s": 17.2,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 308,
+    "root_location": "https://www.hbo.com/",
+    "http_status": 301,
+    "p404_status": 308,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 19.2,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -360,4 +381,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

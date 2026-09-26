@@ -7,12 +7,12 @@
 | Target | https://france24.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | france24.com |
-| Test date | 2026-09-26 18:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:06 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
+Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 20 | info | CT1 | 55 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -133,7 +135,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=05e2fo203ir2my11s89cptp4d98v76; slack-domain-verification=wOMgnbRYKgXB7XwqhoTcBqsEWCtmr3jd3tzjQw16; _globalsign-domain-verification=2oNqKhLsivi-1ZTcHyMO9dU_5DjX78RANaqVUbWf7y
+- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=2oNqKhLsivi-1ZTcHyMO9dU_5DjX78RANaqVUbWf7y; atlassian-domain-verification=A8w13LJxUXKD3We2aV5t054m8lhwHbasQZ/fBI/YySexagczb6; facebook-domain-verification=05e2fo203ir2my11s89cptp4d98v76
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -154,6 +156,18 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 - **Detail:** 23.210.215.217 carries PTR a23-210-215-217.deploy.static.akamaitechnologies.com. for france24.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
+### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for france24.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 20. [INFO] 55 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: static.france24.com, transfert-video.cloud.france24.com
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -165,34 +179,35 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "23.210.215.218"
     ],
     "aaaa": [
-      "2600:1417:76::17c7:2299",
-      "2600:1417:76::17c7:229b"
+      "2600:1417:76::17c7:229b",
+      "2600:1417:76::17c7:2299"
     ],
     "cname": null,
     "mx": [
       "gw000151-eu.fortimail.com (pref 5)"
     ],
     "ns": [
+      "a6-64.akam.net.",
+      "a7-65.akam.net.",
       "a26-67.akam.net.",
-      "a10-66.akam.net.",
       "a9-66.akam.net.",
       "a1-147.akam.net.",
-      "a7-65.akam.net.",
-      "a6-64.akam.net."
+      "a10-66.akam.net."
     ],
+    "caa": [],
     "spf": [
-      "facebook-domain-verification=05e2fo203ir2my11s89cptp4d98v76",
-      "7Um+fJoSowkH7rXy6VX20iW1luuKNiyLTwmGsYpFquI=",
-      "348566992-2132956",
-      "slack-domain-verification=wOMgnbRYKgXB7XwqhoTcBqsEWCtmr3jd3tzjQw16",
       "_globalsign-domain-verification=2oNqKhLsivi-1ZTcHyMO9dU_5DjX78RANaqVUbWf7y",
+      "atlassian-domain-verification=A8w13LJxUXKD3We2aV5t054m8lhwHbasQZ/fBI/YySexagczb6/B44ukx9Rul9J4",
+      "facebook-domain-verification=05e2fo203ir2my11s89cptp4d98v76",
+      "cMhf+QzWy8A/PZ5vWY9/e61nciJUv9Y4np2G/gDW7/u+HQz2tsuKS+gfx/V6dieHjUq+nddoC3NzDMN8+bYjyQ==",
       "google-site-verification=ZhMoVoPXe6QPn3vkbtnf2t9Ef_tQ5bYbJG-cq1v6VL4",
       "google-site-verification=WZy8Y7Q1c7TITei9rcbLhqdkivyumD-Vfq3z9sNAPbU",
-      "v=spf1 +MX ip4:154.52.0.151 ip4:84.14.169.30 ip4:209.52.117.178 include:spf.protection.outlook.com -all",
-      "rlz51bPFaxsQr8ZL1IASL0ou8TMMwkd73X7KAuYwAQI=",
+      "348566992-2132956",
       "atlassian-domain-verification=xDJOpp5LhSlJgX7z4KvFhCYnZB2TY8hfdLraQjAFAVx26Tkac4u7Z8C1oj90csaT",
-      "cMhf+QzWy8A/PZ5vWY9/e61nciJUv9Y4np2G/gDW7/u+HQz2tsuKS+gfx/V6dieHjUq+nddoC3NzDMN8+bYjyQ==",
-      "atlassian-domain-verification=A8w13LJxUXKD3We2aV5t054m8lhwHbasQZ/fBI/YySexagczb6/B44ukx9Rul9J4"
+      "slack-domain-verification=wOMgnbRYKgXB7XwqhoTcBqsEWCtmr3jd3tzjQw16",
+      "rlz51bPFaxsQr8ZL1IASL0ou8TMMwkd73X7KAuYwAQI=",
+      "v=spf1 +MX ip4:154.52.0.151 ip4:84.14.169.30 ip4:209.52.117.178 include:spf.protection.outlook.com -all",
+      "7Um+fJoSowkH7rXy6VX20iW1luuKNiyLTwmGsYpFquI="
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -287,12 +302,39 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     "/api/": 301
   },
   "subdomains": {
-    "status": "ct-pending"
+    "source": "certspotter",
+    "count": 55,
+    "notable": [
+      "static.france24.com",
+      "transfert-video.cloud.france24.com"
+    ],
+    "sample": [
+      "amp.france24.com",
+      "api2.france24.com",
+      "apis.france24.com",
+      "apis.observers.france24.com",
+      "ar.france24.com",
+      "autodiscover.france24.com",
+      "distrib.france24.com",
+      "emailing.france24.com",
+      "embed.france24.com",
+      "en.france24.com",
+      "es.france24.com",
+      "for.france24.com",
+      "for.s.france24.com",
+      "fr.france24.com",
+      "france24.com",
+      "go.france24.com",
+      "graphics.france24.com",
+      "howtowatch.france24.com",
+      "iphone.france24.com",
+      "live.france24.com"
+    ]
   },
   "apex_txt": [
-    "facebook-domain-verification=05e2fo203ir2my11s89cptp4d98v76",
-    "slack-domain-verification=wOMgnbRYKgXB7XwqhoTcBqsEWCtmr3jd3tzjQw16",
     "_globalsign-domain-verification=2oNqKhLsivi-1ZTcHyMO9dU_5DjX78RANaqVUbWf7y",
+    "atlassian-domain-verification=A8w13LJxUXKD3We2aV5t054m8lhwHbasQZ/fBI/YySexagczb6",
+    "facebook-domain-verification=05e2fo203ir2my11s89cptp4d98v76",
     "google-site-verification=ZhMoVoPXe6QPn3vkbtnf2t9Ef_tQ5bYbJG-cq1v6VL4",
     "google-site-verification=WZy8Y7Q1c7TITei9rcbLhqdkivyumD-Vfq3z9sNAPbU"
   ],
@@ -316,8 +358,19 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "a23-210-215-217.deploy.static.akamaitechnologies.com."
     ]
   },
-  "elapsed_s": 5.3,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.france24.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 7.2,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -327,4 +380,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

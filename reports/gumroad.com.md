@@ -7,12 +7,12 @@
 | Target | https://gumroad.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | gumroad.com |
-| Test date | 2026-09-26 18:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:07 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
+Total findings: **27** (High: 0, Medium: 0, Low: 5, Info: 22)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -39,8 +39,10 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
 | 21 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 22 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 | 23 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
-| 24 | info | CT1 | 42 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 25 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 24 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 25 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 26 | info | CT1 | 42 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 27 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -59,13 +61,13 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.17.176.98:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.243.99:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.17.176.98:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.243.99:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [LOW] Mixed content: HTTP resources referenced from HTTPS page (`MIX1`)
@@ -149,13 +151,13 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
 ### 17. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (ozky1o0temh23y.gumroad.com and a3ll6r4efgxpoy.gumroad.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (yxir881scayhw6.gumroad.com and fmdpvgqaspxupw.gumroad.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 18. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=lrFehNfjlR5pdQ9Yl1S3X4-HclWnL2hRE-lp5ciPfYs; tiktok-developers-site-verification=EAMtFdg7OB3QLjHaQnqfXjp7NocwiRoa; google-site-verification=PgpLEes7We_6DhccKbUEiYcZ0pdoMFKC9nvJzv5llfo
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=lrFehNfjlR5pdQ9Yl1S3X4-HclWnL2hRE-lp5ciPfYs; google-site-verification=PgpLEes7We_6DhccKbUEiYcZ0pdoMFKC9nvJzv5llfo; notion-domain-verification=sSdqoXWqKQb9UfQM5R80tQCvesneCxOsRl4uKtCzkZc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 19. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -188,13 +190,25 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
 - **Detail:** Response for https://gumroad.com/ carries Cache-Control: max-age=60, public, stale-while-revalidate=3600, s-maxage=300; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
-### 24. [INFO] 42 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 24. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkx1he1f90cm8b.html -> 404; error page/headers match: Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 25. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for gumroad.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 26. [INFO] 42 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.gumroad.com, blog.gumroad.com, help.gumroad.com, staging.creators.gumroad.com, staging.customers.gumroad.com, staging.followers.gumroad.com, staging.gumroad.com, static.gumroad.com, status.gumroad.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 25. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 27. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: staging.creators.gumroad.com, staging.customers.gumroad.com; content may still be served via virtual-host fallback.
@@ -207,8 +221,8 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
   "domain": "gumroad.com",
   "dns": {
     "a": [
-      "104.17.176.98",
-      "104.18.243.99"
+      "104.18.243.99",
+      "104.17.176.98"
     ],
     "aaaa": [
       "2606:4700::6812:f363",
@@ -216,24 +230,25 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
     ],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)",
-      "aspmx.l.google.com (pref 1)"
+      "aspmx3.googlemail.com (pref 10)"
     ],
     "ns": [
       "venus.ns.cloudflare.com.",
       "jeff.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
       "google-site-verification=lrFehNfjlR5pdQ9Yl1S3X4-HclWnL2hRE-lp5ciPfYs",
-      "tiktok-developers-site-verification=EAMtFdg7OB3QLjHaQnqfXjp7NocwiRoa",
       "google-site-verification=PgpLEes7We_6DhccKbUEiYcZ0pdoMFKC9nvJzv5llfo",
-      "v=spf1 a mx ip4:67.225.137.176 include:sendgrid.net include:stspg-customer.com include:_spf.google.com ~all",
-      "notion-domain-verification=sSdqoXWqKQb9UfQM5R80tQCvesneCxOsRl4uKtCzkZc",
       "MS=ms30035841",
-      "status-page-domain-verification=8vj11whsslmd"
+      "notion-domain-verification=sSdqoXWqKQb9UfQM5R80tQCvesneCxOsRl4uKtCzkZc",
+      "tiktok-developers-site-verification=EAMtFdg7OB3QLjHaQnqfXjp7NocwiRoa",
+      "status-page-domain-verification=8vj11whsslmd",
+      "v=spf1 a mx ip4:67.225.137.176 include:sendgrid.net include:stspg-customer.com include:_spf.google.com ~all"
     ],
     "dmarc": [
       "v=DMARC1; p=none; pct=100; rua=mailto:re+qv9rjnupoda@dmarc.postmarkapp.com; sp=none; aspf=r;"
@@ -263,7 +278,7 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
     }
   },
   "ports": {
-    "ip": "104.17.176.98",
+    "ip": "104.18.243.99",
     "open": [
       8080,
       8443
@@ -362,9 +377,9 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
   "wildcard_dns": true,
   "apex_txt": [
     "google-site-verification=lrFehNfjlR5pdQ9Yl1S3X4-HclWnL2hRE-lp5ciPfYs",
-    "tiktok-developers-site-verification=EAMtFdg7OB3QLjHaQnqfXjp7NocwiRoa",
     "google-site-verification=PgpLEes7We_6DhccKbUEiYcZ0pdoMFKC9nvJzv5llfo",
     "notion-domain-verification=sSdqoXWqKQb9UfQM5R80tQCvesneCxOsRl4uKtCzkZc",
+    "tiktok-developers-site-verification=EAMtFdg7OB3QLjHaQnqfXjp7NocwiRoa",
     "status-page-domain-verification=8vj11whsslmd"
   ],
   "tls2": {
@@ -389,8 +404,18 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 9.5,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 9.7,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -400,4 +425,5 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

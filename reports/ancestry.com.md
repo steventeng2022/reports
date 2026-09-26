@@ -7,12 +7,12 @@
 | Target | https://ancestry.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ancestry.com |
-| Test date | 2026-09-26 18:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
+Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,8 +31,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 16 | info | CT1 | 50 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 17 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 16 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 17 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 18 | info | CT1 | 50 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 19 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -45,13 +47,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.0.50:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.1.50:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.0.50:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.1.50:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -123,7 +125,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=IhnfKIdiEJloKVWygvyOX-OXEqYvnNW3a36zIqvI7s8; atlassian-domain-verification=w3rz7z0y8xvagZiMhu44qJQUXTISEt1vlB5JLH44YwEGaJu1oJ; apple-domain-verification=H7sVwFfpXAjrg5cjwMiD04RqrUPw-yk8nws1ZQLX0OE
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=xzRJaI_84GE45yCfP1XGewPRGYGYtoKN2taBi0W1tvw; google-site-verification=IhnfKIdiEJloKVWygvyOX-OXEqYvnNW3a36zIqvI7s8; apple-domain-verification=aRPuENZQPpkMdwYD
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -132,13 +134,25 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 - **Detail:** Certificate of ancestry.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 16. [INFO] 50 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on ancestry.com indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 17. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkijv30lknl5ui.html -> 403; error page/headers match: Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 18. [INFO] 50 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: careers.ancestry.com, media.nbc.ancestry.com, vpn.ancestry.com, vpn.l1-pci.ancestry.com, wiki.ancestry.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 17. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 19. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: vpn.l1-pci.ancestry.com; content may still be served via virtual-host fallback.
@@ -151,50 +165,63 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
   "domain": "ancestry.com",
   "dns": {
     "a": [
-      "104.18.0.50",
-      "104.18.1.50"
+      "104.18.1.50",
+      "104.18.0.50"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxa-002f8e01.gslb.pphosted.com (pref 10)",
-      "mxb-002f8e01.gslb.pphosted.com (pref 10)"
+      "mxb-002f8e01.gslb.pphosted.com (pref 10)",
+      "mxa-002f8e01.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns-415.awsdns-51.com.",
-      "ns-1996.awsdns-57.co.uk.",
       "ns-1429.awsdns-50.org.",
+      "ns-1996.awsdns-57.co.uk.",
+      "ns-415.awsdns-51.com.",
       "ns-737.awsdns-28.net."
     ],
+    "caa": [
+      "0 issuewild \"thawte.com\"",
+      "0 issue \"digicert.com\"",
+      "0 issue \"globalsign.com\"",
+      "0 issuewild \"globalsign.com\"",
+      "0 issuewild \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issue \"comodoca.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issue \"thawte.com\"",
+      "0 issuewild \"amazon.com\"",
+      "0 issuewild \"digicert.com\"",
+      "0 issue \"pki.goog; cansignhttpexchanges=yes\""
+    ],
     "spf": [
-      "v=spf1 ip4:148.163.143.216 ip4:148.163.146.21 ip4:40.92.0.0/15 ip4:40.107.0.0/16 ip4:52.100.0.0/14 ip4:104.47.0.0/17 include:spfa1.ancestry.com include:spfa2.ancestry.com include:spfa3.ancestry.com include:spfa4.ancestry.com -all",
-      "google-site-verification=IhnfKIdiEJloKVWygvyOX-OXEqYvnNW3a36zIqvI7s8",
-      "atlassian-domain-verification=w3rz7z0y8xvagZiMhu44qJQUXTISEt1vlB5JLH44YwEGaJu1oJQweoaSPwzZwRDa",
-      "apple-domain-verification=H7sVwFfpXAjrg5cjwMiD04RqrUPw-yk8nws1ZQLX0OE",
-      "facebook-domain-verification=jyq4fxqp7asgs8a4uos7lv175smrw0",
-      "Validity-Domain-Verification=ahh6a--ajdta71&akhdggS76SHKEUGkd",
-      "jamf-site-verification=bKnm7mL8x9P7tTbBibqUnw",
-      "ZOOM_verify_pUR3qD3KTUmjq_VepUKiNQ",
-      "bw=V0nvzHI6aiJ+zDVV34NJIpjumOt94AbC2UVMYwNiV94K",
-      "google-site-verification=7cbq4pQ7-mroQaqnQzd_NWlY6FnXHB5jXvaOBv9PvKE",
-      "google-site-verification=-AzknqzfMwXyfxPvw1tFMWHQop_hZggmsBKQaxTtJ_Y",
-      "workplace-domain-verification=8M7WF3aEGWMl1TYqg8a0WPoeU5nGzn",
-      "ca3-5bb298b2372e4cd59aadef5eb8cdc5e2",
-      "docusign=60713c36-f380-42c6-bc97-c0a2f7bb0288",
-      "_globalsign-domain-verification=kXS4kgWQ9hbGjWDmISoLGlXLaOx8-EdTig6ux0WZ2x",
-      "LfWMRqtDo2P6V4y6XUr/J+AhoqnLN10va/BBwWlFW2swSuUuJIy0H7InunZ5t1x11GbBXDUuPLFrNb9i6xtZJg==",
-      "uber-domain-verification=bae1e0bc-36c1-4ddc-82cb-9df008237fbc",
-      "apple-domain-verification=aRPuENZQPpkMdwYD",
-      "1h8615NzQEFqgIY5PxudWlC6duCLMQfBMw+fv5fm3NA7wz2Sl7G2nXilA3HMfQdoU3YUwadBga5qJlKymzJUNg==",
       "google-site-verification=xzRJaI_84GE45yCfP1XGewPRGYGYtoKN2taBi0W1tvw",
-      "cisco-ci-domain-verification=7e9f05a57120466147f6696af195ece74794ffcb865912d4841a6cfae29682fa",
-      "es-domain-verification=572c7e4d-8a43-477d-a7c1-6ec480ca835e",
-      "dtm-domain-verification=SC0ne4rDlm2aeoiu8c76XQPK2EThQ20Dlu700pGs87k",
+      "google-site-verification=IhnfKIdiEJloKVWygvyOX-OXEqYvnNW3a36zIqvI7s8",
+      "apple-domain-verification=aRPuENZQPpkMdwYD",
       "atlassian-sending-domain-verification=84372097-817a-4816-8e7f-2c3b32ac6895",
+      "google-site-verification=7cbq4pQ7-mroQaqnQzd_NWlY6FnXHB5jXvaOBv9PvKE",
       "ca3-8ace22ca65d242f287d5417e8f1ccd9b",
+      "ZOOM_verify_pUR3qD3KTUmjq_VepUKiNQ",
+      "google-site-verification=-AzknqzfMwXyfxPvw1tFMWHQop_hZggmsBKQaxTtJ_Y",
+      "docusign=60713c36-f380-42c6-bc97-c0a2f7bb0288",
+      "apple-domain-verification=H7sVwFfpXAjrg5cjwMiD04RqrUPw-yk8nws1ZQLX0OE",
+      "es-domain-verification=572c7e4d-8a43-477d-a7c1-6ec480ca835e",
+      "atlassian-domain-verification=w3rz7z0y8xvagZiMhu44qJQUXTISEt1vlB5JLH44YwEGaJu1oJQweoaSPwzZwRDa",
+      "1h8615NzQEFqgIY5PxudWlC6duCLMQfBMw+fv5fm3NA7wz2Sl7G2nXilA3HMfQdoU3YUwadBga5qJlKymzJUNg==",
+      "dtm-domain-verification=SC0ne4rDlm2aeoiu8c76XQPK2EThQ20Dlu700pGs87k",
+      "_globalsign-domain-verification=kXS4kgWQ9hbGjWDmISoLGlXLaOx8-EdTig6ux0WZ2x",
+      "wiz-domain-verification=6f1d3544773aad264133bcc557338a5f84b607290582a33eb48cc6e768f48b95",
+      "facebook-domain-verification=jyq4fxqp7asgs8a4uos7lv175smrw0",
+      "ca3-5bb298b2372e4cd59aadef5eb8cdc5e2",
+      "LfWMRqtDo2P6V4y6XUr/J+AhoqnLN10va/BBwWlFW2swSuUuJIy0H7InunZ5t1x11GbBXDUuPLFrNb9i6xtZJg==",
+      "cisco-ci-domain-verification=7e9f05a57120466147f6696af195ece74794ffcb865912d4841a6cfae29682fa",
+      "v=spf1 ip4:148.163.143.216 ip4:148.163.146.21 ip4:40.92.0.0/15 ip4:40.107.0.0/16 ip4:52.100.0.0/14 ip4:104.47.0.0/17 include:spfa1.ancestry.com include:spfa2.ancestry.com include:spfa3.ancestry.com include:spfa4.ancestry.com -all",
+      "bw=V0nvzHI6aiJ+zDVV34NJIpjumOt94AbC2UVMYwNiV94K",
       "mixpanel-domain-verify=030ac2cc-dd22-46ab-abd2-ffe6a6e01dde",
+      "uber-domain-verification=bae1e0bc-36c1-4ddc-82cb-9df008237fbc",
+      "workplace-domain-verification=8M7WF3aEGWMl1TYqg8a0WPoeU5nGzn",
+      "jamf-site-verification=bKnm7mL8x9P7tTbBibqUnw",
       "adobe-idp-site-verification=1222e2336a518f7a8664dbdc6462f85d80c35afb4f46542ba5a329749a24a22a",
-      "wiz-domain-verification=6f1d3544773aad264133bcc557338a5f84b607290582a33eb48cc6e768f48b95"
+      "Validity-Domain-Verification=ahh6a--ajdta71&akhdggS76SHKEUGkd"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc_rua@emaildefense.proofpoint.com,mailto:dmarc_agg@dmarc.everest.email; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com,mailto:dmarc_fr@dmarc.everest.email; fo=1"
@@ -225,7 +252,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     }
   },
   "ports": {
-    "ip": "104.18.0.50",
+    "ip": "104.18.1.50",
     "open": [
       8080,
       8443
@@ -319,11 +346,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     ]
   },
   "apex_txt": [
+    "google-site-verification=xzRJaI_84GE45yCfP1XGewPRGYGYtoKN2taBi0W1tvw",
     "google-site-verification=IhnfKIdiEJloKVWygvyOX-OXEqYvnNW3a36zIqvI7s8",
-    "atlassian-domain-verification=w3rz7z0y8xvagZiMhu44qJQUXTISEt1vlB5JLH44YwEGaJu1oJ",
-    "apple-domain-verification=H7sVwFfpXAjrg5cjwMiD04RqrUPw-yk8nws1ZQLX0OE",
-    "facebook-domain-verification=jyq4fxqp7asgs8a4uos7lv175smrw0",
-    "Validity-Domain-Verification=ahh6a--ajdta71&akhdggS76SHKEUGkd"
+    "apple-domain-verification=aRPuENZQPpkMdwYD",
+    "atlassian-sending-domain-verification=84372097-817a-4816-8e7f-2c3b32ac6895",
+    "google-site-verification=7cbq4pQ7-mroQaqnQzd_NWlY6FnXHB5jXvaOBv9PvKE"
   ],
   "tls2": {
     "alpn": "",
@@ -345,8 +372,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
   "x12": {
     "status": 403
   },
-  "elapsed_s": 5.4,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 403,
+    "http_status": 403,
+    "p404_status": 403,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 6.2,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -356,4 +393,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://startnext.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | startnext.com |
-| Test date | 2026-09-26 18:59 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:15 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
+Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -132,7 +133,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: figma-domain-verification=0f0367ec6cadf1d90abb1acf60f4d9eb0aeada705ee4c551606ba0; openai-domain-verification=dv-8ddqCEpCTKHtOHpVBDDRvyBP; stripe-verification=10777e885e2161e55049d4bb5b7f8b2daeab406e486d229fcccf85c5960d
+- **Detail:** Apex TXT records with verification/token content: hcp-domain-verification=60743923ec7473d8ae8b1adb950803da7ced6b57f812ca059c681460; canva-site-verification=Lef60elp9_zJViARgO1t_Q; stripe-verification=10777e885e2161e55049d4bb5b7f8b2daeab406e486d229fcccf85c5960d
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -153,6 +154,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 - **Detail:** robots.txt lists 45 disallow path(s), e.g. /legal_menu.html, /Starten/Page-Projekt-anlegen.html, /blog/Rubriken.html, /blog/Neuer_Beitrag.html, /info/jobs/assistenz_gf.html
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for startnext.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -164,45 +171,46 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "172.66.135.76"
     ],
     "aaaa": [
-      "2606:4700:10::ac42:874c",
-      "2606:4700:10::ac42:8a96"
+      "2606:4700:10::ac42:8a96",
+      "2606:4700:10::ac42:874c"
     ],
     "cname": null,
     "mx": [
       "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "alt4.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
       "will.ns.cloudflare.com.",
       "jocelyn.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
-      "figma-domain-verification=0f0367ec6cadf1d90abb1acf60f4d9eb0aeada705ee4c551606ba0479e7af19f-1769525845",
-      "openai-domain-verification=dv-8ddqCEpCTKHtOHpVBDDRvyBP",
+      "hcp-domain-verification=60743923ec7473d8ae8b1adb950803da7ced6b57f812ca059c6814600de88f8e",
+      "canva-site-verification=Lef60elp9_zJViARgO1t_Q",
+      "sdfcdef4gfeqfdafr3fdeqfdef",
       "stripe-verification=10777e885e2161e55049d4bb5b7f8b2daeab406e486d229fcccf85c5960d924f",
+      "apple-domain-verification=EFkPQxPpmNH3P9qq",
+      "v=spf1 include:spf.mailjet.com include:spf1.stripe.com include:_spf.google.com mx ~all",
+      "postman-domain-verification=804e758eb395e1f9631a5a6ffcdb1213ed51ad4fbafcb0a4e78234bde9381b48586dcf6468efe8d61cec1b0205bfa095378c40393ecf6f3d0cbb1286b989e5cd",
+      "google-site-verification=1sAqiWWlwgiOXvDGSL_I4U17ntLCTVOx7dEbvnR9LFQ",
+      "ahrefs-site-verification_a3ef10fe6feb196e637f47c659a513b57e8451002a446786c463e76edfdc36ed",
       "zapier-domain-verification-challenge=09073caa-9f62-43e0-8e6c-4f3d4a71ff0a",
+      "facebook-domain-verification=stvicj5365sof2wwqhjvmfx4gj94qq",
+      "1password-site-verification=3CHE4U4RBNBC3KMOD33ZBSTPBQ",
+      "figma-domain-verification=0f0367ec6cadf1d90abb1acf60f4d9eb0aeada705ee4c551606ba0479e7af19f-1769525845",
+      "sipgate_domain_verification=ocgEkVPKtc65nr5iq812hD3KjmbZFsVN",
+      "openai-domain-verification=dv-8ddqCEpCTKHtOHpVBDDRvyBP",
+      "notion-domain-verification=WSNIySxByulDNwhZwtDjy9216rTsi81KLbLZuNGAS6A",
+      "anthropic-domain-verification-afn3zm=kLvCbR5sjNLzPmTZq2GkNL5wp",
       "google-site-verification=iLJXA2QAMVvQ0ygkJP5gfwoZckSWP2ScE6DfDK_WDQo",
+      "lovable_verification=cdfc6ea695bda4007160736f9b3c884d431081ad3e971b8558f4d038da3fd8b4",
+      "status-page-domain-verification=v166389cy5dz",
       "Sendinblue-code:f353cef9d786bf84e5c651a6c36eabe1",
       "jetbrains-domain-verification=4tyrq5pfov7ujkxnj7y60r8ya",
-      "ahrefs-site-verification_a3ef10fe6feb196e637f47c659a513b57e8451002a446786c463e76edfdc36ed",
-      "notion-domain-verification=WSNIySxByulDNwhZwtDjy9216rTsi81KLbLZuNGAS6A",
-      "google-site-verification=1sAqiWWlwgiOXvDGSL_I4U17ntLCTVOx7dEbvnR9LFQ",
-      "apple-domain-verification=EFkPQxPpmNH3P9qq",
-      "loaderio=ddeb6ac1a8a34860bcd9860ab8197ac6",
-      "postman-domain-verification=804e758eb395e1f9631a5a6ffcdb1213ed51ad4fbafcb0a4e78234bde9381b48586dcf6468efe8d61cec1b0205bfa095378c40393ecf6f3d0cbb1286b989e5cd",
-      "facebook-domain-verification=stvicj5365sof2wwqhjvmfx4gj94qq",
-      "canva-site-verification=Lef60elp9_zJViARgO1t_Q",
-      "1password-site-verification=3CHE4U4RBNBC3KMOD33ZBSTPBQ",
-      "lovable_verification=cdfc6ea695bda4007160736f9b3c884d431081ad3e971b8558f4d038da3fd8b4",
-      "anthropic-domain-verification-afn3zm=kLvCbR5sjNLzPmTZq2GkNL5wp",
-      "v=spf1 include:spf.mailjet.com include:spf1.stripe.com include:_spf.google.com mx ~all",
-      "hcp-domain-verification=60743923ec7473d8ae8b1adb950803da7ced6b57f812ca059c6814600de88f8e",
-      "sdfcdef4gfeqfdafr3fdeqfdef",
-      "sipgate_domain_verification=ocgEkVPKtc65nr5iq812hD3KjmbZFsVN",
-      "status-page-domain-verification=v166389cy5dz"
+      "loaderio=ddeb6ac1a8a34860bcd9860ab8197ac6"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:3fe3005f1fa8445381ae617deb23b808@dmarc-reports.cloudflare.net,mailto:re+srhio0nnmwp@dmarc.postmarkapp.com; sp=reject; aspf=r;"
@@ -290,11 +298,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "figma-domain-verification=0f0367ec6cadf1d90abb1acf60f4d9eb0aeada705ee4c551606ba0",
-    "openai-domain-verification=dv-8ddqCEpCTKHtOHpVBDDRvyBP",
+    "hcp-domain-verification=60743923ec7473d8ae8b1adb950803da7ced6b57f812ca059c681460",
+    "canva-site-verification=Lef60elp9_zJViARgO1t_Q",
     "stripe-verification=10777e885e2161e55049d4bb5b7f8b2daeab406e486d229fcccf85c5960d",
-    "zapier-domain-verification-challenge=09073caa-9f62-43e0-8e6c-4f3d4a71ff0a",
-    "google-site-verification=iLJXA2QAMVvQ0ygkJP5gfwoZckSWP2ScE6DfDK_WDQo"
+    "apple-domain-verification=EFkPQxPpmNH3P9qq",
+    "postman-domain-verification=804e758eb395e1f9631a5a6ffcdb1213ed51ad4fbafcb0a4e782"
   ],
   "tls2": {
     "alpn": "",
@@ -332,8 +340,19 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 8.7,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.startnext.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 8.9,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -343,4 +362,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

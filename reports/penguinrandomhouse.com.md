@@ -7,12 +7,12 @@
 | Target | https://penguinrandomhouse.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | penguinrandomhouse.com |
-| Test date | 2026-09-26 18:57 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:12 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,7 +28,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 | 10 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 13 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 14 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -109,14 +110,20 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: miro-verification=20deb2e76b80e8360f078ce72b4c1b020ccbe7e1; atlassian-domain-verification=Kl3ByU1tsfV9fKiC7TDDZYz1uCeTeUo0SSEh5SitZ9q99Ua74O; canva-site-verification=qrGQ4gxWAdHknibYOR88zw
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=Kl3ByU1tsfV9fKiC7TDDZYz1uCeTeUo0SSEh5SitZ9q99Ua74O; anthropic-domain-verification-p3yxqz=0oTx7Z8mJYN8MCnVfLRuy7xrz; miro-verification=20deb2e76b80e8360f078ce72b4c1b020ccbe7e1
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 13. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
-- **CWE:** CWE-603
-- **Detail:** Certificate of penguinrandomhouse.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for penguinrandomhouse.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 14. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The penguinrandomhouse.com certificate lists an AIA OCSP responder (http://ocsp.sectigo.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -134,28 +141,29 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "us-smtp-inbound-2.mimecast.com (pref 10)"
     ],
     "ns": [
-      "ns-362.awsdns-45.com.",
       "ns-1709.awsdns-21.co.uk.",
       "ns-643.awsdns-16.net.",
-      "ns-1259.awsdns-29.org."
+      "ns-1259.awsdns-29.org.",
+      "ns-362.awsdns-45.com."
     ],
+    "caa": [],
     "spf": [
-      "miro-verification=20deb2e76b80e8360f078ce72b4c1b020ccbe7e1",
+      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
       "atlassian-domain-verification=Kl3ByU1tsfV9fKiC7TDDZYz1uCeTeUo0SSEh5SitZ9q99Ua74O571fgiIg//j5Hn",
-      "canva-site-verification=qrGQ4gxWAdHknibYOR88zw",
-      "airtable-verification=07656b9d1c59ef275dc5cf2cc40f902f",
+      "anthropic-domain-verification-p3yxqz=0oTx7Z8mJYN8MCnVfLRuy7xrz",
       "d240bb6782951c680216e3b2c275a67a287ab413a4dbc83ff6",
-      "p^80Ofvy%178DnED&JH$OktbSDSDHdBu8r5TXqXJUzrLTNplO6PB1VAb%#xV06wEKl7lOoFd2erdL@$w0BThd9#s6rEd%9C%tPu",
-      "HmQrtF+YeGABOOs4sUIGNzx5oH/hxa/uuKITM72aP2D3Mmo45+IYTHRRNErkCFI5FluDKT7Og9fYZwF4n3wWlw==",
-      "twilio-domain-verification=fc6fe5f3866856223b427fe22f87cacc",
-      "sophos-domain-verification=30c16c4ad4dd85043d6766d195b3be1bf04c9425e55a4a79745bd7a135474f3b",
-      "monday-com-verification=TT0Hb7qY-id2x_o-2OkWXSSLVpTxTADfmHwVAOcLHIk",
+      "miro-verification=20deb2e76b80e8360f078ce72b4c1b020ccbe7e1",
       "asv=300738b15ca5d787a896887a6179da76",
       "apple-domain-verification=fSsk2qTskZIXUkhu",
-      "anthropic-domain-verification-p3yxqz=0oTx7Z8mJYN8MCnVfLRuy7xrz",
-      "applause-verification:e7f9bc17-1978-415a-83ab-955ebc93e7eb",
-      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
       "openai-domain-verification=dv-Rhm7Hg5yRtoNsmysb1sZR4hb",
+      "applause-verification:e7f9bc17-1978-415a-83ab-955ebc93e7eb",
+      "airtable-verification=07656b9d1c59ef275dc5cf2cc40f902f",
+      "twilio-domain-verification=fc6fe5f3866856223b427fe22f87cacc",
+      "monday-com-verification=TT0Hb7qY-id2x_o-2OkWXSSLVpTxTADfmHwVAOcLHIk",
+      "canva-site-verification=qrGQ4gxWAdHknibYOR88zw",
+      "sophos-domain-verification=30c16c4ad4dd85043d6766d195b3be1bf04c9425e55a4a79745bd7a135474f3b",
+      "HmQrtF+YeGABOOs4sUIGNzx5oH/hxa/uuKITM72aP2D3Mmo45+IYTHRRNErkCFI5FluDKT7Og9fYZwF4n3wWlw==",
+      "p^80Ofvy%178DnED&JH$OktbSDSDHdBu8r5TXqXJUzrLTNplO6PB1VAb%#xV06wEKl7lOoFd2erdL@$w0BThd9#s6rEd%9C%tPu",
       "smartsheet-site-validation=cVJvac04NWxSPbNbKVyoQXTc977egjBr"
     ],
     "dmarc": [
@@ -237,11 +245,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "miro-verification=20deb2e76b80e8360f078ce72b4c1b020ccbe7e1",
     "atlassian-domain-verification=Kl3ByU1tsfV9fKiC7TDDZYz1uCeTeUo0SSEh5SitZ9q99Ua74O",
-    "canva-site-verification=qrGQ4gxWAdHknibYOR88zw",
-    "airtable-verification=07656b9d1c59ef275dc5cf2cc40f902f",
-    "twilio-domain-verification=fc6fe5f3866856223b427fe22f87cacc"
+    "anthropic-domain-verification-p3yxqz=0oTx7Z8mJYN8MCnVfLRuy7xrz",
+    "miro-verification=20deb2e76b80e8360f078ce72b4c1b020ccbe7e1",
+    "apple-domain-verification=fSsk2qTskZIXUkhu",
+    "openai-domain-verification=dv-Rhm7Hg5yRtoNsmysb1sZR4hb"
   ],
   "tls2": {
     "alpn": "",
@@ -252,16 +260,29 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.sectigo.com",
       "not_before": "20251216000000",
       "not_after": "20270109235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "x12": {
     "status": 301
   },
-  "elapsed_s": 36.9,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.penguinrandomhouse.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 46.1,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -271,4 +292,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

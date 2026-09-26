@@ -7,8 +7,8 @@
 | Target | https://eonline.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | eonline.com |
-| Test date | 2026-09-26 18:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:04 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -30,9 +30,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 
 ## Detailed findings
 
@@ -124,26 +124,26 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=4ibctlm5ihzdeufrc19auxqcmcctj8; google-site-verification=jOadQCDbZTkKw5sn27yXszjIb9c3PdMPHENN92uPWy8; atlassian-domain-verification=GLdM+/NLCFfEabD6ehBftAdFAnqPMwq2xU9TtdxKbIEMPaNDD7
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=lL5I6oAU0a5eh4ZS-hLM_iC6cPa32T1eVqTQKBw9i_U; facebook-domain-verification=4ibctlm5ihzdeufrc19auxqcmcctj8; yahoo-verification-key=BA7cyZWD/bUcAWHacbiv/mlU3TAoXO1mVUtdRH+IjhI=
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of eonline.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 15. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but eonline.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 23.210.215.216 carries PTR a23-210-215-216.deploy.static.akamaitechnologies.com. for eonline.com.
+- **Detail:** 23.210.215.219 carries PTR a23-210-215-219.deploy.static.akamaitechnologies.com. for eonline.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 17. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkrwxpizen34t9.html -> 403; error page/headers match: Akamai.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ## Evidence (raw response observations)
 
@@ -152,40 +152,54 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "eonline.com",
   "dns": {
     "a": [
-      "23.210.215.216",
-      "23.210.215.219"
+      "23.210.215.219",
+      "23.210.215.216"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "email.eonline.com (pref 50)",
-      "inbound-smtp.us-west-2.amazonaws.com (pref 10)"
+      "inbound-smtp.us-west-2.amazonaws.com (pref 10)",
+      "email.eonline.com (pref 50)"
     ],
     "ns": [
-      "ns1-161.akam.net.",
-      "eur4.akam.net.",
-      "use3.akam.net.",
-      "asia3.akam.net.",
-      "ns1-102.akam.net.",
-      "eur3.akam.net.",
       "aus1.akam.net.",
+      "eur4.akam.net.",
       "usw1.akam.net.",
-      "asia2.akam.net."
+      "ns1-102.akam.net.",
+      "asia2.akam.net.",
+      "asia3.akam.net.",
+      "eur3.akam.net.",
+      "use3.akam.net.",
+      "ns1-161.akam.net."
+    ],
+    "caa": [
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issuewild \"amazontrust.com\"",
+      "0 issue \"digicert.com\"",
+      "0 issuewild \"pki.goog\"",
+      "0 issuewild \"amazon.com\"",
+      "0 issue \"pki.goog\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"amazontrust.com\"",
+      "0 issue \"globalsign.com\"",
+      "0 issuewild \"digicert.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issuewild \"globalsign.com\""
     ],
     "spf": [
-      "v=spf1 ip:12.46.7.226 -all",
-      "facebook-domain-verification=4ibctlm5ihzdeufrc19auxqcmcctj8",
-      "google-site-verification=jOadQCDbZTkKw5sn27yXszjIb9c3PdMPHENN92uPWy8",
-      "v=spf1 ip:208.78.120.150 -all",
-      "atlassian-domain-verification=GLdM+/NLCFfEabD6ehBftAdFAnqPMwq2xU9TtdxKbIEMPaNDD7sJ8oAxMVye/caJ",
-      "a019e5e8a9ff451d9342f0be28384892",
       "google-site-verification=lL5I6oAU0a5eh4ZS-hLM_iC6cPa32T1eVqTQKBw9i_U",
-      "v=spf1 a:mx0a-00176a04.pphosted.com a:mx0b-00176a04.pphosted.com ip:208.78.120.145 include:aspmx.sailthru.com ~all",
-      "2rhzbzb6r6p8z5hqxjxwdhw3rd57dgms",
+      "a019e5e8a9ff451d9342f0be28384892",
+      "facebook-domain-verification=4ibctlm5ihzdeufrc19auxqcmcctj8",
       "amazonses:qQ+mkErgudZpnvNGBxI2Zan33i9hBjOhugRT6rS5seo=",
+      "v=spf1 ip:208.78.120.150 -all",
       "yahoo-verification-key=BA7cyZWD/bUcAWHacbiv/mlU3TAoXO1mVUtdRH+IjhI=",
-      "_zavqrou6cwfkug7nq3x143m5kcj8c1l",
-      "google-site-verification=HRqGVq6H23RBoZpkjqRgJLFx8SOq9GVxinDBE2A8LFw"
+      "v=spf1 a:mx0a-00176a04.pphosted.com a:mx0b-00176a04.pphosted.com ip:208.78.120.145 include:aspmx.sailthru.com ~all",
+      "google-site-verification=HRqGVq6H23RBoZpkjqRgJLFx8SOq9GVxinDBE2A8LFw",
+      "google-site-verification=jOadQCDbZTkKw5sn27yXszjIb9c3PdMPHENN92uPWy8",
+      "atlassian-domain-verification=GLdM+/NLCFfEabD6ehBftAdFAnqPMwq2xU9TtdxKbIEMPaNDD7sJ8oAxMVye/caJ",
+      "v=spf1 ip:12.46.7.226 -all",
+      "2rhzbzb6r6p8z5hqxjxwdhw3rd57dgms",
+      "_zavqrou6cwfkug7nq3x143m5kcj8c1l"
     ],
     "dmarc": [
       "v=DMARC1; p=none; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -215,7 +229,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "23.210.215.216",
+    "ip": "23.210.215.219",
     "open": []
   },
   "https": {
@@ -272,11 +286,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "facebook-domain-verification=4ibctlm5ihzdeufrc19auxqcmcctj8",
-    "google-site-verification=jOadQCDbZTkKw5sn27yXszjIb9c3PdMPHENN92uPWy8",
-    "atlassian-domain-verification=GLdM+/NLCFfEabD6ehBftAdFAnqPMwq2xU9TtdxKbIEMPaNDD7",
     "google-site-verification=lL5I6oAU0a5eh4ZS-hLM_iC6cPa32T1eVqTQKBw9i_U",
-    "yahoo-verification-key=BA7cyZWD/bUcAWHacbiv/mlU3TAoXO1mVUtdRH+IjhI="
+    "facebook-domain-verification=4ibctlm5ihzdeufrc19auxqcmcctj8",
+    "yahoo-verification-key=BA7cyZWD/bUcAWHacbiv/mlU3TAoXO1mVUtdRH+IjhI=",
+    "google-site-verification=HRqGVq6H23RBoZpkjqRgJLFx8SOq9GVxinDBE2A8LFw",
+    "google-site-verification=jOadQCDbZTkKw5sn27yXszjIb9c3PdMPHENN92uPWy8"
   ],
   "tls2": {
     "alpn": "",
@@ -287,19 +301,31 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.digicert.com",
       "not_before": "20260618000000",
       "not_after": "20270102235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "x12": {
     "status": 403,
     "ptr": [
-      "a23-210-215-216.deploy.static.akamaitechnologies.com."
+      "a23-210-215-219.deploy.static.akamaitechnologies.com."
     ]
   },
-  "elapsed_s": 5.3,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 403,
+    "http_status": 403,
+    "p404_status": 403,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 5.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -309,4 +335,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

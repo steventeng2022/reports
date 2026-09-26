@@ -7,12 +7,12 @@
 | Target | https://popularmechanics.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | popularmechanics.com |
-| Test date | 2026-09-26 18:57 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:13 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,10 +30,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -127,14 +128,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: tollbit-domain-verification=ece496246caa370d7f007485c8f75bd2fddff24339ca004233b2; google-site-verification=twOgjzEass2e5I7cd-1TQlMR9dhhBOBVnI-e2P7hSvs; yahoo-verification-key=5xONH6yORwG/7kfa3pYWXykyZGH78hWvc/P+MqxMxhI=
+- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3; yahoo-verification-key=5xONH6yORwG/7kfa3pYWXykyZGH78hWvc/P+MqxMxhI=; facebook-domain-verification=i25ihj6b5eze1xweou34v7znz6k5v9
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of popularmechanics.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2026q2 -> http-400
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
@@ -154,6 +155,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **Detail:** Response for https://popularmechanics.com/ carries Cache-Control: max-age=0, must-revalidate, private; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
+### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for popularmechanics.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -161,10 +168,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "popularmechanics.com",
   "dns": {
     "a": [
-      "151.101.0.155",
       "151.101.192.155",
       "151.101.128.155",
-      "151.101.64.155"
+      "151.101.64.155",
+      "151.101.0.155"
     ],
     "aaaa": [],
     "cname": null,
@@ -172,25 +179,26 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "popularmechanics-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns-181.awsdns-22.com.",
-      "ns-1955.awsdns-52.co.uk.",
+      "ns-1122.awsdns-12.org.",
       "ns-790.awsdns-34.net.",
-      "ns-1122.awsdns-12.org."
+      "ns-181.awsdns-22.com.",
+      "ns-1955.awsdns-52.co.uk."
     ],
+    "caa": [],
     "spf": [
+      "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
+      "yahoo-verification-key=5xONH6yORwG/7kfa3pYWXykyZGH78hWvc/P+MqxMxhI=",
+      "fastly-domain-delegation-tHoPyhjKot-363395-2021-04-28",
+      "facebook-domain-verification=i25ihj6b5eze1xweou34v7znz6k5v9",
       "tollbit-domain-verification=ece496246caa370d7f007485c8f75bd2fddff24339ca004233b2740cc82bada5",
+      "google-site-verification=98saqo61zkfl_yfZaXKLgLkazlZwpUcMCkqCFEO-O18",
       "9991472f6clc7g866tmn1tbhspnwxcdl",
       "google-site-verification=twOgjzEass2e5I7cd-1TQlMR9dhhBOBVnI-e2P7hSvs",
-      "yahoo-verification-key=5xONH6yORwG/7kfa3pYWXykyZGH78hWvc/P+MqxMxhI=",
+      "google-site-verification=wcwFYNVQ_gHEG0lRSSOEkrXtuYQ5zNIXFTodmJivqgw",
+      "v=spf1 include:aspmx.sailthru.com include:spf.protection.outlook.com ip4:63.240.19.128/25 ip4:12.182.88.0/25 ip4:12.130.33.128/25 ip4:24.103.50.168/29 ip4:205.220.176.159 ip4:205.220.164.154 ~all",
       "MS=ms37465013",
       "BSI91896679786",
-      "v=spf1 include:aspmx.sailthru.com include:spf.protection.outlook.com ip4:63.240.19.128/25 ip4:12.182.88.0/25 ip4:12.130.33.128/25 ip4:24.103.50.168/29 ip4:205.220.176.159 ip4:205.220.164.154 ~all",
-      "facebook-domain-verification=i25ihj6b5eze1xweou34v7znz6k5v9",
-      "fastly-domain-delegation-LJIHG7If6u5dy45rhtfjyGUKHk-00839260-20260924",
-      "google-site-verification=wcwFYNVQ_gHEG0lRSSOEkrXtuYQ5zNIXFTodmJivqgw",
-      "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
-      "fastly-domain-delegation-tHoPyhjKot-363395-2021-04-28",
-      "google-site-verification=98saqo61zkfl_yfZaXKLgLkazlZwpUcMCkqCFEO-O18"
+      "fastly-domain-delegation-LJIHG7If6u5dy45rhtfjyGUKHk-00839260-20260924"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@vali.email"
@@ -366,7 +374,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "151.101.0.155",
+    "ip": "151.101.192.155",
     "open": []
   },
   "https": {
@@ -418,11 +426,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "tollbit-domain-verification=ece496246caa370d7f007485c8f75bd2fddff24339ca004233b2",
-    "google-site-verification=twOgjzEass2e5I7cd-1TQlMR9dhhBOBVnI-e2P7hSvs",
+    "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
     "yahoo-verification-key=5xONH6yORwG/7kfa3pYWXykyZGH78hWvc/P+MqxMxhI=",
     "facebook-domain-verification=i25ihj6b5eze1xweou34v7znz6k5v9",
-    "google-site-verification=wcwFYNVQ_gHEG0lRSSOEkrXtuYQ5zNIXFTodmJivqgw"
+    "tollbit-domain-verification=ece496246caa370d7f007485c8f75bd2fddff24339ca004233b2",
+    "google-site-verification=98saqo61zkfl_yfZaXKLgLkazlZwpUcMCkqCFEO-O18"
   ],
   "tls2": {
     "alpn": "",
@@ -433,10 +441,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2026q2",
       "not_before": "20260611150705",
       "not_after": "20261227140705"
-    }
+    },
+    "ocsp": "http-400"
   },
   "http2": {
     "robots_disallow": [
@@ -460,8 +469,20 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "x12": {
     "status": 301
   },
-  "elapsed_s": 15.6,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.popularmechanics.com/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 19.0,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -471,4 +492,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

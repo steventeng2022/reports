@@ -7,12 +7,12 @@
 | Target | https://buffer.com/ |
 | Bug bounty program | Buffer |
 | Listed scope domain | buffer.com |
-| Test date | 2026-09-26 18:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
+Total findings: **27** (High: 0, Medium: 0, Low: 5, Info: 22)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -40,6 +40,9 @@ Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
 | 22 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 23 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 24 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 25 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 26 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 27 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -179,7 +182,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
 ### 21. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: prtoolkit-verification=03646c6d6d2ac0f380012c074391bce38a2a9608fac40fa63b6501326; google-site-verification=gET2bT39fxReuQ0vLGbVvA9TyxZOmEbpePtAX7xY6oA; google-site-verification=hD-bBRWeNejlB37u_tZThoEBoyq3JcLLqog3Rl5Eqs8
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=2cyRtTXa49V-EbiOs0W-MqSfKfp_smVNFF76A9YguLQ; google-site-verification=142Thz3s7mzQJSHORKyyk0QndKtfKg9DakzAiCX6mDA; google-site-verification=jpDzphFKQHfOP1m86Lu3xA2lyx4wZwx2DILni2KvWFc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 22. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -200,6 +203,24 @@ Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
 - **Detail:** robots.txt lists 8 disallow path(s), e.g. /add, /ajax, /button, /docs-custom-code.js, /docs-footer
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 25. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkvabtx4z1k9bs.html -> 404; error page/headers match: Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 26. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/apple-app-site-association on buffer.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 27. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for buffer.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -211,41 +232,42 @@ Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
       "104.18.99.118"
     ],
     "aaaa": [
-      "2606:4700::6812:6276",
-      "2606:4700::6812:6376"
+      "2606:4700::6812:6376",
+      "2606:4700::6812:6276"
     ],
     "cname": null,
     "mx": [
-      "alt3.aspmx.l.google.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)"
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
       "tess.ns.cloudflare.com.",
       "dom.ns.cloudflare.com."
     ],
+    "caa": [],
     "spf": [
-      "prtoolkit-verification=03646c6d6d2ac0f380012c074391bce38a2a9608fac40fa63b65013268e60491",
-      "google-site-verification=gET2bT39fxReuQ0vLGbVvA9TyxZOmEbpePtAX7xY6oA",
-      "google-site-verification=hD-bBRWeNejlB37u_tZThoEBoyq3JcLLqog3Rl5Eqs8",
-      "B37AB95EC3",
-      "facebook-domain-verification=7cr8hfn0y878zjxzgt4hbknwhxuk5y",
-      "v=spf1 include:helpscoutemail.com include:_spf.google.com include:mail.zendesk.com ~all",
-      "google-site-verification=x9nCBH6uz8yQAOEqpV3TqMnL9gI9nj1Iqz5OTJCi8Xg",
-      "segment-site-verification=e7Zo5L9jKVjVcKRFi1acX9nyEQOnl6z3",
-      "google-site-verification=142Thz3s7mzQJSHORKyyk0QndKtfKg9DakzAiCX6mDA",
-      "1password-site-verification=HD5MBSOQ2ZAYLC55FI3SHX7IP4",
-      "stripe-verification=436470f5c9a974d3045706507ca0deef5fc07b3d82d6456180bce09ef19e13b6",
-      "183374251-11850589",
-      "hj=232078-02102021",
-      "google-site-verification=3aAc3sRkZQKuVjCNI_RbHVKkmv-r4lhLXRlvHMR4_l8",
-      "plain-domain-verification-60n9xv=CBUGsWquVTelyl6FeO4WdfFRf",
-      "google-site-verification=LLI4gMxLVK41gPBfxcDZqgyaUxFSMhsDE70-r-pXzso",
       "google-site-verification=2cyRtTXa49V-EbiOs0W-MqSfKfp_smVNFF76A9YguLQ",
+      "google-site-verification=142Thz3s7mzQJSHORKyyk0QndKtfKg9DakzAiCX6mDA",
+      "v=spf1 include:helpscoutemail.com include:_spf.google.com include:mail.zendesk.com ~all",
       "google-site-verification=jpDzphFKQHfOP1m86Lu3xA2lyx4wZwx2DILni2KvWFc",
-      "google-site-verification=Y09tg5UAyuUXsF8PZ-W92iDQaq9DVNJpuwwGiAZ4Sug"
+      "hj=232078-02102021",
+      "stripe-verification=436470f5c9a974d3045706507ca0deef5fc07b3d82d6456180bce09ef19e13b6",
+      "google-site-verification=gET2bT39fxReuQ0vLGbVvA9TyxZOmEbpePtAX7xY6oA",
+      "B37AB95EC3",
+      "prtoolkit-verification=03646c6d6d2ac0f380012c074391bce38a2a9608fac40fa63b65013268e60491",
+      "google-site-verification=3aAc3sRkZQKuVjCNI_RbHVKkmv-r4lhLXRlvHMR4_l8",
+      "google-site-verification=Y09tg5UAyuUXsF8PZ-W92iDQaq9DVNJpuwwGiAZ4Sug",
+      "facebook-domain-verification=7cr8hfn0y878zjxzgt4hbknwhxuk5y",
+      "google-site-verification=hD-bBRWeNejlB37u_tZThoEBoyq3JcLLqog3Rl5Eqs8",
+      "1password-site-verification=HD5MBSOQ2ZAYLC55FI3SHX7IP4",
+      "google-site-verification=x9nCBH6uz8yQAOEqpV3TqMnL9gI9nj1Iqz5OTJCi8Xg",
+      "183374251-11850589",
+      "plain-domain-verification-60n9xv=CBUGsWquVTelyl6FeO4WdfFRf",
+      "segment-site-verification=e7Zo5L9jKVjVcKRFi1acX9nyEQOnl6z3",
+      "google-site-verification=LLI4gMxLVK41gPBfxcDZqgyaUxFSMhsDE70-r-pXzso"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:re+expge6woxi3@dmarc.postmarkapp.com;"
@@ -344,11 +366,11 @@ Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "prtoolkit-verification=03646c6d6d2ac0f380012c074391bce38a2a9608fac40fa63b6501326",
-    "google-site-verification=gET2bT39fxReuQ0vLGbVvA9TyxZOmEbpePtAX7xY6oA",
-    "google-site-verification=hD-bBRWeNejlB37u_tZThoEBoyq3JcLLqog3Rl5Eqs8",
-    "facebook-domain-verification=7cr8hfn0y878zjxzgt4hbknwhxuk5y",
-    "google-site-verification=x9nCBH6uz8yQAOEqpV3TqMnL9gI9nj1Iqz5OTJCi8Xg"
+    "google-site-verification=2cyRtTXa49V-EbiOs0W-MqSfKfp_smVNFF76A9YguLQ",
+    "google-site-verification=142Thz3s7mzQJSHORKyyk0QndKtfKg9DakzAiCX6mDA",
+    "google-site-verification=jpDzphFKQHfOP1m86Lu3xA2lyx4wZwx2DILni2KvWFc",
+    "stripe-verification=436470f5c9a974d3045706507ca0deef5fc07b3d82d6456180bce09ef19e",
+    "google-site-verification=gET2bT39fxReuQ0vLGbVvA9TyxZOmEbpePtAX7xY6oA"
   ],
   "tls2": {
     "alpn": "",
@@ -379,8 +401,21 @@ Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
   "x12": {
     "status": 200
   },
-  "elapsed_s": 12.8,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 301,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/apple-app-site-association"
+    ],
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 14.8,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -390,4 +425,5 @@ Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

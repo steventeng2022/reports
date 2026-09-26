@@ -7,12 +7,12 @@
 | Target | https://amazon.com.au/ |
 | Bug bounty program | Amazon |
 | Listed scope domain | amazon.com.au |
-| Test date | 2026-09-26 18:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,9 +30,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -126,26 +128,38 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: docker-verification=c50aa452-dfa4-41cb-8219-5a7fea9156f1; google-site-verification=34wOR4ff2wUmhJYNBtvXYwo0WsSt5dKuQCO1AOldRJM; facebook-domain-verification=ombfl5vbrfyo80gfz4bmw5drem3sav
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbD; bluebeam-verification=bnne3s2t1ynv515ug95rocbw7gb0tb; docker-verification=c50aa452-dfa4-41cb-8219-5a7fea9156f1
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of amazon.com.au has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 185 disallow path(s), e.g. /dp/product-availability/, /dp/rate-this-item/, /exec/obidos/account-access-login, /exec/obidos/change-style, /exec/obidos/dt/assoc/handle-buy-box
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 18.246.97.211 carries PTR ec2-18-246-97-211.us-west-2.compute.amazonaws.com. for amazon.com.au.
+- **Detail:** 18.246.101.26 carries PTR ec2-18-246-101-26.us-west-2.compute.amazonaws.com. for amazon.com.au.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 17. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/assetlinks.json on amazon.com.au; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for amazon.com.au; apex com.au, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 19. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The amazon.com.au certificate lists an AIA OCSP responder (http://status.geotrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -154,8 +168,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "amazon.com.au",
   "dns": {
     "a": [
-      "18.246.97.211",
       "18.246.101.26",
+      "18.246.97.211",
       "18.246.102.0"
     ],
     "aaaa": [],
@@ -164,40 +178,41 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "amazon-smtp.amazon.com (pref 10)"
     ],
     "ns": [
-      "ns2.amzndns.co.uk.",
-      "ns2.amzndns.com.",
-      "ns1.amzndns.org.",
-      "ns2.amzndns.net.",
       "ns1.amzndns.net.",
+      "ns1.amzndns.co.uk.",
+      "ns1.amzndns.org.",
       "ns1.amzndns.com.",
+      "ns2.amzndns.net.",
+      "ns2.amzndns.co.uk.",
       "ns2.amzndns.org.",
-      "ns1.amzndns.co.uk."
+      "ns2.amzndns.com."
     ],
+    "caa": [],
     "spf": [
+      "sending_domain608861=02111684abe75590f1d69e5e553d7161304877e3997a46bd986dd250bf789903",
+      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
+      "bluebeam-verification=bnne3s2t1ynv515ug95rocbw7gb0tb",
       "docker-verification=c50aa452-dfa4-41cb-8219-5a7fea9156f1",
       "google-site-verification=34wOR4ff2wUmhJYNBtvXYwo0WsSt5dKuQCO1AOldRJM",
-      "sending_domain608861=02111684abe75590f1d69e5e553d7161304877e3997a46bd986dd250bf789903",
-      "91v2nbygcpmc0y5pkbd6mmz4knhhchfm",
-      "MS=ms73620188",
-      "facebook-domain-verification=ombfl5vbrfyo80gfz4bmw5drem3sav",
+      "canva-site-verification=Bxf88Q8PXuF2I343L5w2zQ",
       "v=spf1 include:amazon.com -all",
-      "autodesk-domain-verification=xE0E3DApePbOXs4s_drg",
-      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
       "MS=ms74130121",
-      "ZOOM_verify_QSHzSsY1990HQOIwdcc6an",
+      "sending_domain1003771=1a5b0afe286d365da0519f2761cad76ffac27bb3ddc3f6d7b982fe2e3aaacc5f",
+      "autodesk-domain-verification=xE0E3DApePbOXs4s_drg",
+      "facebook-domain-verification=ombfl5vbrfyo80gfz4bmw5drem3sav",
+      "91v2nbygcpmc0y5pkbd6mmz4knhhchfm",
+      "google-site-verification=mDEghGAOUAiiSIo5ba_EJd1ZYRzZSZ5rQQ60A98QDj8",
+      "MS=ms73620188",
+      "google-site-verification=JRIRRJp9kRJ3sxP5dqUEHyr8MWvoiiyXdi9vL8vmiAc",
+      "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814",
+      "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
       "spf2.0/pra include:amazon.com -all",
+      "sending_domain229492=f2c63538e12c59c4408ab1dd75c743d70392e079087b71e367aedd2958ee9b48",
+      "sending_domain229492=7d4d64d0b55c5ca37c7ab337de1def400c69c7f69d6206d0010ec41e6db08383",
       "sending_domain608861=d308320d80293ea27debf99bfb65df61a5a5533dc905757adfaab309beacc85d",
       "kahoot-domain-verification=df3b0967f037c4069fa43fdceb1379e66f1cb3c8cedb1c43ef5161725c22c721",
-      "google-site-verification=JRIRRJp9kRJ3sxP5dqUEHyr8MWvoiiyXdi9vL8vmiAc",
-      "sending_domain229492=f2c63538e12c59c4408ab1dd75c743d70392e079087b71e367aedd2958ee9b48",
-      "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814",
-      "sending_domain1003771=8a01320175f69ac365904579a7dc3de1d55f044afd4367fbb5b003b4e9db8861",
-      "canva-site-verification=Bxf88Q8PXuF2I343L5w2zQ",
-      "google-site-verification=mDEghGAOUAiiSIo5ba_EJd1ZYRzZSZ5rQQ60A98QDj8",
-      "bluebeam-verification=bnne3s2t1ynv515ug95rocbw7gb0tb",
-      "sending_domain1003771=1a5b0afe286d365da0519f2761cad76ffac27bb3ddc3f6d7b982fe2e3aaacc5f",
-      "sending_domain229492=7d4d64d0b55c5ca37c7ab337de1def400c69c7f69d6206d0010ec41e6db08383",
-      "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo"
+      "ZOOM_verify_QSHzSsY1990HQOIwdcc6an",
+      "sending_domain1003771=8a01320175f69ac365904579a7dc3de1d55f044afd4367fbb5b003b4e9db8861"
     ],
     "dmarc": [
       "v=DMARC1;",
@@ -276,7 +291,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "18.246.97.211",
+    "ip": "18.246.101.26",
     "open": []
   },
   "https": {
@@ -329,11 +344,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbD",
+    "bluebeam-verification=bnne3s2t1ynv515ug95rocbw7gb0tb",
     "docker-verification=c50aa452-dfa4-41cb-8219-5a7fea9156f1",
     "google-site-verification=34wOR4ff2wUmhJYNBtvXYwo0WsSt5dKuQCO1AOldRJM",
-    "facebook-domain-verification=ombfl5vbrfyo80gfz4bmw5drem3sav",
-    "autodesk-domain-verification=xE0E3DApePbOXs4s_drg",
-    "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbD"
+    "canva-site-verification=Bxf88Q8PXuF2I343L5w2zQ"
   ],
   "tls2": {
     "alpn": "",
@@ -344,10 +359,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://status.geotrust.com",
       "not_before": "20260920000000",
       "not_after": "20270405235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -371,11 +387,26 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-18-246-97-211.us-west-2.compute.amazonaws.com."
+      "ec2-18-246-101-26.us-west-2.compute.amazonaws.com."
     ]
   },
-  "elapsed_s": 19.9,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.amazon.com.au/",
+    "http_status": 301,
+    "p404_status": 301,
+    "wellknown": [
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 28.5,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -385,4 +416,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

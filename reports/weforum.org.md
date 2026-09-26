@@ -7,12 +7,12 @@
 | Target | https://weforum.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | weforum.org |
-| Test date | 2026-09-26 19:01 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,8 +30,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 18 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -125,20 +127,32 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: trend-micro-v1-domain-verification.207d3dea181fe697f7b7baf200bc0723=215960e6-460; canva-site-verification=0Y_UJA27aPqQYo5C8ZlN5A; openai-domain-verification=dv-2ERIqAfMx5ObZD0xf5vGDQQq
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=9UJ64WqmFileahOWizp4xsqS6ocCgUwkPfk7R5gKgFE; apple-domain-verification=OQWui0o3waVdBNot; openai-domain-verification=dv-2ERIqAfMx5ObZD0xf5vGDQQq
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of weforum.org has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m01.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 54.72.189.73 carries PTR ec2-54-72-189-73.eu-west-1.compute.amazonaws.com. for weforum.org.
+- **Detail:** 63.35.58.158 carries PTR ec2-63-35-58-158.eu-west-1.compute.amazonaws.com. for weforum.org.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for weforum.org, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 18. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+
+- **CWE:** CWE-298
+- **Detail:** The weforum.org certificate lists an AIA OCSP responder (http://ocsp.r2m01.amazontrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
+- **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
 ## Evidence (raw response observations)
 
@@ -147,54 +161,55 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "domain": "weforum.org",
   "dns": {
     "a": [
-      "54.72.189.73",
-      "63.35.58.158"
+      "63.35.58.158",
+      "54.72.189.73"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxa-0029f101.gslb.pphosted.com (pref 10)",
-      "mxb-0029f101.gslb.pphosted.com (pref 10)"
+      "mxb-0029f101.gslb.pphosted.com (pref 10)",
+      "mxa-0029f101.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
+      "ns-1240.awsdns-27.org.",
       "ns-108.awsdns-13.com.",
       "ns-757.awsdns-30.net.",
-      "ns-1550.awsdns-01.co.uk.",
-      "ns-1240.awsdns-27.org."
+      "ns-1550.awsdns-01.co.uk."
     ],
+    "caa": [],
     "spf": [
-      "docusign=1fdc429f-b194-4a68-8321-3ed07f170b16",
-      "trend-micro-v1-domain-verification.207d3dea181fe697f7b7baf200bc0723=215960e6-4609-4d83-afa4-7cb2bbe6eed3",
-      "canva-site-verification=0Y_UJA27aPqQYo5C8ZlN5A",
-      "058b7f7c-f1a8-4151-bf33-7c1253b8250c",
-      "_y0a8jocbfw3junt02mldp6b2xl3t8ek",
-      "pardot1023261=931c4279794fd4a47b5a396730efb1ef52c243049f80e03a88d020a4a8a674be",
-      "GIC0y5UuCphNvp5+zdLo3uM9hZCeTKMji/uUwKekuROTMgqPELHboLHV/cXBvIJXsO64CXJZim+NeI7inlxwyg==",
-      "openai-domain-verification=dv-2ERIqAfMx5ObZD0xf5vGDQQq",
-      "onetrust-domain-verification=4706964004d842ff8e3e998cfb9e95ee",
+      "0v44yrz5mz7w4362rxvcphy6vcsz567b",
+      "MS=ms20688131",
+      "21561668a4c58d5dbb50486afe176195ca06a4bd",
       "google-site-verification=9UJ64WqmFileahOWizp4xsqS6ocCgUwkPfk7R5gKgFE",
       "apple-domain-verification=OQWui0o3waVdBNot",
-      "MS=ms20688131",
-      "0v44yrz5mz7w4362rxvcphy6vcsz567b",
-      "Dynatrace-site-verification=b6992eee-7248-43a9-97cb-ac9543820831__nf3vvnhs7i6bjl7jpgv9tusloj",
-      "jamf-site-verification=yXqbk6NIBKAgo92DtNK8Qw",
-      "wrike-verification=MTA5NjQyNzpiNmM1MDkzNjVjYmFlMjI0ZjQwZGVjMjdiZGIzZDYzNTNiZjU0YzhiMDM5NTBiNWNiNmFlYjEyMTM5Nzg2N2M2",
-      "logmein-verification-code=4e3aa1a0-ba3c-408d-8415-2773f0cc7317",
+      "openai-domain-verification=dv-2ERIqAfMx5ObZD0xf5vGDQQq",
       "Dynatrace-site-verification=6fb4cdfa-6d51-4c6b-ba72-32ca31fbd8e9__65807dga6ljd8ga1lhllenjl9n",
-      "hcp-domain-verification=8df8c1bab58a33a3c4a18d55d756be6feecb16f1bc9ff97c4c5b56c24cf39b2f",
-      "sending_domain586733=f770af487ef2e5a0f69363082f6c4cc3e0def8a8c660f71eea5acd311e7d31a2",
-      "sending_domain1023261=d2791adae2bac175e941031c1faea3ebf7d8d0f9bec255c60a22235e31d4564d",
-      "protonmail-verification=9a5678880a3d8a138adef690b172b83011aa72c9",
-      "21561668a4c58d5dbb50486afe176195ca06a4bd",
-      "mixpanel-domain-verify=af7b2ab9-ba7e-4dfb-ae38-8553aaf28806",
-      "asv=30cf3d98cd231922c304e2ea205690bf",
-      "atlassian-domain-verification=KdxYDGkL7ybHsaieC01/GdZSKLeYss2GazxPERg1ibVNnJHIJzyiwmu2H42NRyNr",
-      "pp-verification=6d09c4db-136f-45b0-a876-ee9894ecb227",
+      "adobe-idp-site-verification=d267447c-3316-4c5a-bd63-b478cf4d2581",
+      "pardot1023261=931c4279794fd4a47b5a396730efb1ef52c243049f80e03a88d020a4a8a674be",
       "anthropic-domain-verification-qjr70f=mgOKfC1hzNUdmIcpJ70llX4Pa",
       "pardot586733=df6859a87f543a1aef8e961fa54c4edf37e797ba9695931a6a5a0c41979a8a65",
-      "adobe-idp-site-verification=d267447c-3316-4c5a-bd63-b478cf4d2581",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com +include:%{l}._spf.%{d} -all",
-      "docusign=af7aeb30-e49c-4b7a-98d8-6b127f9bb275"
+      "asv=30cf3d98cd231922c304e2ea205690bf",
+      "sending_domain586733=f770af487ef2e5a0f69363082f6c4cc3e0def8a8c660f71eea5acd311e7d31a2",
+      "atlassian-domain-verification=KdxYDGkL7ybHsaieC01/GdZSKLeYss2GazxPERg1ibVNnJHIJzyiwmu2H42NRyNr",
+      "trend-micro-v1-domain-verification.207d3dea181fe697f7b7baf200bc0723=215960e6-4609-4d83-afa4-7cb2bbe6eed3",
+      "Dynatrace-site-verification=b6992eee-7248-43a9-97cb-ac9543820831__nf3vvnhs7i6bjl7jpgv9tusloj",
+      "canva-site-verification=0Y_UJA27aPqQYo5C8ZlN5A",
+      "hcp-domain-verification=8df8c1bab58a33a3c4a18d55d756be6feecb16f1bc9ff97c4c5b56c24cf39b2f",
+      "pp-verification=6d09c4db-136f-45b0-a876-ee9894ecb227",
+      "sending_domain1023261=d2791adae2bac175e941031c1faea3ebf7d8d0f9bec255c60a22235e31d4564d",
+      "jamf-site-verification=yXqbk6NIBKAgo92DtNK8Qw",
+      "058b7f7c-f1a8-4151-bf33-7c1253b8250c",
+      "_y0a8jocbfw3junt02mldp6b2xl3t8ek",
+      "logmein-verification-code=4e3aa1a0-ba3c-408d-8415-2773f0cc7317",
+      "docusign=af7aeb30-e49c-4b7a-98d8-6b127f9bb275",
+      "mixpanel-domain-verify=af7b2ab9-ba7e-4dfb-ae38-8553aaf28806",
+      "protonmail-verification=9a5678880a3d8a138adef690b172b83011aa72c9",
+      "onetrust-domain-verification=4706964004d842ff8e3e998cfb9e95ee",
+      "GIC0y5UuCphNvp5+zdLo3uM9hZCeTKMji/uUwKekuROTMgqPELHboLHV/cXBvIJXsO64CXJZim+NeI7inlxwyg==",
+      "docusign=1fdc429f-b194-4a68-8321-3ed07f170b16",
+      "wrike-verification=MTA5NjQyNzpiNmM1MDkzNjVjYmFlMjI0ZjQwZGVjMjdiZGIzZDYzNTNiZjU0YzhiMDM5NTBiNWNiNmFlYjEyMTM5Nzg2N2M2",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com +include:%{l}._spf.%{d} -all"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;rua=mailto:dmarc_rua@emaildefense.proofpoint.com;ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com;fo=1"
@@ -224,7 +239,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     }
   },
   "ports": {
-    "ip": "54.72.189.73",
+    "ip": "63.35.58.158",
     "open": []
   },
   "https": {
@@ -277,11 +292,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "trend-micro-v1-domain-verification.207d3dea181fe697f7b7baf200bc0723=215960e6-460",
-    "canva-site-verification=0Y_UJA27aPqQYo5C8ZlN5A",
+    "google-site-verification=9UJ64WqmFileahOWizp4xsqS6ocCgUwkPfk7R5gKgFE",
+    "apple-domain-verification=OQWui0o3waVdBNot",
     "openai-domain-verification=dv-2ERIqAfMx5ObZD0xf5vGDQQq",
-    "onetrust-domain-verification=4706964004d842ff8e3e998cfb9e95ee",
-    "google-site-verification=9UJ64WqmFileahOWizp4xsqS6ocCgUwkPfk7R5gKgFE"
+    "Dynatrace-site-verification=6fb4cdfa-6d51-4c6b-ba72-32ca31fbd8e9__65807dga6ljd8g",
+    "adobe-idp-site-verification=d267447c-3316-4c5a-bd63-b478cf4d2581"
   ],
   "tls2": {
     "alpn": "",
@@ -292,19 +307,32 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m01.amazontrust.com",
       "not_before": "20260209000000",
       "not_after": "20270310235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-54-72-189-73.eu-west-1.compute.amazonaws.com."
+      "ec2-63-35-58-158.eu-west-1.compute.amazonaws.com."
     ]
   },
-  "elapsed_s": 31.2,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.weforum.org:443/",
+    "http_status": 301,
+    "p404_status": 301,
+    "stapling": "not-offered",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 40.4,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -314,4 +342,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

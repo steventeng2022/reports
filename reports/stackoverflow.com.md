@@ -7,12 +7,12 @@
 | Target | https://stackoverflow.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | stackoverflow.com |
-| Test date | 2026-09-26 18:59 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:15 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
+Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 18 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
 
 ## Detailed findings
 
@@ -131,7 +132,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-GLNufzbWDzAq0fDXHD6jxeCK; anthropic-domain-verification-q70207=cKyy0llXkD10O4rDQpWz8tQ5K; profound-domain-verification-5p599x=hWudYd2Du6WOYOod5ko9Rwnp8
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=rdWtMbplKjbRHGr2dNONfwkqithlUvjr3u6i8QEz_mo; apple-domain-verification=O9jlnJXAQ7sNSZqC; anthropic-domain-verification-q70207=cKyy0llXkD10O4rDQpWz8tQ5K
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -146,6 +147,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 - **Detail:** Content-Security-Policy of stackoverflow.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
 - **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
+### 18. [INFO] Framework/stack inferred from cookie name (`CK9`)
+
+- **CWE:** CWE-200
+- **Detail:** Cookie '__cf_bm' set on stackoverflow.com indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -159,38 +166,53 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     "cname": null,
     "mx": [
       "alt2.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)",
       "alt4.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "damian.ns.cloudflare.com.",
-      "sureena.ns.cloudflare.com."
+      "sureena.ns.cloudflare.com.",
+      "damian.ns.cloudflare.com."
+    ],
+    "caa": [
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issuewild \"comodoca.com\"",
+      "0 issue \"sectigo.com\"",
+      "0 issuewild \"ssl.com\"",
+      "128 iodef \"mailto:sysadmin-team@stackoverflow.com\"",
+      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issue \"ssl.com\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issuewild \"sectigo.com\"",
+      "0 issuewild \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issue \"comodoca.com\""
     ],
     "spf": [
-      "openai-domain-verification=dv-GLNufzbWDzAq0fDXHD6jxeCK",
-      "anthropic-domain-verification-q70207=cKyy0llXkD10O4rDQpWz8tQ5K",
-      "profound-domain-verification-5p599x=hWudYd2Du6WOYOod5ko9Rwnp8",
-      "make-domain-verification=eec31159-f381-4f38-9d89-e59123dd023e",
-      "cursor-domain-verification-sb0ayf=Pk6AyptQuTpzpcuSlfYGWloxv",
-      "onetrust-domain-verification=0d9d67f856334905a54256085a5768b3",
-      "work-os-domain-verification-43a3e0=GoDUTSc5MMjDaiIC3s5yRKqMD",
-      "ibmid=4e7cbbb3-5f12-40b4-96c7-5b064347b822",
-      "docker-verification=d65aee54-9091-4ceb-b792-61f5d5804050",
-      "MS=ms52592611",
-      "v=MCPv1; k=ed25519; p=VhBofO8RaYvTvHT7q5tTty+HQeCU8R6h5Y8k/sj20So=",
-      "google-site-verification=rdWtMbplKjbRHGr2dNONfwkqithlUvjr3u6i8QEz_mo",
-      "ZOOM_verify_AbkNwz5bBl0eurcDKyhhuk",
-      "google-site-verification=o3EMam8yBGo1yEjyybIiZcOunGHOQKpo8JmOtp9n1BU",
-      "atlassian-domain-verification=byLeZgl3MIcfOqwWuMhq8Fhr/1zem/jIaouJegvDZbBKUU5OqhwDjdpkyYg5CTzm",
-      "adobe-idp-site-verification=25ba5203f3687c9cd6ee3223ee5de1528917828d1da3ebd3bd9a44094cbfc4ac",
       "v=spf1 ip4:52.38.191.241 include:_spf.google.com include:mailgun.org include:sendgrid.net include:mail.zendesk.com include:spf.tipalti.com ~all",
+      "google-site-verification=rdWtMbplKjbRHGr2dNONfwkqithlUvjr3u6i8QEz_mo",
       "apple-domain-verification=O9jlnJXAQ7sNSZqC",
-      "docusign=4262531d-29f4-4a62-9f33-ae9f66f5247b",
-      "google-site-verification=ctogLnZNAdc_CXq8yOhODMLpmugGynjxKecKHDz4oL8",
+      "anthropic-domain-verification-q70207=cKyy0llXkD10O4rDQpWz8tQ5K",
+      "adobe-idp-site-verification=25ba5203f3687c9cd6ee3223ee5de1528917828d1da3ebd3bd9a44094cbfc4ac",
+      "cursor-domain-verification-sb0ayf=Pk6AyptQuTpzpcuSlfYGWloxv",
+      "docker-verification=d65aee54-9091-4ceb-b792-61f5d5804050",
+      "v=MCPv1; k=ed25519; p=VhBofO8RaYvTvHT7q5tTty+HQeCU8R6h5Y8k/sj20So=",
+      "google-site-verification=o3EMam8yBGo1yEjyybIiZcOunGHOQKpo8JmOtp9n1BU",
       "google-site-verification=2Bi6SYw5skkRexdtdLPL2gpxeIhLxnYVqITVP9Htl3w",
-      "onetrust-domain-verification=e445562296a64c649ae3d520230b8c4c"
+      "docusign=4262531d-29f4-4a62-9f33-ae9f66f5247b",
+      "ibmid=4e7cbbb3-5f12-40b4-96c7-5b064347b822",
+      "MS=ms52592611",
+      "work-os-domain-verification-43a3e0=GoDUTSc5MMjDaiIC3s5yRKqMD",
+      "google-site-verification=ctogLnZNAdc_CXq8yOhODMLpmugGynjxKecKHDz4oL8",
+      "onetrust-domain-verification=0d9d67f856334905a54256085a5768b3",
+      "atlassian-domain-verification=byLeZgl3MIcfOqwWuMhq8Fhr/1zem/jIaouJegvDZbBKUU5OqhwDjdpkyYg5CTzm",
+      "profound-domain-verification-5p599x=hWudYd2Du6WOYOod5ko9Rwnp8",
+      "onetrust-domain-verification=e445562296a64c649ae3d520230b8c4c",
+      "make-domain-verification=eec31159-f381-4f38-9d89-e59123dd023e",
+      "openai-domain-verification=dv-GLNufzbWDzAq0fDXHD6jxeCK",
+      "ZOOM_verify_AbkNwz5bBl0eurcDKyhhuk"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:dmarc-aggregates@stackoverflow.com; ruf=mailto:dmarc-forensics@stackoverflow.com; fo=1"
@@ -292,10 +314,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "openai-domain-verification=dv-GLNufzbWDzAq0fDXHD6jxeCK",
+    "google-site-verification=rdWtMbplKjbRHGr2dNONfwkqithlUvjr3u6i8QEz_mo",
+    "apple-domain-verification=O9jlnJXAQ7sNSZqC",
     "anthropic-domain-verification-q70207=cKyy0llXkD10O4rDQpWz8tQ5K",
-    "profound-domain-verification-5p599x=hWudYd2Du6WOYOod5ko9Rwnp8",
-    "make-domain-verification=eec31159-f381-4f38-9d89-e59123dd023e",
+    "adobe-idp-site-verification=25ba5203f3687c9cd6ee3223ee5de1528917828d1da3ebd3bd9a",
     "cursor-domain-verification-sb0ayf=Pk6AyptQuTpzpcuSlfYGWloxv"
   ],
   "tls2": {
@@ -315,8 +337,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
   "x12": {
     "status": 429
   },
-  "elapsed_s": 6.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 429,
+    "http_status": 301,
+    "p404_status": 429,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 6.8,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -326,4 +358,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

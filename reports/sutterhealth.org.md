@@ -7,12 +7,12 @@
 | Target | https://sutterhealth.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | sutterhealth.org |
-| Test date | 2026-09-26 19:00 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:16 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
+Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,7 +31,6 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 | 13 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
@@ -131,14 +130,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: airtable-verification=480dc28b5f136aeeb9c72e1ffecd2d94; google-site-verification=5suSPLWcnGo4WMF8P2HtDOX0AnzrBIfGv2JpJ89kM_o; apple-domain-verification=6EmugeAdzqtGatZ7
+- **Detail:** Apex TXT records with verification/token content: flexera-domain-verification-dcafjcaqzcrdbucx; dtm-domain-verification=A5i70Rs02iuV7ZM7VBHmm1NXbUDdVVLR7G7sz9q5zR8; vmware-cloud-verification-03a26331-13b3-4a4f-8123-a34d1b5466e6
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
-
-### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of sutterhealth.org has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
 ## Evidence (raw response observations)
 
@@ -155,38 +148,44 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "sutterhealth-org.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns4-05.azure-dns.info.",
       "ns2-05.azure-dns.net.",
       "ns3-05.azure-dns.org.",
+      "ns4-05.azure-dns.info.",
       "ns1-05.azure-dns.com."
     ],
+    "caa": [
+      "0 issue \"sectigo.com\"",
+      "0 issue \"digicert.com\"",
+      "0 issue \"amazonaws.com\"",
+      "0 issue \"letsencrypt.org\""
+    ],
     "spf": [
-      "sprout-social-260c110f-d385-4d75-9e75-7d32e5c9e17e",
-      "intersight=2f9f41d547c44be2b28284231fe1c0d3387c68d963a53d504f18cfec349315cd",
-      "airtable-verification=480dc28b5f136aeeb9c72e1ffecd2d94",
-      "smartsheet-site-validation=KG4FnJLPbY4nNo-dVmeX_sNqnmYA11I-",
-      "google-site-verification=5suSPLWcnGo4WMF8P2HtDOX0AnzrBIfGv2JpJ89kM_o",
-      "apple-domain-verification=6EmugeAdzqtGatZ7",
-      "MS=ms47734453",
-      "tqsshcrdlqd6jz66rb59x85p3mp6xt5j",
-      "vmware-cloud-verification-03a26331-13b3-4a4f-8123-a34d1b5466e6",
-      "jamf-site-verification=YEnMiAdegNX2xNXsyl81MA",
-      "google-site-verification=1ut73vMWSdD7vAGFYE6rwNwgZp6sTlzHM4KE_iMO-Wg",
-      "atlassian-domain-verification=k/4cB6WdjX8dp8sJrsQpUCv13/jkgZuZB472VFPxuN9TbANMRruC8a5QSriOWHHe",
-      "openai-domain-verification=dv-sgDNw1gS2lSTsyf6bdj2f3fh",
-      "28DD0C4B37308B587E99CBDEE640AB744470C72767F36FB82E374F3E94D67B32",
-      "_shsq80a8ay3rc5vqi8figqyjpg9xo2h",
-      "A2A2AED6DE5DB1951512FE7F27A0FF20849F36FE5A2086EA578A8F8D618514D0",
-      "_5jyz87it742obj4hxmhnp46i4byr8vw",
-      "v=spf1 ip4:198.217.64.0/24 ip4:198.217.112.0/24 ip4:199.79.205.16/29 ip4:199.79.205.32/29 include:_spf1.sutterhealth.org include:_spf2.sutterhealth.org include:_spf3.sutterhealth.org include:_spf4.sutterhealth.org include:spf.protection.outlook.com -all",
-      "427263CA40526231DA0DD17A9899B7423D812E7AA717665DBE16B613DB02B34C",
-      "pardot266982=11b4fde586ddd3585348b584a83b7b24379df66ceea079251091c947935bb3a2",
-      "amazonses:+ouqWoubNLvOffFrO8GNnPJsJqC3k9zvq4fGmF+/JFc=",
-      "_etnz4zr5xfdan0i6arxavk1gj5fzzpo",
-      "dtm-domain-verification=A5i70Rs02iuV7ZM7VBHmm1NXbUDdVVLR7G7sz9q5zR8",
-      "twilio-domain-verification=f9445f3342fc1d16bc787547acc675e3",
       "flexera-domain-verification-dcafjcaqzcrdbucx",
-      "njH6RDHlABsQmJvITIaqix1L+/Y3ZLr1u/H0Lj/PqqvvNPv8oMwuwaxiZFRNkYdtifBqMGV7Rf7i9r9i/P7uzA=="
+      "dtm-domain-verification=A5i70Rs02iuV7ZM7VBHmm1NXbUDdVVLR7G7sz9q5zR8",
+      "A2A2AED6DE5DB1951512FE7F27A0FF20849F36FE5A2086EA578A8F8D618514D0",
+      "v=spf1 ip4:198.217.64.0/24 ip4:198.217.112.0/24 ip4:199.79.205.16/29 ip4:199.79.205.32/29 include:_spf1.sutterhealth.org include:_spf2.sutterhealth.org include:_spf3.sutterhealth.org include:_spf4.sutterhealth.org include:spf.protection.outlook.com -all",
+      "intersight=2f9f41d547c44be2b28284231fe1c0d3387c68d963a53d504f18cfec349315cd",
+      "_shsq80a8ay3rc5vqi8figqyjpg9xo2h",
+      "njH6RDHlABsQmJvITIaqix1L+/Y3ZLr1u/H0Lj/PqqvvNPv8oMwuwaxiZFRNkYdtifBqMGV7Rf7i9r9i/P7uzA==",
+      "vmware-cloud-verification-03a26331-13b3-4a4f-8123-a34d1b5466e6",
+      "openai-domain-verification=dv-sgDNw1gS2lSTsyf6bdj2f3fh",
+      "amazonses:+ouqWoubNLvOffFrO8GNnPJsJqC3k9zvq4fGmF+/JFc=",
+      "apple-domain-verification=6EmugeAdzqtGatZ7",
+      "google-site-verification=5suSPLWcnGo4WMF8P2HtDOX0AnzrBIfGv2JpJ89kM_o",
+      "atlassian-domain-verification=k/4cB6WdjX8dp8sJrsQpUCv13/jkgZuZB472VFPxuN9TbANMRruC8a5QSriOWHHe",
+      "jamf-site-verification=YEnMiAdegNX2xNXsyl81MA",
+      "28DD0C4B37308B587E99CBDEE640AB744470C72767F36FB82E374F3E94D67B32",
+      "google-site-verification=1ut73vMWSdD7vAGFYE6rwNwgZp6sTlzHM4KE_iMO-Wg",
+      "_5jyz87it742obj4hxmhnp46i4byr8vw",
+      "pardot266982=11b4fde586ddd3585348b584a83b7b24379df66ceea079251091c947935bb3a2",
+      "_etnz4zr5xfdan0i6arxavk1gj5fzzpo",
+      "twilio-domain-verification=f9445f3342fc1d16bc787547acc675e3",
+      "tqsshcrdlqd6jz66rb59x85p3mp6xt5j",
+      "smartsheet-site-validation=KG4FnJLPbY4nNo-dVmeX_sNqnmYA11I-",
+      "427263CA40526231DA0DD17A9899B7423D812E7AA717665DBE16B613DB02B34C",
+      "MS=ms47734453",
+      "airtable-verification=480dc28b5f136aeeb9c72e1ffecd2d94",
+      "sprout-social-260c110f-d385-4d75-9e75-7d32e5c9e17e"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; rua=mailto:es8rh9mx@ag.dmarcian.com;"
@@ -269,11 +268,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "airtable-verification=480dc28b5f136aeeb9c72e1ffecd2d94",
-    "google-site-verification=5suSPLWcnGo4WMF8P2HtDOX0AnzrBIfGv2JpJ89kM_o",
-    "apple-domain-verification=6EmugeAdzqtGatZ7",
+    "flexera-domain-verification-dcafjcaqzcrdbucx",
+    "dtm-domain-verification=A5i70Rs02iuV7ZM7VBHmm1NXbUDdVVLR7G7sz9q5zR8",
     "vmware-cloud-verification-03a26331-13b3-4a4f-8123-a34d1b5466e6",
-    "jamf-site-verification=YEnMiAdegNX2xNXsyl81MA"
+    "openai-domain-verification=dv-sgDNw1gS2lSTsyf6bdj2f3fh",
+    "apple-domain-verification=6EmugeAdzqtGatZ7"
   ],
   "tls2": {
     "alpn": "",
@@ -284,16 +283,28 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.sectigo.com",
       "not_before": "20260323000000",
       "not_after": "20261007235959"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "x12": {
     "status": 429
   },
-  "elapsed_s": 6.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 429,
+    "http_status": 308,
+    "p404_status": 429,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 6.5,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -303,4 +314,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

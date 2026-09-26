@@ -7,12 +7,12 @@
 | Target | https://airtable.com/ |
 | Bug bounty program | Airtable |
 | Listed scope domain | airtable.com |
-| Test date | 2026-09-26 18:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
+Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,11 +26,16 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 | 8 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 9 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 11 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 13 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 | 14 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 | 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 16 | low | CK8 | Session-like cookie with >=30-day lifetime | CWE-613 |
+| 17 | low | CK8 | Session-like cookie with >=30-day lifetime | CWE-613 |
+| 18 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 19 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -96,14 +101,14 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: box-domain-verification=7b0f06dc1db321da4355e0a57264582ef993ea8d5ec6a6a535c0da1f; facebook-domain-verification=gfg0qo2au8cywd132m0itehi8rqhfq; jamf-site-verification=rHp6jc3H-3QFQbAJCz28xA
+- **Detail:** Apex TXT records with verification/token content: pylon-domain-verification-rhyhge=10SPcgfAp1cUzFOD1rW7HK9o6; atlassian-domain-verification=SEoCkU1vByxZ6STi0tknyHIzfSDxB1F6wGGf/phI3fHsyIuu4d; google-site-verification=euX05KyKBY2XRY3sMd51MBgkLgWSDt-D6HxEPbJZE4E
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 11. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
 
 - **CWE:** CWE-603
-- **Detail:** Certificate of airtable.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+- **Detail:** OCSP check via http://ocsp.r2m04.amazontrust.com -> http-403
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
 ### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
@@ -126,8 +131,38 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 ### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 3.169.55.74 carries PTR server-3-169-55-74.tpe54.r.cloudfront.net. for airtable.com.
+- **Detail:** 3.169.121.64 carries PTR server-3-169-121-64.tpe53.r.cloudfront.net. for airtable.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 16. [LOW] Session-like cookie with >=30-day lifetime (`CK8`)
+
+- **CWE:** CWE-613
+- **Detail:** Cookie '__Host-airtable-session' on airtable.com is session-like but carries a Max-Age/Expires lifetime of 30 days or more; a stolen cookie stays valid for a long window.
+- **Recommendation:** Shorten session-cookie lifetime and/or require re-authentication for sensitive actions.
+
+### 17. [LOW] Session-like cookie with >=30-day lifetime (`CK8`)
+
+- **CWE:** CWE-613
+- **Detail:** Cookie '__Host-airtable-session.sig' on airtable.com is session-like but carries a Max-Age/Expires lifetime of 30 days or more; a stolen cookie stays valid for a long window.
+- **Recommendation:** Shorten session-cookie lifetime and/or require re-authentication for sensitive actions.
+
+### 18. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkniskagi0nikg.html -> 404; error page/headers match: CloudFront.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 19. [INFO] App-association / digital-asset-links surface published (`WK1`)
+
+- **CWE:** CWE-200
+- **Detail:** Live JSON at /.well-known/assetlinks.json on airtable.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
+- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
+
+### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
+
+- **CWE:** CWE-295
+- **Detail:** No CAA record found for airtable.com, so any public CA can issue a certificate for the zone.
+- **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
 ## Evidence (raw response observations)
 
@@ -136,69 +171,70 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
   "domain": "airtable.com",
   "dns": {
     "a": [
-      "3.169.55.74",
-      "3.169.55.99",
-      "3.169.55.6",
-      "3.169.55.126"
+      "3.169.121.64",
+      "3.169.121.104",
+      "3.169.121.5",
+      "3.169.121.126"
     ],
     "aaaa": [
-      "2600:9000:2834:2600:0:fde1:c980:93a1",
-      "2600:9000:2834:4800:0:fde1:c980:93a1",
-      "2600:9000:2834:2200:0:fde1:c980:93a1",
-      "2600:9000:2834:e200:0:fde1:c980:93a1",
-      "2600:9000:2834:f800:0:fde1:c980:93a1",
-      "2600:9000:2834:ac00:0:fde1:c980:93a1",
-      "2600:9000:2834:1200:0:fde1:c980:93a1",
-      "2600:9000:2834:de00:0:fde1:c980:93a1"
+      "2600:9000:284c:3000:0:fde1:c980:93a1",
+      "2600:9000:284c:d000:0:fde1:c980:93a1",
+      "2600:9000:284c:1a00:0:fde1:c980:93a1",
+      "2600:9000:284c:3c00:0:fde1:c980:93a1",
+      "2600:9000:284c:5a00:0:fde1:c980:93a1",
+      "2600:9000:284c:1000:0:fde1:c980:93a1",
+      "2600:9000:284c:1600:0:fde1:c980:93a1",
+      "2600:9000:284c:f200:0:fde1:c980:93a1"
     ],
     "cname": null,
     "mx": [
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt4.aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
+      "ns-1899.awsdns-45.co.uk.",
       "ns-685.awsdns-21.net.",
-      "ns-1069.awsdns-05.org.",
       "ns-447.awsdns-55.com.",
-      "ns-1899.awsdns-45.co.uk."
+      "ns-1069.awsdns-05.org."
     ],
+    "caa": [],
     "spf": [
-      "box-domain-verification=7b0f06dc1db321da4355e0a57264582ef993ea8d5ec6a6a535c0da1fbb3716c4",
-      "facebook-domain-verification=gfg0qo2au8cywd132m0itehi8rqhfq",
-      "jamf-site-verification=rHp6jc3H-3QFQbAJCz28xA",
-      "postman-domain-verification=403414135fdd4de22ea8e6924a70b46d821cf0de2e9555c4b96e41c60231c9d84c37489d47b347411f991b446b0a7e0050b0bbff390999842ce3cc8c11cf8a93",
-      "google-site-verification=O-kfeG0vtUgAjQYn-gDpWkYWb_Kl8f3z9OjKswYlDug",
-      "beam-verification=Z9ucVlrllzaQ5SpJiJltJUsYSnHkBBIBjKadv4gsv5gddutH",
-      "zapier-domain-verification-challenge=8ee12b84-1c1e-467a-bbbf-a8f5f30f442e",
-      "cursor-domain-verification-7etnx9=AnyVPVFCmQJv6S6Hy1hH9cMUx",
+      "v=MCPv1; k=ed25519; p=G1cCoFkb5x1fTZwAJLb42JSNQB/sT9Cyx+colhPq7YI=",
+      "pylon-domain-verification-rhyhge=10SPcgfAp1cUzFOD1rW7HK9o6",
+      "mgverify=c76c0b58ab94a58ab6470a3648cd01d386e0eded8faff1fe936c0f51605886c6",
+      "cloudflare_dashboard_sso=c69d6361128a7dad5039e5b76e9b2cde",
+      "atlassian-domain-verification=SEoCkU1vByxZ6STi0tknyHIzfSDxB1F6wGGf/phI3fHsyIuu4doRXS/fXd0oadkC",
+      "google-site-verification=euX05KyKBY2XRY3sMd51MBgkLgWSDt-D6HxEPbJZE4E",
       "ibmid=0555764c-fa27-4142-a90e-2ceb610f84ff",
-      "onetrust-domain-verification=08cafae7e510435994fd87812abaa805",
+      "stripe-verification=528727982b9408fcfaf4799d022aed98e6fe59f7bd19fb80c19eddf770808454",
+      "box-domain-verification=7b0f06dc1db321da4355e0a57264582ef993ea8d5ec6a6a535c0da1fbb3716c4",
+      "google-site-verification=jCY0WH76zs_XUIsPN-CpVMrGxoER14S-qmba5HB-NOw",
+      "google-site-verification=dKKmkVVrUbTHz22G3Mouc0xGoi_asVZMFspACVKmJoM",
+      "google-site-verification=7OYI2dFV51swegn-yfn7A9M6JKMyCLwnwVcoHriMkgw",
+      "zapier-domain-verification-challenge=8ee12b84-1c1e-467a-bbbf-a8f5f30f442e",
+      "facebook-domain-verification=gfg0qo2au8cywd132m0itehi8rqhfq",
+      "beam-verification=Z9ucVlrllzaQ5SpJiJltJUsYSnHkBBIBjKadv4gsv5gddutH",
+      "MS=ms57543645",
+      "TAILSCALE-LCbD2Tan8BItnHOB3y0p",
       "docusign=48aed6b7-99ce-449e-b576-0e32ac39a3ca",
       "google-site-verification=AqsnhsVuEKjGgLyc8RXu6W3IPYDj-805B5Ofrt4ubp8",
-      "TAILSCALE-LCbD2Tan8BItnHOB3y0p",
-      "google-site-verification=dKKmkVVrUbTHz22G3Mouc0xGoi_asVZMFspACVKmJoM",
-      "sprout-social-092bd800-f204-4740-bf84-ae806843855d",
-      "drift-domain-verification=25a66e35596d2f8afdc380e147dc2c84a92afd4020ca912c4eece0fe0ba31b07",
-      "google-site-verification=jCY0WH76zs_XUIsPN-CpVMrGxoER14S-qmba5HB-NOw",
       "google-site-verification=yvhp-gxMyp-JZnuAm8Jx_EEoEjdik7VFz-wCpC4fklQ",
-      "v=MCPv1; k=ed25519; p=G1cCoFkb5x1fTZwAJLb42JSNQB/sT9Cyx+colhPq7YI=",
-      "google-site-verification=DXt7gC5fDi-TwbqBj4qhJ0xZolvejBEbmsnmAWmid90",
-      "atlassian-domain-verification=SEoCkU1vByxZ6STi0tknyHIzfSDxB1F6wGGf/phI3fHsyIuu4doRXS/fXd0oadkC",
-      "google-site-verification=7OYI2dFV51swegn-yfn7A9M6JKMyCLwnwVcoHriMkgw",
-      "stripe-verification=528727982b9408fcfaf4799d022aed98e6fe59f7bd19fb80c19eddf770808454",
-      "pylon-domain-verification-rhyhge=10SPcgfAp1cUzFOD1rW7HK9o6",
-      "cloudflare_dashboard_sso=c69d6361128a7dad5039e5b76e9b2cde",
+      "sprout-social-092bd800-f204-4740-bf84-ae806843855d",
+      "jamf-site-verification=rHp6jc3H-3QFQbAJCz28xA",
       "openai-domain-verification=dv-cLdaKW0SF1WwsRiJz5GPTU3z",
+      "onetrust-domain-verification=08cafae7e510435994fd87812abaa805",
+      "drift-domain-verification=25a66e35596d2f8afdc380e147dc2c84a92afd4020ca912c4eece0fe0ba31b07",
       "docker-verification=d352c009-156f-4f43-a6c9-19c62d5f7f39",
+      "google-site-verification=O-kfeG0vtUgAjQYn-gDpWkYWb_Kl8f3z9OjKswYlDug",
       "v=spf1 ip4:159.135.229.248 ip4:159.135.231.62 ip4:69.72.44.244 include:_spf.mailgun.org include:_spf.google.com include:_spf.salesforce.com mx ~all",
-      "mgverify=c76c0b58ab94a58ab6470a3648cd01d386e0eded8faff1fe936c0f51605886c6",
+      "google-site-verification=DXt7gC5fDi-TwbqBj4qhJ0xZolvejBEbmsnmAWmid90",
+      "postman-domain-verification=403414135fdd4de22ea8e6924a70b46d821cf0de2e9555c4b96e41c60231c9d84c37489d47b347411f991b446b0a7e0050b0bbff390999842ce3cc8c11cf8a93",
+      "cursor-domain-verification-7etnx9=AnyVPVFCmQJv6S6Hy1hH9cMUx",
       "mgverify=4e7a1ef686139875f21ee18e629284f4b32b4bef29516a48d42806937db7489f",
-      "google-site-verification=euX05KyKBY2XRY3sMd51MBgkLgWSDt-D6HxEPbJZE4E",
-      "apple-domain-verification=p7c2orfu38a1od5v",
-      "MS=ms57543645"
+      "apple-domain-verification=p7c2orfu38a1od5v"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; pct=100; ri=3600; rua=mailto:dc7a0f9c@dmarc.mailgun.org,mailto:b38def86@inbox.ondmarc.com;"
@@ -228,7 +264,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
     }
   },
   "ports": {
-    "ip": "3.169.55.74",
+    "ip": "3.169.121.64",
     "open": []
   },
   "https": {
@@ -303,11 +339,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "box-domain-verification=7b0f06dc1db321da4355e0a57264582ef993ea8d5ec6a6a535c0da1f",
-    "facebook-domain-verification=gfg0qo2au8cywd132m0itehi8rqhfq",
-    "jamf-site-verification=rHp6jc3H-3QFQbAJCz28xA",
-    "postman-domain-verification=403414135fdd4de22ea8e6924a70b46d821cf0de2e9555c4b96e",
-    "google-site-verification=O-kfeG0vtUgAjQYn-gDpWkYWb_Kl8f3z9OjKswYlDug"
+    "pylon-domain-verification-rhyhge=10SPcgfAp1cUzFOD1rW7HK9o6",
+    "atlassian-domain-verification=SEoCkU1vByxZ6STi0tknyHIzfSDxB1F6wGGf/phI3fHsyIuu4d",
+    "google-site-verification=euX05KyKBY2XRY3sMd51MBgkLgWSDt-D6HxEPbJZE4E",
+    "stripe-verification=528727982b9408fcfaf4799d022aed98e6fe59f7bd19fb80c19eddf77080",
+    "box-domain-verification=7b0f06dc1db321da4355e0a57264582ef993ea8d5ec6a6a535c0da1f"
   ],
   "tls2": {
     "alpn": "",
@@ -318,10 +354,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.r2m04.amazontrust.com",
       "not_before": "20260713000000",
       "not_after": "20270126235959"
-    }
+    },
+    "ocsp": "http-403"
   },
   "http2": {
     "hsts_preloaded": true,
@@ -346,11 +383,26 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
   "x12": {
     "status": 301,
     "ptr": [
-      "server-3-169-55-74.tpe54.r.cloudfront.net."
+      "server-3-169-121-64.tpe53.r.cloudfront.net."
     ]
   },
-  "elapsed_s": 13.0,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 301,
+    "root_location": "https://www.airtable.com/",
+    "http_status": 301,
+    "p404_status": 404,
+    "wellknown": [
+      "/.well-known/assetlinks.json"
+    ],
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 13.9,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -360,4 +412,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

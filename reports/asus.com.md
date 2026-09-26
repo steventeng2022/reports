@@ -7,8 +7,8 @@
 | Target | https://asus.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | asus.com |
-| Test date | 2026-09-26 18:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 21:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -66,7 +66,7 @@ Total findings: **8** (High: 0, Medium: 1, Low: 1, Info: 6)
 ### 7. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=71RHI7e5zrzhwOgNIz8aT-pbh6LGw1zQ7VWTAnhlpF8; google-site-verification=iA3Ko0FQtp-yaka9tibkFlF98ZMkxrnu5ofKd9QQ-QE; google-site-verification=eUHxhIYbA4kM7heyt2W2onNhJHLTXuDgo4VE3snEBKw
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=YVSgEqQtJRjmdVBu; google-site-verification=Rs_zuu4Gqxki8VVX5xNs63-tIOcut0qvdvYvW2KLY38; google-site-verification=iA3Ko0FQtp-yaka9tibkFlF98ZMkxrnu5ofKd9QQ-QE
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 8. [INFO] 118 hostnames found via Certificate Transparency (certspotter) (`CT1`)
@@ -88,42 +88,55 @@ Total findings: **8** (High: 0, Medium: 1, Low: 1, Info: 6)
     "cname": null,
     "mx": [
       "mg2.asus.com (pref 100)",
-      "mg.asus.com (pref 10)",
-      "mg1.asus.com (pref 20)"
+      "mg1.asus.com (pref 20)",
+      "mg.asus.com (pref 10)"
     ],
     "ns": [
-      "ns-1875.awsdns-42.co.uk.",
-      "ns-337.awsdns-42.com.",
+      "ns-1039.awsdns-01.org.",
       "ns-544.awsdns-04.net.",
-      "ns-1039.awsdns-01.org."
+      "ns-337.awsdns-42.com.",
+      "ns-1875.awsdns-42.co.uk."
+    ],
+    "caa": [
+      "0 iodef \"mailto:dns_admin@asus.com\"",
+      "0 issue \"twca.com.tw\"",
+      "0 issue \"amazonaws.com\"",
+      "0 issue \"digicert.com\"",
+      "0 issue \"globalsign.com\"",
+      "0 issue \"pki.goog\"",
+      "0 issue \"amazontrust.com\"",
+      "0 issue \"sectigo.com\"",
+      "0 issue \"awstrust.com\"",
+      "0 issue \"ssl.com\"",
+      "0 issue \"amazon.com\""
     ],
     "spf": [
-      "google-site-verification=71RHI7e5zrzhwOgNIz8aT-pbh6LGw1zQ7VWTAnhlpF8",
-      "pardot922413=75629e802092cb0ac07329098a29b2cec1b3d86f4470d27f5643addd5bc78707",
+      "5YA7LJMOVXX399OL065GX65G87UKJ20FFDBUVX2M",
+      "apple-domain-verification=YVSgEqQtJRjmdVBu",
+      "mu56Kq__Cg9v_aczc5degR_4sMXtsDa2AeU3-oEsihw",
+      "1dbc8bc7963d4b0e90bbb0e474e38e2e",
+      "google-site-verification=Rs_zuu4Gqxki8VVX5xNs63-tIOcut0qvdvYvW2KLY38",
+      "google-site-verification=iA3Ko0FQtp-yaka9tibkFlF98ZMkxrnu5ofKd9QQ-QE",
       "v=spf1 ip4:103.10.4.0/22 ip4:213.61.92.115 ip4:218.211.38.242 ip4:118.163.110.210 ip4:213.61.152.30 include:spf.protection.outlook.com -all",
+      "wiz-domain-verification=6e11efe846bf3a2f81870077d571d06c8650aff084bd960c34cfc32434dac695",
       "hT5pYl5FKR/fwLMKrJ1KQPnZrNC8YzgJ7REPX6Wux1cRehEIzwrOuyB9ASXckqMz+rHto/UaM/44UfPgbQFjYg==",
       "docusign=f0d1ec0b-94f3-4abf-bf6f-e5c894776e57",
-      "google-site-verification=iA3Ko0FQtp-yaka9tibkFlF98ZMkxrnu5ofKd9QQ-QE",
-      "google-site-verification=eUHxhIYbA4kM7heyt2W2onNhJHLTXuDgo4VE3snEBKw",
-      "atlassian-domain-verification=2Z9J5op7FAXNJxHd0AExZaq7IBe8R8DFbq6Lh6Qx/fhUeEWmSeGtuSYud7tFYjGn",
-      "google-site-verification=va5g5RuEWw-pwEJ7ssCrnyBAggf7yCLxugRggQY8Udc",
-      "google-site-verification=ZAxDQWYWbQka8_PwpGcJnv38NFkB1kp4ZeamtqNEjLw",
-      "facebook-domain-verification=tkhj31qarb9901xcperg0w0yfcdazh",
-      "1dbc8bc7963d4b0e90bbb0e474e38e2e",
-      "MS=ms94547556",
-      "mu56Kq__Cg9v_aczc5degR_4sMXtsDa2AeU3-oEsihw",
-      "7894A73F0CFEDD51A6EA5C7E4CCD13A3965623132C7519E917382CF0131AA3F2",
-      "apple-domain-verification=YVSgEqQtJRjmdVBu",
-      "google-site-verification=Rs_zuu4Gqxki8VVX5xNs63-tIOcut0qvdvYvW2KLY38",
-      "docusign=9c43421e-314b-49f7-82ae-fe698bce40bd",
-      "trend-micro-v1-domain-verification.e5d263b0eb2014dbafc1625a7865e267=1ea4ccc7-05b5-476d-aff9-5272fc7c5d2e",
-      "atlassian-domain-verification=jxVtO6D77cvTtzPiqZUe8DiTmI1mqdbU0jqM66bYHskWVDfx5kiqtfOWcKBZMAVC",
-      "zzldvfj08yfss0ydft85bbysmy1cj96x.",
       "google-site-verification=44buYvNtZHvSRVcj2dOJGZMtmPAaLOa9zPSVMMVwbaY",
-      "wiz-domain-verification=6e11efe846bf3a2f81870077d571d06c8650aff084bd960c34cfc32434dac695",
-      "bv-domain-verification=e134f5546cb5c93ee5ffb1f47c8015873876076d9c43dda13d85dfc6341f65ca",
+      "facebook-domain-verification=tkhj31qarb9901xcperg0w0yfcdazh",
+      "google-site-verification=eUHxhIYbA4kM7heyt2W2onNhJHLTXuDgo4VE3snEBKw",
+      "7894A73F0CFEDD51A6EA5C7E4CCD13A3965623132C7519E917382CF0131AA3F2",
+      "google-site-verification=va5g5RuEWw-pwEJ7ssCrnyBAggf7yCLxugRggQY8Udc",
       "adobe-idp-site-verification=382f5b6399951cb3de1a5d1dbd06bb8eb8d701f88c4ea5db38aa69347dd9a13f",
-      "5YA7LJMOVXX399OL065GX65G87UKJ20FFDBUVX2M"
+      "zzldvfj08yfss0ydft85bbysmy1cj96x.",
+      "docusign=9c43421e-314b-49f7-82ae-fe698bce40bd",
+      "atlassian-domain-verification=jxVtO6D77cvTtzPiqZUe8DiTmI1mqdbU0jqM66bYHskWVDfx5kiqtfOWcKBZMAVC",
+      "google-site-verification=71RHI7e5zrzhwOgNIz8aT-pbh6LGw1zQ7VWTAnhlpF8",
+      "bv-domain-verification=e134f5546cb5c93ee5ffb1f47c8015873876076d9c43dda13d85dfc6341f65ca",
+      "google-site-verification=ZAxDQWYWbQka8_PwpGcJnv38NFkB1kp4ZeamtqNEjLw",
+      "MS=ms94547556",
+      "atlassian-domain-verification=2Z9J5op7FAXNJxHd0AExZaq7IBe8R8DFbq6Lh6Qx/fhUeEWmSeGtuSYud7tFYjGn",
+      "trend-micro-v1-domain-verification.e5d263b0eb2014dbafc1625a7865e267=1ea4ccc7-05b5-476d-aff9-5272fc7c5d2e",
+      "pardot922413=75629e802092cb0ac07329098a29b2cec1b3d86f4470d27f5643addd5bc78707"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; sp=quarantine"
@@ -199,11 +212,11 @@ Total findings: **8** (High: 0, Medium: 1, Low: 1, Info: 6)
     ]
   },
   "apex_txt": [
-    "google-site-verification=71RHI7e5zrzhwOgNIz8aT-pbh6LGw1zQ7VWTAnhlpF8",
+    "apple-domain-verification=YVSgEqQtJRjmdVBu",
+    "google-site-verification=Rs_zuu4Gqxki8VVX5xNs63-tIOcut0qvdvYvW2KLY38",
     "google-site-verification=iA3Ko0FQtp-yaka9tibkFlF98ZMkxrnu5ofKd9QQ-QE",
-    "google-site-verification=eUHxhIYbA4kM7heyt2W2onNhJHLTXuDgo4VE3snEBKw",
-    "atlassian-domain-verification=2Z9J5op7FAXNJxHd0AExZaq7IBe8R8DFbq6Lh6Qx/fhUeEWmSe",
-    "google-site-verification=va5g5RuEWw-pwEJ7ssCrnyBAggf7yCLxugRggQY8Udc"
+    "wiz-domain-verification=6e11efe846bf3a2f81870077d571d06c8650aff084bd960c34cfc324",
+    "google-site-verification=44buYvNtZHvSRVcj2dOJGZMtmPAaLOa9zPSVMMVwbaY"
   ],
   "tls2": {
     "error": "ConnectionResetError(10054, '遠端主機已強制關閉一個現存的連線。', None, 10054, None)"
@@ -214,8 +227,16 @@ Total findings: **8** (High: 0, Medium: 1, Low: 1, Info: 6)
   "x12": {
     "error": "ConnectionError(ProtocolError('Connection aborted.', ConnectionResetError(10054,"
   },
-  "elapsed_s": 38.2,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_error": "ConnectionError(ProtocolError('Connection aborted.', ConnectionResetError(10054,",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 58.4,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -225,4 +246,5 @@ Total findings: **8** (High: 0, Medium: 1, Low: 1, Info: 6)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

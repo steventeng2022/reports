@@ -7,12 +7,12 @@
 | Target | https://help.apple.com/ |
 | Bug bounty program | Apple |
 | Listed scope domain | help.apple.com |
-| Test date | 2026-09-26 18:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:07 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
+Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,11 +26,10 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 | 8 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
 | 9 | info | RED2 | Soft redirect (302/303) for HTTP to HTTPS | CWE-319 |
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
-| 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
-| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 13 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -102,31 +101,25 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of help.apple.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 12. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but help.apple.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 13. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 122 disallow path(s), e.g. /imovie/Contents/en/searchindex/, /garageband/Contents/en/searchindex/, /imovie/cameras/, /finalcutpro, /finalcutpro/cameras/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 14. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+### 13. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
 
 - **CWE:** CWE-922
 - **Detail:** Response for https://help.apple.com/ carries Cache-Control: max-age=600; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
-### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 17.253.117.131 carries PTR twtpe2-vip-fx-101.a.aaplimg.com. for help.apple.com.
@@ -140,15 +133,16 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
   "dns": {
     "a": [
       "17.253.117.131",
-      "17.253.117.132"
+      "17.253.117.134"
     ],
     "aaaa": [
-      "2403:300:a30:f000::131",
-      "2403:300:a30:f000::134"
+      "2403:300:a30:f000::132",
+      "2403:300:a30:f000::131"
     ],
     "cname": "help.origin-apple.com.akadns.net.",
     "mx": [],
     "ns": [],
+    "caa": [],
     "spf": [],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -241,10 +235,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null,
+      "aia_ocsp": "http://ocsp.apple.com/ocsp03-apsecca1g1",
       "not_before": "20260816235615",
       "not_after": "20261110185218"
-    }
+    },
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -271,8 +266,19 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
       "twtpe2-vip-fx-101.a.aaplimg.com."
     ]
   },
-  "elapsed_s": 9.2,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 200,
+    "http_status": 302,
+    "p404_status": 404,
+    "stapling": "inconclusive",
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 11.2,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -282,4 +288,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.

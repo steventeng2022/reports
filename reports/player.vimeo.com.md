@@ -7,12 +7,12 @@
 | Target | https://player.vimeo.com/ |
 | Bug bounty program | Vimeo |
 | Listed scope domain | player.vimeo.com |
-| Test date | 2026-09-26 18:57 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 22:13 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
+Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,7 +30,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 13 | info | CK5 | Cookie scoped to parent domain (vimeo.com) | CWE-200 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 15 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 15 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 16 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 
 ## Detailed findings
 
@@ -43,13 +44,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 162.159.138.60:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 162.159.128.61:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 162.159.138.60:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 162.159.128.61:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -124,11 +125,17 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 - **Detail:** robots.txt lists 2 disallow path(s), e.g. /, /external
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 15. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+### 15. [INFO] Framework/stack inferred from cookie name (`CK9`)
 
 - **CWE:** CWE-200
-- **Detail:** CSP of player.vimeo.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
-- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+- **Detail:** Cookie '__cf_bm' set on player.vimeo.com indicates Cloudflare bot-management cookie.
+- **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
+
+### 16. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xkl48c9nfuzox7.html -> 404; error page/headers match: Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ## Evidence (raw response observations)
 
@@ -137,13 +144,14 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
   "domain": "player.vimeo.com",
   "dns": {
     "a": [
-      "162.159.138.60",
-      "162.159.128.61"
+      "162.159.128.61",
+      "162.159.138.60"
     ],
     "aaaa": [],
     "cname": "player.vimeo.com.cdn.cloudflare.net.",
     "mx": [],
     "ns": [],
+    "caa": [],
     "spf": [],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -171,7 +179,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
     }
   },
   "ports": {
-    "ip": "162.159.138.60",
+    "ip": "162.159.128.61",
     "open": [
       8080,
       8443
@@ -259,8 +267,19 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
   "x12": {
     "status": 302
   },
-  "elapsed_s": 9.4,
-  "rechecked": "2026-09-26 18:44 UTC"
+  "x13": {
+    "root_status": 302,
+    "root_location": "https://vimeo.com/features",
+    "http_status": 301,
+    "p404_status": 404,
+    "quic": {
+      "ok": false,
+      "version": "",
+      "note": "deferred (vantage drops udp/443)"
+    }
+  },
+  "elapsed_s": 10.9,
+  "rechecked": "2026-09-26 21:56 UTC"
 }
 ```
 
@@ -270,4 +289,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - Findings are reported against the public program scope; submission through the program tracker is pending.
