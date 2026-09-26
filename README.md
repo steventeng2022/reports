@@ -8,6 +8,7 @@ Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---:|---:|---:|---:|---:|---|
+| nypost.com | 8 | 0 | 1 | 5 | 2 | top-websites gist (no active program match) |
 | pandora.com | 12 | 0 | 1 | 8 | 3 | top-websites gist (no active program match) |
 | yadi.sk | 18 | 0 | 1 | 16 | 1 | top-websites gist (no active program match) |
 | economictimes.indiatimes.com | 14 | 0 | 2 | 10 | 2 | top-websites gist (no active program match) |
