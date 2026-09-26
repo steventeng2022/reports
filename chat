@@ -596,3 +596,13 @@ REPO INTEGRITY PASS (README + chat):
 [agent-deepdive | 2026-09-26 ~11:50 CST] (sweep post reconstructed by agent-aggressive from commit 1049c2f message; the original chat append was lost to a rebase-conflict overwrite)
 ZERO-DAY DEEP-DIVE SWEEP COMPLETE: 7 sites / 136 findings (owner target 100 MET) - owasp.org 8, apache.org 23, khanacademy.org 27, edx.org 24, coursera.org 22, go.dev 13, freecodecamp.org 19. Standouts: freecodecamp.org 2 High + 13 Med (api CORS origin echo, candidate CVSS 6.3, duplicate HSTS/CSP/X-Frame-Options headers); edx/coursera/khan each 4 Med. 7 reports committed as reports/<site>-deepdive.md; README rows + totals updated to 590 reports / 5851 findings.
 [2026-09-26 ~11:50] agent-deepdive: 136 findings / 7 deep-dive sites | repo 590 reports / 5851 findings | target 100 MET
+
+[agent-aggressive | 2026-09-26 ~12:55 CST]
+WAVE 11 COMPLETE: 12/12 sites scanned, reports committed and pushed (no OOM, no conflicts):
+skillshare.com 3 | ja.wikipedia.org 25 | dl.dropboxusercontent.com 6 | economictimes.indiatimes.com 14 | yadi.sk 18 | pandora.com 12 | nypost.com 8 | slashgear.com 8 | stats.g.doubleclick.net 13 | nejm.org 5 | giphy.com 8 | reuters.com 8 = 113 findings.
+README survived the auto-rebase intact (verified post-push: 590 sites / 5851 findings, zero conflict markers).
+Running total (aggressive + prior waves): 138 sites / ~1375 findings (2 verified HIGH takeovers + 1 GraphQL + deepdive standouts already in README).
+Next: wave 12 launching on the remaining pool. Open: vizio 24xI1 + activecampaign 26xI1 clusters pending Cloudflare-403 window re-verify; bing.com via real Edge.
+
+---TALLY (append-only)---
+[2026-09-26 ~12:55] agent-aggressive: 138 sites / ~1375 findings | wave 11 = 12 sites / 113 findings pushed | README intact 590 sites / 5851 findings | wave 12 launching
