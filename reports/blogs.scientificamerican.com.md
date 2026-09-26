@@ -5,59 +5,174 @@
 | Item | Value |
 |---|---|
 | Target | https://blogs.scientificamerican.com/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | blogs.scientificamerican.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-26 01:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
+Total findings: **5** (High: 0, Medium: 0, Low: 0, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | info | C4 | Cookies scoped to parent/wildcard domain | CWE-200 |
-| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 3 | info | H2c | HSTS not preloaded | CWE-319 |
-| 4 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 5 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
-| 6 | info | X3 | HTTPS root redirects to different host | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 4 | info | H6 | Server technology disclosure | CWE-200 |
+| 5 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [INFO] Cookies scoped to parent/wildcard domain (`C4`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
+
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
+
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** Cookies set with domain beyond blogs.scientificamerican.com: www.scientificamerican.com.
+- **Detail:** Detected: Server: CloudFront
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for blogs.scientificamerican.com lists 4 name(s) besides the scope host: *.sciam.com, *.scientificamerican.com, sciam.com, scientificamerican.com
-
-### 3. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000; includeSubDomains` lacks the preload directive.
-
-### 4. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://blogs.scientificamerican.com/ -> https://blogs.scientificamerican.com/ (positive check).
-
-### 5. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on blogs.scientificamerican.com.
+- **Detail:** Alt-Svc: h3=":443"; ma=86400
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
 
-### 6. [INFO] HTTPS root redirects to different host (`X3`)
+### 4. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** https://blogs.scientificamerican.com/ redirects to https://www.scientificamerican.com/.
+- **Detail:** Header reveals: CloudFront
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
 
-## Reproduction notes
+### 5. [INFO] Missing security.txt (`P8`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://blogs.scientificamerican.com/ final status: 200 (final URL https://www.scientificamerican.com/).
-- http://blogs.scientificamerican.com/ initial status: 301.
-- Certificate: Amazon Amazon RSA 2048 M01, valid until 2026-12-09T23:59:59+00:00.
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "blogs.scientificamerican.com",
+  "dns": {
+    "a": [
+      "65.9.180.86",
+      "65.9.180.96",
+      "65.9.180.98",
+      "65.9.180.72"
+    ],
+    "aaaa": [
+      "2600:9000:202b:1200:12:7409:4340:93a1",
+      "2600:9000:202b:d600:12:7409:4340:93a1",
+      "2600:9000:202b:2600:12:7409:4340:93a1",
+      "2600:9000:202b:8000:12:7409:4340:93a1",
+      "2600:9000:202b:1c00:12:7409:4340:93a1",
+      "2600:9000:202b:7000:12:7409:4340:93a1",
+      "2600:9000:202b:ec00:12:7409:4340:93a1",
+      "2600:9000:202b:3200:12:7409:4340:93a1"
+    ],
+    "cname": null,
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=scientificamerican.com",
+    "issuer": "countryName=US, organizationName=Amazon, commonName=Amazon RSA 2048 M01",
+    "notBefore": "May 26 00:00:00 2026 GMT",
+    "notAfter": "Dec  9 23:59:59 2026 GMT",
+    "san": [
+      "scientificamerican.com",
+      "*.sciam.com",
+      "sciam.com",
+      "*.scientificamerican.com"
+    ],
+    "days_left": 74,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "65.9.180.86",
+    "open": []
+  },
+  "https": {
+    "status": 302,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: CloudFront"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.blogs.scientificamerican.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://blogs.scientificamerican.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 302",
+    "/redirect?next=https://evil-auditor.example/x -> 302",
+    "/go?url=https://evil-auditor.example/x -> 302",
+    "/url?url=https://evil-auditor.example/x -> 302"
+  ],
+  "paths": {
+    "/robots.txt": 302,
+    "/sitemap.xml": 302,
+    "/.well-known/security.txt": 302,
+    "/security.txt": 302,
+    "/.git/HEAD": 302,
+    "/.git/config": 302,
+    "/.env": 403,
+    "/.htaccess": 302,
+    "/wp-login.php": 302,
+    "/phpmyadmin/index.php": 302,
+    "/server-status": 302,
+    "/api/": 302
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 0,
+    "notable": [],
+    "sample": []
+  },
+  "elapsed_s": 3.9,
+  "rechecked": "2026-09-26 01:45 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -5,101 +5,224 @@
 | Item | Value |
 |---|---|
 | Target | https://yahoo.com/ |
-| Bug bounty program | [Yahoo!](https://app.intigriti.com/programs/yahoo/yahoobugbounty/detail) |
+| Bug bounty program | Yahoo! |
 | Listed scope domain | yahoo.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:29 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
+Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 3 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
-| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 5 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 6 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 7 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 8 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 9 | info | H2c | HSTS not preloaded | CWE-319 |
-| 10 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 11 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 12 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 13 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | TLS4 | TLS certificate expires within 30 days | CWE-298 |
+| 3 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 6 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 7 | info | H6 | Server technology disclosure | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://yahoo.com/ without HttpOnly: A1S. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://yahoo.com/ without SameSite=Lax/Strict: A3. Cross-site request cookies.
-
-### 3. [LOW] TLS certificate expiring within 30 days (`T3`)
+### 2. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires 2026-10-21T23:59:59+00:00 (25 days left) for yahoo.com.
+- **Detail:** Certificate expires in 26 days (notAfter Oct 21 23:59:59 2026 GMT).
+- **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
-### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for yahoo.com lists 15 name(s) besides the scope host: *.amp.yimg.com, *.att.yahoo.com, *.media.yahoo.com, *.www.yahoo.com, *.yahoo.com, add.my.yahoo.com, brb.yahoo.net, ca.my.yahoo.com... (3 no longer resolve)
-
-### 5. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `brb.yahoo.net` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 6. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `hk.rd.yahoo.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 7. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `tw.rd.yahoo.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 8. [INFO] HSTS without includeSubDomains (`H2b`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` does not cover subdomains.
-
-### 9. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` lacks the preload directive.
-
-### 10. [INFO] Missing Permissions-Policy (`H7`)
+### 3. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://yahoo.com/; browser features (camera, mic, geolocation) unrestricted.
+- **Detail:** Detected: Server: ATS
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 11. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+### 4. [LOW] Missing CSP header (`H2`)
 
-- **CWE:** CWE-319
-- **Detail:** http://yahoo.com/ -> https://yahoo.com/ (positive check).
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 12. [INFO] robots.txt discloses crawl rules/paths (`R1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt on https://yahoo.com/ exposes 23 unique Disallow path(s) (*/articles/, /, /_multiremote, /_remote, /_td_api) and 3 sitemap reference(s)
-
-### 13. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+### 5. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://yahoo.com (554 bytes); contact: mailto:security@yahooinc.com
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 6. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://yahoo.com/ final status: 200 (final URL https://tw.yahoo.com/?p=us).
-- http://yahoo.com/ initial status: 301.
-- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-21T23:59:59+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 7. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: ATS
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "yahoo.com",
+  "dns": {
+    "a": [
+      "74.6.231.21",
+      "74.6.143.25",
+      "74.6.143.26",
+      "98.137.11.164",
+      "74.6.231.20",
+      "98.137.11.163"
+    ],
+    "aaaa": [
+      "2001:4998:24:120d::1:0",
+      "2001:4998:44:3507::8000",
+      "2001:4998:124:1507::f001",
+      "2001:4998:24:120d::1:1",
+      "2001:4998:44:3507::8001",
+      "2001:4998:124:1507::f000"
+    ],
+    "cname": null,
+    "mx": [
+      "mta6.am0.yahoodns.net (pref 1)",
+      "mta5.am0.yahoodns.net (pref 1)",
+      "mta7.am0.yahoodns.net (pref 1)"
+    ],
+    "ns": [
+      "ns4.yahoo.com.",
+      "ns1.yahoo.com.",
+      "ns2.yahoo.com.",
+      "ns5.yahoo.com.",
+      "ns3.yahoo.com."
+    ],
+    "spf": [
+      "google-site-verification=GLp01gkFNopm_JItbLxml4iuVbTgJa3rKu0-eq1RvsE",
+      "google-site-verification=w4N2bNopAWw1xYrdXKORILxx-WW3_LIiyX6dIMIidgk",
+      "Zoom=13284637",
+      "_globalsign-domain-verification=3rQPnwMFlx5UmUzSMV-JeDoNEMeG8BYFKvKDsHEzr9",
+      "google-site-verification=2b8irRvU5a2h4Mb-H_fdqNrqWjS00qmPfPcWqm8BhxI",
+      "edb3bff2c0d64622a9b2250438277a59",
+      "google-site-verification=GU8WAl0zPqaxdcZqDjuN7pqdfPCpR9Amz9rwxMG91qw",
+      "google-site-verification=Z3-Vh6zqUMgybVH4wQl1GxKSKN7JE13kyCyeZ3TZZ-I",
+      "facebook-domain-verification=gysqrcd69g0ej34f4jfn0huivkym1p",
+      "v=spf1 redirect=_spf.mail.yahoo.com",
+      "google-site-verification=xoBvU6aKxP0gYgNL0iXqF0EccAg6nFrO7XxsHnc3iNQ",
+      "google-site-verification=2b0Glh8l2icXIAgAcjOcFx16Jt26yWDgEyrk5hPD-ZY"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; pct=100; rua=mailto:d@rua.agari.com; ruf=mailto:d@ruf.agari.com;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "countryName=US, stateOrProvinceName=New York, localityName=New York, organizationName=Yahoo Holdings Inc., commonName=yahoo.com",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
+    "notBefore": "Jul 28 00:00:00 2026 GMT",
+    "notAfter": "Oct 21 23:59:59 2026 GMT",
+    "san": [
+      "yahoo.com",
+      "tw.rd.yahoo.com",
+      "s.yimg.com",
+      "mbp.yimg.com",
+      "hk.rd.yahoo.com",
+      "fr-ca.rogers.yahoo.com",
+      "ddl.fp.yahoo.com",
+      "ca.rogers.yahoo.com",
+      "ca.my.yahoo.com",
+      "brb.yahoo.net",
+      "add.my.yahoo.com",
+      "*.yahoo.com",
+      "*.www.yahoo.com",
+      "*.media.yahoo.com",
+      "*.att.yahoo.com",
+      "*.amp.yimg.com"
+    ],
+    "days_left": 26,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "74.6.231.21",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: ATS"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.yahoo.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://yahoo.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 200,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 404,
+    "/.htaccess": 404,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 40.0,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -5,119 +5,291 @@
 | Item | Value |
 |---|---|
 | Target | https://united.com/ |
-| Bug bounty program | [United Airlines](https://bugcrowd.com/united-vdp) |
+| Bug bounty program | United Airlines |
 | Listed scope domain | united.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:25 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
+Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C2 | Cookies set without Secure flag | CWE-614 |
-| 3 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 4 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 5 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 6 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 7 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 8 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 9 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 10 | info | H2 | Short HSTS max-age | CWE-319 |
-| 11 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 12 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 13 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 14 | info | R1 | robots.txt protected | CWE-200 |
-| 15 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
-| 16 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H1b | Weak HSTS (max-age < 1 year) | CWE-319 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://united.com/ without HttpOnly: PROrigin, akacd_NS_AB. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without Secure flag (`C2`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
-- **CWE:** CWE-614
-- **Detail:** Set on https://united.com/ without Secure: PROrigin. Will be transmitted over HTTP if the site is reachable cleartext.
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: AkamaiGHost
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 3. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://united.com/ without SameSite=Lax/Strict: PROrigin, akacd_NS_AB. Cross-site request cookies.
-
-### 4. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://united.com/; no defense-in-depth against XSS/content injection.
-
-### 5. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://united.com/; browsers may MIME-sniff responses.
-
-### 6. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for united.com lists 20 name(s) besides the scope host: beta.united.com, checkin.united.com, ife.unitedwifi.com, mobile.united.com, pss.united.com, ual.com, unitedairlines.ca, unitedairlines.co.uk... (5 no longer resolve)
-
-### 7. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `ual.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 8. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `unitedairlines.ca` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 9. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `unitedairlines.co.uk` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 10. [INFO] Short HSTS max-age (`H2`)
+### 3. [LOW] Weak HSTS (max-age < 1 year) (`H1b`)
 
 - **CWE:** CWE-319
-- **Detail:** HSTS max-age=15768000 (< 1 year): `max-age=15768000; includeSubDomains; preload`.
+- **Detail:** HSTS present but max-age=15768000 (< 31536000).
+- **Context:** https response, /
+- **Recommendation:** Increase max-age to at least 31536000; add includeSubDomains/preload.
 
-### 11. [INFO] Missing Referrer-Policy (`H5`)
+### 4. [LOW] Missing CSP header (`H2`)
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://united.com/; full URL (incl. query strings) is sent as referrer by default.
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 12. [INFO] Missing Permissions-Policy (`H7`)
+### 5. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://united.com/; browser features (camera, mic, geolocation) unrestricted.
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 13. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+### 6. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-319
-- **Detail:** http://united.com/ -> https://united.com/ (positive check).
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 14. [INFO] robots.txt protected (`R1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /robots.txt returned 403.
-
-### 15. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 403 on united.com.
-
-### 16. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** https://united.com/ responded 403 (passive check only; no further probing).
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-## Reproduction notes
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://united.com/ final status: 403 (final URL https://www.united.com/).
-- http://united.com/ initial status: 301.
-- Certificate: DigiCert Inc GeoTrust TLS RSA CA G1, valid until 2026-12-08T23:59:59+00:00.
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
+
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 10. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: AkamaiGHost
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 11. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "united.com",
+  "dns": {
+    "a": [
+      "23.209.216.114"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "mxb-00212602.gslb.pphosted.com (pref 10)",
+      "mxa-00212602.gslb.pphosted.com (pref 10)",
+      "67.231.152.135 (pref 6)",
+      "67.231.145.22 (pref 5)"
+    ],
+    "ns": [
+      "a10-65.akam.net.",
+      "a11-66.akam.net.",
+      "a26-64.akam.net.",
+      "a18-67.akam.net.",
+      "a1-66.akam.net.",
+      "a5-65.akam.net."
+    ],
+    "spf": [
+      "qFCoTGARAo0YzsD8J4JXGTPJnoGyXVcN1UUT76knKhsb0VWg5k8Ltz0EKn5Wht7bsSdnw7/DP8N0lC4BPHOutQ==",
+      "vmware-cloud-verification-21e81564-6cf2-4948-92cd-7d169a06dbfd",
+      "cloudhealth=5dda028a-3bad-41ee-8197-a76d049e4648",
+      "e2ma-verification=l59eb",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
+      "sending_domain473072=2536efd81f433897e4eade7bd5c07c9f572003ea06fcdee11f2872c01a4befbf",
+      "e2ma-verification=to1eb",
+      "miro-verification=c4f22d27f3df65dc4bcc76cdacabb97da8a5765e",
+      "cisco-ci-domain-verification=150e1a1fbae294ccdb82094631861d593dd76e186d81076c716c15de04b1b04e",
+      "twilio-domain-verification=422291df00dd2d1e86b024d9d140c96f",
+      "cisco-ci-domain-verification=2348f9b423234f5b6cb296d8e0b21a433c9708dbd7885f35a347b7f361eef8e6",
+      "webexdomainverification.=c3b585c2-1a13-47c5-abc9-49cebb862ae3",
+      "e2ma-verification=vozeb",
+      "zoho-verification=zb79381715.zmverify.zoho.in",
+      "e2ma-verification=so1eb",
+      "webexdomainverification.NMB6=5e3a4841-bed2-49e3-995e-7e6577637d4a",
+      "duo_sso_verification=DhdWOQSIwy1C7mfnQgxNMBEtJM5SbFCu5mbQ8jKQCh4LGxf6CmNJlx1NUMEFrro1",
+      "anthropic-domain-verification-9jtz5g=oedRjF26denAvMXx0Ubb50D74",
+      "pardot895221=0283c9002444941b4251d2fc11749bba12b56a77f8f1fcafcae8f8ea396db336",
+      "pardot895221=e613bb2bd7a53de50e4c0f525dca606bba246e4d5fc9514a220acf78f6b40cd2",
+      "google-gws-recovery-domain-verification=47260811",
+      "insomnia-validation=7975158d8fce4d6c9e6889f06d4894d5c0e9e9e6e7985e37865960ac45e99c60",
+      "pardot895221=fa7d573afba39e23c5d310777b3e4b8e3059fc036c5f8a141061e48acb644c2e",
+      "starlink-domain-verification=c05d3ac0-aef3-4c4a-a5a2-d2310fb2422b",
+      "atlassian-domain-verification=LS4NFLIjbXxDhEDh1uRXHFIsGV0c7/eMwPLjJasBzHbldYDoiaVCRUUJ19njM5b/",
+      "adobe-idp-site-verification=4b5fa402a6cdc780157d690e7860970f4447772807197ddf38cbc78d7b3666d6",
+      "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
+      "docker-verification=eac5f372-ff38-49a3-a449-013649023462",
+      "cisco-ci-domain-verification=7b72a7a0f463b7ae34bd19b2b4e7c9e32a23184af97a606601ab4470cbb94b67",
+      "TSqI+8N8XlipHXL0ef29pOHU8OuiMLGRBHCe/Bj9pnVXi4+pFDDuyU7cAs0mRED85RC60Vk/RQk/UE+o+Qe3dw==",
+      "3hdk90qzhvh0l7yvw0wg014c6m2xxz9d",
+      "rebelmouse=0296577248d0df8680XXXXb4f5b2663e106f6c40",
+      "_7d3owcum7npdansxr9rm5adumrqels5",
+      "mandrill_verify.o-YnntrhVJmYGforpN1_eg",
+      "pardot895221=5106e47e334be87ed949b11dd8839ee745c0b5f2d9c49d4d7268519ee605ad84",
+      "smartsheet-site-validation=a-QJqDk8-xugCQsJJ59BloRXsQ78NHEu",
+      "_f4a7xelp84p4m660f9cr1t61ryb6n3f",
+      "vmware-cloud-verification-9cd123ef-b219-486d-a9a0-b315b5ba0da3",
+      "google-site-verification=o8Ds49E6OUh_KlAGHKP5Cp1n2VFnRCOn0Po9XIYNuVw",
+      "EjEnj26GQ6Rch4cK-0_3Bg",
+      "e2ma-verification=wozeb",
+      "_pu9ae99ovdbyxleilm1jlqdhzbmmcv5",
+      "docusign=83f7c0a0-80c9-41e2-9dbb-101c34f5fd08",
+      "apple-domain-verification=JX4d4nEINvrmcrFB",
+      "hpe-greenlake-domain-verification=4a774d567170674c43373938696b56704239656c347a533862435a66356b4455",
+      "ciUNjcPdDUwJlNwxs7hQOL+JdXldzfLl1U0+1NLC4U/KcgyYha7rJDX0z8ECmAXiC7WfSIWGNLcakbS5aicncg==",
+      "MS=ms48035785",
+      "ibmid=775b7bb2-5029-4241-8adb-c97959b13265",
+      "Dynatrace-site-verification=5aa9bae5-aed4-4063-8545-7f63572d80ff__3j2g8rj4tmvasq9qhrv51ichkd",
+      "sitecore-domain-verification=544b04b1172546a8ad8a86742156828e",
+      "docusign=a852ec83-5d46-4c48-9ae4-35ac3ae4b32c"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; fo=1; pct=100; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "countryName=US, stateOrProvinceName=Illinois, localityName=Arlington Heights, organizationName=United Airlines Inc, commonName=www.united.com",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, organizationalUnitName=www.digicert.com, commonName=GeoTrust TLS RSA CA G1",
+    "notBefore": "Dec  9 00:00:00 2025 GMT",
+    "notAfter": "Dec  8 23:59:59 2026 GMT",
+    "san": [
+      "www.united.com",
+      "beta.united.com",
+      "checkin.united.com",
+      "ife.unitedwifi.com",
+      "mobile.united.com",
+      "pss.united.com",
+      "ual.com",
+      "united.com",
+      "unitedairlines.ca",
+      "unitedairlines.co.uk",
+      "unitedairlines.com",
+      "unitedairlines.jp",
+      "unitedwifi.com",
+      "walletservices.united.com",
+      "www.ual.com",
+      "www.unitedairlines.ca",
+      "www.unitedairlines.co.uk",
+      "www.unitedairlines.com",
+      "www.unitedairlines.de",
+      "www.unitedairlines.jp",
+      "www.unitedwifi.com"
+    ],
+    "days_left": 74,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "23.209.216.114",
+    "open": []
+  },
+  "https": {
+    "status": 302,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: AkamaiGHost"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.united.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://united.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 302",
+    "/redirect?next=https://evil-auditor.example/x -> 302",
+    "/go?url=https://evil-auditor.example/x -> 302",
+    "/url?url=https://evil-auditor.example/x -> 302"
+  ],
+  "paths": {
+    "/robots.txt": 302,
+    "/sitemap.xml": 302,
+    "/.well-known/security.txt": 302,
+    "/security.txt": 302,
+    "/.git/HEAD": 302,
+    "/.git/config": 302,
+    "/.env": 302,
+    "/.htaccess": 302,
+    "/wp-login.php": 302,
+    "/phpmyadmin/index.php": 302,
+    "/server-status": 302,
+    "/api/": 302
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 42.6,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

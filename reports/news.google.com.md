@@ -5,77 +5,181 @@
 | Item | Value |
 |---|---|
 | Target | https://news.google.com/ |
-| Bug bounty program | [Google](https://www.google.com/about/appsecurity/reward-program/) |
+| Bug bounty program | Google |
 | Listed scope domain | news.google.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:04 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
+Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 3 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 4 | info | H2c | HSTS not preloaded | CWE-319 |
-| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 6 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 7 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 8 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 9 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 5 | info | H6 | Server technology disclosure | CWE-200 |
+| 6 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://news.google.com/ without SameSite=Lax/Strict: NID. Cross-site request cookies.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for news.google.com lists 1 name(s) besides the scope host: *.news.google.com
-
-### 3. [INFO] HSTS without includeSubDomains (`H2b`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` does not cover subdomains.
-
-### 4. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` lacks the preload directive.
-
-### 5. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://news.google.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** Detected: Server: ESF
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 6. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://news.google.com/ lists 0 URLs.
-
-### 7. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://news.google.com/ -> https://news.google.com/ (positive check).
-
-### 8. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://news.google.com/ exposes 1 unique Disallow path(s) (/)
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
 
-### 9. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+### 4. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://news.google.com (302398 bytes)
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-## Reproduction notes
+### 5. [INFO] Server technology disclosure (`H6`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://news.google.com/ final status: 200 (final URL https://news.google.com/home?hl=en-US&gl=US&ceid=US:en).
-- http://news.google.com/ initial status: 301.
-- Certificate: Google Trust Services WE2, valid until 2026-12-03T19:23:56+00:00.
+- **CWE:** CWE-200
+- **Detail:** Header reveals: ESF
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 6. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "news.google.com",
+  "dns": {
+    "a": [
+      "142.250.157.102",
+      "142.250.157.113",
+      "142.250.157.101",
+      "142.250.157.139",
+      "142.250.157.138",
+      "142.250.157.100"
+    ],
+    "aaaa": [
+      "2404:6800:4008:c13::8b",
+      "2404:6800:4008:c13::66",
+      "2404:6800:4008:c13::8a",
+      "2404:6800:4008:c13::65"
+    ],
+    "cname": null,
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=*.news.google.com",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
+    "notBefore": "Sep 10 19:23:57 2026 GMT",
+    "notAfter": "Dec  3 19:23:56 2026 GMT",
+    "san": [
+      "*.news.google.com",
+      "news.google.com"
+    ],
+    "days_left": 69,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "142.250.157.102",
+    "open": []
+  },
+  "https": {
+    "status": 302,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: ESF"
+  ],
+  "cookies": [
+    {
+      "domain": ".google.com",
+      "samesite": "none"
+    },
+    {}
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.news.google.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://news.google.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 25.6,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

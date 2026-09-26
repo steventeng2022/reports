@@ -5,83 +5,235 @@
 | Item | Value |
 |---|---|
 | Target | https://flow.microsoft.com/ |
-| Bug bounty program | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
+| Bug bounty program | Microsoft Online Services |
 | Listed scope domain | flow.microsoft.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 09:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
+Total findings: **9** (High: 0, Medium: 0, Low: 4, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 3 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 4 | info | H2c | HSTS not preloaded | CWE-319 |
-| 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 6 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 7 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 8 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 9 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
-| 10 | info | X3 | HTTPS root redirects to different host | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | H1 | Missing HSTS header | CWE-319 |
+| 3 | low | H2 | Missing CSP header | CWE-1021 |
+| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 5 | low | H4 | No clickjacking protection | CWE-1023 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 9 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
+
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
+
+### 2. [LOW] Missing HSTS header (`H1`)
+
+- **CWE:** CWE-319
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
+
+### 3. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://flow.microsoft.com/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 4. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for flow.microsoft.com lists 46 name(s) besides the scope host: *.asia.flow.microsoft.com, *.australia.flow.microsoft.com, *.canada.flow.microsoft.com, *.emea.flow.microsoft.com, *.france.flow.microsoft.com, *.germany.flow.microsoft.com, *.india.flow.microsoft.com, *.italy.flow.microsoft.com... (1 no longer resolve)
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 3. [INFO] Possible dangling subdomain (`D2`)
+### 5. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `tip0.flow.microsoft.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 4. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000; includeSubDomains` lacks the preload directive.
-
-### 5. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://flow.microsoft.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 6. [INFO] sitemap.xml discloses URL inventory (`M1`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://flow.microsoft.com/ lists 0 URLs.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 7. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://flow.microsoft.com/ -> https://flow.microsoft.com/ (positive check).
-
-### 8. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://flow.microsoft.com/ exposes 0 unique Disallow path(s)
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 9. [INFO] security.txt exposed (public disclosure policy) (`S2`)
-
-- **CWE:** CWE-200
-- **Detail:** security.txt present on https://flow.microsoft.com (7959 bytes)
-
-### 10. [INFO] HTTPS root redirects to different host (`X3`)
+### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** https://flow.microsoft.com/ redirects to https://make.powerautomate.com/.
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-## Reproduction notes
+### 9. [INFO] Missing security.txt (`P8`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://flow.microsoft.com/ final status: 200 (final URL https://make.powerautomate.com/).
-- http://flow.microsoft.com/ initial status: 307.
-- Certificate: Microsoft Corporation Microsoft TLS G2 RSA CA OCSP 16, valid until 2027-02-25T04:53:07+00:00.
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "flow.microsoft.com",
+  "dns": {
+    "a": [
+      "150.171.110.108"
+    ],
+    "aaaa": [
+      "2603:1061:14:141::1"
+    ],
+    "cname": "portal.processsimple.trafficmanager.net.",
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "countryName=US, stateOrProvinceName=WA, localityName=Redmond, organizationName=Microsoft Corporation, commonName=flow.microsoft.com",
+    "issuer": "countryName=US, organizationName=Microsoft Corporation, commonName=Microsoft TLS G2 RSA CA OCSP 16",
+    "notBefore": "Aug 29 04:53:07 2026 GMT",
+    "notAfter": "Feb 25 04:53:07 2027 GMT",
+    "san": [
+      "flow.microsoft.com",
+      "us.flow.microsoft.com",
+      "preview.flow.microsoft.com",
+      "emea.flow.microsoft.com",
+      "asia.flow.microsoft.com",
+      "australia.flow.microsoft.com",
+      "india.flow.microsoft.com",
+      "japan.flow.microsoft.com",
+      "canada.flow.microsoft.com",
+      "uk.flow.microsoft.com",
+      "unitedkingdom.flow.microsoft.com",
+      "ms.flow.microsoft.com",
+      "southamerica.flow.microsoft.com",
+      "tip0.flow.microsoft.com",
+      "preview.portal.processsimple.trafficmanager.net",
+      "portal.processsimple.trafficmanager.net",
+      "france.flow.microsoft.com",
+      "unitedarabemirates.flow.microsoft.com",
+      "*.asia.flow.microsoft.com",
+      "*.australia.flow.microsoft.com",
+      "*.canada.flow.microsoft.com",
+      "*.emea.flow.microsoft.com",
+      "*.france.flow.microsoft.com",
+      "*.germany.flow.microsoft.com",
+      "*.india.flow.microsoft.com",
+      "*.japan.flow.microsoft.com",
+      "*.preview.flow.microsoft.com",
+      "*.southamerica.flow.microsoft.com",
+      "*.uk.flow.microsoft.com",
+      "*.unitedarabemirates.flow.microsoft.com",
+      "*.us.flow.microsoft.com",
+      "germany.flow.microsoft.com",
+      "switzerland.flow.microsoft.com",
+      "*.switzerland.flow.microsoft.com",
+      "*.unitedkingdom.flow.microsoft.com",
+      "korea.flow.microsoft.com",
+      "*.korea.flow.microsoft.com",
+      "norway.flow.microsoft.com",
+      "*.norway.flow.microsoft.com",
+      "southafrica.flow.microsoft.com",
+      "*.southafrica.flow.microsoft.com",
+      "singapore.flow.microsoft.com",
+      "*.singapore.flow.microsoft.com",
+      "sweden.flow.microsoft.com",
+      "*.sweden.flow.microsoft.com",
+      "italy.flow.microsoft.com",
+      "*.italy.flow.microsoft.com"
+    ],
+    "days_left": 152,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "150.171.110.108",
+    "open": []
+  },
+  "https": {
+    "status": 307,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.flow.microsoft.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 307,
+    "location": "https://flow.microsoft.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 307",
+    "/redirect?next=https://evil-auditor.example/x -> 307",
+    "/go?url=https://evil-auditor.example/x -> 307",
+    "/url?url=https://evil-auditor.example/x -> 307"
+  ],
+  "paths": {
+    "/robots.txt": 307,
+    "/sitemap.xml": 307,
+    "/.well-known/security.txt": 307,
+    "/security.txt": 307,
+    "/.git/HEAD": 307,
+    "/.git/config": 307,
+    "/.env": 307,
+    "/.htaccess": 307,
+    "/wp-login.php": 307,
+    "/phpmyadmin/index.php": 307,
+    "/server-status": 307,
+    "/api/": 307
+  },
+  "subdomains": {
+    "status": "crt.sh ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='crt.sh', port=443): Read (certspotter 429)"
+  },
+  "elapsed_s": 24.7,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

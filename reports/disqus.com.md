@@ -7,109 +7,229 @@
 | Target | https://disqus.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | disqus.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 17:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
+Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 2 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 3 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
-| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 5 | info | H2 | Short HSTS max-age | CWE-319 |
-| 6 | info | H2c | HSTS not preloaded | CWE-319 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 9 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 10 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 11 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 12 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | MAIL4 | DMARC policy is p=none (monitor only) | CWE-200 |
+| 3 | low | TLS4 | TLS certificate expires within 30 days | CWE-298 |
+| 4 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 5 | low | H1b | Weak HSTS (max-age < 1 year) | CWE-319 |
+| 6 | low | H2 | Missing CSP header | CWE-1021 |
+| 7 | low | H4 | No clickjacking protection | CWE-1023 |
+| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 11 | info | H6 | Server technology disclosure | CWE-200 |
+| 12 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing Content-Security-Policy (`H3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://disqus.com/; no defense-in-depth against XSS/content injection.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 2. [INFO] DMARC policy is p=none (monitor only) (`MAIL4`)
 
-- **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://disqus.com/; page may be rendered in a foreign frame.
+- **CWE:** CWE-200
+- **Detail:** DMARC is published but policy is 'none'; failing mail is not quarantined.
+- **Recommendation:** Move to p=quarantine/reject once monitor reports are clean.
 
-### 3. [LOW] TLS certificate expiring within 30 days (`T3`)
+### 3. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires 2026-10-16T23:59:59+00:00 (20 days left) for disqus.com.
+- **Detail:** Certificate expires in 21 days (notAfter Oct 16 23:59:59 2026 GMT).
+- **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
-### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 4. [INFO] Technology fingerprint (`TECH1`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for disqus.com lists 1 name(s) besides the scope host: *.disqus.com
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: nginx
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 5. [INFO] Short HSTS max-age (`H2`)
+### 5. [LOW] Weak HSTS (max-age < 1 year) (`H1b`)
 
 - **CWE:** CWE-319
-- **Detail:** HSTS max-age=300 (< 1 year): `max-age=300; includeSubdomains`.
+- **Detail:** HSTS present but max-age=300 (< 31536000).
+- **Context:** https response, /
+- **Recommendation:** Increase max-age to at least 31536000; add includeSubDomains/preload.
 
-### 6. [INFO] HSTS not preloaded (`H2c`)
+### 6. [LOW] Missing CSP header (`H2`)
 
-- **CWE:** CWE-319
-- **Detail:** `max-age=300; includeSubdomains` lacks the preload directive.
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 7. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://disqus.com/; full URL (incl. query strings) is sent as referrer by default.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 8. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://disqus.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 9. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://disqus.com/ lists 11 URLs.
-
-### 10. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://disqus.com/ -> https://disqus.com/ (positive check).
-
-### 11. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 8. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://disqus.com/ exposes 2 unique Disallow path(s) (/forgot, /reset)
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 12. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 9. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on disqus.com.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 10. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://disqus.com/ final status: 200 (final URL https://disqus.com/).
-- http://disqus.com/ initial status: 301.
-- Certificate: Sectigo Limited Sectigo Public Server Authentication CA DV R36, valid until 2026-10-16T23:59:59+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-## Active agent cross-check (wave 7-9 aggressive scan on main - disqus.com)
+### 11. [INFO] Server technology disclosure (`H6`)
 
-Total findings: **9** - latest aggressive-method scan (main branch). Full detailed findings remain in the main-branch version of this file; passive re-audit above is the non-injection view.
+- **CWE:** CWE-200
+- **Detail:** Header reveals: nginx
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
 
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H4 | No clickjacking protection | CWE-1023 |
-| 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 6 | info | T2 | TLS certificate expiring within 22 days | CWE-295 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H6 | Server technology disclosure | CWE-200 |
-| 9 | info | I26 | humans.txt exposed (team/contact enumeration) | CWE-200 |
+### 12. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "disqus.com",
+  "dns": {
+    "a": [
+      "151.101.192.134",
+      "151.101.64.134",
+      "151.101.0.134",
+      "151.101.128.134"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "disqus-com.mail.protection.outlook.com (pref 0)"
+    ],
+    "ns": [
+      "ns-620.awsdns-13.net.",
+      "ns-1148.awsdns-15.org.",
+      "ns-1870.awsdns-41.co.uk.",
+      "ns-179.awsdns-22.com."
+    ],
+    "spf": [
+      "atlassian-domain-verification=VWUavCxXQBdA22BdIz4KQDlSXFLiCdhywIZhyapNcSNjMvIyTdUSTxsaS5KsQEXy",
+      "dropbox-domain-verification=xgxriaywlrcv",
+      "tipalti-domain-verification=9dffb2af-8871-f111-8391-02501973a9c1",
+      "_globalsign-domain-verification=_XCFILJ7eSiRq9rSWcB9wqJjbgKsGbvW2wQ9FztWPW",
+      "v=spf1 include:servers.mcsv.net include:429754.spf04.hubspotemail.net include:spf.protection.outlook.com include:spfa.cpmails.com include:amazonses.com -all",
+      "google-site-verification=bNxtittci6R0vzV6tO1HsHyQrydEZNZ5y1RgGoTEsHk"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=none; pct=100; rua=mailto:re+xcmmepsx0yx@dmarc.postmarkapp.com; sp=none; aspf=r;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=*.disqus.com",
+    "issuer": "countryName=GB, organizationName=Sectigo Limited, commonName=Sectigo Public Server Authentication CA DV R36",
+    "notBefore": "Apr  1 00:00:00 2026 GMT",
+    "notAfter": "Oct 16 23:59:59 2026 GMT",
+    "san": [
+      "*.disqus.com",
+      "disqus.com"
+    ],
+    "days_left": 21,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "151.101.192.134",
+    "open": []
+  },
+  "https": {
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "title": "&num;1 in audience engagement and community growth &vert; Disqus"
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: nginx"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.disqus.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://disqus.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 200,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 404,
+    "/.git/HEAD": 404,
+    "/.git/config": 404,
+    "/.env": 404,
+    "/.htaccess": 404,
+    "/wp-login.php": 404,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 11.1,
+  "rechecked": "2026-09-25 17:50 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

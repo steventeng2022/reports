@@ -5,83 +5,233 @@
 | Item | Value |
 |---|---|
 | Target | https://css-tricks.com/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | css-tricks.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 09:11 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
+Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 3 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 4 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 5 | info | H2c | HSTS not preloaded | CWE-319 |
-| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 7 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | MAIL1 | Mail servers exist (MX) but no SPF record | CWE-200 |
+| 3 | low | MAIL3 | No DMARC record | CWE-200 |
+| 4 | info | PRT8080 | Alternate web service (port 8080) reachable | CWE-200 |
+| 5 | info | PRT8443 | Alternate web service (port 8443) reachable | CWE-200 |
+| 6 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 7 | low | H2 | Missing CSP header | CWE-1021 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | P11 | WordPress login page exposed | CWE-200 |
+| 12 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://css-tricks.com/ without SameSite=Lax/Strict: __cf_bm. Cross-site request cookies.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://css-tricks.com/; no defense-in-depth against XSS/content injection.
-
-### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for css-tricks.com lists 1 name(s) besides the scope host: internal-cache-purge-csstricks.css-tricks.com
-
-### 4. [INFO] HSTS without includeSubDomains (`H2b`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` does not cover subdomains.
-
-### 5. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` lacks the preload directive.
-
-### 6. [INFO] Missing Permissions-Policy (`H7`)
+### 2. [INFO] Mail servers exist (MX) but no SPF record (`MAIL1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://css-tricks.com/; browser features (camera, mic, geolocation) unrestricted.
+- **Detail:** MX records are published but no SPF TXT record; sender-domain spoofing is harder to validate.
+- **Recommendation:** Publish an SPF record enumerating authorized senders.
 
-### 7. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://css-tricks.com/ lists 142 URLs.
-
-### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://css-tricks.com/ -> https://css-tricks.com/ (positive check).
-
-### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 3. [LOW] No DMARC record (`MAIL3`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://css-tricks.com/ exposes 11 unique Disallow path(s) (/, /*?replytocom=, /*?s=, /cart/, /category/*/page/) and 3 sitemap reference(s)
+- **Detail:** No _dmarc TXT record published; receivers cannot enforce DMARC policy for this domain.
+- **Recommendation:** Publish a DMARC record (start with p=none, then quarantine).
 
-### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 4. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on css-tricks.com.
+- **Detail:** TCP connect to 172.64.148.235:8080 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-## Reproduction notes
+### 5. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://css-tricks.com/ final status: 200 (final URL https://css-tricks.com/).
-- http://css-tricks.com/ initial status: 301.
-- Certificate: Google Trust Services WE1, valid until 2026-10-29T05:44:56+00:00.
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 172.64.148.235:8443 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 6. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: cloudflare; Cloudflare CDN/WAF
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 7. [LOW] Missing CSP header (`H2`)
+
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 8. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
+
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 10. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: cloudflare
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 11. [INFO] WordPress login page exposed (`P11`)
+
+- **CWE:** CWE-200
+- **Detail:** /wp-login.php returns 200.
+- **Recommendation:** Restrict or rate-limit the WordPress login endpoint.
+
+### 12. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "css-tricks.com",
+  "dns": {
+    "a": [
+      "172.64.148.235",
+      "104.18.39.21"
+    ],
+    "aaaa": [
+      "2606:4700:4403::ac40:94eb",
+      "2606:4700:440b::6812:2715"
+    ],
+    "cname": null,
+    "mx": [
+      "aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx4.googlemail.com (pref 30)",
+      "aspmx3.googlemail.com (pref 30)",
+      "aspmx5.googlemail.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx2.googlemail.com (pref 30)"
+    ],
+    "ns": [
+      "austin.ns.cloudflare.com.",
+      "nicole.ns.cloudflare.com."
+    ],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=css-tricks.com",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE1",
+    "notBefore": "Jul 31 04:45:07 2026 GMT",
+    "notAfter": "Oct 29 05:44:56 2026 GMT",
+    "san": [
+      "css-tricks.com",
+      "internal-cache-purge-csstricks.css-tricks.com"
+    ],
+    "days_left": 33,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "172.64.148.235",
+    "open": [
+      8080,
+      8443
+    ]
+  },
+  "https": {
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "title": "CSS-Tricks - Learning for front-end designers and developers"
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: cloudflare",
+    "Cloudflare CDN/WAF"
+  ],
+  "cookies": [
+    {
+      "domain": "css-tricks.com",
+      "samesite": "none"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.css-tricks.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://css-tricks.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 404,
+    "/.git/HEAD": 403,
+    "/.git/config": 403,
+    "/.env": 403,
+    "/.htaccess": 403,
+    "/wp-login.php": 200,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 403,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "crt.sh 502 (certspotter 429)"
+  },
+  "elapsed_s": 116.8,
+  "rechecked": "2026-09-25 10:43 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

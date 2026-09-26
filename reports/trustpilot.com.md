@@ -5,89 +5,226 @@
 | Item | Value |
 |---|---|
 | Target | https://trustpilot.com/ |
-| Bug bounty program | [Trustpilot](https://hackerone.com/trustpilot) |
+| Bug bounty program | Trustpilot |
 | Listed scope domain | trustpilot.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:25 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
+Total findings: **9** (High: 0, Medium: 0, Low: 4, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | H1 | Missing HSTS header | CWE-319 |
+| 3 | low | H2 | Missing CSP header | CWE-1021 |
+| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 5 | low | H4 | No clickjacking protection | CWE-1023 |
 | 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
 | 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 10 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
-| 11 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
+| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 9 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
+
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
+
+### 2. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header on https://trustpilot.com/. Clients may connect over plain HTTP on first visit.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 2. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://trustpilot.com/; no defense-in-depth against XSS/content injection.
-
-### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://trustpilot.com/; browsers may MIME-sniff responses.
-
-### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 3. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://trustpilot.com/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 5. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 4. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for trustpilot.com lists 1 name(s) besides the scope host: *.trustpilot.com
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
+
+### 5. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
 ### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://trustpilot.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
 ### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://trustpilot.com/; browser features (camera, mic, geolocation) unrestricted.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://trustpilot.com/ -> https://www.trustpilot.com/ (positive check).
-
-### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://trustpilot.com/ exposes 34 unique Disallow path(s) (/, /*?*claimed=, /*?*country=, /*?*date=, /*?*editmode=) and 3 sitemap reference(s)
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 10. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+### 9. [INFO] Missing security.txt (`P8`)
 
-- **CWE:** CWE-200
-- **Detail:** security.txt present on https://trustpilot.com (74 bytes); contact: mailto:security@trustpilot.com
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 11. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+## Evidence (raw response observations)
 
-- **CWE:** CWE-200
-- **Detail:** https://trustpilot.com/ responded 403 (passive check only; no further probing).
+```json
+{
+  "domain": "trustpilot.com",
+  "dns": {
+    "a": [
+      "63.35.41.16",
+      "34.251.1.61",
+      "63.33.98.142"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx2.googlemail.com (pref 30)",
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx4.googlemail.com (pref 30)",
+      "aspmx3.googlemail.com (pref 30)",
+      "aspmx5.googlemail.com (pref 30)"
+    ],
+    "ns": [
+      "ns-1859.awsdns-40.co.uk.",
+      "ns-627.awsdns-14.net.",
+      "ns-1198.awsdns-21.org.",
+      "ns-507.awsdns-63.com."
+    ],
+    "spf": [
+      "h1-domain-verification=K1j4L82MxUY9ci2JywgBgo6FvxyEvTfYou9bBcQ9j5dK7DUC",
+      "hubspot-developer-verification=MDUzYTcyZDctZTlmYS00YzUxLWE3ZGItMmVlYTM4ZTRlZmJm",
+      "stripe-verification=5309EE27ADA96F87770018A428B9C43D1E0B0CDC5726252873D4BC67C5871789",
+      "docusign=be55314d-2f73-40d6-b69b-81fe9012c808",
+      "jetbrains-domain-verification=4x4x2p1njocim1o7bh7dmijxk",
+      "calendly-site-verification=VExW0uOVuA35JUxpvM76K50anC81mCpUybq3Ts0aX",
+      "atlassian-domain-verification=Eo0XF2YMZT8L2vGyok0CJob7i4RRe1QrfcDxjjnF0pO7j7V05HsJz2qiVFB/zJ1t",
+      "gJn7h6f2m!!%WT@C%m6ox&4pFfcDjvkBYB4hq*0L2im#W#t^MLKcAlh4*Ddm59e2ricfrPUbb&H3X&h*6AjNI8tXONPH#*PluEY",
+      "google-site-verification=KdmHR50ME1X0_bgJJO27tI6Y2ZZh_teVRqF8D2vmBSM",
+      "SFMC-51XpMfjNiP4EVyMcp4ez89Vu8Wk1q6Q6LJ68PeRh",
+      "onetrust-domain-verification=d9e381bf0e9c411cb5fcff80e6e8a5ad",
+      "v=spf1 include:trustpilotservice.com include:_spf.google.com include:u5760.wl.sendgrid.net include:mail.zendesk.com include:cust-spf.exacttarget.com -all",
+      "google-site-verification=eX8LrikiWD5mmqtziAD3DYIjGF1AqsK2n-GvJl6jd2Q",
+      "google-site-verification=QDeDnLx9XehnRUiSDiEMTlo7FC5yIgBaMfhzkg36lQc",
+      "onetrust-domain-verification=f8c9c8fbc2254290a3239ea97107324d",
+      "atlassian-sending-domain-verification=2448cf59-90a2-4b9f-ab88-6c212605cc8a",
+      "jamf-site-verification=hCZILKggaY23aId4VBfmVA",
+      "anthropic-domain-verification-qga6j9=93jJxdvry3EauO3oQFZvf8dHx",
+      "apple-domain-verification=MmFgAj5P9HBaVpmv",
+      "miro-verification=031ae4a4b2a83d8570b7352bf4c87365ade7cb7b"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; rua=mailto:noreply-dmarc@trustpilot.com"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.2",
+    "cipher": "ECDHE-RSA-AES128-GCM-SHA256",
+    "subject": "commonName=*.trustpilot.com",
+    "issuer": "countryName=US, organizationName=Amazon, commonName=Amazon RSA 2048 M01",
+    "notBefore": "Nov  1 00:00:00 2025 GMT",
+    "notAfter": "Nov 29 23:59:59 2026 GMT",
+    "san": [
+      "*.trustpilot.com",
+      "trustpilot.com"
+    ],
+    "days_left": 65,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": false
+    }
+  },
+  "ports": {
+    "ip": "63.35.41.16",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.trustpilot.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://www.trustpilot.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 43.4,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
 
-## Reproduction notes
+## Notes
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://trustpilot.com/ final status: 403 (final URL https://www.trustpilot.com/).
-- http://trustpilot.com/ initial status: 301.
-- Certificate: Amazon Amazon RSA 2048 M01, valid until 2026-11-29T23:59:59+00:00.
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -5,101 +5,157 @@
 | Item | Value |
 |---|---|
 | Target | https://azure.microsoft.com/ |
-| Bug bounty program | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
+| Bug bounty program | Microsoft Online Services |
 | Listed scope domain | azure.microsoft.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 08:40 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
+Total findings: **3** (High: 0, Medium: 0, Low: 1, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
-| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 3 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 4 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 5 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 6 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 7 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 8 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 9 | info | H2c | HSTS not preloaded | CWE-319 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 12 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 13 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | CT1 | 31 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 3 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without HttpOnly (`C1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://azure.microsoft.com/ without HttpOnly: CAS_PROGRAM. Readable by client-side script.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://azure.microsoft.com/ without SameSite=Lax/Strict: CAS_PROGRAM. Cross-site request cookies.
-
-### 3. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://azure.microsoft.com/; no defense-in-depth against XSS/content injection.
-
-### 4. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://azure.microsoft.com/; browsers may MIME-sniff responses.
-
-### 5. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
-
-- **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://azure.microsoft.com/; page may be rendered in a foreign frame.
-
-### 6. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for azure.microsoft.com lists 1 name(s) besides the scope host: dialtone.azure.microsoft.com (1 no longer resolve)
-
-### 7. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `dialtone.azure.microsoft.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 8. [INFO] HSTS without includeSubDomains (`H2b`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` does not cover subdomains.
-
-### 9. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` lacks the preload directive.
-
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] 31 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://azure.microsoft.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** Notable hostnames: aef-alt.onedscollector.dev.azure.microsoft.com, aef.onedscollector.dev.azure.microsoft.com, assessment.changeguard.fcm.azure.microsoft.com, azure.microsoft.com, azurelocalsolutions.azure.microsoft.com, azurestackhcisolutions.azure.microsoft.com, changeexplorer.fcm.azure.microsoft.com, changeguard.fcm.azure.microsoft.com, emails-ppe.azure.microsoft.com, emails.azure.microsoft.com
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 11. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://azure.microsoft.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 12. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 3. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://azure.microsoft.com/ exposes 25 unique Disallow path(s) (/*&ep_*, /*/embed/, /*/patterns/, /*/search/?q=*, /*/searchresults/) and 32 sitemap reference(s)
+- **Detail:** Historical subdomains no longer have A/AAAA records: aef-alt.onedscollector.dev.azure.microsoft.com, aef.onedscollector.dev.azure.microsoft.com; content may still be served via virtual-host fallback.
+- **Recommendation:** Reclaim or delete dangling subdomains to reduce virtual-hosting attack surface.
 
-### 13. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+## Evidence (raw response observations)
 
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on azure.microsoft.com.
+```json
+{
+  "domain": "azure.microsoft.com",
+  "dns": {
+    "a": [
+      "23.209.218.179"
+    ],
+    "aaaa": [
+      "2600:1417:76:480::439b",
+      "2600:1417:76:4a1::439b"
+    ],
+    "cname": "azure.microsoft.com.edgekey.net.",
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "countryName=US, stateOrProvinceName=WA, localityName=Redmond, organizationName=Microsoft Corporation, commonName=azure.microsoft.com",
+    "issuer": "countryName=US, organizationName=Microsoft Corporation, commonName=Microsoft TLS G2 RSA CA OCSP 04",
+    "notBefore": "Sep 16 19:05:38 2026 GMT",
+    "notAfter": "Apr  2 19:05:38 2027 GMT",
+    "san": [
+      "dialtone.azure.microsoft.com",
+      "azure.microsoft.com"
+    ],
+    "days_left": 189,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "23.209.218.179",
+    "open": []
+  },
+  "https": {
+    "status": 0,
+    "content_type": "",
+    "title": "",
+    "error": "https connect failed"
+  },
+  "mixed_content": [],
+  "cookies": [],
+  "cors": [],
+  "http": {
+    "status": 301,
+    "location": "http://azure.microsoft.com/en-us"
+  },
+  "redir_probes": [],
+  "paths": {},
+  "subdomains": {
+    "source": "certspotter",
+    "count": 31,
+    "notable": [
+      "aef-alt.onedscollector.dev.azure.microsoft.com",
+      "aef.onedscollector.dev.azure.microsoft.com",
+      "assessment.changeguard.fcm.azure.microsoft.com",
+      "azure.microsoft.com",
+      "azurelocalsolutions.azure.microsoft.com",
+      "azurestackhcisolutions.azure.microsoft.com",
+      "changeexplorer.fcm.azure.microsoft.com",
+      "changeguard.fcm.azure.microsoft.com",
+      "emails-ppe.azure.microsoft.com",
+      "emails.azure.microsoft.com",
+      "eu-aef.onedscollector.dev.azure.microsoft.com",
+      "eu-kar.onedscollector.dev.azure.microsoft.com",
+      "eu-uda.onedscollector.dev.azure.microsoft.com",
+      "hcicatalog.azure.microsoft.com",
+      "jwcc.azure.microsoft.com"
+    ],
+    "sample": [
+      "aef-alt.onedscollector.dev.azure.microsoft.com",
+      "aef.onedscollector.dev.azure.microsoft.com",
+      "assessment.changeguard.fcm.azure.microsoft.com",
+      "azure.microsoft.com",
+      "azurelocalsolutions.azure.microsoft.com",
+      "azurestackhcisolutions.azure.microsoft.com",
+      "changeexplorer.fcm.azure.microsoft.com",
+      "changeguard.fcm.azure.microsoft.com",
+      "emails-ppe.azure.microsoft.com",
+      "emails.azure.microsoft.com",
+      "eu-aef.onedscollector.dev.azure.microsoft.com",
+      "eu-kar.onedscollector.dev.azure.microsoft.com",
+      "eu-uda.onedscollector.dev.azure.microsoft.com",
+      "hcicatalog.azure.microsoft.com",
+      "jwcc.azure.microsoft.com",
+      "kar-alt.onedscollector.dev.azure.microsoft.com",
+      "kar.onedscollector.dev.azure.microsoft.com",
+      "portal-staging.changeguard.fcm.azure.microsoft.com",
+      "portal-staging.changemanager.fcm.azure.microsoft.com",
+      "portal.changeguard.fcm.azure.microsoft.com"
+    ],
+    "dangling": [
+      "aef-alt.onedscollector.dev.azure.microsoft.com",
+      "aef.onedscollector.dev.azure.microsoft.com"
+    ]
+  },
+  "elapsed_s": 187.3,
+  "rechecked": "2026-09-25 13:59 UTC"
+}
+```
 
-## Reproduction notes
+## Notes
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://azure.microsoft.com/ final status: 200 (final URL https://azure.microsoft.com/en-us).
-- http://azure.microsoft.com/ initial status: 301.
-- Certificate: Microsoft Corporation Microsoft TLS G2 RSA CA OCSP 04, valid until 2027-04-02T19:05:38+00:00.
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

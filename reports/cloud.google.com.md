@@ -5,77 +5,276 @@
 | Item | Value |
 |---|---|
 | Target | https://cloud.google.com/ |
-| Bug bounty program | [Google](https://www.google.com/about/appsecurity/reward-program/) |
+| Bug bounty program | Google |
 | Listed scope domain | cloud.google.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 09:03 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
+Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 3 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 4 | info | H2c | HSTS not preloaded | CWE-319 |
-| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 6 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 7 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 8 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 9 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 5 | info | H6 | Server technology disclosure | CWE-200 |
+| 6 | info | CT1 | 15 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://cloud.google.com/ without SameSite=Lax/Strict: NID. Cross-site request cookies.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for cloud.google.com lists 65 name(s) besides the scope host: *.aistudio.google.com, *.android.com, *.appengine.google.com, *.bdn.dev, *.cloud.google.com, *.crowdsource.google.com, *.datacompute.google.com, *.flash.android.com...
-
-### 3. [INFO] HSTS without includeSubDomains (`H2b`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` does not cover subdomains.
-
-### 4. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` lacks the preload directive.
-
-### 5. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://cloud.google.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** Detected: Server: ESF
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 6. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://cloud.google.com/ lists 0 URLs.
-
-### 7. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://cloud.google.com/ -> https://cloud.google.com/ (positive check).
-
-### 8. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://cloud.google.com/ exposes 0 unique Disallow path(s)
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
 
-### 9. [INFO] security.txt exposed (public disclosure policy) (`S2`)
+### 4. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** security.txt present on https://cloud.google.com (41039 bytes)
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-## Reproduction notes
+### 5. [INFO] Server technology disclosure (`H6`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://cloud.google.com/ final status: 200 (final URL https://cloud.google.com/).
-- http://cloud.google.com/ initial status: 301.
-- Certificate: Google Trust Services WR2, valid until 2026-12-03T19:21:52+00:00.
+- **CWE:** CWE-200
+- **Detail:** Header reveals: ESF
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 6. [INFO] 15 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: console.au.cloud.google.com, console.ca.cloud.google.com, console.ch.cloud.google.com, console.eu.cloud.google.com, console.il.cloud.google.com, console.in.cloud.google.com, console.it.cloud.google.com, console.jp.cloud.google.com, console.sa.cloud.google.com, console.uk.cloud.google.com
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "cloud.google.com",
+  "dns": {
+    "a": [
+      "142.250.77.206"
+    ],
+    "aaaa": [
+      "2404:6800:4012::200e"
+    ],
+    "cname": null,
+    "mx": [],
+    "ns": [],
+    "spf": [
+      "linkedin-site-verification=665646e8-9b99-454f-86a2-803db5044863",
+      "google-site-verification=FNbpLNxt8J8XYQAudCNFnig_1bP-LAUSeAePJXlfjzU",
+      "google-site-verification=jaH5RlwfdutdrKEaZY5nEbcReUEp9rlTOJIuMqh-SV4",
+      "facebook-domain-verification=arpzb36y6gfzl22n4jl30bg5fsrgh0",
+      "linkedin-site-verification=d232e0a9-aa43-41a4-8fa4-243021df793a",
+      "google-site-verification=6nz-JOcA8VP-mmx29RInf7-g6CTloBX9wpmWHlVSMsw"
+    ],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=*.google.com",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
+    "notBefore": "Sep 10 19:21:53 2026 GMT",
+    "notAfter": "Dec  3 19:21:52 2026 GMT",
+    "san": [
+      "*.google.com",
+      "*.appengine.google.com",
+      "*.bdn.dev",
+      "*.origin-test.bdn.dev",
+      "*.cloud.google.com",
+      "*.crowdsource.google.com",
+      "*.datacompute.google.com",
+      "*.google.ca",
+      "*.google.cl",
+      "*.google.co.in",
+      "*.google.co.jp",
+      "*.google.co.uk",
+      "*.google.com.ar",
+      "*.google.com.au",
+      "*.google.com.br",
+      "*.google.com.co",
+      "*.google.com.mx",
+      "*.google.com.tr",
+      "*.google.com.vn",
+      "*.google.de",
+      "*.google.es",
+      "*.google.fr",
+      "*.google.hu",
+      "*.google.it",
+      "*.google.nl",
+      "*.google.pl",
+      "*.google.pt",
+      "*.gemini.cloud.google.com",
+      "*.gstatic.com",
+      "*.metric.gstatic.com",
+      "*.gvt1.com",
+      "*.gcpcdn.gvt1.com",
+      "*.gvt2.com",
+      "*.gcp.gvt2.com",
+      "*.url.google.com",
+      "*.youtube-nocookie.com",
+      "*.ytimg.com",
+      "ai.android",
+      "android.com",
+      "*.android.com",
+      "*.flash.android.com",
+      "g.co",
+      "*.g.co",
+      "goo.gl",
+      "www.goo.gl",
+      "google-analytics.com",
+      "*.google-analytics.com",
+      "google.com",
+      "googlecommerce.com",
+      "*.googlecommerce.com",
+      "urchin.com",
+      "*.urchin.com",
+      "youtu.be",
+      "youtube.com",
+      "*.youtube.com",
+      "music.youtube.com",
+      "*.music.youtube.com",
+      "youtubeeducation.com",
+      "*.youtubeeducation.com",
+      "youtubekids.com",
+      "*.youtubekids.com",
+      "yt.be",
+      "*.yt.be",
+      "android.clients.google.com",
+      "*.aistudio.google.com"
+    ],
+    "days_left": 69,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "142.250.77.206",
+    "open": []
+  },
+  "https": {
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "title": "AI and Cloud Computing Services | Google Cloud"
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: ESF"
+  ],
+  "cookies": [
+    {
+      "domain": ".google.com",
+      "samesite": "none"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.cloud.google.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://cloud.google.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 200",
+    "/redirect?next=https://evil-auditor.example/x -> 200",
+    "/go?url=https://evil-auditor.example/x -> 200",
+    "/url?url=https://evil-auditor.example/x -> 200"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 200,
+    "/.well-known/security.txt": 200,
+    "/security.txt": 200,
+    "/.git/HEAD": 200,
+    "/.git/config": 200,
+    "/.env": 200,
+    "/.htaccess": 200,
+    "/wp-login.php": 200,
+    "/phpmyadmin/index.php": 200,
+    "/server-status": 200,
+    "/api/": 301
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 15,
+    "notable": [
+      "console.au.cloud.google.com",
+      "console.ca.cloud.google.com",
+      "console.ch.cloud.google.com",
+      "console.eu.cloud.google.com",
+      "console.il.cloud.google.com",
+      "console.in.cloud.google.com",
+      "console.it.cloud.google.com",
+      "console.jp.cloud.google.com",
+      "console.sa.cloud.google.com",
+      "console.uk.cloud.google.com",
+      "console.us.cloud.google.com",
+      "datastudio.eu.cloud.google.com",
+      "datastudio.us.cloud.google.com",
+      "lookerstudio.eu.cloud.google.com",
+      "lookerstudio.us.cloud.google.com"
+    ],
+    "sample": [
+      "console.au.cloud.google.com",
+      "console.ca.cloud.google.com",
+      "console.ch.cloud.google.com",
+      "console.eu.cloud.google.com",
+      "console.il.cloud.google.com",
+      "console.in.cloud.google.com",
+      "console.it.cloud.google.com",
+      "console.jp.cloud.google.com",
+      "console.sa.cloud.google.com",
+      "console.uk.cloud.google.com",
+      "console.us.cloud.google.com",
+      "datastudio.eu.cloud.google.com",
+      "datastudio.us.cloud.google.com",
+      "lookerstudio.eu.cloud.google.com",
+      "lookerstudio.us.cloud.google.com"
+    ]
+  },
+  "elapsed_s": 106.6,
+  "rechecked": "2026-09-25 13:59 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -5,71 +5,282 @@
 | Item | Value |
 |---|---|
 | Target | https://blockchain.info/ |
-| Bug bounty program | [Blockchain](https://hackerone.com/blockchain) |
+| Bug bounty program | Blockchain |
 | Listed scope domain | blockchain.info |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 08:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
+Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
-| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 3 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 4 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 5 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 6 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
-| 7 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
-| 8 | info | X3 | HTTPS root redirects to different host | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | PRT8080 | Alternate web service (port 8080) reachable | CWE-200 |
+| 3 | info | PRT8443 | Alternate web service (port 8443) reachable | CWE-200 |
+| 4 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 5 | low | H2 | Missing CSP header | CWE-1021 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | CT1 | 31 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] TLS certificate expiring within 30 days (`T3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-298
-- **Detail:** Certificate expires 2026-10-26T23:59:59+00:00 (30 days left) for blockchain.info.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for blockchain.info lists 6 name(s) besides the scope host: api.blockchain.com, api.blockchain.info, bps.blockchain.com, login.blockchain.com, ws.blockchain.info, www.blockchain.com
-
-### 3. [INFO] sitemap.xml discloses URL inventory (`M1`)
+### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://blockchain.info/ lists 120 URLs.
+- **Detail:** TCP connect to 104.16.118.55:8080 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 4. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://blockchain.info/ -> https://blockchain.info/ (positive check).
-
-### 5. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://blockchain.info/ exposes 6 unique Disallow path(s) (/*/block-index/*, /*/search, /*/tx-index/*, /r?*, /search) and 1 sitemap reference(s)
+- **Detail:** TCP connect to 104.16.118.55:8443 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-### 6. [INFO] security.txt exposed (public disclosure policy) (`S2`)
-
-- **CWE:** CWE-200
-- **Detail:** security.txt present on https://blockchain.info (216 bytes); contact: https://hackerone.com/blockchain
-
-### 7. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+### 4. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** https://blockchain.info/ responded 403 (passive check only; no further probing).
+- **Detail:** Detected: Server: cloudflare; Cloudflare CDN/WAF
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 8. [INFO] HTTPS root redirects to different host (`X3`)
+### 5. [LOW] Missing CSP header (`H2`)
+
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 6. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** https://blockchain.info/ redirects to https://www.blockchain.com/explorer.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-## Reproduction notes
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://blockchain.info/ final status: 403 (final URL https://www.blockchain.com/explorer).
-- http://blockchain.info/ initial status: 301.
-- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-26T23:59:59+00:00.
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
+
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 10. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: cloudflare
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 11. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 12. [INFO] 31 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: api.blockchain.info, api.dev.blockchain.info, api.prod.blockchain.info, api.staging.blockchain.info, consul.dev.blockchain.info, consul.europe-west1.internal.blockchain.info, consul.internal.blockchain.info, consul.staging.blockchain.info, dev.blockchain.info, europe-west1.internal.blockchain.info
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "blockchain.info",
+  "dns": {
+    "a": [
+      "104.16.118.55",
+      "104.16.117.55"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx.l.google.com (pref 10)",
+      "aspmx3.googlemail.com (pref 30)",
+      "aspmx2.googlemail.com (pref 30)",
+      "alt1.aspmx.l.google.com (pref 20)"
+    ],
+    "ns": [
+      "beth.ns.cloudflare.com.",
+      "jay.ns.cloudflare.com."
+    ],
+    "spf": [
+      "yandex-verification: d9f3f2859b58ce6d",
+      "v=spf1 include:sendgrid.net include:_spf.google.com -all",
+      "google-site-verification=qRCbhQsR3fxD3ylXPxNwUGUA5DD53PT3Wt9HSzZkPE8",
+      "atlassian-domain-verification=3Nau9JDz9R67dqvzkIEpQsriloeNPy4vI/eh5acyDnEsG255ANV5Qyed2nE0WK/o",
+      "google-site-verification=FcNnFGROYe6Yh5FMJ6T3XdwvIkbWtIwzREMEEbnX0YQ",
+      "anthropic-domain-verification-yd7a79=MXqAD8dd4IelKFle1JyrIkOOs",
+      "google-site-verification=N70QW1CLbk8SytHhHLNHc-J8DCxNPmgyAP2ueTaxono",
+      "_t0jbgqd8x84sclv1k8ycz5xupbcxf92",
+      "google-site-verification=qgYS2zBag9OWLnZ9Xj4HRihaVR0vPlx11_HRRAizW3Y"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc-reports@blockchain.info;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "countryName=KY, localityName=George Town, organizationName=Blockchain.com Group Holdings, Inc., commonName=www.blockchain.com",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
+    "notBefore": "Sep 25 00:00:00 2025 GMT",
+    "notAfter": "Oct 26 23:59:59 2026 GMT",
+    "san": [
+      "www.blockchain.com",
+      "blockchain.info",
+      "ws.blockchain.info",
+      "api.blockchain.info",
+      "login.blockchain.com",
+      "api.blockchain.com",
+      "bps.blockchain.com"
+    ],
+    "days_left": 31,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "104.16.118.55",
+    "open": [
+      8080,
+      8443
+    ]
+  },
+  "https": {
+    "status": 302,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: cloudflare",
+    "Cloudflare CDN/WAF"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.blockchain.info",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://blockchain.info/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 302,
+    "/.git/HEAD": 403,
+    "/.git/config": 403,
+    "/.env": 403,
+    "/.htaccess": 403,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 31,
+    "notable": [
+      "api.blockchain.info",
+      "api.dev.blockchain.info",
+      "api.prod.blockchain.info",
+      "api.staging.blockchain.info",
+      "consul.dev.blockchain.info",
+      "consul.europe-west1.internal.blockchain.info",
+      "consul.internal.blockchain.info",
+      "consul.staging.blockchain.info",
+      "dev.blockchain.info",
+      "europe-west1.internal.blockchain.info",
+      "internal.blockchain.info",
+      "nomad.dev.blockchain.info",
+      "nomad.internal.blockchain.info",
+      "nomad.staging.blockchain.info",
+      "ollama.internal.blockchain.info"
+    ],
+    "sample": [
+      "api.blockchain.info",
+      "api.dev.blockchain.info",
+      "api.prod.blockchain.info",
+      "api.staging.blockchain.info",
+      "blockchain.info",
+      "consul.dev.blockchain.info",
+      "consul.europe-west1.internal.blockchain.info",
+      "consul.internal.blockchain.info",
+      "consul.prod.blockchain.info",
+      "consul.staging.blockchain.info",
+      "dev.blockchain.info",
+      "europe-west1.internal.blockchain.info",
+      "internal-nodes.prod.blockchain.info",
+      "internal.blockchain.info",
+      "nomad.dev.blockchain.info",
+      "nomad.internal.blockchain.info",
+      "nomad.prod.blockchain.info",
+      "nomad.staging.blockchain.info",
+      "ollama.internal.blockchain.info",
+      "prod.blockchain.info"
+    ]
+  },
+  "elapsed_s": 163.3,
+  "rechecked": "2026-09-25 10:43 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

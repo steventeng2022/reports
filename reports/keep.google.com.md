@@ -5,65 +5,209 @@
 | Item | Value |
 |---|---|
 | Target | https://keep.google.com/ |
-| Bug bounty program | [Google](https://www.google.com/about/appsecurity/reward-program/) |
+| Bug bounty program | Google |
 | Listed scope domain | keep.google.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 09:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 0, Low: 0, Info: 7)
+Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 2 | info | H2c | HSTS not preloaded | CWE-319 |
-| 3 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 4 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 5 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 6 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
-| 7 | info | X3 | HTTPS root redirects to different host | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | MAIL3 | No DMARC record | CWE-200 |
+| 3 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 4 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 7 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 8 | info | H6 | Server technology disclosure | CWE-200 |
+| 9 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for keep.google.com lists 2 name(s) besides the scope host: *.keep.google.com, www.keep.google.com
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000; includeSubDomains` lacks the preload directive.
-
-### 3. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [LOW] No DMARC record (`MAIL3`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://keep.google.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No _dmarc TXT record published; receivers cannot enforce DMARC policy for this domain.
+- **Recommendation:** Publish a DMARC record (start with p=none, then quarantine).
 
-### 4. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://keep.google.com/ -> https://keep.google.com/ (positive check).
-
-### 5. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 3. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://keep.google.com/ exposes 0 unique Disallow path(s)
+- **Detail:** Detected: Server: ESF
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 6. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on keep.google.com.
-
-### 7. [INFO] HTTPS root redirects to different host (`X3`)
+### 4. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
 - **CWE:** CWE-200
-- **Detail:** https://keep.google.com/ redirects to https://accounts.google.com/v3/signin/identifier?continue=https://keep.google.com/&followup=https://keep.google.com/&ltmpl=keep&passive=1209600&service=memento&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S-1425823159:1790386949993450.
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
 
-## Reproduction notes
+### 5. [INFO] Missing Referrer-Policy (`H5`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://keep.google.com/ final status: 200 (final URL https://accounts.google.com/v3/signin/identifier?continue=https://keep.google.com/&followup=https://keep.google.com/&ltmpl=keep&passive=1209600&service=memento&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S-1425823159:1790386949993450).
-- http://keep.google.com/ initial status: 301.
-- Certificate: Google Trust Services WE2, valid until 2026-12-03T19:21:59+00:00.
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+
+### 6. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
+
+### 7. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 8. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: ESF
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 9. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "keep.google.com",
+  "dns": {
+    "a": [
+      "142.251.153.176",
+      "142.251.154.176",
+      "142.251.151.176",
+      "142.251.156.176",
+      "142.251.157.176",
+      "142.251.152.176",
+      "142.251.155.176",
+      "142.251.150.176"
+    ],
+    "aaaa": [
+      "2404:6800:4008:c15::64",
+      "2404:6800:4008:c15::8b",
+      "2404:6800:4008:c15::8a",
+      "2404:6800:4008:c15::66"
+    ],
+    "cname": null,
+    "mx": [
+      "alt4.gmr-smtp-in.l.google.com (pref 40)",
+      "gmr-smtp-in.l.google.com (pref 5)",
+      "alt2.gmr-smtp-in.l.google.com (pref 20)",
+      "alt1.gmr-smtp-in.l.google.com (pref 10)",
+      "alt3.gmr-smtp-in.l.google.com (pref 30)"
+    ],
+    "ns": [],
+    "spf": [
+      "v=spf1 redirect=_spf.google.com"
+    ],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=keep.google.com",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
+    "notBefore": "Sep 10 19:22:00 2026 GMT",
+    "notAfter": "Dec  3 19:21:59 2026 GMT",
+    "san": [
+      "keep.google.com",
+      "*.keep.google.com",
+      "www.keep.google.com"
+    ],
+    "days_left": 69,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "142.251.153.176",
+    "open": []
+  },
+  "https": {
+    "status": 302,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: ESF"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.keep.google.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://keep.google.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 404",
+    "/redirect?next=https://evil-auditor.example/x -> 404",
+    "/go?url=https://evil-auditor.example/x -> 404",
+    "/url?url=https://evil-auditor.example/x -> 404"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 404,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 404,
+    "/.git/HEAD": 404,
+    "/.git/config": 404,
+    "/.env": 404,
+    "/.htaccess": 404,
+    "/wp-login.php": 404,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 404,
+    "/api/": 404
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 24.1,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

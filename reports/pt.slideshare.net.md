@@ -5,101 +5,219 @@
 | Item | Value |
 |---|---|
 | Target | https://pt.slideshare.net/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | pt.slideshare.net |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:11 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
+Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C2 | Cookies set without Secure flag | CWE-614 |
-| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 3 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 4 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 5 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 6 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 9 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 10 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 11 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 12 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
-| 13 | info | X3 | HTTPS root redirects to different host | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 3 | low | H2 | Missing CSP header | CWE-1021 |
+| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 5 | low | H4 | No clickjacking protection | CWE-1023 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 9 | low | CK1 | Cookie set without Secure flag over HTTPS | CWE-614 |
+| 10 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
+| 11 | low | CK1 | Cookie set without Secure flag over HTTPS | CWE-614 |
+| 12 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without Secure flag (`C2`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-614
-- **Detail:** Set on https://pt.slideshare.net/ without Secure: _fs_ch_st_FSBmUei20MqUiJb9. Will be transmitted over HTTP if the site is reachable cleartext.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 2. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://pt.slideshare.net/ without SameSite=Lax/Strict: _fs_ch_st_FSBmUei20MqUiJb9. Cross-site request cookies.
+- **CWE:** CWE-200
+- **Detail:** Alt-Svc: h3=":443";ma=86400,h3-29=":443";ma=86400,h3-27=":443";ma=86400
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
 
-### 3. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://pt.slideshare.net/; no defense-in-depth against XSS/content injection.
-
-### 4. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://pt.slideshare.net/; browsers may MIME-sniff responses.
-
-### 5. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 3. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://pt.slideshare.net/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 6. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 4. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for pt.slideshare.net lists 2 name(s) besides the scope host: *.slideshare.net, slideshare.net
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 7. [INFO] Missing Referrer-Policy (`H5`)
+### 5. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://pt.slideshare.net/; full URL (incl. query strings) is sent as referrer by default.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 8. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://pt.slideshare.net/; browser features (camera, mic, geolocation) unrestricted.
-
-### 9. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://pt.slideshare.net/ lists 0 URLs.
-
-### 10. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://pt.slideshare.net/ -> https://www.slideshare.net/ (positive check).
-
-### 11. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://pt.slideshare.net/ exposes 0 unique Disallow path(s)
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 12. [INFO] security.txt exposed (public disclosure policy) (`S2`)
-
-- **CWE:** CWE-200
-- **Detail:** security.txt present on https://pt.slideshare.net (3036 bytes)
-
-### 13. [INFO] HTTPS root redirects to different host (`X3`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** https://pt.slideshare.net/ redirects to https://www.slideshare.net/.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://pt.slideshare.net/ final status: 200 (final URL https://www.slideshare.net/).
-- http://pt.slideshare.net/ initial status: 302.
-- Certificate: Let's Encrypt YR2, valid until 2026-12-06T13:58:11+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 9. [LOW] Cookie set without Secure flag over HTTPS (`CK1`)
+
+- **CWE:** CWE-614
+- **Detail:** Cookie '_fs_ch_st_FSBmUei20MqUiJb9' has no Secure attribute on an HTTPS response.
+- **Context:** https response, /
+- **Recommendation:** Set Secure on all cookies over HTTPS.
+
+### 10. [INFO] Cookie without SameSite attribute (`CK3`)
+
+- **CWE:** CWE-1275
+- **Detail:** Cookie '_fs_ch_st_FSBmUei20MqUiJb9' has no SameSite attribute.
+- **Context:** https response, /
+- **Recommendation:** Set SameSite=Lax (or Strict) to reduce CSRF surface.
+
+### 11. [LOW] Cookie set without Secure flag over HTTPS (`CK1`)
+
+- **CWE:** CWE-614
+- **Detail:** Cookie 'browser_id' has no Secure attribute on an HTTPS response.
+- **Context:** https response, /
+- **Recommendation:** Set Secure on all cookies over HTTPS.
+
+### 12. [INFO] Cookie without SameSite attribute (`CK3`)
+
+- **CWE:** CWE-1275
+- **Detail:** Cookie 'browser_id' has no SameSite attribute.
+- **Context:** https response, /
+- **Recommendation:** Set SameSite=Lax (or Strict) to reduce CSRF surface.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "pt.slideshare.net",
+  "dns": {
+    "a": [
+      "151.101.130.152",
+      "151.101.2.152",
+      "151.101.66.152",
+      "151.101.194.152"
+    ],
+    "aaaa": [],
+    "cname": "scribd.map.fastly.net.",
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=*.slideshare.net",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YR2",
+    "notBefore": "Sep  7 13:58:12 2026 GMT",
+    "notAfter": "Dec  6 13:58:11 2026 GMT",
+    "san": [
+      "*.slideshare.net",
+      "slideshare.net"
+    ],
+    "days_left": 72,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "151.101.130.152",
+    "open": []
+  },
+  "https": {
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "title": "Client Challenge"
+  },
+  "mixed_content": [],
+  "cookies": [
+    {},
+    {
+      "domain": ".slideshare.net"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.pt.slideshare.net",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://pt.slideshare.net/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 200",
+    "/redirect?next=https://evil-auditor.example/x -> 200",
+    "/go?url=https://evil-auditor.example/x -> 200",
+    "/url?url=https://evil-auditor.example/x -> 200"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 200,
+    "/.well-known/security.txt": 200,
+    "/security.txt": 200,
+    "/.git/HEAD": 406,
+    "/.git/config": 406,
+    "/.env": 406,
+    "/.htaccess": 406,
+    "/wp-login.php": 200,
+    "/phpmyadmin/index.php": 200,
+    "/server-status": 200,
+    "/api/": 200
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 51.7,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

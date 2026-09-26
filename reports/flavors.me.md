@@ -5,32 +5,73 @@
 | Item | Value |
 |---|---|
 | Target | https://flavors.me/ |
-| Bug bounty program | [top-websites gist (no active program match)]() |
+| Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | flavors.me |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 09:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **2** (High: 0, Medium: 0, Low: 0, Info: 2)
+Total findings: **1** (High: 0, Medium: 0, Low: 0, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | info | D0 | Scope host does not resolve in DNS | CWE-200 |
-| 2 | info | X1 | HTTPS homepage unreachable | CWE-200 |
+| 1 | info | DNS1 | Domain does not resolve (no A/AAAA) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [INFO] Scope host does not resolve in DNS (`D0`)
+### 1. [INFO] Domain does not resolve (no A/AAAA) (`DNS1`)
 
 - **CWE:** CWE-200
-- **Detail:** flavors.me returned no A/AAAA record.
+- **Detail:** No A or AAAA record returned from public resolvers; site may be offline or DNS-only outage.
+- **Recommendation:** Confirm the service is still expected to be live.
 
-### 2. [INFO] HTTPS homepage unreachable (`X1`)
+## Evidence (raw response observations)
 
-- **CWE:** CWE-200
-- **Detail:** https://flavors.me/: ConnectionError: HTTPSConnectionPool(host='flavors.me', port=443): Max retries exceeded with url: / (Caused by NameResolutionError("HTTPSConnection(host='flavors.me', port=443):
+```json
+{
+  "domain": "flavors.me",
+  "dns": {
+    "a": [],
+    "aaaa": [],
+    "cname": null,
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": []
+  },
+  "tls": {
+    "status": "no-ip"
+  },
+  "ports": {
+    "status": "no-ip"
+  },
+  "https": {
+    "status": 0,
+    "content_type": "",
+    "title": "",
+    "error": "https connect failed"
+  },
+  "mixed_content": [],
+  "cookies": [],
+  "cors": [],
+  "http": {
+    "status": 0,
+    "error": "http connect failed"
+  },
+  "redir_probes": [],
+  "paths": {},
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 19.3,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
 
-## Reproduction notes
+## Notes
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

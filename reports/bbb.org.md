@@ -7,129 +7,302 @@
 | Target | https://bbb.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | bbb.org |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 17:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
+Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 3 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 4 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 5 | info | R1 | robots.txt protected | CWE-200 |
-| 6 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
-| 7 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | MAIL4 | DMARC policy is p=none (monitor only) | CWE-200 |
+| 3 | info | PRT8080 | Alternate web service (port 8080) reachable | CWE-200 |
+| 4 | info | PRT8443 | Alternate web service (port 8443) reachable | CWE-200 |
+| 5 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 6 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 7 | low | H2 | Missing CSP header | CWE-1021 |
+| 8 | low | H4 | No clickjacking protection | CWE-1023 |
+| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 10 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 11 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 12 | info | H6 | Server technology disclosure | CWE-200 |
+| 13 | info | P8 | Missing security.txt | CWE-1038 |
+| 14 | info | CT1 | 44 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://bbb.org/ without SameSite=Lax/Strict: __cf_bm. Cross-site request cookies.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://bbb.org/; no defense-in-depth against XSS/content injection.
-
-### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for bbb.org lists 1 name(s) besides the scope host: www.stage.bbb.org
-
-### 4. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://bbb.org/ -> https://www.bbb.org/ (positive check).
-
-### 5. [INFO] robots.txt protected (`R1`)
+### 2. [INFO] DMARC policy is p=none (monitor only) (`MAIL4`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /robots.txt returned 403.
+- **Detail:** DMARC is published but policy is 'none'; failing mail is not quarantined.
+- **Recommendation:** Move to p=quarantine/reject once monitor reports are clean.
 
-### 6. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 403 on bbb.org.
-
-### 7. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** https://bbb.org/ responded 403 (passive check only; no further probing).
+- **Detail:** TCP connect to 104.18.12.85:8080 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-## Reproduction notes
+### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://bbb.org/ final status: 403 (final URL https://www.bbb.org/).
-- http://bbb.org/ initial status: 301.
-- Certificate: Google Trust Services WE1, valid until 2026-12-20T21:29:54+00:00.
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 104.18.12.85:8443 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
-## Active scan cross-check (consolidated: agent-random phase 25 + agent-aggressive wave 7)
+### 5. [INFO] Technology fingerprint (`TECH1`)
 
-> Replaces the earlier 4-finding wave-7-9 excerpt: the two active scans were merged and deduped by ID+name, and the S1 subdomain lead was re-verified during consolidation (see finding 6 - medium demoted to info).
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: cloudflare; Cloudflare CDN/WAF
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-## Summary
+### 6. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
-Total findings: **6** (High: 0, Medium: 0, Low: 3, Info: 3)
+- **CWE:** CWE-200
+- **Detail:** Alt-Svc: h3=":443"; ma=86400
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
 
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H2 | Missing CSP header | CWE-1021 |
-| 3 | low | H4 | No clickjacking protection | CWE-1023 |
-| 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 5 | info | H6 | Server technology disclosure | CWE-200 |
-| 6 | info | S1 | Status-page subdomain hosted on third-party platform (claimed, not dangling) | CWE-916 |
-
-## Detailed findings
-
-### 1. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
-- **Context:** http response
-- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
-
-### 2. [LOW] Missing CSP header (`H2`)
+### 7. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy header (observed on both HTTP and HTTPS responses). XSS mitigation relies solely on output encoding.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
 - **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 3. [LOW] No clickjacking protection (`H4`)
+### 8. [LOW] No clickjacking protection (`H4`)
 
 - **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors (HTTP and HTTPS). Page can be embedded in a frame.
-- **Recommendation:** Set X-Frame-Options DENY or CSP frame-ancestors 'self'.
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 4. [INFO] Missing Referrer-Policy (`H5`)
+### 9. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
-- **Recommendation:** Set Referrer-Policy (e.g. strict-origin-when-cross-origin).
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 5. [INFO] Server technology disclosure (`H6`)
+### 10. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** Server/X-Powered-By headers reveal backend technology.
-- **Recommendation:** Minimize version/technology details in response headers.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 6. [INFO] Status-page subdomain hosted on third-party platform (claimed, not dangling) (`S1`)
+### 11. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- **CWE:** CWE-916
-- **Detail:** status.bbb.org CNAME -> h4kfvdh35ftv.stspg-customer.com (StatusPage/Atlassian customer subdomain, CloudFront 65.9.180.x). Re-verified at consolidation: the platform target RESOLVES and is CLAIMED - https://status.bbb.org/ serves a live 97,695-byte "BBB System Status" page (server: AtlassianEdge), and the bare target 302s to www.statuspage.io. Not a dangling takeover (no NXDOMAIN, no missing-app/missing-bucket page); recorded as an informational third-party-hosted subdomain (takeover would require the StatusPage account to be deleted/expired).
-- **Recommendation:** Monitor the StatusPage subscription; if it is ever canceled, the CNAME would become claimable (register the platform account to prevent takeover).
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-## Aggressive probe campaign
+### 12. [INFO] Server technology disclosure (`H6`)
 
-**Stage 4 - injection/XSS/redirect/endpoint matrix suite v4 (63 requests on the phase-25 scan):** no stage-4 probe hits (all probes negative); no live query parameters harvested on sampled pages.
+- **CWE:** CWE-200
+- **Detail:** Header reveals: cloudflare
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 13. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 14. [INFO] 44 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: api-gateway.dev.bbb.org, api-gateway.stage.bbb.org, api-legacy.stage.bbb.org, ask-bbb.dev.bbb.org, ask-bbb.stage.bbb.org, bbb-web.dev.bbb.org, bbb-web.stage.bbb.org, corecms.dev.bbb.org, corecms.stage.bbb.org, header-footer.dev.bbb.org
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "bbb.org",
+  "dns": {
+    "a": [
+      "104.18.12.85",
+      "104.18.13.85"
+    ],
+    "aaaa": [
+      "2606:4700::6812:d55",
+      "2606:4700::6812:c55"
+    ],
+    "cname": null,
+    "mx": [
+      "usb-smtp-inbound-2.mimecast.com (pref 10)",
+      "bbb-org.mail.protection.outlook.com (pref 0)"
+    ],
+    "ns": [
+      "sky.ns.cloudflare.com.",
+      "ben.ns.cloudflare.com."
+    ],
+    "spf": [
+      "google-site-verification=vbCoHJ2AdOVcONDq3HpldnSUFPqkLqLsGqepsvIG3W8",
+      "_mp71k0i4mlicenedphurdghi22bzipz",
+      "linkedin-site-verification=7e3a9aa5-56d0-408f-875b-2f90a2949a8d",
+      "TS-GateMark-XerusPlaty-BishopCastor-MuleArctic",
+      "MS=ms51510006",
+      "airtable-verification=c6510236934b04ad8e279c50f5ba261d",
+      "brevo-code:0e7907f04aee89146d8699fe9b1e761e",
+      "MS=ms42622636",
+      "atlassian-sending-domain-verification=3439449f-9f47-43a0-b8d4-5547eb95d654",
+      "google-gws-recovery-domain-verification=69716138",
+      "atlassian-domain-verification=mir0Y7FBh7vWasF7DQkZu7/P04Fj6MOtgGOTB8pGdjcBZmExhPHag3je/Kgoc54b",
+      "v=spf1 include:_spf.psm.knowbe4.com include:simplelists.com include:docebosaas.com include:spfbbb.bluebbb.org include:stspg-customer.com include:sendgrid.net -all",
+      "canva-site-verification=17rTdC3iGSynnfP0MM3AxA",
+      "TAILSCALE-v5jb4LWi9twmrM7F2iv1",
+      "google-site-verification=sqG5mY8Hhz4UmPAIpQFTicF7UYQNiU_soZvbYouBOcc",
+      "MS=ms70871153",
+      "linkedin-site-verification=f1538191-6fff-4d9f-b874-131440fe2859",
+      "Target: 0ed1fe018a8dab4f1075c24ce291b3534d6253b1c7",
+      "status-page-domain-verification=qg8m0xbmfqv7",
+      "linkedin-site-verification=01c52a57-4144-410e-9dd7-cdad211a2499",
+      "google-site-verification=z0BQYT93-PT2Fu2bTuVIpYMJo9lEtQJCPRdJsfzMgYo",
+      "anthropic-domain-verification-1pw1ts=9bt3Q0epDBUzD0U2d9u38ULex"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=none; rua=mailto:39a3b8628f3f867@rep.dmarcanalyzer.com; ruf=mailto:39a3b8628f3f867@for.dmarcanalyzer.com; fo=1;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=bbb.org",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE1",
+    "notBefore": "Sep 21 20:30:13 2026 GMT",
+    "notAfter": "Dec 20 21:29:54 2026 GMT",
+    "san": [
+      "bbb.org",
+      "www.stage.bbb.org"
+    ],
+    "days_left": 86,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "104.18.12.85",
+    "open": [
+      8080,
+      8443
+    ]
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: cloudflare",
+    "Cloudflare CDN/WAF"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.bbb.org",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://www.bbb.org/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 44,
+    "notable": [
+      "api-gateway.dev.bbb.org",
+      "api-gateway.stage.bbb.org",
+      "api-legacy.stage.bbb.org",
+      "ask-bbb.dev.bbb.org",
+      "ask-bbb.stage.bbb.org",
+      "bbb-web.dev.bbb.org",
+      "bbb-web.stage.bbb.org",
+      "corecms.dev.bbb.org",
+      "corecms.stage.bbb.org",
+      "header-footer.dev.bbb.org",
+      "header-footer.stage.bbb.org",
+      "help.bbb.org",
+      "img.noreply.bbb.org",
+      "scamtracker.dev.bbb.org",
+      "scamtracker.stage.bbb.org"
+    ],
+    "sample": [
+      "26106802.bbb.org",
+      "aem-dev.bbb.org",
+      "aem-stage.bbb.org",
+      "aem.bbb.org",
+      "api-gateway.dev.bbb.org",
+      "api-gateway.prod.bbb.org",
+      "api-gateway.stage.bbb.org",
+      "api-legacy.stage.bbb.org",
+      "ask-bbb.dev.bbb.org",
+      "ask-bbb.prod.bbb.org",
+      "ask-bbb.stage.bbb.org",
+      "bbb-web.dev.bbb.org",
+      "bbb-web.prod.bbb.org",
+      "bbb-web.stage.bbb.org",
+      "bbb.org",
+      "bostonhelp.bbb.org",
+      "corecms.bbb.org",
+      "corecms.dev.bbb.org",
+      "corecms.stage.bbb.org",
+      "councilvpn.bbb.org"
+    ]
+  },
+  "elapsed_s": 10.0,
+  "rechecked": "2026-09-25 17:50 UTC"
+}
+```
 
 ## Notes
 
-- Consolidation of two independent scans; duplicate header findings deduped by ID+name.
-- No credentials were used; no state was modified on the target.
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

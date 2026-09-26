@@ -5,89 +5,181 @@
 | Item | Value |
 |---|---|
 | Target | https://pbs.twimg.com/ |
-| Bug bounty program | [Twitter](https://hackerone.com/twitter) |
+| Bug bounty program | Twitter |
 | Listed scope domain | pbs.twimg.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 10:06 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
+Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 2 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 3 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 4 | info | D2 | Possible dangling subdomain | CWE-1382 |
-| 5 | info | H2c | HSTS not preloaded | CWE-319 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 8 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
-| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
-| 11 | info | X2 | HTTPS homepage returned HTTP 400 | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | H2 | Missing CSP header | CWE-1021 |
+| 3 | low | H4 | No clickjacking protection | CWE-1023 |
+| 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 6 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 7 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
+| 8 | info | P8 | Missing security.txt | CWE-1038 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing Content-Security-Policy (`H3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://pbs.twimg.com/; no defense-in-depth against XSS/content injection.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 2. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://pbs.twimg.com/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 3. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 3. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for pbs.twimg.com lists 4 name(s) besides the scope host: *.twimg.com, cdn.syndication.twimg.com, platform.twitter.com, twimg.com (1 no longer resolve)
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 4. [INFO] Possible dangling subdomain (`D2`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate lists `twimg.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
-
-### 5. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=631138519; includeSubdomains` lacks the preload directive.
-
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 4. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://pbs.twimg.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 7. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://pbs.twimg.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 8. [INFO] Plain HTTP returns non-redirect status (`N3`)
-
-- **CWE:** CWE-319
-- **Detail:** http://pbs.twimg.com/ returns 400 (no redirect to HTTPS).
-
-### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 5. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://pbs.twimg.com/ exposes 0 unique Disallow path(s)
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on pbs.twimg.com.
-
-### 11. [INFO] HTTPS homepage returned HTTP 400 (`X2`)
+### 6. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** https://pbs.twimg.com/ responded 400 (passive check only; no further probing).
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-## Reproduction notes
+### 7. [INFO] CORS: subdomain origin origin accepted (no credentials) (`CORS2`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://pbs.twimg.com/ final status: 400 (final URL https://pbs.twimg.com/).
-- http://pbs.twimg.com/ initial status: 400.
-- Certificate: Let's Encrypt YR2, valid until 2026-12-14T20:20:30+00:00.
+- **CWE:** CWE-942
+- **Detail:** Origin https://sub.pbs.twimg.com was echoed in Access-Control-Allow-Origin.
+- **Context:** https response, /
+- **Recommendation:** Confirm whether arbitrary origin echoing is intended.
+
+### 8. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "pbs.twimg.com",
+  "dns": {
+    "a": [
+      "151.101.76.159"
+    ],
+    "aaaa": [],
+    "cname": "dualstack.twimg.twitter.map.fastly.net.",
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=*.twimg.com",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YR2",
+    "notBefore": "Sep 15 20:20:31 2026 GMT",
+    "notAfter": "Dec 14 20:20:30 2026 GMT",
+    "san": [
+      "*.twimg.com",
+      "cdn.syndication.twimg.com",
+      "platform.twitter.com",
+      "twimg.com"
+    ],
+    "days_left": 80,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "151.101.76.159",
+    "open": []
+  },
+  "https": {
+    "status": 400,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "https://evil-auditor.example",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.pbs.twimg.com",
+      "acao": "https://sub.pbs.twimg.com",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 400
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 400",
+    "/redirect?next=https://evil-auditor.example/x -> 400",
+    "/go?url=https://evil-auditor.example/x -> 400",
+    "/url?url=https://evil-auditor.example/x -> 400"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 400,
+    "/.well-known/security.txt": 404,
+    "/security.txt": 400,
+    "/.git/HEAD": 404,
+    "/.git/config": 404,
+    "/.env": 400,
+    "/.htaccess": 400,
+    "/wp-login.php": 400,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 400,
+    "/api/": 400
+  },
+  "subdomains": {
+    "status": "crt.sh 429 (certspotter 429)"
+  },
+  "elapsed_s": 55.9,
+  "rechecked": "2026-09-25 07:46 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

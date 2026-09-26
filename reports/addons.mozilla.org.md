@@ -7,81 +7,201 @@
 | Target | https://addons.mozilla.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | addons.mozilla.org |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-25 07:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
+Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
-| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 3 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 4 | info | H2c | HSTS not preloaded | CWE-319 |
-| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 7 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | MAIL1 | Mail servers exist (MX) but no SPF record | CWE-200 |
+| 3 | low | MAIL3 | No DMARC record | CWE-200 |
+| 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 6 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 7 | info | P8 | Missing security.txt | CWE-1038 |
+| 8 | info | CT1 | 7 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] TLS certificate expiring within 30 days (`T3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-298
-- **Detail:** Certificate expires 2026-10-26T16:03:05+00:00 (30 days left) for addons.mozilla.org.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for addons.mozilla.org lists 1 name(s) besides the scope host: services.addons.mozilla.org
-
-### 3. [INFO] HSTS without includeSubDomains (`H2b`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` does not cover subdomains.
-
-### 4. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31536000` lacks the preload directive.
-
-### 5. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] Mail servers exist (MX) but no SPF record (`MAIL1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://addons.mozilla.org/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** MX records are published but no SPF TXT record; sender-domain spoofing is harder to validate.
+- **Recommendation:** Publish an SPF record enumerating authorized senders.
 
-### 6. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://addons.mozilla.org/; browser features (camera, mic, geolocation) unrestricted.
-
-### 7. [INFO] sitemap.xml discloses URL inventory (`M1`)
+### 3. [LOW] No DMARC record (`MAIL3`)
 
 - **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://addons.mozilla.org/ lists 2716 URLs.
+- **Detail:** No _dmarc TXT record published; receivers cannot enforce DMARC policy for this domain.
+- **Recommendation:** Publish a DMARC record (start with p=none, then quarantine).
 
-### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://addons.mozilla.org/ -> https://addons.mozilla.org/ (positive check).
-
-### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 4. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://addons.mozilla.org/ exposes 260 unique Disallow path(s) (/android/downloads/, /cs/android/collections/, /cs/android/search/, /cs/firefox/collections/, /cs/firefox/collections/4757633/$)
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 5. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on addons.mozilla.org.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 6. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://addons.mozilla.org/ final status: 200 (final URL https://addons.mozilla.org/en-US/firefox/).
-- http://addons.mozilla.org/ initial status: 301.
-- Certificate: Let's Encrypt YR1, valid until 2026-10-26T16:03:05+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 7. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 8. [INFO] 7 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: none flagged
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "addons.mozilla.org",
+  "dns": {
+    "a": [
+      "151.101.193.91",
+      "151.101.65.91",
+      "151.101.1.91",
+      "151.101.129.91"
+    ],
+    "aaaa": [
+      "2a04:4e42:600::347",
+      "2a04:4e42:200::347",
+      "2a04:4e42:400::347",
+      "2a04:4e42::347"
+    ],
+    "cname": null,
+    "mx": [
+      "mx.socketlabs.com (pref 10)"
+    ],
+    "ns": [
+      "ns-1696.awsdns-20.co.uk.",
+      "ns-967.awsdns-56.net.",
+      "ns-1140.awsdns-14.org.",
+      "ns-144.awsdns-18.com."
+    ],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=addons.mozilla.org",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YR1",
+    "notBefore": "Jul 28 16:03:06 2026 GMT",
+    "notAfter": "Oct 26 16:03:05 2026 GMT",
+    "san": [
+      "addons.mozilla.org",
+      "services.addons.mozilla.org"
+    ],
+    "days_left": 31,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "151.101.193.91",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.addons.mozilla.org",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://addons.mozilla.org/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 302",
+    "/redirect?next=https://evil-auditor.example/x -> 302",
+    "/go?url=https://evil-auditor.example/x -> 302",
+    "/url?url=https://evil-auditor.example/x -> 302"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 200,
+    "/.well-known/security.txt": 302,
+    "/security.txt": 302,
+    "/.git/HEAD": 302,
+    "/.git/config": 302,
+    "/.env": 302,
+    "/.htaccess": 302,
+    "/wp-login.php": 302,
+    "/phpmyadmin/index.php": 302,
+    "/server-status": 302,
+    "/api/": 302
+  },
+  "subdomains": {
+    "source": "certspotter",
+    "count": 7,
+    "notable": [],
+    "sample": [
+      "addons.mozilla.org",
+      "blocklist.addons.mozilla.org",
+      "discovery.addons.mozilla.org",
+      "reviewers.addons.mozilla.org",
+      "services.addons.mozilla.org",
+      "versioncheck-bg.addons.mozilla.org",
+      "versioncheck.addons.mozilla.org"
+    ]
+  },
+  "elapsed_s": 135.8,
+  "rechecked": "2026-09-25 13:59 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.
