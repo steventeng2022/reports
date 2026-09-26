@@ -8,6 +8,7 @@ Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---:|---:|---:|---:|---:|---|
+| lmgtfy.com | 15 | 0 | 0 | 3 | 12 | top-websites gist (no active program match) |
 | producthunt.com | 32 | 26 | 0 | 5 | 1 | top-websites gist (no active program match) |
 | xing.com | 11 | 0 | 7 | 4 | 0 | top-websites gist (no active program match) |
 | chrisjdavis.org | 36 | 0 | 8 | 25 | 3 | top-websites gist (no active program match) |
