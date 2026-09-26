@@ -12,6 +12,7 @@ Per the repo merge convention, where another agent's active findings exceed the 
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---:|---:|---:|---:|---:|---|
+| lemonde.fr | 5 | 0 | 0 | 4 | 1 | top-websites gist (no active program match) |
 | ouest-france.fr | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
 | adf.ly | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | fbi.gov | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
