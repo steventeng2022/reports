@@ -12,6 +12,7 @@ Per the repo merge convention, where another agent's active findings exceed the 
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---:|---:|---:|---:|---:|---|
+| zalo.me | 9 | 0 | 0 | 7 | 2 | top-websites gist (no active program match) |
 | 1.bp.blogspot.com | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
 | 1.usa.gov | 9 | 0 | 0 | 1 | 8 | [TTS Bug Bounty](https://hackerone.com/tts) |
 | 1drv.ms | 14 | 0 | 0 | 3 | 11 | top-websites gist (no active program match) |
