@@ -7,12 +7,12 @@
 | Target | https://dashlane.com/ |
 | Bug bounty program | Dashlane |
 | Listed scope domain | dashlane.com |
-| Test date | 2026-09-25 09:12 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:42 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
+Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -39,13 +44,13 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.27.218:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.26.218:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.27.218:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.26.218:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -103,6 +108,36 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=RFwRELa7WvbbTQW5f6j9hPJUSLTAovvSepABK6YwHaeC6AcZtm; google-site-verification=yS6BK31Z2KXSj9dmrqfPzPshkE7b32wulJmzfiz4EUY; wrike-verification=MjM0Nzk4OTpkODUzOWI2ZTk1ZjgyOWUxZDE2MDBmMWIyNmUxODUwODdiMTdkY
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of dashlane.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 6 disallow path(s), e.g. /payment, /, /payment, /payment, /payment
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -110,49 +145,49 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
   "domain": "dashlane.com",
   "dns": {
     "a": [
-      "104.18.27.218",
-      "104.18.26.218"
+      "104.18.26.218",
+      "104.18.27.218"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt4.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)"
+      "alt4.aspmx.l.google.com (pref 10)",
+      "alt3.aspmx.l.google.com (pref 10)",
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "ns-396.awsdns-49.com.",
       "ns-1838.awsdns-37.co.uk.",
       "ns-646.awsdns-16.net.",
+      "ns-396.awsdns-49.com.",
       "ns-1381.awsdns-44.org."
     ],
     "spf": [
-      "stripe-verification=F6D326204AE8297C7C1DCE7B72D865C2DF049FEF4E46AA6BACEE6316D87F404F",
-      "0ed1fe018a052438ee880c4b2fb7f1796949e855a2",
-      "_klajo684kaqqtg2dul51ana7m7aol1s",
-      "CKO=cli_mi3ag5v4v5ie3fcimbb5zcjkdi",
-      "v=spf1 include:_spf.google.com include:spf2.dashlane.com include:mail.zendesk.com include:mktomail.com include:mg-spf.greenhouse.io include:_spf.salesforce.com -all",
-      "1|www.dashlane.com",
-      "google-site-verification=ozFOOl99Gxv4y-55zHWOduavfcmZEXqS1yR_CDVmupI",
+      "MS=ms78056367",
       "ca3-3ad4d01464cb4caaad75392931cf4b49",
+      "_yqvhaiv5owhbgbsa4qdcii7szjyce9m",
+      "ca3-f1f15d7cb167404ab9c514c3b87529c0",
       "atlassian-domain-verification=RFwRELa7WvbbTQW5f6j9hPJUSLTAovvSepABK6YwHaeC6AcZtml0apL64eQFCdNQ",
-      "openai-domain-verification=dv-4e55Awe1PWzWlnozKcMcHLLN",
-      "jamf-site-verification=i2cgTr97X6Qxa-MZy8gprA",
-      "KOmW3ca2DpgwtUwRLQ4RHREFYMTccYEbcgnu7ipuO8syoAZI6C3u7zcGX8zAw9ssJDdffzxQinO7UJCu3PvDdA==",
       "google-site-verification=yS6BK31Z2KXSj9dmrqfPzPshkE7b32wulJmzfiz4EUY",
       "wrike-verification=MjM0Nzk4OTpkODUzOWI2ZTk1ZjgyOWUxZDE2MDBmMWIyNmUxODUwODdiMTdkYjA5MjgyNjY3YjEwNmI2NzFmNTcyZjJiZGEz",
-      "ca3-f1f15d7cb167404ab9c514c3b87529c0",
-      "ca3-8b5b3457e553481da2ecf93bdf264443",
-      "MS=ms78056367",
+      "0ed1fe018a052438ee880c4b2fb7f1796949e855a2",
+      "v=spf1 include:_spf.google.com include:spf2.dashlane.com include:mail.zendesk.com include:mktomail.com include:mg-spf.greenhouse.io include:_spf.salesforce.com -all",
       "stripe-verification=237c0c2be4be590e020173f0d294be75fc3de8a6271806f084d2018b62d33372",
-      "detectify-verification=19ea3dd383daec40adcb74a7968825b8",
-      "google-site-verification=6lT65mGzmxxPStSgeiblmtFtT4u5V3PJYdIJ2dFu5So",
-      "_yqvhaiv5owhbgbsa4qdcii7szjyce9m",
+      "ca3-8b5b3457e553481da2ecf93bdf264443",
       "drift-domain-verification=3e92a53ea6894b4f337d741ba27c2ab31c8630fc4eed6403e438a4fdfb162a02",
+      "google-site-verification=ozFOOl99Gxv4y-55zHWOduavfcmZEXqS1yR_CDVmupI",
+      "openai-domain-verification=dv-4e55Awe1PWzWlnozKcMcHLLN",
+      "google-site-verification=6lT65mGzmxxPStSgeiblmtFtT4u5V3PJYdIJ2dFu5So",
+      "jamf-site-verification=i2cgTr97X6Qxa-MZy8gprA",
       "anthropic-domain-verification-7k1h5w=lnSRFRHXgc8eyEwyyyEs0MZTE",
-      "miro-verification=36887a2acef64995e895317181e786f8fbc6ce21"
+      "miro-verification=36887a2acef64995e895317181e786f8fbc6ce21",
+      "KOmW3ca2DpgwtUwRLQ4RHREFYMTccYEbcgnu7ipuO8syoAZI6C3u7zcGX8zAw9ssJDdffzxQinO7UJCu3PvDdA==",
+      "CKO=cli_mi3ag5v4v5ie3fcimbb5zcjkdi",
+      "_klajo684kaqqtg2dul51ana7m7aol1s",
+      "1|www.dashlane.com",
+      "detectify-verification=19ea3dd383daec40adcb74a7968825b8",
+      "stripe-verification=F6D326204AE8297C7C1DCE7B72D865C2DF049FEF4E46AA6BACEE6316D87F404F"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; adkim=s; aspf=r; rua=mailto:dmarc-reports@dashlane.com; ruf=mailto:dmarc-reports@dashlane.com; rf=afrf; pct=100; ri=86400"
@@ -173,7 +208,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
       "check.dashlane.com",
       "*.check.dashlane.com"
     ],
-    "days_left": 88,
+    "days_left": 87,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -183,7 +218,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
     }
   },
   "ports": {
-    "ip": "104.18.27.218",
+    "ip": "104.18.26.218",
     "open": [
       8080,
       8443
@@ -242,10 +277,40 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 67.2,
-  "rechecked": "2026-09-25 10:43 UTC"
+  "apex_txt": [
+    "atlassian-domain-verification=RFwRELa7WvbbTQW5f6j9hPJUSLTAovvSepABK6YwHaeC6AcZtm",
+    "google-site-verification=yS6BK31Z2KXSj9dmrqfPzPshkE7b32wulJmzfiz4EUY",
+    "wrike-verification=MjM0Nzk4OTpkODUzOWI2ZTk1ZjgyOWUxZDE2MDBmMWIyNmUxODUwODdiMTdkY",
+    "stripe-verification=237c0c2be4be590e020173f0d294be75fc3de8a6271806f084d2018b62d3",
+    "drift-domain-verification=3e92a53ea6894b4f337d741ba27c2ab31c8630fc4eed6403e438a4"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true,
+    "robots_disallow": [
+      "/payment",
+      "/",
+      "/payment",
+      "/payment",
+      "/payment",
+      "/payment"
+    ]
+  },
+  "elapsed_s": 5.2,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -254,4 +319,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

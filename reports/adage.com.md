@@ -7,12 +7,12 @@
 | Target | https://adage.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | adage.com |
-| Test date | 2026-09-25 08:16 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:38 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | low | MAIL7 | SPF include: points to unresolvable domain(s) | CWE-285 |
+| 13 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
@@ -104,6 +109,36 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 12. [LOW] SPF include: points to unresolvable domain(s) (`MAIL7`)
+
+- **CWE:** CWE-285
+- **Detail:** Broken include(s): usb. (no A/TXT record).
+- **Recommendation:** Fix or remove the broken include directives.
+
+### 13. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 14. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=uWzYibDTuhjliXGRiMnMEthKIS6O5mnJViVhGIOvK28; anthropic-domain-verification-pg50pw=UwO6bTKI23RICT2yieNZizAJB; lucidlink-verification=J1CHE4K03BM1Q64NFPMW63KC24
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of adage.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -111,8 +146,8 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
   "domain": "adage.com",
   "dns": {
     "a": [
-      "210.71.227.72",
-      "210.71.227.56"
+      "184.26.127.138",
+      "184.26.127.144"
     ],
     "aaaa": [
       "2001:b034:1c:200::d247:e348",
@@ -120,19 +155,19 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
     ],
     "cname": null,
     "mx": [
-      "usb-smtp-inbound-2.mimecast.com (pref 60)",
-      "usb-smtp-inbound-1.mimecast.com (pref 10)"
+      "usb-smtp-inbound-1.mimecast.com (pref 10)",
+      "usb-smtp-inbound-2.mimecast.com (pref 60)"
     ],
     "ns": [
       "connie.ns.cloudflare.com.",
       "kurt.ns.cloudflare.com."
     ],
     "spf": [
-      "anthropic-domain-verification-pg50pw=UwO6bTKI23RICT2yieNZizAJB",
       "v=spf1 include:spf.crain.com include:_spf.clickshare.com include:aspmx.pardot.com include:usb._netblocks.mimecast.com ~all",
+      "MS=ms52345011",
       "bw=A0toi1iKzrmRS2jxukTxOo6KI3d7V7eoIzDw5G7ubw5s",
       "google-site-verification=uWzYibDTuhjliXGRiMnMEthKIS6O5mnJViVhGIOvK28",
-      "MS=ms52345011",
+      "anthropic-domain-verification-pg50pw=UwO6bTKI23RICT2yieNZizAJB",
       "lucidlink-verification=J1CHE4K03BM1Q64NFPMW63KC24",
       "google-site-verification=69bymnCN1yRQSpHf-DQz5sLMlqQ0GuCspakaXRLBVZg"
     ],
@@ -244,7 +279,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
       "www.tirebusiness.com",
       "www.utech-polyurethane.com"
     ],
-    "days_left": 55,
+    "days_left": 53,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -254,7 +289,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
     }
   },
   "ports": {
-    "ip": "210.71.227.72",
+    "ip": "184.26.127.138",
     "open": []
   },
   "https": {
@@ -303,10 +338,28 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
     "/api/": 403
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 90.5,
-  "rechecked": "2026-09-25 13:59 UTC"
+  "apex_txt": [
+    "google-site-verification=uWzYibDTuhjliXGRiMnMEthKIS6O5mnJViVhGIOvK28",
+    "anthropic-domain-verification-pg50pw=UwO6bTKI23RICT2yieNZizAJB",
+    "lucidlink-verification=J1CHE4K03BM1Q64NFPMW63KC24",
+    "google-site-verification=69bymnCN1yRQSpHf-DQz5sLMlqQ0GuCspakaXRLBVZg"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 5.0,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -315,4 +368,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

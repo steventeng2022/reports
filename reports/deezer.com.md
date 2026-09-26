@@ -7,12 +7,12 @@
 | Target | https://deezer.com/ |
 | Bug bounty program | Deezer |
 | Listed scope domain | deezer.com |
-| Test date | 2026-09-25 09:13 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:43 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
+Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,10 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
@@ -105,6 +109,30 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: docker-verification=2fcbee18-9629-4252-b876-b5f09e7f0d52; gradle-verification=F2ED2BTRLBH4T55MB7BLMAHMU3PKH; google-site-verification=7I-SYis8ZeMmOpyppnK8xwO0zl0svUEAhj8Z2Y9PFcI
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of deezer.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -112,57 +140,57 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
   "domain": "deezer.com",
   "dns": {
     "a": [
-      "3.169.55.83",
-      "3.169.55.41",
       "3.169.55.75",
+      "3.169.55.41",
+      "3.169.55.83",
       "3.169.55.100"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx5.googlemail.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)",
-      "alt2.aspmx.l.google.com (pref 20)",
       "aspmx.l.google.com (pref 10)",
+      "aspmx5.googlemail.com (pref 30)",
+      "aspmx3.googlemail.com (pref 30)",
       "aspmx2.googlemail.com (pref 30)",
+      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx4.googlemail.com (pref 30)",
-      "aspmx3.googlemail.com (pref 30)"
+      "alt2.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
-      "ns-340.awsdns-42.com.",
-      "ns-1072.awsdns-06.org.",
       "ns-672.awsdns-20.net.",
-      "ns-1935.awsdns-49.co.uk."
+      "ns-340.awsdns-42.com.",
+      "ns-1935.awsdns-49.co.uk.",
+      "ns-1072.awsdns-06.org."
     ],
     "spf": [
-      "miro-verification=dfdce60c3dafe475e66cee1a7dff403050e298a9",
-      "MS=ms80038696",
-      "teamviewer-sso-verification=255ec7551d7b4b16bfc94d0cba632b63",
-      "docusign=8d8c13b3-cb80-43af-a6f3-0036bba8d3fc",
-      "tiktok-developers-site-verification=fsHQ2q4rKdukpTPlO15oSq88WsUbzChs",
-      "wsbvv2s5vf",
-      "facebook-domain-verification=wbu2pxqkdmso2hjz7j14fm2hoccy4z",
-      "tiktok-developers-site-verification=biDigQ8eMAwiHueSlRfgZYYDQnasm3L2",
-      "jamf-site-verification=KLk9LYux1EXjBffu88rVgg",
-      "docusign=842e27e7-d700-4873-af3e-0cee181088e5",
-      "anthropic-domain-verification-2kxj5s=ldg3Froq5PB3Ue61ZLWcJ120B",
-      "brevo-code:fa2e70dc2bb0553ba7f879cdb321c3f0",
       "docker-verification=2fcbee18-9629-4252-b876-b5f09e7f0d52",
-      "google-site-verification=od_WkSXO534wNFRABA-6zoxUIVwn60Md6SlU2i5i8iE",
-      "google-site-verification=F8ZbIRsZzJL9xffCHf3E56G59z6HjD2CP6I1SRSDP68",
-      "google-site-verification=vvyvPgv8IufaTIaccQQlinaL8TQ85_PHDAfcZWtE6O0",
-      "atlassian-domain-verification=OKs3QGwhDbZrt7WH4gOo+3G6aSPoFiiO04wvktNpPRFGSzbDMhOz5OKfZMCP+F7Q",
-      "browserstack-domain-verification=79af734f-e88b-487f-9191-55c52b27be0b",
+      "MS=ms80038696",
       "gradle-verification=F2ED2BTRLBH4T55MB7BLMAHMU3PKH",
-      "v=spf1 include:_spf.google.com include:sendgrid.net include:mail.zendesk.com include:servers.mcsv.net ip4:78.40.120.128/26 ip4:78.40.121.0/24 ip4:78.40.123.0/24 ip4:78.40.120.244 ip4:185.159.104.113 ip4:35.241.138.172 -all",
-      "apple-domain-verification=P57n1OdYT_c47nnR4KwTymOZrOA0cl32GWqj5pkCGQ0",
-      "teamviewer-sso-verification=f9da86a27d794c74b772287a9d5787c2",
-      "TAILSCALE-35IXkmM36zZhS07BnS3k",
-      "bvAlPqTZ=c6edbdd62238ef342b47a23d07284dad",
-      "segment-site-verification=GlpHielfWK2mAxw280lnbJndwol19aGH",
       "google-site-verification=7I-SYis8ZeMmOpyppnK8xwO0zl0svUEAhj8Z2Y9PFcI",
+      "anthropic-domain-verification-2kxj5s=ldg3Froq5PB3Ue61ZLWcJ120B",
+      "google-site-verification=F8ZbIRsZzJL9xffCHf3E56G59z6HjD2CP6I1SRSDP68",
       "yandex-verification: ecd5587d4fbf1dc6",
-      "bitrise-verification=07f1c1d2f9ad3bc9-LO62dmQufLLX"
+      "v=spf1 include:_spf.google.com include:sendgrid.net include:mail.zendesk.com include:servers.mcsv.net ip4:78.40.120.128/26 ip4:78.40.121.0/24 ip4:78.40.123.0/24 ip4:78.40.120.244 ip4:185.159.104.113 ip4:35.241.138.172 -all",
+      "facebook-domain-verification=wbu2pxqkdmso2hjz7j14fm2hoccy4z",
+      "apple-domain-verification=P57n1OdYT_c47nnR4KwTymOZrOA0cl32GWqj5pkCGQ0",
+      "tiktok-developers-site-verification=biDigQ8eMAwiHueSlRfgZYYDQnasm3L2",
+      "miro-verification=dfdce60c3dafe475e66cee1a7dff403050e298a9",
+      "tiktok-developers-site-verification=fsHQ2q4rKdukpTPlO15oSq88WsUbzChs",
+      "bvAlPqTZ=c6edbdd62238ef342b47a23d07284dad",
+      "TAILSCALE-35IXkmM36zZhS07BnS3k",
+      "google-site-verification=vvyvPgv8IufaTIaccQQlinaL8TQ85_PHDAfcZWtE6O0",
+      "wsbvv2s5vf",
+      "jamf-site-verification=KLk9LYux1EXjBffu88rVgg",
+      "segment-site-verification=GlpHielfWK2mAxw280lnbJndwol19aGH",
+      "docusign=842e27e7-d700-4873-af3e-0cee181088e5",
+      "google-site-verification=od_WkSXO534wNFRABA-6zoxUIVwn60Md6SlU2i5i8iE",
+      "teamviewer-sso-verification=255ec7551d7b4b16bfc94d0cba632b63",
+      "brevo-code:fa2e70dc2bb0553ba7f879cdb321c3f0",
+      "browserstack-domain-verification=79af734f-e88b-487f-9191-55c52b27be0b",
+      "docusign=8d8c13b3-cb80-43af-a6f3-0036bba8d3fc",
+      "teamviewer-sso-verification=f9da86a27d794c74b772287a9d5787c2",
+      "bitrise-verification=07f1c1d2f9ad3bc9-LO62dmQufLLX",
+      "atlassian-domain-verification=OKs3QGwhDbZrt7WH4gOo+3G6aSPoFiiO04wvktNpPRFGSzbDMhOz5OKfZMCP+F7Q"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc_report@deezer.com"
@@ -182,7 +210,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
       "*.deezer.com",
       "deezer.com"
     ],
-    "days_left": 127,
+    "days_left": 126,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -192,7 +220,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
     }
   },
   "ports": {
-    "ip": "3.169.55.83",
+    "ip": "3.169.55.75",
     "open": []
   },
   "https": {
@@ -242,10 +270,29 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 105.5,
-  "rechecked": "2026-09-25 10:43 UTC"
+  "apex_txt": [
+    "docker-verification=2fcbee18-9629-4252-b876-b5f09e7f0d52",
+    "gradle-verification=F2ED2BTRLBH4T55MB7BLMAHMU3PKH",
+    "google-site-verification=7I-SYis8ZeMmOpyppnK8xwO0zl0svUEAhj8Z2Y9PFcI",
+    "anthropic-domain-verification-2kxj5s=ldg3Froq5PB3Ue61ZLWcJ120B",
+    "google-site-verification=F8ZbIRsZzJL9xffCHf3E56G59z6HjD2CP6I1SRSDP68"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 10.7,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -254,4 +301,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

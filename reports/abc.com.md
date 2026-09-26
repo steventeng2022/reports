@@ -7,12 +7,12 @@
 | Target | https://abc.com/ |
 | Bug bounty program | The Walt Disney Company |
 | Listed scope domain | abc.com |
-| Test date | 2026-09-25 08:09 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:38 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
+Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,7 +28,12 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 | 10 | low | CK1 | Cookie set without Secure flag over HTTPS | CWE-614 |
 | 11 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
 | 12 | info | P8 | Missing security.txt | CWE-1038 |
-| 13 | info | CT1 | 43 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 13 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | CT1 | 43 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -113,7 +118,37 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 13. [INFO] 43 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 13. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 14. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=9KrlZfA2rYO7_JUgB6G6PzmIzp5C0aMcAgiODVFOXL4; adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e0; apple-domain-verification=pSxAase3tgjHfXBE
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of abc.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 17. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 20 disallow path(s), e.g. /rss/, /xml/, /json/, /headerxml/, /service/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 18. [INFO] 43 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.abc.com, api.partners.abc.com, cdn.mktg.abc.com, cdn.video.abc.com, dev.cd.abc.com, dev.galaxy.abc.com, fcast.cdn.abc.com, fcast.qa.cdn.abc.com, help.abc.com, ll.media.abc.com
@@ -126,10 +161,10 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
   "domain": "abc.com",
   "dns": {
     "a": [
-      "3.169.121.28",
       "3.169.121.22",
+      "3.169.121.125",
       "3.169.121.54",
-      "3.169.121.125"
+      "3.169.121.28"
     ],
     "aaaa": [],
     "cname": null,
@@ -137,32 +172,32 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "abc-com.mail.protection.outlook.com (pref 5)"
     ],
     "ns": [
-      "ns-1869.awsdns-41.co.uk.",
       "ns-1368.awsdns-43.org.",
+      "ns-1869.awsdns-41.co.uk.",
       "ns-318.awsdns-39.com.",
       "ns-736.awsdns-28.net."
     ],
     "spf": [
-      "v=spf1 include:spf.disney.com -all",
-      "nintex.5f22e1f0a5ad340038cdb208",
       "42357818",
-      "intersight=e61370b3eacaf63c12b058d9c7b287aa1a9fdbc17d6958aaf1036e5c54f90502",
-      "ECZjYXSxe4CRnyGjS8E1nRw2keq1hV77Z66acQb6JhwQk14sk4ZGwLt61w4aZhtOdmqIJUj1fNCxo6721F0pfg==",
-      "docusign=53e074c1-b80d-41a1-be73-d444698c3a91",
       "docusign=12a35007-299f-4d83-bd45-4f1963b4e234",
-      "canva-site-verification=mQci1SnoC4Y-iJQpirTu6Q",
-      "cisco-ci-domain-verification=4b0af123fd61d9b672e3d23654d753d00150aec9b4c32ff0673f0f1b7801edab",
-      "smartsheet-site-validation=o821NYtWlw35E2By_1h2gMDN-nAgTRqB",
-      "atlassian-domain-verification=5lqJwtfJPMHqC/aGvT/7s2BR53IHCs9P6vFjCQYA5nkQ4mvoHKTqNTW7gucscGW7",
-      "adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e02bd5d0dc3916",
-      "jumpdesktop=12d076284350363e1df1806a94f0096dc18aed9d3a58a4e35376c09ce886",
-      "anthropic-domain-verification-dfbjfj=cItiODp4D19q3YKkyJLoZsKXZ",
-      "apple-domain-verification=pSxAase3tgjHfXBE",
-      "google-site-verification=RcEUU_s2q7QWyysoeXd4Y0W3IE3QSpeu2lh2OFGRiJA",
-      "Dynatrace-site-verification=f8c987df-9919-467d-80cf-05c74781a94e__j7ut0lc17ppaoqaqo4hm9dbq23",
-      "MS=ms24761496",
       "google-site-verification=9KrlZfA2rYO7_JUgB6G6PzmIzp5C0aMcAgiODVFOXL4",
-      "extensis-domain-verification=4dec3be6-1ab2-4cd3-b508-5a61c50ac453"
+      "adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e02bd5d0dc3916",
+      "apple-domain-verification=pSxAase3tgjHfXBE",
+      "canva-site-verification=mQci1SnoC4Y-iJQpirTu6Q",
+      "google-site-verification=RcEUU_s2q7QWyysoeXd4Y0W3IE3QSpeu2lh2OFGRiJA",
+      "nintex.5f22e1f0a5ad340038cdb208",
+      "ECZjYXSxe4CRnyGjS8E1nRw2keq1hV77Z66acQb6JhwQk14sk4ZGwLt61w4aZhtOdmqIJUj1fNCxo6721F0pfg==",
+      "anthropic-domain-verification-dfbjfj=cItiODp4D19q3YKkyJLoZsKXZ",
+      "cisco-ci-domain-verification=4b0af123fd61d9b672e3d23654d753d00150aec9b4c32ff0673f0f1b7801edab",
+      "Dynatrace-site-verification=f8c987df-9919-467d-80cf-05c74781a94e__j7ut0lc17ppaoqaqo4hm9dbq23",
+      "extensis-domain-verification=4dec3be6-1ab2-4cd3-b508-5a61c50ac453",
+      "intersight=e61370b3eacaf63c12b058d9c7b287aa1a9fdbc17d6958aaf1036e5c54f90502",
+      "docusign=53e074c1-b80d-41a1-be73-d444698c3a91",
+      "jumpdesktop=12d076284350363e1df1806a94f0096dc18aed9d3a58a4e35376c09ce886",
+      "atlassian-domain-verification=5lqJwtfJPMHqC/aGvT/7s2BR53IHCs9P6vFjCQYA5nkQ4mvoHKTqNTW7gucscGW7",
+      "MS=ms24761496",
+      "v=spf1 include:spf.disney.com -all",
+      "smartsheet-site-validation=o821NYtWlw35E2By_1h2gMDN-nAgTRqB"
     ],
     "dmarc": [
       "v=DMARC1;p=none;fo=1;rua=mailto:Corp.Dmarc_RUA@disney.com;ruf=mailto:Corp.Dmarc_RUF@disney.com"
@@ -219,7 +254,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "*.blackishtv.com",
       "ngtvfe.com"
     ],
-    "days_left": 193,
+    "days_left": 192,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -229,7 +264,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
     }
   },
   "ports": {
-    "ip": "3.169.121.28",
+    "ip": "3.169.121.22",
     "open": []
   },
   "https": {
@@ -320,8 +355,46 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "fcast.qa.cdn.abc.com"
     ]
   },
-  "elapsed_s": 126.5,
-  "rechecked": "2026-09-25 10:43 UTC"
+  "apex_txt": [
+    "google-site-verification=9KrlZfA2rYO7_JUgB6G6PzmIzp5C0aMcAgiODVFOXL4",
+    "adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e0",
+    "apple-domain-verification=pSxAase3tgjHfXBE",
+    "canva-site-verification=mQci1SnoC4Y-iJQpirTu6Q",
+    "google-site-verification=RcEUU_s2q7QWyysoeXd4Y0W3IE3QSpeu2lh2OFGRiJA"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/rss/",
+      "/xml/",
+      "/json/",
+      "/headerxml/",
+      "/service/",
+      "/util/",
+      "/vp2/",
+      "/embed/",
+      "/html/",
+      "/images/",
+      "/js/",
+      "/lib/",
+      "/media/",
+      "/site/",
+      "/contact-us-thanks"
+    ]
+  },
+  "elapsed_s": 13.1,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -330,4 +403,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

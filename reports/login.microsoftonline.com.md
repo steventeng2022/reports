@@ -7,12 +7,12 @@
 | Target | https://login.microsoftonline.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | login.microsoftonline.com |
-| Test date | 2026-09-25 09:57 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
+Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -23,6 +23,9 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
 | 5 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 6 | info | RED2 | Soft redirect (302/303) for HTTP to HTTPS | CWE-319 |
 | 7 | info | P8 | Missing security.txt | CWE-1038 |
+| 8 | low | DNS4 | Deep CNAME chain (>4 hops) | CWE-345 |
+| 9 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 10 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 
 ## Detailed findings
 
@@ -74,6 +77,24 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 8. [LOW] Deep CNAME chain (>4 hops) (`DNS4`)
+
+- **CWE:** CWE-345
+- **Detail:** CNAME chain depth 5 for login.microsoftonline.com.
+- **Recommendation:** Shorten the CNAME chain.
+
+### 9. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of login.microsoftonline.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 10. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but login.microsoftonline.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
 ## Evidence (raw response observations)
 
 ```json
@@ -81,24 +102,24 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
   "domain": "login.microsoftonline.com",
   "dns": {
     "a": [
-      "20.190.141.38",
-      "20.190.141.35",
-      "20.190.141.37",
       "20.190.141.33",
       "40.126.13.8",
       "40.126.13.9",
-      "20.190.141.36",
-      "20.190.141.32"
+      "20.190.141.39",
+      "20.190.141.32",
+      "20.190.141.38",
+      "20.190.141.37",
+      "20.190.141.35"
     ],
     "aaaa": [
-      "2603:1046:2000:148::2",
-      "2603:1047:1:150::2",
-      "2603:1047:1:150::1",
       "2603:1046:2000:148::5",
-      "2603:1046:2000:158::5",
-      "2603:1046:2000:158::3",
+      "2603:1047:1:150::3",
+      "2603:1047:1:150::1",
       "2603:1046:2000:148::3",
-      "2603:1046:2000:158::4"
+      "2603:1047:1:150::2",
+      "2603:1046:2000:158::4",
+      "2603:1046:2000:148::2",
+      "2603:1046:2000:158::3"
     ],
     "cname": "login.mso.msidentity.com.",
     "mx": [],
@@ -112,11 +133,12 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
     "chain": "trusted",
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
-    "subject": "countryName=US, stateOrProvinceName=WA, localityName=Redmond, organizationName=Microsoft Corporation, commonName=stamp2.login.microsoftonline.com",
-    "issuer": "countryName=US, organizationName=Microsoft Corporation, commonName=Microsoft TLS G2 RSA CA OCSP 04",
-    "notBefore": "Aug 13 01:37:12 2026 GMT",
-    "notAfter": "Nov 21 00:37:12 2026 GMT",
+    "subject": "countryName=US, stateOrProvinceName=Washington, localityName=Redmond, organizationName=Microsoft Corporation, commonName=stamp2.login.microsoftonline.com",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
+    "notBefore": "Aug 13 00:00:00 2026 GMT",
+    "notAfter": "Nov 21 23:59:59 2026 GMT",
     "san": [
+      "stamp2.login.microsoftonline.com",
       "login.microsoftonline-int.com",
       "login.microsoftonline-p.com",
       "login.microsoftonline.com",
@@ -124,8 +146,7 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
       "login2.microsoftonline.com",
       "loginex.microsoftonline-int.com",
       "loginex.microsoftonline.com",
-      "stamp2.login.microsoftonline-int.com",
-      "stamp2.login.microsoftonline.com"
+      "stamp2.login.microsoftonline-int.com"
     ],
     "days_left": 56,
     "protocols": {
@@ -137,7 +158,7 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
     }
   },
   "ports": {
-    "ip": "20.190.141.38",
+    "ip": "20.190.141.33",
     "open": []
   },
   "https": {
@@ -198,10 +219,29 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
     "/api/": 404
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 28.4,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "cname_chain": [
+    "login.mso.msidentity.com",
+    "ak.privatelink.msidentity.com",
+    "www.tm.a.prd.aadg.akadns.net",
+    "www.current.a.prd.aadg.akadns.net",
+    "osa-lb.current.a.prd.aadg.akadns.net"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.12",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 9.1,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -210,4 +250,5 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

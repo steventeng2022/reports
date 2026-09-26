@@ -7,242 +7,326 @@
 | Target | https://docker.com/ |
 | Bug bounty program | Docker |
 | Listed scope domain | docker.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-26 17:43 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 3 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 4 | info | H2c | HSTS not preloaded | CWE-319 |
-| 5 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 6 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 7 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 8 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H1 | Missing HSTS header | CWE-319 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing Content-Security-Policy (`H3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://docker.com/; no defense-in-depth against XSS/content injection.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for docker.com lists 1 name(s) besides the scope host: www.docker.com
-
-### 3. [INFO] HSTS without includeSubDomains (`H2b`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31622400` does not cover subdomains.
-
-### 4. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31622400` lacks the preload directive.
-
-### 5. [INFO] sitemap.xml discloses URL inventory (`M1`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://docker.com/ lists 15 URLs.
+- **Detail:** Detected: Server: Pantheon
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 6. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://docker.com/ -> https://www.docker.com/ (positive check).
-
-### 7. [INFO] robots.txt discloses crawl rules/paths (`R1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt on https://docker.com/ exposes 24 unique Disallow path(s) (/c/, /cdn-cgi/, /company/contact-thank-you/, /ja-jp/c/, /ja-jp/cdn-cgi/) and 2 sitemap reference(s)
-
-### 8. [INFO] security.txt exposed (public disclosure policy) (`S2`)
-
-- **CWE:** CWE-200
-- **Detail:** security.txt present on https://docker.com (199 bytes); contact: mailto:security@docker.com
-
-## Reproduction notes
-
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://docker.com/ final status: 200 (final URL https://www.docker.com/).
-- http://docker.com/ initial status: 301.
-- Certificate: Let's Encrypt YR1, valid until 2026-10-28T10:32:23+00:00.
-
-## Active agent cross-check (latest pre-merge `main` snapshot)
-
-The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before the latest passive re-audit was merged is preserved below for comparison and to avoid losing later verification work.
-
-<details>
-<summary>Expand active-scan snapshot — 8 findings: 0 high, 0 medium, 1 low, 7 info</summary>
-
-### Security Audit Report — docker.com
-
-#### Scope and authorization
-
-| Item | Value |
-|---|---|
-| Target | https://docker.com/ |
-| Bug bounty program | Docker |
-| Listed scope domain | docker.com |
-| Test date | 2026-09-25 09:51 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
-
-#### Summary
-
-Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
-
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 3 | info | H2b | HSTS without includeSubDomains | CWE-319 |
-| 4 | info | H2c | HSTS not preloaded | CWE-319 |
-| 5 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 6 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 7 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 8 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
-
-#### Detailed findings
-
-##### 1. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://docker.com/; no defense-in-depth against XSS/content injection.
-
-##### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for docker.com lists 1 name(s) besides the scope host: www.docker.com
-
-##### 3. [INFO] HSTS without includeSubDomains (`H2b`)
+### 3. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** `max-age=31622400` does not cover subdomains.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-##### 4. [INFO] HSTS not preloaded (`H2c`)
-
-- **CWE:** CWE-319
-- **Detail:** `max-age=31622400` lacks the preload directive.
-
-##### 5. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://docker.com/ lists 15 URLs.
-
-##### 6. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://docker.com/ -> https://www.docker.com/ (positive check).
-
-##### 7. [INFO] robots.txt discloses crawl rules/paths (`R1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt on https://docker.com/ exposes 24 unique Disallow path(s) (/c/, /cdn-cgi/, /company/contact-thank-you/, /ja-jp/c/, /ja-jp/cdn-cgi/) and 2 sitemap reference(s)
-
-##### 8. [INFO] security.txt exposed (public disclosure policy) (`S2`)
-
-- **CWE:** CWE-200
-- **Detail:** security.txt present on https://docker.com (199 bytes); contact: mailto:security@docker.com
-
-#### Reproduction notes
-
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://docker.com/ final status: 200 (final URL https://www.docker.com/).
-- http://docker.com/ initial status: 301.
-- Certificate: Let's Encrypt YR1, valid until 2026-10-28T10:32:23+00:00.
-
-#### Active agent cross-check (latest pre-merge `main` snapshot)
-
-The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before PR #1 was merged is preserved below for comparison and to avoid losing later verification work.
-
-<details>
-<summary>Expand active-scan snapshot — 9 findings: 0 high, 1 medium, 6 low, 2 info</summary>
-
-##### Security Audit Report — docker.com
-
-###### Scope and authorization
-
-| Item | Value |
-|---|---|
-| Target | https://docker.com/ |
-| Bug bounty program | Docker |
-| Listed scope domain | docker.com |
-| Test date | 2026-09-25 04:25 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
-
-###### Summary
-
-Total findings: **9** (High: 0, Medium: 1, Low: 6, Info: 2)
-
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | low | S1 | test.docker.com - live S3 (Docker install script) on retest | CWE-916 |
-| 3 | low | S1 | beta.docker.com - 301 to www.docker.com on retest | CWE-916 |
-| 4 | low | S1 | status.docker.com - 301 to dockerstatus.com on retest | CWE-916 |
-| 5 | low | S1 | docs.docker.com - live S3 (Docker Docs) on retest | CWE-916 |
-| 6 | low | H2 | Missing CSP header | CWE-1021 |
-| 7 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-| 8 | info | T2 | TLS certificate expiring within 34 days | CWE-295 |
-| 9 | info | H6 | Server technology disclosure | CWE-200 |
-
-###### Detailed findings
-
-##### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
-
-- **CWE:** CWE-538
-- **Detail:** robots.txt disallows /pricing/contact-sales/bss-cc-thankyou/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
-
-##### 2. [LOW] test.docker.com - live S3 (Docker install script) on retest (`S1`)
-
-- **CWE:** CWE-916
-- **Detail:** test.docker.com -> 54.192.248.27. RETEST 2026-09-25: 200 from AmazonS3 (via CloudFront) serving the Docker Engine for Linux install script (23KB shell script). LIVE managed content, not a dangling platform account. Downgraded medium -> low.
-
-##### 3. [LOW] beta.docker.com - 301 to www.docker.com on retest (`S1`)
-
-- **CWE:** CWE-916
-- **Detail:** beta.docker.com. RETEST 2026-09-25: 301 (AmazonS3 via CloudFront) -> https://www.docker.com/. Managed redirect, not dangling. Downgraded medium -> low.
-
-##### 4. [LOW] status.docker.com - 301 to dockerstatus.com on retest (`S1`)
-
-- **CWE:** CWE-916
-- **Detail:** status.docker.com. RETEST 2026-09-25: 301 (AmazonS3 via CloudFront) -> https://dockerstatus.com/ (their Statuspage). Managed redirect, not dangling. Downgraded medium -> low.
-
-##### 5. [LOW] docs.docker.com - live S3 (Docker Docs) on retest (`S1`)
-
-- **CWE:** CWE-916
-- **Detail:** docs.docker.com. RETEST 2026-09-25: 200 from AmazonS3 serving "Docker Docs" (187KB). LIVE managed content, not dangling. Downgraded medium -> low.
-
-##### 6. [LOW] Missing CSP header (`H2`)
+### 4. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on https://www.docker.com/
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-##### 7. [LOW] Host header alters response (vhost behavior) (`I12`)
+### 5. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: docker.com + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-##### 8. [INFO] TLS certificate expiring within 34 days (`T2`)
+### 6. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-295
-- **Detail:** Certificate for www.docker.com (CN=docker.com) valid_to Oct 28 10:32:23 2026 GMT.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-##### 9. [INFO] Server technology disclosure (`H6`)
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** Server header: nginx
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-###### Reproduction notes
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
-- Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-</details>
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-</details>
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 10. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: Pantheon
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 11. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=CFmV0geNs1hCxK0mBEpjWaDoNwBIiDxIRjTvt3YGRDM; jamf-site-verification=jqNgc5MzMp4UnSANweyyEQ; opine-verification=14d8ea53-d8ae-406f-93b0-76dc879d9b46
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of docker.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 24 disallow path(s), e.g. /wp-admin/, /pricing/contact-sales/bss-cc-thankyou/, /pricing/contact-sales/bss-thankyou/, /company/contact-thank-you/, /thank-you-subscribing-docker-weekly/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "docker.com",
+  "dns": {
+    "a": [
+      "23.185.0.4"
+    ],
+    "aaaa": [
+      "2620:12a:8001::4",
+      "2620:12a:8000::4"
+    ],
+    "cname": null,
+    "mx": [
+      "alt3.aspmx.l.google.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
+      "alt4.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)"
+    ],
+    "ns": [
+      "ns-1289.awsdns-33.org.",
+      "ns-1981.awsdns-55.co.uk.",
+      "ns-568.awsdns-07.net.",
+      "ns-207.awsdns-25.com."
+    ],
+    "spf": [
+      "google-site-verification=CFmV0geNs1hCxK0mBEpjWaDoNwBIiDxIRjTvt3YGRDM",
+      "jamf-site-verification=jqNgc5MzMp4UnSANweyyEQ",
+      "opine-verification=14d8ea53-d8ae-406f-93b0-76dc879d9b46",
+      "cursor-domain-verification-pkwbtp=KD6kIrkeudCadzeviiVJgEWnd",
+      "adobe-idp-site-verification=a8d1a71d0cba44c2521bcb451d9dc708ee20d93c7b5b04791f699d128bbe6ec2",
+      "detectify-verification=87a64c3bf3301354588d90672bd1b74e",
+      "zapier-domain-verification-challenge=c3e7ddaf-20bf-40ca-9374-1a917b16be06",
+      "google-site-verification=rCKOZlVmB_xuu9DiT-urSmmXAEUGn5RI8PxdyCW5LJg",
+      "docusign=aeb25cd4-f743-4efc-b6fb-b8bc5dd1d0e8",
+      "google-site-verification=Nyiwo5q4kkaD5V-sEiXsW74HXyVRtKVyxYFfZuFLG7M",
+      "MS=ms98031138",
+      "stripe-verification=804359af3a919b4a46343227e384abdf33e10ad5bb81ea9f1d17ed4e74486ab4",
+      "onetrust-domain-verification=fb12882ae6344670a7b91077bd57c0f1",
+      "MS=ms42223923",
+      "d0vcwvtyam",
+      "google-site-verification=GjEZ_3KyjpDbmRzGdMUtqMeuXdh7HCSc8uRsPGYL-I0",
+      "google-site-verification=4PyKLfy_lowkc_qcu-byUkmF1kxAUT7tfho7ZiP353s",
+      "openai-domain-verification=dv-tj9VEsgExQvdNl9SCOa2Awju",
+      "google-site-verification=i6hYWAXRYCtHNnyiQAYXiy_4StkAMJQiNCfH-3olY-I",
+      "google-site-verification=VbuWA5NflxQMko2x9BJFIPVYrbuxHQll4UP4gZ4Fm08",
+      "google-site-verification=5e33xBJIwW1XU49IqmIYtN7yi2Iq0GNnWwN4ujn4G_M",
+      "apple-domain-verification=S580UenDqcwy2I1X",
+      "sinch-domain-verification=d8a66194-44cf-49c3-96ab-74325ad6e7be",
+      "atlassian-domain-verification=I1f5bgOm9sPUEcK/2JTD6weNlWt+Wwsyo5dwvJe1fGjf9V+x3kyqxZRrl9z7ILEK",
+      "airtable-verification=7f122efe7db6b16848108e469042c39c",
+      "sonatype-domain-verification=OSSRH-62474",
+      "docker-verification=4b72827b-32c1-4fe6-a843-2256c0df8a31",
+      "v=spf1 include:_spf.google.com include:spf.tipalti.com include:_spf.salesforce.com include:mktomail.com include:mail.zendesk.com -all",
+      "anthropic-domain-verification-p1ks1q=BmUzJzzDzqNXVWLXmZVoEvTr3",
+      "miro-verification=116f0987438eb5a48c070e080a68e7d7b3087e5f",
+      "astro-domain-verification=cljrj1fgz00hm01lvtaq65gnn"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=quarantine; pct=100; rua=mailto:q1xwnepx@ag.dmarcian.com; ruf=mailto:q1xwnepx@fr.dmarcian.com;"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=docker.com",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YR1",
+    "notBefore": "Jul 30 10:32:24 2026 GMT",
+    "notAfter": "Oct 28 10:32:23 2026 GMT",
+    "san": [
+      "docker.com",
+      "www.docker.com"
+    ],
+    "days_left": 31,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "23.185.0.4",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: Pantheon"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.docker.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://www.docker.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "ct-pending"
+  },
+  "apex_txt": [
+    "google-site-verification=CFmV0geNs1hCxK0mBEpjWaDoNwBIiDxIRjTvt3YGRDM",
+    "jamf-site-verification=jqNgc5MzMp4UnSANweyyEQ",
+    "opine-verification=14d8ea53-d8ae-406f-93b0-76dc879d9b46",
+    "cursor-domain-verification-pkwbtp=KD6kIrkeudCadzeviiVJgEWnd",
+    "adobe-idp-site-verification=a8d1a71d0cba44c2521bcb451d9dc708ee20d93c7b5b04791f69"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/wp-admin/",
+      "/pricing/contact-sales/bss-cc-thankyou/",
+      "/pricing/contact-sales/bss-thankyou/",
+      "/company/contact-thank-you/",
+      "/thank-you-subscribing-docker-weekly/",
+      "/pricing/contact-sales2/",
+      "/cdn-cgi/",
+      "/static/",
+      "/c/",
+      "/p/",
+      "/products/telepresence-for-docker/thank-you/",
+      "/style-guide/",
+      "/search/",
+      "/ja-jp/wp-admin/",
+      "/ja-jp/pricing/contact-sales/bss-cc-thankyou/"
+    ]
+  },
+  "elapsed_s": 22.4,
+  "rechecked": "2026-09-26 17:38 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

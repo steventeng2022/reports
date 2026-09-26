@@ -7,12 +7,12 @@
 | Target | https://bluehost.com/ |
 | Bug bounty program | Bluehost |
 | Listed scope domain | bluehost.com |
-| Test date | 2026-09-25 08:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:40 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
+Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,7 +30,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 | 12 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 13 | info | H6 | Server technology disclosure | CWE-200 |
 | 14 | info | P8 | Missing security.txt | CWE-1038 |
-| 15 | info | CT1 | 74 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 15 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
+| 16 | info | MAIL10 | DMARC subdomain policy (sp=) set while apex policy is p=none | CWE-285 |
+| 17 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 18 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 19 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 20 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 21 | info | CT1 | 74 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -49,13 +55,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.146.48:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.41.208:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.146.48:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.41.208:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -127,7 +133,43 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 15. [INFO] 74 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 15. [LOW] SPF record has no explicit all mechanism (implicit +all) (`MAIL6`)
+
+- **CWE:** CWE-285
+- **Detail:** Without -all/~all/+all the SPF record implicitly authorizes all senders.
+- **Recommendation:** End the SPF record with -all or ~all.
+
+### 16. [INFO] DMARC subdomain policy (sp=) set while apex policy is p=none (`MAIL10`)
+
+- **CWE:** CWE-285
+- **Detail:** Subdomains are enforced while the apex domain is monitor-only.
+- **Recommendation:** Confirm the split policy is intended.
+
+### 17. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 18. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 19. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=-LZzunGOfIDaGqxvWFtIFoN8PuA8VvjkP81XZZzEcJQ; knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77; onetrust-domain-verification=945145d8f9504c238ba20ad58be4ca9d
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 20. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of bluehost.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 21. [INFO] 74 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: amusebouche.dev.cap.bluehost.com, app.bluehost.com, app.builder-svcs.bluehost.com, beta.bluehost.com, dev.cap.bluehost.com, dev.content.bluehost.com, dev.registration.bluehost.com, dev.sr.cap.bluehost.com, lw-qa.login.bluehost.com, mx.bluehost.com
@@ -140,8 +182,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
   "domain": "bluehost.com",
   "dns": {
     "a": [
-      "172.64.146.48",
-      "104.18.41.208"
+      "104.18.41.208",
+      "172.64.146.48"
     ],
     "aaaa": [],
     "cname": null,
@@ -153,20 +195,20 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "erin.ns.cloudflare.com."
     ],
     "spf": [
-      "v=spf1 ip4:209.17.115.0/24 ip4:64.69.218.0/24 include:spf2.bluehost.com include:_spf.qualtrics.com include:_spf.salesforce.com include:sparkpostmail.com include:spf.mailjet.com include:spf.protection.outlook.com include:_spf.myorderbox.com include:eig.spf",
-      ".a.cloudfilter.net include:spf.websitewelcome.com -all",
-      "knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77",
-      "google-site-verification=U4hJ1v_Tet3cc77Sr3dv-Ev6J4mfMB1Gt8RX125PkcM",
       "google-site-verification=-LZzunGOfIDaGqxvWFtIFoN8PuA8VvjkP81XZZzEcJQ",
-      "google-site-verification=66tEZdAQlA9BLDQd3QylvqYIhriJr5gGoA9cQbIOTp4",
-      "google-site-verification=Te366sWRx0P9u95lb_Rfj5YyalbHdb20J8t6ESOx1vc",
-      "google-site-verification=_6nbuoY72FRe_b9BN_gDw9Jkfcod1HYfWMzd9X4VwEg",
+      "knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77",
       "onetrust-domain-verification=945145d8f9504c238ba20ad58be4ca9d",
       "google-site-verification=Ps-PuyL1E7WcWPrX6y78aC4P2RfLoGvwpsl4-xwJPVw",
-      "google-site-verification=DRKzLI6tQYu_YO6K5pGg0wOuuLxVcDhWpThjGgHA-cE",
+      "google-site-verification=66tEZdAQlA9BLDQd3QylvqYIhriJr5gGoA9cQbIOTp4",
+      "v=spf1 ip4:209.17.115.0/24 ip4:64.69.218.0/24 include:spf2.bluehost.com include:_spf.qualtrics.com include:_spf.salesforce.com include:sparkpostmail.com include:spf.mailjet.com include:spf.protection.outlook.com include:_spf.myorderbox.com include:eig.spf",
+      ".a.cloudfilter.net include:spf.websitewelcome.com -all",
+      "google-site-verification=DzOfkbFR16zGttaTzbxkajZdHmTa66FrjVWwY5gThCE",
       "google-site-verification=pFgmIQ6qK3YjcRAAhsKiPzmEiOVcynQslFMEba5lXvs",
+      "google-site-verification=DRKzLI6tQYu_YO6K5pGg0wOuuLxVcDhWpThjGgHA-cE",
+      "google-site-verification=U4hJ1v_Tet3cc77Sr3dv-Ev6J4mfMB1Gt8RX125PkcM",
+      "google-site-verification=Te366sWRx0P9u95lb_Rfj5YyalbHdb20J8t6ESOx1vc",
       "MS=ms67698328",
-      "google-site-verification=DzOfkbFR16zGttaTzbxkajZdHmTa66FrjVWwY5gThCE"
+      "google-site-verification=_6nbuoY72FRe_b9BN_gDw9Jkfcod1HYfWMzd9X4VwEg"
     ],
     "dmarc": [
       "v=DMARC1; p=none; pct=100; rua=mailto:re+r0nph73obnf@dmarc.postmarkapp.com; sp=none; aspf=r;"
@@ -187,7 +229,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "*.auth.bluehost.com",
       "auth.bluehost.com"
     ],
-    "days_left": 87,
+    "days_left": 86,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -197,7 +239,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     }
   },
   "ports": {
-    "ip": "172.64.146.48",
+    "ip": "104.18.41.208",
     "open": [
       8080,
       8443
@@ -292,8 +334,27 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "builder-svcs.bluehost.com"
     ]
   },
-  "elapsed_s": 139.5,
-  "rechecked": "2026-09-25 13:59 UTC"
+  "apex_txt": [
+    "google-site-verification=-LZzunGOfIDaGqxvWFtIFoN8PuA8VvjkP81XZZzEcJQ",
+    "knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77",
+    "onetrust-domain-verification=945145d8f9504c238ba20ad58be4ca9d",
+    "google-site-verification=Ps-PuyL1E7WcWPrX6y78aC4P2RfLoGvwpsl4-xwJPVw",
+    "google-site-verification=66tEZdAQlA9BLDQd3QylvqYIhriJr5gGoA9cQbIOTp4"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 4.7,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -302,4 +363,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

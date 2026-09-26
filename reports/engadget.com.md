@@ -7,12 +7,12 @@
 | Target | https://engadget.com/ |
 | Bug bounty program | Yahoo! |
 | Listed scope domain | engadget.com |
-| Test date | 2026-09-25 09:30 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
+Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,10 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
@@ -105,6 +109,30 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=z8P2Zv9ueAtK5r0B2VTHvQhS1bUWkyU0ppiD2av3pUU; facebook-domain-verification=ji23xe0rk7xahs4smgxgv2b833jbr7
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of engadget.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -112,25 +140,25 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
   "domain": "engadget.com",
   "dns": {
     "a": [
-      "3.169.55.40",
-      "3.169.55.35",
+      "3.169.55.67",
       "3.169.55.83",
-      "3.169.55.67"
+      "3.169.55.35",
+      "3.169.55.40"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx3.googlemail.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx2.googlemail.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "aspmx2.googlemail.com (pref 10)"
+      "aspmx3.googlemail.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-1799.awsdns-32.co.uk.",
       "ns-305.awsdns-38.com.",
+      "ns-1449.awsdns-53.org.",
       "ns-598.awsdns-10.net.",
-      "ns-1449.awsdns-53.org."
+      "ns-1799.awsdns-32.co.uk."
     ],
     "spf": [
       "google-site-verification=z8P2Zv9ueAtK5r0B2VTHvQhS1bUWkyU0ppiD2av3pUU",
@@ -155,7 +183,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
       "engadget.com",
       "*.engadget.com"
     ],
-    "days_left": 47,
+    "days_left": 46,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -165,7 +193,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
     }
   },
   "ports": {
-    "ip": "3.169.55.40",
+    "ip": "3.169.55.67",
     "open": []
   },
   "https": {
@@ -215,10 +243,26 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
     "/api/": 403
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 107.5,
-  "rechecked": "2026-09-25 10:43 UTC"
+  "apex_txt": [
+    "google-site-verification=z8P2Zv9ueAtK5r0B2VTHvQhS1bUWkyU0ppiD2av3pUU",
+    "facebook-domain-verification=ji23xe0rk7xahs4smgxgv2b833jbr7"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 4.3,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -227,4 +271,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

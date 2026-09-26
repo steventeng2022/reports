@@ -7,12 +7,12 @@
 | Target | https://united.com/ |
 | Bug bounty program | United Airlines |
 | Listed scope domain | united.com |
-| Test date | 2026-09-25 10:25 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
+Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,10 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
@@ -105,6 +109,30 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: starlink-domain-verification=c05d3ac0-aef3-4c4a-a5a2-d2310fb2422b; vmware-cloud-verification-9cd123ef-b219-486d-a9a0-b315b5ba0da3; twilio-domain-verification=422291df00dd2d1e86b024d9d140c96f
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of united.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -117,71 +145,71 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxb-00212602.gslb.pphosted.com (pref 10)",
       "mxa-00212602.gslb.pphosted.com (pref 10)",
-      "67.231.152.135 (pref 6)",
-      "67.231.145.22 (pref 5)"
+      "mxb-00212602.gslb.pphosted.com (pref 10)",
+      "67.231.145.22 (pref 5)",
+      "67.231.152.135 (pref 6)"
     ],
     "ns": [
       "a10-65.akam.net.",
       "a11-66.akam.net.",
-      "a26-64.akam.net.",
-      "a18-67.akam.net.",
       "a1-66.akam.net.",
-      "a5-65.akam.net."
+      "a5-65.akam.net.",
+      "a18-67.akam.net.",
+      "a26-64.akam.net."
     ],
     "spf": [
       "qFCoTGARAo0YzsD8J4JXGTPJnoGyXVcN1UUT76knKhsb0VWg5k8Ltz0EKn5Wht7bsSdnw7/DP8N0lC4BPHOutQ==",
-      "vmware-cloud-verification-21e81564-6cf2-4948-92cd-7d169a06dbfd",
-      "cloudhealth=5dda028a-3bad-41ee-8197-a76d049e4648",
-      "e2ma-verification=l59eb",
       "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
-      "sending_domain473072=2536efd81f433897e4eade7bd5c07c9f572003ea06fcdee11f2872c01a4befbf",
-      "e2ma-verification=to1eb",
-      "miro-verification=c4f22d27f3df65dc4bcc76cdacabb97da8a5765e",
-      "cisco-ci-domain-verification=150e1a1fbae294ccdb82094631861d593dd76e186d81076c716c15de04b1b04e",
-      "twilio-domain-verification=422291df00dd2d1e86b024d9d140c96f",
-      "cisco-ci-domain-verification=2348f9b423234f5b6cb296d8e0b21a433c9708dbd7885f35a347b7f361eef8e6",
-      "webexdomainverification.=c3b585c2-1a13-47c5-abc9-49cebb862ae3",
-      "e2ma-verification=vozeb",
-      "zoho-verification=zb79381715.zmverify.zoho.in",
-      "e2ma-verification=so1eb",
-      "webexdomainverification.NMB6=5e3a4841-bed2-49e3-995e-7e6577637d4a",
-      "duo_sso_verification=DhdWOQSIwy1C7mfnQgxNMBEtJM5SbFCu5mbQ8jKQCh4LGxf6CmNJlx1NUMEFrro1",
-      "anthropic-domain-verification-9jtz5g=oedRjF26denAvMXx0Ubb50D74",
-      "pardot895221=0283c9002444941b4251d2fc11749bba12b56a77f8f1fcafcae8f8ea396db336",
-      "pardot895221=e613bb2bd7a53de50e4c0f525dca606bba246e4d5fc9514a220acf78f6b40cd2",
-      "google-gws-recovery-domain-verification=47260811",
-      "insomnia-validation=7975158d8fce4d6c9e6889f06d4894d5c0e9e9e6e7985e37865960ac45e99c60",
-      "pardot895221=fa7d573afba39e23c5d310777b3e4b8e3059fc036c5f8a141061e48acb644c2e",
       "starlink-domain-verification=c05d3ac0-aef3-4c4a-a5a2-d2310fb2422b",
-      "atlassian-domain-verification=LS4NFLIjbXxDhEDh1uRXHFIsGV0c7/eMwPLjJasBzHbldYDoiaVCRUUJ19njM5b/",
-      "adobe-idp-site-verification=4b5fa402a6cdc780157d690e7860970f4447772807197ddf38cbc78d7b3666d6",
-      "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
-      "docker-verification=eac5f372-ff38-49a3-a449-013649023462",
-      "cisco-ci-domain-verification=7b72a7a0f463b7ae34bd19b2b4e7c9e32a23184af97a606601ab4470cbb94b67",
+      "_pu9ae99ovdbyxleilm1jlqdhzbmmcv5",
       "TSqI+8N8XlipHXL0ef29pOHU8OuiMLGRBHCe/Bj9pnVXi4+pFDDuyU7cAs0mRED85RC60Vk/RQk/UE+o+Qe3dw==",
-      "3hdk90qzhvh0l7yvw0wg014c6m2xxz9d",
-      "rebelmouse=0296577248d0df8680XXXXb4f5b2663e106f6c40",
-      "_7d3owcum7npdansxr9rm5adumrqels5",
-      "mandrill_verify.o-YnntrhVJmYGforpN1_eg",
-      "pardot895221=5106e47e334be87ed949b11dd8839ee745c0b5f2d9c49d4d7268519ee605ad84",
-      "smartsheet-site-validation=a-QJqDk8-xugCQsJJ59BloRXsQ78NHEu",
-      "_f4a7xelp84p4m660f9cr1t61ryb6n3f",
+      "docusign=a852ec83-5d46-4c48-9ae4-35ac3ae4b32c",
+      "ciUNjcPdDUwJlNwxs7hQOL+JdXldzfLl1U0+1NLC4U/KcgyYha7rJDX0z8ECmAXiC7WfSIWGNLcakbS5aicncg==",
       "vmware-cloud-verification-9cd123ef-b219-486d-a9a0-b315b5ba0da3",
+      "mandrill_verify.o-YnntrhVJmYGforpN1_eg",
+      "twilio-domain-verification=422291df00dd2d1e86b024d9d140c96f",
+      "ibmid=775b7bb2-5029-4241-8adb-c97959b13265",
+      "docusign=83f7c0a0-80c9-41e2-9dbb-101c34f5fd08",
       "google-site-verification=o8Ds49E6OUh_KlAGHKP5Cp1n2VFnRCOn0Po9XIYNuVw",
+      "rebelmouse=0296577248d0df8680XXXXb4f5b2663e106f6c40",
+      "insomnia-validation=7975158d8fce4d6c9e6889f06d4894d5c0e9e9e6e7985e37865960ac45e99c60",
+      "cloudhealth=5dda028a-3bad-41ee-8197-a76d049e4648",
       "EjEnj26GQ6Rch4cK-0_3Bg",
       "e2ma-verification=wozeb",
-      "_pu9ae99ovdbyxleilm1jlqdhzbmmcv5",
-      "docusign=83f7c0a0-80c9-41e2-9dbb-101c34f5fd08",
-      "apple-domain-verification=JX4d4nEINvrmcrFB",
-      "hpe-greenlake-domain-verification=4a774d567170674c43373938696b56704239656c347a533862435a66356b4455",
-      "ciUNjcPdDUwJlNwxs7hQOL+JdXldzfLl1U0+1NLC4U/KcgyYha7rJDX0z8ECmAXiC7WfSIWGNLcakbS5aicncg==",
+      "smartsheet-site-validation=a-QJqDk8-xugCQsJJ59BloRXsQ78NHEu",
+      "zoho-verification=zb79381715.zmverify.zoho.in",
+      "pardot895221=5106e47e334be87ed949b11dd8839ee745c0b5f2d9c49d4d7268519ee605ad84",
+      "cisco-ci-domain-verification=150e1a1fbae294ccdb82094631861d593dd76e186d81076c716c15de04b1b04e",
+      "docker-verification=eac5f372-ff38-49a3-a449-013649023462",
+      "e2ma-verification=vozeb",
+      "e2ma-verification=so1eb",
+      "adobe-idp-site-verification=4b5fa402a6cdc780157d690e7860970f4447772807197ddf38cbc78d7b3666d6",
       "MS=ms48035785",
-      "ibmid=775b7bb2-5029-4241-8adb-c97959b13265",
-      "Dynatrace-site-verification=5aa9bae5-aed4-4063-8545-7f63572d80ff__3j2g8rj4tmvasq9qhrv51ichkd",
+      "3hdk90qzhvh0l7yvw0wg014c6m2xxz9d",
+      "pardot895221=fa7d573afba39e23c5d310777b3e4b8e3059fc036c5f8a141061e48acb644c2e",
       "sitecore-domain-verification=544b04b1172546a8ad8a86742156828e",
-      "docusign=a852ec83-5d46-4c48-9ae4-35ac3ae4b32c"
+      "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
+      "hpe-greenlake-domain-verification=4a774d567170674c43373938696b56704239656c347a533862435a66356b4455",
+      "e2ma-verification=to1eb",
+      "Dynatrace-site-verification=5aa9bae5-aed4-4063-8545-7f63572d80ff__3j2g8rj4tmvasq9qhrv51ichkd",
+      "cisco-ci-domain-verification=7b72a7a0f463b7ae34bd19b2b4e7c9e32a23184af97a606601ab4470cbb94b67",
+      "pardot895221=0283c9002444941b4251d2fc11749bba12b56a77f8f1fcafcae8f8ea396db336",
+      "e2ma-verification=l59eb",
+      "pardot895221=e613bb2bd7a53de50e4c0f525dca606bba246e4d5fc9514a220acf78f6b40cd2",
+      "duo_sso_verification=DhdWOQSIwy1C7mfnQgxNMBEtJM5SbFCu5mbQ8jKQCh4LGxf6CmNJlx1NUMEFrro1",
+      "sending_domain473072=2536efd81f433897e4eade7bd5c07c9f572003ea06fcdee11f2872c01a4befbf",
+      "atlassian-domain-verification=LS4NFLIjbXxDhEDh1uRXHFIsGV0c7/eMwPLjJasBzHbldYDoiaVCRUUJ19njM5b/",
+      "anthropic-domain-verification-9jtz5g=oedRjF26denAvMXx0Ubb50D74",
+      "webexdomainverification.=c3b585c2-1a13-47c5-abc9-49cebb862ae3",
+      "apple-domain-verification=JX4d4nEINvrmcrFB",
+      "webexdomainverification.NMB6=5e3a4841-bed2-49e3-995e-7e6577637d4a",
+      "_7d3owcum7npdansxr9rm5adumrqels5",
+      "google-gws-recovery-domain-verification=47260811",
+      "miro-verification=c4f22d27f3df65dc4bcc76cdacabb97da8a5765e",
+      "cisco-ci-domain-verification=2348f9b423234f5b6cb296d8e0b21a433c9708dbd7885f35a347b7f361eef8e6",
+      "vmware-cloud-verification-21e81564-6cf2-4948-92cd-7d169a06dbfd",
+      "_f4a7xelp84p4m660f9cr1t61ryb6n3f"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; pct=100; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com;"
@@ -220,7 +248,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
       "www.unitedairlines.jp",
       "www.unitedwifi.com"
     ],
-    "days_left": 74,
+    "days_left": 73,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -280,10 +308,32 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
     "/api/": 302
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 42.6,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "starlink-domain-verification=c05d3ac0-aef3-4c4a-a5a2-d2310fb2422b",
+    "vmware-cloud-verification-9cd123ef-b219-486d-a9a0-b315b5ba0da3",
+    "twilio-domain-verification=422291df00dd2d1e86b024d9d140c96f",
+    "google-site-verification=o8Ds49E6OUh_KlAGHKP5Cp1n2VFnRCOn0Po9XIYNuVw",
+    "e2ma-verification=wozeb"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true
+  },
+  "elapsed_s": 7.4,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -292,4 +342,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

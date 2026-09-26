@@ -7,109 +7,334 @@
 | Target | https://chicagotribune.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | chicagotribune.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-26 17:41 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 3 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 4 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 7 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 8 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 9 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 10 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H1 | Missing HSTS header | CWE-319 |
+| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 5 | low | H4 | No clickjacking protection | CWE-1023 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 9 | info | H6 | Server technology disclosure | CWE-200 |
+| 10 | info | P11 | WordPress login page exposed | CWE-200 |
+| 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | low | MAIL7 | SPF include: points to unresolvable domain(s) | CWE-285 |
+| 13 | low | MAIL9 | DMARC enforces (p=reject) but has no reporting address (rua) | CWE-285 |
+| 14 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
+
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
+
+### 2. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: nginx
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 3. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header on https://chicagotribune.com/. Clients may connect over plain HTTP on first visit.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 2. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
+### 4. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://chicagotribune.com/; browsers may MIME-sniff responses.
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 3. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 5. [LOW] No clickjacking protection (`H4`)
 
-- **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://chicagotribune.com/; page may be rendered in a foreign frame.
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for chicagotribune.com lists 1 name(s) besides the scope host: www.chicagotribune.com
-
-### 5. [INFO] Missing Referrer-Policy (`H5`)
-
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://chicagotribune.com/; full URL (incl. query strings) is sent as referrer by default.
-
-### 6. [INFO] Missing Permissions-Policy (`H7`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://chicagotribune.com/; browser features (camera, mic, geolocation) unrestricted.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 7. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://chicagotribune.com/ lists 3050 URLs.
-
-### 8. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://chicagotribune.com/ -> https://chicagotribune.com/ (positive check).
-
-### 9. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://chicagotribune.com/ exposes 10 unique Disallow path(s) (/, /cgi-bin/, /comments/, /trackback/, /wp-admin/) and 1 sitemap reference(s)
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 10. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on chicagotribune.com.
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-## Reproduction notes
+### 9. [INFO] Server technology disclosure (`H6`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://chicagotribune.com/ final status: 200 (final URL https://www.chicagotribune.com/).
-- http://chicagotribune.com/ initial status: 301.
-- Certificate: Let's Encrypt YE1, valid until 2026-12-03T00:38:49+00:00.
+- **CWE:** CWE-200
+- **Detail:** Header reveals: nginx
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
 
-## Passive re-audit cross-check (agent-passive, 2026-09-25)
+### 10. [INFO] WordPress login page exposed (`P11`)
 
-Aggressive-method finding retained from chat log: **agent-random phase 20/22 (2026-09-25): HIGH subdomain takeover - app.chicagotribune.com CNAME -> tribune.ed4.net NXDOMAIN (DoH status 3); plus MEDIUM GraphQL introspection enabled (full type list, no auth). Re-verified via DoH.**
+- **CWE:** CWE-200
+- **Detail:** /wp-login.php returns 200.
+- **Recommendation:** Restrict or rate-limit the WordPress login endpoint.
 
-This passive re-audit pass (no injection, no subdomain sweep) does not itself confirm the takeover; the CNAME/NXDOMAIN evidence above comes from the active agent's re-verification. Kept as HIGH pending owner decision on merge policy.
+### 11. [INFO] Missing security.txt (`P8`)
 
-## Active agent cross-check (latest aggressive scan on main, wave 5 - chicagotribune.com)
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-Total findings: **15** - latest aggressive-method scan by agent-aggressive (main branch). Full detailed findings remain in the main-branch version of this file; passive re-audit above is the non-injection view.
+### 12. [LOW] SPF include: points to unresolvable domain(s) (`MAIL7`)
 
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | high | B9 | Subdomain takeover candidate (CNAME to unresolvable target) | CWE-1596 |
-| 2 | medium | A3 | GraphQL introspection enabled | CWE-200 |
-| 3 | low | H1 | Missing HSTS header | CWE-319 |
-| 4 | low | H1 | Missing HSTS header | CWE-319 |
-| 5 | low | H2 | Missing CSP header | CWE-1021 |
-| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 7 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 8 | low | H4 | No clickjacking protection | CWE-1023 |
-| 9 | low | H4 | No clickjacking protection | CWE-1023 |
-| 10 | info | A10b | Sitemap enumerates URLs | CWE-200 |
-| 11 | info | A4i | Sensitive paths exist (protected or app shells) | CWE-538 |
-| 12 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 13 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 14 | info | H6 | Server technology disclosure | CWE-200 |
-| 15 | info | H6 | Server technology disclosure | CWE-200 |
+- **CWE:** CWE-285
+- **Detail:** Broken include(s): de. (no A/TXT record).
+- **Recommendation:** Fix or remove the broken include directives.
+
+### 13. [LOW] DMARC enforces (p=reject) but has no reporting address (rua) (`MAIL9`)
+
+- **CWE:** CWE-285
+- **Detail:** Without a rua= reporting address the policy cannot be tuned; mis-sends may be silently quarantined.
+- **Recommendation:** Add a rua= reporting mailbox to the DMARC record.
+
+### 14. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 15. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: knowbe4-site-verification=90309b4eacebd82470e924deb428c541; google-site-verification=WZ1oTeEoyp2ivPsaJjoK2C9YLNIFyuuI3WpcG387MIM; google-site-verification=tCFWENjSprayvXVGaRbGtnlL1DMiF3qL6KwnvJTUdDE
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of chicagotribune.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 70 disallow path(s), e.g. /wp-admin/, /cgi-bin/, /wp-includes/, /xmlrpc.php, /wp-content/plugins/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "chicagotribune.com",
+  "dns": {
+    "a": [
+      "192.0.66.226"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)"
+    ],
+    "ns": [
+      "ns-670.awsdns-19.net.",
+      "ns-1929.awsdns-49.co.uk.",
+      "ns-318.awsdns-39.com.",
+      "ns-1494.awsdns-58.org."
+    ],
+    "spf": [
+      "jrrp75hmjgof937m48dfr168tf",
+      "hucq9oebjdhnpo231ru64sqlu4",
+      "qhsioljhf61egi221dmpq75l97",
+      "4qa0gtiqqj7c3qb8ign7j5veae",
+      "knowbe4-site-verification=90309b4eacebd82470e924deb428c541",
+      "google-site-verification=WZ1oTeEoyp2ivPsaJjoK2C9YLNIFyuuI3WpcG387MIM",
+      "1d9ebbcd0e404243947cfbbcd8f50291",
+      "google-site-verification=tCFWENjSprayvXVGaRbGtnlL1DMiF3qL6KwnvJTUdDE",
+      "MS=ms20138954",
+      "google-site-verification=KgZD5A9gpsayiGlRAoeE7bgSRBjgujWL4U-Kz_4YS-M",
+      "google-site-verification=7DJm-cs-QXsih9c8YkgDHUv-fEdopAZ-xU8Z2M3oDnc",
+      "_globalsign-domain-verification=eRi2ZQZJ99fAou8jrSC06eUJpasrvj8YgWl21vaW5G",
+      "q8qte811etl3vh7t2kjtj5hvef",
+      "google-site-verification=R1gNl6zO56wI3fvU3rTP5_TVgm9XQX30rXJa2XJzp6I",
+      "bntlt7a869guderdu33t64dms5",
+      "iehg8ub4pkj0fr1muk30236f2h",
+      "google-site-verification=IIMYhaHdVMjr0knA13JlUko59o7aG_WfsRumyBjbOx8",
+      "v=spf1 include:_spf.google.com include:spf.protection.outlook.com include:de._spf.fagms.net include:sendgrid.net ip4:198.21.3.53 ip4:159.183.220.8 exists:%{i}.spf.sitel.iphmx.com ip4:52.6.112.187 include:navigacloud.com -all",
+      "google-site-verification=W2rzDizmU_fC811E9mwZ2NCwDCPmzcG1LR8chZdf5Rs",
+      "google-site-verification=fXz0UUCS6jEN-J8qKswb90LlksOYFKoXQw8fHoUwjsE",
+      "google-site-verification=7YyRyZ2VOIw6bJi4MEx8_EsHZbGoghhN5nfHVivraY4",
+      "bw=uBsTlw0gfXBTobeK+x5MDbbYw7z/+6e8St20HrxOzAUC",
+      "t26qk4mlm75j2yzsjlcj89w3tr8qml1t",
+      "7e2evqs0fhns3181r2qr7a85h7",
+      "dc5c2772ba0747a1b324e08489986f72",
+      "tollbit-domain-verification=fa0b71753f77d48596d9c864ee65b7243d54641a266abed5cbff240c5388e88f",
+      "8fhvtdhi65bc45gilg1icj1b8f",
+      "fuh70icl95j9uk98vh9in27a1v",
+      "facebook-domain-verification=ie1u288563hms698676bmsocuqkst5",
+      "globalsign-domain-verification=KaParXxs1OHDy7o8CMbPpHBN-2m_mzwdPqKMMQ66a6",
+      "00D6A000000u2db=1TBRP00000001P7"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; pct=100"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=chicagotribune.com",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YE1",
+    "notBefore": "Sep  4 00:38:50 2026 GMT",
+    "notAfter": "Dec  3 00:38:49 2026 GMT",
+    "san": [
+      "chicagotribune.com",
+      "www.chicagotribune.com"
+    ],
+    "days_left": 67,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "192.0.66.226",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: nginx"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.chicagotribune.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://chicagotribune.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 200,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 403,
+    "/.git/config": 403,
+    "/.env": 403,
+    "/.htaccess": 403,
+    "/wp-login.php": 200,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "ct-pending"
+  },
+  "apex_txt": [
+    "knowbe4-site-verification=90309b4eacebd82470e924deb428c541",
+    "google-site-verification=WZ1oTeEoyp2ivPsaJjoK2C9YLNIFyuuI3WpcG387MIM",
+    "google-site-verification=tCFWENjSprayvXVGaRbGtnlL1DMiF3qL6KwnvJTUdDE",
+    "google-site-verification=KgZD5A9gpsayiGlRAoeE7bgSRBjgujWL4U-Kz_4YS-M",
+    "google-site-verification=7DJm-cs-QXsih9c8YkgDHUv-fEdopAZ-xU8Z2M3oDnc"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.3",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/wp-admin/",
+      "/cgi-bin/",
+      "/wp-includes/",
+      "/xmlrpc.php",
+      "/wp-content/plugins/",
+      "/wp-content/cache/",
+      "/trackback/",
+      "/comments/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/"
+    ]
+  },
+  "elapsed_s": 27.7,
+  "rechecked": "2026-09-26 17:38 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://economist.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | economist.com |
-| Test date | 2026-09-25 09:28 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 | 12 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 13 | info | H6 | Server technology disclosure | CWE-200 |
 | 14 | info | P8 | Missing security.txt | CWE-1038 |
+| 15 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 16 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -126,6 +131,36 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 15. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 16. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: miro-verification=f342c1be96026976f75e811e572741cd2b7dc4cf; tollbit-domain-verification=a4ca26ee57be1d61750a8376fd838114dfc91be8c429fdf9c095; globalsign-domain-verification=YHnWXL-7NA_q79ZvMwQDblw1lRYrh6nXXIoWOab5Fd
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of economist.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 19. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 32 disallow path(s), e.g. /, /, /, /, /
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -139,64 +174,64 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
       "alt1.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt4.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
+      "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
       "dns4.p02.nsone.net.",
-      "dns2.p02.nsone.net.",
+      "dns1.p02.nsone.net.",
       "dns3.p02.nsone.net.",
-      "dns1.p02.nsone.net."
+      "dns2.p02.nsone.net."
     ],
     "spf": [
-      "google-site-verification=Qb5YYUgxi34zMjL_BuQQ_Najf2Rw51HKl3CRIL43Pcc",
-      "qb506uja0p70oalro6ufvvqgt8",
-      "1password-site-verification=LMMTFIQ3UNB4PHRN4PIDK3XRYY",
-      "docker-verification=b3049f71-60ff-4ab5-8e4b-af12071ad9ef",
-      "zoho-verification=zb52015705.zmverify.zoho.e",
-      "google-site-verification=QbYbPDNp9mefRCIxiwdP-pwbPHZdRB2ULKa5W-8WJlw",
-      "new-relic-domain-verification=6ed4883fe01f4350a7c2d6e4b70440ac",
-      "stripe-verification=89A5BEC017BC1A0474BEB086C5CD9ED1C5064FEC53663120E30568AD843E5350",
-      "cloudhealth=056432f7-cc47-40f2-a7ff-f94e38ab420e",
-      "lucidlink-verification=87PF6BE3MBWNVC1A1HSPVEYFBM",
-      "google-site-verification=6JINqi8eBX4Cq2IQuMDqx-zcEVrqIGsUwn67akjL_NQ",
-      "ca3-b658fbd113a84fc7a2457785e2a028cb",
-      "ca3-397b89c6332644339a66e5474039efb1",
-      "v=spf2.0/pra a mx include:spf.rimanggis.com ~all",
-      "openai-domain-verification=dv-ihHQTdhnTvKLha6AwMHkRkXz",
-      "google-site-verification=w_R93wx06QyNfts4iAvHnfcVpRQkm-WpiBg_xs26kxk",
-      "OPE0071241",
-      "atlassian-domain-verification=ijxvw3ZV5ymQqnxv80sk3KF8m68Y5zejPUmA24aR3X1gDYFZLr1KJnthnreXeb3O",
-      "4971555iboa4dcf2se7ndmucc",
-      "ca3-3bc5fae524474e949511aadca9ffb68d",
-      "duo_sso_verification=M08QexH6Mc7fVPS7jsm3WEdvzoVJZz18LlXKjgCyGE39wQQXycZ0H1VKzu34KD3T",
-      "UK-federation-domain-verification=d262373b2f27d3cad1db8a568d706c79",
-      "adobe-idp-site-verification=fe3563308082627876b00fed079b9b07fa742f53e1dbad27a04d4066c84e4e52",
-      "MS=24621E8BD1E72EEF43C436A16E7DA57F77130691",
-      "google-site-verification=SjXraZgTJjBr9KW8fGa51r5znTl_bHN0l_l-HryKg0c",
-      "v=spf1 include:_spf.google.com include:amazonses.com include:_spf.salesforce.com include:servers.mcsv.net include:spfa.cpmails.com include:spf1.economist.com ~all",
-      "google-site-verification=J-5vS04lUpwFu33fb1lVeIiM0fhsBtzi5O-C3lhtPfU",
+      "miro-verification=f342c1be96026976f75e811e572741cd2b7dc4cf",
+      "tollbit-domain-verification=a4ca26ee57be1d61750a8376fd838114dfc91be8c429fdf9c09590cba54b046a",
       "globalsign-domain-verification=YHnWXL-7NA_q79ZvMwQDblw1lRYrh6nXXIoWOab5Fd",
       "1c1f838c-c20e-4116-b628-2fd519dfc4f3",
-      "_globalsign-domain-verification=_MvaGBHROp0lO8jfRBlUhVvNlSY3UqwMW2MKrFQD0j",
-      "_998iskp70idb7xlds6nagvu9g13yf8d",
-      "google-site-verification=-IZ_bGbCMjxT7R9muUSQC8U2CmTbX4Jl-xXf5kkqzeA",
-      "ff9e2be8158dcbdc8f4cc0ff3a7aac77005532d6f7817d8798",
-      "docusign=b54578ae-aff9-4dea-834d-db831e2aa957",
-      "tollbit-domain-verification=a4ca26ee57be1d61750a8376fd838114dfc91be8c429fdf9c09590cba54b046a",
+      "docker-verification=b3049f71-60ff-4ab5-8e4b-af12071ad9ef",
+      "_globalsign-domain-verification=h7hNxzyjxWcMmQGgdPl1sYiG5V-Bjrl_CsJqpKbIU4",
+      "4971555iboa4dcf2se7ndmucc",
+      "google-site-verification=Qb5YYUgxi34zMjL_BuQQ_Najf2Rw51HKl3CRIL43Pcc",
+      "new-relic-domain-verification=6ed4883fe01f4350a7c2d6e4b70440ac",
+      "UK-federation-domain-verification=d262373b2f27d3cad1db8a568d706c79",
+      "google-site-verification=6JINqi8eBX4Cq2IQuMDqx-zcEVrqIGsUwn67akjL_NQ",
+      "google-site-verification=SjXraZgTJjBr9KW8fGa51r5znTl_bHN0l_l-HryKg0c",
       "cursor-domain-verification-62734j=SxJ3sl8QlA292FmfZ1F5ITe71",
-      "facebook-domain-verification=2i21rtf1fbvf27qxahaf05x68twhjy",
-      "google-site-verification=dzY0WjX5aDMkfAz45NIzTiq4STvJFQVLKardBINrGdU",
+      "qb506uja0p70oalro6ufvvqgt8",
+      "google-site-verification=QbYbPDNp9mefRCIxiwdP-pwbPHZdRB2ULKa5W-8WJlw",
+      "atlassian-domain-verification=ijxvw3ZV5ymQqnxv80sk3KF8m68Y5zejPUmA24aR3X1gDYFZLr1KJnthnreXeb3O",
+      "openai-domain-verification=dv-ihHQTdhnTvKLha6AwMHkRkXz",
+      "duo_sso_verification=M08QexH6Mc7fVPS7jsm3WEdvzoVJZz18LlXKjgCyGE39wQQXycZ0H1VKzu34KD3T",
+      "ca3-397b89c6332644339a66e5474039efb1",
+      "stripe-verification=89A5BEC017BC1A0474BEB086C5CD9ED1C5064FEC53663120E30568AD843E5350",
+      "cloudhealth=056432f7-cc47-40f2-a7ff-f94e38ab420e",
+      "zoho-verification=zb52015705.zmverify.zoho.e",
+      "lucidlink-verification=87PF6BE3MBWNVC1A1HSPVEYFBM",
+      "1password-site-verification=LMMTFIQ3UNB4PHRN4PIDK3XRYY",
+      "OPE0071241",
+      "google-site-verification=w_R93wx06QyNfts4iAvHnfcVpRQkm-WpiBg_xs26kxk",
       "datadome-domain-verify=tjdVhvbvz12jNxbmlOOatTgehZm77CeH",
       "21inh0ishkm6dc2p9vk3qlam0l",
-      "google-site-verification=umYQJmRxpXTIiMNaF4IsR6apNajC4YwAQ0098xDaU3k",
+      "adobe-idp-site-verification=fe3563308082627876b00fed079b9b07fa742f53e1dbad27a04d4066c84e4e52",
+      "google-site-verification=J-5vS04lUpwFu33fb1lVeIiM0fhsBtzi5O-C3lhtPfU",
+      "ff9e2be8158dcbdc8f4cc0ff3a7aac77005532d6f7817d8798",
+      "_globalsign-domain-verification=_MvaGBHROp0lO8jfRBlUhVvNlSY3UqwMW2MKrFQD0j",
+      "ca3-3bc5fae524474e949511aadca9ffb68d",
+      "docusign=b54578ae-aff9-4dea-834d-db831e2aa957",
       "lucidlink-verification=DF38QZV72ECT76YYFSM1MZQZR8",
-      "miro-verification=f342c1be96026976f75e811e572741cd2b7dc4cf",
-      "_globalsign-domain-verification=h7hNxzyjxWcMmQGgdPl1sYiG5V-Bjrl_CsJqpKbIU4",
-      "anthropic-domain-verification-zzt4eb=hxHesCzVCR69nkH6qtjvnMN87"
+      "v=spf2.0/pra a mx include:spf.rimanggis.com ~all",
+      "google-site-verification=umYQJmRxpXTIiMNaF4IsR6apNajC4YwAQ0098xDaU3k",
+      "anthropic-domain-verification-zzt4eb=hxHesCzVCR69nkH6qtjvnMN87",
+      "facebook-domain-verification=2i21rtf1fbvf27qxahaf05x68twhjy",
+      "_998iskp70idb7xlds6nagvu9g13yf8d",
+      "v=spf1 include:_spf.google.com include:amazonses.com include:_spf.salesforce.com include:servers.mcsv.net include:spfa.cpmails.com include:spf1.economist.com ~all",
+      "google-site-verification=-IZ_bGbCMjxT7R9muUSQC8U2CmTbX4Jl-xXf5kkqzeA",
+      "ca3-b658fbd113a84fc7a2457785e2a028cb",
+      "google-site-verification=dzY0WjX5aDMkfAz45NIzTiq4STvJFQVLKardBINrGdU",
+      "MS=24621E8BD1E72EEF43C436A16E7DA57F77130691"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=quarantine; pct=100; rua=mailto:rua-import-31438@sendforensics.com"
@@ -216,7 +251,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "economist.com",
       "*.economist.com"
     ],
-    "days_left": 46,
+    "days_left": 45,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -288,10 +323,48 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 68.5,
-  "rechecked": "2026-09-25 10:43 UTC"
+  "apex_txt": [
+    "miro-verification=f342c1be96026976f75e811e572741cd2b7dc4cf",
+    "tollbit-domain-verification=a4ca26ee57be1d61750a8376fd838114dfc91be8c429fdf9c095",
+    "globalsign-domain-verification=YHnWXL-7NA_q79ZvMwQDblw1lRYrh6nXXIoWOab5Fd",
+    "docker-verification=b3049f71-60ff-4ab5-8e4b-af12071ad9ef",
+    "_globalsign-domain-verification=h7hNxzyjxWcMmQGgdPl1sYiG5V-Bjrl_CsJqpKbIU4"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/"
+    ]
+  },
+  "elapsed_s": 7.2,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -300,4 +373,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

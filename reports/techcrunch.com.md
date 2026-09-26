@@ -7,12 +7,12 @@
 | Target | https://techcrunch.com/ |
 | Bug bounty program | Yahoo! |
 | Listed scope domain | techcrunch.com |
-| Test date | 2026-09-25 10:22 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 0, Low: 1, Info: 6)
+Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -23,6 +23,13 @@ Total findings: **7** (High: 0, Medium: 0, Low: 1, Info: 6)
 | 5 | info | H6 | Server technology disclosure | CWE-200 |
 | 6 | info | P11 | WordPress login page exposed | CWE-200 |
 | 7 | info | P8 | Missing security.txt | CWE-1038 |
+| 8 | low | MAIL7 | SPF include: points to unresolvable domain(s) | CWE-285 |
+| 9 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 10 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 11 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -72,6 +79,48 @@ Total findings: **7** (High: 0, Medium: 0, Low: 1, Info: 6)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 8. [LOW] SPF include: points to unresolvable domain(s) (`MAIL7`)
+
+- **CWE:** CWE-285
+- **Detail:** Broken include(s): usb. (no A/TXT record).
+- **Recommendation:** Fix or remove the broken include directives.
+
+### 9. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 10. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: figma-domain-verification=774a69a105d2f08bc9290464cb7082210e1fe77d9a4aa86a50e29e; slido-domain-verification=87b6e1fe-2406-444f-90df-2cd87a594a34; google-site-verification=NgMXk6BZ-jqt9XTrgnGt_O7hY4xD-NEAWsfSSD2VuZQ
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of techcrunch.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 13. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but techcrunch.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 17 disallow path(s), e.g. /wp-admin/, /wp-json/, /search/, /?s=, /*?customize_changeset_uuid=*
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -86,42 +135,42 @@ Total findings: **7** (High: 0, Medium: 0, Low: 1, Info: 6)
     ],
     "cname": null,
     "mx": [
-      "usb-smtp-inbound-2.mimecast.com (pref 0)",
-      "usb-smtp-inbound-1.mimecast.com (pref 0)"
+      "usb-smtp-inbound-1.mimecast.com (pref 0)",
+      "usb-smtp-inbound-2.mimecast.com (pref 0)"
     ],
     "ns": [
       "gordon.ns.cloudflare.com.",
       "elly.ns.cloudflare.com."
     ],
     "spf": [
-      "google-site-verification=8tVHhkiXUNoPjI09EcLgjl9V7TwSXxLV0bnIjcEmpFw",
-      "dropbox-domain-verification=sh3f8kienale",
-      "knowbe4-site-verification=bc3830115833f4f956e30f506f1da8c8",
-      "0ed1fe018a18c01fd51bff49e5bd633fade441856b",
-      "airtable-verification=e989fdaedddc09c0e5c782dd036dd08a",
-      "MS=ms48927658",
-      "b42c6b9e-33ca-44c0-a919-3152d6b3ddfa",
-      "google-site-verification=KsXJcvhk00hppwpZ3oNMk0GzB9M2GFUxA7XjdRVpc1U",
-      "fireflies-verification=01KRNDX9V0J96ERQ2TKYCJ2M27.ffverify.fireflies.ai-request-verification=2026-05-15T09:01:35Z",
-      "docusign=1ad1e6cd-4dfe-4b34-8689-5797102f132e",
-      "zeplin",
-      "MS=ms36891426",
-      "v=spf1 a mx include:usb._netblocks.mimecast.com include:spf.protection.outlook.com include:aspmx.sailthru.com include:mail.zendesk.com include:242234635.spf02.hubspotemail.net -all",
-      "google-site-verification=NgMXk6BZ-jqt9XTrgnGt_O7hY4xD-NEAWsfSSD2VuZQ",
-      "openai-domain-verification=dv-NrFR5wvpHqoGtf07m6oIH3J1",
-      "slido-domain-verification=87b6e1fe-2406-444f-90df-2cd87a594a34",
-      "google-site-verification=VZcuQE1gCO7Zg1W2g_uzOzDXXICzPt74_eE-w0SRpt4",
-      "anthropic-domain-verification-bqkhj4=U4gt2pxQQDf0aqgfPI3Q8Uvtp",
-      "google-site-verification=JJNsJJsmpgH6VoKlFj7qG9V223pIrsduvb7qQ31GNC0",
       "figma-domain-verification=774a69a105d2f08bc9290464cb7082210e1fe77d9a4aa86a50e29eb75501b33d-1787841662",
-      "_globalsign-domain-verification=esDvs5Msz39F5o97VaHcZxyKR4A6NPHRpuo9du1Tro",
-      "google-site-verification=DhlHJ_81bZLsrh5TLvK7ac04EG4QvEAa8hjtsiMpUTQ",
+      "0ed1fe018a18c01fd51bff49e5bd633fade441856b",
+      "slido-domain-verification=87b6e1fe-2406-444f-90df-2cd87a594a34",
+      "google-site-verification=NgMXk6BZ-jqt9XTrgnGt_O7hY4xD-NEAWsfSSD2VuZQ",
+      "fireflies-verification=01KRNDX9V0J96ERQ2TKYCJ2M27.ffverify.fireflies.ai-request-verification=2026-05-15T09:01:35Z",
+      "airtable-verification=e989fdaedddc09c0e5c782dd036dd08a",
       "134052hpsyz5k73sv39m0sgxljsqyls7",
-      "apple-domain-verification=uzwfq0Ev591PKKS6",
-      "google-site-verification=HgtRMjw2Jm4kQso_oGLMcQ7ndEv8wNcGa0Kquhm9KK0",
+      "google-site-verification=DhlHJ_81bZLsrh5TLvK7ac04EG4QvEAa8hjtsiMpUTQ",
+      "knowbe4-site-verification=bc3830115833f4f956e30f506f1da8c8",
       "atlassian-domain-verification=4p4CB0YJGNxskcxmubnX/fKvtqP6u8KRknplzFR3ZsH8zcSfjqtxNyCNIIktcAch",
+      "google-site-verification=8tVHhkiXUNoPjI09EcLgjl9V7TwSXxLV0bnIjcEmpFw",
+      "google-site-verification=KsXJcvhk00hppwpZ3oNMk0GzB9M2GFUxA7XjdRVpc1U",
+      "dropbox-domain-verification=sh3f8kienale",
       "yahoo-verification-key=nBRGLDZQzTUnUA7c6taNupK6RrG3ZGZs0PjHJmWAkqM=",
-      "google-site-verification=nTM39ZyyvRHb2-jcX__j5Hp1-y9zCw_gwX_I-QYrnVo"
+      "google-site-verification=nTM39ZyyvRHb2-jcX__j5Hp1-y9zCw_gwX_I-QYrnVo",
+      "docusign=1ad1e6cd-4dfe-4b34-8689-5797102f132e",
+      "_globalsign-domain-verification=esDvs5Msz39F5o97VaHcZxyKR4A6NPHRpuo9du1Tro",
+      "google-site-verification=JJNsJJsmpgH6VoKlFj7qG9V223pIrsduvb7qQ31GNC0",
+      "apple-domain-verification=uzwfq0Ev591PKKS6",
+      "anthropic-domain-verification-bqkhj4=U4gt2pxQQDf0aqgfPI3Q8Uvtp",
+      "MS=ms36891426",
+      "MS=ms48927658",
+      "google-site-verification=HgtRMjw2Jm4kQso_oGLMcQ7ndEv8wNcGa0Kquhm9KK0",
+      "v=spf1 a mx include:usb._netblocks.mimecast.com include:spf.protection.outlook.com include:aspmx.sailthru.com include:mail.zendesk.com include:242234635.spf02.hubspotemail.net -all",
+      "b42c6b9e-33ca-44c0-a919-3152d6b3ddfa",
+      "openai-domain-verification=dv-NrFR5wvpHqoGtf07m6oIH3J1",
+      "google-site-verification=VZcuQE1gCO7Zg1W2g_uzOzDXXICzPt74_eE-w0SRpt4",
+      "zeplin"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:6cc97f5d2993594@rep.dmarcanalyzer.com; ruf=mailto:6cc97f5d2993594@for.dmarcanalyzer.com; fo=1;"
@@ -141,7 +190,7 @@ Total findings: **7** (High: 0, Medium: 0, Low: 1, Info: 6)
       "techcrunch.com",
       "www.techcrunch.com"
     ],
-    "days_left": 87,
+    "days_left": 86,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -202,10 +251,48 @@ Total findings: **7** (High: 0, Medium: 0, Low: 1, Info: 6)
     "/api/": 404
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 30.8,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "figma-domain-verification=774a69a105d2f08bc9290464cb7082210e1fe77d9a4aa86a50e29e",
+    "slido-domain-verification=87b6e1fe-2406-444f-90df-2cd87a594a34",
+    "google-site-verification=NgMXk6BZ-jqt9XTrgnGt_O7hY4xD-NEAWsfSSD2VuZQ",
+    "fireflies-verification=01KRNDX9V0J96ERQ2TKYCJ2M27.ffverify.fireflies.ai-request-",
+    "airtable-verification=e989fdaedddc09c0e5c782dd036dd08a"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.3",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/wp-admin/",
+      "/wp-json/",
+      "/search/",
+      "/?s=",
+      "/*?customize_changeset_uuid=*",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/"
+    ]
+  },
+  "elapsed_s": 28.6,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -214,4 +301,5 @@ Total findings: **7** (High: 0, Medium: 0, Low: 1, Info: 6)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

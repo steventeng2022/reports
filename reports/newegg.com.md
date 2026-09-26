@@ -7,12 +7,12 @@
 | Target | https://newegg.com/ |
 | Bug bounty program | Newegg |
 | Listed scope domain | newegg.com |
-| Test date | 2026-09-25 10:04 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
+Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,6 +26,12 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 | 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 9 | info | H6 | Server technology disclosure | CWE-200 |
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
+| 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -97,6 +103,42 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 11. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 12. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=ajXtDle0UfsPUgtjCZ37T8opwg2zvXLzkHNjZTlIVFI; anthropic-domain-verification-1k1kwv=sA28xQK50TxxHO9tIaJbCEP60; apple-domain-verification=fookR9-T71Tb7G4opXgos6kiHa32YIsCriQxJY4SNU8
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of newegg.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 15. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but newegg.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 86 disallow path(s), e.g. /Common/BML/, /Common/ThirdParty/, /App/, /Application/, /Configuration/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -114,22 +156,21 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
     ],
     "ns": [
       "ns0011.secondary.cloudflare.com.",
-      "a7-65.akam.net.",
       "ns0197.secondary.cloudflare.com.",
-      "a9-66.akam.net.",
+      "a24-67.akam.net.",
       "a1-21.akam.net.",
       "a16-66.akam.net.",
-      "a24-67.akam.net.",
-      "a28-64.akam.net."
+      "a28-64.akam.net.",
+      "a7-65.akam.net.",
+      "a9-66.akam.net."
     ],
     "spf": [
       "google-site-verification=ajXtDle0UfsPUgtjCZ37T8opwg2zvXLzkHNjZTlIVFI",
-      "ca3-d55519625ba84c9aa83e9e9a416063ba",
       "anthropic-domain-verification-1k1kwv=sA28xQK50TxxHO9tIaJbCEP60",
-      "apple-domain-verification=fookR9-T71Tb7G4opXgos6kiHa32YIsCriQxJY4SNU8",
       "v=spf1 ip4:107.20.210.250/32 ip4:52.1.14.157/32 ip4:216.52.208.0/24 ip4:204.14.213.0/24 ip4:204.89.152.0/24 ip4:50.79.138.221 include:spf-004ed001.pphosted.com include:u1970239.wl.sendgrid.net include:spf.protection.outlook.com -all",
-      "yahoo-verification-key=UuN8VB7V7E4fK9e6tGDxdS2LNdDFfDU50tLmkOQftws=",
       "_a4kh6j7awcaw7fxqj5shnpuurxqqwy8",
+      "apple-domain-verification=fookR9-T71Tb7G4opXgos6kiHa32YIsCriQxJY4SNU8",
+      "yahoo-verification-key=UuN8VB7V7E4fK9e6tGDxdS2LNdDFfDU50tLmkOQftws=",
       "cursor-domain-verification-w61mwq=TQrKtOakRs3OBorucA3sDlbEQ"
     ],
     "dmarc": [
@@ -203,7 +244,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
       "www.rosewillhome.com",
       "www2.newegg.com"
     ],
-    "days_left": 49,
+    "days_left": 48,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -263,10 +304,48 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 32.6,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "google-site-verification=ajXtDle0UfsPUgtjCZ37T8opwg2zvXLzkHNjZTlIVFI",
+    "anthropic-domain-verification-1k1kwv=sA28xQK50TxxHO9tIaJbCEP60",
+    "apple-domain-verification=fookR9-T71Tb7G4opXgos6kiHa32YIsCriQxJY4SNU8",
+    "yahoo-verification-key=UuN8VB7V7E4fK9e6tGDxdS2LNdDFfDU50tLmkOQftws=",
+    "cursor-domain-verification-w61mwq=TQrKtOakRs3OBorucA3sDlbEQ"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.3",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/Common/BML/",
+      "/Common/ThirdParty/",
+      "/App/",
+      "/Application/",
+      "/Configuration/",
+      "/NewMyAccount/",
+      "/MyNewegg/",
+      "/insider/blog/wp-admin/",
+      "/api/UpdateStorage",
+      "/api/TrendingNow",
+      "/mycountry",
+      "/api/MiniCart",
+      "/api/GetStorage",
+      "/areyouahuman",
+      "/api/Common/GBuy"
+    ]
+  },
+  "elapsed_s": 15.0,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -275,4 +354,5 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

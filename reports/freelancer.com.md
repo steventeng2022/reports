@@ -7,12 +7,12 @@
 | Target | https://freelancer.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | freelancer.com |
-| Test date | 2026-09-25 08:05 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,7 +26,14 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 | 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 9 | info | H6 | Server technology disclosure | CWE-200 |
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
-| 11 | info | CT1 | 36 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 13 | low | DNS3 | Wildcard DNS detected | CWE-345 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | CT1 | 36 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -98,7 +105,49 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 11. [INFO] 36 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 11. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 12. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 13. [LOW] Wildcard DNS detected (`DNS3`)
+
+- **CWE:** CWE-345
+- **Detail:** Two random labels (5ab0tgakuvo1k9.freelancer.com and mrz9ipa0i3hb84.freelancer.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: ahrefs-site-verification_d3c10f66e1e45dd0ba44ea9e87972068ada4cc55399000cd0bf2dd6; anthropic-domain-verification-zmrkrz=BWcvNIhdz7pRP5S3gNSKur2wW; openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of freelancer.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but freelancer.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 17. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 40 disallow path(s), e.g. /, /, /sellers/placebid.php*, /buyers/repost.php*, /ajax/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 18. [INFO] 36 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: git.freelancer.com, my.freelancer.com, news.freelancer.com, www.my.freelancer.com
@@ -111,37 +160,37 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
   "domain": "freelancer.com",
   "dns": {
     "a": [
+      "54.221.62.44",
       "52.86.196.209",
-      "3.82.239.82",
-      "18.215.211.101"
+      "34.197.165.66"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx5.googlemail.com (pref 30)",
       "alt2.aspmx.l.google.com (pref 20)",
-      "aspmx4.googlemail.com (pref 30)",
-      "aspmx2.googlemail.com (pref 30)",
-      "aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx3.googlemail.com (pref 30)",
-      "aspmx5.googlemail.com (pref 30)"
+      "aspmx.l.google.com (pref 10)",
+      "aspmx4.googlemail.com (pref 30)",
+      "aspmx2.googlemail.com (pref 30)"
     ],
     "ns": [
-      "ns-549.awsdns-04.net.",
-      "ns-1363.awsdns-42.org.",
       "ns-470.awsdns-58.com.",
+      "ns-1363.awsdns-42.org.",
+      "ns-549.awsdns-04.net.",
       "ns-1780.awsdns-30.co.uk."
     ],
     "spf": [
-      "MS=ms24738001",
-      "globalsign-domain-verification=WkLv9MyE6hoZ2g9h5eP3fBXm0FAfqv5X8L-J8iPmGe",
-      "cursor-domain-verification-1c4pg9=RSGYjeGSZhXVJg4djpmBMSxjy",
-      "v=spf1 include:_spf1.freelancer.com include:_spf2.freelancer.com include:_spf.google.com -all",
-      "openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK",
       "ZOOM_verify_MucGMGVCBb0sY18bpTcobR",
-      "twilio-domain-verification=e6bbec233a8c9e43fe0548ee6c530dfe",
       "ahrefs-site-verification_d3c10f66e1e45dd0ba44ea9e87972068ada4cc55399000cd0bf2dd68a7338a46",
-      "anthropic-domain-verification-zmrkrz=BWcvNIhdz7pRP5S3gNSKur2wW"
+      "MS=ms24738001",
+      "v=spf1 include:_spf1.freelancer.com include:_spf2.freelancer.com include:_spf.google.com -all",
+      "anthropic-domain-verification-zmrkrz=BWcvNIhdz7pRP5S3gNSKur2wW",
+      "openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK",
+      "cursor-domain-verification-1c4pg9=RSGYjeGSZhXVJg4djpmBMSxjy",
+      "twilio-domain-verification=e6bbec233a8c9e43fe0548ee6c530dfe",
+      "globalsign-domain-verification=WkLv9MyE6hoZ2g9h5eP3fBXm0FAfqv5X8L-J8iPmGe"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; rua=mailto:y4fb8gcr@ag.au.dmarcian.com,mailto:61597d2f@mxtoolbox.dmarc-report.com,mailto:a68db7279cf8db37fa9c3e812a3543a8-t@dmarc.report-uri.com,mailto:dmarc+rua@freelancer.com;"
@@ -161,7 +210,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
       "freelancer.com",
       "*.freelancer.com"
     ],
-    "days_left": 170,
+    "days_left": 169,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -171,7 +220,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
     }
   },
   "ports": {
-    "ip": "52.86.196.209",
+    "ip": "54.221.62.44",
     "open": []
   },
   "https": {
@@ -252,8 +301,47 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
       "pypi.freelancer.com"
     ]
   },
-  "elapsed_s": 141.2,
-  "rechecked": "2026-09-25 10:43 UTC"
+  "wildcard_dns": true,
+  "apex_txt": [
+    "ahrefs-site-verification_d3c10f66e1e45dd0ba44ea9e87972068ada4cc55399000cd0bf2dd6",
+    "anthropic-domain-verification-zmrkrz=BWcvNIhdz7pRP5S3gNSKur2wW",
+    "openai-domain-verification=dv-1ktftOr3h5KrYkHrCX8CxulK",
+    "cursor-domain-verification-1c4pg9=RSGYjeGSZhXVJg4djpmBMSxjy",
+    "twilio-domain-verification=e6bbec233a8c9e43fe0548ee6c530dfe"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/",
+      "/",
+      "/sellers/placebid.php*",
+      "/buyers/repost.php*",
+      "/ajax/",
+      "/users/login-fast.php*",
+      "/users/login-faster.php*",
+      "/users/login-instant.php*",
+      "/users/login-quick.php*",
+      "/bl-email/*",
+      "/users/onUpdateOnlineStatus.php*",
+      "/online-count/*",
+      "/report/violation*",
+      "/widgets$",
+      "/widgets/*"
+    ]
+  },
+  "elapsed_s": 27.1,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -262,4 +350,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

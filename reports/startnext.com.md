@@ -7,12 +7,12 @@
 | Target | https://startnext.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | startnext.com |
-| Test date | 2026-09-25 10:19 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
+Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,12 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 | 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 11 | info | H6 | Server technology disclosure | CWE-200 |
 | 12 | info | P8 | Missing security.txt | CWE-1038 |
+| 13 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -40,13 +46,13 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.66.135.76:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.66.138.150:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.66.135.76:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.66.138.150:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -111,6 +117,42 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 13. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 14. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=EFkPQxPpmNH3P9qq; hcp-domain-verification=60743923ec7473d8ae8b1adb950803da7ced6b57f812ca059c681460; zapier-domain-verification-challenge=09073caa-9f62-43e0-8e6c-4f3d4a71ff0a
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of startnext.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 17. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but startnext.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 45 disallow path(s), e.g. /legal_menu.html, /Starten/Page-Projekt-anlegen.html, /blog/Rubriken.html, /blog/Neuer_Beitrag.html, /info/jobs/assistenz_gf.html
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -118,49 +160,49 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
   "domain": "startnext.com",
   "dns": {
     "a": [
-      "172.66.135.76",
-      "172.66.138.150"
+      "172.66.138.150",
+      "172.66.135.76"
     ],
     "aaaa": [
-      "2606:4700:10::ac42:8a96",
-      "2606:4700:10::ac42:874c"
+      "2606:4700:10::ac42:874c",
+      "2606:4700:10::ac42:8a96"
     ],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "alt3.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "jocelyn.ns.cloudflare.com.",
-      "will.ns.cloudflare.com."
+      "will.ns.cloudflare.com.",
+      "jocelyn.ns.cloudflare.com."
     ],
     "spf": [
-      "ahrefs-site-verification_a3ef10fe6feb196e637f47c659a513b57e8451002a446786c463e76edfdc36ed",
-      "sipgate_domain_verification=ocgEkVPKtc65nr5iq812hD3KjmbZFsVN",
-      "v=spf1 include:spf.mailjet.com include:spf1.stripe.com include:_spf.google.com mx ~all",
-      "Sendinblue-code:f353cef9d786bf84e5c651a6c36eabe1",
-      "google-site-verification=1sAqiWWlwgiOXvDGSL_I4U17ntLCTVOx7dEbvnR9LFQ",
-      "canva-site-verification=Lef60elp9_zJViARgO1t_Q",
-      "zapier-domain-verification-challenge=09073caa-9f62-43e0-8e6c-4f3d4a71ff0a",
       "apple-domain-verification=EFkPQxPpmNH3P9qq",
-      "stripe-verification=10777e885e2161e55049d4bb5b7f8b2daeab406e486d229fcccf85c5960d924f",
-      "figma-domain-verification=0f0367ec6cadf1d90abb1acf60f4d9eb0aeada705ee4c551606ba0479e7af19f-1769525845",
-      "openai-domain-verification=dv-8ddqCEpCTKHtOHpVBDDRvyBP",
-      "anthropic-domain-verification-afn3zm=kLvCbR5sjNLzPmTZq2GkNL5wp",
-      "loaderio=ddeb6ac1a8a34860bcd9860ab8197ac6",
-      "facebook-domain-verification=stvicj5365sof2wwqhjvmfx4gj94qq",
-      "google-site-verification=iLJXA2QAMVvQ0ygkJP5gfwoZckSWP2ScE6DfDK_WDQo",
-      "sdfcdef4gfeqfdafr3fdeqfdef",
-      "lovable_verification=cdfc6ea695bda4007160736f9b3c884d431081ad3e971b8558f4d038da3fd8b4",
-      "notion-domain-verification=WSNIySxByulDNwhZwtDjy9216rTsi81KLbLZuNGAS6A",
-      "1password-site-verification=3CHE4U4RBNBC3KMOD33ZBSTPBQ",
-      "postman-domain-verification=804e758eb395e1f9631a5a6ffcdb1213ed51ad4fbafcb0a4e78234bde9381b48586dcf6468efe8d61cec1b0205bfa095378c40393ecf6f3d0cbb1286b989e5cd",
-      "status-page-domain-verification=v166389cy5dz",
       "hcp-domain-verification=60743923ec7473d8ae8b1adb950803da7ced6b57f812ca059c6814600de88f8e",
-      "jetbrains-domain-verification=4tyrq5pfov7ujkxnj7y60r8ya"
+      "zapier-domain-verification-challenge=09073caa-9f62-43e0-8e6c-4f3d4a71ff0a",
+      "jetbrains-domain-verification=4tyrq5pfov7ujkxnj7y60r8ya",
+      "sipgate_domain_verification=ocgEkVPKtc65nr5iq812hD3KjmbZFsVN",
+      "1password-site-verification=3CHE4U4RBNBC3KMOD33ZBSTPBQ",
+      "google-site-verification=iLJXA2QAMVvQ0ygkJP5gfwoZckSWP2ScE6DfDK_WDQo",
+      "postman-domain-verification=804e758eb395e1f9631a5a6ffcdb1213ed51ad4fbafcb0a4e78234bde9381b48586dcf6468efe8d61cec1b0205bfa095378c40393ecf6f3d0cbb1286b989e5cd",
+      "figma-domain-verification=0f0367ec6cadf1d90abb1acf60f4d9eb0aeada705ee4c551606ba0479e7af19f-1769525845",
+      "google-site-verification=1sAqiWWlwgiOXvDGSL_I4U17ntLCTVOx7dEbvnR9LFQ",
+      "notion-domain-verification=WSNIySxByulDNwhZwtDjy9216rTsi81KLbLZuNGAS6A",
+      "loaderio=ddeb6ac1a8a34860bcd9860ab8197ac6",
+      "ahrefs-site-verification_a3ef10fe6feb196e637f47c659a513b57e8451002a446786c463e76edfdc36ed",
+      "status-page-domain-verification=v166389cy5dz",
+      "Sendinblue-code:f353cef9d786bf84e5c651a6c36eabe1",
+      "stripe-verification=10777e885e2161e55049d4bb5b7f8b2daeab406e486d229fcccf85c5960d924f",
+      "canva-site-verification=Lef60elp9_zJViARgO1t_Q",
+      "openai-domain-verification=dv-8ddqCEpCTKHtOHpVBDDRvyBP",
+      "facebook-domain-verification=stvicj5365sof2wwqhjvmfx4gj94qq",
+      "v=spf1 include:spf.mailjet.com include:spf1.stripe.com include:_spf.google.com mx ~all",
+      "lovable_verification=cdfc6ea695bda4007160736f9b3c884d431081ad3e971b8558f4d038da3fd8b4",
+      "anthropic-domain-verification-afn3zm=kLvCbR5sjNLzPmTZq2GkNL5wp",
+      "sdfcdef4gfeqfdafr3fdeqfdef"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:3fe3005f1fa8445381ae617deb23b808@dmarc-reports.cloudflare.net,mailto:re+srhio0nnmwp@dmarc.postmarkapp.com; sp=reject; aspf=r;"
@@ -181,7 +223,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "mcp.startnext.com",
       "*.mcp.startnext.com"
     ],
-    "days_left": 38,
+    "days_left": 37,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -191,7 +233,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
     }
   },
   "ports": {
-    "ip": "172.66.135.76",
+    "ip": "172.66.138.150",
     "open": [
       8080,
       8443
@@ -245,10 +287,48 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 42.1,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "apple-domain-verification=EFkPQxPpmNH3P9qq",
+    "hcp-domain-verification=60743923ec7473d8ae8b1adb950803da7ced6b57f812ca059c681460",
+    "zapier-domain-verification-challenge=09073caa-9f62-43e0-8e6c-4f3d4a71ff0a",
+    "jetbrains-domain-verification=4tyrq5pfov7ujkxnj7y60r8ya",
+    "sipgate_domain_verification=ocgEkVPKtc65nr5iq812hD3KjmbZFsVN"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/legal_menu.html",
+      "/Starten/Page-Projekt-anlegen.html",
+      "/blog/Rubriken.html",
+      "/blog/Neuer_Beitrag.html",
+      "/info/jobs/assistenz_gf.html",
+      "/info/jobs/designerin.html",
+      "/info/jobs/fullstackdev.html",
+      "/info/jobs/akquiseprojektberatung.html",
+      "/info/jobs/kommunikationsdesign_1.html",
+      "/info/jobs/communication_managerin.html",
+      "/info/jobs/social_media_managerin.html",
+      "/info/jobs/community_managerin.html",
+      "/info/verstoss-melden.html",
+      "/infos/launch-day_26.html",
+      "/hilfe/gebuehren24.html"
+    ]
+  },
+  "elapsed_s": 9.2,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -257,4 +337,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

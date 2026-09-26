@@ -7,21 +7,27 @@
 | Target | https://arstechnica.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | arstechnica.com |
-| Test date | 2026-09-25 08:01 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:39 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 1, Low: 1, Info: 4)
+Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
-| 2 | medium | TLS2 | TLS certificate hostname mismatch | CWE-297 |
+| 2 | info | PRT8080 | Alternate web service (port 8080) reachable | CWE-200 |
 | 3 | low | H1b | Weak HSTS (max-age < 1 year) | CWE-319 |
 | 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
 | 5 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 6 | info | P8 | Missing security.txt | CWE-1038 |
+| 7 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
+| 8 | low | DNS3 | Wildcard DNS detected | CWE-345 |
+| 9 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -31,11 +37,11 @@ Total findings: **6** (High: 0, Medium: 1, Low: 1, Info: 4)
 - **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
 - **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [MEDIUM] TLS certificate hostname mismatch (`TLS2`)
+### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
-- **CWE:** CWE-297
-- **Detail:** TLS verification failed: _ssl.c:993: The handshake operation timed out
-- **Recommendation:** Serve a certificate whose SAN covers arstechnica.com.
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 18.190.166.196:8080 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [LOW] Weak HSTS (max-age < 1 year) (`H1b`)
 
@@ -65,6 +71,42 @@ Total findings: **6** (High: 0, Medium: 1, Low: 1, Info: 4)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 7. [LOW] MTA-STS TXT published but policy file missing/invalid (`MAIL12`)
+
+- **CWE:** CWE-285
+- **Detail:** GET https://mta-sts.arstechnica.com/.well-known/mta-sts/policy.txt -> 404
+- **Recommendation:** Publish a valid policy.txt (version, max_age, mode) or remove the TXT record.
+
+### 8. [LOW] Wildcard DNS detected (`DNS3`)
+
+- **CWE:** CWE-345
+- **Detail:** Two random labels (4vfgtkv64tigp1.arstechnica.com and sp9yjvu0g2c0ro.arstechnica.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
+
+### 9. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=Xt1q2fpVK6qREDXADvlLz2O5pvmUz9G_xxoGdeEnrH0; google-site-verification=XuFuLW59WRoAbzeQ-wsF0JwpaeYwtdzRmtiktfi3Pmc; google-site-verification=HdFEloOqFNJZvQWa7SK2BRmWVt8aVnPuagqXZ-C2U5U
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of arstechnica.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but arstechnica.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 34 disallow path(s), e.g. Allow:, User-agent:, /, /, /cgi-bin/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -72,34 +114,34 @@ Total findings: **6** (High: 0, Medium: 1, Low: 1, Info: 4)
   "domain": "arstechnica.com",
   "dns": {
     "a": [
-      "77.112.68.204",
-      "18.217.85.125"
+      "18.190.166.196",
+      "77.112.68.204"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "alt3.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "alt4.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)"
+      "alt4.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
       "ns-1285.awsdns-32.org.",
       "ns-493.awsdns-61.com.",
-      "ns-783.awsdns-33.net.",
-      "ns-2008.awsdns-59.co.uk."
+      "ns-2008.awsdns-59.co.uk.",
+      "ns-783.awsdns-33.net."
     ],
     "spf": [
+      "loaderio=2fd6086b1c3ba926ae36db37131123f7",
+      "v=spf1 include:_u.arstechnica.com._spf.smart.ondmarc.com ~all",
+      "google-site-verification=Xt1q2fpVK6qREDXADvlLz2O5pvmUz9G_xxoGdeEnrH0",
+      "google-site-verification=XuFuLW59WRoAbzeQ-wsF0JwpaeYwtdzRmtiktfi3Pmc",
+      "google-site-verification=HdFEloOqFNJZvQWa7SK2BRmWVt8aVnPuagqXZ-C2U5U",
+      "yahoo-verification-key=bP+HO9s82IBxbotbnF/O1nN4Jo4VfFXq5JNFAPCK8+o=",
       "google-site-verification=nso4GHYIGZwo4gB6AoUxzJWkxOUdx83kbGeREAxnv3A",
       "facebook-domain-verification=qptjyerza2q11uv3fe6aay6hbsncr8",
-      "google-site-verification=HdFEloOqFNJZvQWa7SK2BRmWVt8aVnPuagqXZ-C2U5U",
-      "google-site-verification=Xt1q2fpVK6qREDXADvlLz2O5pvmUz9G_xxoGdeEnrH0",
-      "v=spf1 include:_u.arstechnica.com._spf.smart.ondmarc.com ~all",
-      "yahoo-verification-key=bP+HO9s82IBxbotbnF/O1nN4Jo4VfFXq5JNFAPCK8+o=",
-      "google-site-verification=XuFuLW59WRoAbzeQ-wsF0JwpaeYwtdzRmtiktfi3Pmc",
-      "google-site-verification=OtVm0j4Rqs4y10N827uQ_n8ZnMtO0vfqw1k5NCzaJvo",
-      "loaderio=2fd6086b1c3ba926ae36db37131123f7"
+      "google-site-verification=OtVm0j4Rqs4y10N827uQ_n8ZnMtO0vfqw1k5NCzaJvo"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; sp=reject; rua=mailto:a6816915@inbox.ondmarc.com; ruf=mailto:a6816915@inbox.ondmarc.com; adkim=r; aspf=r; fo=1; rf=afrf; ri=3600"
@@ -108,7 +150,7 @@ Total findings: **6** (High: 0, Medium: 1, Low: 1, Info: 4)
   },
   "tls": {
     "status": "ok",
-    "chain": "hostname-mismatch",
+    "chain": "trusted",
     "version": "TLSv1.2",
     "cipher": "ECDHE-RSA-AES128-GCM-SHA256",
     "subject": "commonName=*.arstechnica.com",
@@ -119,13 +161,21 @@ Total findings: **6** (High: 0, Medium: 1, Low: 1, Info: 4)
       "*.arstechnica.com",
       "arstechnica.com"
     ],
-    "days_left": 105
+    "days_left": 104,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": false
+    }
   },
-  "elapsed_s": 17.9,
-  "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+  "ports": {
+    "ip": "18.190.166.196",
+    "open": [
+      8080
+    ]
   },
-  "rechecked": "2026-09-25 13:59 UTC",
   "https": {
     "status": 200,
     "content_type": "text/html; charset=UTF-8",
@@ -168,7 +218,51 @@ Total findings: **6** (High: 0, Medium: 1, Low: 1, Info: 4)
     "/phpmyadmin/index.php": 404,
     "/server-status": 404,
     "/api/": 301
-  }
+  },
+  "subdomains": {
+    "status": "ct-pending"
+  },
+  "wildcard_dns": true,
+  "apex_txt": [
+    "google-site-verification=Xt1q2fpVK6qREDXADvlLz2O5pvmUz9G_xxoGdeEnrH0",
+    "google-site-verification=XuFuLW59WRoAbzeQ-wsF0JwpaeYwtdzRmtiktfi3Pmc",
+    "google-site-verification=HdFEloOqFNJZvQWa7SK2BRmWVt8aVnPuagqXZ-C2U5U",
+    "yahoo-verification-key=bP+HO9s82IBxbotbnF/O1nN4Jo4VfFXq5JNFAPCK8+o=",
+    "google-site-verification=nso4GHYIGZwo4gB6AoUxzJWkxOUdx83kbGeREAxnv3A"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.2",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "Allow:",
+      "User-agent:",
+      "/",
+      "/",
+      "/cgi-bin/",
+      "/wp/wp-admin/",
+      "/wp/wp-includes/",
+      "/wp/wp-content/",
+      "/wp-content/plugins/",
+      "/wp-content/mu_plugins/",
+      "/wp-content/cache/",
+      "/wp-content/themes/",
+      "/trackback/",
+      "/comments/",
+      "/category/*/*"
+    ]
+  },
+  "elapsed_s": 37.0,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -177,4 +271,5 @@ Total findings: **6** (High: 0, Medium: 1, Low: 1, Info: 4)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

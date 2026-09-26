@@ -7,23 +7,26 @@
 | Target | https://timesofindia.indiatimes.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | timesofindia.indiatimes.com |
-| Test date | 2026-09-25 10:22 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
+Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
-| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 2 | low | TLS4 | TLS certificate expires within 30 days | CWE-298 |
 | 3 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
 | 4 | low | H1b | Weak HSTS (max-age < 1 year) | CWE-319 |
 | 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
 | 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
 | 7 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
-| 8 | info | H6 | Server technology disclosure | CWE-200 |
+| 8 | info | CORS4 | CORS: wildcard Access-Control-Allow-Origin | CWE-942 |
+| 9 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
+| 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 
 ## Detailed findings
 
@@ -33,11 +36,11 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
 - **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
 - **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Technology fingerprint (`TECH1`)
+### 2. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
-- **CWE:** CWE-200
-- **Detail:** Detected: Server: Bhoot
-- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+- **CWE:** CWE-298
+- **Detail:** Certificate expires in 30 days (notAfter Oct 27 05:38:36 2026 GMT).
+- **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
 ### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
@@ -73,12 +76,31 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
 - **Context:** https response, /
 - **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 8. [INFO] Server technology disclosure (`H6`)
+### 8. [INFO] CORS: wildcard Access-Control-Allow-Origin (`CORS4`)
 
-- **CWE:** CWE-200
-- **Detail:** Header reveals: Bhoot
+- **CWE:** CWE-942
+- **Detail:** Access-Control-Allow-Origin: * is set for cross-origin requests.
 - **Context:** https response, /
-- **Recommendation:** Consider hiding or shortening the Server header.
+- **Recommendation:** Restrict the allowed origins if sensitive data is exposed via the API.
+
+### 9. [INFO] CORS: subdomain origin origin accepted (no credentials) (`CORS2`)
+
+- **CWE:** CWE-942
+- **Detail:** Origin https://sub.timesofindia.indiatimes.com was echoed in Access-Control-Allow-Origin.
+- **Context:** https response, /
+- **Recommendation:** Confirm whether arbitrary origin echoing is intended.
+
+### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of timesofindia.indiatimes.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but timesofindia.indiatimes.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
 ## Evidence (raw response observations)
 
@@ -87,12 +109,12 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
   "domain": "timesofindia.indiatimes.com",
   "dns": {
     "a": [
-      "104.116.243.96",
-      "104.116.243.83"
+      "104.116.243.83",
+      "104.116.243.96"
     ],
     "aaaa": [
-      "2600:1417:76::6874:f360",
-      "2600:1417:76::6874:f353"
+      "2600:1417:76::6874:f353",
+      "2600:1417:76::6874:f360"
     ],
     "cname": "timesofindia.indiatimes.com-v1.edgekey.net.",
     "mx": [],
@@ -211,7 +233,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
       "www.timesofindia.com",
       "www.timesofindia.indiatimes.com"
     ],
-    "days_left": 31,
+    "days_left": 30,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -221,33 +243,31 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
     }
   },
   "ports": {
-    "ip": "104.116.243.96",
+    "ip": "104.116.243.83",
     "open": []
   },
   "https": {
     "status": 200,
-    "content_type": "text/html",
-    "title": "Times of India"
+    "content_type": "text/html; charset=utf-8",
+    "title": "TOI - Breaking News, Latest News, India News, World News, Bollywood, Sports, Business and Political News | The Times of India"
   },
   "mixed_content": [],
-  "tech": [
-    "Server: Bhoot"
-  ],
   "cookies": [],
   "cors": [
     {
       "origin": "https://evil-auditor.example",
-      "acao": "",
+      "acao": "*",
       "acac": "false"
     },
     {
       "origin": "https://sub.timesofindia.indiatimes.com",
-      "acao": "",
+      "acao": "*",
       "acac": "false"
     }
   ],
   "http": {
-    "status": 200
+    "status": 301,
+    "location": "https://timesofindia.indiatimes.com/"
   },
   "redir_probes": [
     "/redirect?url=https://evil-auditor.example/x -> 404",
@@ -270,10 +290,26 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
     "/api/": 200
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 47.4,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "cname_chain": [
+    "timesofindia.indiatimes.com-v1.edgekey.net",
+    "e180620.dscj.akamaiedge.net"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 16.6,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -282,4 +318,5 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

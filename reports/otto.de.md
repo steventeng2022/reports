@@ -7,12 +7,12 @@
 | Target | https://otto.de/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | otto.de |
-| Test date | 2026-09-25 07:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,7 +28,12 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 | 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 11 | info | H6 | Server technology disclosure | CWE-200 |
 | 12 | info | P8 | Missing security.txt | CWE-1038 |
-| 13 | info | CT1 | 33 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 13 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | CT1 | 33 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -113,7 +118,37 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 13. [INFO] 33 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 13. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 14. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: dtm-domain-verification=mM876KNtSp0KQQYotikNG6TPTIoaSmKM_7lgUENJM_o; facebook-domain-verification=j70v29fpjg4ojg80gbifqw1eego33r; miro-verification=bdc9cd9f80167223093040082fce9f70cb15a22c
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of otto.de has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 17. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 14 disallow path(s), e.g. /gate/, /onex/, /cdn-cgi/, /149e9513-01fa-4fb0-aad4-566afd725d1b/2d206a39-8ed7-437e-a3be-862e0f06eea3/, /suche/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 18. [INFO] 33 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: analyzer-ui.develop.prada-dr.cloud.otto.de, api.permissionservice.nonlive.ipanema.cloud.otto.de, cdc.develop.paymentinfo.cloud.otto.de, configuration-ui.develop.prada-dr.cloud.otto.de, develop.customer-green.cloud.otto.de, develop.tracking-dr.cloud.otto.de, external-api.permissionservice.nonlive.ipanema.cloud.otto.de, infra.identity-green.cloud.otto.de, infra.tracking-dr.cloud.otto.de, internal-api.permissionservice.nonlive.ipanema.cloud.otto.de
@@ -126,8 +161,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   "domain": "otto.de",
   "dns": {
     "a": [
-      "18.194.12.37",
       "63.185.195.55",
+      "63.184.231.210",
       "63.181.40.227"
     ],
     "aaaa": [],
@@ -136,34 +171,34 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "otto-de.mail.protection.outlook.com (pref 50)"
     ],
     "ns": [
-      "a24-65.akam.net.",
       "a28-66.akam.net.",
-      "a1-208.akam.net.",
-      "a5-66.akam.net.",
       "a8-65.akam.net.",
-      "a9-64.akam.net."
+      "a5-66.akam.net.",
+      "a9-64.akam.net.",
+      "a24-65.akam.net.",
+      "a1-208.akam.net."
     ],
     "spf": [
-      "mongodb-site-verification=XP5hVwaaialm2di9r4ME8FEBAgoydmWc",
-      "00D9b00000SfmQL=1TB9b00000008wr;00D2o000000kAmU=1TBTr00000004Jl",
       "dtm-domain-verification=mM876KNtSp0KQQYotikNG6TPTIoaSmKM_7lgUENJM_o",
-      "google-site-verification=mwRR8O8tb2xn2nbAuVoFRXq3FvQG8TBXVfvao9Ws6dY",
-      "apple-domain-verification=siseb2WuYlAhQ1Js",
-      "MS=ms67614880",
-      "w/u0tIPwCWqtaT33cfLaDRI4cUHazVnFGfjZSvZs5J409OjBQgoS6SifMXSef28udDpQymTVQsX2gktjmDFz0w==",
       "facebook-domain-verification=j70v29fpjg4ojg80gbifqw1eego33r",
-      "figma-domain-verification=a7779162ff855ae8f5aca8708caa598f1d994bcd54c597f3816230fcc8817fe0-1744186662",
-      "adobe-idp-site-verification=86e3d89586a3c84e183be6ac5f4ecb05d1011a5b6df236931e040666450a8c7f",
-      "QCbesHKcvkL0B5iRm1w3tj7P1PyQAorD",
-      "wiz-domain-verification=9e685f8b43ce318887c925c4c1973c62ec374a09e49fb1c22bfb049a03ddf05e",
-      "atlassian-domain-verification=XuvfFNPt8O1LGWHgmu6drxqQRbfQGX4Dr2Ot8f9rgaA2FemHHZpmo2KZHiug8I9G",
       "miro-verification=bdc9cd9f80167223093040082fce9f70cb15a22c",
-      "google-site-verification=uhp66_5IP66csx6AefbIEaCUbgfvZ6gffnAwJj3IX5c",
-      "wiz-domain-verification=084961cf6a9943467022b6e4e254206d89ccca15ebf3b26fbcda38cfa76fdb97",
-      "v=spf1 ip4:80.85.192.0/20 include:spf.hornetsecurity.com include:spf.protection.outlook.com include:_spf.salesforce.com a:_spf.otto.de -all",
-      "CTxuSaM2ovKYyOHyjzvyQ0f9brbx1ug7SugtgTUplebg9BFi1Vtkj5o/qoiuVxKuAUUWEaoNuR4awzrsYh6LiA==",
+      "google-site-verification=mwRR8O8tb2xn2nbAuVoFRXq3FvQG8TBXVfvao9Ws6dY",
+      "wiz-domain-verification=9e685f8b43ce318887c925c4c1973c62ec374a09e49fb1c22bfb049a03ddf05e",
+      "QCbesHKcvkL0B5iRm1w3tj7P1PyQAorD",
       "docker-verification=dd370709-def2-48e6-bfe6-ceafcf66e031",
-      "amazonses:mIH7OVHQO2F5WChOVyD79u9apTHT6sbf7e2VZ9NtvsA="
+      "v=spf1 ip4:80.85.192.0/20 include:spf.hornetsecurity.com include:spf.protection.outlook.com include:_spf.salesforce.com a:_spf.otto.de -all",
+      "mongodb-site-verification=XP5hVwaaialm2di9r4ME8FEBAgoydmWc",
+      "figma-domain-verification=a7779162ff855ae8f5aca8708caa598f1d994bcd54c597f3816230fcc8817fe0-1744186662",
+      "apple-domain-verification=siseb2WuYlAhQ1Js",
+      "wiz-domain-verification=084961cf6a9943467022b6e4e254206d89ccca15ebf3b26fbcda38cfa76fdb97",
+      "amazonses:mIH7OVHQO2F5WChOVyD79u9apTHT6sbf7e2VZ9NtvsA=",
+      "atlassian-domain-verification=XuvfFNPt8O1LGWHgmu6drxqQRbfQGX4Dr2Ot8f9rgaA2FemHHZpmo2KZHiug8I9G",
+      "CTxuSaM2ovKYyOHyjzvyQ0f9brbx1ug7SugtgTUplebg9BFi1Vtkj5o/qoiuVxKuAUUWEaoNuR4awzrsYh6LiA==",
+      "00D9b00000SfmQL=1TB9b00000008wr;00D2o000000kAmU=1TBTr00000004Jl",
+      "adobe-idp-site-verification=86e3d89586a3c84e183be6ac5f4ecb05d1011a5b6df236931e040666450a8c7f",
+      "google-site-verification=uhp66_5IP66csx6AefbIEaCUbgfvZ6gffnAwJj3IX5c",
+      "w/u0tIPwCWqtaT33cfLaDRI4cUHazVnFGfjZSvZs5J409OjBQgoS6SifMXSef28udDpQymTVQsX2gktjmDFz0w==",
+      "MS=ms67614880"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:dmarc_agg@vali.email"
@@ -185,7 +220,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "ts.otto.de",
       "otto.de"
     ],
-    "days_left": 171,
+    "days_left": 170,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -195,7 +230,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     }
   },
   "ports": {
-    "ip": "18.194.12.37",
+    "ip": "63.185.195.55",
     "open": []
   },
   "https": {
@@ -287,8 +322,45 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "live.customer-green.cloud.otto.de"
     ]
   },
-  "elapsed_s": 145.7,
-  "rechecked": "2026-09-25 10:43 UTC"
+  "apex_txt": [
+    "dtm-domain-verification=mM876KNtSp0KQQYotikNG6TPTIoaSmKM_7lgUENJM_o",
+    "facebook-domain-verification=j70v29fpjg4ojg80gbifqw1eego33r",
+    "miro-verification=bdc9cd9f80167223093040082fce9f70cb15a22c",
+    "google-site-verification=mwRR8O8tb2xn2nbAuVoFRXq3FvQG8TBXVfvao9Ws6dY",
+    "wiz-domain-verification=9e685f8b43ce318887c925c4c1973c62ec374a09e49fb1c22bfb049a"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/gate/",
+      "/onex/",
+      "/cdn-cgi/",
+      "/149e9513-01fa-4fb0-aad4-566afd725d1b/2d206a39-8ed7-437e-a3be-862e0f06eea3/",
+      "/suche/",
+      "/gate/",
+      "/onex/",
+      "/cdn-cgi/",
+      "/149e9513-01fa-4fb0-aad4-566afd725d1b/2d206a39-8ed7-437e-a3be-862e0f06eea3/",
+      "/kundenbewertungen/",
+      "/gate/",
+      "/onex/",
+      "/cdn-cgi/",
+      "/149e9513-01fa-4fb0-aad4-566afd725d1b/2d206a39-8ed7-437e-a3be-862e0f06eea3/"
+    ]
+  },
+  "elapsed_s": 25.6,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -297,4 +369,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

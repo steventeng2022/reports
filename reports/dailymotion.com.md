@@ -7,12 +7,12 @@
 | Target | https://dailymotion.com/ |
 | Bug bounty program | Dailymotion |
 | Listed scope domain | dailymotion.com |
-| Test date | 2026-09-25 09:12 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:42 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -39,7 +44,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 ### 2. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires in 30 days (notAfter Oct 25 23:59:59 2026 GMT).
+- **Detail:** Certificate expires in 29 days (notAfter Oct 25 23:59:59 2026 GMT).
 - **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
 ### 3. [INFO] Technology fingerprint (`TECH1`)
@@ -104,6 +109,36 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: notion-domain-verification=uvbWKKeyZnS8S7Wbx92ycOmg6ciLlUt4DXUbFAGGx9K; google-site-verification=CmwXiGhZe_wN9v_ACMLi26gPNF8jMSiO7IIm3uJDflU; anthropic-domain-verification-c1804p=NXPXkMxpSDDbn8bTInhn5Ajb7
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of dailymotion.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 735 disallow path(s), e.g. /a/*, /abuse/group/, /activate, */adfit/*, /ajax/user
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -124,23 +159,23 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
       "b.dailymotion.com."
     ],
     "spf": [
-      "apple-domain-verification=Xc0pXSUjiGdd6fzI",
-      "anthropic-domain-verification-c1804p=NXPXkMxpSDDbn8bTInhn5Ajb7",
       "notion-domain-verification=uvbWKKeyZnS8S7Wbx92ycOmg6ciLlUt4DXUbFAGGx9K",
-      "432125346-6247381",
-      "google-site-verification=jb-qAE0Qy-NAyOuv1frZT1A1UE6gNE955_I3lhjZP_0",
-      "canva-site-verification=M-ynsH9PuwqgXIvdn1n6XA",
       "google-site-verification=CmwXiGhZe_wN9v_ACMLi26gPNF8jMSiO7IIm3uJDflU",
-      "wiz-domain-verification=22e8ef3cd472ce86a7a48ea0bf2d3113fa543c2d41f969132187ce1c7142466e",
-      "facebook-domain-verification=12wxrtyxlslijcmfpit8f0fwtlywlz",
       "v=spf1 include:spf.protection.outlook.com include:_spf.salesforce.com include:_spf.google.com include:spfa.dailymotion.com include:spfb.dailymotion.com include:spfc.dailymotion.com ~all",
-      "figma-domain-verification=cbb3b2f479e5448b33c1db6b92c0a5c13113593739aa38b3ab18f4e7dfcad023-1777467509",
-      "MS=ms31612776",
       "docusign=c8b32be7-de71-4c64-a061-78cd9ef299ee",
-      "atlassian-domain-verification=1fQPUuD1xWMMiqUh4TDo7tO4mPlbE/ptj393wMdMtIRv5UXlZmKDb2cfLlApGCBs",
+      "anthropic-domain-verification-c1804p=NXPXkMxpSDDbn8bTInhn5Ajb7",
+      "canva-site-verification=M-ynsH9PuwqgXIvdn1n6XA",
       "miro-verification=a02c054603f34e1def7bec67636b72d31e230cf4",
+      "jamf-site-verification=tyNylgsFuzDaZKhtv2ws8A",
+      "atlassian-domain-verification=1fQPUuD1xWMMiqUh4TDo7tO4mPlbE/ptj393wMdMtIRv5UXlZmKDb2cfLlApGCBs",
+      "google-site-verification=jb-qAE0Qy-NAyOuv1frZT1A1UE6gNE955_I3lhjZP_0",
+      "facebook-domain-verification=12wxrtyxlslijcmfpit8f0fwtlywlz",
+      "figma-domain-verification=cbb3b2f479e5448b33c1db6b92c0a5c13113593739aa38b3ab18f4e7dfcad023-1777467509",
       "OSSRH-69635",
-      "jamf-site-verification=tyNylgsFuzDaZKhtv2ws8A"
+      "wiz-domain-verification=22e8ef3cd472ce86a7a48ea0bf2d3113fa543c2d41f969132187ce1c7142466e",
+      "432125346-6247381",
+      "MS=ms31612776",
+      "apple-domain-verification=Xc0pXSUjiGdd6fzI"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-reports@dailymotion.com"
@@ -160,12 +195,12 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
       "*.dailymotion.com",
       "dailymotion.com"
     ],
-    "days_left": 30,
+    "days_left": 29,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
       "TLS1.1": false,
-      "TLS1.2": false,
+      "TLS1.2": true,
       "TLS1.3": true
     }
   },
@@ -187,8 +222,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
     {
       "origin": "https://evil-auditor.example",
       "acao": "",
-      "acac": "",
-      "error": "ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='dailymotion.com', port=443): Read timed out. (read timeout=8)\"))"
+      "acac": ""
     },
     {
       "origin": "https://sub.dailymotion.com",
@@ -201,9 +235,9 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
     "location": "https://dailymotion.com/"
   },
   "redir_probes": [
-    "/redirect?url=https://evil-auditor.example/x -> 0",
+    "/redirect?url=https://evil-auditor.example/x -> 301",
     "/redirect?next=https://evil-auditor.example/x -> 301",
-    "/go?url=https://evil-auditor.example/x -> 0",
+    "/go?url=https://evil-auditor.example/x -> 301",
     "/url?url=https://evil-auditor.example/x -> 301"
   ],
   "paths": {
@@ -215,16 +249,55 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
     "/.git/config": 301,
     "/.env": 301,
     "/.htaccess": 301,
-    "/wp-login.php": 0,
-    "/phpmyadmin/index.php": 0,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
     "/server-status": 301,
-    "/api/": 0
+    "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 226.8,
-  "rechecked": "2026-09-25 10:43 UTC"
+  "apex_txt": [
+    "notion-domain-verification=uvbWKKeyZnS8S7Wbx92ycOmg6ciLlUt4DXUbFAGGx9K",
+    "google-site-verification=CmwXiGhZe_wN9v_ACMLi26gPNF8jMSiO7IIm3uJDflU",
+    "anthropic-domain-verification-c1804p=NXPXkMxpSDDbn8bTInhn5Ajb7",
+    "canva-site-verification=M-ynsH9PuwqgXIvdn1n6XA",
+    "miro-verification=a02c054603f34e1def7bec67636b72d31e230cf4"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true,
+    "robots_disallow": [
+      "/a/*",
+      "/abuse/group/",
+      "/activate",
+      "*/adfit/*",
+      "/ajax/user",
+      "*/alphaaz/",
+      "*/alphaza/",
+      "*/bookmarks/",
+      "/controller/",
+      "*/cookie/dmaid/*",
+      "*/country/",
+      "*/created-after/",
+      "*/creative-official+internal/",
+      "/edit/",
+      "*/edited/"
+    ]
+  },
+  "elapsed_s": 39.2,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -233,4 +306,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

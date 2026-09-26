@@ -7,12 +7,12 @@
 | Target | https://oecd.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | oecd.org |
-| Test date | 2026-09-25 23:12 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -24,8 +24,14 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 | 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 7 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 8 | info | P8 | Missing security.txt | CWE-1038 |
-| 9 | info | CT1 | 124 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 10 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 9 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 10 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 11 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | CT1 | 124 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 16 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -84,13 +90,49 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 9. [INFO] 124 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 9. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 10. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=ywMTwu2FAsfR60NR80rZ3jMdv8Ku-rr1NVnMGvor75k; google-site-verification=SDEWojQdWXNif-TLtOo9erhxfQLpv29GSU6XhHK1r68; apple-domain-verification=Z7TTmRtTMuoxrVa2
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of oecd.org has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 13. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but oecd.org is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 2 disallow path(s), e.g. /content/dam/oecd/, /adobe/dynamicmedia/deliver/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 15. [INFO] 124 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.oecd.org, api.one-pp.oecd.org, api.one.oecd.org, login.my.oecd.org, login.oecd.org
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 10. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 16. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: login.my.oecd.org; content may still be served via virtual-host fallback.
@@ -103,10 +145,10 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
   "domain": "oecd.org",
   "dns": {
     "a": [
-      "151.101.67.10",
+      "151.101.195.10",
       "151.101.3.10",
       "151.101.131.10",
-      "151.101.195.10"
+      "151.101.67.10"
     ],
     "aaaa": [],
     "cname": null,
@@ -114,28 +156,28 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
       "oecd-org.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns1-03.azure-dns.com.",
-      "ns4-03.azure-dns.info.",
       "ns2-03.azure-dns.net.",
-      "ns3-03.azure-dns.org."
+      "ns1-03.azure-dns.com.",
+      "ns3-03.azure-dns.org.",
+      "ns4-03.azure-dns.info."
     ],
     "spf": [
-      "MS=ms12713444",
-      "docusign=26a8c1aa-ac33-45f2-9a60-8d2cd96d4b3d",
-      "google-site-verification=SDEWojQdWXNif-TLtOo9erhxfQLpv29GSU6XhHK1r68",
-      "2b065714-2fc1-4d13-b11f-08fbc02c7626",
       "google-site-verification=ywMTwu2FAsfR60NR80rZ3jMdv8Ku-rr1NVnMGvor75k",
       "d122tnk0lmcb7fw4lzdcvqmw9jdf4qqb",
-      "v=spf1 ip4:78.41.128.0/22 include:spf.protection.outlook.com -all",
+      "docusign=26a8c1aa-ac33-45f2-9a60-8d2cd96d4b3d",
+      "google-site-verification=SDEWojQdWXNif-TLtOo9erhxfQLpv29GSU6XhHK1r68",
       "apple-domain-verification=Z7TTmRtTMuoxrVa2",
+      "openai-domain-verification=dv-TmLkx83mPP4k3cYF7dEcKasX",
+      "cisco-ci-domain-verification=295dc971d1c6be2b5403477737c89eac7ec07601440a1e0855e475c20aa08f68",
+      "docusign=4a7be657-e630-44fc-87ba-b68287ac2a3d",
+      "hpe-greenlake-domain-verification=4677486a4449536d6173586553475a59354f6761314d47683048313635694334",
+      "v=spf1 ip4:78.41.128.0/22 include:spf.protection.outlook.com -all",
       "3f6aa5c46d2a4da482b5cb56af96dec1",
       "_c4vs31pucag8knkqzie5i90hhnstnug",
-      "adobe-idp-site-verification=fe3732a56cceead6122113a39f9385a693c3367314cdad48789e5cfbf77d5977",
-      "openai-domain-verification=dv-TmLkx83mPP4k3cYF7dEcKasX",
-      "hpe-greenlake-domain-verification=4677486a4449536d6173586553475a59354f6761314d47683048313635694334",
       "v/l2fKfgQ+sfAM7ZccgEU41dgW0s412pftzTh7XJzyim4AUo1Wi2WVai364FALz09lut6gJWcS8YLtAjbkatrA==",
-      "cisco-ci-domain-verification=295dc971d1c6be2b5403477737c89eac7ec07601440a1e0855e475c20aa08f68",
-      "docusign=4a7be657-e630-44fc-87ba-b68287ac2a3d"
+      "2b065714-2fc1-4d13-b11f-08fbc02c7626",
+      "adobe-idp-site-verification=fe3732a56cceead6122113a39f9385a693c3367314cdad48789e5cfbf77d5977",
+      "MS=ms12713444"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:mailincidentreport@oecd.org; ruf=mailto:mailincidentreport@oecd.org; fo=1;"
@@ -155,7 +197,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
       "*.oecd.org",
       "oecd.org"
     ],
-    "days_left": 52,
+    "days_left": 51,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -165,7 +207,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
     }
   },
   "ports": {
-    "ip": "151.101.67.10",
+    "ip": "151.101.195.10",
     "open": []
   },
   "https": {
@@ -249,8 +291,33 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
       "login.my.oecd.org"
     ]
   },
-  "elapsed_s": 45.6,
-  "rechecked": "2026-09-25 23:12 UTC"
+  "apex_txt": [
+    "google-site-verification=ywMTwu2FAsfR60NR80rZ3jMdv8Ku-rr1NVnMGvor75k",
+    "google-site-verification=SDEWojQdWXNif-TLtOo9erhxfQLpv29GSU6XhHK1r68",
+    "apple-domain-verification=Z7TTmRtTMuoxrVa2",
+    "openai-domain-verification=dv-TmLkx83mPP4k3cYF7dEcKasX",
+    "cisco-ci-domain-verification=295dc971d1c6be2b5403477737c89eac7ec07601440a1e0855e"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/content/dam/oecd/",
+      "/adobe/dynamicmedia/deliver/"
+    ]
+  },
+  "elapsed_s": 40.9,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -259,4 +326,5 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

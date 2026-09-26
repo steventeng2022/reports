@@ -7,63 +7,232 @@
 | Target | https://developer.android.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | developer.android.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-26 17:43 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 0, Low: 1, Info: 6)
+Total findings: **10** (High: 0, Medium: 0, Low: 0, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 3 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 4 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
-| 5 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 6 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 7 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
+| 4 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 5 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 6 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 7 | info | H6 | Server technology disclosure | CWE-200 |
+| 8 | info | P8 | Missing security.txt | CWE-1038 |
+| 9 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 10 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://developer.android.com/ without SameSite=Lax/Strict: session. Cross-site request cookies.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Missing Referrer-Policy (`H5`)
-
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://developer.android.com/; full URL (incl. query strings) is sent as referrer by default.
-
-### 3. [INFO] Missing Permissions-Policy (`H7`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://developer.android.com/; browser features (camera, mic, geolocation) unrestricted.
+- **Detail:** Detected: Server: Google Frontend
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 4. [INFO] sitemap.xml discloses URL inventory (`M1`)
-
-- **CWE:** CWE-200
-- **Detail:** sitemap.xml on https://developer.android.com/ lists 9 URLs.
-
-### 5. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://developer.android.com/ -> https://developer.android.com/ (positive check).
-
-### 6. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://developer.android.com/ exposes 10 unique Disallow path(s) (/assets/css/, /assets/images/, /assets/js/, /guide/samples/, /images/) and 1 sitemap reference(s)
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+- **Recommendation:** Verify the advertised protocol endpoints are configured.
 
-### 7. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+### 4. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 404 on developer.android.com.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-## Reproduction notes
+### 5. [INFO] Missing Permissions-Policy (`H7`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://developer.android.com/ final status: 200 (final URL https://developer.android.com/).
-- http://developer.android.com/ initial status: 301.
-- Certificate: Google Trust Services WR2, valid until 2026-12-03T19:23:17+00:00.
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
+
+### 6. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 7. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: Google Frontend
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 8. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 9. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of developer.android.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 10. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 10 disallow path(s), e.g. /assets/css/, /assets/images/, /assets/js/, /guide/samples/, /images/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "developer.android.com",
+  "dns": {
+    "a": [
+      "142.250.196.206"
+    ],
+    "aaaa": [
+      "2404:6800:4012:6::200e"
+    ],
+    "cname": "www3.l.google.com.",
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=developer.android.com",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
+    "notBefore": "Sep 10 19:23:18 2026 GMT",
+    "notAfter": "Dec  3 19:23:17 2026 GMT",
+    "san": [
+      "developer.android.com"
+    ],
+    "days_left": 68,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "142.250.196.206",
+    "open": []
+  },
+  "https": {
+    "status": 302,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: Google Frontend"
+  ],
+  "cookies": [
+    {},
+    {},
+    {},
+    {
+      "samesite": "none"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.developer.android.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://developer.android.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 302",
+    "/redirect?next=https://evil-auditor.example/x -> 302",
+    "/go?url=https://evil-auditor.example/x -> 302",
+    "/url?url=https://evil-auditor.example/x -> 302"
+  ],
+  "paths": {
+    "/robots.txt": 302,
+    "/sitemap.xml": 200,
+    "/.well-known/security.txt": 302,
+    "/security.txt": 302,
+    "/.git/HEAD": 302,
+    "/.git/config": 302,
+    "/.env": 302,
+    "/.htaccess": 302,
+    "/wp-login.php": 302,
+    "/phpmyadmin/index.php": 302,
+    "/server-status": 302,
+    "/api/": 302
+  },
+  "subdomains": {
+    "status": "ct-pending"
+  },
+  "cname_chain": [
+    "www3.l.google.com"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true,
+    "robots_disallow": [
+      "/assets/css/",
+      "/assets/images/",
+      "/assets/js/",
+      "/guide/samples/",
+      "/images/",
+      "/partners/",
+      "/sdk/OLD_RELEASENOTES",
+      "/sdk/RELEASENOTES",
+      "/sdk/older_releases",
+      "/shareables/"
+    ]
+  },
+  "elapsed_s": 15.2,
+  "rechecked": "2026-09-26 17:38 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

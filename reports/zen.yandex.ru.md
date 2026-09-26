@@ -7,12 +7,12 @@
 | Target | https://zen.yandex.ru/ |
 | Bug bounty program | Yandex |
 | Listed scope domain | zen.yandex.ru |
-| Test date | 2026-09-25 10:30 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
+Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,13 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | RED2 | Soft redirect (302/303) for HTTP to HTTPS | CWE-319 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
+| 13 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | CK5 | Cookie scoped to parent domain (.yandex.ru) | CWE-200 |
+| 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -105,6 +112,48 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 12. [LOW] SPF record has no explicit all mechanism (implicit +all) (`MAIL6`)
+
+- **CWE:** CWE-285
+- **Detail:** Without -all/~all/+all the SPF record implicitly authorizes all senders.
+- **Recommendation:** End the SPF record with -all or ~all.
+
+### 13. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 14. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=pS5x1twac3BzKk3hE85gZ3nDua-pdHnqwmamk-XtxP0; mailru-verification: 74012169191518f4; yandex-verification: adcf799d964be8a8
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of zen.yandex.ru has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 17. [INFO] Cookie scoped to parent domain (.yandex.ru) (`CK5`)
+
+- **CWE:** CWE-200
+- **Detail:** Set-Cookie Domain attribute is broader than the request host zen.yandex.ru.
+- **Recommendation:** Confirm the wider cookie scope is intended.
+
+### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 91 disallow path(s), e.g. /about*?*, /away, /top$, /search, /money
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -126,12 +175,12 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
       "ns3.yandex.ru."
     ],
     "spf": [
-      "facebook-domain-verification=3j25o2dnvau5xoluquutgkewnd2321",
-      "google-site-verification=GuJk1T5z2NlhKlN-pHwdtqiFEFJmvjm4pDu-lbj4g5A",
-      "v=spf1 include:_spf.yandex-team.ru include:mail.zendesk.com",
       "google-site-verification=pS5x1twac3BzKk3hE85gZ3nDua-pdHnqwmamk-XtxP0",
+      "mailru-verification: 74012169191518f4",
+      "v=spf1 include:_spf.yandex-team.ru include:mail.zendesk.com",
       "yandex-verification: adcf799d964be8a8",
-      "mailru-verification: 74012169191518f4"
+      "google-site-verification=GuJk1T5z2NlhKlN-pHwdtqiFEFJmvjm4pDu-lbj4g5A",
+      "facebook-domain-verification=3j25o2dnvau5xoluquutgkewnd2321"
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -194,7 +243,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
       "zen-redirect.yandex.ru",
       "zen.yandex.ru"
     ],
-    "days_left": 122,
+    "days_left": 121,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -268,10 +317,48 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
     "/api/": 302
   },
   "subdomains": {
-    "status": "crt.sh ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='crt.sh', port=443): Read (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 64.3,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "google-site-verification=pS5x1twac3BzKk3hE85gZ3nDua-pdHnqwmamk-XtxP0",
+    "mailru-verification: 74012169191518f4",
+    "yandex-verification: adcf799d964be8a8",
+    "google-site-verification=GuJk1T5z2NlhKlN-pHwdtqiFEFJmvjm4pDu-lbj4g5A",
+    "facebook-domain-verification=3j25o2dnvau5xoluquutgkewnd2321"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.2",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/about*?*",
+      "/away",
+      "/top$",
+      "/search",
+      "/money",
+      "/onboarding",
+      "/news/top",
+      "/news/smi",
+      "/news/search",
+      "/t/",
+      "/user/",
+      "/embed/",
+      "/*/url",
+      "/video/games/tags/",
+      "/*sso_failed="
+    ]
+  },
+  "elapsed_s": 41.8,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -280,4 +367,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://shareasale.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | shareasale.com |
-| Test date | 2026-09-25 10:14 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,10 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 | 11 | low | CK1 | Cookie set without Secure flag over HTTPS | CWE-614 |
 | 12 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
 | 13 | info | P8 | Missing security.txt | CWE-1038 |
+| 14 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
@@ -121,6 +125,30 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 14. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 15. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: adobe-sign-verification=6b46612fdf192a89f40282249c9d1f29; atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXlTSpjt
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of shareasale.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -128,10 +156,10 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
   "domain": "shareasale.com",
   "dns": {
     "a": [
-      "3.169.55.43",
-      "3.169.55.112",
+      "3.169.55.26",
       "3.169.55.2",
-      "3.169.55.26"
+      "3.169.55.112",
+      "3.169.55.43"
     ],
     "aaaa": [],
     "cname": null,
@@ -139,15 +167,15 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
       "shareasale-com.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "ns-1744.awsdns-26.co.uk.",
-      "ns-222.awsdns-27.com.",
+      "ns-581.awsdns-08.net.",
       "ns-1496.awsdns-59.org.",
-      "ns-581.awsdns-08.net."
+      "ns-1744.awsdns-26.co.uk.",
+      "ns-222.awsdns-27.com."
     ],
     "spf": [
-      "v=spf1 ip4:3.132.114.185 ip4:3.141.128.230 ip4:18.189.174.37 ip4:3.22.247.220 include:spf.protection.outlook.com include:emailsrvr.com include:_spf.salesforce.com include:mail.zendesk.com -all",
+      "adobe-sign-verification=6b46612fdf192a89f40282249c9d1f29",
       "atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXlTSpjtg1iNnMasAJ3GsD",
-      "adobe-sign-verification=6b46612fdf192a89f40282249c9d1f29"
+      "v=spf1 ip4:3.132.114.185 ip4:3.141.128.230 ip4:18.189.174.37 ip4:3.22.247.220 include:spf.protection.outlook.com include:emailsrvr.com include:_spf.salesforce.com include:mail.zendesk.com -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@vali.email; ruf=mailto:dmarc@awin.com;"
@@ -167,7 +195,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
       "shareasale.com",
       "*.shareasale.com"
     ],
-    "days_left": 64,
+    "days_left": 63,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -177,7 +205,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
     }
   },
   "ports": {
-    "ip": "3.169.55.43",
+    "ip": "3.169.55.26",
     "open": []
   },
   "https": {
@@ -234,10 +262,26 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 21.6,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "adobe-sign-verification=6b46612fdf192a89f40282249c9d1f29",
+    "atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXlTSpjt"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 7.1,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -246,4 +290,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

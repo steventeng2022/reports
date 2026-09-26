@@ -7,12 +7,12 @@
 | Target | https://chase.com/ |
 | Bug bounty program | Chase |
 | Listed scope domain | chase.com |
-| Test date | 2026-09-25 09:01 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:41 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
+Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,7 +27,10 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
-| 12 | info | CT1 | 114 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 12 | low | MAIL12 | MTA-STS TXT published but policy file unreachable | CWE-285 |
+| 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | CT1 | 114 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -106,7 +109,25 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 12. [INFO] 114 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 12. [LOW] MTA-STS TXT published but policy file unreachable (`MAIL12`)
+
+- **CWE:** CWE-285
+- **Detail:** GET https://mta-sts.chase.com/.well-known/mta-sts/policy.txt failed from this vantage point.
+- **Recommendation:** Publish a reachable policy.txt or remove the TXT record.
+
+### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: wiz-domain-verification=ccd3ec907fff510311f6a14b2a659fcb83adea2818bb6e78503239d2; google-site-verification=w00TwyVREI5RpqAT9hqSLZVvZcZi46578G57D1aMGeE; google-site-verification=iZwZzo1YPl0G29U136Suzn4c1VptcA_LkvvdWOYC6B0
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of chase.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 15. [INFO] 114 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -126,41 +147,41 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
     "aaaa": [],
     "cname": null,
     "mx": [
+      "cluster14a.us.messagelabs.com (pref 40)",
       "cluster14.us.messagelabs.com (pref 10)",
       "cluster14.us.messagelabs.com (pref 20)",
-      "cluster14a.us.messagelabs.com (pref 40)",
       "cluster14.us.messagelabs.com (pref 30)"
     ],
     "ns": [
-      "ns2.jpmorganchase.com.",
       "ns0140.secondary.cloudflare.com.",
-      "ns0119.secondary.cloudflare.com.",
-      "ns1.jpmorganchase.com.",
+      "ns2.jpmorganchase.com.",
       "ns06.jpmorganchase.com.",
-      "ns05.jpmorganchase.com."
+      "ns1.jpmorganchase.com.",
+      "ns05.jpmorganchase.com.",
+      "ns0119.secondary.cloudflare.com."
     ],
     "spf": [
-      "wiz-domain-verification=66aa74155d5e84d10ed4b5a786a66f94063cff3b4c7e11d09fb46f027736dbf0",
       "wiz-domain-verification=ccd3ec907fff510311f6a14b2a659fcb83adea2818bb6e78503239d2877e8657?",
-      "docusign=b04ddbec-21ac-4d6b-bb8b-3f1a3bca079f",
-      "pendo-domain-verification=1f6e5677-d405-438e-88ba-141766793ce8",
-      "atlassian-domain-verification=Ua2Fovb97Ak39kxh4koulfhVlpieV1PLhaMkdZpzINDMQGlcvLV+ORgL2QmOryw+",
-      "onetrust-domain-verification=ccee45576c1e4fbfaa4014725a73344f",
-      "DirectFedAuthUrl=https://idauatg2.jpmorganchase.com/adfs/ls/",
+      "_m47rp0d9u3ci4ycif1echp310q0yy09",
+      "google-site-verification=w00TwyVREI5RpqAT9hqSLZVvZcZi46578G57D1aMGeE",
       "docusign=500adee6-4cca-451d-bcd8-2813346419c8",
+      "smartsheet-site-validation=JdBS3Kn_332V6dI9U0iq0TV3RZZXTUhL",
+      "google-site-verification=iZwZzo1YPl0G29U136Suzn4c1VptcA_LkvvdWOYC6B0",
+      "wiz-domain-verification=68c6d9fa0c4bdd60150d3df50635cd0fcf4af6af079771d90239d10add2c2967",
+      "wiz-domain-verification=66aa74155d5e84d10ed4b5a786a66f94063cff3b4c7e11d09fb46f027736dbf0",
       "atlassian-domain-verification=wUjrfh2T73RznZOKmEZfc0mRF92bjC7JyjSgRXg9Yt2e9ZMRZwafUO6GPJaecYOh",
+      "google-site-verification=PfSAyrffyVUKXLc1Ew8C2IFPWkjufFSsbboFz_24Qt4",
+      "atlassian-domain-verification=PZApk1vJjd7scChzBMQy2d4NEwk4Bt26obCVACc7vWiOBVCOxTOV4/EB9LMexMnl",
+      "sinch-domain-verification=6848bb42-da6f-49cf-8974-920af9cf1806",
+      "DirectFedAuthUrl=https://idauatg2.jpmorganchase.com/adfs/ls/",
+      "atlassian-domain-verification=Ua2Fovb97Ak39kxh4koulfhVlpieV1PLhaMkdZpzINDMQGlcvLV+ORgL2QmOryw+",
+      "docusign=b04ddbec-21ac-4d6b-bb8b-3f1a3bca079f",
+      "wiz-domain-verification=a0d8d067bcb1cdd44255d0633a31df3ba13c82e30f27c080519b0b85ba734d32",
       "atlassian-domain-verification\\u003dpD6ozLCGDinP/R+vd5R9hpoPCSOmTFTHfWPK633PXEtELa5KlVDw4w1Pnn02aTdC",
       "airtable-verification=1d59ed5062280d21aeef0c14aaf4f950",
-      "google-site-verification=iZwZzo1YPl0G29U136Suzn4c1VptcA_LkvvdWOYC6B0",
-      "google-site-verification=PfSAyrffyVUKXLc1Ew8C2IFPWkjufFSsbboFz_24Qt4",
       "v=spf1 include:tpo.chase.com exists:%{i}.spf.chase.com exists:%{i}.spf.hc4673-96.iphmx.com exists:%{i}.spf.hc4698-8.iphmx.com -all",
-      "sinch-domain-verification=6848bb42-da6f-49cf-8974-920af9cf1806",
-      "_m47rp0d9u3ci4ycif1echp310q0yy09",
-      "wiz-domain-verification=a0d8d067bcb1cdd44255d0633a31df3ba13c82e30f27c080519b0b85ba734d32",
-      "google-site-verification=w00TwyVREI5RpqAT9hqSLZVvZcZi46578G57D1aMGeE",
-      "atlassian-domain-verification=PZApk1vJjd7scChzBMQy2d4NEwk4Bt26obCVACc7vWiOBVCOxTOV4/EB9LMexMnl",
-      "wiz-domain-verification=68c6d9fa0c4bdd60150d3df50635cd0fcf4af6af079771d90239d10add2c2967",
-      "smartsheet-site-validation=JdBS3Kn_332V6dI9U0iq0TV3RZZXTUhL"
+      "pendo-domain-verification=1f6e5677-d405-438e-88ba-141766793ce8",
+      "onetrust-domain-verification=ccee45576c1e4fbfaa4014725a73344f"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:d@rua.agari.com; ruf=mailto:d@ruf.agari.com;"
@@ -181,7 +202,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "chase.com",
       "www-ndc.chase.com"
     ],
-    "days_left": 181,
+    "days_left": 180,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -267,8 +288,27 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "capture.chase.com"
     ]
   },
-  "elapsed_s": 108.5,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "wiz-domain-verification=ccd3ec907fff510311f6a14b2a659fcb83adea2818bb6e78503239d2",
+    "google-site-verification=w00TwyVREI5RpqAT9hqSLZVvZcZi46578G57D1aMGeE",
+    "google-site-verification=iZwZzo1YPl0G29U136Suzn4c1VptcA_LkvvdWOYC6B0",
+    "wiz-domain-verification=68c6d9fa0c4bdd60150d3df50635cd0fcf4af6af079771d90239d10a",
+    "wiz-domain-verification=66aa74155d5e84d10ed4b5a786a66f94063cff3b4c7e11d09fb46f02"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 29.6,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -277,4 +317,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

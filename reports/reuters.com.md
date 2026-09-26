@@ -7,12 +7,12 @@
 | Target | https://reuters.com/ |
 | Bug bounty program | Reuters |
 | Listed scope domain | reuters.com |
-| Test date | 2026-09-26 14:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
+Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,14 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | low | RED10 | Host header reflected into redirect Location | CWE-601 |
+| 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | CT1 | 138 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 19 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -105,6 +113,54 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: yahoo-verification-key=5bF6siWgzdkfub3ZLp8cnSL2ps44ipYuy28vgoM7qDA=; openai-domain-verification=dv-3vP8oxOY9pDhfiwzHjba8jmZ; google-site-verification=FZwUpO_E2LIEPLqcxfWRpQipxi2faQ4Qt4wyYJpJr1g
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of reuters.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [LOW] Host header reflected into redirect Location (`RED10`)
+
+- **CWE:** CWE-601
+- **Detail:** GET with Host: evil-auditor.example -> Location: https://www.evil-auditor.example/
+- **Recommendation:** Validate redirect targets against the expected host.
+
+### 17. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 28 disallow path(s), e.g. /finance/stocks/option, /finance/stocks/financialHighlights, /search, /site-search/, /beta
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 18. [INFO] 138 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: apps.data.reuters.com, aws.contentdownloader.reuters.com, aws.dev.contentdownloader.reuters.com, aws.qa.contentdownloader.reuters.com, dev.ace.reuters.com, dev.commsmonitor.wne.reuters.com, dev.contentdownloader.reuters.com, dev.gpdb.media.reuters.com, dev.gpdbservices.media.reuters.com, dev.graphics.reuters.com
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+### 19. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+
+- **CWE:** CWE-200
+- **Detail:** Historical subdomains no longer have A/AAAA records: aws.dev.contentdownloader.reuters.com, dev.ace.reuters.com; content may still be served via virtual-host fallback.
+- **Recommendation:** Reclaim or delete dangling subdomains to reduce virtual-hosting attack surface.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -122,22 +178,22 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
     ],
     "ns": [
       "ns-aws-2.thomsonreuters.net.",
-      "ns-aws-3.thomsonreuters.org.",
       "ns-aws-1.thomsonreuters.com.",
-      "ns-aws-4.thomsonreuters.co.uk."
+      "ns-aws-4.thomsonreuters.co.uk.",
+      "ns-aws-3.thomsonreuters.org."
     ],
     "spf": [
-      "openai-domain-verification=dv-3vP8oxOY9pDhfiwzHjba8jmZ",
       "yahoo-verification-key=5bF6siWgzdkfub3ZLp8cnSL2ps44ipYuy28vgoM7qDA=",
+      "openai-domain-verification=dv-3vP8oxOY9pDhfiwzHjba8jmZ",
+      "google-site-verification=FZwUpO_E2LIEPLqcxfWRpQipxi2faQ4Qt4wyYJpJr1g",
+      "apple-domain-verification=voAz1fDhqIN4vRxG52m4VSOgLipH0OMyfJIprobVB1U",
+      "MS=ms24417066",
+      "google-site-verification=O1A9GoZ5a23atyZjR2IBMnmdG-jz3mrsQ900uMn0sbY",
       "apple-domain-verification=cKpm3aVB5VEf9fQ0oxIIumulcv3CvTjrOGvqF8nUDO8",
       "google-site-verification=7UwjlMmBYuyFWx01Pu6NEVEWRPD9W25PnwffZejseEg",
-      "apple-domain-verification=voAz1fDhqIN4vRxG52m4VSOgLipH0OMyfJIprobVB1U",
-      "google-site-verification=FZwUpO_E2LIEPLqcxfWRpQipxi2faQ4Qt4wyYJpJr1g",
+      "google-site-verification=LMfrSuyToK_ofO0MSu-lf5QJhLYITHNDX09ofoF7_FY",
       "facebook-domain-verification=ra7bjxso3pnjy2p63mdc0002chquca",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
-      "google-site-verification=O1A9GoZ5a23atyZjR2IBMnmdG-jz3mrsQ900uMn0sbY",
-      "MS=ms24417066",
-      "google-site-verification=LMfrSuyToK_ofO0MSu-lf5QJhLYITHNDX09ofoF7_FY"
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -386,10 +442,92 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "source": "certspotter",
+    "count": 138,
+    "notable": [
+      "apps.data.reuters.com",
+      "aws.contentdownloader.reuters.com",
+      "aws.dev.contentdownloader.reuters.com",
+      "aws.qa.contentdownloader.reuters.com",
+      "dev.ace.reuters.com",
+      "dev.commsmonitor.wne.reuters.com",
+      "dev.contentdownloader.reuters.com",
+      "dev.gpdb.media.reuters.com",
+      "dev.gpdbservices.media.reuters.com",
+      "dev.graphics.reuters.com",
+      "dev.livesapi.wne.reuters.com",
+      "dev.monitorapi.wne.reuters.com",
+      "dev.stats.wne.reuters.com",
+      "my.reuters.com",
+      "ppe.videobroadcast.cdn.reuters.com"
+    ],
+    "sample": [
+      "about.reuters.com",
+      "ace.reuters.com",
+      "adminportal-lab.reuters.com",
+      "adminportal-qa.reuters.com",
+      "adminportal.reuters.com",
+      "agency.reuters.com",
+      "apps.data.reuters.com",
+      "aws.contentdownloader.reuters.com",
+      "aws.dev.contentdownloader.reuters.com",
+      "aws.qa.contentdownloader.reuters.com",
+      "branding.reuters.com",
+      "charts.data.reuters.com",
+      "ci-fwc.pix.reuters.com",
+      "ci-web.pix.reuters.com",
+      "commsmonitor.wne.reuters.com",
+      "contentdownloader.reuters.com",
+      "coproducer.reuters.com",
+      "datashare-black.data.reuters.com",
+      "datashare-dev.data.reuters.com",
+      "datashare-orange.data.reuters.com"
+    ],
+    "dangling": [
+      "aws.dev.contentdownloader.reuters.com",
+      "dev.ace.reuters.com"
+    ]
   },
-  "elapsed_s": 24.5,
-  "rechecked": "2026-09-26 14:53 UTC"
+  "apex_txt": [
+    "yahoo-verification-key=5bF6siWgzdkfub3ZLp8cnSL2ps44ipYuy28vgoM7qDA=",
+    "openai-domain-verification=dv-3vP8oxOY9pDhfiwzHjba8jmZ",
+    "google-site-verification=FZwUpO_E2LIEPLqcxfWRpQipxi2faQ4Qt4wyYJpJr1g",
+    "apple-domain-verification=voAz1fDhqIN4vRxG52m4VSOgLipH0OMyfJIprobVB1U",
+    "google-site-verification=O1A9GoZ5a23atyZjR2IBMnmdG-jz3mrsQ900uMn0sbY"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.2",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/finance/stocks/option",
+      "/finance/stocks/financialHighlights",
+      "/search",
+      "/site-search/",
+      "/beta",
+      "/designtech",
+      "/featured-optimize",
+      "/energy-test",
+      "/article/beta",
+      "/sponsored/previewcampaign",
+      "/sponsored/previewarticle",
+      "/test/",
+      "/news/archive/commentary",
+      "/brandfeatures/venture-capital",
+      "/assets/siteindex"
+    ]
+  },
+  "elapsed_s": 28.5,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -398,4 +536,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

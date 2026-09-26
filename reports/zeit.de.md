@@ -7,12 +7,12 @@
 | Target | https://zeit.de/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | zeit.de |
-| Test date | 2026-09-25 10:29 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
+Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,6 +25,12 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
 | 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 9 | info | P8 | Missing security.txt | CWE-1038 |
+| 10 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -89,6 +95,42 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 10. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 11. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: tollbit-domain-verification=0acc441095133f12278c9179168937ecd19b3f5c9b36b930acac; klaviyo-site-verification=VfVpZ3; 1password-site-verification=76KQ3OKJ3FH35OMHXYMAINGJ5Q
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of zeit.de has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 14. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but zeit.de is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 43 disallow path(s), e.g. /angebote/, /zeit/, /suche/, /templates/, /hp_channels/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -104,44 +146,44 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
       "zeit-de.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "dns4.p01.nsone.net.",
-      "dns1.p01.nsone.net.",
+      "dns3.p01.nsone.net.",
       "dns2.p01.nsone.net.",
-      "dns3.p01.nsone.net."
+      "dns4.p01.nsone.net.",
+      "dns1.p01.nsone.net."
     ],
     "spf": [
-      "a8e28041862668f7d799dcf2cdff2f75",
-      "google-gws-recovery-domain-verification=59065683",
-      "mgverify=fa8deab5e1cdad1afca895f77cb4460493457c695b1b6b0bccc40a8732f882da",
-      "teamviewer-sso-verification=0da1e5ee3dc04351aa206dff020cda50",
-      "miro-verification=00f74b9596272eaafb51a7d481892788837e487b",
-      "klaviyo-site-verification=VfVpZ3",
-      "smeazeit.sbc1.getdirectrouting.de",
       "tollbit-domain-verification=0acc441095133f12278c9179168937ecd19b3f5c9b36b930acac5d3a96353c14",
-      "gxg1t2ljzzj4n05h57kh5bvsxjr1ctcp",
-      "jamf-site-verification=qlf_TOpLdeS2DNRMndJxIA",
-      "atlassian-domain-verification=0KXQ/HyHlWaW2LeS2kKh/QYjoZkk7smirpVo/Q1IPHetkLFv/eN7OwNE/FKNVMh7",
+      "klaviyo-site-verification=VfVpZ3",
       "1password-site-verification=76KQ3OKJ3FH35OMHXYMAINGJ5Q",
       "5F0-8UN-VT6",
-      "MS=ms15247335",
       "mxI8RUm6rfKEWT0c",
-      "adobe-idp-site-verification=9204c69a-b8c5-4286-a6d5-6c3259f8cf1d",
-      "MS=ms37100824",
+      "adobe-idp-site-verification=23219eabc0a82ab7eca544a45515b433090e77f559461941395be62189f6d8f0",
+      "mgverify=fa8deab5e1cdad1afca895f77cb4460493457c695b1b6b0bccc40a8732f882da",
+      "3j98x7j4yjf2xvtw6gt4rt8yjn117l3x",
       "smeazeit.sbc2.getdirectrouting.de",
-      "apple-domain-verification=TYlrXCrrWPMzHzAY",
+      "pardot1088002=2b9a0e203820f4740ccc144cc3a5c523f49f60334cd030c6b87aac23cf9ef02e",
+      "a8e28041862668f7d799dcf2cdff2f75",
+      "atlassian-domain-verification=0KXQ/HyHlWaW2LeS2kKh/QYjoZkk7smirpVo/Q1IPHetkLFv/eN7OwNE/FKNVMh7",
+      "google-gws-recovery-domain-verification=59065683",
+      "figma-domain-verification=5e6d24ca5cac9fbcdad302605f2185d9a7fef03e17170672f424d334b70a949b-1768473624",
+      "canva-site-verification=HGiDOMp4J0OMWIO_vX2irg",
+      "smeazeit.sbc1.getdirectrouting.de",
+      "adobe-idp-site-verification=9204c69a-b8c5-4286-a6d5-6c3259f8cf1d",
+      "MS=ms15247335",
+      "MS=ms37100824",
+      "asv=128b0bc0702196cf36653421800e6808",
+      "jamf-site-verification=qlf_TOpLdeS2DNRMndJxIA",
+      "teamviewer-sso-verification=0da1e5ee3dc04351aa206dff020cda50",
       "P2A_58148_200",
+      "google-site-verification=tLw22x4l0DHcYxy-T7rQxtbQp2bh3_GJ6vAeRXJQEAw",
+      "apple-domain-verification=TYlrXCrrWPMzHzAY",
+      "atlassian-domain-verification=1ImdxQwjaBPB5dXgPBYl2HIs9t45uAqjWHxPe2aKn2aKCTUXGuf3HXbG5vYm2959",
+      "gxg1t2ljzzj4n05h57kh5bvsxjr1ctcp",
+      "miro-verification=00f74b9596272eaafb51a7d481892788837e487b",
+      "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A",
       "elevenlabs=AkVMNw8U-sHd65pGypKEoqiMEsmMhUooL9FJ4TyUgaQ",
       "anthropic-domain-verification-djwjvt=JzQ9OZDYsDipeKOp8ddQCSBkh",
-      "3j98x7j4yjf2xvtw6gt4rt8yjn117l3x",
-      "google-site-verification=tLw22x4l0DHcYxy-T7rQxtbQp2bh3_GJ6vAeRXJQEAw",
-      "asv=128b0bc0702196cf36653421800e6808",
-      "figma-domain-verification=5e6d24ca5cac9fbcdad302605f2185d9a7fef03e17170672f424d334b70a949b-1768473624",
-      "atlassian-domain-verification=1ImdxQwjaBPB5dXgPBYl2HIs9t45uAqjWHxPe2aKn2aKCTUXGuf3HXbG5vYm2959",
-      "pardot1088002=2b9a0e203820f4740ccc144cc3a5c523f49f60334cd030c6b87aac23cf9ef02e",
-      "canva-site-verification=HGiDOMp4J0OMWIO_vX2irg",
-      "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A",
-      "v=spf1 mx include:spf1.zeit.de include:spf.mailjet.com include:sendgrid.net include:spf.mandrillapp.com include:spfa.myconvento.com include:spf.protection.outlook.com ~all",
-      "adobe-idp-site-verification=23219eabc0a82ab7eca544a45515b433090e77f559461941395be62189f6d8f0"
+      "v=spf1 mx include:spf1.zeit.de include:spf.mailjet.com include:sendgrid.net include:spf.mandrillapp.com include:spfa.myconvento.com include:spf.protection.outlook.com ~all"
     ],
     "dmarc": [
       "v=DMARC1; p=none;"
@@ -160,7 +202,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
     "san": [
       "zeit.de"
     ],
-    "days_left": 37,
+    "days_left": 36,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -217,10 +259,48 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='crt.sh', port=443): Read (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 53.8,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "tollbit-domain-verification=0acc441095133f12278c9179168937ecd19b3f5c9b36b930acac",
+    "klaviyo-site-verification=VfVpZ3",
+    "1password-site-verification=76KQ3OKJ3FH35OMHXYMAINGJ5Q",
+    "adobe-idp-site-verification=23219eabc0a82ab7eca544a45515b433090e77f559461941395b",
+    "atlassian-domain-verification=0KXQ/HyHlWaW2LeS2kKh/QYjoZkk7smirpVo/Q1IPHetkLFv/e"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/angebote/",
+      "/zeit/",
+      "/suche/",
+      "/templates/",
+      "/hp_channels/",
+      "/send/",
+      "/rezepte/suche/",
+      "*/comment-thread?",
+      "*/liveblog-backend*",
+      "/framebuilder/",
+      "/campus/framebuilder/",
+      "/navigation-teasers*",
+      "*iqadcontroller.js",
+      "/",
+      "/"
+    ]
+  },
+  "elapsed_s": 28.5,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -229,4 +309,5 @@ Total findings: **9** (High: 0, Medium: 0, Low: 3, Info: 6)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

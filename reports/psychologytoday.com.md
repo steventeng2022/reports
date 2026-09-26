@@ -7,12 +7,12 @@
 | Target | https://psychologytoday.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | psychologytoday.com |
-| Test date | 2026-09-25 10:11 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
+Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,14 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 | 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 11 | info | H6 | Server technology disclosure | CWE-200 |
 | 12 | info | P8 | Missing security.txt | CWE-1038 |
+| 13 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
+| 14 | info | MAIL10 | DMARC subdomain policy (sp=) set while apex policy is p=none | CWE-285 |
+| 15 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 16 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 19 | low | RED10 | Host header reflected into redirect Location | CWE-601 |
+| 20 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -112,6 +120,54 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 13. [LOW] SPF record has no explicit all mechanism (implicit +all) (`MAIL6`)
+
+- **CWE:** CWE-285
+- **Detail:** Without -all/~all/+all the SPF record implicitly authorizes all senders.
+- **Recommendation:** End the SPF record with -all or ~all.
+
+### 14. [INFO] DMARC subdomain policy (sp=) set while apex policy is p=none (`MAIL10`)
+
+- **CWE:** CWE-285
+- **Detail:** Subdomains are enforced while the apex domain is monitor-only.
+- **Recommendation:** Confirm the split policy is intended.
+
+### 15. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 16. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: ahrefs-site-verification_c5eacc8f555523e31dce89e9442b03648fc2b7d2fead535dfe8c736; rippling-domain-verification=4d1920958a9eff40; google-site-verification=G-wasBQCXXJoehIaVW5BsO9VYKt4oqmWGo155wSSakQ
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of psychologytoday.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 19. [LOW] Host header reflected into redirect Location (`RED10`)
+
+- **CWE:** CWE-601
+- **Detail:** GET with Host: evil-auditor.example -> Location: http://evil-auditor.example/us
+- **Recommendation:** Validate redirect targets against the expected host.
+
+### 20. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 156 disallow path(s), e.g. /, /, /, /, /
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -119,8 +175,8 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
   "domain": "psychologytoday.com",
   "dns": {
     "a": [
-      "44.205.114.56",
-      "100.50.67.152"
+      "100.50.67.152",
+      "44.205.114.56"
     ],
     "aaaa": [],
     "cname": null,
@@ -128,22 +184,22 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "psychologytoday-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns-1884.awsdns-43.co.uk.",
-      "ns-442.awsdns-55.com.",
       "ns-1135.awsdns-13.org.",
-      "ns-672.awsdns-20.net."
+      "ns-672.awsdns-20.net.",
+      "ns-442.awsdns-55.com.",
+      "ns-1884.awsdns-43.co.uk."
     ],
     "spf": [
       "v=spf1 ip4:64.115.237.0/24  include:spf.protection.outlook.com ",
       "include:mxlogic.net include:servers.mcsv.net include:spf.mandrillapp.com ",
       "ip4:216.250.171.184/28 ip4:65.83.107.192/26 ",
       "-all",
-      "facebook-domain-verification=zvzd8hbx2rbjjfjniv0zv3jlv8r2lg",
-      "google-site-verification=G-wasBQCXXJoehIaVW5BsO9VYKt4oqmWGo155wSSakQ",
-      "rippling-domain-verification=4d1920958a9eff40",
-      "google-site-verification=8_DFXIUlkFaRa9nq3ahPGfevCdxMEdkg-0c2T9kA8SM",
       "ahrefs-site-verification_c5eacc8f555523e31dce89e9442b03648fc2b7d2fead535dfe8c7364341ced7a",
-      "MS=ms39591051"
+      "MS=ms39591051",
+      "rippling-domain-verification=4d1920958a9eff40",
+      "google-site-verification=G-wasBQCXXJoehIaVW5BsO9VYKt4oqmWGo155wSSakQ",
+      "facebook-domain-verification=zvzd8hbx2rbjjfjniv0zv3jlv8r2lg",
+      "google-site-verification=8_DFXIUlkFaRa9nq3ahPGfevCdxMEdkg-0c2T9kA8SM"
     ],
     "dmarc": [
       "v=DMARC1;p=none;pct=100;rua=mailto:admin@psychologytoday.com,mailto:re+jtahk01sryk@dmarc.postmarkapp.com;adkim=r;aspf=r;sp=quarantine;"
@@ -157,13 +213,13 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
     "cipher": "TLS_AES_128_GCM_SHA256",
     "subject": "commonName=*.psychologytoday.com",
     "issuer": "countryName=US, organizationName=Amazon, commonName=Amazon RSA 2048 M01",
-    "notBefore": "Oct 27 00:00:00 2025 GMT",
-    "notAfter": "Nov 24 23:59:59 2026 GMT",
+    "notBefore": "Sep 26 00:00:00 2026 GMT",
+    "notAfter": "Apr 11 23:59:59 2027 GMT",
     "san": [
       "*.psychologytoday.com",
       "psychologytoday.com"
     ],
-    "days_left": 60,
+    "days_left": 197,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -173,7 +229,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
     }
   },
   "ports": {
-    "ip": "44.205.114.56",
+    "ip": "100.50.67.152",
     "open": []
   },
   "https": {
@@ -223,10 +279,48 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 37.5,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "ahrefs-site-verification_c5eacc8f555523e31dce89e9442b03648fc2b7d2fead535dfe8c736",
+    "rippling-domain-verification=4d1920958a9eff40",
+    "google-site-verification=G-wasBQCXXJoehIaVW5BsO9VYKt4oqmWGo155wSSakQ",
+    "facebook-domain-verification=zvzd8hbx2rbjjfjniv0zv3jlv8r2lg",
+    "google-site-verification=8_DFXIUlkFaRa9nq3ahPGfevCdxMEdkg-0c2T9kA8SM"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/includes/",
+      "/misc/",
+      "/modules/",
+      "/profiles/",
+      "/scripts/",
+      "/themes/"
+    ]
+  },
+  "elapsed_s": 27.0,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -235,4 +329,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

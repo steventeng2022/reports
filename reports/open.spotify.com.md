@@ -7,12 +7,12 @@
 | Target | https://open.spotify.com/ |
 | Bug bounty program | Spotify |
 | Listed scope domain | open.spotify.com |
-| Test date | 2026-09-25 10:05 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
+Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -24,6 +24,10 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 | 6 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 7 | info | H6 | Server technology disclosure | CWE-200 |
 | 8 | info | P8 | Missing security.txt | CWE-1038 |
+| 9 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 10 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 11 | info | CK5 | Cookie scoped to parent domain (.spotify.com) | CWE-200 |
+| 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -36,7 +40,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 ### 2. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires in 12 days (notAfter Oct  7 19:01:59 2026 GMT).
+- **Detail:** Certificate expires in 11 days (notAfter Oct  7 19:01:59 2026 GMT).
 - **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
 ### 3. [INFO] Technology fingerprint (`TECH1`)
@@ -80,6 +84,30 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 9. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of open.spotify.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 10. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but open.spotify.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 11. [INFO] Cookie scoped to parent domain (.spotify.com) (`CK5`)
+
+- **CWE:** CWE-200
+- **Detail:** Set-Cookie Domain attribute is broader than the request host open.spotify.com.
+- **Recommendation:** Confirm the wider cookie scope is intended.
+
+### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 16 disallow path(s), e.g. /local/, /download/, /embed/, /, /
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -87,16 +115,16 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
   "domain": "open.spotify.com",
   "dns": {
     "a": [
-      "151.101.195.42",
       "151.101.131.42",
       "151.101.67.42",
-      "151.101.3.42"
+      "151.101.3.42",
+      "151.101.195.42"
     ],
     "aaaa": [
-      "2a04:4e42:400::810",
-      "2a04:4e42::810",
       "2a04:4e42:200::810",
-      "2a04:4e42:600::810"
+      "2a04:4e42:600::810",
+      "2a04:4e42::810",
+      "2a04:4e42:400::810"
     ],
     "cname": "atc.spotify.map.fastly.net.",
     "mx": [],
@@ -117,7 +145,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
     "san": [
       "open.spotify.com"
     ],
-    "days_left": 12,
+    "days_left": 11,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -127,7 +155,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
     }
   },
   "ports": {
-    "ip": "151.101.195.42",
+    "ip": "151.101.131.42",
     "open": []
   },
   "https": {
@@ -195,10 +223,44 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
     "/api/": 404
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 33.5,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "cname_chain": [
+    "atc.spotify.map.fastly.net"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/local/",
+      "/download/",
+      "/embed/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "/",
+      "User-agent:"
+    ]
+  },
+  "elapsed_s": 20.6,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -207,4 +269,5 @@ Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

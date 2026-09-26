@@ -7,12 +7,12 @@
 | Target | https://t.co/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | t.co |
-| Test date | 2026-09-25 10:22 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 | 12 | info | H6 | Server technology disclosure | CWE-200 |
 | 13 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
 | 14 | info | P8 | Missing security.txt | CWE-1038 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -126,6 +129,24 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of t.co has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but t.co is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 17. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 3 disallow path(s), e.g. #, User-agent:, /
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -139,20 +160,20 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     "cname": null,
     "mx": [],
     "ns": [
-      "c.r06.twtrdns.net.",
+      "c.u06.twtrdns.net.",
+      "b.r06.twtrdns.net.",
+      "b.u06.twtrdns.net.",
       "a.u06.twtrdns.net.",
       "d.r06.twtrdns.net.",
-      "d.u06.twtrdns.net.",
-      "b.u06.twtrdns.net.",
+      "c.r06.twtrdns.net.",
       "a.r06.twtrdns.net.",
-      "c.u06.twtrdns.net.",
-      "b.r06.twtrdns.net."
+      "d.u06.twtrdns.net."
     ],
     "spf": [
-      "1nfb08f5jkpy0flhn6lwml2vk7x34hrd",
-      "48qgbs8f2v055y997kpf4cx2302fzfs2",
       "v=spf1 -all",
-      "1z8q6j6wymwb6bh0t3q28tp7vsbgnh6d"
+      "1nfb08f5jkpy0flhn6lwml2vk7x34hrd",
+      "1z8q6j6wymwb6bh0t3q28tp7vsbgnh6d",
+      "48qgbs8f2v055y997kpf4cx2302fzfs2"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; adkim=s; aspf=s; rua=mailto:d@rua.agari.com; ruf=mailto:d@ruf.agari.com; fo=1"
@@ -171,7 +192,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     "san": [
       "t.co"
     ],
-    "days_left": 70,
+    "days_left": 69,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -242,10 +263,29 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     "/api/": 404
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 50.9,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.3",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "#",
+      "User-agent:",
+      "/"
+    ]
+  },
+  "elapsed_s": 11.6,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -254,4 +294,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

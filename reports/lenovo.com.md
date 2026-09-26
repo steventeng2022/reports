@@ -7,12 +7,12 @@
 | Target | https://lenovo.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | lenovo.com |
-| Test date | 2026-09-25 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
+Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,10 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | low | RED1 | HTTP redirect points to another host over plain HTTP | CWE-319 |
 | 12 | info | P8 | Missing security.txt | CWE-1038 |
+| 13 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
@@ -113,6 +117,30 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 13. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 14. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: figma-domain-verification=8b6b33942e392f3a6b635697b081e78986a6854d82587c11ae4b1b; openai-domain-verification=dv-w6UANk0E74dbpJI3mTMHPfxP; Dynatrace-site-verification=9bffa29b-0dbd-4e8f-8c8c-b28fca3b1bdf__49s5b44hnes32j
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of lenovo.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -120,7 +148,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
   "domain": "lenovo.com",
   "dns": {
     "a": [
-      "104.115.211.7"
+      "23.49.123.153"
     ],
     "aaaa": [],
     "cname": null,
@@ -128,55 +156,55 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
       "lenovo-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "a24-65.akam.net.",
+      "a1-79.akam.net.",
       "a3-67.akam.net.",
       "a28-66.akam.net.",
-      "a1-79.akam.net.",
+      "a24-65.akam.net.",
       "a8-64.akam.net.",
       "a11-64.akam.net."
     ],
     "spf": [
-      "google-gws-recovery-domain-verification=53030486",
-      "google-site-verification=IGQvpRBrmSETWSziSpzxK4YIjUVeTyNb5mTytcatDD8",
-      "v=spf1 include:spf.lenovo.com include:vendorspf.lenovo.com ~all",
-      "google-site-verification=hxNSoF46anzjUtyFgpRVpzshTkYClFBJ7OAT3Dz6440",
-      "63posrsg6o3q95dtuc80da228n",
-      "airtable-verification=1d5415310fbcf1fdc72c0b175208089a",
-      "duo_sso_verification=2eFmztpfk73LXpFC92aOkVdh4qWYBJ169vmf2WqC2omGJBXPVugwvp3gTFjX8cr2",
-      "duo_sso_verification=sKtyF9pQMvjVPX6vq4nzV00r7qKNkEVAkkb0Tlx1om1ZqroOG1eZEexVxJr0kfAY",
-      "google-site-verification=vyPsFusgDLeWzvnapRyBbiva5dXJ1JIJjcNbGuO52-k",
-      "4b60110d90a0ba16827618f3165cf720c5458664c9392ea157363087784e0292",
-      "MS=ms38130575",
-      "google-site-verification=VxW_e6r_Ka7A518qfX2MmIMHGnkpGbnACsjSxKFCBw0",
-      "_0nv5veu70xwpobopaobpzyaqo6i9iv8",
-      "openai-domain-verification=dv-w6UANk0E74dbpJI3mTMHPfxP",
-      "Visit www.lenovo.com/think for information about Lenovo products and services",
-      "_globalsign-domain-verification=4qaYYFkDr3zY8xFnX817RHQdbwKtr7S6GWVF9HLJ3P",
-      "fastly-domain-delegation-Gg2T0SlTwT-2021-03-09",
-      "google-site-verification=sHIlSlj0U6UnCDkfHp1AolWgVEvDjWvc0TR4KaysD2c",
-      "a82c74b37aa84e7c8580f0e32f4d795d",
-      "google-site-verification=nGgukcp60rC-gFxMOJw1NHH0B4VnSchRrlfWV-He_tE",
-      "x1n4n7dfpt5hlqlv6vpbtg2czj5bk2y8",
-      "qh7hdmqm4lzs85p704d6wsybgrpsly0j",
-      "Dynatrace-site-verification=9bffa29b-0dbd-4e8f-8c8c-b28fca3b1bdf__49s5b44hnes32j605089h3f60a",
-      "pendo-domain-verification=KCqOPkCxJXwRvhV7udrsxm7aBQg",
-      "iEf8OeY/ebUNJkh8rH9jcDmdS7Uq9B5wNePdkhhqLVHgHP4eekupSYlmdsz+e3Y59/XTCbHY40h1BtI5cpfDJw==",
-      "ece42d7743c84d6889abda7011fe6f53",
-      "atlassian-domain-verification=lBI3riiS/hlfifAaegKM2zDr7vf//HR7mVq7kfQbtMrynu8eQKK3NyDc7EVwWPRs",
-      "_dnsauth=4hlzyrmrk0hdkk4c96qw745ll5h58x35",
-      "adobe-idp-site-verification=5540c96206f5fe2df921a6c596ea9fb3d7e418d3eddb598c29935cc03163805b",
-      "qctqpsq058s3t12m0rjf2jxw8jnvn0zr",
-      "figma-domain-verification=77471062f3395d7cb96639684e519d0b3d276830c64ca7e17ea13b8f28203680-1772698461",
-      "google-site-verification=KT4YATm6NeQqaD0WLCJtFOjb0gYXhbzUekUM9Rm-fb8",
-      "facebook-domain-verification=1r2am7c2bhzrxpqyt0mda0djoquqsi",
-      "_globalsign-domain-verification=feXxUwi7bGccktj7bI7l7OYmFCm_x8ogmN1-U4Hu-T",
-      "smartsheet-site-validation=rRKFFSIrRIhcJ7s3nfiTgTC_jH46Dlu_",
-      "cursor-domain-verification-k5ed5k=vc6Qb8LpyNVHcyT7pkGQklhoh",
-      "google-site-verification=247PPmmalrNARHoE2rmOJ3YQygtMquQwLpM_LzVXsFg",
       "figma-domain-verification=8b6b33942e392f3a6b635697b081e78986a6854d82587c11ae4b1b3bd257b6f1-1784306874",
+      "openai-domain-verification=dv-w6UANk0E74dbpJI3mTMHPfxP",
+      "Dynatrace-site-verification=9bffa29b-0dbd-4e8f-8c8c-b28fca3b1bdf__49s5b44hnes32j605089h3f60a",
+      "MS=ms38130575",
+      "Visit www.lenovo.com/think for information about Lenovo products and services",
+      "qh7hdmqm4lzs85p704d6wsybgrpsly0j",
+      "adobe-idp-site-verification=5540c96206f5fe2df921a6c596ea9fb3d7e418d3eddb598c29935cc03163805b",
+      "atlassian-domain-verification=lBI3riiS/hlfifAaegKM2zDr7vf//HR7mVq7kfQbtMrynu8eQKK3NyDc7EVwWPRs",
       "google-site-verification=HESboqU3DntBTT9PbwXRvCBnD3atK7HWgIcv3TJcllw",
       "google-site-verification=1dLAd9aAmT5IZx0wSSkxrD-Fk3izPYLC3Hw_nCQ56sw",
-      "atlassian-domain-verification=Vx1wgyd3FWPEj1cw8sYFv4k6przB3O0EzfmiVawbgV4nMmAqY0fcCo6BeaOrg24G"
+      "iEf8OeY/ebUNJkh8rH9jcDmdS7Uq9B5wNePdkhhqLVHgHP4eekupSYlmdsz+e3Y59/XTCbHY40h1BtI5cpfDJw==",
+      "_globalsign-domain-verification=feXxUwi7bGccktj7bI7l7OYmFCm_x8ogmN1-U4Hu-T",
+      "_globalsign-domain-verification=4qaYYFkDr3zY8xFnX817RHQdbwKtr7S6GWVF9HLJ3P",
+      "google-site-verification=hxNSoF46anzjUtyFgpRVpzshTkYClFBJ7OAT3Dz6440",
+      "fastly-domain-delegation-Gg2T0SlTwT-2021-03-09",
+      "facebook-domain-verification=1r2am7c2bhzrxpqyt0mda0djoquqsi",
+      "63posrsg6o3q95dtuc80da228n",
+      "pendo-domain-verification=KCqOPkCxJXwRvhV7udrsxm7aBQg",
+      "4b60110d90a0ba16827618f3165cf720c5458664c9392ea157363087784e0292",
+      "smartsheet-site-validation=rRKFFSIrRIhcJ7s3nfiTgTC_jH46Dlu_",
+      "v=spf1 include:spf.lenovo.com include:vendorspf.lenovo.com ~all",
+      "google-site-verification=IGQvpRBrmSETWSziSpzxK4YIjUVeTyNb5mTytcatDD8",
+      "google-site-verification=KT4YATm6NeQqaD0WLCJtFOjb0gYXhbzUekUM9Rm-fb8",
+      "google-site-verification=sHIlSlj0U6UnCDkfHp1AolWgVEvDjWvc0TR4KaysD2c",
+      "google-gws-recovery-domain-verification=53030486",
+      "airtable-verification=1d5415310fbcf1fdc72c0b175208089a",
+      "qctqpsq058s3t12m0rjf2jxw8jnvn0zr",
+      "a82c74b37aa84e7c8580f0e32f4d795d",
+      "_dnsauth=4hlzyrmrk0hdkk4c96qw745ll5h58x35",
+      "atlassian-domain-verification=Vx1wgyd3FWPEj1cw8sYFv4k6przB3O0EzfmiVawbgV4nMmAqY0fcCo6BeaOrg24G",
+      "_0nv5veu70xwpobopaobpzyaqo6i9iv8",
+      "x1n4n7dfpt5hlqlv6vpbtg2czj5bk2y8",
+      "google-site-verification=VxW_e6r_Ka7A518qfX2MmIMHGnkpGbnACsjSxKFCBw0",
+      "figma-domain-verification=77471062f3395d7cb96639684e519d0b3d276830c64ca7e17ea13b8f28203680-1772698461",
+      "duo_sso_verification=sKtyF9pQMvjVPX6vq4nzV00r7qKNkEVAkkb0Tlx1om1ZqroOG1eZEexVxJr0kfAY",
+      "cursor-domain-verification-k5ed5k=vc6Qb8LpyNVHcyT7pkGQklhoh",
+      "google-site-verification=vyPsFusgDLeWzvnapRyBbiva5dXJ1JIJjcNbGuO52-k",
+      "duo_sso_verification=2eFmztpfk73LXpFC92aOkVdh4qWYBJ169vmf2WqC2omGJBXPVugwvp3gTFjX8cr2",
+      "google-site-verification=nGgukcp60rC-gFxMOJw1NHH0B4VnSchRrlfWV-He_tE",
+      "google-site-verification=247PPmmalrNARHoE2rmOJ3YQygtMquQwLpM_LzVXsFg",
+      "ece42d7743c84d6889abda7011fe6f53"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@lenovo.com,mailto:bzo4atck@ag.ap.dmarcian.com; ruf=mailto:dmarc_ruf@lenovo.com"
@@ -196,7 +224,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
       "*.lenovo.com",
       "lenovo.com"
     ],
-    "days_left": 128,
+    "days_left": 127,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -206,7 +234,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
     }
   },
   "ports": {
-    "ip": "104.115.211.7",
+    "ip": "23.49.123.153",
     "open": []
   },
   "https": {
@@ -256,10 +284,29 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='crt.sh', port=443): Read (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 25.8,
-  "rechecked": "2026-09-25 17:50 UTC"
+  "apex_txt": [
+    "figma-domain-verification=8b6b33942e392f3a6b635697b081e78986a6854d82587c11ae4b1b",
+    "openai-domain-verification=dv-w6UANk0E74dbpJI3mTMHPfxP",
+    "Dynatrace-site-verification=9bffa29b-0dbd-4e8f-8c8c-b28fca3b1bdf__49s5b44hnes32j",
+    "adobe-idp-site-verification=5540c96206f5fe2df921a6c596ea9fb3d7e418d3eddb598c2993",
+    "atlassian-domain-verification=lBI3riiS/hlfifAaegKM2zDr7vf//HR7mVq7kfQbtMrynu8eQK"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 5.9,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -268,4 +315,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

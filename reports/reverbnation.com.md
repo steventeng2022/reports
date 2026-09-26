@@ -7,12 +7,12 @@
 | Target | https://reverbnation.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | reverbnation.com |
-| Test date | 2026-09-26 01:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,7 +27,12 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
-| 12 | info | CT1 | 24 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | low | DNS3 | Wildcard DNS detected | CWE-345 |
+| 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | CT1 | 24 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
 
 ## Detailed findings
 
@@ -106,7 +111,37 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 12. [INFO] 24 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [LOW] Wildcard DNS detected (`DNS3`)
+
+- **CWE:** CWE-345
+- **Detail:** Two random labels (i72gs9tau5pe0u.reverbnation.com and 3sgjs14wxdsrwc.reverbnation.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
+
+### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=q5lr3cb0ykzlqrgp690whm7lyy9a4n; google-site-verification=vKoPprQ3OHR48keWjnsdn5zbOuqH8cjHhwYTSv5LBD4
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of reverbnation.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 17. [INFO] 24 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: blog.reverbnation.com, help.reverbnation.com
@@ -128,21 +163,21 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
     "cname": null,
     "mx": [
       "aspmx2.googlemail.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx3.googlemail.com (pref 10)"
     ],
     "ns": [
-      "ns-1132.awsdns-13.org.",
-      "ns-1972.awsdns-54.co.uk.",
       "ns-117.awsdns-14.com.",
-      "ns-800.awsdns-36.net."
+      "ns-1132.awsdns-13.org.",
+      "ns-800.awsdns-36.net.",
+      "ns-1972.awsdns-54.co.uk."
     ],
     "spf": [
-      "google-site-verification=vKoPprQ3OHR48keWjnsdn5zbOuqH8cjHhwYTSv5LBD4",
       "facebook-domain-verification=q5lr3cb0ykzlqrgp690whm7lyy9a4n",
-      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:_spf.reverbnation.com include:servers.mcsv.net include:transmail.net ~all"
+      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:_spf.reverbnation.com include:servers.mcsv.net include:transmail.net ~all",
+      "google-site-verification=vKoPprQ3OHR48keWjnsdn5zbOuqH8cjHhwYTSv5LBD4"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=quarantine; rua=mailto:d9c27693@mxtoolbox.dmarc-report.com; rf=afrf; pct=100; ri=86400"
@@ -251,8 +286,25 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "www.msmfr.reverbnation.com"
     ]
   },
-  "elapsed_s": 20.3,
-  "rechecked": "2026-09-26 01:45 UTC"
+  "wildcard_dns": true,
+  "apex_txt": [
+    "facebook-domain-verification=q5lr3cb0ykzlqrgp690whm7lyy9a4n",
+    "google-site-verification=vKoPprQ3OHR48keWjnsdn5zbOuqH8cjHhwYTSv5LBD4"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 9.2,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -261,4 +313,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

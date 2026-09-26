@@ -7,18 +7,21 @@
 | Target | https://youtube-nocookie.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | youtube-nocookie.com |
-| Test date | 2026-09-25 17:56 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **3** (High: 0, Medium: 1, Low: 1, Info: 1)
+Total findings: **6** (High: 0, Medium: 1, Low: 1, Info: 4)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
 | 2 | medium | TLS2 | TLS certificate hostname mismatch | CWE-297 |
 | 3 | low | TLS6 | Certificate SAN does not include the target hostname | CWE-297 |
+| 4 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 5 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 6 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
@@ -40,6 +43,24 @@ Total findings: **3** (High: 0, Medium: 1, Low: 1, Info: 1)
 - **Detail:** Presented certificate SANs ['*.google.com', '*.appengine.google.com', '*.bdn.dev', '*.origin-test.bdn.dev', '*.cloud.google.com', '*.crowdsource.google.com'] do not include youtube-nocookie.com.
 - **Recommendation:** Issue a certificate covering this hostname (or wildcard).
 
+### 4. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 5. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 6. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of youtube-nocookie.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -57,10 +78,10 @@ Total findings: **3** (High: 0, Medium: 1, Low: 1, Info: 1)
       "smtp.google.com (pref 0)"
     ],
     "ns": [
-      "ns1.google.com.",
-      "ns4.google.com.",
+      "ns2.google.com.",
       "ns3.google.com.",
-      "ns2.google.com."
+      "ns1.google.com.",
+      "ns4.google.com."
     ],
     "spf": [
       "v=spf1 ip4:208.117.224.0/19 ip4:208.65.152.0/22 ip4:64.15.112.0/20 include:google.com mx ~all"
@@ -146,7 +167,7 @@ Total findings: **3** (High: 0, Medium: 1, Low: 1, Info: 1)
       "android.clients.google.com",
       "*.aistudio.google.com"
     ],
-    "days_left": 69,
+    "days_left": 68,
     "san_match": false,
     "protocols": {
       "SSLv3": false,
@@ -181,8 +202,23 @@ Total findings: **3** (High: 0, Medium: 1, Low: 1, Info: 1)
     "notable": [],
     "sample": []
   },
-  "elapsed_s": 3.6,
-  "rechecked": "2026-09-25 17:50 UTC"
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "error": "root GET failed"
+  },
+  "elapsed_s": 2.9,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -191,4 +227,5 @@ Total findings: **3** (High: 0, Medium: 1, Low: 1, Info: 1)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

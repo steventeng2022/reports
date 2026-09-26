@@ -7,12 +7,12 @@
 | Target | https://tripadvisor.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | tripadvisor.com |
-| Test date | 2026-09-26 14:56 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 0, Low: 3, Info: 5)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -24,6 +24,14 @@ Total findings: **8** (High: 0, Medium: 0, Low: 3, Info: 5)
 | 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 7 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 8 | info | P8 | Missing security.txt | CWE-1038 |
+| 9 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 10 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 11 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | CT1 | 125 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 16 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -82,6 +90,54 @@ Total findings: **8** (High: 0, Medium: 0, Low: 3, Info: 5)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 9. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 10. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: bitrise-verification=b03d9c7c59423f9c-nSSshb2Ef1iv; protonmail-verification=5e35a64e327cebe41439dc21e8657f78970c051a; _globalsign-domain-verification=GaLfs98jrznUbwIzD2n4S8pINM0PU-EyBVWkTTQvp9
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of tripadvisor.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 13. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but tripadvisor.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 679 disallow path(s), e.g. /, /5349, /AccommodationTips, /AccountMerge, /Achievements
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 15. [INFO] 125 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: api.a.tripadvisor.com, api.b.tripadvisor.com, api.content.tripadvisor.com, api.tripadvisor.com, api.w.tripadvisor.com, cdn.tripadvisor.com, certificate-requestor.ops.tripadvisor.com, docs.terra.tripadvisor.com, els-cerebro-ashburn.ops.tripadvisor.com, els-kibana1-ashburn.ops.tripadvisor.com
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+### 16. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+
+- **CWE:** CWE-200
+- **Detail:** Historical subdomains no longer have A/AAAA records: api.a.tripadvisor.com; content may still be served via virtual-host fallback.
+- **Recommendation:** Reclaim or delete dangling subdomains to reduce virtual-hosting attack surface.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -89,9 +145,9 @@ Total findings: **8** (High: 0, Medium: 0, Low: 3, Info: 5)
   "domain": "tripadvisor.com",
   "dns": {
     "a": [
+      "65.9.180.28",
       "65.9.180.77",
       "65.9.180.51",
-      "65.9.180.28",
       "65.9.180.34"
     ],
     "aaaa": [],
@@ -100,53 +156,53 @@ Total findings: **8** (High: 0, Medium: 0, Low: 3, Info: 5)
       "smtp.google.com (pref 10)"
     ],
     "ns": [
-      "ns-1455.awsdns-53.org.",
-      "ns-1702.awsdns-20.co.uk.",
       "ns-584.awsdns-09.net.",
-      "ns-218.awsdns-27.com."
+      "ns-1702.awsdns-20.co.uk.",
+      "ns-218.awsdns-27.com.",
+      "ns-1455.awsdns-53.org."
     ],
     "spf": [
-      "segment-site-verification=Lv56Wm7ECxH2FrJtoG9FmQ77Co6nf93L",
-      "docker-verification=a6e2315b-2f86-428a-84d7-52270aea1853",
-      "cursor-domain-verification-bwta0g=rGWNgTQrx8pQ3A5XE0S1XxKzM",
-      "asv=d902c0e169042b928445d5bc9a610e24",
-      "atlassian-domain-verification=w2N0fg0r/RRZCQ7UgNfpKKFXJH1kvCtLacvj/HzML7VZYyhEDT7N1skt744NCyxJ",
-      "stripe-verification=A71BECF4CEF430F171A6A2382BEECE6A64B9633FC460020EB8A205A95669B679",
-      "cisco-ci-domain-verification=6de74e9c24339dc358b099e999ca47c34dd162c04f635f9810372e2000ad9f57",
-      "pardot_211512_*=005e7416cb39efdf4ede9f02352c05fe01bf0e6c5435039550bdab7d707cae58",
-      "perplexity-ai-domain-verification-2hn78f=hnjr1IgErK6Rjhxpscmyv9Ztq",
-      "anthropic-domain-verification-pc5mq6=ebxPo8aNNofNaqlqU65hyJHjA",
-      "_2erojipq9p68ygptyqgypy83ah2dnzz",
-      "teamviewer-sso-verification=b42c480c302645eb8ed8f32688556be4",
-      "facebook-domain-verification=rld5ayte5pgnngj4ljg2ovn3kaeo4q",
-      "datadome-domain-verify=LtwSY8f9UsuWkflYriVEN5xJW7jb1OGB",
-      "zapier-domain-verification-challenge=e7c8b772-89e7-420e-b76b-3a084b0bbf83",
-      "google-site-verification=XMWC5EUo1s-TCtWPBEwzBDLUHqlmf-UcS-t7E8YRlmw",
-      "jamf-site-verification=Ac2uXdbieW6reJXv2o4UQw",
-      "b4jddSWKFAZrS-Y8QD1o7T2nzdk",
-      "spf2.0/pra",
       "MS=ms43904515",
-      "_globalsign-domain-verification=GaLfs98jrznUbwIzD2n4S8pINM0PU-EyBVWkTTQvp9",
-      "_18y5y646xcsfq732og6fu2xmgabh125",
-      "google-site-verification=u10Ue1BCmah8YviQ9Ju9IqSP-xZtlgEnBloxhP5Lhn8",
-      "twilio-domain-verification=57fba14b7bba9c1c99652540a081cc79",
-      "onetrust-domain-verification=9214adc265ab47e992a332150c6a315b",
-      "miro-verification=6ff1de40e337f458d05086183318e55305c99fe1",
-      "docusign=4c82afdc-4187-4e03-9e78-8dbdc5ed7d0d",
-      "protonmail-verification=5e35a64e327cebe41439dc21e8657f78970c051a",
-      "docusign=f4d14366-23f0-482a-bc08-98b15bd25db6",
-      "duo_sso_verification=N763Lu3Yt0ygaRnHrvqziKZ7YVtOU95w7GXyHhCljSOT7d1KVi7z2TSRd5BR4a3Q",
-      "sprout-social-85a564fb-ff50-11ef-b8c4-0e418c465417",
-      "v=spf1 include:_spf.tripadvisor.com include:mail.zendesk.com ~all",
-      "bnyGlxykTsBZSdNWWe3jXJ5tVU2U7gsTx6UjsZyIpHk=",
-      "apple-domain-verification=jtPwxHyUkw7GVjBd",
-      "MS=E0371C101EE1151078A9F24A7375E7021319CF9E",
-      "bugcrowd-verification=4889742e219d4b280f2d3673d147a6a9",
-      "jetbrains-domain-verification=5zlraawspitiqhi2hp4wizy31",
       "bitrise-verification=b03d9c7c59423f9c-nSSshb2Ef1iv",
-      "astro-domain-verification=cmhtl2g8213y801lqzjo38fe8",
+      "v=spf1 include:_spf.tripadvisor.com include:mail.zendesk.com ~all",
+      "_2erojipq9p68ygptyqgypy83ah2dnzz",
+      "protonmail-verification=5e35a64e327cebe41439dc21e8657f78970c051a",
+      "docusign=4c82afdc-4187-4e03-9e78-8dbdc5ed7d0d",
+      "_globalsign-domain-verification=GaLfs98jrznUbwIzD2n4S8pINM0PU-EyBVWkTTQvp9",
+      "twilio-domain-verification=57fba14b7bba9c1c99652540a081cc79",
+      "google-site-verification=XMWC5EUo1s-TCtWPBEwzBDLUHqlmf-UcS-t7E8YRlmw",
+      "sprout-social-85a564fb-ff50-11ef-b8c4-0e418c465417",
+      "docusign=f4d14366-23f0-482a-bc08-98b15bd25db6",
+      "jamf-site-verification=Ac2uXdbieW6reJXv2o4UQw",
+      "_18y5y646xcsfq732og6fu2xmgabh125",
+      "cisco-ci-domain-verification=6de74e9c24339dc358b099e999ca47c34dd162c04f635f9810372e2000ad9f57",
+      "miro-verification=6ff1de40e337f458d05086183318e55305c99fe1",
+      "apple-domain-verification=jtPwxHyUkw7GVjBd",
+      "docker-verification=a6e2315b-2f86-428a-84d7-52270aea1853",
+      "MS=E0371C101EE1151078A9F24A7375E7021319CF9E",
+      "segment-site-verification=Lv56Wm7ECxH2FrJtoG9FmQ77Co6nf93L",
+      "atlassian-domain-verification=w2N0fg0r/RRZCQ7UgNfpKKFXJH1kvCtLacvj/HzML7VZYyhEDT7N1skt744NCyxJ",
+      "zapier-domain-verification-challenge=e7c8b772-89e7-420e-b76b-3a084b0bbf83",
+      "stripe-verification=A71BECF4CEF430F171A6A2382BEECE6A64B9633FC460020EB8A205A95669B679",
+      "b4jddSWKFAZrS-Y8QD1o7T2nzdk",
       "openai-domain-verification=dv-5I8xhFhqZatLn3rbDbmtgpc2",
-      "pendo-domain-verification=M8PpCcCrkPq-ll2Fr1arfZA1YvI"
+      "spf2.0/pra",
+      "datadome-domain-verify=LtwSY8f9UsuWkflYriVEN5xJW7jb1OGB",
+      "bugcrowd-verification=4889742e219d4b280f2d3673d147a6a9",
+      "perplexity-ai-domain-verification-2hn78f=hnjr1IgErK6Rjhxpscmyv9Ztq",
+      "duo_sso_verification=N763Lu3Yt0ygaRnHrvqziKZ7YVtOU95w7GXyHhCljSOT7d1KVi7z2TSRd5BR4a3Q",
+      "pendo-domain-verification=M8PpCcCrkPq-ll2Fr1arfZA1YvI",
+      "asv=d902c0e169042b928445d5bc9a610e24",
+      "facebook-domain-verification=rld5ayte5pgnngj4ljg2ovn3kaeo4q",
+      "pardot_211512_*=005e7416cb39efdf4ede9f02352c05fe01bf0e6c5435039550bdab7d707cae58",
+      "jetbrains-domain-verification=5zlraawspitiqhi2hp4wizy31",
+      "teamviewer-sso-verification=b42c480c302645eb8ed8f32688556be4",
+      "onetrust-domain-verification=9214adc265ab47e992a332150c6a315b",
+      "astro-domain-verification=cmhtl2g8213y801lqzjo38fe8",
+      "bnyGlxykTsBZSdNWWe3jXJ5tVU2U7gsTx6UjsZyIpHk=",
+      "anthropic-domain-verification-pc5mq6=ebxPo8aNNofNaqlqU65hyJHjA",
+      "google-site-verification=u10Ue1BCmah8YviQ9Ju9IqSP-xZtlgEnBloxhP5Lhn8",
+      "cursor-domain-verification-bwta0g=rGWNgTQrx8pQ3A5XE0S1XxKzM"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-rua@tripadvisor.com; ruf=mailto:dmarc-ruf@tripadvisor.com"
@@ -218,7 +274,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 3, Info: 5)
     }
   },
   "ports": {
-    "ip": "65.9.180.77",
+    "ip": "65.9.180.28",
     "open": []
   },
   "https": {
@@ -265,10 +321,91 @@ Total findings: **8** (High: 0, Medium: 0, Low: 3, Info: 5)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='crt.sh', port=443): Read (certspotter 429)"
+    "source": "certspotter",
+    "count": 125,
+    "notable": [
+      "api.a.tripadvisor.com",
+      "api.b.tripadvisor.com",
+      "api.content.tripadvisor.com",
+      "api.tripadvisor.com",
+      "api.w.tripadvisor.com",
+      "cdn.tripadvisor.com",
+      "certificate-requestor.ops.tripadvisor.com",
+      "docs.terra.tripadvisor.com",
+      "els-cerebro-ashburn.ops.tripadvisor.com",
+      "els-kibana1-ashburn.ops.tripadvisor.com",
+      "els-kibana2-ashburn.ops.tripadvisor.com",
+      "grfdbproxy.ops.tripadvisor.com",
+      "jenkins-ashburn.ops.tripadvisor.com",
+      "jenkins-master.ops.tripadvisor.com",
+      "k8s-prom-ashburn.ops.tripadvisor.com"
+    ],
+    "sample": [
+      "accounts-dev.tripadvisor.com",
+      "accounts-sbx.tripadvisor.com",
+      "accounts.tripadvisor.com",
+      "api-bing.tripadvisor.com",
+      "api.a.tripadvisor.com",
+      "api.b.tripadvisor.com",
+      "api.content.tripadvisor.com",
+      "api.tripadvisor.com",
+      "api.w.tripadvisor.com",
+      "ar.tripadvisor.com",
+      "assetlibrary.tripadvisor.com",
+      "backup-api.tripadvisor.com",
+      "brandswetravelwith.tripadvisor.com",
+      "cdn.tripadvisor.com",
+      "certificate-requestor.ops.tripadvisor.com",
+      "cn.tripadvisor.com",
+      "dev-api.content.tripadvisor.com",
+      "dev-terra.tripadvisor.com",
+      "docs.terra.tripadvisor.com",
+      "dynamic-media-cdn.tripadvisor.com"
+    ],
+    "dangling": [
+      "api.a.tripadvisor.com"
+    ]
   },
-  "elapsed_s": 27.9,
-  "rechecked": "2026-09-26 14:53 UTC"
+  "apex_txt": [
+    "bitrise-verification=b03d9c7c59423f9c-nSSshb2Ef1iv",
+    "protonmail-verification=5e35a64e327cebe41439dc21e8657f78970c051a",
+    "_globalsign-domain-verification=GaLfs98jrznUbwIzD2n4S8pINM0PU-EyBVWkTTQvp9",
+    "twilio-domain-verification=57fba14b7bba9c1c99652540a081cc79",
+    "google-site-verification=XMWC5EUo1s-TCtWPBEwzBDLUHqlmf-UcS-t7E8YRlmw"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/",
+      "/5349",
+      "/AccommodationTips",
+      "/AccountMerge",
+      "/Achievements",
+      "/ActionRecord",
+      "/AddForumUser",
+      "/AddListing",
+      "/AdRequestEventLogApi",
+      "/AdsManager",
+      "/adsoverview",
+      "/AffiliateWidgets",
+      "/AirlineRegistration",
+      "/AirlineTips",
+      "/AirportFromGeoAjax"
+    ]
+  },
+  "elapsed_s": 10.6,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -277,4 +414,5 @@ Total findings: **8** (High: 0, Medium: 0, Low: 3, Info: 5)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

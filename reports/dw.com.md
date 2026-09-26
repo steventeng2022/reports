@@ -7,12 +7,12 @@
 | Target | https://dw.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | dw.com |
-| Test date | 2026-09-26 14:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
+Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,7 +25,14 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 | 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 9 | info | P8 | Missing security.txt | CWE-1038 |
-| 10 | info | CT1 | 17 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 10 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
+| 11 | low | MAIL9 | DMARC enforces (p=reject) but has no reporting address (rua) | CWE-285 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | CT1 | 17 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -91,7 +98,49 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 10. [INFO] 17 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 10. [LOW] SPF record has no explicit all mechanism (implicit +all) (`MAIL6`)
+
+- **CWE:** CWE-285
+- **Detail:** Without -all/~all/+all the SPF record implicitly authorizes all senders.
+- **Recommendation:** End the SPF record with -all or ~all.
+
+### 11. [LOW] DMARC enforces (p=reject) but has no reporting address (rua) (`MAIL9`)
+
+- **CWE:** CWE-285
+- **Detail:** Without a rua= reporting address the policy cannot be tuned; mis-sends may be silently quarantined.
+- **Recommendation:** Add a rua= reporting mailbox to the DMARC record.
+
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: teamviewer-sso-verification=57fb36a8398445fc808d31a8bee8edca; jamf-site-verification=VzImhW6bKsbg86C4ZMCWfg; apple-domain-verification=vBdShnLUGnPMCvIg
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of dw.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 67 disallow path(s), e.g. /search/, /*/search/, /overlay/, /popups/mediaplayer/, /popups/popup_gallery/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 17. [INFO] 17 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: jobs.dw.com
@@ -104,8 +153,8 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
   "domain": "dw.com",
   "dns": {
     "a": [
-      "194.55.26.46",
-      "194.55.30.46"
+      "194.55.30.46",
+      "194.55.26.46"
     ],
     "aaaa": [],
     "cname": null,
@@ -113,24 +162,24 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
       "dw-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "dns4.netcologne.de.",
-      "voltaire.dwelle.de.",
       "dns5.netcologne.de.",
+      "voltaire.dwelle.de.",
+      "dns4.netcologne.de.",
       "dns3.netcologne.de."
     ],
     "spf": [
-      "teamviewer-sso-verification=57fb36a8398445fc808d31a8bee8edca",
-      "jamf-site-verification=VzImhW6bKsbg86C4ZMCWfg",
-      "apple-domain-verification=71lMwTH6feCf0VJS",
-      "adobe-idp-site-verification=dd7ac996-1443-4180-9755-342404d53a4c",
-      "KewQ0sSdpaTF58pY71mtuZuuRhTip0nkIZQXczy8YI3flbo0X0MX2ymCjtQSHysSX/tHB691GLsOAB4ob9g+rA==",
       "v=spf1 ip4:194.55.30.155 ip4:194.55.30.156 ip4:194.55.26.155 ip4:194.55.26.156 ip4:81.209.250.80 ip4:81.209.250.76 ip4:81.209.250.78 ip4:83.133.243.211 ip4:185.17.245.132 ip4:185.17.245.28",
       " include:spf.umantis.com include:spf.de.umantis.com include:spf.protection.outlook.com",
       " include:spf1.checkinserver.com include:spf.vizito.be include:spf.send.business-beat.eu -all",
-      "amazonses:NcKjDbDrJqvaflTjJpYU24E8SwJhcD8L4P8f0UYl7rQ=",
-      "miro-verification=5b57a1504272050f14683cddfb29af797bfa1133",
+      "teamviewer-sso-verification=57fb36a8398445fc808d31a8bee8edca",
+      "jamf-site-verification=VzImhW6bKsbg86C4ZMCWfg",
+      "apple-domain-verification=vBdShnLUGnPMCvIg",
       "MS=ms20961559",
-      "apple-domain-verification=vBdShnLUGnPMCvIg"
+      "KewQ0sSdpaTF58pY71mtuZuuRhTip0nkIZQXczy8YI3flbo0X0MX2ymCjtQSHysSX/tHB691GLsOAB4ob9g+rA==",
+      "miro-verification=5b57a1504272050f14683cddfb29af797bfa1133",
+      "amazonses:NcKjDbDrJqvaflTjJpYU24E8SwJhcD8L4P8f0UYl7rQ=",
+      "adobe-idp-site-verification=dd7ac996-1443-4180-9755-342404d53a4c",
+      "apple-domain-verification=71lMwTH6feCf0VJS"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;ruf=mailto:dmarc-report@dw.com"
@@ -160,7 +209,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
     }
   },
   "ports": {
-    "ip": "194.55.26.46",
+    "ip": "194.55.30.46",
     "open": []
   },
   "https": {
@@ -232,8 +281,46 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
       "tv-download.dw.com"
     ]
   },
-  "elapsed_s": 24.1,
-  "rechecked": "2026-09-26 16:29 UTC"
+  "apex_txt": [
+    "teamviewer-sso-verification=57fb36a8398445fc808d31a8bee8edca",
+    "jamf-site-verification=VzImhW6bKsbg86C4ZMCWfg",
+    "apple-domain-verification=vBdShnLUGnPMCvIg",
+    "miro-verification=5b57a1504272050f14683cddfb29af797bfa1133",
+    "adobe-idp-site-verification=dd7ac996-1443-4180-9755-342404d53a4c"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/search/",
+      "/*/search/",
+      "/overlay/",
+      "/popups/mediaplayer/",
+      "/popups/popup_gallery/",
+      "/*/layoutvorlagen/",
+      "/*/user/account$",
+      "/*/user/activity$",
+      "/*/user/profile$",
+      "/*/user/password/change$",
+      "/*/user/password/set$",
+      "/*/user/feedback/status?type=*",
+      "/*/user/register/confirm$",
+      "/*/user/email/change$",
+      "/popups/"
+    ]
+  },
+  "elapsed_s": 33.8,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -242,4 +329,5 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

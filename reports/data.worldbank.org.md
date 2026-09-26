@@ -7,12 +7,12 @@
 | Target | https://data.worldbank.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | data.worldbank.org |
-| Test date | 2026-09-25 09:15 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:42 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
+Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,6 +26,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 | 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 9 | info | H6 | Server technology disclosure | CWE-200 |
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
+| 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
@@ -94,6 +95,12 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of data.worldbank.org has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -105,8 +112,8 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
       "104.18.35.190"
     ],
     "aaaa": [
-      "2a06:98c1:310b::6812:23be",
-      "2606:4700:4407::ac40:9842"
+      "2606:4700:4407::ac40:9842",
+      "2a06:98c1:310b::6812:23be"
     ],
     "cname": "data.worldbank.org.cdn.cloudflare.net.",
     "mx": [],
@@ -127,7 +134,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
     "san": [
       "data.worldbank.org"
     ],
-    "days_left": 80,
+    "days_left": 79,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -187,10 +194,10 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
     "location": "https://data.worldbank.org/"
   },
   "redir_probes": [
-    "/redirect?url=https://evil-auditor.example/x -> 404",
-    "/redirect?next=https://evil-auditor.example/x -> 0",
+    "/redirect?url=https://evil-auditor.example/x -> 0",
+    "/redirect?next=https://evil-auditor.example/x -> 404",
     "/go?url=https://evil-auditor.example/x -> 0",
-    "/url?url=https://evil-auditor.example/x -> 404"
+    "/url?url=https://evil-auditor.example/x -> 0"
   ],
   "paths": {
     "/robots.txt": 200,
@@ -202,15 +209,30 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
     "/.env": 403,
     "/.htaccess": 403,
     "/wp-login.php": 0,
-    "/phpmyadmin/index.php": 404,
-    "/server-status": 404,
+    "/phpmyadmin/index.php": 0,
+    "/server-status": 0,
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 153.6,
-  "rechecked": "2026-09-25 10:43 UTC"
+  "cname_chain": [
+    "data.worldbank.org.cdn.cloudflare.net"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "elapsed_s": 96.1,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -219,4 +241,5 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

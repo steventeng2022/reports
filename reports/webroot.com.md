@@ -7,12 +7,12 @@
 | Target | https://webroot.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | webroot.com |
-| Test date | 2026-09-25 10:27 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **34** (High: 0, Medium: 6, Low: 6, Info: 22)
+Total findings: **42** (High: 0, Medium: 6, Low: 8, Info: 28)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -50,6 +50,14 @@ Total findings: **34** (High: 0, Medium: 6, Low: 6, Info: 22)
 | 32 | low | CK1 | Cookie set without Secure flag over HTTPS | CWE-614 |
 | 33 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
 | 34 | info | P8 | Missing security.txt | CWE-1038 |
+| 35 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
+| 36 | low | MAIL7 | SPF include: points to unresolvable domain(s) | CWE-285 |
+| 37 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 38 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 39 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 40 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 41 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 42 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -68,7 +76,7 @@ Total findings: **34** (High: 0, Medium: 6, Low: 6, Info: 22)
 ### 3. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires in 17 days (notAfter Oct 12 23:59:59 2026 GMT).
+- **Detail:** Certificate expires in 16 days (notAfter Oct 12 23:59:59 2026 GMT).
 - **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
 ### 4. [MEDIUM] FTP service (cleartext) reachable (`PRT21`)
@@ -269,6 +277,54 @@ Total findings: **34** (High: 0, Medium: 6, Low: 6, Info: 22)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 35. [LOW] SPF record has no explicit all mechanism (implicit +all) (`MAIL6`)
+
+- **CWE:** CWE-285
+- **Detail:** Without -all/~all/+all the SPF record implicitly authorizes all senders.
+- **Recommendation:** End the SPF record with -all or ~all.
+
+### 36. [LOW] SPF include: points to unresolvable domain(s) (`MAIL7`)
+
+- **CWE:** CWE-285
+- **Detail:** Broken include(s): stspg-custo (no A/TXT record).
+- **Recommendation:** Fix or remove the broken include directives.
+
+### 37. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 38. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 39. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=W342u9ABN8CsWzHJEUTnnprvsso64lGHcBzHIjXtP4A; status-page-domain-verification=2tbgnrpnfp6b; status-page-domain-verification=ry2yxtvp8dt4
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 40. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of webroot.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 41. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but webroot.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 42. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 23 disallow path(s), e.g. /*?trpd=*, /*?loc=*, /*?WRSID=*, /*?lang=*, /au/en/cart
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -286,21 +342,21 @@ Total findings: **34** (High: 0, Medium: 6, Low: 6, Info: 22)
       "mxb-00102601.gslb.pphosted.com (pref 1)"
     ],
     "ns": [
-      "dns1.safenames.com.",
       "dns2.safenames.net.",
+      "dns1.safenames.com.",
       "dns3.safenames.org."
     ],
     "spf": [
       "google-site-verification=W342u9ABN8CsWzHJEUTnnprvsso64lGHcBzHIjXtP4A",
+      "status-page-domain-verification=2tbgnrpnfp6b",
       "MS=ms92726142",
-      "635557aa461593e8536643d878d7c78d698bcbb535e185853f5cfd526cafddfe",
-      "hj-ownership=kbD4%B6@fEzJ",
+      "F5Bkf8aYNUTZwrEkaw2ss/rMNTWy9wTOKyKrIeQdD5YoMTFkYg9rjW275X1dSx5AWusuVqkf+caFIRtd63kGgw==",
+      "amazonses:DUPTZ+5PC5cywK2wrfzQHVsalso6GCYZmw9b2wSAgMo=",
       "v=spf1 ip4:66.35.53.240 ip4:66.35.53.180 ip4:208.87.139.150 ip4:66.35.53.248 ip4:208.74.204.0/22 ip4:46.19.168.0/23 ip4:208.87.139.64 ip4:208.87.139.66 include:spf.protection.outlook.com include:spf.messagelabs.com include:mktomail.com include:stspg-custo",
       "mer.com ip4:52.38.191.241 -all",
-      "status-page-domain-verification=ry2yxtvp8dt4",
-      "status-page-domain-verification=2tbgnrpnfp6b",
-      "F5Bkf8aYNUTZwrEkaw2ss/rMNTWy9wTOKyKrIeQdD5YoMTFkYg9rjW275X1dSx5AWusuVqkf+caFIRtd63kGgw==",
-      "amazonses:DUPTZ+5PC5cywK2wrfzQHVsalso6GCYZmw9b2wSAgMo="
+      "635557aa461593e8536643d878d7c78d698bcbb535e185853f5cfd526cafddfe",
+      "hj-ownership=kbD4%B6@fEzJ",
+      "status-page-domain-verification=ry2yxtvp8dt4"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com;fo=1"
@@ -320,7 +376,7 @@ Total findings: **34** (High: 0, Medium: 6, Low: 6, Info: 22)
       "*.webroot.com",
       "webroot.com"
     ],
-    "days_left": 17,
+    "days_left": 16,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -415,10 +471,46 @@ Total findings: **34** (High: 0, Medium: 6, Low: 6, Info: 22)
     "/api/": 307
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 32.3,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "google-site-verification=W342u9ABN8CsWzHJEUTnnprvsso64lGHcBzHIjXtP4A",
+    "status-page-domain-verification=2tbgnrpnfp6b",
+    "status-page-domain-verification=ry2yxtvp8dt4"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/*?trpd=*",
+      "/*?loc=*",
+      "/*?WRSID=*",
+      "/*?lang=*",
+      "/au/en/cart",
+      "/au/en/cart/",
+      "/gb/en/cart",
+      "/gb/en/cart/",
+      "/gb/en/home/affiliates/",
+      "/jp/ja/home/affiliates/",
+      "/jp/ja/home/sem/",
+      "/au/en/search",
+      "/gb/en/search",
+      "/hk/en/search",
+      "/in/en/search"
+    ]
+  },
+  "elapsed_s": 34.5,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -427,4 +519,5 @@ Total findings: **34** (High: 0, Medium: 6, Low: 6, Info: 22)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

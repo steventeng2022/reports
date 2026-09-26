@@ -7,12 +7,12 @@
 | Target | https://stripe.com/ |
 | Bug bounty program | Stripe |
 | Listed scope domain | stripe.com |
-| Test date | 2026-09-25 10:19 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **4** (High: 0, Medium: 0, Low: 0, Info: 4)
+Total findings: **9** (High: 0, Medium: 0, Low: 0, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -20,6 +20,11 @@ Total findings: **4** (High: 0, Medium: 0, Low: 0, Info: 4)
 | 2 | info | TECH1 | Technology fingerprint | CWE-200 |
 | 3 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 4 | info | H6 | Server technology disclosure | CWE-200 |
+| 5 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 6 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 7 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 8 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 9 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -49,6 +54,36 @@ Total findings: **4** (High: 0, Medium: 0, Low: 0, Info: 4)
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
+### 5. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 6. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 7. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: vercel-domain-verification-0x8270=XezzJjJYrYZwY6CahDneh2ruB; stripe-verification=82ce82470fb8324e19fa65abdb6fd370da5a8f90bba09712f259760f625d; vercel-domain-verification-d2ks5d=rkbS4OdBoLxPogGq2IhBN1OZV
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 8. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of stripe.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 9. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 17 disallow path(s), e.g. /docs, /docs$, /bitcoin/refund, /sources/refund, /sources/sepa_mandate
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -56,64 +91,64 @@ Total findings: **4** (High: 0, Medium: 0, Low: 0, Info: 4)
   "domain": "stripe.com",
   "dns": {
     "a": [
-      "198.202.176.41",
-      "198.137.150.41"
+      "198.202.176.111",
+      "198.137.150.111"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 20)",
-      "alt2.aspmx.l.google.com (pref 20)",
       "aspmx2.googlemail.com (pref 30)",
-      "aspmx3.googlemail.com (pref 30)"
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx.l.google.com (pref 10)",
+      "aspmx3.googlemail.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
-      "ns-1087.awsdns-07.org.",
       "ns-423.awsdns-52.com.",
       "ns-705.awsdns-24.net.",
-      "ns-1882.awsdns-43.co.uk."
+      "ns-1882.awsdns-43.co.uk.",
+      "ns-1087.awsdns-07.org."
     ],
     "spf": [
-      "neat-pulse-domain-verification-8GMn8nv=36eba03d-345e-421a-a823-d6d1f28938a4",
-      "_c2ygqoyhcuwjjnqk7h1mcm0x144rm1z",
+      "vercel-domain-verification-0x8270=XezzJjJYrYZwY6CahDneh2ruB",
+      "stripe-verification=82ce82470fb8324e19fa65abdb6fd370da5a8f90bba09712f259760f625d0790",
+      "vercel-domain-verification-d2ks5d=rkbS4OdBoLxPogGq2IhBN1OZV",
+      "edcbf4c7-b604-457b-870e-1b05f655e769",
+      "elevenlabs=NpcIkVJW_8Vyd2gLKzPviuaU1g5rz83KiWQQ3sWKGtI",
+      "google-site-verification=NLkFgZLHeVMVYlR3t1UZC9_1LzmqCAefJyNDs6ZQqBA",
+      "anthropic-domain-verification-zk7x9c=QfN52ECybLPUWh51R9pKF0QO3",
+      "cursor-domain-verification-vncvvm=D0NzeIDbQa8PPgIf1ukp9UPiu",
       "liveramp-site-verification=7gyFkTwGYsvgd7IUQwyAOfImETwR06wgKjKiXq90KEY",
       "_2m7hdcar6jar33f5vyr8h0xaru6rvrn",
-      "VISA=38A3D7A1AA5D71E43525144DD886F6B8",
-      "anthropic-domain-verification-zk7x9c=QfN52ECybLPUWh51R9pKF0QO3",
-      "asv=8de0c1a866b958297e22a36216e594a6",
-      "z4mthhzk10l6qc0rg4211mnnppkh2y5b",
       "00D50000000JV6w=1TBTQ0000000CIv;00DDn000000HWol=1TBVY00000002Hx;00D4x000003vxGL=1TBPQ00000008Tp;00Dfn00000BUlWD=1TBan0000000LPR",
-      "linear-domain-verification=prudk75mtrrj",
-      "cursor-domain-verification-vncvvm=D0NzeIDbQa8PPgIf1ukp9UPiu",
+      "whimsical=253112f9add9790f3a27b9d9893626451fc4cda1",
       "vercel-domain-verification-n462w8=JRePwTQbccpon6VAqYhidisHw",
-      "docker-verification=ccde1a0d-8d2c-44b5-9d20-6c4e19113fc9",
-      "h1-domain-verification=KhpNX9YNAc7bX95agGvFsPPKbYTVe1KC6xj7P1zKZrRzxcuS",
-      "atlassian-domain-verification=upLp21qQgja1aHG2gnAb1AmXRqb/zG0UK1a0n3zTSXZg5DgOSttR3i5uzA3T9Cdk",
-      "google-site-verification=ZgGi2-xDdfnaWxdfjn5AqtUS11jKWqSXAV_EHODFzdE",
-      "vercel-domain-verification-0x8270=XezzJjJYrYZwY6CahDneh2ruB",
-      "google-site-verification=PrlpJHdk11CIkPsiXoHEAJevWHAk39JRFAqVSe9l7n0",
       "google-site-verification=hPfjsDwiisKJ4RP1ExOst9gAOD_0P8Q7-kxdcKUvEcc",
-      "MS=ms80697640",
-      "google-site-verification=qjP3OAiraClha_40cX9Z9FrG5q3O_0InXSamXOswY-s",
-      "facebook-domain-verification=m7id9rt8ehlgcg9tt2yggbsi6gro7i",
-      "docusign=4c9f5602-1c19-4e4c-bde7-77dc4b9ea8a0",
+      "neat-pulse-domain-verification-8GMn8nv=36eba03d-345e-421a-a823-d6d1f28938a4",
       "google-site-verification=pmz8ueKvWMPxNlwUDcVroF91-tq6I9VM6wSO_0i7-wc",
       "fastly-domain-delegation-3c9tdnjzdwy7wfffvyyy-786084-2024-07-08",
-      "vercel-domain-verification-d2ks5d=rkbS4OdBoLxPogGq2IhBN1OZV",
-      "v=spf1 ip4:198.2.180.60/32 ip4:13.111.2.227/32 include:spf1.stripe.com include:greenhouse-outbound-mail.stripe.com include:_spf.qualtrics.com ~all",
-      "edcbf4c7-b604-457b-870e-1b05f655e769",
+      "atlassian-domain-verification=upLp21qQgja1aHG2gnAb1AmXRqb/zG0UK1a0n3zTSXZg5DgOSttR3i5uzA3T9Cdk",
+      "z4mthhzk10l6qc0rg4211mnnppkh2y5b",
       "openai-domain-verification=dv-9tiBE20GDN0Td9lCfVtA3DwG",
-      "whimsical=253112f9add9790f3a27b9d9893626451fc4cda1",
-      "apple-domain-verification=8kIS0gmJTvILWQuI",
-      "elevenlabs=NpcIkVJW_8Vyd2gLKzPviuaU1g5rz83KiWQQ3sWKGtI",
-      "canva-site-verification=xLypn0D9XANRy-lbwcMfHA",
-      "v=MCPv1; k=ed25519; p=WMeka0C1fIH9HQLMtsSM9DD9cM6Bz6Wz34mHnK86UcM=",
-      "vercel-domain-verification-9rcztj=vE2uCkG0lJyU17dOW1DamoD7v",
       "postman-domain-verification=c3b168067b16085c452b04b643ae1000079b095e383b53d1074e409b0e600b6265e1c7963beca1ca87cc63c381dcea332544c92c919651e4cda69f9a6303079c",
-      "stripe-verification=82ce82470fb8324e19fa65abdb6fd370da5a8f90bba09712f259760f625d0790",
-      "google-site-verification=NLkFgZLHeVMVYlR3t1UZC9_1LzmqCAefJyNDs6ZQqBA",
-      "docusign=4a93db58-af07-4632-a881-b569d41a6c57"
+      "docusign=4c9f5602-1c19-4e4c-bde7-77dc4b9ea8a0",
+      "google-site-verification=ZgGi2-xDdfnaWxdfjn5AqtUS11jKWqSXAV_EHODFzdE",
+      "docker-verification=ccde1a0d-8d2c-44b5-9d20-6c4e19113fc9",
+      "asv=8de0c1a866b958297e22a36216e594a6",
+      "facebook-domain-verification=m7id9rt8ehlgcg9tt2yggbsi6gro7i",
+      "v=spf1 ip4:198.2.180.60/32 ip4:13.111.2.227/32 include:spf1.stripe.com include:greenhouse-outbound-mail.stripe.com include:_spf.qualtrics.com ~all",
+      "v=MCPv1; k=ed25519; p=WMeka0C1fIH9HQLMtsSM9DD9cM6Bz6Wz34mHnK86UcM=",
+      "google-site-verification=PrlpJHdk11CIkPsiXoHEAJevWHAk39JRFAqVSe9l7n0",
+      "canva-site-verification=xLypn0D9XANRy-lbwcMfHA",
+      "h1-domain-verification=KhpNX9YNAc7bX95agGvFsPPKbYTVe1KC6xj7P1zKZrRzxcuS",
+      "apple-domain-verification=8kIS0gmJTvILWQuI",
+      "MS=ms80697640",
+      "VISA=38A3D7A1AA5D71E43525144DD886F6B8",
+      "google-site-verification=qjP3OAiraClha_40cX9Z9FrG5q3O_0InXSamXOswY-s",
+      "_c2ygqoyhcuwjjnqk7h1mcm0x144rm1z",
+      "vercel-domain-verification-9rcztj=vE2uCkG0lJyU17dOW1DamoD7v",
+      "docusign=4a93db58-af07-4632-a881-b569d41a6c57",
+      "linear-domain-verification=prudk75mtrrj"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; fo=1; rua=mailto:dmarc-reports@stripe.com; ruf=mailto:dmarc-forensics@stripe.com;"
@@ -133,7 +168,7 @@ Total findings: **4** (High: 0, Medium: 0, Low: 0, Info: 4)
       "stripe.com",
       "www.stripe.com"
     ],
-    "days_left": 48,
+    "days_left": 47,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -143,7 +178,7 @@ Total findings: **4** (High: 0, Medium: 0, Low: 0, Info: 4)
     }
   },
   "ports": {
-    "ip": "198.202.176.41",
+    "ip": "198.202.176.111",
     "open": []
   },
   "https": {
@@ -193,10 +228,49 @@ Total findings: **4** (High: 0, Medium: 0, Low: 0, Info: 4)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 28.1,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "vercel-domain-verification-0x8270=XezzJjJYrYZwY6CahDneh2ruB",
+    "stripe-verification=82ce82470fb8324e19fa65abdb6fd370da5a8f90bba09712f259760f625d",
+    "vercel-domain-verification-d2ks5d=rkbS4OdBoLxPogGq2IhBN1OZV",
+    "google-site-verification=NLkFgZLHeVMVYlR3t1UZC9_1LzmqCAefJyNDs6ZQqBA",
+    "anthropic-domain-verification-zk7x9c=QfN52ECybLPUWh51R9pKF0QO3"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.3",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true,
+    "robots_disallow": [
+      "/docs",
+      "/docs$",
+      "/bitcoin/refund",
+      "/sources/refund",
+      "/sources/sepa_mandate",
+      "/sources/test_source",
+      "/sources/test_klarna",
+      "/handoff-healthcheck",
+      "/handoff",
+      "/bitcoin/refund",
+      "/sources/refund",
+      "/sources/sepa_mandate",
+      "/sources/test_source",
+      "/sources/test_klarna",
+      "/unsupported-browser"
+    ]
+  },
+  "elapsed_s": 13.5,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -205,4 +279,5 @@ Total findings: **4** (High: 0, Medium: 0, Low: 0, Info: 4)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://ibm.com/ |
 | Bug bounty program | IBM |
 | Listed scope domain | ibm.com |
-| Test date | 2026-09-25 09:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
+Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,12 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
 | 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 11 | info | H6 | Server technology disclosure | CWE-200 |
 | 12 | info | P8 | Missing security.txt | CWE-1038 |
+| 13 | low | MAIL12 | MTA-STS TXT published but policy file unreachable | CWE-285 |
+| 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -40,7 +46,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
 ### 2. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires in 22 days (notAfter Oct 17 23:59:59 2026 GMT).
+- **Detail:** Certificate expires in 21 days (notAfter Oct 17 23:59:59 2026 GMT).
 - **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
 ### 3. [INFO] Technology fingerprint (`TECH1`)
@@ -112,6 +118,42 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 13. [LOW] MTA-STS TXT published but policy file unreachable (`MAIL12`)
+
+- **CWE:** CWE-285
+- **Detail:** GET https://mta-sts.ibm.com/.well-known/mta-sts/policy.txt failed from this vantage point.
+- **Recommendation:** Publish a reachable policy.txt or remove the TXT record.
+
+### 14. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-gws-recovery-domain-verification=48225137; atlassian-sending-domain-verification=79afa9af-6e0f-47e6-b636-2786f8772f66; google-site-verification=tzdngH5fWH-k8uQoDVovOFJQZTwaGtDOP6S2cQlOvCs
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of ibm.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 17. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but ibm.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 154 disallow path(s), e.g. /account/registration, /account/mypro, /account/myint, /Admin, /cgi-
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -122,69 +164,69 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
       "184.84.207.120"
     ],
     "aaaa": [
-      "2600:1417:8400:17b9::3831",
-      "2600:1417:8400:1782::3831"
+      "2600:1417:8400:1782::3831",
+      "2600:1417:8400:17b9::3831"
     ],
     "cname": null,
     "mx": [
-      "mx0b-001b2d05.pphosted.com (pref 5)",
-      "mx0a-001b2d05.pphosted.com (pref 5)"
+      "mx0a-001b2d05.pphosted.com (pref 5)",
+      "mx0b-001b2d05.pphosted.com (pref 5)"
     ],
     "ns": [
       "dns4.p05.nsone.net.",
-      "dns1.p05.nsone.net.",
       "dns3.p05.nsone.net.",
-      "dns2.p05.nsone.net."
+      "dns2.p05.nsone.net.",
+      "dns1.p05.nsone.net."
     ],
     "spf": [
-      "coursera-domain-verification=To0Ej5CrewXrC0FcCjVxXG1lTcLLJQjvrW2gdUt8rCxFxTGMdA0vA54nUlgLfbyO",
-      "00df40000004784eaa",
       "google-gws-recovery-domain-verification=48225137",
-      "40a21f5affe343c6b37e0a5af80dcd93",
-      "docker-verification=7c4d4e40-e7ee-4183-94c2-db97d0873269",
-      "jamf-site-verification=CN4bHigc1ZnD6ZQX_2c6XQ",
-      "figma-domain-verification=b8b3862b529816383e0e7ec9ad2757f8f7b4a0f4da290136796f1aa36d558841-1785230801",
-      "google-site-verification=Jck8mLbYYfCnrmi_nRy4MG2fbUN3UGhC29KdspGLd9Y",
-      "atlassian-domain-verification=79ZnqmRPyDwm6b99GAF3ymzBmjtRZU9oCfgMwVMAUGlrPPenDc6esgO62jafAXUI",
-      "apple-domain-verification=M3o953J0rN1B0P2a",
-      "google-site-verification=aH5jG_abrxRKeKZKOrX9CuXlXdFSCQxVkmAVoYwzNcc",
-      "DomainVerification=CYICZMSWT62KDTQWZ1YCKKU763NN36BQJ4TD5BV606K3FLDUR3UOJE58E30FTIVL",
-      "amazonses:79ShwQazteb+WkCt8e297sAC2mwZVRditsrzaoxiHjU=",
-      "adobe-idp-site-verification=5f8adca7-512f-44e1-a5b2-b62c5e3763f2",
-      "MS=ms61389031",
-      "h1-domain-verification=m9jGKLYa5hDdU5AHUfK9jrBmWVhx3h9t9ztfDFMaxZfgChvk",
-      "00d50000000c9mweay",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
-      "smartsheet-site-validation=TaCpXPZ-qFfOgfHXuMrfF8_d6GZjICNl",
       "atlassian-sending-domain-verification=79afa9af-6e0f-47e6-b636-2786f8772f66",
-      "00d00000000hedieay",
       "google-site-verification=tzdngH5fWH-k8uQoDVovOFJQZTwaGtDOP6S2cQlOvCs",
-      "atlassian-domain-verification=WAjTH82C5Zx475WLKAA2nrdlsoA/kN0ej9igrLrED4h15KMHPOm+A5H3GndKAxDC",
-      "figma-domain-verification=6db9259c4472f3e5ba44c7ae284b4f4b8aa0268c0797659a5e1a28ccfe912ddf-1741206863",
-      "google-site-verification=ewe2QcP5aMj3DKuSfxscZME5wip4EpoTxCXPNvr0-J0",
-      "google-gws-recovery-domain-verification=42135076",
-      "yandex-verification: 5f458b477256c50c",
-      "ms-domain-verification=bedcd06e-7e1c-4906-9b6a-b4a1095fa4ed",
-      "asv=e8bb80eeac60e62a4dd07f03d1d36829",
-      "_github-challenge-ibm.ibm.com=2613e984bc",
-      "_analyst_ng_validation=f6702989-83f3-42b8-be39-19cf8f1c33f5",
-      "mongodb-site-verification=Gcqpap80hVonXfV2VnYC6AlEr2Z9vvf3",
-      "00D3h000004YkeYEAS",
+      "DomainVerification=CYICZMSWT62KDTQWZ1YCKKU763NN36BQJ4TD5BV606K3FLDUR3UOJE58E30FTIVL",
       "ms-domain-verification=1adbc779-89ce-47cf-8167-c4e4a3b4a6aa",
-      "atlassian-domain-verification=a32Aj0uoXQRh6QseDFFrlufYlkbeSdok7az3sY0DQNVXpW1Iqj8zlsuXFZgHMojH",
-      "docker-verification=846278f4-7e2c-4586-ae26-e1a9f0f0aecd",
-      "facebook-domain-verification=7w4exj2revwpv5u708s6bji5j6tswy",
-      "intersight=1439768961d2f6d736c38b947d235947681cd817abea13eab3daee9ecbdc6c3d",
-      "google-site-verification=I-empodMpM7n5Px1doUgIaOKHKeIMXXf6k8Ea5ENyO4",
-      "Dynatrace-site-verification=76b6b299-fe43-4f31-889b-a8a467193478__8q74sg9dg5udjppn95utrb8bct",
-      "smartsheet-site-validation=I-lI3gCPdvKbKQ6KTki96Ream6Yjs1gU",
-      "intersight=cfe6f48b59e7428442b9aab04765ca0953e01c480a685ca5cf6939ef9e505532",
-      "mongodb-site-verification=gEevYaKFpagtLmrYxomtpE2QmYwnd29i",
+      "atlassian-domain-verification=79ZnqmRPyDwm6b99GAF3ymzBmjtRZU9oCfgMwVMAUGlrPPenDc6esgO62jafAXUI",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
       "onetrust-domain-verification=e7e09cedfb9b4ff386f1274e4c214d55",
-      "wework-site-verification=hhWLSbG4qiaKhsXU",
+      "ms-domain-verification=bedcd06e-7e1c-4906-9b6a-b4a1095fa4ed",
+      "mongodb-site-verification=3d0wR0KvanH3yTbll0sXEJ0QGBQffOkv",
+      "yandex-verification: 5f458b477256c50c",
+      "intersight=cfe6f48b59e7428442b9aab04765ca0953e01c480a685ca5cf6939ef9e505532",
+      "google-gws-recovery-domain-verification=42135076",
+      "mongodb-site-verification=Gcqpap80hVonXfV2VnYC6AlEr2Z9vvf3",
+      "figma-domain-verification=6db9259c4472f3e5ba44c7ae284b4f4b8aa0268c0797659a5e1a28ccfe912ddf-1741206863",
+      "google-site-verification=I-empodMpM7n5Px1doUgIaOKHKeIMXXf6k8Ea5ENyO4",
+      "google-site-verification=Jck8mLbYYfCnrmi_nRy4MG2fbUN3UGhC29KdspGLd9Y",
+      "asv=e8bb80eeac60e62a4dd07f03d1d36829",
+      "docker-verification=846278f4-7e2c-4586-ae26-e1a9f0f0aecd",
+      "40a21f5affe343c6b37e0a5af80dcd93",
       "00D10000000biEb=1TBQ80000000b2n",
+      "docker-verification=7c4d4e40-e7ee-4183-94c2-db97d0873269",
+      "facebook-domain-verification=7w4exj2revwpv5u708s6bji5j6tswy",
+      "smartsheet-site-validation=TaCpXPZ-qFfOgfHXuMrfF8_d6GZjICNl",
+      "apple-domain-verification=M3o953J0rN1B0P2a",
+      "Dynatrace-site-verification=76b6b299-fe43-4f31-889b-a8a467193478__8q74sg9dg5udjppn95utrb8bct",
+      "00D3h000004YkeYEAS",
+      "wework-site-verification=hhWLSbG4qiaKhsXU",
+      "_github-challenge-ibm.ibm.com=2613e984bc",
+      "00d00000000hedieay",
       "anthropic-domain-verification-ym2t7s=RPDdVAMpzgbooX0kxhqstuM2D",
-      "mongodb-site-verification=3d0wR0KvanH3yTbll0sXEJ0QGBQffOkv"
+      "coursera-domain-verification=To0Ej5CrewXrC0FcCjVxXG1lTcLLJQjvrW2gdUt8rCxFxTGMdA0vA54nUlgLfbyO",
+      "amazonses:79ShwQazteb+WkCt8e297sAC2mwZVRditsrzaoxiHjU=",
+      "google-site-verification=ewe2QcP5aMj3DKuSfxscZME5wip4EpoTxCXPNvr0-J0",
+      "atlassian-domain-verification=WAjTH82C5Zx475WLKAA2nrdlsoA/kN0ej9igrLrED4h15KMHPOm+A5H3GndKAxDC",
+      "adobe-idp-site-verification=5f8adca7-512f-44e1-a5b2-b62c5e3763f2",
+      "google-site-verification=aH5jG_abrxRKeKZKOrX9CuXlXdFSCQxVkmAVoYwzNcc",
+      "MS=ms61389031",
+      "atlassian-domain-verification=a32Aj0uoXQRh6QseDFFrlufYlkbeSdok7az3sY0DQNVXpW1Iqj8zlsuXFZgHMojH",
+      "intersight=1439768961d2f6d736c38b947d235947681cd817abea13eab3daee9ecbdc6c3d",
+      "mongodb-site-verification=gEevYaKFpagtLmrYxomtpE2QmYwnd29i",
+      "00df40000004784eaa",
+      "00d50000000c9mweay",
+      "h1-domain-verification=m9jGKLYa5hDdU5AHUfK9jrBmWVhx3h9t9ztfDFMaxZfgChvk",
+      "figma-domain-verification=b8b3862b529816383e0e7ec9ad2757f8f7b4a0f4da290136796f1aa36d558841-1785230801",
+      "smartsheet-site-validation=I-lI3gCPdvKbKQ6KTki96Ream6Yjs1gU",
+      "_analyst_ng_validation=f6702989-83f3-42b8-be39-19cf8f1c33f5",
+      "jamf-site-verification=CN4bHigc1ZnD6ZQX_2c6XQ"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=none; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -226,7 +268,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
       "www.sevone.com",
       "www.turbonomic.com"
     ],
-    "days_left": 22,
+    "days_left": 21,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -286,10 +328,48 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='crt.sh', port=443): Read (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 24.7,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "google-gws-recovery-domain-verification=48225137",
+    "atlassian-sending-domain-verification=79afa9af-6e0f-47e6-b636-2786f8772f66",
+    "google-site-verification=tzdngH5fWH-k8uQoDVovOFJQZTwaGtDOP6S2cQlOvCs",
+    "DomainVerification=CYICZMSWT62KDTQWZ1YCKKU763NN36BQJ4TD5BV606K3FLDUR3UOJE58E30FT",
+    "ms-domain-verification=1adbc779-89ce-47cf-8167-c4e4a3b4a6aa"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.3",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/account/registration",
+      "/account/mypro",
+      "/account/myint",
+      "/Admin",
+      "/cgi-",
+      "/contact/employees/servlets",
+      "/data/",
+      "/db2s",
+      "/developerworks/*-pdf.pdf$",
+      "/developerworks/forums/servlet",
+      "/developerworks/forums/abuse",
+      "/developerworks/forums/post",
+      "/docs/api",
+      "/fcgi-",
+      "/fscripts"
+    ]
+  },
+  "elapsed_s": 7.7,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -298,4 +378,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

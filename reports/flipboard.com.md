@@ -7,12 +7,12 @@
 | Target | https://flipboard.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | flipboard.com |
-| Test date | 2026-09-25 07:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
+Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -22,7 +22,13 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
 | 4 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 5 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 6 | info | P8 | Missing security.txt | CWE-1038 |
-| 7 | info | CT1 | 12 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 7 | low | MAIL9 | DMARC enforces (p=quarantine) but has no reporting address (rua) | CWE-285 |
+| 8 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 9 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 13 | info | CT1 | 12 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -67,7 +73,43 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 7. [INFO] 12 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 7. [LOW] DMARC enforces (p=quarantine) but has no reporting address (rua) (`MAIL9`)
+
+- **CWE:** CWE-285
+- **Detail:** Without a rua= reporting address the policy cannot be tuned; mis-sends may be silently quarantined.
+- **Recommendation:** Add a rua= reporting mailbox to the DMARC record.
+
+### 8. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 9. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=EU2djlhiCyLFRE6dqL0HEIwLSclUSRLzkbvQ4ObXr7I; google-site-verification=9rExE5dYg3CPZ3GFGvrkj2MbbKAkdHHH5aRUYSnq9w4; google-site-verification=eqogjmVDZB-9UMYUFvv5OlEO_a20KZadbY7DJw35Dys
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of flipboard.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 19 disallow path(s), e.g. /, /analytics/, /api/, /bookmarklet/, /editor/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 13. [INFO] 12 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -80,50 +122,50 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
   "domain": "flipboard.com",
   "dns": {
     "a": [
-      "54.192.248.119",
       "54.192.248.59",
-      "54.192.248.101",
-      "54.192.248.48"
+      "54.192.248.48",
+      "54.192.248.119",
+      "54.192.248.101"
     ],
     "aaaa": [
-      "2600:9000:202f:4000:15:d33e:2640:93a1",
-      "2600:9000:202f:5c00:15:d33e:2640:93a1",
-      "2600:9000:202f:8c00:15:d33e:2640:93a1",
+      "2600:9000:202f:2c00:15:d33e:2640:93a1",
+      "2600:9000:202f:c400:15:d33e:2640:93a1",
+      "2600:9000:202f:7e00:15:d33e:2640:93a1",
       "2600:9000:202f:9c00:15:d33e:2640:93a1",
-      "2600:9000:202f:7800:15:d33e:2640:93a1",
-      "2600:9000:202f:3600:15:d33e:2640:93a1",
-      "2600:9000:202f:6c00:15:d33e:2640:93a1",
-      "2600:9000:202f:bc00:15:d33e:2640:93a1"
+      "2600:9000:202f:3e00:15:d33e:2640:93a1",
+      "2600:9000:202f:5e00:15:d33e:2640:93a1",
+      "2600:9000:202f:f800:15:d33e:2640:93a1",
+      "2600:9000:202f:4000:15:d33e:2640:93a1"
     ],
     "cname": null,
     "mx": [
-      "aspmx2.googlemail.com (pref 30)",
-      "alt2.aspmx.l.google.com (pref 20)",
+      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx5.googlemail.com (pref 30)",
+      "aspmx2.googlemail.com (pref 30)",
       "aspmx4.googlemail.com (pref 30)",
       "aspmx3.googlemail.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)",
+      "alt2.aspmx.l.google.com (pref 20)",
       "aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-60.awsdns-07.com.",
-      "ns-1756.awsdns-27.co.uk.",
+      "ns-1510.awsdns-60.org.",
       "ns-816.awsdns-38.net.",
-      "ns-1510.awsdns-60.org."
+      "ns-1756.awsdns-27.co.uk.",
+      "ns-60.awsdns-07.com."
     ],
     "spf": [
-      "google-site-verification=eqogjmVDZB-9UMYUFvv5OlEO_a20KZadbY7DJw35Dys",
-      "google-site-verification=9rExE5dYg3CPZ3GFGvrkj2MbbKAkdHHH5aRUYSnq9w4",
       "google-site-verification=EU2djlhiCyLFRE6dqL0HEIwLSclUSRLzkbvQ4ObXr7I",
-      "google-site-verification=47g-PnfQPJHjb8Ze5YYF-hF2ABg67yFQc-kwrSv8PAY",
-      "v=spf1 include:servers.mcsv.net include:sendgrid.net include:_spf.google.com ip4:54.243.226.239 ip4:107.22.115.145 -all",
-      "anthropic-domain-verification-1avd9b=GWlaVK7cM1UrnAecUR0PhzRI7",
-      "have-i-been-pwned-verification=6b731851fd4ef8a6d49f6f8ff8f3eed4",
+      "google-site-verification=9rExE5dYg3CPZ3GFGvrkj2MbbKAkdHHH5aRUYSnq9w4",
+      "google-site-verification=eqogjmVDZB-9UMYUFvv5OlEO_a20KZadbY7DJw35Dys",
+      "v=spf1 include:servers.mcsv.net include:sendgrid.net include:_spf.google.com -all",
       "google-site-verification=196ICmalqDggbij227IKpDuO8wjKIGJOoWQUKVR0B0U",
+      "atlassian-domain-verification=dZ8g4eOwcpvhvx5AD10LH0gUSjKTUUgORwal07qANXl3412gq8IYKOlI4oa4llnl",
       "_wpengine-sso-challenge.flipboard.com= 2KkDEiUGF0IvgPeA6uHIcV57z9H",
-      "google-site-verification=BqjKftnKldO1vP49cSkz2ryHMLPk5y3V6-JlkIhUo1U",
       "_wpengine-sso-challenge= 2KkDEiUGF0IvgPeA6uHIcV57z9H",
-      "atlassian-domain-verification=dZ8g4eOwcpvhvx5AD10LH0gUSjKTUUgORwal07qANXl3412gq8IYKOlI4oa4llnl"
+      "google-site-verification=BqjKftnKldO1vP49cSkz2ryHMLPk5y3V6-JlkIhUo1U",
+      "have-i-been-pwned-verification=6b731851fd4ef8a6d49f6f8ff8f3eed4",
+      "google-site-verification=47g-PnfQPJHjb8Ze5YYF-hF2ABg67yFQc-kwrSv8PAY",
+      "anthropic-domain-verification-1avd9b=GWlaVK7cM1UrnAecUR0PhzRI7"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine;"
@@ -144,7 +186,7 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
       "www.flipboard.com",
       "flipboard.com"
     ],
-    "days_left": 167,
+    "days_left": 166,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -154,7 +196,7 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
     }
   },
   "ports": {
-    "ip": "54.192.248.119",
+    "ip": "54.192.248.59",
     "open": []
   },
   "https": {
@@ -225,8 +267,46 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
       "www.flipboard.com"
     ]
   },
-  "elapsed_s": 11.6,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "google-site-verification=EU2djlhiCyLFRE6dqL0HEIwLSclUSRLzkbvQ4ObXr7I",
+    "google-site-verification=9rExE5dYg3CPZ3GFGvrkj2MbbKAkdHHH5aRUYSnq9w4",
+    "google-site-verification=eqogjmVDZB-9UMYUFvv5OlEO_a20KZadbY7DJw35Dys",
+    "google-site-verification=196ICmalqDggbij227IKpDuO8wjKIGJOoWQUKVR0B0U",
+    "atlassian-domain-verification=dZ8g4eOwcpvhvx5AD10LH0gUSjKTUUgORwal07qANXl3412gq8"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/",
+      "/analytics/",
+      "/api/",
+      "/bookmarklet/",
+      "/editor/",
+      "/getflipit",
+      "/logout",
+      "/notifications",
+      "/post",
+      "/oauth/",
+      "/redirect?",
+      "/search/",
+      "/signout",
+      "/static/ebsa/",
+      "/static/gfs/"
+    ]
+  },
+  "elapsed_s": 14.2,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -235,4 +315,5 @@ Total findings: **7** (High: 0, Medium: 0, Low: 2, Info: 5)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

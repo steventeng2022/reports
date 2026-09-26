@@ -7,93 +7,331 @@
 | Target | https://ranker.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ranker.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-26 17:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 5, Info: 7)
+Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H1 | Missing HSTS header | CWE-319 |
-| 2 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 3 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 4 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 5 | low | T3 | TLS certificate expiring within 30 days | CWE-298 |
-| 6 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 9 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 10 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 11 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
-| 12 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | low | TLS4 | TLS certificate expires within 30 days | CWE-298 |
+| 3 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 4 | low | H1 | Missing HSTS header | CWE-319 |
+| 5 | low | H2 | Missing CSP header | CWE-1021 |
+| 6 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 7 | low | H4 | No clickjacking protection | CWE-1023 |
+| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 11 | info | H6 | Server technology disclosure | CWE-200 |
+| 12 | info | P8 | Missing security.txt | CWE-1038 |
+| 13 | low | MAIL9 | DMARC enforces (p=quarantine) but has no reporting address (rua) | CWE-285 |
+| 14 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Missing HSTS header (`H1`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header on https://ranker.com/. Clients may connect over plain HTTP on first visit.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://ranker.com/; no defense-in-depth against XSS/content injection.
-
-### 3. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://ranker.com/; browsers may MIME-sniff responses.
-
-### 4. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
-
-- **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://ranker.com/; page may be rendered in a foreign frame.
-
-### 5. [LOW] TLS certificate expiring within 30 days (`T3`)
+### 2. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires 2026-10-20T16:13:55+00:00 (24 days left) for ranker.com.
+- **Detail:** Certificate expires in 23 days (notAfter Oct 20 16:13:55 2026 GMT).
+- **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
-### 6. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for ranker.com lists 1 name(s) besides the scope host: *.ranker.com
-
-### 7. [INFO] Missing Referrer-Policy (`H5`)
+### 3. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://ranker.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** Detected: Server: Varnish
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 8. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://ranker.com/; browser features (camera, mic, geolocation) unrestricted.
-
-### 9. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+### 4. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** http://ranker.com/ -> https://www.ranker.com/ (positive check).
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 10. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 5. [LOW] Missing CSP header (`H2`)
+
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 6. [LOW] Missing X-Content-Type-Options (`H3`)
+
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
+
+### 7. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+
+### 8. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://ranker.com/ exposes 12 unique Disallow path(s) (/, /*US_CENSUS_NAME*, /amp, /app, /commentary) and 4 sitemap reference(s)
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 11. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /.well-known/security.txt returned 403 on ranker.com.
-
-### 12. [INFO] HTTPS homepage returned HTTP 403 (`X2`)
+### 9. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** https://ranker.com/ responded 403 (passive check only; no further probing).
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-## Reproduction notes
+### 10. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://ranker.com/ final status: 403 (final URL https://www.ranker.com/).
-- http://ranker.com/ initial status: 301.
-- Certificate: Let's Encrypt YR1, valid until 2026-10-20T16:13:55+00:00.
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 11. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: Varnish
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+### 12. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 13. [LOW] DMARC enforces (p=quarantine) but has no reporting address (rua) (`MAIL9`)
+
+- **CWE:** CWE-285
+- **Detail:** Without a rua= reporting address the policy cannot be tuned; mis-sends may be silently quarantined.
+- **Recommendation:** Add a rua= reporting mailbox to the DMARC record.
+
+### 14. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 15. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=aue17bMlckop0yJT92alkaO3fRnBcGpjLxQiPPC6axDLkPXu-1; google-site-verification=jqHABK4Jkg-lEBRepYp99T1QQQXCC26kLj6yPjYZEeg; yahoo-verification-key=zlsEByKn+Okxqt7fH1B8SKCIxyH/QUT8UFt7q6imi6k=
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of ranker.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 33 disallow path(s), e.g. /app, /commentary, /listcommentary, /extlink, /node
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "ranker.com",
+  "dns": {
+    "a": [
+      "151.101.195.11",
+      "151.101.67.11",
+      "151.101.3.11",
+      "151.101.131.11"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
+      "alt4.aspmx.googlemail.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.googlemail.com (pref 10)"
+    ],
+    "ns": [
+      "ian.ns.cloudflare.com.",
+      "elsa.ns.cloudflare.com."
+    ],
+    "spf": [
+      "atlassian-domain-verification=aue17bMlckop0yJT92alkaO3fRnBcGpjLxQiPPC6axDLkPXu-1N6fjs2IsMlNJlq",
+      "google-site-verification=jqHABK4Jkg-lEBRepYp99T1QQQXCC26kLj6yPjYZEeg",
+      "yahoo-verification-key=zlsEByKn+Okxqt7fH1B8SKCIxyH/QUT8UFt7q6imi6k=",
+      "apple-domain-verification=edykha2YhibLXlct",
+      "globalsign-domain-verification=8frsHcE2ag-0ccaaP5BTpPmUJC8ob8pdjDQchfAWzD",
+      "_globalsign-domain-verification=SQONiBgTxRVzPPtIHjei_IUGCiAa0KxoVWFw1QfVes",
+      "qp53mbb5h00qmj19w91jz0g3wrs5j0zv",
+      "5931c6cbe5d34a8ba3e3df1f6df54354",
+      "_globalsign-domain-verification=mgS7wKROK2_MMsG_5_Qd4dKIGuTLXbCuOEHzfFAaDu",
+      "_globalsign-domain-verification=R1bvWDvJUF1gpXlmc7Q3deFwpZciil5dpJR4t-a8XM",
+      "google-site-verification=_XSw0m_pkesvita5g68cVTl9GIDfvUlj8AkaoJ-M1B8",
+      "google-site-verification=DuJOGvTjO_yyqB6rGW6lzOOqUE-o_xLhfQeBHf415fQ",
+      "v=spf1 ip4:173.193.210.57 include:_spf.google.com include:aspmx.sailthru.com -all",
+      "facebook-domain-verification=w5xu8gdevyd7v4wqvm9qibon7dvhh5"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=quarantine; adkim=r; aspf=r"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=ranker.com",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YR1",
+    "notBefore": "Jul 22 16:13:56 2026 GMT",
+    "notAfter": "Oct 20 16:13:55 2026 GMT",
+    "san": [
+      "*.ranker.com",
+      "ranker.com"
+    ],
+    "days_left": 23,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "151.101.195.11",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: Varnish"
+  ],
+  "cookies": [
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {}
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.ranker.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://www.ranker.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "ct-pending"
+  },
+  "apex_txt": [
+    "atlassian-domain-verification=aue17bMlckop0yJT92alkaO3fRnBcGpjLxQiPPC6axDLkPXu-1",
+    "google-site-verification=jqHABK4Jkg-lEBRepYp99T1QQQXCC26kLj6yPjYZEeg",
+    "yahoo-verification-key=zlsEByKn+Okxqt7fH1B8SKCIxyH/QUT8UFt7q6imi6k=",
+    "apple-domain-verification=edykha2YhibLXlct",
+    "globalsign-domain-verification=8frsHcE2ag-0ccaaP5BTpPmUJC8ob8pdjDQchfAWzD"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/app",
+      "/commentary",
+      "/listcommentary",
+      "/extlink",
+      "/node",
+      "/suggestions",
+      "/widget",
+      "/pics",
+      "/review",
+      "/amp",
+      "/*US_CENSUS_NAME*",
+      "/",
+      "/app",
+      "/commentary",
+      "/listcommentary"
+    ]
+  },
+  "elapsed_s": 14.8,
+  "rechecked": "2026-09-26 17:38 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

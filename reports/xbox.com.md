@@ -7,12 +7,12 @@
 | Target | https://xbox.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | xbox.com |
-| Test date | 2026-09-25 23:13 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,8 +26,14 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 | 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 9 | info | H6 | Server technology disclosure | CWE-200 |
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
-| 11 | info | CT1 | 450 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 12 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | CT1 | 450 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 18 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -99,13 +105,49 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 11. [INFO] 450 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 11. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 12. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=jRoICv0mMREqo5IthM1McDzE_8rRtEYtSVtHmOTUoJA; google-site-verification=e70dJcpsqnXzda_PC9I_VO_bpU9hlMlqhtvsxegHEQc; facebook-domain-verification=n2md3enk4k9r4s6kylpqmekhxyyrq7
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of xbox.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 15. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but xbox.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 9 disallow path(s), e.g. /error, /*Search?q*, /*search?q*, /*results?k*, /*Results?k*
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 17. [INFO] 450 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: americas.test.play.xbox.com, assets.play.xbox.com, auth.cert.xbox.com, auth.int2.xbox.com, auth.part.xbox.com, auth.xbox.com, beta.support-preview.ci.xbox.com, beta.support-preview.nightly.xbox.com, beta.support-preview.staging.xbox.com, beta.support-preview.xbox.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 12. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 18. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: auth.cert.xbox.com, auth.part.xbox.com; content may still be served via virtual-host fallback.
@@ -118,39 +160,39 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
   "domain": "xbox.com",
   "dns": {
     "a": [
+      "20.70.246.20",
       "20.231.239.246",
       "20.112.250.133",
       "20.236.44.162",
-      "20.70.246.20",
       "20.76.201.171"
     ],
     "aaaa": [
+      "2603:1030:c02:8::14",
       "2603:1020:201:10::10f",
       "2603:1030:20e:3::23c",
-      "2603:1030:c02:8::14",
-      "2603:1010:3:3::5b",
-      "2603:1030:b:3::152"
+      "2603:1030:b:3::152",
+      "2603:1010:3:3::5b"
     ],
     "cname": null,
     "mx": [
       "xbox-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns1-205.azure-dns.com.",
-      "ns3-205.azure-dns.org.",
       "ns2-205.azure-dns.net.",
-      "ns4-205.azure-dns.info."
+      "ns4-205.azure-dns.info.",
+      "ns1-205.azure-dns.com.",
+      "ns3-205.azure-dns.org."
     ],
     "spf": [
-      "facebook-domain-verification=n2md3enk4k9r4s6kylpqmekhxyyrq7",
-      "facebook-domain-verification=yvcz1zil7qv3biswf68ikkxkh1nsoh",
-      "v=spf1 ip4:65.55.42.0/24 ip4:65.55.76.0/24 mx:xbox.com include:_spf-ssg-a.microsoft.com include:spf.protection.outlook.com -all",
-      "google-site-verification=e70dJcpsqnXzda_PC9I_VO_bpU9hlMlqhtvsxegHEQc",
       "google-site-verification=jRoICv0mMREqo5IthM1McDzE_8rRtEYtSVtHmOTUoJA",
-      "atlassian-domain-verification=xvoaqRfxSg3PnlVnR4xCSOlKyw1Aln0MMxRiKXnwWroFG7vI76TUC8xYb03MwMXv",
-      "docusign=c2837ae3-ac1e-446d-b257-c2328dce901a",
       "b1939PPDAGDjXs+54riWGyuzfCM+s+PE66uPOHEQ+9z264YnfenE2CVrUxq+5UGTDqiOU8JqZ5AKRvfcUVpfXQ==",
+      "google-site-verification=e70dJcpsqnXzda_PC9I_VO_bpU9hlMlqhtvsxegHEQc",
+      "facebook-domain-verification=n2md3enk4k9r4s6kylpqmekhxyyrq7",
+      "v=spf1 ip4:65.55.42.0/24 ip4:65.55.76.0/24 mx:xbox.com include:_spf-ssg-a.microsoft.com include:spf.protection.outlook.com -all",
+      "facebook-domain-verification=yvcz1zil7qv3biswf68ikkxkh1nsoh",
+      "docusign=c2837ae3-ac1e-446d-b257-c2328dce901a",
       "adobe-idp-site-verification=8aa35c528af5d72beb19b1bd3ed9b86d87ea7f24b2ba3c99ffcd00c27e9d809c",
+      "atlassian-domain-verification=xvoaqRfxSg3PnlVnR4xCSOlKyw1Aln0MMxRiKXnwWroFG7vI76TUC8xYb03MwMXv",
       "AFDVALIDATION=Xbox"
     ],
     "dmarc": [
@@ -362,7 +404,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "www.seeyouinthework.com",
       "aieconomy.microsoft.com"
     ],
-    "days_left": 91,
+    "days_left": 90,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -372,7 +414,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
     }
   },
   "ports": {
-    "ip": "20.231.239.246",
+    "ip": "20.70.246.20",
     "open": []
   },
   "https": {
@@ -468,8 +510,40 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "auth.part.xbox.com"
     ]
   },
-  "elapsed_s": 22.8,
-  "rechecked": "2026-09-25 23:12 UTC"
+  "apex_txt": [
+    "google-site-verification=jRoICv0mMREqo5IthM1McDzE_8rRtEYtSVtHmOTUoJA",
+    "google-site-verification=e70dJcpsqnXzda_PC9I_VO_bpU9hlMlqhtvsxegHEQc",
+    "facebook-domain-verification=n2md3enk4k9r4s6kylpqmekhxyyrq7",
+    "facebook-domain-verification=yvcz1zil7qv3biswf68ikkxkh1nsoh",
+    "adobe-idp-site-verification=8aa35c528af5d72beb19b1bd3ed9b86d87ea7f24b2ba3c99ffcd"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.12",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/error",
+      "/*Search?q*",
+      "/*search?q*",
+      "/*results?k*",
+      "/*Results?k*",
+      "/_layouts/",
+      "/_vti_bin/",
+      "/*/contact-us?isChatCallAvailable=false",
+      "/*/play/user/*"
+    ]
+  },
+  "elapsed_s": 18.5,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -478,4 +552,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

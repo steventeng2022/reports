@@ -7,12 +7,12 @@
 | Target | https://snapchat.com/ |
 | Bug bounty program | Snapchat |
 | Listed scope domain | snapchat.com |
-| Test date | 2026-09-25 10:16 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 5, Info: 5)
+Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,6 +26,11 @@ Total findings: **10** (High: 0, Medium: 0, Low: 5, Info: 5)
 | 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
 | 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -38,7 +43,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 5, Info: 5)
 ### 2. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires in 21 days (notAfter Oct 16 23:59:59 2026 GMT).
+- **Detail:** Certificate expires in 20 days (notAfter Oct 16 23:59:59 2026 GMT).
 - **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
 ### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
@@ -96,6 +101,36 @@ Total findings: **10** (High: 0, Medium: 0, Low: 5, Info: 5)
 - **Context:** https response, /
 - **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
+### 11. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 12. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=Ro2UVvcjx7U_bRc-_HAUELMOxwk4Y6n5FX9FQt8BDsQ; censys-domain-verification=9U1U43sYXK5eDeoXbt8WB090FMa8IystN7iMx0waR50S; yahoo-verification-key=hbsSgAjgGym9aXgBQSAX5APr5RKaTlmtGlqFTCMIEXo=
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of snapchat.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 61 disallow path(s), e.g. /verificationofemployment, /static_files/deletion_request.pdf, /static/gla/, /invite/, /
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -111,58 +146,58 @@ Total findings: **10** (High: 0, Medium: 0, Low: 5, Info: 5)
       "alt1.aspmx.l.google.com (pref 20)",
       "aspmx2.googlemail.com (pref 40)",
       "alt2.aspmx.l.google.com (pref 30)",
-      "aspmx.l.google.com (pref 10)",
-      "aspmx3.googlemail.com (pref 50)"
+      "aspmx3.googlemail.com (pref 50)",
+      "aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-220.awsdns-27.com.",
-      "ns-530.awsdns-02.net.",
       "ns-1468.awsdns-55.org.",
-      "ns-1892.awsdns-44.co.uk."
+      "ns-1892.awsdns-44.co.uk.",
+      "ns-220.awsdns-27.com.",
+      "ns-530.awsdns-02.net."
     ],
     "spf": [
-      "segment-site-verification=e6U89hyQcmGvDFTApWYKvbj7NFSMu8zj",
-      "yahoo-verification-key=xUKCyvTR9ya3lyjYFuWPLGfSFLC/5C0y2txg4crwEbw=",
-      "onetrust-domain-verification=faca66624bfe477db467f97c7583b7ba",
-      "atlassian-domain-verification=t2mP/OxdJvz/S28h3o/5egOc105U1aKneVRngll9cfhI4Un8gQxYaQjIPVaKpKpT",
-      "linear-domain-verification=v82bwvzkpw5w",
-      "google-site-verification=bgzZGVgOr4py5YcPQHFZYJFJbarBD_shCxIvjQS1grI",
-      "shopify-verification-code=6AbSmjYHNX0fOCzG0oBfncSsCVJfgT",
-      "dropbox-domain-verification=oypu2eeh56yg",
-      "atlassian-domain-verification=P7v4/0SuI03V2xsQfPTYYZLbRwBN1QkqBg4E/zqmJVvyWKraMaJRbamwkK2vWrx0",
-      "logmein-verification-code=fd76bf0c-ec62-4587-bb84-4511579e41f4",
-      "https://issues.sonatype.org/browse/OSSRH-54682",
-      "krea-verification=b6d6daff3226c8bdfa48187fc11d00d721aa8ed08878659c1ee40b73104da392",
-      "nyy2gbb26yz2kntxp7ynycsvql0swn71",
-      "parallels-domain-verification=58886ce349db42dfbfb94599884a65ead28c9543a5c947df8fc596694c81eba6",
-      "openai-domain-verification=dv-qRVXfFNUY6fVpEXy5skTuRnd",
-      "3ae8f0a14f7a4c98a9023fe8947467bd",
-      "atlassian-domain-verification=TH6BFQJRvZM36e0pNbXcEI/RpTrqBb2JDxzoBsBLa3RajLrpmc6pK6Quau40P7oa",
-      "onetrust-domain-verification=32eb1654587e494fbd3b4f8a54a6b57f",
-      "hubspot-developer-verification=Zjk1NTNlNmYtODAxNi00YzNhLTgzNGEtY2JlNWQyNGRhZmFk",
-      "arcules-domain-verification=kEVxs7LUGURYpDYCelXSgp02wBuL6A82zKQMMw8lGzR",
-      "jamf-site-verification=_Y2-z-8UweEkmdMZsNbTJg",
-      "adobe-idp-site-verification=1b7089e1333b1302c4f425ff60baae967ac377d76fb6aa7bb61c9f0282fd664d",
-      "yahoo-verification-key=T1Hbkkgw9crF2nr93/q/Zb+IzUPXWSZEmqh1G5VCds0=",
-      "MS=255BA8D56417782169DA12894F5A53521A65F7F2",
-      "snapchat-domain-verification-zx5hhx=Q7zL5FmxwFKyQWOuKc4blSh7k",
-      "docker-verification=2351a4bf-bc17-42ff-8fca-521e86376280",
-      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:aspmx.pardot.com -all",
       "smartsheet-site-validation=dw0MifosV2eGg1JG9ZTtiGpSGNuiqybJ",
-      "censys-domain-verification=9U1U43sYXK5eDeoXbt8WB090FMa8IystN7iMx0waR50S",
-      "autodesk-domain-verification=S6bhF0FKFgY957I6SLKW",
-      "pardot_346841_*=de35b68dd0e766cfba41cc068f8b424a6ce7ac92052cb30fe9a4a55ac88a0583",
-      "canva-site-verification=blQT_XTqOBtV9rXZPJYTvg",
-      "apple-domain-verification=hAi0YbrGnN5ny4wm",
-      "google-site-verification=tHsCd67KywyjuYvvr7V9I4PFTXXznN48z-jvPm20yBE",
-      "google-site-verification=eye-nbnjs2nv4ll-8vo9ijpgkdvyrs8h2j_1bzkp-t0",
       "google-site-verification=Ro2UVvcjx7U_bRc-_HAUELMOxwk4Y6n5FX9FQt8BDsQ",
-      "google-site-verification=Eo-pwhENGkrh6E74BafjjhjK4dGk0B1Tv12bUn5UPSY",
-      "TAILSCALE-bAU9TfNGoz4iD4hioxcp",
+      "censys-domain-verification=9U1U43sYXK5eDeoXbt8WB090FMa8IystN7iMx0waR50S",
       "yahoo-verification-key=hbsSgAjgGym9aXgBQSAX5APr5RKaTlmtGlqFTCMIEXo=",
-      "miro-verification=b341b9dfb098865b7517b6c662e94e5538603be4",
+      "apple-domain-verification=hAi0YbrGnN5ny4wm",
+      "atlassian-domain-verification=TH6BFQJRvZM36e0pNbXcEI/RpTrqBb2JDxzoBsBLa3RajLrpmc6pK6Quau40P7oa",
+      "TAILSCALE-bAU9TfNGoz4iD4hioxcp",
+      "arcules-domain-verification=kEVxs7LUGURYpDYCelXSgp02wBuL6A82zKQMMw8lGzR",
+      "parallels-domain-verification=58886ce349db42dfbfb94599884a65ead28c9543a5c947df8fc596694c81eba6",
+      "google-site-verification=bgzZGVgOr4py5YcPQHFZYJFJbarBD_shCxIvjQS1grI",
+      "logmein-verification-code=fd76bf0c-ec62-4587-bb84-4511579e41f4",
+      "atlassian-domain-verification=t2mP/OxdJvz/S28h3o/5egOc105U1aKneVRngll9cfhI4Un8gQxYaQjIPVaKpKpT",
+      "MS=255BA8D56417782169DA12894F5A53521A65F7F2",
+      "yahoo-verification-key=T1Hbkkgw9crF2nr93/q/Zb+IzUPXWSZEmqh1G5VCds0=",
+      "krea-verification=b6d6daff3226c8bdfa48187fc11d00d721aa8ed08878659c1ee40b73104da392",
+      "linear-domain-verification=v82bwvzkpw5w",
+      "google-site-verification=eye-nbnjs2nv4ll-8vo9ijpgkdvyrs8h2j_1bzkp-t0",
+      "yahoo-verification-key=xUKCyvTR9ya3lyjYFuWPLGfSFLC/5C0y2txg4crwEbw=",
+      "onetrust-domain-verification=32eb1654587e494fbd3b4f8a54a6b57f",
+      "autodesk-domain-verification=S6bhF0FKFgY957I6SLKW",
+      "canva-site-verification=blQT_XTqOBtV9rXZPJYTvg",
+      "shopify-verification-code=6AbSmjYHNX0fOCzG0oBfncSsCVJfgT",
+      "segment-site-verification=e6U89hyQcmGvDFTApWYKvbj7NFSMu8zj",
+      "dropbox-domain-verification=oypu2eeh56yg",
+      "jamf-site-verification=_Y2-z-8UweEkmdMZsNbTJg",
+      "hubspot-developer-verification=Zjk1NTNlNmYtODAxNi00YzNhLTgzNGEtY2JlNWQyNGRhZmFk",
+      "anthropic-domain-verification-kg6835=FrP90V31rmTTa7Cu3plqLLMEx",
+      "google-site-verification=Eo-pwhENGkrh6E74BafjjhjK4dGk0B1Tv12bUn5UPSY",
+      "3ae8f0a14f7a4c98a9023fe8947467bd",
+      "pardot_346841_*=de35b68dd0e766cfba41cc068f8b424a6ce7ac92052cb30fe9a4a55ac88a0583",
+      "snapchat-domain-verification-zx5hhx=Q7zL5FmxwFKyQWOuKc4blSh7k",
+      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:aspmx.pardot.com -all",
+      "google-site-verification=tHsCd67KywyjuYvvr7V9I4PFTXXznN48z-jvPm20yBE",
+      "https://issues.sonatype.org/browse/OSSRH-54682",
+      "openai-domain-verification=dv-qRVXfFNUY6fVpEXy5skTuRnd",
+      "adobe-idp-site-verification=1b7089e1333b1302c4f425ff60baae967ac377d76fb6aa7bb61c9f0282fd664d",
+      "onetrust-domain-verification=faca66624bfe477db467f97c7583b7ba",
+      "atlassian-domain-verification=P7v4/0SuI03V2xsQfPTYYZLbRwBN1QkqBg4E/zqmJVvyWKraMaJRbamwkK2vWrx0",
       "_hh9zpxhf35itout7v7mwibqktr44s3s",
-      "anthropic-domain-verification-kg6835=FrP90V31rmTTa7Cu3plqLLMEx"
+      "docker-verification=2351a4bf-bc17-42ff-8fca-521e86376280",
+      "nyy2gbb26yz2kntxp7ynycsvql0swn71",
+      "miro-verification=b341b9dfb098865b7517b6c662e94e5538603be4"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-report@snapchat.com; rf=afrf; pct=100; ri=86400"
@@ -217,7 +252,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 5, Info: 5)
       "saturn.live",
       "specs.com"
     ],
-    "days_left": 21,
+    "days_left": 20,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -274,10 +309,48 @@ Total findings: **10** (High: 0, Medium: 0, Low: 5, Info: 5)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='crt.sh', port=443): Read (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 20.7,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "google-site-verification=Ro2UVvcjx7U_bRc-_HAUELMOxwk4Y6n5FX9FQt8BDsQ",
+    "censys-domain-verification=9U1U43sYXK5eDeoXbt8WB090FMa8IystN7iMx0waR50S",
+    "yahoo-verification-key=hbsSgAjgGym9aXgBQSAX5APr5RKaTlmtGlqFTCMIEXo=",
+    "apple-domain-verification=hAi0YbrGnN5ny4wm",
+    "atlassian-domain-verification=TH6BFQJRvZM36e0pNbXcEI/RpTrqBb2JDxzoBsBLa3RajLrpmc"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/verificationofemployment",
+      "/static_files/deletion_request.pdf",
+      "/static/gla/",
+      "/invite/",
+      "/",
+      "/",
+      "/getreplies",
+      "/explore/",
+      "/getreplies",
+      "/explore/",
+      "/getreplies",
+      "/explore/",
+      "/getreplies",
+      "/explore/",
+      "/getreplies"
+    ]
+  },
+  "elapsed_s": 4.7,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -286,4 +359,5 @@ Total findings: **10** (High: 0, Medium: 0, Low: 5, Info: 5)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

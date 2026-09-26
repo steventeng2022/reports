@@ -7,12 +7,12 @@
 | Target | https://ifttt.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ifttt.com |
-| Test date | 2026-09-25 09:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
+Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -22,6 +22,12 @@ Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
 | 4 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 5 | info | H6 | Server technology disclosure | CWE-200 |
 | 6 | info | P8 | Missing security.txt | CWE-1038 |
+| 7 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 8 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 9 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -65,6 +71,42 @@ Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 7. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 8. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 9. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=sdwLeEbGkwDQnNef_ZybsYYO1nz4RksHjJlL4BFy97c; google-site-verification=LaHtMW5vokuLBZBVhajjw-NS3aQbRMOOz92B-RM_4hQ; facebook-domain-verification=2gbh6mjor9buxlzajjq1hjbnksveuo
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of ifttt.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but ifttt.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 14 disallow path(s), e.g. /search/query/, /unsubscribe-from-applet/, /unsubscribe, /missing_link, /create/api/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -72,54 +114,54 @@ Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
   "domain": "ifttt.com",
   "dns": {
     "a": [
-      "3.169.121.105",
-      "3.169.121.27",
+      "3.169.121.41",
       "3.169.121.2",
-      "3.169.121.41"
+      "3.169.121.105",
+      "3.169.121.27"
     ],
     "aaaa": [
-      "2600:9000:284c:ac00:1:b1c6:9e40:93a1",
-      "2600:9000:284c:9400:1:b1c6:9e40:93a1",
-      "2600:9000:284c:a00:1:b1c6:9e40:93a1",
-      "2600:9000:284c:e400:1:b1c6:9e40:93a1",
-      "2600:9000:284c:da00:1:b1c6:9e40:93a1",
-      "2600:9000:284c:2200:1:b1c6:9e40:93a1",
-      "2600:9000:284c:6c00:1:b1c6:9e40:93a1",
-      "2600:9000:284c:4400:1:b1c6:9e40:93a1"
+      "2600:9000:284c:7800:1:b1c6:9e40:93a1",
+      "2600:9000:284c:4e00:1:b1c6:9e40:93a1",
+      "2600:9000:284c:9a00:1:b1c6:9e40:93a1",
+      "2600:9000:284c:2600:1:b1c6:9e40:93a1",
+      "2600:9000:284c:ca00:1:b1c6:9e40:93a1",
+      "2600:9000:284c:e800:1:b1c6:9e40:93a1",
+      "2600:9000:284c:3000:1:b1c6:9e40:93a1",
+      "2600:9000:284c:6400:1:b1c6:9e40:93a1"
     ],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)",
-      "aspmx.l.google.com (pref 1)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "aspmx.l.google.com (pref 1)",
+      "aspmx3.googlemail.com (pref 10)"
     ],
     "ns": [
-      "ns-676.awsdns-20.net.",
       "ns-425.awsdns-53.com.",
-      "ns-1400.awsdns-47.org.",
-      "ns-1614.awsdns-09.co.uk."
+      "ns-1614.awsdns-09.co.uk.",
+      "ns-676.awsdns-20.net.",
+      "ns-1400.awsdns-47.org."
     ],
     "spf": [
-      "google-site-verification=VdD3iT9gG8si3Zu4-crc2cMxN3b3oiRHtFcEAiDwTLc",
-      "facebook-domain-verification=2gbh6mjor9buxlzajjq1hjbnksveuo",
-      "v=MCPv1; k=ed25519; p=shhg+Sx/4D+wFvY1jwECmtgaGtpfAC5UDl0mb+mhdNg=",
-      "v=spf1 include:sendgrid.net include:_spf.google.com include:customeriomail.com include:mail.zendesk.com include:stspg-customer.com -all",
-      "edca106a3d3b474e87b5e47c25f607ec",
-      "a774vnn3gtgp35cvtd31idrcug",
-      "qrql38igvi0ce4abfi3on0vvke",
-      "google-site-verification=LaHtMW5vokuLBZBVhajjw-NS3aQbRMOOz92B-RM_4hQ",
-      "pinterest-site-verification=8e6e3928621ee8deeaa774c7569bb607",
       "google-site-verification=sdwLeEbGkwDQnNef_ZybsYYO1nz4RksHjJlL4BFy97c",
-      "openai-domain-verification=dv-owUo2sHFljJJv2dyVfHqW3bb",
-      "stripe-verification=d9aecd16a51b8f74a32c270d11a6bce84470c737c9d1e1de696edbce60ea7b47",
+      "google-site-verification=LaHtMW5vokuLBZBVhajjw-NS3aQbRMOOz92B-RM_4hQ",
+      "a774vnn3gtgp35cvtd31idrcug",
+      "facebook-domain-verification=2gbh6mjor9buxlzajjq1hjbnksveuo",
+      "edca106a3d3b474e87b5e47c25f607ec",
+      "qrql38igvi0ce4abfi3on0vvke",
+      "v=MCPv1; k=ed25519; p=shhg+Sx/4D+wFvY1jwECmtgaGtpfAC5UDl0mb+mhdNg=",
+      "pinterest-site-verification=8e6e3928621ee8deeaa774c7569bb607",
       "have-i-been-pwned-verification=1931e44ce46fd205b3806eff20a8b416",
-      "status-page-domain-verification=btfx82x3lwwg",
-      "_globalsign-domain-verification=rRjaOlcgFhBuUq2_dp1lnClpS6rvXrnUtycKh8GTEH",
+      "stripe-verification=d9aecd16a51b8f74a32c270d11a6bce84470c737c9d1e1de696edbce60ea7b47",
       "globalsign-domain-verification=2D384BE73AFA22F600E2F2FD71973C63",
+      "_globalsign-domain-verification=rRjaOlcgFhBuUq2_dp1lnClpS6rvXrnUtycKh8GTEH",
+      "google-site-verification=VdD3iT9gG8si3Zu4-crc2cMxN3b3oiRHtFcEAiDwTLc",
+      "hubspot-developer-verification=ODA3YjI3MGQtOTk1Ni00YzgxLWE2NjAtNzkyYjljZDU4MzVj",
+      "status-page-domain-verification=btfx82x3lwwg",
+      "openai-domain-verification=dv-owUo2sHFljJJv2dyVfHqW3bb",
       "MS=ms71593285",
-      "hubspot-developer-verification=ODA3YjI3MGQtOTk1Ni00YzgxLWE2NjAtNzkyYjljZDU4MzVj"
+      "v=spf1 include:sendgrid.net include:_spf.google.com include:customeriomail.com include:mail.zendesk.com include:stspg-customer.com -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:arqctnow@ag.dmarcian.com;"
@@ -139,7 +181,7 @@ Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
       "ifttt.com",
       "*.ifttt.com"
     ],
-    "days_left": 63,
+    "days_left": 62,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -149,7 +191,7 @@ Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
     }
   },
   "ports": {
-    "ip": "3.169.121.105",
+    "ip": "3.169.121.41",
     "open": []
   },
   "https": {
@@ -208,10 +250,47 @@ Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
     "/api/": 404
   },
   "subdomains": {
-    "status": "crt.sh ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='crt.sh', port=443): Read (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 42.4,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "google-site-verification=sdwLeEbGkwDQnNef_ZybsYYO1nz4RksHjJlL4BFy97c",
+    "google-site-verification=LaHtMW5vokuLBZBVhajjw-NS3aQbRMOOz92B-RM_4hQ",
+    "facebook-domain-verification=2gbh6mjor9buxlzajjq1hjbnksveuo",
+    "pinterest-site-verification=8e6e3928621ee8deeaa774c7569bb607",
+    "have-i-been-pwned-verification=1931e44ce46fd205b3806eff20a8b416"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/search/query/",
+      "/unsubscribe-from-applet/",
+      "/unsubscribe",
+      "/missing_link",
+      "/create/api/",
+      "/dri/",
+      "/search/query/",
+      "/unsubscribe-from-applet/",
+      "/unsubscribe",
+      "/missing_link",
+      "/create/api/",
+      "/dri/",
+      "/join",
+      "/login"
+    ]
+  },
+  "elapsed_s": 7.4,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -220,4 +299,5 @@ Total findings: **6** (High: 0, Medium: 0, Low: 0, Info: 6)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

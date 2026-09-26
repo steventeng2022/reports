@@ -7,12 +7,12 @@
 | Target | https://google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | google.com |
-| Test date | 2026-09-25 09:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
+Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,7 +26,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 | 8 | info | H6 | Server technology disclosure | CWE-200 |
 | 9 | low | RED1 | HTTP redirect points to another host over plain HTTP | CWE-319 |
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
-| 11 | info | CT1 | 47 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 11 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
+| 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | CT1 | 47 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -97,7 +101,31 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 11. [INFO] 47 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 11. [LOW] MTA-STS TXT published but policy file missing/invalid (`MAIL12`)
+
+- **CWE:** CWE-285
+- **Detail:** GET https://mta-sts.google.com/.well-known/mta-sts/policy.txt -> 404
+- **Recommendation:** Publish a valid policy.txt (version, max_age, mode) or remove the TXT record.
+
+### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: arcules-domain-verification=2R4t5G7nI6tRCo61lpxxbLksPYstxhGmtV75cpr8x9K; onetrust-domain-verification=6d685f1d41a94696ad7ef771f68993e0; google-site-verification=4ibFUgB-wXLQ_S7vsXVomSTVamuOXBiVAzpR5IZ87D0
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of google.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 178 disallow path(s), e.g. /search, /sdch, /groups, /index.html?, /?
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 15. [INFO] 47 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: console.au.cloud.google.com, console.ca.cloud.google.com, console.ch.cloud.google.com, console.eu.cloud.google.com, console.il.cloud.google.com, console.in.cloud.google.com, console.it.cloud.google.com, console.jp.cloud.google.com, console.sa.cloud.google.com, console.uk.cloud.google.com
@@ -113,7 +141,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
       "142.250.198.78"
     ],
     "aaaa": [
-      "2404:6800:4012:8::200e"
+      "2404:6800:4012:6::200e"
     ],
     "cname": null,
     "mx": [
@@ -126,23 +154,23 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
       "ns3.google.com."
     ],
     "spf": [
-      "arcules-domain-verification=2R4t5G7nI6tRCo61lpxxbLksPYstxhGmtV75cpr8x9K",
-      "google-site-verification=TV9-DBe4R80X4v0M4U_bd_J9cpOJM0nikft0jAgjmsQ",
-      "cisco-ci-domain-verification=47c38bc8c4b74b7233e9053220c1bbe76bcc1cd33c7acf7acd36cd6a5332004b",
-      "_r4rd1pvwyrpi7sw4a3hzmw8e51yh9td",
-      "Z29vZ2xl",
       "docusign=1b0a6754-49b1-4db5-8540-d2c12664b289",
-      "onetrust-domain-verification=0d477fe608074e6f9c12bca7826035cc",
-      "google-site-verification=4ibFUgB-wXLQ_S7vsXVomSTVamuOXBiVAzpR5IZ87D0",
-      "v=spf1 include:_spf.google.com ~all",
-      "docusign=05958488-4752-4ef2-95eb-aa7ba8a3bd0e",
-      "MS=E4A68B9AB2BB9670BCE15412F62916164C0B20BB",
-      "work-accounts-domain-verification=Tcj6JjIMZOw2KsSEw2Nt2rLae89tN6",
+      "arcules-domain-verification=2R4t5G7nI6tRCo61lpxxbLksPYstxhGmtV75cpr8x9K",
+      "Z29vZ2xl",
+      "_r4rd1pvwyrpi7sw4a3hzmw8e51yh9td",
       "onetrust-domain-verification=6d685f1d41a94696ad7ef771f68993e0",
+      "google-site-verification=4ibFUgB-wXLQ_S7vsXVomSTVamuOXBiVAzpR5IZ87D0",
+      "apple-domain-verification=30afIBcvSuDV2PLX",
       "globalsign-smime-dv=CDYX+XFHUw2wml6/Gb8+59BsH31KzUr6c1l2BPvqKX8=",
+      "cisco-ci-domain-verification=47c38bc8c4b74b7233e9053220c1bbe76bcc1cd33c7acf7acd36cd6a5332004b",
+      "MS=E4A68B9AB2BB9670BCE15412F62916164C0B20BB",
       "facebook-domain-verification=22rm551cu4k0ab0bxsw536tlds4h95",
       "google-site-verification=wD8N7i1JTNTkezJ49swvWW48f8_9xveREV4oB-0Hf5o",
-      "apple-domain-verification=30afIBcvSuDV2PLX"
+      "work-accounts-domain-verification=Tcj6JjIMZOw2KsSEw2Nt2rLae89tN6",
+      "onetrust-domain-verification=0d477fe608074e6f9c12bca7826035cc",
+      "google-site-verification=TV9-DBe4R80X4v0M4U_bd_J9cpOJM0nikft0jAgjmsQ",
+      "v=spf1 include:_spf.google.com ~all",
+      "docusign=05958488-4752-4ef2-95eb-aa7ba8a3bd0e"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:mailauth-reports@google.com"
@@ -225,7 +253,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
       "android.clients.google.com",
       "*.aistudio.google.com"
     ],
-    "days_left": 69,
+    "days_left": 68,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -327,8 +355,46 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
       "console.us.cloud.google.com"
     ]
   },
-  "elapsed_s": 6.9,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "arcules-domain-verification=2R4t5G7nI6tRCo61lpxxbLksPYstxhGmtV75cpr8x9K",
+    "onetrust-domain-verification=6d685f1d41a94696ad7ef771f68993e0",
+    "google-site-verification=4ibFUgB-wXLQ_S7vsXVomSTVamuOXBiVAzpR5IZ87D0",
+    "apple-domain-verification=30afIBcvSuDV2PLX",
+    "cisco-ci-domain-verification=47c38bc8c4b74b7233e9053220c1bbe76bcc1cd33c7acf7acd3"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/search",
+      "/sdch",
+      "/groups",
+      "/index.html?",
+      "/?",
+      "/goto?",
+      "/?hl=*&",
+      "/?hl=*&*&gws_rd=ssl",
+      "/imgres",
+      "/u/",
+      "/setprefs",
+      "/m?",
+      "/m/",
+      "/wml?",
+      "/wml/?"
+    ]
+  },
+  "elapsed_s": 5.0,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -337,4 +403,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

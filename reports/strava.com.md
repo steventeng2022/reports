@@ -7,290 +7,322 @@
 | Target | https://strava.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | strava.com |
-| Test date | 2026-09-26 01:40 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
+| Test date | 2026-09-26 17:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 4 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 5 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 6 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H1 | Missing HSTS header | CWE-319 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
 | 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
 | 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 9 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 10 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 11 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | H6 | Server technology disclosure | CWE-200 |
+| 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-1004
-- **Detail:** Set on https://strava.com/ without SameSite=Lax/Strict: _strava4_session. Cross-site request cookies.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
+
+- **CWE:** CWE-200
+- **Detail:** Detected: Server: istio-envoy
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
+
+### 3. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header on https://strava.com/. Clients may connect over plain HTTP on first visit.
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
+- **Context:** https response, /
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 3. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://strava.com/; no defense-in-depth against XSS/content injection.
-
-### 4. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://strava.com/; browsers may MIME-sniff responses.
-
-### 5. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
+### 4. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://strava.com/; page may be rendered in a foreign frame.
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 6. [INFO] Extra names enumerated from certificate SANs (`D1`)
+### 5. [LOW] Missing X-Content-Type-Options (`H3`)
 
-- **CWE:** CWE-1382
-- **Detail:** Certificate for strava.com lists 1 name(s) besides the scope host: *.strava.com
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
+
+### 6. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
 ### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://strava.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
 ### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://strava.com/; browser features (camera, mic, geolocation) unrestricted.
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 9. [INFO] HTTP correctly redirects to HTTPS (`N2`)
-
-- **CWE:** CWE-319
-- **Detail:** http://strava.com/ -> https://strava.com/ (positive check).
-
-### 10. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt on https://strava.com/ exposes 44 unique Disallow path(s) (/, /activities/*/analysis, /activities/*/embed/, /activities/*/est-power-*, /activities/*/flags/new) and 1 sitemap reference(s)
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 11. [INFO] security.txt exposed (public disclosure policy) (`S2`)
-
-- **CWE:** CWE-200
-- **Detail:** security.txt present on https://strava.com (3012 bytes); contact: mailto:vulnerabilities@strava.com
-
-## Reproduction notes
-
-- Scanned 2026-09-26 01:40 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://strava.com/ final status: 200 (final URL https://www.strava.com/).
-- http://strava.com/ initial status: 301.
-- Certificate: GoDaddy.com GoDaddy TLS Intermediate CA DV - R1v1, valid until 2027-03-19T20:56:39+00:00.
-
-## Active agent cross-check (latest pre-merge `main` snapshot)
-
-The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before the latest passive re-audit was merged is preserved below for comparison and to avoid losing later verification work.
-
-<details>
-<summary>Expand active-scan snapshot — 11 findings: 0 high, 0 medium, 5 low, 6 info</summary>
-
-### Security Audit Report — strava.com
-
-#### Scope and authorization
-
-| Item | Value |
-|---|---|
-| Target | https://strava.com/ |
-| Bug bounty program | top-websites gist (no active program match) |
-| Listed scope domain | strava.com |
-| Test date | 2026-09-25 09:51 UTC |
-| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
-
-#### Summary
-
-Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
-
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H3 | Missing Content-Security-Policy | CWE-79 |
-| 4 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
-| 5 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
-| 6 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 9 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
-| 10 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
-| 11 | info | S2 | security.txt exposed (public disclosure policy) | CWE-200 |
-
-#### Detailed findings
-
-##### 1. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
-
-- **CWE:** CWE-1004
-- **Detail:** Set on https://strava.com/ without SameSite=Lax/Strict: _strava4_session. Cross-site request cookies.
-
-##### 2. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security header on https://strava.com/. Clients may connect over plain HTTP on first visit.
-
-##### 3. [LOW] Missing Content-Security-Policy (`H3`)
-
-- **CWE:** CWE-79
-- **Detail:** No CSP header on https://strava.com/; no defense-in-depth against XSS/content injection.
-
-##### 4. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
-
-- **CWE:** CWE-693
-- **Detail:** No X-Content-Type-Options header on https://strava.com/; browsers may MIME-sniff responses.
-
-##### 5. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
-
-- **CWE:** CWE-1021
-- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://strava.com/; page may be rendered in a foreign frame.
-
-##### 6. [INFO] Extra names enumerated from certificate SANs (`D1`)
-
-- **CWE:** CWE-1382
-- **Detail:** Certificate for strava.com lists 1 name(s) besides the scope host: *.strava.com
-
-##### 7. [INFO] Missing Referrer-Policy (`H5`)
+### 10. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy header on https://strava.com/; full URL (incl. query strings) is sent as referrer by default.
+- **Detail:** Header reveals: istio-envoy
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
 
-##### 8. [INFO] Missing Permissions-Policy (`H7`)
+### 11. [INFO] Missing security.txt (`P8`)
 
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header on https://strava.com/; browser features (camera, mic, geolocation) unrestricted.
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-##### 9. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
 
-- **CWE:** CWE-319
-- **Detail:** http://strava.com/ -> https://strava.com/ (positive check).
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
 
-##### 10. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
 
-- **CWE:** CWE-200
-- **Detail:** robots.txt on https://strava.com/ exposes 44 unique Disallow path(s) (/, /activities/*/analysis, /activities/*/embed/, /activities/*/est-power-*, /activities/*/flags/new) and 1 sitemap reference(s)
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
 
-##### 11. [INFO] security.txt exposed (public disclosure policy) (`S2`)
-
-- **CWE:** CWE-200
-- **Detail:** security.txt present on https://strava.com (3012 bytes); contact: mailto:vulnerabilities@strava.com
-
-#### Reproduction notes
-
-- Scanned 2026-09-25 09:51 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
-- https://strava.com/ final status: 200 (final URL https://www.strava.com/).
-- http://strava.com/ initial status: 301.
-- Certificate: GoDaddy.com GoDaddy TLS Intermediate CA DV - R1v1, valid until 2027-03-19T20:56:39+00:00.
-
-#### Active agent cross-check (latest pre-merge `main` snapshot)
-
-The passive findings above remain the primary README/index counts. The active-scan version that was on `main` before PR #1 was merged is preserved below for comparison and to avoid losing later verification work.
-
-<details>
-<summary>Expand active-scan snapshot — 11 findings: 0 high, 2 medium, 6 low, 3 info</summary>
-
-##### Security Audit Report — strava.com
-
-###### Scope and authorization
-
-| Item | Value |
-|---|---|
-| Target | https://strava.com/ |
-| Bug bounty program | top-websites gist (no active program match) |
-| Listed scope domain | strava.com |
-| Test date | 2026-09-25 04:25 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
-
-###### Summary
-
-Total findings: **11** (High: 0, Medium: 2, Low: 6, Info: 3)
-
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | medium | S1 | ftp.strava.com - dormant CloudFront distribution (403 + TLS failure) | CWE-916 |
-| 3 | low | S1 | app.strava.com - live 301 to www.strava.com on retest | CWE-916 |
-| 4 | low | S1 | status.strava.com - live Atlassian Statuspage on retest | CWE-916 |
-| 5 | low | H1 | Missing HSTS header | CWE-319 |
-| 6 | low | H2 | Missing CSP header | CWE-1021 |
-| 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-| 9 | info | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 11 | info | I26 | security.txt exposed (public vulnerability disclosure policy) | CWE-200 |
-
-###### Detailed findings
-
-##### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
-
-- **CWE:** CWE-538
-- **Detail:** robots.txt disallows /get-started which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
-
-##### 2. [MEDIUM] ftp.strava.com - dormant CloudFront distribution (403 + TLS failure) (`S1`)
-
-- **CWE:** CWE-916
-- **Detail:** ftp.strava.com -> 54.192.248.56. RETEST 2026-09-25: over HTTP CloudFront returns 403 (via 1.1 dfa0b51d34f92a426f4ba3cbfc8199b0.cloudfront.net); over HTTPS the TLS handshake FAILS (ssl/tls alert handshake failure). Distribution exists but serves nothing = dormant CloudFront distribution, classic takeover candidate (claim the distribution/bucket behind it). KEPT as medium - best remaining takeover lead for strava.com.
-
-##### 3. [LOW] app.strava.com - live 301 to www.strava.com on retest (`S1`)
-
-- **CWE:** CWE-916
-- **Detail:** app.strava.com. RETEST 2026-09-25: 301 (istio-envoy behind CloudFront) -> https://www.strava.com/. Live managed redirect (app consolidated to main site), not dangling. Downgraded medium -> low.
-
-##### 4. [LOW] status.strava.com - live Atlassian Statuspage on retest (`S1`)
-
-- **CWE:** CWE-916
-- **Detail:** status.strava.com. RETEST 2026-09-25: 200 (100KB) "Strava Status" served by AtlassianEdge = active Atlassian Statuspage. Not dangling. Downgraded medium -> low.
-
-##### 5. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security on https://www.strava.com/
-
-##### 6. [LOW] Missing CSP header (`H2`)
-
-- **CWE:** CWE-1021
-- **Detail:** No Content-Security-Policy on https://www.strava.com/
-
-##### 7. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on https://www.strava.com/
-
-##### 8. [LOW] Host header alters response (vhost behavior) (`I12`)
-
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: strava.com + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
-
-##### 9. [INFO] Missing X-Content-Type-Options (`H3`)
-
-- **CWE:** CWE-1194
-- **Detail:** No X-Content-Type-Options on https://www.strava.com/
-
-##### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://www.strava.com/
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=b-brkKP8oTaok4WqJS4ip220QWuatmTIa9_9-4yP0Rg; docker-verification=2e6711c6-5d4d-4dbf-802d-e9c0eafda287; decagon-domain-verification-4pmp61=bzrLxzaMsSC8YBwPLgVYm9xSC
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-##### 11. [INFO] security.txt exposed (public vulnerability disclosure policy) (`I26`)
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of strava.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET https://www.strava.com/.well-known/security.txt returned 200 (3012 bytes) with a matching signature.
+- **Detail:** robots.txt lists 44 disallow path(s), e.g. /, /admin/, /api/, /stream/, /activities/*/analysis
+- **Recommendation:** Review disallowed paths; robots is not access control.
 
-###### Reproduction notes
+## Evidence (raw response observations)
 
-- Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+```json
+{
+  "domain": "strava.com",
+  "dns": {
+    "a": [
+      "54.192.248.128",
+      "54.192.248.56",
+      "54.192.248.55",
+      "54.192.248.90"
+    ],
+    "aaaa": [],
+    "cname": null,
+    "mx": [
+      "alt2.aspmx.l.google.com (pref 30)",
+      "aspmx3.googlemail.com (pref 50)",
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx2.googlemail.com (pref 40)",
+      "aspmx.l.google.com (pref 10)"
+    ],
+    "ns": [
+      "ns-1461.awsdns-54.org.",
+      "ns-1806.awsdns-33.co.uk.",
+      "ns-610.awsdns-12.net.",
+      "ns-145.awsdns-18.com."
+    ],
+    "spf": [
+      "google-site-verification=b-brkKP8oTaok4WqJS4ip220QWuatmTIa9_9-4yP0Rg",
+      "cloudflare_dashboard_sso=9369287776c37e9ac8fb04bf9053fd26",
+      "docker-verification=2e6711c6-5d4d-4dbf-802d-e9c0eafda287",
+      "decagon-domain-verification-4pmp61=bzrLxzaMsSC8YBwPLgVYm9xSC",
+      "anthropic-domain-verification-stddgc=YcuPCewLcCRlX44Nt6YT7iWGa",
+      "adobe-idp-site-verification=9a5218c79f86c05d91cd0b2e9563f5c6e8cd5572bf65e7e7686f55a90cf1befc",
+      "atlassian-domain-verification=4SfbkeWjP1TP5ROrzUdI40l9E0MqiStUDoG2m4KYvKDtsBhLnniowUc7ILCsYZ1S",
+      "google-site-verification=KKJriV53T6NWYsL-B85XmGlIGGVSQU7Iz1hA7L3lqgc",
+      "apple-domain-verification=9ACAsKFrulr6AjAT",
+      "loom-site-verification=b0f23be7d86c413d868b47f2d93ec03e",
+      "google-site-verification=w4nbPkV1Xy_Sha-bUciA4fLF1L3jNqunS7B3BZ3jmk0",
+      "docusign=76e529f9-f4ae-4745-b880-de1c9d1417f6",
+      "work-accounts-domain-verification=nLwT1cx0x4uEv9vvCACvt1Lg4luy5O",
+      "mixpanel-domain-verify=d81ed633-675a-4e48-a5ca-26304e495168",
+      "mixpanel-domain-verify=7a9d27b9-b001-4b6c-9015-6ca9d511eb0e",
+      "notion-domain-verification=5btQssUe0luq0yarLdA50PxDGvHA6JIqrSaOyQvO0fs",
+      "jamf-site-verification=w9mElzcFuOBxXmCXv2bCpA",
+      "google-site-verification=z9engXe1IAxie3KkQEmv3FU2paPe3wciOlRip5-AyA8",
+      "hubspot-domain-verification=OGRkN2YzMDQtNzE4My00MGJlLWI1ODktNzM4ZmJmMDExMjEy",
+      "cursor-domain-verification-xxvmxc=08C6fCgWX5w8WDgwWcYQaMI9E",
+      "airtable-verification=de9c073c9ccf61acff9d73b8823edbef",
+      "MS=C4B6EF60D51B967591B73261035E0C54EDF75375",
+      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
+      "google-site-verification=7V-jaWtdlKU59XzrF3bZjomZygEWkYS4B1du-Tn6WTk",
+      "zapier-domain-verification-challenge=aaed450e-ad27-40cc-90a3-8946ab1a6998",
+      "google-site-verification=8oa-S3w8xvrsbI6gFOLjiipTrm_TizA54b2WptEosBY",
+      "tiktok-developers-site-verification=TaDdWWlWycl7vyceILq930ykKqH5rE31"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; rua=mailto:dmarc_agg@vali.email,mailto:dmarc@strava.com"
+    ],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=*.strava.com",
+    "issuer": "countryName=US, organizationName=GoDaddy.com, commonName=GoDaddy TLS Intermediate CA DV - R1v1",
+    "notBefore": "Sep  2 20:56:39 2026 GMT",
+    "notAfter": "Mar 19 20:56:39 2027 GMT",
+    "san": [
+      "*.strava.com",
+      "strava.com"
+    ],
+    "days_left": 174,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "54.192.248.128",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: istio-envoy"
+  ],
+  "cookies": [],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.strava.com",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://strava.com/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
+  ],
+  "paths": {
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 403,
+    "/.htaccess": 403,
+    "/wp-login.php": 403,
+    "/phpmyadmin/index.php": 403,
+    "/server-status": 301,
+    "/api/": 301
+  },
+  "subdomains": {
+    "status": "ct-pending"
+  },
+  "apex_txt": [
+    "google-site-verification=b-brkKP8oTaok4WqJS4ip220QWuatmTIa9_9-4yP0Rg",
+    "docker-verification=2e6711c6-5d4d-4dbf-802d-e9c0eafda287",
+    "decagon-domain-verification-4pmp61=bzrLxzaMsSC8YBwPLgVYm9xSC",
+    "anthropic-domain-verification-stddgc=YcuPCewLcCRlX44Nt6YT7iWGa",
+    "adobe-idp-site-verification=9a5218c79f86c05d91cd0b2e9563f5c6e8cd5572bf65e7e7686f"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/",
+      "/admin/",
+      "/api/",
+      "/stream/",
+      "/activities/*/analysis",
+      "/activities/*/embed/",
+      "/activities/*/est-power-*",
+      "/activities/*/flags/new",
+      "/activities/*/heartrate",
+      "/activities/*/laps",
+      "/activities/*/matched*",
+      "/activities/*/overview",
+      "/activities/*/pace-*",
+      "/activities/*/potential-segment*",
+      "/activities/*/power-*"
+    ]
+  },
+  "elapsed_s": 11.8,
+  "rechecked": "2026-09-26 17:38 UTC"
+}
+```
 
-</details>
+## Notes
 
-</details>
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

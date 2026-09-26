@@ -7,12 +7,12 @@
 | Target | https://bbc.com/ |
 | Bug bounty program | BBC |
 | Listed scope domain | bbc.com |
-| Test date | 2026-09-25 08:43 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:40 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
+Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,7 +27,12 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 | 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
-| 12 | info | CT1 | 89 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | CT1 | 89 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -105,7 +110,37 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 12. [INFO] 89 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: airtable-verification=b1a394c872dd6721d39a1d91cc96080d; jamf-site-verification=28Mn3O6rTBSXkL5w6c911A; slack-domain-verification=hza4gfkmctQ7A7BpMhGNVOZVZcKTFC8OC5ewDFVA
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of bbc.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 88 disallow path(s), e.g. /asset/, /backstage/bbc-login-help/, /backstage/bbc-login-help$, /bitesize/search$, /bitesize/search/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 17. [INFO] 89 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: account-api.api.bbc.com, activity.api.bbc.com, activity.int.api.bbc.com, activity.stage.api.bbc.com, activity.test.api.bbc.com, af-dummy-ui-1.test.api.bbc.com, amservice.api.bbc.com, amservice.int.api.bbc.com, amservice.stage.api.bbc.com, amservice.test.api.bbc.com
@@ -124,10 +159,10 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "151.101.128.81"
     ],
     "aaaa": [
-      "2a04:4e42:200::81",
-      "2a04:4e42:400::81",
       "2a04:4e42:600::81",
-      "2a04:4e42::81"
+      "2a04:4e42::81",
+      "2a04:4e42:200::81",
+      "2a04:4e42:400::81"
     ],
     "cname": null,
     "mx": [
@@ -135,31 +170,31 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "cluster8a.eu.messagelabs.com (pref 20)"
     ],
     "ns": [
-      "dns0.bbc.com.",
-      "dns1.bbc.co.uk.",
-      "ddns1.bbc.com.",
       "ddns0.bbc.co.uk.",
-      "ddns0.bbc.com.",
-      "dns1.bbc.com.",
+      "dns0.bbc.com.",
       "ddns1.bbc.co.uk.",
-      "dns0.bbc.co.uk."
+      "ddns1.bbc.com.",
+      "dns1.bbc.co.uk.",
+      "ddns0.bbc.com.",
+      "dns0.bbc.co.uk.",
+      "dns1.bbc.com."
     ],
     "spf": [
-      "_globalsign-domain-verification=PpIYEptb1-AaatNRPoS2XiWRmxR7zAT1MR52dvDNzx",
       "airtable-verification=b1a394c872dd6721d39a1d91cc96080d",
-      "dropbox-domain-verification=mtgv0f2pudoz",
-      "atlassian-domain-verification=SQsgJ5h/FqwMTXuSG/G4Nd1Gx6uX2keREOsZSa22D5XT46EsEuyaic8Aej4cR4Tr",
-      "google-site-verification=mTy-FoNnG0yetpI3-0e9AXctAkUCcWGc_K3BcMfioFI",
-      "adobe-idp-site-verification=c3a16fcb00ac5365e4ea125d5e59d4be11936f768b3020c4d81b4232019604a2",
-      "xoCARoExwkNhLPdKaaxv",
-      "docusign=75217687-3ba0-49bb-bb3b-482d888493af",
-      "Validity-Domain-Verification=TYXJnAeGHNF4DGlOgE4vdoDT3a0=",
-      "v=spf1 ip4:212.58.224.0/19 ip4:132.185.0.0/16 +include:spf.messagelabs.com ~all",
       "jamf-site-verification=28Mn3O6rTBSXkL5w6c911A",
+      "xoCARoExwkNhLPdKaaxv",
       "docusign=57499c1f-9099-463b-a5bd-cb7583816d78",
       "slack-domain-verification=hza4gfkmctQ7A7BpMhGNVOZVZcKTFC8OC5ewDFVA",
+      "adobe-idp-site-verification=c3a16fcb00ac5365e4ea125d5e59d4be11936f768b3020c4d81b4232019604a2",
+      "docker-verification=f89691bb-7bdd-4bc1-9673-57454d6d9c42",
+      "Validity-Domain-Verification=TYXJnAeGHNF4DGlOgE4vdoDT3a0=",
+      "atlassian-domain-verification=SQsgJ5h/FqwMTXuSG/G4Nd1Gx6uX2keREOsZSa22D5XT46EsEuyaic8Aej4cR4Tr",
+      "dropbox-domain-verification=mtgv0f2pudoz",
       "atlassian-sending-domain-verification=da3721b6-1d2c-4c32-bf01-b792667aeb4d",
-      "docker-verification=f89691bb-7bdd-4bc1-9673-57454d6d9c42"
+      "_globalsign-domain-verification=PpIYEptb1-AaatNRPoS2XiWRmxR7zAT1MR52dvDNzx",
+      "docusign=75217687-3ba0-49bb-bb3b-482d888493af",
+      "google-site-verification=mTy-FoNnG0yetpI3-0e9AXctAkUCcWGc_K3BcMfioFI",
+      "v=spf1 ip4:212.58.224.0/19 ip4:132.185.0.0/16 +include:spf.messagelabs.com ~all"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;aspf=s;adkim=s;pct=100;fo=0;ri=86400; rua=mailto:dmarc_agg@vali.email;"
@@ -199,7 +234,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "wwwnews.live.bbc.co.uk",
       "bbc.com"
     ],
-    "days_left": 120,
+    "days_left": 119,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -301,8 +336,47 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "bag.test.api.bbc.com"
     ]
   },
-  "elapsed_s": 142.4,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "apex_txt": [
+    "airtable-verification=b1a394c872dd6721d39a1d91cc96080d",
+    "jamf-site-verification=28Mn3O6rTBSXkL5w6c911A",
+    "slack-domain-verification=hza4gfkmctQ7A7BpMhGNVOZVZcKTFC8OC5ewDFVA",
+    "adobe-idp-site-verification=c3a16fcb00ac5365e4ea125d5e59d4be11936f768b3020c4d81b",
+    "docker-verification=f89691bb-7bdd-4bc1-9673-57454d6d9c42"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.113549.1.1.1",
+      "key_bits": 2048,
+      "curve": "1.2.840.113549.1.1.1",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true,
+    "robots_disallow": [
+      "/asset/",
+      "/backstage/bbc-login-help/",
+      "/backstage/bbc-login-help$",
+      "/bitesize/search$",
+      "/bitesize/search/",
+      "/bitesize/search?",
+      "/cbbc/search/",
+      "/cbbc/search$",
+      "/cbbc/search?",
+      "/cbeebies/search/",
+      "/cbeebies/search$",
+      "/cbeebies/search?",
+      "/chwilio/",
+      "/chwilio$",
+      "/chwilio?"
+    ]
+  },
+  "elapsed_s": 12.9,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -311,4 +385,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

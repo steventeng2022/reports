@@ -7,12 +7,12 @@
 | Target | https://messenger.com/ |
 | Bug bounty program | Facebook |
 | Listed scope domain | messenger.com |
-| Test date | 2026-09-25 10:01 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
+Total findings: **16** (High: 0, Medium: 0, Low: 8, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
 | 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 12 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
+| 13 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
+| 14 | low | DNS3 | Wildcard DNS detected | CWE-345 |
+| 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
@@ -39,7 +44,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
 ### 2. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires in 7 days (notAfter Oct  2 23:59:59 2026 GMT).
+- **Detail:** Certificate expires in 8 days (notAfter Oct  4 23:59:59 2026 GMT).
 - **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
 ### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
@@ -104,6 +109,36 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 12. [LOW] SPF record has no explicit all mechanism (implicit +all) (`MAIL6`)
+
+- **CWE:** CWE-285
+- **Detail:** Without -all/~all/+all the SPF record implicitly authorizes all senders.
+- **Recommendation:** End the SPF record with -all or ~all.
+
+### 13. [LOW] MTA-STS TXT published but policy file missing/invalid (`MAIL12`)
+
+- **CWE:** CWE-285
+- **Detail:** GET https://mta-sts.messenger.com/.well-known/mta-sts/policy.txt -> 400
+- **Recommendation:** Publish a valid policy.txt (version, max_age, mode) or remove the TXT record.
+
+### 14. [LOW] Wildcard DNS detected (`DNS3`)
+
+- **CWE:** CWE-345
+- **Detail:** Two random labels (rjkjqxksli05o9.messenger.com and xjzffsd7ueepkj.messenger.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
+
+### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=z9mNNADBbsCO2UKMxiu5UFnUz5SvavUmC2Jx-4Lw9RI; google-site-verification=f68cxjENokmrbNLEilsjxlPqbiM3lTmXKGLJFg0OHr4
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of messenger.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -118,24 +153,24 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
     ],
     "cname": null,
     "mx": [
-      "mxb-00082601.gslb.pphosted.com (pref 10)",
       "mxa-00082601.gslb.pphosted.com (pref 10)",
-      "mx0a-00082601.pphosted.com (pref 20)",
-      "mx0b-00082601.pphosted.com (pref 20)"
+      "mxb-00082601.gslb.pphosted.com (pref 10)",
+      "mx0b-00082601.pphosted.com (pref 20)",
+      "mx0a-00082601.pphosted.com (pref 20)"
     ],
     "ns": [
-      "c.ns.facebook.com.",
       "b.ns.facebook.com.",
       "d.ns.facebook.com.",
-      "a.ns.facebook.com."
+      "a.ns.facebook.com.",
+      "c.ns.facebook.com."
     ],
     "spf": [
       "google-site-verification=z9mNNADBbsCO2UKMxiu5UFnUz5SvavUmC2Jx-4Lw9RI",
-      "google-site-verification=f68cxjENokmrbNLEilsjxlPqbiM3lTmXKGLJFg0OHr4",
+      "fLEQ2Q8vdk4sDU0r7FqRc8XJoe7FYEj3ihT0KxCABfwuAbMel2204jpnNBjV+c1rfY71OeFf/cTMCKZpzJBPPw==",
+      "v=spf1 redirect=_spf.fb.com",
       "6fd64222-f6ef-4766-87e8-34729703809a",
       "MS=ms57472615",
-      "v=spf1 redirect=_spf.fb.com",
-      "fLEQ2Q8vdk4sDU0r7FqRc8XJoe7FYEj3ihT0KxCABfwuAbMel2204jpnNBjV+c1rfY71OeFf/cTMCKZpzJBPPw=="
+      "google-site-verification=f68cxjENokmrbNLEilsjxlPqbiM3lTmXKGLJFg0OHr4"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:a@dmarc.facebookmail.com; pct=100"
@@ -149,8 +184,8 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
     "cipher": "TLS_CHACHA20_POLY1305_SHA256",
     "subject": "countryName=US, stateOrProvinceName=California, localityName=Menlo Park, organizationName=Meta Platforms, Inc., commonName=*.facebook.com",
     "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
-    "notBefore": "Jul  4 00:00:00 2026 GMT",
-    "notAfter": "Oct  2 23:59:59 2026 GMT",
+    "notBefore": "Jul  6 00:00:00 2026 GMT",
+    "notAfter": "Oct  4 23:59:59 2026 GMT",
     "san": [
       "*.facebook.com",
       "*.facebook.net",
@@ -164,7 +199,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
       "facebook.com",
       "messenger.com"
     ],
-    "days_left": 7,
+    "days_left": 8,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -221,10 +256,30 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 22.4,
-  "rechecked": "2026-09-25 07:46 UTC"
+  "wildcard_dns": true,
+  "apex_txt": [
+    "google-site-verification=z9mNNADBbsCO2UKMxiu5UFnUz5SvavUmC2Jx-4Lw9RI",
+    "google-site-verification=f68cxjENokmrbNLEilsjxlPqbiM3lTmXKGLJFg0OHr4"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.113549.1.1.11",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true
+  },
+  "elapsed_s": 7.8,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -233,4 +288,5 @@ Total findings: **11** (High: 0, Medium: 0, Low: 5, Info: 6)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

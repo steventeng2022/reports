@@ -7,12 +7,12 @@
 | Target | https://cloudflare.com/ |
 | Bug bounty program | Cloudflare |
 | Listed scope domain | cloudflare.com |
-| Test date | 2026-09-25 09:04 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:41 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 | 12 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 13 | info | H6 | Server technology disclosure | CWE-200 |
 | 14 | info | P8 | Missing security.txt | CWE-1038 |
+| 15 | low | MAIL12 | MTA-STS TXT published but policy file unreachable | CWE-285 |
+| 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 
 ## Detailed findings
 
@@ -42,13 +45,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.132.229:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.133.229:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.132.229:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.133.229:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -126,6 +129,24 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 15. [LOW] MTA-STS TXT published but policy file unreachable (`MAIL12`)
+
+- **CWE:** CWE-285
+- **Detail:** GET https://mta-sts.cloudflare.com/.well-known/mta-sts/policy.txt failed from this vantage point.
+- **Recommendation:** Publish a reachable policy.txt or remove the TXT record.
+
+### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: logmein-verification-code=b3433c86-3823-4808-8a7e-58042469f654; stripe-verification=bf1a94e6b16ace2502a4a7fff574a25c8a45291054960c883c59be39d178; liveramp-site-verification=EhH1MqgwbndTWl1AN64hOTKz7hc1s80yUpchLbgpfY0
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
+
+### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of cloudflare.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -133,8 +154,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
   "domain": "cloudflare.com",
   "dns": {
     "a": [
-      "104.16.132.229",
-      "104.16.133.229"
+      "104.16.133.229",
+      "104.16.132.229"
     ],
     "aaaa": [
       "2606:4700::6810:85e5",
@@ -142,48 +163,48 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     ],
     "cname": null,
     "mx": [
-      "mxb-canary.global.inbound.cf-emailsecurity.net (pref 5)",
-      "mxb.global.inbound.cf-emailsecurity.net (pref 10)",
       "mxa-canary.global.inbound.cf-emailsecurity.net (pref 5)",
-      "mxa.global.inbound.cf-emailsecurity.net (pref 10)"
+      "mxa.global.inbound.cf-emailsecurity.net (pref 10)",
+      "mxb.global.inbound.cf-emailsecurity.net (pref 10)",
+      "mxb-canary.global.inbound.cf-emailsecurity.net (pref 5)"
     ],
     "ns": [
-      "ns5.cloudflare.com.",
-      "ns3.cloudflare.com.",
       "ns6.cloudflare.com.",
+      "ns3.cloudflare.com.",
+      "ns5.cloudflare.com.",
       "ns7.cloudflare.com.",
       "ns4.cloudflare.com."
     ],
     "spf": [
-      "docker-verification=c578e21c-34fb-4474-9b90-d55ee4cba10c",
-      "_saml-domain-challenge.2dc00405-79cd-457b-b288-a119c6f0c7b7.71996d53-d178-4ba9-bef4-7f7e46edab74.cloudflare.com=1c8736fd-84b2-4197-985f-3fb2852f2457",
-      "DirectFedAuthUrl=https://cloudflare-security.cloudflareaccess.com/cdn-cgi/access/sso/saml/ebec933773c69c93420d13e6776adb8c4a190f6281f9d132bcebd7dcb0967bdd",
-      "status-page-domain-verification=r14frwljwbxs",
-      "stripe-verification=bf1a94e6b16ace2502a4a7fff574a25c8a45291054960c883c59be39d1788db9",
-      "cisco-ci-domain-verification=27e926884619804ef987ae4aa1c4168f6b152ada84f4c8bfc74eb2bd2912ad72",
-      "google-site-verification=C7thfNeXVahkVhniiqTI1iSVnElKR_kBBtnEHkeGDlo",
-      "uber-domain-verification=58086039-150a-42a4-a4be-b4032921aa0f",
-      "asv=894f6d1f9f83bcf44e4b1bc40bc1c4aa",
-      "v=spf1 ip4:199.15.212.0/22 ip4:173.245.48.0/20 include:_spf.google.com include:spf1.mcsv.net include:spf.mandrillapp.com include:mail.zendesk.com include:stspg-customer.com include:_spf.salesforce.com -all",
       "logmein-verification-code=b3433c86-3823-4808-8a7e-58042469f654",
-      "MS=ms70274184",
+      "stripe-verification=bf1a94e6b16ace2502a4a7fff574a25c8a45291054960c883c59be39d1788db9",
       "liveramp-site-verification=EhH1MqgwbndTWl1AN64hOTKz7hc1s80yUpchLbgpfY0",
-      "creatopy-domain-verification=97d2ca50-9b6f-4a21-9bdb-fbb630e4cec7",
-      "ZOOM_verify_7LFBvOO9SIigypFG2xRlMA",
-      "apple-domain-verification=DNnWJoArJobFJKhJ",
-      "onetrust-domain-verification=bd5cd08a1e9644799fdb98ed7d60c9cb",
-      "atlassian-domain-verification=WxxKyN9aLnjEsoOjUYI6T0bb5vcqmKzaIkC9Rx2QkNb751G3LL/cus8/ZDOgh8xB",
-      "canva-site-verification=oOyaVnHC-OiFoR1BPvetNA",
-      "_neqmkgaq1lq9it5s8qmetrhbnu121wb",
       "databank-domain-verification-hkehd2=fzgu4kmbZwMoW99zENgO4u8NL",
+      "v=spf1 ip4:199.15.212.0/22 ip4:173.245.48.0/20 include:_spf.google.com include:spf1.mcsv.net include:spf.mandrillapp.com include:mail.zendesk.com include:stspg-customer.com include:_spf.salesforce.com -all",
       "miro-verification=bdd7dfa0a49adfb43ad6ddfaf797633246c07356",
-      "facebook-domain-verification=h9mm6zopj6p2po54woa16m5bskm6oo",
-      "drift-domain-verification=f037808a26ae8b25bc13b1f1f2b4c3e0f78c03e67f24cefdd4ec520efa8e719f",
-      "jamf-site-verification=c-eUvHBbhgFxMulFSY-QJQ",
-      "stripe-verification=5096d01ff2cf194285dd51cae18f24fa9c26dc928cebac3636d462b4c6925623",
-      "_wkjc0fot0d7qrvrdt78bxkj2e2o67d2",
+      "asv=894f6d1f9f83bcf44e4b1bc40bc1c4aa",
+      "uber-domain-verification=58086039-150a-42a4-a4be-b4032921aa0f",
+      "google-site-verification=C7thfNeXVahkVhniiqTI1iSVnElKR_kBBtnEHkeGDlo",
+      "creatopy-domain-verification=97d2ca50-9b6f-4a21-9bdb-fbb630e4cec7",
+      "google-site-verification=ZdlQZLBBAPkxeFTCM1rpiB_ibtGff_JF5KllNKwDR9I",
       "DirectFedAuthUrl=https://cloudflare-security.cloudflareaccess.com/cdn-cgi/access/sso/saml/dba6756ad312fc13c45f705cf7f5e87f4d658be016c41f950329aa4085b3abc1",
-      "google-site-verification=ZdlQZLBBAPkxeFTCM1rpiB_ibtGff_JF5KllNKwDR9I"
+      "onetrust-domain-verification=bd5cd08a1e9644799fdb98ed7d60c9cb",
+      "apple-domain-verification=DNnWJoArJobFJKhJ",
+      "drift-domain-verification=f037808a26ae8b25bc13b1f1f2b4c3e0f78c03e67f24cefdd4ec520efa8e719f",
+      "facebook-domain-verification=h9mm6zopj6p2po54woa16m5bskm6oo",
+      "atlassian-domain-verification=WxxKyN9aLnjEsoOjUYI6T0bb5vcqmKzaIkC9Rx2QkNb751G3LL/cus8/ZDOgh8xB",
+      "status-page-domain-verification=r14frwljwbxs",
+      "ZOOM_verify_7LFBvOO9SIigypFG2xRlMA",
+      "canva-site-verification=oOyaVnHC-OiFoR1BPvetNA",
+      "MS=ms70274184",
+      "_saml-domain-challenge.2dc00405-79cd-457b-b288-a119c6f0c7b7.71996d53-d178-4ba9-bef4-7f7e46edab74.cloudflare.com=1c8736fd-84b2-4197-985f-3fb2852f2457",
+      "_neqmkgaq1lq9it5s8qmetrhbnu121wb",
+      "stripe-verification=5096d01ff2cf194285dd51cae18f24fa9c26dc928cebac3636d462b4c6925623",
+      "docker-verification=c578e21c-34fb-4474-9b90-d55ee4cba10c",
+      "cisco-ci-domain-verification=27e926884619804ef987ae4aa1c4168f6b152ada84f4c8bfc74eb2bd2912ad72",
+      "_wkjc0fot0d7qrvrdt78bxkj2e2o67d2",
+      "DirectFedAuthUrl=https://cloudflare-security.cloudflareaccess.com/cdn-cgi/access/sso/saml/ebec933773c69c93420d13e6776adb8c4a190f6281f9d132bcebd7dcb0967bdd",
+      "jamf-site-verification=c-eUvHBbhgFxMulFSY-QJQ"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; adkim=r; aspf=r; pct=100; rua=mailto:a1c47f179bc04efd8ee4dcd4d85dfc65@dmarc-reports.cloudflare.net,mailto:rua@cloudflare.com"
@@ -206,7 +227,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "*.secondary.cloudflare.com",
       "secondary.cloudflare.com"
     ],
-    "days_left": 70,
+    "days_left": 69,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -216,7 +237,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     }
   },
   "ports": {
-    "ip": "104.16.132.229",
+    "ip": "104.16.133.229",
     "open": [
       8080,
       8443
@@ -275,10 +296,32 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 132.1,
-  "rechecked": "2026-09-25 13:59 UTC"
+  "apex_txt": [
+    "logmein-verification-code=b3433c86-3823-4808-8a7e-58042469f654",
+    "stripe-verification=bf1a94e6b16ace2502a4a7fff574a25c8a45291054960c883c59be39d178",
+    "liveramp-site-verification=EhH1MqgwbndTWl1AN64hOTKz7hc1s80yUpchLbgpfY0",
+    "databank-domain-verification-hkehd2=fzgu4kmbZwMoW99zENgO4u8NL",
+    "miro-verification=bdd7dfa0a49adfb43ad6ddfaf797633246c07356"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "hsts_preloaded": true
+  },
+  "elapsed_s": 4.9,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -287,4 +330,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,8 +7,8 @@
 | Target | https://accessdata.fda.gov/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | accessdata.fda.gov |
-| Test date | 2026-09-26 01:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:38 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -57,8 +57,8 @@ Total findings: **4** (High: 0, Medium: 1, Low: 0, Info: 3)
       "23.11.91.198"
     ],
     "aaaa": [
-      "2600:1417:76:480::308a",
-      "2600:1417:76:4a1::308a"
+      "2600:1417:76:4a1::308a",
+      "2600:1417:76:480::308a"
     ],
     "cname": "resolver.fda.gov.akadns.net.",
     "mx": [],
@@ -118,8 +118,19 @@ Total findings: **4** (High: 0, Medium: 1, Low: 0, Info: 3)
       "www.origin-aws.www.accessdata.fda.gov"
     ]
   },
-  "elapsed_s": 3.6,
-  "rechecked": "2026-09-26 01:45 UTC"
+  "cname_chain": [
+    "resolver.fda.gov.akadns.net",
+    "www.fda.gov.edgekey.net",
+    "e12426.dscb.akamaiedge.net"
+  ],
+  "tls2": {
+    "error": "ConnectionResetError(10054, '遠端主機已強制關閉一個現存的連線。', None, 10054, None)"
+  },
+  "http2": {
+    "error": "root GET failed"
+  },
+  "elapsed_s": 3.5,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -128,4 +139,5 @@ Total findings: **4** (High: 0, Medium: 1, Low: 0, Info: 3)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

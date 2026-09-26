@@ -7,12 +7,12 @@
 | Target | https://code.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | code.google.com |
-| Test date | 2026-09-25 09:04 UTC |
-| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 17:41 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
+Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,6 +25,8 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 | 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 8 | info | H6 | Server technology disclosure | CWE-200 |
 | 9 | info | P8 | Missing security.txt | CWE-1038 |
+| 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 11 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 
 ## Detailed findings
 
@@ -88,6 +90,18 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+
+- **CWE:** CWE-603
+- **Detail:** Certificate of code.google.com has no Authority Information Access OCSP entry.
+- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 11. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 10 disallow path(s), e.g. /hosting/search, /p/*/issues/csv, /p/*/source/diff, /p/*/people/detail, /u/*
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -95,18 +109,18 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
   "domain": "code.google.com",
   "dns": {
     "a": [
-      "173.194.174.113",
-      "173.194.174.100",
-      "173.194.174.102",
       "173.194.174.101",
+      "173.194.174.138",
+      "173.194.174.113",
       "173.194.174.139",
-      "173.194.174.138"
+      "173.194.174.102",
+      "173.194.174.100"
     ],
     "aaaa": [
-      "2404:6800:4008:c1b::66",
       "2404:6800:4008:c1b::71",
-      "2404:6800:4008:c1b::64",
-      "2404:6800:4008:c1b::8b"
+      "2404:6800:4008:c1b::65",
+      "2404:6800:4008:c1b::8a",
+      "2404:6800:4008:c1b::66"
     ],
     "cname": "code.l.google.com.",
     "mx": [],
@@ -191,7 +205,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
       "android.clients.google.com",
       "*.aistudio.google.com"
     ],
-    "days_left": 69,
+    "days_left": 68,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -201,7 +215,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
     }
   },
   "ports": {
-    "ip": "173.194.174.113",
+    "ip": "173.194.174.101",
     "open": []
   },
   "https": {
@@ -250,10 +264,39 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 502 (certspotter 429)"
+    "status": "ct-pending"
   },
-  "elapsed_s": 103.3,
-  "rechecked": "2026-09-25 10:43 UTC"
+  "cname_chain": [
+    "code.l.google.com"
+  ],
+  "tls2": {
+    "alpn": "",
+    "tls_ver": "TLSv1.3",
+    "subject": "None",
+    "cert": {
+      "sig_oid": "1.2.840.10045.4.3.2",
+      "key_alg": "1.2.840.10045.2.1",
+      "key_bits": 256,
+      "curve": "1.2.840.10045.3.1.7",
+      "aia_ocsp": null
+    }
+  },
+  "http2": {
+    "robots_disallow": [
+      "/hosting/search",
+      "/p/*/issues/csv",
+      "/p/*/source/diff",
+      "/p/*/people/detail",
+      "/u/*",
+      "/a/",
+      "/a/*/hosting/search",
+      "/a/*/p/*/issues/csv",
+      "/a/*/p/*/source/diff",
+      "/p/blackout-m7/"
+    ]
+  },
+  "elapsed_s": 3.9,
+  "rechecked": "2026-09-26 17:38 UTC"
 }
 ```
 
@@ -262,4 +305,5 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 - All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
 - No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
 - DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - Findings are reported against the public program scope; submission through the program tracker is pending.
