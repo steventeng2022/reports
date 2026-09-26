@@ -7,12 +7,12 @@
 | Target | https://bookstackapp.com/ |
 | Bug bounty program | None (open-source project; GitHub issue tracker) |
 | Listed scope domain | bookstackapp.com |
-| Test date | 2026-09-26 17:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 14 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -140,6 +141,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - **Detail:** Certificate of bookstackapp.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 88.99.102.202 carries PTR smtp.danb.me. for bookstackapp.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -156,8 +163,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "in2-smtp.messagingengine.com (pref 20)"
     ],
     "ns": [
-      "dns2.registrar-servers.com.",
-      "dns1.registrar-servers.com."
+      "dns1.registrar-servers.com.",
+      "dns2.registrar-servers.com."
     ],
     "spf": [
       "v=spf1 include:spf.messagingengine.com include:smtp.danb.me ~all"
@@ -252,11 +259,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260824012709",
+      "not_after": "20261122012708"
     }
   },
-  "elapsed_s": 26.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "smtp.danb.me."
+    ]
+  },
+  "elapsed_s": 27.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

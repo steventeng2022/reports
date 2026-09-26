@@ -7,12 +7,12 @@
 | Target | https://cbs.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | cbs.com |
-| Test date | 2026-09-26 17:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -132,7 +133,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: parallels-domain-verification=19f7e985539e42cca485ea9a8dc3dd94c6f9931d85d8423b8e; cursor-domain-verification-w3k7jb=Mmgep5pBpOeN01mmeuk7k9UM8; openai-domain-verification=dv-r9tHTSsnvIsv2rnpBDBWwgYk
+- **Detail:** Apex TXT records with verification/token content: cursor-domain-verification-w3k7jb=Mmgep5pBpOeN01mmeuk7k9UM8; edisen-verification-key=8f029dc6-1fd2-4bdc-8ee5-073a334f3eaa; mongodb-site-verification=zKDU5qGhEc0p64kdgWDPRGB2iIDxJsH9
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -153,6 +154,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **Detail:** robots.txt lists 52 disallow path(s), e.g. /shows/upfront_2015/, /shows/upfront_2015/simulcast/, /sitemap/, /thunder/feeds/, /thunder/player/1_0-backup/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 3.126.5.188 carries PTR ec2-3-126-5-188.eu-central-1.compute.amazonaws.com. for cbs.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -160,86 +167,86 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "cbs.com",
   "dns": {
     "a": [
-      "18.185.24.46",
       "3.126.5.188",
+      "18.185.24.46",
       "3.71.139.153"
     ],
     "aaaa": [
-      "2a05:d014:803:f30e:ffe5:90d1:736a:fcad",
       "2a05:d014:803:f30c:505c:9738:13c:b7a5",
+      "2a05:d014:803:f30e:ffe5:90d1:736a:fcad",
       "2a05:d014:803:f30a:4c8d:5530:dac2:179"
     ],
     "cname": null,
     "mx": [
-      "mx0b-00262c01.pphosted.com (pref 20)",
-      "mx0a-00262c01.pphosted.com (pref 20)",
       "mxa-00262c01.gslb.pphosted.com (pref 0)",
+      "mx0a-00262c01.pphosted.com (pref 20)",
+      "mx0b-00262c01.pphosted.com (pref 20)",
       "mxb-00262c01.gslb.pphosted.com (pref 0)"
     ],
     "ns": [
-      "ns0004.secondary.cloudflare.com.",
-      "dns3.p09.nsone.net.",
       "dns2.p09.nsone.net.",
-      "dns1.p09.nsone.net.",
+      "dns3.p09.nsone.net.",
+      "dns4.p09.nsone.net.",
       "ns0243.secondary.cloudflare.com.",
-      "dns4.p09.nsone.net."
+      "ns0004.secondary.cloudflare.com.",
+      "dns1.p09.nsone.net."
     ],
     "spf": [
-      "parallels-domain-verification=19f7e985539e42cca485ea9a8dc3dd94c6f9931d85d8423b8ecef69756834710",
       "cursor-domain-verification-w3k7jb=Mmgep5pBpOeN01mmeuk7k9UM8",
-      "openai-domain-verification=dv-r9tHTSsnvIsv2rnpBDBWwgYk",
-      "fastly_delegation-x6tUm3FMIioXHPmJtUf4-356335-2021-0325",
-      "zapier-domain-verification-challenge=182a380e-d8cb-48d0-8e86-3415469bd188",
-      "9c2e4682d62e4bc1b83fd096b19b4133",
-      "wiz-domain-verification=6fd13e7cdaff683d7d119656d141ce4e9caeec911c829518efb28e9acbf43323",
-      "apple-domain-verification=JCjy3KA3JizlAuxJ",
-      "elevenlabs=H5kuOqr8fZrhkFwf4r_Yujuxp6wI5N_aiKWp1i0QbN4",
-      "smartsheet-site-validation=fi4r0takqwh-EHcjb-CZhZvYoRBBKQ2-",
-      "_globalsign-domain-verification=KRYUAaIdI2Hm0sL3et24xMRZ1Z04xSIOipNqTFowDv",
-      "_9wqjcd0f9p5hunqt2p6enolap3ckxbv",
-      "Dynatrace-site-verification=2c825a10-c7d2-4d0d-ad9d-b3a297b87389__garjptoag7b57591ii5ijf34j0",
-      "lucidlink-verification=P7RCNP9VTRT2SYJ78H5HNG7W9M",
-      "onetrust-domain-verification=40c996e736cc495ca304800c7d770182",
-      "google-site-verification=wfRkqvYvkuHwHrdobgtemVB0CnFS2hXVus5ht3LAT3o",
+      "edisen-verification-key=8f029dc6-1fd2-4bdc-8ee5-073a334f3eaa",
       "MS=ms19625380",
-      "apple-domain-verification=8eUiChfwCLb5sgRU",
-      "smartsheet-site-validation=6fRfOip63D5bQxcxIgBuQ3nnkqKfkSL_",
-      "appspace-domain-verification=95717daa24b5c09519b505de173a1b8d2d0d37ec64cb70ce7d6fde2847c72bca",
-      "smartsheet-site-validation=nOrfn3FHZ5ADEze-eJlaIFva5NEYK4HJ",
-      "atlassian-domain-verification=naOIwEMBtdvHkw+IbFFLC3NjVyvxpx+lz8FkxRTnOkMNCka9n9vgGV7HxruWh4Rf",
-      "anthropic-domain-verification-gza3ps=IbXgCu5n0ntv2zdI90Lo0PxMQ",
-      "adobe-sign-verification=68cebdbe443dcb16df9d0a70159ea1b4",
-      "wombat-verification=3KwxVCQV1HEp-aRXRTKKaZ5G0frhk",
-      "90cdadc0e313448e9e53b744f2a8bcb7",
+      "9c2e4682d62e4bc1b83fd096b19b4133",
       "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ip4:170.20.0.0/16 ip4:192.238.125.248/29 ip4:192.238.127.124/30 ip4:192.238.95.12/31 ip4:198.99.118.0/23 ip4:216.239.112.0/20 ip4:64.30.227.218 ip4:64.30.231.0/25 ip4:74.125.148.0/22 ip4:66.171.202.1/32 ",
       "ip4:199.85.116.25 ip4:52.5.134.202 ip4:192.238.95.141/27 include:spf.protection.outlook.com include:_spf.google.com include:_netblocks.viacom.com include:_spf.salesforce.com include:spf-00262c02.pphosted.com include:smtp.app.echomark.com -all",
-      "I4PDudah320pFzRklVfDTkn9SIJHO4WKPRz7RsrLwWtjGL4Vqc78gFXDisko2giT3g+QTwfvYb4cPZy/jA08fQ==",
-      "edisen-verification-key=8f029dc6-1fd2-4bdc-8ee5-073a334f3eaa",
-      "flexera-domain-verification-llinghxwqvjodvhz",
-      "mongodb-site-verification=Da5cIXJAed1ruJ6eaJM8TZbPwjpOBZNk",
-      "MS=ms68193247",
-      "adobe-idp-site-verification=9b12eeee86b1217caefd9bbbc36da8e767b6c0cca5d2d3bf31c4e295edfa77a0",
-      "google-site-verification=ZTM_XBqlJiw5v4mkB2Uk8luIp85S8Tk3rr6-xe3gJ4w",
-      "docusign=386b0618-baa0-4cdb-9a7f-8ab02ec40558",
-      "mongodb-site-verification=WFelJyPKc7eyMd0LDavgsUk4sVH0TLPA",
-      "onetrust-domain-verification=61d8a6aba17340b3b5f0101aeae999eb",
-      "google-site-verification:jycEA9SnsRqxr4yRvO178BZVLPhGVMXGjrjjmiIxaWs",
-      "jumpdesktop=b4fa936a2391b2c031678520a28921add6f4a4ac3124925307ed23a5d0cd",
-      "atlassian-domain-verification=E+wiTTQbdi+aIBlOe7MvMyDmxBdCed/oDG6hRZquh5QIu+JegSoM3VH8Fof+kOz6",
-      "MS=ms33190795",
-      "echomark-domain-verification=019e8f4f-f967-77ed-874a-842c7c126b7f",
-      "458111aa584c42ff93f3847e07351879",
-      "elevenlabs=oLxS0_BBKCrkY4U1UA2b2CNL58srDC1eIcrGISL79RE",
-      "jamf-site-verification=a3Fj5VQCdAtGX43rqyj1mQ",
-      "ahrefs-site-verification_a090368a0301a92f7320d0221998037d0a4585cfac2ea7f19842b55baa01a9e9",
-      "google-site-verification=ZH9b78AnoW-I4pg9tjWF2lKKfA0Dyqwm3p_SOGuSJo4",
-      "Fastly-Verify-s8dk39din4n5jajsd8",
       "mongodb-site-verification=zKDU5qGhEc0p64kdgWDPRGB2iIDxJsH9",
-      "openai-domain-verification=dv-cT9qwiInKClYkXoNTBhyJuzU",
+      "elevenlabs=oLxS0_BBKCrkY4U1UA2b2CNL58srDC1eIcrGISL79RE",
+      "smartsheet-site-validation=fi4r0takqwh-EHcjb-CZhZvYoRBBKQ2-",
+      "echomark-domain-verification=019e8f4f-f967-77ed-874a-842c7c126b7f",
+      "I4PDudah320pFzRklVfDTkn9SIJHO4WKPRz7RsrLwWtjGL4Vqc78gFXDisko2giT3g+QTwfvYb4cPZy/jA08fQ==",
+      "smartsheet-site-validation=nOrfn3FHZ5ADEze-eJlaIFva5NEYK4HJ",
+      "ahrefs-site-verification_a090368a0301a92f7320d0221998037d0a4585cfac2ea7f19842b55baa01a9e9",
+      "jumpdesktop=b4fa936a2391b2c031678520a28921add6f4a4ac3124925307ed23a5d0cd",
+      "jamf-site-verification=a3Fj5VQCdAtGX43rqyj1mQ",
       "docker-verification=998fe766-03cd-4edd-89ec-686a9bdb8ffd",
+      "MS=ms68193247",
+      "google-site-verification:jycEA9SnsRqxr4yRvO178BZVLPhGVMXGjrjjmiIxaWs",
+      "MS=ms33190795",
+      "Dynatrace-site-verification=2c825a10-c7d2-4d0d-ad9d-b3a297b87389__garjptoag7b57591ii5ijf34j0",
       "06lbvwmgw17v9lcjddt2xv8krnby1sy7",
+      "lucidlink-verification=P7RCNP9VTRT2SYJ78H5HNG7W9M",
+      "elevenlabs=H5kuOqr8fZrhkFwf4r_Yujuxp6wI5N_aiKWp1i0QbN4",
+      "_globalsign-domain-verification=KRYUAaIdI2Hm0sL3et24xMRZ1Z04xSIOipNqTFowDv",
+      "atlassian-domain-verification=naOIwEMBtdvHkw+IbFFLC3NjVyvxpx+lz8FkxRTnOkMNCka9n9vgGV7HxruWh4Rf",
+      "apple-domain-verification=8eUiChfwCLb5sgRU",
+      "mongodb-site-verification=Da5cIXJAed1ruJ6eaJM8TZbPwjpOBZNk",
+      "apple-domain-verification=JCjy3KA3JizlAuxJ",
+      "fastly_delegation-x6tUm3FMIioXHPmJtUf4-356335-2021-0325",
+      "wombat-verification=3KwxVCQV1HEp-aRXRTKKaZ5G0frhk",
+      "parallels-domain-verification=19f7e985539e42cca485ea9a8dc3dd94c6f9931d85d8423b8ecef69756834710",
+      "flexera-domain-verification-llinghxwqvjodvhz",
+      "google-site-verification=ZH9b78AnoW-I4pg9tjWF2lKKfA0Dyqwm3p_SOGuSJo4",
+      "zapier-domain-verification-challenge=182a380e-d8cb-48d0-8e86-3415469bd188",
+      "smartsheet-site-validation=6fRfOip63D5bQxcxIgBuQ3nnkqKfkSL_",
+      "anthropic-domain-verification-gza3ps=IbXgCu5n0ntv2zdI90Lo0PxMQ",
       "mongodb-site-verification=T62Bm0WB86kaJUIZ4oCf0K3y7fjhW1LH",
-      "MS=ms66906550"
+      "google-site-verification=ZTM_XBqlJiw5v4mkB2Uk8luIp85S8Tk3rr6-xe3gJ4w",
+      "adobe-idp-site-verification=9b12eeee86b1217caefd9bbbc36da8e767b6c0cca5d2d3bf31c4e295edfa77a0",
+      "Fastly-Verify-s8dk39din4n5jajsd8",
+      "adobe-sign-verification=68cebdbe443dcb16df9d0a70159ea1b4",
+      "onetrust-domain-verification=40c996e736cc495ca304800c7d770182",
+      "wiz-domain-verification=6fd13e7cdaff683d7d119656d141ce4e9caeec911c829518efb28e9acbf43323",
+      "docusign=386b0618-baa0-4cdb-9a7f-8ab02ec40558",
+      "90cdadc0e313448e9e53b744f2a8bcb7",
+      "MS=ms66906550",
+      "_9wqjcd0f9p5hunqt2p6enolap3ckxbv",
+      "mongodb-site-verification=WFelJyPKc7eyMd0LDavgsUk4sVH0TLPA",
+      "openai-domain-verification=dv-r9tHTSsnvIsv2rnpBDBWwgYk",
+      "openai-domain-verification=dv-cT9qwiInKClYkXoNTBhyJuzU",
+      "atlassian-domain-verification=E+wiTTQbdi+aIBlOe7MvMyDmxBdCed/oDG6hRZquh5QIu+JegSoM3VH8Fof+kOz6",
+      "458111aa584c42ff93f3847e07351879",
+      "google-site-verification=wfRkqvYvkuHwHrdobgtemVB0CnFS2hXVus5ht3LAT3o",
+      "appspace-domain-verification=95717daa24b5c09519b505de173a1b8d2d0d37ec64cb70ce7d6fde2847c72bca",
+      "onetrust-domain-verification=61d8a6aba17340b3b5f0101aeae999eb"
     ],
     "dmarc": [
       "v=DMARC1; p=none; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -268,7 +275,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "18.185.24.46",
+    "ip": "3.126.5.188",
     "open": []
   },
   "https": {
@@ -321,11 +328,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "parallels-domain-verification=19f7e985539e42cca485ea9a8dc3dd94c6f9931d85d8423b8e",
     "cursor-domain-verification-w3k7jb=Mmgep5pBpOeN01mmeuk7k9UM8",
-    "openai-domain-verification=dv-r9tHTSsnvIsv2rnpBDBWwgYk",
-    "zapier-domain-verification-challenge=182a380e-d8cb-48d0-8e86-3415469bd188",
-    "wiz-domain-verification=6fd13e7cdaff683d7d119656d141ce4e9caeec911c829518efb28e9a"
+    "edisen-verification-key=8f029dc6-1fd2-4bdc-8ee5-073a334f3eaa",
+    "mongodb-site-verification=zKDU5qGhEc0p64kdgWDPRGB2iIDxJsH9",
+    "echomark-domain-verification=019e8f4f-f967-77ed-874a-842c7c126b7f",
+    "ahrefs-site-verification_a090368a0301a92f7320d0221998037d0a4585cfac2ea7f19842b55"
   ],
   "tls2": {
     "alpn": "",
@@ -336,7 +343,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260908004633",
+      "not_after": "20261207004632"
     }
   },
   "http2": {
@@ -358,8 +367,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "/thunder/partner/"
     ]
   },
-  "elapsed_s": 27.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ec2-3-126-5-188.eu-central-1.compute.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 28.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

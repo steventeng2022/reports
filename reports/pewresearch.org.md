@@ -7,8 +7,8 @@
 | Target | https://pewresearch.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | pewresearch.org |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -118,7 +118,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=jwmmtXct21FKveAwprcQKkMrhqVY7ac2TtxUvubWT30; hcp-domain-verification=a3c6e4dafba5b710eebea68d3af09226b78e92d2c41ac640723ab9c5; google-site-verification=EuKSpyq2IYv-oJplq6yQlPQKYsV1LWeqwQjs9lu3Z-o
+- **Detail:** Apex TXT records with verification/token content: linear-domain-verification=aeaz7jeynne3; tollbit-domain-verification=c379eea53a12f277b7e1b4ddb627fdf3c39380c133229681529a; apple-domain-verification=DQ3TtP8IS4sFJC9EKMrlcZ2yCjEHmQGa66M46pg6m3k
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -154,44 +154,44 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "pewresearch-org.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "ns-795.awsdns-35.net.",
-      "ns-1841.awsdns-38.co.uk.",
       "ns-281.awsdns-35.com.",
-      "ns-1318.awsdns-36.org."
+      "ns-1318.awsdns-36.org.",
+      "ns-795.awsdns-35.net.",
+      "ns-1841.awsdns-38.co.uk."
     ],
     "spf": [
-      "google-site-verification=jwmmtXct21FKveAwprcQKkMrhqVY7ac2TtxUvubWT30",
-      "hcp-domain-verification=a3c6e4dafba5b710eebea68d3af09226b78e92d2c41ac640723ab9c5ef82f330",
-      "citrix.mobile.ads.otp=kd0jxp1wb9rh0n6flcz64s",
-      "google-site-verification=EuKSpyq2IYv-oJplq6yQlPQKYsV1LWeqwQjs9lu3Z-o",
-      "apple-domain-verification=JyKtturocxJ7e8bI",
-      "workbrew-domain-verification-b91wyv=bPXNAREVhl7vOrFTnQdCJbRFZ",
-      "apple-domain-verification=DQ3TtP8IS4sFJC9EKMrlcZ2yCjEHmQGa66M46pg6m3k",
       "j8p1v8uvnjiungbkieg6894ctb",
-      "google-site-verification=a39GDHtKkznS6vJx2Bd4tLCPiu3gprTJYBsfeJ-Afy4",
-      "81mjlnmdt3ilhf605acjac3142",
-      "ZOOM_verify_JaT9z62TGWk4Xq1EBKbVqZ",
-      "LEu+WRccDmqfd4AKPAO6X54Tg6icB74LQc1Cok7AIhhwxvY4OA6ZiVNYRLUclWqM5Qmx3c/rhinRNrB+yUCcuQ==",
-      "n+rGfPXv0394s7Mav6oftRucHJ3XrkPA5Gu2efLCfMNgvA9Q2j5wLodRQMBf09AxhL/ZJr158ExNxMgdKLykAQ==",
-      "v=spf1 include:spf.protection.outlook.com  include:spf.predictiveresponse.net include:servers.mcsv.net include:cust-spf.exacttarget.com include:_spf.pewresearch.org -all",
-      "docusign=db8286b4-617d-4518-a8d2-ffd9c7d6b445",
-      "tollbit-domain-verification=c379eea53a12f277b7e1b4ddb627fdf3c39380c133229681529aae9c7df3c531",
-      "MS=ms53170065",
-      "anthropic-domain-verification-27dfqx=89zzqeHhnNFCvRLyUPN6Rrm2S",
-      "cisco-ci-domain-verification=59488ea3a94920c64294e106be6efcfec41e63d9329d22edb6423a746c309339",
-      "5fg2mqnnnwjw1cw30f0jtgslypdvlglc",
-      "t35wwdky16ymmmcgvvs20r2bv8zny0j0",
-      "cursor-domain-verification-36qzmn=mNriG0xAskkvI4tGbhcGakb2s",
-      "adobe-idp-site-verification=dce4a001508adff6a7b1ce11bcee94997898dc790dbe672077b69fd9e362a3cf",
-      "jpq4l34skjc4madsqn48odfika",
+      "linear-domain-verification=aeaz7jeynne3",
       "70tqopf58gehn5q0l172ijp4s9",
-      "m7unfqgh2tqd69cmft07vog4u2",
+      "v=spf1 include:spf.protection.outlook.com  include:spf.predictiveresponse.net include:servers.mcsv.net include:cust-spf.exacttarget.com include:_spf.pewresearch.org -all",
+      "tollbit-domain-verification=c379eea53a12f277b7e1b4ddb627fdf3c39380c133229681529aae9c7df3c531",
+      "5fg2mqnnnwjw1cw30f0jtgslypdvlglc",
+      "LEu+WRccDmqfd4AKPAO6X54Tg6icB74LQc1Cok7AIhhwxvY4OA6ZiVNYRLUclWqM5Qmx3c/rhinRNrB+yUCcuQ==",
+      "apple-domain-verification=DQ3TtP8IS4sFJC9EKMrlcZ2yCjEHmQGa66M46pg6m3k",
       "MS=ms46499721",
       "facebook-domain-verification=79sdy6w4z5ih1t1h56pzbtfg98s2b1",
-      "linear-domain-verification=aeaz7jeynne3",
+      "adobe-idp-site-verification=dce4a001508adff6a7b1ce11bcee94997898dc790dbe672077b69fd9e362a3cf",
+      "81mjlnmdt3ilhf605acjac3142",
+      "google-site-verification=a39GDHtKkznS6vJx2Bd4tLCPiu3gprTJYBsfeJ-Afy4",
+      "hcp-domain-verification=a3c6e4dafba5b710eebea68d3af09226b78e92d2c41ac640723ab9c5ef82f330",
+      "google-site-verification=EuKSpyq2IYv-oJplq6yQlPQKYsV1LWeqwQjs9lu3Z-o",
+      "m7unfqgh2tqd69cmft07vog4u2",
+      "MS=ms53170065",
+      "docusign=db8286b4-617d-4518-a8d2-ffd9c7d6b445",
       "asv=93e4c31a4bfea86fd47cf32edc0fef1b",
+      "oqubjqei44ol2n7u4raiso8aja",
+      "google-site-verification=jwmmtXct21FKveAwprcQKkMrhqVY7ac2TtxUvubWT30",
+      "apple-domain-verification=JyKtturocxJ7e8bI",
+      "citrix.mobile.ads.otp=kd0jxp1wb9rh0n6flcz64s",
+      "cisco-ci-domain-verification=59488ea3a94920c64294e106be6efcfec41e63d9329d22edb6423a746c309339",
+      "jpq4l34skjc4madsqn48odfika",
+      "t35wwdky16ymmmcgvvs20r2bv8zny0j0",
+      "ZOOM_verify_JaT9z62TGWk4Xq1EBKbVqZ",
       "openai-domain-verification=dv-vkGktfLOtwd6xNFPJ1lL0QTl",
-      "oqubjqei44ol2n7u4raiso8aja"
+      "n+rGfPXv0394s7Mav6oftRucHJ3XrkPA5Gu2efLCfMNgvA9Q2j5wLodRQMBf09AxhL/ZJr158ExNxMgdKLykAQ==",
+      "cursor-domain-verification-36qzmn=mNriG0xAskkvI4tGbhcGakb2s",
+      "workbrew-domain-verification-b91wyv=bPXNAREVhl7vOrFTnQdCJbRFZ",
+      "anthropic-domain-verification-27dfqx=89zzqeHhnNFCvRLyUPN6Rrm2S"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:6183e7d4856a5@ag.dmarcly.com; ruf=mailto:6183e7d4856a5@fo.dmarcly.com;"
@@ -295,11 +295,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     ]
   },
   "apex_txt": [
-    "google-site-verification=jwmmtXct21FKveAwprcQKkMrhqVY7ac2TtxUvubWT30",
-    "hcp-domain-verification=a3c6e4dafba5b710eebea68d3af09226b78e92d2c41ac640723ab9c5",
-    "google-site-verification=EuKSpyq2IYv-oJplq6yQlPQKYsV1LWeqwQjs9lu3Z-o",
-    "apple-domain-verification=JyKtturocxJ7e8bI",
-    "workbrew-domain-verification-b91wyv=bPXNAREVhl7vOrFTnQdCJbRFZ"
+    "linear-domain-verification=aeaz7jeynne3",
+    "tollbit-domain-verification=c379eea53a12f277b7e1b4ddb627fdf3c39380c133229681529a",
+    "apple-domain-verification=DQ3TtP8IS4sFJC9EKMrlcZ2yCjEHmQGa66M46pg6m3k",
+    "facebook-domain-verification=79sdy6w4z5ih1t1h56pzbtfg98s2b1",
+    "adobe-idp-site-verification=dce4a001508adff6a7b1ce11bcee94997898dc790dbe672077b6"
   ],
   "tls2": {
     "alpn": "",
@@ -310,7 +310,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910000746",
+      "not_after": "20261209000745"
     }
   },
   "http2": {
@@ -324,8 +326,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "/?s="
     ]
   },
-  "elapsed_s": 19.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 19.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

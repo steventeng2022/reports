@@ -7,8 +7,8 @@
 | Target | https://about.fb.com/ |
 | Bug bounty program | Facebook |
 | Listed scope domain | about.fb.com |
-| Test date | 2026-09-26 17:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -224,7 +224,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260601000000",
+      "not_after": "20261216235959"
     }
   },
   "http2": {
@@ -233,8 +235,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "Sitemap:"
     ]
   },
-  "elapsed_s": 18.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 17.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

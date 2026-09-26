@@ -7,12 +7,12 @@
 | Target | https://amzn.asia/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | amzn.asia |
-| Test date | 2026-09-26 17:39 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
+Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,7 +28,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 13 | info | CT1 | 2 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 14 | info | CT1 | 2 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
 
 ## Detailed findings
 
@@ -112,7 +113,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 - **Detail:** Strict-Transport-Security is served but amzn.asia is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 13. [INFO] 2 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 18.246.99.252 carries PTR ec2-18-246-99-252.us-west-2.compute.amazonaws.com. for amzn.asia.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 14. [INFO] 2 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -125,22 +132,22 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
   "domain": "amzn.asia",
   "dns": {
     "a": [
-      "18.246.97.64",
       "18.246.99.252",
-      "18.246.100.105"
+      "18.246.100.105",
+      "18.246.97.64"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [],
     "ns": [
+      "ns1.amzndns.net.",
+      "ns2.amzndns.com.",
+      "ns2.amzndns.net.",
+      "ns1.amzndns.com.",
+      "ns2.amzndns.co.uk.",
       "ns1.amzndns.org.",
       "ns1.amzndns.co.uk.",
-      "ns1.amzndns.net.",
-      "ns1.amzndns.com.",
-      "ns2.amzndns.net.",
-      "ns2.amzndns.org.",
-      "ns2.amzndns.co.uk.",
-      "ns2.amzndns.com."
+      "ns2.amzndns.org."
     ],
     "spf": [
       "v=spf1 -all"
@@ -173,7 +180,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
     }
   },
   "ports": {
-    "ip": "18.246.97.64",
+    "ip": "18.246.99.252",
     "open": []
   },
   "https": {
@@ -240,11 +247,19 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260724000000",
+      "not_after": "20270206235959"
     }
   },
-  "elapsed_s": 20.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 404,
+    "ptr": [
+      "ec2-18-246-99-252.us-west-2.compute.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 20.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

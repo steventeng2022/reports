@@ -7,8 +7,8 @@
 | Target | https://idealo.de/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | idealo.de |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -117,7 +117,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: 1password-site-verification=NPLE72RPPJCD5MQWHCH2LBWOSA; mongodb-site-verification=PWvAUTuE0LHic9S4sUMdPfiKHH9Vhj55; apple-domain-verification=KCTdqG3zCfRDNB57
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-gm4n1q=mbgtscKppFSQPa94iEKut1DCu; google-site-verification=vnKFVNK2CNvD26H6RgVwBzA3kl8EnMW1xc4DIYfZqr0; apple-domain-verification=KCTdqG3zCfRDNB57
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -134,12 +134,12 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
   "dns": {
     "a": [
       "45.89.130.29",
-      "45.89.129.108",
-      "45.89.129.173"
+      "45.89.129.173",
+      "45.89.129.108"
     ],
     "aaaa": [
-      "2a0b:a200:0:102:ddaf:6c77:9375:1ed0",
       "2a0b:a200:0:100:3909:3d2d:af11:1f6",
+      "2a0b:a200:0:102:ddaf:6c77:9375:1ed0",
       "2a0b:a200:0:101:9b4:8326:1ab1:3982"
     ],
     "cname": null,
@@ -147,27 +147,27 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
       "idealo-de.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "ns-1734.awsdns-24.co.uk.",
-      "ns-527.awsdns-01.net.",
+      "ns-1201.awsdns-22.org.",
       "ns-53.awsdns-06.com.",
-      "ns-1201.awsdns-22.org."
+      "ns-527.awsdns-01.net.",
+      "ns-1734.awsdns-24.co.uk."
     ],
     "spf": [
-      "1password-site-verification=NPLE72RPPJCD5MQWHCH2LBWOSA",
-      "mongodb-site-verification=PWvAUTuE0LHic9S4sUMdPfiKHH9Vhj55",
-      "MS=ms59853604",
-      "apple-domain-verification=KCTdqG3zCfRDNB57",
-      "jamf-site-verification=cgA87WElNjz-TqQEDiiQAg",
-      "astro-domain-verification=cmfl404981ir001ri7eudlvbp",
-      "atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXlTSpjtg1iNnMasAJ3GsD",
-      "google-site-verification=vnKFVNK2CNvD26H6RgVwBzA3kl8EnMW1xc4DIYfZqr0",
-      "mgverify=cca526e60761a60ac07b6a052965659d6c3c76ff8a4958a398cb1071007da7ca",
-      "cursor-domain-verification-987qxp=NzVU3KiAhhQpAYRf9gWgmwH2M",
       "anthropic-domain-verification-gm4n1q=mbgtscKppFSQPa94iEKut1DCu",
-      "facebook-domain-verification=xj7sye2iiecu2xm4coraz2sghglxyg",
+      "google-site-verification=vnKFVNK2CNvD26H6RgVwBzA3kl8EnMW1xc4DIYfZqr0",
+      "apple-domain-verification=KCTdqG3zCfRDNB57",
+      "v=spf1 include:spf.asv.de include:_spf.google.com include:spf.protection.outlook.com include:_spf.salesforce.com ~all",
       "google-site-verification=rU54pg91seSvEOguy4FYBoAz_-1kbL9JtzckNRoKI-8",
+      "1password-site-verification=NPLE72RPPJCD5MQWHCH2LBWOSA",
+      "mgverify=cca526e60761a60ac07b6a052965659d6c3c76ff8a4958a398cb1071007da7ca",
+      "astro-domain-verification=cmfl404981ir001ri7eudlvbp",
+      "MS=ms59853604",
+      "facebook-domain-verification=xj7sye2iiecu2xm4coraz2sghglxyg",
+      "atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXlTSpjtg1iNnMasAJ3GsD",
+      "mongodb-site-verification=PWvAUTuE0LHic9S4sUMdPfiKHH9Vhj55",
       "wiz-domain-verification=106d737f255f6040e903621fcc553ce41977b40940acfab67d828304fbe01399",
-      "v=spf1 include:spf.asv.de include:_spf.google.com include:spf.protection.outlook.com include:_spf.salesforce.com ~all"
+      "jamf-site-verification=cgA87WElNjz-TqQEDiiQAg",
+      "cursor-domain-verification-987qxp=NzVU3KiAhhQpAYRf9gWgmwH2M"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=0; rua=mailto:dmarc-aggregation@idealo.de,mailto:idealo@rua.netcraft.com; ruf=mailto:dmarc-forensic@idealo.de,mailto:idealo@ruf.netcraft.com;"
@@ -249,11 +249,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "1password-site-verification=NPLE72RPPJCD5MQWHCH2LBWOSA",
-    "mongodb-site-verification=PWvAUTuE0LHic9S4sUMdPfiKHH9Vhj55",
+    "anthropic-domain-verification-gm4n1q=mbgtscKppFSQPa94iEKut1DCu",
+    "google-site-verification=vnKFVNK2CNvD26H6RgVwBzA3kl8EnMW1xc4DIYfZqr0",
     "apple-domain-verification=KCTdqG3zCfRDNB57",
-    "jamf-site-verification=cgA87WElNjz-TqQEDiiQAg",
-    "astro-domain-verification=cmfl404981ir001ri7eudlvbp"
+    "google-site-verification=rU54pg91seSvEOguy4FYBoAz_-1kbL9JtzckNRoKI-8",
+    "1password-site-verification=NPLE72RPPJCD5MQWHCH2LBWOSA"
   ],
   "tls2": {
     "alpn": "",
@@ -264,11 +264,16 @@ Total findings: **14** (High: 0, Medium: 0, Low: 5, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260517000000",
+      "not_after": "20261130235959"
     }
   },
-  "elapsed_s": 25.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 25.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

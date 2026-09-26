@@ -7,8 +7,8 @@
 | Target | https://researchgate.net/ |
 | Bug bounty program | Research Gate |
 | Listed scope domain | researchgate.net |
-| Test date | 2026-09-26 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -137,7 +137,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-08jfec=YTBMKsyajkzCM7tuK08Il8BTQ; atlassian-domain-verification=Nad6ba1ysA1mdnvoY0zYwoRwv6nBwSBawy/Xaexh3Vf9DcC0a7; apple-domain-verification=1zVGDn699lBJWe3h
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=Nad6ba1ysA1mdnvoY0zYwoRwv6nBwSBawy/Xaexh3Vf9DcC0a7; google-site-verification=o6Zn1HIYOJ47s1qpx6D1NYJiRORsOBrWWIKgCHozu0g; google-site-verification=adDX9Qsrt8PjtLYlL3wfJJVp_QvS36jMwtcjEPd4J9Q
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -168,10 +168,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     ],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt4.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
@@ -179,13 +179,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "val.ns.cloudflare.com."
     ],
     "spf": [
-      "anthropic-domain-verification-08jfec=YTBMKsyajkzCM7tuK08Il8BTQ",
       "atlassian-domain-verification=Nad6ba1ysA1mdnvoY0zYwoRwv6nBwSBawy/Xaexh3Vf9DcC0a74yExKioYvCdaM7",
-      "apple-domain-verification=1zVGDn699lBJWe3h",
+      "google-site-verification=o6Zn1HIYOJ47s1qpx6D1NYJiRORsOBrWWIKgCHozu0g",
+      "google-site-verification=adDX9Qsrt8PjtLYlL3wfJJVp_QvS36jMwtcjEPd4J9Q",
+      "anthropic-domain-verification-08jfec=YTBMKsyajkzCM7tuK08Il8BTQ",
       "v=spf1 ip4:209.15.209.64/27 ip4:209.15.214.192/28 ip4:209.15.243.112/28 ip4:209.15.247.224/28 ip4:209.15.249.176/28 ip4:209.15.249.224/29 ip4:209.15.250.112/28 ip4:37.44.2.16/28 include:_spf.google.com include:servers.mcsv.net include:mail.zendesk.com inc",
       "lude:_spf.salesforce.com ~all",
-      "google-site-verification=adDX9Qsrt8PjtLYlL3wfJJVp_QvS36jMwtcjEPd4J9Q",
-      "google-site-verification=o6Zn1HIYOJ47s1qpx6D1NYJiRORsOBrWWIKgCHozu0g"
+      "apple-domain-verification=1zVGDn699lBJWe3h"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:99aee09c@mxtoolbox.dmarc-report.com,mailto:reports@dmarc.researchgate.net; ruf=mailto:authfail@dmarc.researchgate.net"
@@ -272,11 +272,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "anthropic-domain-verification-08jfec=YTBMKsyajkzCM7tuK08Il8BTQ",
     "atlassian-domain-verification=Nad6ba1ysA1mdnvoY0zYwoRwv6nBwSBawy/Xaexh3Vf9DcC0a7",
-    "apple-domain-verification=1zVGDn699lBJWe3h",
+    "google-site-verification=o6Zn1HIYOJ47s1qpx6D1NYJiRORsOBrWWIKgCHozu0g",
     "google-site-verification=adDX9Qsrt8PjtLYlL3wfJJVp_QvS36jMwtcjEPd4J9Q",
-    "google-site-verification=o6Zn1HIYOJ47s1qpx6D1NYJiRORsOBrWWIKgCHozu0g"
+    "anthropic-domain-verification-08jfec=YTBMKsyajkzCM7tuK08Il8BTQ",
+    "apple-domain-verification=1zVGDn699lBJWe3h"
   ],
   "tls2": {
     "alpn": "",
@@ -287,7 +287,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260816125446",
+      "not_after": "20261114135434"
     }
   },
   "http2": {
@@ -302,8 +304,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "/signup."
     ]
   },
-  "elapsed_s": 4.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 5.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

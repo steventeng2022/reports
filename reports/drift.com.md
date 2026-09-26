@@ -7,8 +7,8 @@
 | Target | https://drift.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | drift.com |
-| Test date | 2026-09-26 17:43 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -126,13 +126,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (xaeya4azljd7fj.drift.com and gdn15m85fq4ym1.drift.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (xodw54z0ieltkk.drift.com and fotd4on5k0o7y6.drift.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=EXb4VABeG7RDBygZaviPE5EEm43o7Law1aGs_JPWr1I; atlassian-domain-verification=cXu9R09NLHAY+K7dTK1SXLMXAx9vcXr4Cpp1VAIbvjJCJ2dZ0g; google-site-verification=43nlxX--h0jQ5cSmfjXsnSnZLCdkw-_tdB1ArWsDmx4
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=FDRrp3PiBSjA9M9oxffVx1rEVTnoBMk9UbFWLQnhvis; apple-domain-verification=D9CdpC9KtRb2SU67; google-site-verification=ryKNMbLSr2_ShC67c8PeREDk5u5L-Tqb1Qt3SMZl3bw
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -159,47 +159,47 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)",
-      "alt3.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "alt4.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-1960.awsdns-53.co.uk.",
       "ns-1271.awsdns-30.org.",
-      "ns-808.awsdns-37.net.",
-      "ns-466.awsdns-58.com."
+      "ns-1960.awsdns-53.co.uk.",
+      "ns-466.awsdns-58.com.",
+      "ns-808.awsdns-37.net."
     ],
     "spf": [
-      "google-site-verification=EXb4VABeG7RDBygZaviPE5EEm43o7Law1aGs_JPWr1I",
-      "atlassian-domain-verification=cXu9R09NLHAY+K7dTK1SXLMXAx9vcXr4Cpp1VAIbvjJCJ2dZ0g4rTWzyhUadykZ0",
-      "google-site-verification=43nlxX--h0jQ5cSmfjXsnSnZLCdkw-_tdB1ArWsDmx4",
-      "google-site-verification=WBts36f15QIx_SHhtQqJQmPN4udrRODidRIQXPi2FXA",
-      "google-site-verification=qb-I0lESyGU3sA7pewDjqWhPLv19DxO6DcpdV5mJzqU",
+      "google-site-verification=FDRrp3PiBSjA9M9oxffVx1rEVTnoBMk9UbFWLQnhvis",
+      "apple-domain-verification=D9CdpC9KtRb2SU67",
+      "google-site-verification=ryKNMbLSr2_ShC67c8PeREDk5u5L-Tqb1Qt3SMZl3bw",
+      "zoom-domain-verification = c3bf7571-f003-4704-84be-10ccb4cf6973",
+      "v=spf1 ip4:199.15.215.69 include:spf1.drift.com include:spf3.drift.com include:_spf.google.com include:sendgrid.net include:amazonses.com include:spf-0038ba01.pphosted.com -all",
       "google-site-verification=Oz2hq_0Q1TnZkKGf2y3ju_gVKpIQzAm2-c0gKV_-IHg",
       "google-site-verification=TXlp5hH6h0vO7YBSaqaiHcnvO7t37m2xp5pykbieAIA",
-      "v=spf1 ip4:199.15.215.69 include:spf1.drift.com include:spf3.drift.com include:_spf.google.com include:sendgrid.net include:amazonses.com include:spf-0038ba01.pphosted.com -all",
-      "google-site-verification=_E3k51OOYCLniiFQOJDxBb7YeUTZsRsnS9obKBOWIBM",
-      "apple-domain-verification=D9CdpC9KtRb2SU67",
+      "atlassian-domain-verification=cXu9R09NLHAY+K7dTK1SXLMXAx9vcXr4Cpp1VAIbvjJCJ2dZ0g4rTWzyhUadykZ0",
+      "google-site-verification=K-eBDZ2a4JrdklKBnqe2cFaBkEhF1jAJ0i3TjH9Bt3M",
+      "atlassian-domain-verification=eovY2DLWsxOhMcSetCZItREJgqvTapcaJkxT7T3r5NPqZr6BncV5EKM8bpfQYLxL",
+      "docusign=d2419350-d082-40c3-88b7-a362b7dde6d6",
+      "miro-verification=aed7e2c2c984c8243ee35435d2c86c041ddd2d73",
+      "jwF+NotcU8L1uVCcbRt9T9TQknJ+J7zcCzTC9Ce1oZI=",
       "google-site-verification=rTkFvWKmmNOAbgIzQTn8_n-FLHW34IOsl_I02BJwe-o",
-      "amazonses:8VA52IIvc5L0tiPo2dTPk95Ix2Fe8fGZ6mOgmlWj1mU=",
+      "bugcrowd-verification=dab931f75202b157a31593fc7c0b5959",
+      "status-page-domain-verification=vxfhhw8y9980",
+      "google-site-verification=EXb4VABeG7RDBygZaviPE5EEm43o7Law1aGs_JPWr1I",
       "google-site-verification=FeoHJ-gYBb4Do22PZknzteLMDiNHad1o_4n4_qbtk4Q",
       "atlassian-domain-verification=IK4vQZrJAZuDOM2zNyGYPNXnd4z5wvPTZSUGq0l8uOywrhDgX7D2FjUgj6tttYty",
-      "google-site-verification=K-eBDZ2a4JrdklKBnqe2cFaBkEhF1jAJ0i3TjH9Bt3M",
-      "zoom-domain-verification = c3bf7571-f003-4704-84be-10ccb4cf6973",
-      "jwF+NotcU8L1uVCcbRt9T9TQknJ+J7zcCzTC9Ce1oZI=",
-      "asv=d105e8b7dc7943f129ed561be48cb964",
-      "bugcrowd-verification=dab931f75202b157a31593fc7c0b5959",
-      "google-site-verification=F39d3BrG_GMyTPfgS9BmAOoutEZVSxYNBBeyx1mUnEo",
-      "miro-verification=aed7e2c2c984c8243ee35435d2c86c041ddd2d73",
-      "status-page-domain-verification=vxfhhw8y9980",
-      "docusign=d2419350-d082-40c3-88b7-a362b7dde6d6",
-      "google-site-verification=ryKNMbLSr2_ShC67c8PeREDk5u5L-Tqb1Qt3SMZl3bw",
-      "google-site-verification=prz0gOLypp4g-rvgvts13UHLmKmQPR-NUmBZ7svLWDA",
+      "amazonses:8VA52IIvc5L0tiPo2dTPk95Ix2Fe8fGZ6mOgmlWj1mU=",
       "google-site-verification=cIfqvzYUI06fvgbYARw5UlD9kA9UWn2N9oqCt69ce7Y",
-      "google-site-verification=FDRrp3PiBSjA9M9oxffVx1rEVTnoBMk9UbFWLQnhvis",
-      "atlassian-domain-verification=eovY2DLWsxOhMcSetCZItREJgqvTapcaJkxT7T3r5NPqZr6BncV5EKM8bpfQYLxL"
+      "google-site-verification=WBts36f15QIx_SHhtQqJQmPN4udrRODidRIQXPi2FXA",
+      "google-site-verification=prz0gOLypp4g-rvgvts13UHLmKmQPR-NUmBZ7svLWDA",
+      "google-site-verification=F39d3BrG_GMyTPfgS9BmAOoutEZVSxYNBBeyx1mUnEo",
+      "google-site-verification=_E3k51OOYCLniiFQOJDxBb7YeUTZsRsnS9obKBOWIBM",
+      "google-site-verification=qb-I0lESyGU3sA7pewDjqWhPLv19DxO6DcpdV5mJzqU",
+      "asv=d105e8b7dc7943f129ed561be48cb964",
+      "google-site-verification=43nlxX--h0jQ5cSmfjXsnSnZLCdkw-_tdB1ArWsDmx4"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:compliance+driftrua@salesloft.com; ruf=mailto:compliance+driftruf@salesloft.com"
@@ -282,11 +282,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=EXb4VABeG7RDBygZaviPE5EEm43o7Law1aGs_JPWr1I",
-    "atlassian-domain-verification=cXu9R09NLHAY+K7dTK1SXLMXAx9vcXr4Cpp1VAIbvjJCJ2dZ0g",
-    "google-site-verification=43nlxX--h0jQ5cSmfjXsnSnZLCdkw-_tdB1ArWsDmx4",
-    "google-site-verification=WBts36f15QIx_SHhtQqJQmPN4udrRODidRIQXPi2FXA",
-    "google-site-verification=qb-I0lESyGU3sA7pewDjqWhPLv19DxO6DcpdV5mJzqU"
+    "google-site-verification=FDRrp3PiBSjA9M9oxffVx1rEVTnoBMk9UbFWLQnhvis",
+    "apple-domain-verification=D9CdpC9KtRb2SU67",
+    "google-site-verification=ryKNMbLSr2_ShC67c8PeREDk5u5L-Tqb1Qt3SMZl3bw",
+    "zoom-domain-verification = c3bf7571-f003-4704-84be-10ccb4cf6973",
+    "google-site-verification=Oz2hq_0Q1TnZkKGf2y3ju_gVKpIQzAm2-c0gKV_-IHg"
   ],
   "tls2": {
     "alpn": "",
@@ -297,11 +297,16 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260904075736",
+      "not_after": "20261203075735"
     }
   },
-  "elapsed_s": 18.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 15.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

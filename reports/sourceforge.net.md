@@ -7,12 +7,12 @@
 | Target | https://sourceforge.net/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | sourceforge.net |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
+Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 
 ## Detailed findings
 
@@ -42,13 +43,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.12.149:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.13.149:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.12.149:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.13.149:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -99,13 +100,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 ### 11. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (s3s28dchjtfo5k.sourceforge.net and 66kwvxoom2gkd2.sourceforge.net) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (a8ul56hg8nyphl.sourceforge.net and prclqu3ivk057g.sourceforge.net) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: abuseipdb-verification=dvyMFAir; yandex-verification: eddadce308154a90; tollbit-domain-verification=bae1f5123238c200f3429dba2556501be81cc1ab0b0f0692146e
+- **Detail:** Apex TXT records with verification/token content: yandex-verification: eddadce308154a90; brave-ledger-verification=09845b65316c1613c72337595c391c4675fff6ae8923768232dc3f; abuseipdb-verification=dvyMFAir
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -120,6 +121,12 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 - **Detail:** robots.txt lists 164 disallow path(s), e.g. /p/*/code/, /p/*/git/, /p/*/svn/, /p/*/hg/, /p/*/search
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 15. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of sourceforge.net permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -127,12 +134,12 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
   "domain": "sourceforge.net",
   "dns": {
     "a": [
-      "104.18.12.149",
-      "104.18.13.149"
+      "104.18.13.149",
+      "104.18.12.149"
     ],
     "aaaa": [
-      "2606:4700::6812:d95",
-      "2606:4700::6812:c95"
+      "2606:4700::6812:c95",
+      "2606:4700::6812:d95"
     ],
     "cname": null,
     "mx": [
@@ -140,23 +147,23 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
     ],
     "ns": [
       "ns51.constellix.net.",
-      "ns41.constellix.net.",
+      "ns61.constellix.net.",
       "ns21.constellix.com.",
       "ns31.constellix.com.",
-      "ns11.constellix.com.",
-      "ns61.constellix.net."
+      "ns41.constellix.net.",
+      "ns11.constellix.com."
     ],
     "spf": [
-      "ca3-1594c24430d2487fad7bceaec2fa251f",
-      "abuseipdb-verification=dvyMFAir",
       "yandex-verification: eddadce308154a90",
-      "tollbit-domain-verification=bae1f5123238c200f3429dba2556501be81cc1ab0b0f0692146e362a49979895",
-      "google-site-verification=HugCfmT_JOUQaz6xbszx1O9W3ccm_Dh5GiageK7egmM",
-      "ca3-33e180a2afaa4c86951f4a8ad123e300",
-      "v=spf1 include:sparkpostmail.com include:servers.mcsv.net ip4:216.105.38.0/26 -all",
       "brave-ledger-verification=09845b65316c1613c72337595c391c4675fff6ae8923768232dc3f6c661af14b",
+      "abuseipdb-verification=dvyMFAir",
+      "ca3-8b7801430b214be99a3325aab5d0d899",
+      "ca3-1594c24430d2487fad7bceaec2fa251f",
+      "tollbit-domain-verification=bae1f5123238c200f3429dba2556501be81cc1ab0b0f0692146e362a49979895",
+      "v=spf1 include:sparkpostmail.com include:servers.mcsv.net ip4:216.105.38.0/26 -all",
+      "google-site-verification=HugCfmT_JOUQaz6xbszx1O9W3ccm_Dh5GiageK7egmM",
       "SourceForge, Inc.",
-      "ca3-8b7801430b214be99a3325aab5d0d899"
+      "ca3-33e180a2afaa4c86951f4a8ad123e300"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:ipm1wcw@ar.glockapps.com,mailto:kgtkm21q@ag.dmarcian.com; ruf=mailto:ipm1wcw@fr.glockapps.com; fo=1; sp=none;"
@@ -187,7 +194,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
     }
   },
   "ports": {
-    "ip": "104.18.12.149",
+    "ip": "104.18.13.149",
     "open": [
       8080,
       8443
@@ -249,11 +256,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "abuseipdb-verification=dvyMFAir",
     "yandex-verification: eddadce308154a90",
+    "brave-ledger-verification=09845b65316c1613c72337595c391c4675fff6ae8923768232dc3f",
+    "abuseipdb-verification=dvyMFAir",
     "tollbit-domain-verification=bae1f5123238c200f3429dba2556501be81cc1ab0b0f0692146e",
-    "google-site-verification=HugCfmT_JOUQaz6xbszx1O9W3ccm_Dh5GiageK7egmM",
-    "brave-ledger-verification=09845b65316c1613c72337595c391c4675fff6ae8923768232dc3f"
+    "google-site-verification=HugCfmT_JOUQaz6xbszx1O9W3ccm_Dh5GiageK7egmM"
   ],
   "tls2": {
     "alpn": "",
@@ -264,7 +271,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260812192223",
+      "not_after": "20261110192222"
     }
   },
   "http2": {
@@ -286,8 +295,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
       "/*/ci/"
     ]
   },
-  "elapsed_s": 5.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 4.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

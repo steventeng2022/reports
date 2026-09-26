@@ -7,12 +7,12 @@
 | Target | https://wix.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | wix.com |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -112,13 +113,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 12. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (aps8foznfegtqv.wix.com and 16zw35iz2f4xn8.wix.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (nx1iehvs4ivbk6.wix.com and nkjyf2jl3zj4m4.wix.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=igUuyfBRZoBZQ0BFNepTw5JslX4b4ilhiFYSgT6muOE; tiktok-developers-site-verification=gzeUQu5YG50bjEvjyo0ZfbVZ5j0V999U; canva-site-verification=qnvjScw_870K8yKfi-_rTg
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=MvlfsFt9kmoBIEA-kfNZGc1DoBWCpDeO2I0BFi2r0Ls; atlassian-domain-verification=csQ4SmhA03xwafLVCnb97huNyHYH1UukzPuDqZGNUAxVncR0Fa; stripe-verification=c332fc1713103584e6975aff689df49f78df9ea5980c7d124640f1256185
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -139,6 +140,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - **Detail:** robots.txt lists 87 disallow path(s), e.g. /api/, /blogtemp, /wixblog, /bo/, /editor.jsp
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 199.15.163.133 carries PTR unalocated.163.wixsite.com. for wix.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -151,88 +158,88 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)",
-      "alt4.aspmx.l.google.com (pref 10)"
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "dns1.p03.nsone.net.",
       "dns4.p03.nsone.net.",
+      "dns1.p03.nsone.net.",
       "dns2.p03.nsone.net.",
       "dns3.p03.nsone.net."
     ],
     "spf": [
-      "google-site-verification=igUuyfBRZoBZQ0BFNepTw5JslX4b4ilhiFYSgT6muOE",
-      "tiktok-developers-site-verification=gzeUQu5YG50bjEvjyo0ZfbVZ5j0V999U",
-      "docusign=5e9b707a-aa10-4cc8-8c18-44ba07c7261d",
-      "canva-site-verification=qnvjScw_870K8yKfi-_rTg",
-      "MS=ms84842189",
-      "google-site-verification=bgK_1_cVW1tLXaQirTZFxyCNGwebJrSrtxEnhi8nj34",
-      "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A",
-      "astro-domain-verification=cmdn44xpt2r0g01n6ltozezn0",
-      "attio-domain-verification=Z2ET4PUWKCF36X53R79B3D4B",
-      "stripe-verification=90fcaa8e136e2e6061f8be2b71a3415891ea8673424e9ff92247249c019912e6",
-      "cloudflare_dashboard_sso=6509b3cf451e0682879ea790c12c0f25",
-      "lucidlink-verification=Q6AYQQCN4FGFRCQR0AF47JR318",
-      "google-site-verification=JO8-pIBHBq2rsYKaFQQDYV0LLq8RbBMxJ3sJmGAvop4",
-      "google-site-verification=cPL86MHWzrMGIKsTjOEI-oy3ISSoZhhnwuudVWrhvrU",
-      "have-i-been-pwned-verification=7bc715f972068147270244a4389abc6d",
-      "apple-domain-verification=q4AHUtVh9qSoTPfP",
-      "openai-domain-verification=dv-FVMlkPb2ttnAtrpY3PbRxymv",
-      "msfpkey=5uza2mr5f7gagdu4v6mibe905",
-      "ZOOM_verify_MfQI7nhORG2Puh-3X5ATPg",
-      "google-site-verification=n0cDifZIn0mJu7nixM4mDeq05V87pc2G0idMzBfwpyw",
-      "wq3kgvs1qvcjxqx95561tx37v6hgssjj",
-      "_globalsign-domain-verification=hJCPfpeQg9VcjdDQFrVs_lkJML8ynoEnfwBUsQJ6zB",
-      "cursor-domain-verification-1tkm1m=rRuMFC1cXEdKxx2xnJVQHycAq",
+      "google-site-verification=MvlfsFt9kmoBIEA-kfNZGc1DoBWCpDeO2I0BFi2r0Ls",
+      "atlassian-domain-verification=csQ4SmhA03xwafLVCnb97huNyHYH1UukzPuDqZGNUAxVncR0FaSIvgm0VUxSpDA9",
+      "stripe-verification=c332fc1713103584e6975aff689df49f78df9ea5980c7d124640f12561857924",
+      "mixpanel-domain-verify=50fec8a0-784f-4f4d-9e78-0e0a16f8babe",
+      "vLXvkpGVsBpywsoGExNq4Y9fpP78GQ",
+      "v=MCPv1; k=ed25519; p=EbQt/aJoTxU91btvOjmJoFgANaxHhXpEw07phT5RZp4=",
       "stripe-verification=0d2a575bc62dd29de9df29436fb90d8ed6f29050dfae2d211c1ad9aeafbd897e",
+      "stripe-verification=96483778492eb4f2255ee7fcb447f01413aa413328443b4ef81edadbcbe56af1",
+      "MS=ms84842189",
+      "lucidlink-verification=Q6AYQQCN4FGFRCQR0AF47JR318",
+      "attio-domain-verification=Z2ET4PUWKCF36X53R79B3D4B",
+      "wq3kgvs1qvcjxqx95561tx37v6hgssjj",
+      "atlassian-domain-verification=/0xGMpS1a6Y4hkYjG5Rprk0LKayTNxlYBFefwdxm2FhvHJaFr9MiYUbL0wEu8NYs",
+      "zapier-domain-verification-challenge=b9a64e2d-2ca9-415d-bd69-cfa2d9fa9907",
+      "cloudflare_dashboard_sso=6509b3cf451e0682879ea790c12c0f25",
       "globalsign-domain-verification=pyR6ci6IB7uVAxLPZN5Z7_imdnvGJLhXCcmfs8v5RP",
       "google-site-verification=VIxXEU16_I7ytV2OZx7MribDyDrrO8qdo3zN_Z4midI",
-      "stripe-verification=87df6886f3e159f187fde2e275ec83dc599278c4d7c88dee2391c5879643626a",
-      "anthropic-domain-verification-wj1991=6IRjBpZdVnL6nplaTY4n69b7J",
-      "aO7RBfR",
-      "google-site-verification=ogdABx45v2ErCVBP-Ms5Wm2fNT-LJq4emfL0AecJZZA",
-      "v=MCPv1; k=ed25519; p=EbQt/aJoTxU91btvOjmJoFgANaxHhXpEw07phT5RZp4=",
-      "stripe-verification=3d38b8ba77051423fc63beab24fd133e79c48c38c129e6f32a8f31dd1442b257",
-      "atlassian-domain-verification=csQ4SmhA03xwafLVCnb97huNyHYH1UukzPuDqZGNUAxVncR0FaSIvgm0VUxSpDA9",
-      "jamf-site-verification=_Sa01rGeZhiS_fErQgeIfA",
-      "google-site-verification=MvlfsFt9kmoBIEA-kfNZGc1DoBWCpDeO2I0BFi2r0Ls",
-      "anodot-domain-verification=22a37350bc036e536d9fbb047513c15f1d09de30af60f87c20af295836a05e53",
       "google-site-verification=tidJNtRp7m6rB1RoNn3WWu94llPGNf69LO5cMRL2aog",
-      "google-site-verification=GK0pXfNH9o0j611VmQUTjL4d24lbdaLr4464gb0325s",
-      "MS=ms67587784",
-      "openai-domain-verification=dv-pLJ3xAPCIeMa3cC4XNtNDJX2",
-      "t9Mb1J4w2JVvj8BbxdSv/0Vq6ijiuUn5uWS/LqkvNkE=",
-      "mixpanel-domain-verify=50fec8a0-784f-4f4d-9e78-0e0a16f8babe",
-      "v=spf1 include:wix.com._nspf.vali.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email  ~all",
-      "stripe-verification=acd68941bb2908ddb9252b6af7dfb0bec4c44516bf8ddf6281064d5267d6fe16",
-      "google-site-verification=mlu2CMylrUqQGNZj8kf-TLOgvFtObPuYG8iDyF40-yw",
+      "openai-domain-verification=dv-FVMlkPb2ttnAtrpY3PbRxymv",
       "bpdvtdlgubb2u4fibokgbtimqm",
-      "mentimeter-26622928-e74c-4bef-bd86-6fb3ef16da73",
-      "google-site-verification=caM2lnCRLah4A1mGepO9qL_hg8cqHdh3UzqMkNMaNAA",
-      "miro-verification=1400621c6beb4ad13c3ab05208a4bcc4446e4ead",
-      "google-site-verification=LlgLpcZTcUwtCuZ6rbFW3qpMhBRXM6TRPLWTaJIz6qo",
-      "docusign=79f63237-be11-4e2d-b4b4-91ab6dce95fc",
-      "h1-domain-verification=PcpK2wxKRm5TX3bUxcufNmYpDJfshghw8GwndcysTzykjNsF",
-      "stripe-verification=96483778492eb4f2255ee7fcb447f01413aa413328443b4ef81edadbcbe56af1",
+      "stripe-verification=87df6886f3e159f187fde2e275ec83dc599278c4d7c88dee2391c5879643626a",
       "mongodb-site-verification=gdhANZR3xAzZgoC98tNYliiKI87AerWD",
-      "zapier-domain-verification-challenge=b9a64e2d-2ca9-415d-bd69-cfa2d9fa9907",
-      "stripe-verification=c332fc1713103584e6975aff689df49f78df9ea5980c7d124640f12561857924",
-      "stripe-verification=9a57080fa5c5d67942dead568a7b95d81e0b004381ccfda174b91c5a84b370aa",
+      "anodot-domain-verification=22a37350bc036e536d9fbb047513c15f1d09de30af60f87c20af295836a05e53",
+      "google-site-verification=ogdABx45v2ErCVBP-Ms5Wm2fNT-LJq4emfL0AecJZZA",
       "487477444-11657476",
-      "stripe-verification=c20e469bd7bbf272f6048b664b7f9cc406b912f67ad8fa91647eff8350b65f21",
-      "amazonses:kmAm6mAq2E1NgyaEam+5i0Mnyf/O2i4kosh3YVJwJZo=",
-      "vLXvkpGVsBpywsoGExNq4Y9fpP78GQ",
+      "ZOOM_verify_MfQI7nhORG2Puh-3X5ATPg",
+      "docusign=79f63237-be11-4e2d-b4b4-91ab6dce95fc",
+      "openai-domain-verification=dv-pLJ3xAPCIeMa3cC4XNtNDJX2",
       "c5d403d181be4c99af6bfc33a6b174ef",
+      "have-i-been-pwned-verification=7bc715f972068147270244a4389abc6d",
+      "_globalsign-domain-verification=hJCPfpeQg9VcjdDQFrVs_lkJML8ynoEnfwBUsQJ6zB",
       "twilio-domain-verification=833bfa35c546d96f3c57986df3eb723e",
-      "Dynatrace-site-verification=501eb6b7-ec68-4d6e-9cff-542d23e861a6__2sdtlct1d5od1saarpf7t3ivro",
-      "atlassian-domain-verification=/0xGMpS1a6Y4hkYjG5Rprk0LKayTNxlYBFefwdxm2FhvHJaFr9MiYUbL0wEu8NYs",
-      "hubspot-developer-verification=OGU2OTcxZmMtOTQ5ZS00MmE4LWEwNGMtZDU5ODVjMjFlNzE3",
+      "cursor-domain-verification-1tkm1m=rRuMFC1cXEdKxx2xnJVQHycAq",
+      "msfpkey=5uza2mr5f7gagdu4v6mibe905",
+      "google-site-verification=GK0pXfNH9o0j611VmQUTjL4d24lbdaLr4464gb0325s",
+      "astro-domain-verification=cmdn44xpt2r0g01n6ltozezn0",
+      "docusign=5e9b707a-aa10-4cc8-8c18-44ba07c7261d",
+      "miro-verification=1400621c6beb4ad13c3ab05208a4bcc4446e4ead",
+      "canva-site-verification=qnvjScw_870K8yKfi-_rTg",
+      "google-site-verification=caM2lnCRLah4A1mGepO9qL_hg8cqHdh3UzqMkNMaNAA",
+      "google-site-verification=bgK_1_cVW1tLXaQirTZFxyCNGwebJrSrtxEnhi8nj34",
+      "google-site-verification=LlgLpcZTcUwtCuZ6rbFW3qpMhBRXM6TRPLWTaJIz6qo",
+      "google-site-verification=igUuyfBRZoBZQ0BFNepTw5JslX4b4ilhiFYSgT6muOE",
+      "MS=ms67587784",
+      "tiktok-developers-site-verification=gzeUQu5YG50bjEvjyo0ZfbVZ5j0V999U",
+      "aO7RBfR",
+      "google-site-verification=cPL86MHWzrMGIKsTjOEI-oy3ISSoZhhnwuudVWrhvrU",
+      "stripe-verification=acd68941bb2908ddb9252b6af7dfb0bec4c44516bf8ddf6281064d5267d6fe16",
+      "t9Mb1J4w2JVvj8BbxdSv/0Vq6ijiuUn5uWS/LqkvNkE=",
       "stripe-verification=e5d336648c47bc8257c95e6b90f8e72cefe71d491fdb5f05e7e91f7dba43b373",
+      "stripe-verification=3d38b8ba77051423fc63beab24fd133e79c48c38c129e6f32a8f31dd1442b257",
+      "v=spf1 include:wix.com._nspf.vali.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email  ~all",
+      "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A",
+      "Dynatrace-site-verification=501eb6b7-ec68-4d6e-9cff-542d23e861a6__2sdtlct1d5od1saarpf7t3ivro",
       "google-site-verification=FXlaz4eC6IRkW2WmIRbIk4CArdmHESk0yNe3AFUDhp0",
-      "google-site-verification=WXWCve5A0fdvZG9JuNcYOlPnkIfD5jCwtx-Hz6ky6wA"
+      "google-site-verification=WXWCve5A0fdvZG9JuNcYOlPnkIfD5jCwtx-Hz6ky6wA",
+      "mentimeter-26622928-e74c-4bef-bd86-6fb3ef16da73",
+      "jamf-site-verification=_Sa01rGeZhiS_fErQgeIfA",
+      "stripe-verification=90fcaa8e136e2e6061f8be2b71a3415891ea8673424e9ff92247249c019912e6",
+      "apple-domain-verification=q4AHUtVh9qSoTPfP",
+      "google-site-verification=n0cDifZIn0mJu7nixM4mDeq05V87pc2G0idMzBfwpyw",
+      "stripe-verification=9a57080fa5c5d67942dead568a7b95d81e0b004381ccfda174b91c5a84b370aa",
+      "anthropic-domain-verification-wj1991=6IRjBpZdVnL6nplaTY4n69b7J",
+      "hubspot-developer-verification=OGU2OTcxZmMtOTQ5ZS00MmE4LWEwNGMtZDU5ODVjMjFlNzE3",
+      "google-site-verification=JO8-pIBHBq2rsYKaFQQDYV0LLq8RbBMxJ3sJmGAvop4",
+      "h1-domain-verification=PcpK2wxKRm5TX3bUxcufNmYpDJfshghw8GwndcysTzykjNsF",
+      "google-site-verification=mlu2CMylrUqQGNZj8kf-TLOgvFtObPuYG8iDyF40-yw",
+      "amazonses:kmAm6mAq2E1NgyaEam+5i0Mnyf/O2i4kosh3YVJwJZo=",
+      "stripe-verification=c20e469bd7bbf272f6048b664b7f9cc406b912f67ad8fa91647eff8350b65f21"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc_agg@vali.email,mailto:postmaster@wix.com"
@@ -317,11 +324,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=igUuyfBRZoBZQ0BFNepTw5JslX4b4ilhiFYSgT6muOE",
-    "tiktok-developers-site-verification=gzeUQu5YG50bjEvjyo0ZfbVZ5j0V999U",
-    "canva-site-verification=qnvjScw_870K8yKfi-_rTg",
-    "google-site-verification=bgK_1_cVW1tLXaQirTZFxyCNGwebJrSrtxEnhi8nj34",
-    "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A"
+    "google-site-verification=MvlfsFt9kmoBIEA-kfNZGc1DoBWCpDeO2I0BFi2r0Ls",
+    "atlassian-domain-verification=csQ4SmhA03xwafLVCnb97huNyHYH1UukzPuDqZGNUAxVncR0Fa",
+    "stripe-verification=c332fc1713103584e6975aff689df49f78df9ea5980c7d124640f1256185",
+    "stripe-verification=0d2a575bc62dd29de9df29436fb90d8ed6f29050dfae2d211c1ad9aeafbd",
+    "stripe-verification=96483778492eb4f2255ee7fcb447f01413aa413328443b4ef81edadbcbe5"
   ],
   "tls2": {
     "alpn": "",
@@ -332,7 +339,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260808113436",
+      "not_after": "20261106113435"
     }
   },
   "http2": {
@@ -354,8 +363,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "/website-template/view/flash/"
     ]
   },
-  "elapsed_s": 20.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "unalocated.163.wixsite.com."
+    ]
+  },
+  "elapsed_s": 20.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

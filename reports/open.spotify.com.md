@@ -7,12 +7,12 @@
 | Target | https://open.spotify.com/ |
 | Bug bounty program | Spotify |
 | Listed scope domain | open.spotify.com |
-| Test date | 2026-09-26 17:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
+Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
 | 10 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 11 | info | CK5 | Cookie scoped to parent domain (.spotify.com) | CWE-200 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 13 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 
 ## Detailed findings
 
@@ -108,6 +109,12 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
 - **Detail:** robots.txt lists 16 disallow path(s), e.g. /local/, /download/, /embed/, /, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 13. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of open.spotify.com permits unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -115,16 +122,16 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
   "domain": "open.spotify.com",
   "dns": {
     "a": [
-      "151.101.131.42",
-      "151.101.67.42",
       "151.101.3.42",
-      "151.101.195.42"
+      "151.101.131.42",
+      "151.101.195.42",
+      "151.101.67.42"
     ],
     "aaaa": [
-      "2a04:4e42:200::810",
       "2a04:4e42:600::810",
-      "2a04:4e42::810",
-      "2a04:4e42:400::810"
+      "2a04:4e42:200::810",
+      "2a04:4e42:400::810",
+      "2a04:4e42::810"
     ],
     "cname": "atc.spotify.map.fastly.net.",
     "mx": [],
@@ -155,7 +162,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
     }
   },
   "ports": {
-    "ip": "151.101.131.42",
+    "ip": "151.101.3.42",
     "open": []
   },
   "https": {
@@ -237,7 +244,9 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260907190200",
+      "not_after": "20261007190159"
     }
   },
   "http2": {
@@ -259,8 +268,11 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
       "User-agent:"
     ]
   },
-  "elapsed_s": 20.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 21.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

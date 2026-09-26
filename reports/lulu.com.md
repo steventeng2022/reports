@@ -7,8 +7,8 @@
 | Target | https://lulu.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | lulu.com |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -139,7 +139,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=a9f7w4y37ydo5g3q0tfydbey3kwxad; google-site-verification=7gKvqFReVQWD23yqgp-v_JhguipmpuV3ydrq4IqrITk; shopify-verification-code=gtRB1vnyqEWyYRXJkfVL3C7tJ95z7P
+- **Detail:** Apex TXT records with verification/token content: ps-cd-verification=cf75bffd-ed77-4ea5-b755-b5d9819a2bda; google-site-verification=mB4_VANG6lpvHxH_eGxy7CMdcxTqb6vvGMDcCJpz6Lg; facebook-domain-verification=a9f7w4y37ydo5g3q0tfydbey3kwxad
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -171,27 +171,27 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "cname": null,
     "mx": [
       "alt3.aspmx.l.google.com (pref 10)",
-      "aspmx.l.google.com (pref 1)",
       "alt1.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)"
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
       "cecelia.ns.cloudflare.com.",
       "lakas.ns.cloudflare.com."
     ],
     "spf": [
+      "ps-cd-verification=cf75bffd-ed77-4ea5-b755-b5d9819a2bda",
+      "google-site-verification=mB4_VANG6lpvHxH_eGxy7CMdcxTqb6vvGMDcCJpz6Lg",
       "ng0uiaa2qvneubvqb1k6tcplhe",
       "facebook-domain-verification=a9f7w4y37ydo5g3q0tfydbey3kwxad",
-      "n8lDT14T2vPMUel",
       "google-site-verification=7gKvqFReVQWD23yqgp-v_JhguipmpuV3ydrq4IqrITk",
-      "shopify-verification-code=gtRB1vnyqEWyYRXJkfVL3C7tJ95z7P",
-      "v=spf1 mx a ip4:160.72.45.1/24 include:shops.shopify.com include:_spf.google.com -all",
-      "apple-domain-verification=oUbI5R9QvaHMO12X",
-      "ps-cd-verification=cf75bffd-ed77-4ea5-b755-b5d9819a2bda",
-      "google-site-verification=zRy9qbrLuWw9wkEOkhmXqRBAGd-khcIS0h_3_MftBSA",
+      "n8lDT14T2vPMUel",
       "klaviyo-site-verification=RdmY9z",
-      "google-site-verification=mB4_VANG6lpvHxH_eGxy7CMdcxTqb6vvGMDcCJpz6Lg"
+      "shopify-verification-code=gtRB1vnyqEWyYRXJkfVL3C7tJ95z7P",
+      "apple-domain-verification=oUbI5R9QvaHMO12X",
+      "google-site-verification=zRy9qbrLuWw9wkEOkhmXqRBAGd-khcIS0h_3_MftBSA",
+      "v=spf1 mx a ip4:160.72.45.1/24 include:shops.shopify.com include:_spf.google.com -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:re+c3555c356bba@inbound.dmarcdigests.com"
@@ -218,7 +218,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "*.production.lulu.com",
       "*.testing.lulu.com"
     ],
-    "days_left": 59,
+    "days_left": 58,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -285,11 +285,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "ps-cd-verification=cf75bffd-ed77-4ea5-b755-b5d9819a2bda",
+    "google-site-verification=mB4_VANG6lpvHxH_eGxy7CMdcxTqb6vvGMDcCJpz6Lg",
     "facebook-domain-verification=a9f7w4y37ydo5g3q0tfydbey3kwxad",
     "google-site-verification=7gKvqFReVQWD23yqgp-v_JhguipmpuV3ydrq4IqrITk",
-    "shopify-verification-code=gtRB1vnyqEWyYRXJkfVL3C7tJ95z7P",
-    "apple-domain-verification=oUbI5R9QvaHMO12X",
-    "ps-cd-verification=cf75bffd-ed77-4ea5-b755-b5d9819a2bda"
+    "klaviyo-site-verification=RdmY9z"
   ],
   "tls2": {
     "alpn": "",
@@ -300,7 +300,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260826174840",
+      "not_after": "20261124184816"
     }
   },
   "http2": {
@@ -322,8 +324,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "/account/"
     ]
   },
-  "elapsed_s": 6.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 7.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

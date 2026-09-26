@@ -7,12 +7,12 @@
 | Target | https://creativemarket.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | creativemarket.com |
-| Test date | 2026-09-26 17:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
+Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
 | 10 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 11 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 13 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 
 ## Detailed findings
 
@@ -90,13 +91,13 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
 ### 10. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (o0qnkm911nx7kn.creativemarket.com and xa4ie2otb8f4tg.creativemarket.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (sprn9o4va9pi2o.creativemarket.com and qnof9p1bl0f2dq.creativemarket.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=o06UtMir6spz9U81R1jgVspJe-h2SQL3l25JWXHO-No; google-site-verification=_1Bh-ba5uJAVphxjDQOE5JrTSGn7qPy-scJOuB8Fn2c; google-site-verification=9dM4OOkYQ1jgIlhAh9QwY1smcki10zvmPcAilwsn984
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=xLmsaIL8UceIPgixV8uVXfNRP_O0D15_IRAU-jihhSE; google-site-verification=qKCBZfUAtlffU_5exbyfUIPFvaQNgalXKVKHdZ_yq0I; google-site-verification=Jga1T34soq0dMRGYnFvV8h1KgT-L2ZBqc6jpmBUqtV8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -104,6 +105,12 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
 - **CWE:** CWE-603
 - **Detail:** Certificate of creativemarket.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 13. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of creativemarket.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
 ## Evidence (raw response observations)
 
@@ -116,36 +123,36 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
       "104.18.26.236"
     ],
     "aaaa": [
-      "2606:4700::6812:1bec",
-      "2606:4700::6812:1aec"
+      "2606:4700::6812:1aec",
+      "2606:4700::6812:1bec"
     ],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)",
-      "alt4.aspmx.l.google.com (pref 10)"
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
       "simone.ns.cloudflare.com.",
       "ram.ns.cloudflare.com."
     ],
     "spf": [
+      "google-site-verification=xLmsaIL8UceIPgixV8uVXfNRP_O0D15_IRAU-jihhSE",
+      "v=spf1 include:_spf.google.com include:sendgrid.net include:mail.zendesk.com include:_spf.mailgun.org  ~all",
+      "google-site-verification=qKCBZfUAtlffU_5exbyfUIPFvaQNgalXKVKHdZ_yq0I",
+      "google-site-verification=Jga1T34soq0dMRGYnFvV8h1KgT-L2ZBqc6jpmBUqtV8",
+      "MS=ms49014779",
+      "google-site-verification=pER8ejDjXLNeEa94-RN4EKj96DuOS0uCCyUabuslNTA",
       "google-site-verification=o06UtMir6spz9U81R1jgVspJe-h2SQL3l25JWXHO-No",
       "google-site-verification=_1Bh-ba5uJAVphxjDQOE5JrTSGn7qPy-scJOuB8Fn2c",
-      "google-site-verification=9dM4OOkYQ1jgIlhAh9QwY1smcki10zvmPcAilwsn984",
-      "v=spf1 include:_spf.google.com include:sendgrid.net include:mail.zendesk.com include:_spf.mailgun.org  ~all",
-      "google-site-verification=KnP0Q8kZF8AklumyR98JDQhcGVuSPPhYz71Eu5BxtyQ",
-      "MS=ms49014779",
-      "google-site-verification=qKCBZfUAtlffU_5exbyfUIPFvaQNgalXKVKHdZ_yq0I",
-      "google-site-verification=RLtqARphmXRxEa0MJdvehSqA1EXfFlBGE_Ncr09ATgo",
       "bugcrowd-verification=ace6499849f3a071d3cd5f48ae25fb76",
-      "rbn304r0t27nflr0664jwrk74hwrpklw",
-      "google-site-verification=xLmsaIL8UceIPgixV8uVXfNRP_O0D15_IRAU-jihhSE",
+      "google-site-verification=KnP0Q8kZF8AklumyR98JDQhcGVuSPPhYz71Eu5BxtyQ",
+      "google-site-verification=RLtqARphmXRxEa0MJdvehSqA1EXfFlBGE_Ncr09ATgo",
       "google-site-verification=iHAGg1uBsC_VIeBWwe0cums1YMQFij3M1qnjGTQ0csY",
-      "google-site-verification=pER8ejDjXLNeEa94-RN4EKj96DuOS0uCCyUabuslNTA",
-      "google-site-verification=Jga1T34soq0dMRGYnFvV8h1KgT-L2ZBqc6jpmBUqtV8"
+      "rbn304r0t27nflr0664jwrk74hwrpklw",
+      "google-site-verification=9dM4OOkYQ1jgIlhAh9QwY1smcki10zvmPcAilwsn984"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:4aa2925f86404c12b8ba2f332f32fa59@dmarc-reports.cloudflare.net,mailto:re+fyn3azxnxei@dmarc.postmarkapp.com; ruf=mailto:dmarc-ruf@creativemarket.com; sp=quarantine; aspf=r;"
@@ -238,11 +245,11 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=o06UtMir6spz9U81R1jgVspJe-h2SQL3l25JWXHO-No",
-    "google-site-verification=_1Bh-ba5uJAVphxjDQOE5JrTSGn7qPy-scJOuB8Fn2c",
-    "google-site-verification=9dM4OOkYQ1jgIlhAh9QwY1smcki10zvmPcAilwsn984",
-    "google-site-verification=KnP0Q8kZF8AklumyR98JDQhcGVuSPPhYz71Eu5BxtyQ",
-    "google-site-verification=qKCBZfUAtlffU_5exbyfUIPFvaQNgalXKVKHdZ_yq0I"
+    "google-site-verification=xLmsaIL8UceIPgixV8uVXfNRP_O0D15_IRAU-jihhSE",
+    "google-site-verification=qKCBZfUAtlffU_5exbyfUIPFvaQNgalXKVKHdZ_yq0I",
+    "google-site-verification=Jga1T34soq0dMRGYnFvV8h1KgT-L2ZBqc6jpmBUqtV8",
+    "google-site-verification=pER8ejDjXLNeEa94-RN4EKj96DuOS0uCCyUabuslNTA",
+    "google-site-verification=o06UtMir6spz9U81R1jgVspJe-h2SQL3l25JWXHO-No"
   ],
   "tls2": {
     "alpn": "",
@@ -253,14 +260,19 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260820044148",
+      "not_after": "20261118054146"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
-  "elapsed_s": 4.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 4.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

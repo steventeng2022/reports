@@ -7,8 +7,8 @@
 | Target | https://adf.ly/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | adf.ly |
-| Test date | 2026-09-26 17:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -161,7 +161,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 ### 19. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=YiQ7S-nRpkUxYJmEWKsV8crqejwAi1Q7auUt-87itFc; google-site-verification=zsnNnbn_vaQOzeYHYNF7QZJkarABEYXSWj_N6UlMyYU
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=zsnNnbn_vaQOzeYHYNF7QZJkarABEYXSWj_N6UlMyYU; google-site-verification=YiQ7S-nRpkUxYJmEWKsV8crqejwAi1Q7auUt-87itFc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 20. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -189,18 +189,18 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "route2.mx.cloudflare.net (pref 92)",
       "route3.mx.cloudflare.net (pref 28)",
-      "route1.mx.cloudflare.net (pref 43)"
+      "route1.mx.cloudflare.net (pref 43)",
+      "route2.mx.cloudflare.net (pref 92)"
     ],
     "ns": [
-      "jim.ns.cloudflare.com.",
-      "zara.ns.cloudflare.com."
+      "zara.ns.cloudflare.com.",
+      "jim.ns.cloudflare.com."
     ],
     "spf": [
-      "google-site-verification=YiQ7S-nRpkUxYJmEWKsV8crqejwAi1Q7auUt-87itFc",
+      "google-site-verification=zsnNnbn_vaQOzeYHYNF7QZJkarABEYXSWj_N6UlMyYU",
       "v=spf1 include:_spf.mx.cloudflare.net ~all",
-      "google-site-verification=zsnNnbn_vaQOzeYHYNF7QZJkarABEYXSWj_N6UlMyYU"
+      "google-site-verification=YiQ7S-nRpkUxYJmEWKsV8crqejwAi1Q7auUt-87itFc"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:support@adf.ly"
@@ -295,8 +295,8 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     ]
   },
   "apex_txt": [
-    "google-site-verification=YiQ7S-nRpkUxYJmEWKsV8crqejwAi1Q7auUt-87itFc",
-    "google-site-verification=zsnNnbn_vaQOzeYHYNF7QZJkarABEYXSWj_N6UlMyYU"
+    "google-site-verification=zsnNnbn_vaQOzeYHYNF7QZJkarABEYXSWj_N6UlMyYU",
+    "google-site-verification=YiQ7S-nRpkUxYJmEWKsV8crqejwAi1Q7auUt-87itFc"
   ],
   "tls2": {
     "alpn": "",
@@ -307,11 +307,16 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260905113433",
+      "not_after": "20261204122937"
     }
   },
-  "elapsed_s": 5.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 6.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

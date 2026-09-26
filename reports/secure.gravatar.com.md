@@ -7,12 +7,12 @@
 | Target | https://secure.gravatar.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | secure.gravatar.com |
-| Test date | 2026-09-26 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
+Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,8 @@ Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
 | 9 | info | P8 | Missing security.txt | CWE-1038 |
 | 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 11 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 12 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 13 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -101,6 +103,18 @@ Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 22 disallow path(s), e.g. /*.json, /*.xml, /*.php, /*.vcf, /*.qr
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 12. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of secure.gravatar.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
+### 13. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://secure.gravatar.com/ carries Cache-Control: no-cache, must-revalidate, max-age=0; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
 ## Evidence (raw response observations)
 
@@ -205,7 +219,9 @@ Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260808194401",
+      "not_after": "20261106194400"
     }
   },
   "http2": {
@@ -228,8 +244,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
       "/"
     ]
   },
-  "elapsed_s": 24.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 27.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

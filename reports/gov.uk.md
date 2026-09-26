@@ -7,8 +7,8 @@
 | Target | https://gov.uk/ |
 | Bug bounty program | NCSC UK |
 | Listed scope domain | gov.uk |
-| Test date | 2026-09-26 17:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -125,39 +125,39 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
   "domain": "gov.uk",
   "dns": {
     "a": [
-      "151.101.192.144",
       "151.101.128.144",
-      "151.101.0.144",
-      "151.101.64.144"
+      "151.101.192.144",
+      "151.101.64.144",
+      "151.101.0.144"
     ],
     "aaaa": [
+      "2a04:4e42:c00::144",
+      "2a04:4e42::144",
       "2a04:4e42:e00::144",
       "2a04:4e42:a00::144",
-      "2a04:4e42:c00::144",
       "2a04:4e42:600::144",
+      "2a04:4e42:200::144",
       "2a04:4e42:400::144",
-      "2a04:4e42:800::144",
-      "2a04:4e42::144",
-      "2a04:4e42:200::144"
+      "2a04:4e42:800::144"
     ],
     "cname": null,
     "mx": [],
     "ns": [
-      "dns3.nic.uk.",
+      "dns2.nic.uk.",
+      "dns4.nic.uk.",
       "nsd.nic.uk.",
+      "nsa.nic.uk.",
+      "nsc.nic.uk.",
       "dns1.nic.uk.",
       "nsb.nic.uk.",
-      "dns4.nic.uk.",
-      "nsc.nic.uk.",
-      "dns2.nic.uk.",
-      "nsa.nic.uk."
+      "dns3.nic.uk."
     ],
     "spf": [
-      "_globalsign-domain-verification=a5p69EoJN9T_qv6CU2Y_FkAocR4FJpRN84165hHR25",
-      "#Timestamp: 1790444100",
-      "security_contact=https://vulnerability-reporting.service.security.gov.uk",
+      "v=spf1 -all",
       "d1v9gv6rnax070.cloudfront.net",
-      "v=spf1 -all"
+      "#Timestamp: 1790448300",
+      "_globalsign-domain-verification=a5p69EoJN9T_qv6CU2Y_FkAocR4FJpRN84165hHR25",
+      "security_contact=https://vulnerability-reporting.service.security.gov.uk"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;sp=none;np=reject;adkim=s;aspf=s;fo=1;rua=mailto:dmarc-rua@dmarc.service.gov.uk"
@@ -198,7 +198,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
     }
   },
   "ports": {
-    "ip": "151.101.192.144",
+    "ip": "151.101.128.144",
     "open": []
   },
   "https": {
@@ -262,7 +262,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251126220615",
+      "not_after": "20261228220614"
     }
   },
   "http2": {
@@ -275,8 +277,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "/"
     ]
   },
-  "elapsed_s": 13.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 14.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

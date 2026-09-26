@@ -7,12 +7,12 @@
 | Target | https://breitbart.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | breitbart.com |
-| Test date | 2026-09-26 17:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -147,6 +149,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** robots.txt lists 8 disallow path(s), e.g. /cgi-bin, /wp-admin, /wp-includes, /wp-content, /xmlrpc.php
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 18. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://breitbart.com/ carries Cache-Control: public, max-age=3600, proxy-revalidate; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 34.117.28.18 carries PTR 18.28.117.34.bc.googleusercontent.com. for breitbart.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -162,8 +176,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "breitbart-com.mail.protection.outlook.com (pref 2)"
     ],
     "ns": [
-      "sofia.ns.cloudflare.com.",
-      "alan.ns.cloudflare.com."
+      "alan.ns.cloudflare.com.",
+      "sofia.ns.cloudflare.com."
     ],
     "spf": [
       "v=spf1 +mx include:emailsrvr.com include:spf.mtasv.net include:email.prnewswire.com include:spf.protection.outlook.com ip4:66.70.185.172 -all",
@@ -264,7 +278,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260428000000",
+      "not_after": "20261112235959"
     }
   },
   "http2": {
@@ -279,8 +295,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/_wp_link_placeholder"
     ]
   },
-  "elapsed_s": 8.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "18.28.117.34.bc.googleusercontent.com."
+    ]
+  },
+  "elapsed_s": 9.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

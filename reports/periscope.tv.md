@@ -7,12 +7,12 @@
 | Target | https://periscope.tv/ |
 | Bug bounty program | Twitter |
 | Listed scope domain | periscope.tv |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
+Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 | 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 11 | low | RED10 | Host header reflected into redirect Location | CWE-601 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -107,6 +108,12 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 - **Detail:** robots.txt lists 4 disallow path(s), e.g. /android-attribution, /ios-attribution, /privacy.html, /eula.html
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 3.113.35.109 carries PTR ec2-3-113-35-109.ap-northeast-1.compute.amazonaws.com. for periscope.tv.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -114,30 +121,30 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
   "domain": "periscope.tv",
   "dns": {
     "a": [
-      "13.196.122.3",
-      "3.113.35.109"
+      "3.113.35.109",
+      "13.196.122.3"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "aspmx3.googlemail.com (pref 10)",
-      "aspmx.l.google.com (pref 1)",
       "aspmx2.googlemail.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
       "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-506.awsdns-63.com.",
-      "ns-599.awsdns-10.net.",
+      "ns-1733.awsdns-24.co.uk.",
       "ns-1323.awsdns-37.org.",
-      "ns-1733.awsdns-24.co.uk."
+      "ns-506.awsdns-63.com.",
+      "ns-599.awsdns-10.net."
     ],
     "spf": [
-      "v=spf1 a mx include:spf.mtasv.net ~all",
       "globalsign-domain-verification=Q0uJZ5kDAwKey4N1aE8T3tvQqG7x8qbGJezt5INRzO",
       "globalsign-domain-verification=TQFwNXX-22Rp3iu0w0iSSZOGHlgyojpElPrhqwzgaH",
-      "gg38l5npbb4kqfrvp12tzgb8f95cv2p9",
-      "google-site-verification=6kBkaW7FmkNGKpx5HESNfvXncfwY-h7vzBhEJpXRovg"
+      "v=spf1 a mx include:spf.mtasv.net ~all",
+      "google-site-verification=6kBkaW7FmkNGKpx5HESNfvXncfwY-h7vzBhEJpXRovg",
+      "gg38l5npbb4kqfrvp12tzgb8f95cv2p9"
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -165,7 +172,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
     }
   },
   "ports": {
-    "ip": "13.196.122.3",
+    "ip": "3.113.35.109",
     "open": []
   },
   "https": {
@@ -228,7 +235,9 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260112000000",
+      "not_after": "20270210235959"
     }
   },
   "http2": {
@@ -240,8 +249,14 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "/eula.html"
     ]
   },
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "ec2-3-113-35-109.ap-northeast-1.compute.amazonaws.com."
+    ]
+  },
   "elapsed_s": 18.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

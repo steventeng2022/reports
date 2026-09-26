@@ -7,12 +7,12 @@
 | Target | https://messenger.com/ |
 | Bug bounty program | Facebook |
 | Listed scope domain | messenger.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 8, Info: 8)
+Total findings: **17** (High: 0, Medium: 0, Low: 8, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 8, Info: 8)
 | 14 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -124,7 +125,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 8, Info: 8)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (rjkjqxksli05o9.messenger.com and xjzffsd7ueepkj.messenger.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (pzw9ojs5fk4l8y.messenger.com and 2voqsu4ez6i3s8.messenger.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
@@ -138,6 +139,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 8, Info: 8)
 - **CWE:** CWE-603
 - **Detail:** Certificate of messenger.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 57.144.92.141 carries PTR edge-star-shv-01-tpe5.facebook.com. for messenger.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -153,24 +160,24 @@ Total findings: **16** (High: 0, Medium: 0, Low: 8, Info: 8)
     ],
     "cname": null,
     "mx": [
-      "mxa-00082601.gslb.pphosted.com (pref 10)",
+      "mx0a-00082601.pphosted.com (pref 20)",
       "mxb-00082601.gslb.pphosted.com (pref 10)",
-      "mx0b-00082601.pphosted.com (pref 20)",
-      "mx0a-00082601.pphosted.com (pref 20)"
+      "mxa-00082601.gslb.pphosted.com (pref 10)",
+      "mx0b-00082601.pphosted.com (pref 20)"
     ],
     "ns": [
-      "b.ns.facebook.com.",
+      "c.ns.facebook.com.",
       "d.ns.facebook.com.",
-      "a.ns.facebook.com.",
-      "c.ns.facebook.com."
+      "b.ns.facebook.com.",
+      "a.ns.facebook.com."
     ],
     "spf": [
+      "6fd64222-f6ef-4766-87e8-34729703809a",
       "google-site-verification=z9mNNADBbsCO2UKMxiu5UFnUz5SvavUmC2Jx-4Lw9RI",
       "fLEQ2Q8vdk4sDU0r7FqRc8XJoe7FYEj3ihT0KxCABfwuAbMel2204jpnNBjV+c1rfY71OeFf/cTMCKZpzJBPPw==",
       "v=spf1 redirect=_spf.fb.com",
-      "6fd64222-f6ef-4766-87e8-34729703809a",
-      "MS=ms57472615",
-      "google-site-verification=f68cxjENokmrbNLEilsjxlPqbiM3lTmXKGLJFg0OHr4"
+      "google-site-verification=f68cxjENokmrbNLEilsjxlPqbiM3lTmXKGLJFg0OHr4",
+      "MS=ms57472615"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:a@dmarc.facebookmail.com; pct=100"
@@ -272,14 +279,22 @@ Total findings: **16** (High: 0, Medium: 0, Low: 8, Info: 8)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260706000000",
+      "not_after": "20261004235959"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
-  "elapsed_s": 7.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "edge-star-shv-01-tpe5.facebook.com."
+    ]
+  },
+  "elapsed_s": 7.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

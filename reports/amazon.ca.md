@@ -7,12 +7,12 @@
 | Target | https://amazon.ca/ |
 | Bug bounty program | Amazon |
 | Listed scope domain | amazon.ca |
-| Test date | 2026-09-26 17:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
+Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,8 +32,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | CT1 | 109 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 18 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | CT1 | 109 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 19 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -127,7 +128,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: uber-domain-verification=7a35217f-6956-41a0-be5c-a28ea2646964; google-site-verification=LivBRhp5Uf9LRKW4XC5YEaexYZPWZw0GVN7qWtMT-1o; uber-domain-verification=01e9f567-7b84-45dd-9326-53992a028b40
+- **Detail:** Apex TXT records with verification/token content: uber-domain-verification=72ffdffb-d431-452c-932e-cd1030d1eb46; atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbD; uber-domain-verification=0ddb4c64-175c-4e7a-8a7a-f552034222e8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -142,13 +143,19 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 - **Detail:** robots.txt lists 163 disallow path(s), e.g. /exec/obidos/account-access-login, /exec/obidos/change-style, /exec/obidos/flex-sign-in, /exec/obidos/handle-buy-box, /exec/obidos/tg/cm/member/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 17. [INFO] 109 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 98.87.170.205 carries PTR ec2-98-87-170-205.compute-1.amazonaws.com. for amazon.ca.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 18. [INFO] 109 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.app.social.amazon.ca, api.social.amazon.ca, app.social.amazon.ca, help.amazon.ca, internal.campfire.amazon.ca, shop.social.amazon.ca, sophap.beta.gql.music.amazon.ca, support.amazon.ca
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 18. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 19. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: api.app.social.amazon.ca; content may still be served via virtual-host fallback.
@@ -161,9 +168,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   "domain": "amazon.ca",
   "dns": {
     "a": [
-      "98.82.155.12",
+      "98.87.170.205",
       "98.87.171.159",
-      "98.87.170.205"
+      "98.82.155.12"
     ],
     "aaaa": [],
     "cname": null,
@@ -172,32 +179,32 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     ],
     "ns": [
       "ns-520.awsdns-01.net.",
-      "ns-1561.awsdns-03.co.uk.",
       "ns-52.awsdns-06.com.",
+      "ns-1561.awsdns-03.co.uk.",
       "ns-1036.awsdns-01.org."
     ],
     "spf": [
+      "sending_domain608861=78ca61d8b9a7c1a753b6770dffea9e6eb4ce681513fec5c35638f1c81bd375cf",
+      "sending_domain608861=fd6e4e5c8ac1742d0173098538a216ea73818f1f4f8c4094ba26303da6007ee6",
+      "v=spf1 include:amazon.com -all",
+      "uber-domain-verification=72ffdffb-d431-452c-932e-cd1030d1eb46",
+      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
+      "sending_domain1003771=d8fbb81d5f6de3bfb9d5cf396770c228dd3ada847b97e2bc12700deea6d90c87",
+      "uber-domain-verification=0ddb4c64-175c-4e7a-8a7a-f552034222e8",
+      "google-site-verification=L1r_iURvVl8iMPeesmTnJMjir81-5xK_8r-SOS9vL3w",
+      "docker-verification=749d27fa-18f7-4933-bef5-ed333f53556b",
+      "uber-domain-verification=5f5cc242-4dbe-4871-b726-bbbe085ff053",
       "uber-domain-verification=7a35217f-6956-41a0-be5c-a28ea2646964",
+      "sending_domain229492=82f7d92f23b48fbe1e1a03ef83cb5a33aab6ffcbfc94faa5dccb681d9e488903",
+      "box-domain-verification=ffea95cd0e0d61c302198367155b07e74fd534fa1d867662dc9bf9969b6f535d",
+      "canva-site-verification=o1N9Yacy_Q9Kl0710BHpzw",
+      "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
+      "sending_domain229492=8fc1e4db25ccac36897136580c51327bbe8a5256582e84a7bb2f64c4453383e0",
+      "sending_domain1003771=0212f52e68db5e2cffad95c587e13549995e8dcf28629ac3c8d1b3ea0dbd2fee",
+      "facebook-domain-verification=ps3oomhw99zvbl2f2j55zgjmwgksys",
       "google-site-verification=LivBRhp5Uf9LRKW4XC5YEaexYZPWZw0GVN7qWtMT-1o",
       "uber-domain-verification=01e9f567-7b84-45dd-9326-53992a028b40",
-      "sending_domain1003771=d8fbb81d5f6de3bfb9d5cf396770c228dd3ada847b97e2bc12700deea6d90c87",
-      "uber-domain-verification=5f5cc242-4dbe-4871-b726-bbbe085ff053",
-      "canva-site-verification=o1N9Yacy_Q9Kl0710BHpzw",
-      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
-      "sending_domain1003771=0212f52e68db5e2cffad95c587e13549995e8dcf28629ac3c8d1b3ea0dbd2fee",
-      "v=spf1 include:amazon.com -all",
-      "uber-domain-verification=0ddb4c64-175c-4e7a-8a7a-f552034222e8",
-      "spf2.0/pra include:amazon.com -all",
-      "box-domain-verification=ffea95cd0e0d61c302198367155b07e74fd534fa1d867662dc9bf9969b6f535d",
-      "sending_domain608861=fd6e4e5c8ac1742d0173098538a216ea73818f1f4f8c4094ba26303da6007ee6",
-      "sending_domain608861=78ca61d8b9a7c1a753b6770dffea9e6eb4ce681513fec5c35638f1c81bd375cf",
-      "docker-verification=749d27fa-18f7-4933-bef5-ed333f53556b",
-      "sending_domain229492=8fc1e4db25ccac36897136580c51327bbe8a5256582e84a7bb2f64c4453383e0",
-      "uber-domain-verification=72ffdffb-d431-452c-932e-cd1030d1eb46",
-      "sending_domain229492=82f7d92f23b48fbe1e1a03ef83cb5a33aab6ffcbfc94faa5dccb681d9e488903",
-      "facebook-domain-verification=ps3oomhw99zvbl2f2j55zgjmwgksys",
-      "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
-      "google-site-verification=L1r_iURvVl8iMPeesmTnJMjir81-5xK_8r-SOS9vL3w"
+      "spf2.0/pra include:amazon.com -all"
     ],
     "dmarc": [
       "v=DMARC1;",
@@ -239,7 +246,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     }
   },
   "ports": {
-    "ip": "98.82.155.12",
+    "ip": "98.87.170.205",
     "open": []
   },
   "https": {
@@ -328,11 +335,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     ]
   },
   "apex_txt": [
-    "uber-domain-verification=7a35217f-6956-41a0-be5c-a28ea2646964",
-    "google-site-verification=LivBRhp5Uf9LRKW4XC5YEaexYZPWZw0GVN7qWtMT-1o",
-    "uber-domain-verification=01e9f567-7b84-45dd-9326-53992a028b40",
-    "uber-domain-verification=5f5cc242-4dbe-4871-b726-bbbe085ff053",
-    "canva-site-verification=o1N9Yacy_Q9Kl0710BHpzw"
+    "uber-domain-verification=72ffdffb-d431-452c-932e-cd1030d1eb46",
+    "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbD",
+    "uber-domain-verification=0ddb4c64-175c-4e7a-8a7a-f552034222e8",
+    "google-site-verification=L1r_iURvVl8iMPeesmTnJMjir81-5xK_8r-SOS9vL3w",
+    "docker-verification=749d27fa-18f7-4933-bef5-ed333f53556b"
   ],
   "tls2": {
     "alpn": "",
@@ -343,7 +350,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260627000000",
+      "not_after": "20270110235959"
     }
   },
   "http2": {
@@ -365,8 +374,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "/gp/slides/make-money"
     ]
   },
-  "elapsed_s": 23.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ec2-98-87-170-205.compute-1.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 25.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

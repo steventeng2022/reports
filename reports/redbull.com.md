@@ -7,12 +7,12 @@
 | Target | https://redbull.com/ |
 | Bug bounty program | Redbull |
 | Listed scope domain | redbull.com |
-| Test date | 2026-09-26 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -124,7 +125,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: neat-pulse-domain-verification-W8XZ4xN=35c9459f-5f1d-48dc-a8dc-fcd480a2e5f1; atlassian-domain-verification=SE0bg/sLbNj/sxFjb5WzNowyB2EHWNhe/j4JbSYgLllAii8XsA; notion-domain-verification=hN2mHaKh119t9oIeUxOZ3tMcWasvrx4wAOUBR7gEgfY
+- **Detail:** Apex TXT records with verification/token content: jamf-site-verification=_T1tJfEpBa5y1V4i5ongPw; apple-domain-verification=odkhNiY1AwjKsHAl; yandex-verification: a51dcd774998eab8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -133,6 +134,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - **Detail:** Certificate of redbull.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.216.153.159 carries PTR a23-216-153-159.deploy.static.akamaitechnologies.com. for redbull.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -140,8 +147,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
   "domain": "redbull.com",
   "dns": {
     "a": [
-      "23.216.153.150",
-      "23.216.153.159"
+      "23.216.153.159",
+      "23.216.153.150"
     ],
     "aaaa": [
       "2600:1417:8400:31::17ce:cb46",
@@ -154,59 +161,59 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     "ns": [
       "ns15.ultradns2.com.",
       "pdns91.ultradns.org.",
+      "pdns91.ultradns.biz.",
       "ns15.ultradns2.org.",
-      "pdns91.ultradns.com.",
       "pdns91.ultradns.net.",
-      "pdns91.ultradns.biz."
+      "pdns91.ultradns.com."
     ],
     "spf": [
-      "docusign=b3640d57-0668-4c84-a5cb-4e199fd00d38",
-      "neat-pulse-domain-verification-W8XZ4xN=35c9459f-5f1d-48dc-a8dc-fcd480a2e5f1",
-      "Ws0bd7f6/5qF5IIq/WdhyrANdPcnsIiWWLi0IaWO5cKb/CFj6cBCGx2siy/4UFRc0e2FMOB0+FUmWeos/leuYg==",
-      "amazonses:pkdkj6bcdiVxa2xtsoMA70kc1PyYjNtUzGcLZGHWXQk=",
-      "atlassian-domain-verification=SE0bg/sLbNj/sxFjb5WzNowyB2EHWNhe/j4JbSYgLllAii8XsA6kVaTiLiQS7Kr7",
-      "f7fbf1eb4bb2bd20afa0e38447eff8dc3d66a2c953e59e527a",
-      "notion-domain-verification=hN2mHaKh119t9oIeUxOZ3tMcWasvrx4wAOUBR7gEgfY",
-      "adobe-idp-site-verification=f7adf3e3b2e02fdafc5d0da23da483f36bbf68c3d554a3bb94db66190116545f",
-      "v=spf1 include:spf.protection.outlook.com include:_spf.redbull.com include:spf.virtrugateway.com -all",
-      "firebase=redbull-photobooth-fansite",
+      "jamf-site-verification=_T1tJfEpBa5y1V4i5ongPw",
+      "apple-domain-verification=odkhNiY1AwjKsHAl",
+      "yandex-verification: a51dcd774998eab8",
+      "virtru-site-verify=obp3KuFTAvVACEbB28a2PkjY9bvEQhygmi7gd3d6",
+      "figma-domain-verification=7a82465e7631432ddae7da5c5874d4fd7bdefc2c5eabd1baca75d219dc388f58-1725268196",
+      "globalsign-domain-verification=hL1YyaIXzf8_UoxDhIMWaHVWUANe7eU7dWvXus7lwI",
       "_uy14g9zokx3stw6c10e7kacxl2krs0h",
-      "cm.com-domain-verification=648a8834-79b1-4072-9fcc-01a85c8f8c22",
-      "workplace-domain-verification=G6JbgsDS3rGKm9xjdExKVXP3uazq8P",
-      "spycloud-domain-verification=7b0d7b29-0783-43a8-ae02-2618020eb9d0",
+      "atlassian-domain-verification=6JjO48MB9UypL10pMDk0vdlEGRGtdMztJavx3KTtMJerMz/adr2Ks0qr+55+LpoQ",
       "vector-saml-92020417",
+      "spycloud-domain-verification=7b0d7b29-0783-43a8-ae02-2618020eb9d0",
+      "google-site-verification=dyaNOA-sacV_MOg8KnODyK8ihwNa368Vz0Hq2_5MpcY",
+      "anthropic-domain-verification-5wg0q8=Drbo9cZiHvN1d2LNdDTEpoRku",
+      "atlassian-domain-verification=SE0bg/sLbNj/sxFjb5WzNowyB2EHWNhe/j4JbSYgLllAii8XsA6kVaTiLiQS7Kr7",
+      "teamviewer-sso-verification=3d50f93de59b453aa294796293a115d0",
+      "neat-pulse-domain-verification-W8XZ4xN=35c9459f-5f1d-48dc-a8dc-fcd480a2e5f1",
+      "v=spf1 include:spf.protection.outlook.com include:_spf.redbull.com include:spf.virtrugateway.com -all",
+      "uber-domain-verification=345f84e7-8f29-4772-8a95-437d5755fd97",
+      "atlassian-sending-domain-verification=3531ce11-63aa-453d-a854-4ab6aad86fcf",
+      "QuoVadis=d56f7361-359a-4f04-b858-2e34d9d9b117",
+      "MS=ms97463818",
+      "ZOOM_verify_m27rLBztRkeFHLDKbAtzuA",
+      "ciscocidomainverification=484a6f952eb1e97a5d6a12260122d88095307403a3c873f524b55a8a09e0311c",
+      "google-site-verification=zdiNmEZSzIJoZazEYew3bFFSXqudF7ODAHqljjf9hjg",
+      "zapier-domain-verification-challenge=112b278f-86f3-41a1-896b-d581fb935e34",
+      "docusign=679758f7-e6bc-41ab-8dbf-417624c378a4",
+      "docusign=b3640d57-0668-4c84-a5cb-4e199fd00d38",
+      "f7fbf1eb4bb2bd20afa0e38447eff8dc3d66a2c953e59e527a",
+      "workplace-domain-verification=G6JbgsDS3rGKm9xjdExKVXP3uazq8P",
       "yandex-verification: aad18f620b64b27c",
       "facebook-domain-verification=uhk1v8zuggj2ug6q0e9f1hczlzz1jr",
-      "zapier-domain-verification-challenge=112b278f-86f3-41a1-896b-d581fb935e34",
-      "atlassian-sending-domain-verification=3531ce11-63aa-453d-a854-4ab6aad86fcf",
-      "MS=ms97463818",
       "google-site-verification=wjAcjCp-XN8rKlZWz47ImMiC6gYoaVe5So6Yl7YhHk0",
-      "ciscocidomainverification=484a6f952eb1e97a5d6a12260122d88095307403a3c873f524b55a8a09e0311c",
-      "jamf-site-verification=_T1tJfEpBa5y1V4i5ongPw",
-      "mongodb-site-verification=s4RGRapyJSjdREFYPXqvzHmYt60COynM",
       "_ryr62gyfim9w9j6y96gb4hido52o87c",
-      "virtru-site-verify=obp3KuFTAvVACEbB28a2PkjY9bvEQhygmi7gd3d6",
-      "TGTRxhxdWsMPjij6aytGGneMBuVXCl/yZnJjLxOrka4s+20mUfT10boKi26Gucz3BPhpnzjLSLk+ktKl9sGJxw==",
-      "monday-com-verification=qVsHJCKBqguw6NvEWYm9FSUma88aPXmBM__iEh_LcdU",
-      "apple-domain-verification=odkhNiY1AwjKsHAl",
-      "atlassian-domain-verification=6JjO48MB9UypL10pMDk0vdlEGRGtdMztJavx3KTtMJerMz/adr2Ks0qr+55+LpoQ",
-      "anthropic-domain-verification-5wg0q8=Drbo9cZiHvN1d2LNdDTEpoRku",
-      "google-site-verification=dyaNOA-sacV_MOg8KnODyK8ihwNa368Vz0Hq2_5MpcY",
-      "yandex-verification: a51dcd774998eab8",
-      "uber-domain-verification=345f84e7-8f29-4772-8a95-437d5755fd97",
-      "QuoVadis=d56f7361-359a-4f04-b858-2e34d9d9b117",
+      "Ws0bd7f6/5qF5IIq/WdhyrANdPcnsIiWWLi0IaWO5cKb/CFj6cBCGx2siy/4UFRc0e2FMOB0+FUmWeos/leuYg==",
       "fastly-domain-delegation-l6ByU9UvR9NX06q-20251121",
-      "google-site-verification=zdiNmEZSzIJoZazEYew3bFFSXqudF7ODAHqljjf9hjg",
-      "canva-site-verification=CpUH3-GXSXlisKiHbnI6kw",
-      "google-site-verification=cAAOttK7KB-rKBmOD7p1Imx6EcdvKD-DLIvoDclN8YA",
       "webexdomainverification.C5UR=281b4db8-b67c-4111-9ece-8958b41cd08f",
-      "ZOOM_verify_m27rLBztRkeFHLDKbAtzuA",
-      "globalsign-domain-verification=hL1YyaIXzf8_UoxDhIMWaHVWUANe7eU7dWvXus7lwI",
       "google-site-verification=FT9NwKVuURPQaWb5Fq7oVSA7l5r_OebpkZ8ySQLlOIY",
+      "notion-domain-verification=hN2mHaKh119t9oIeUxOZ3tMcWasvrx4wAOUBR7gEgfY",
+      "cm.com-domain-verification=648a8834-79b1-4072-9fcc-01a85c8f8c22",
+      "mongodb-site-verification=s4RGRapyJSjdREFYPXqvzHmYt60COynM",
+      "TGTRxhxdWsMPjij6aytGGneMBuVXCl/yZnJjLxOrka4s+20mUfT10boKi26Gucz3BPhpnzjLSLk+ktKl9sGJxw==",
+      "amazonses:pkdkj6bcdiVxa2xtsoMA70kc1PyYjNtUzGcLZGHWXQk=",
       "google-site-verification=x_6pn1VmeoS7F3VrlNiZye1yb0RXleXiW2psI9flRBY",
-      "docusign=679758f7-e6bc-41ab-8dbf-417624c378a4",
-      "figma-domain-verification=7a82465e7631432ddae7da5c5874d4fd7bdefc2c5eabd1baca75d219dc388f58-1725268196",
-      "teamviewer-sso-verification=3d50f93de59b453aa294796293a115d0"
+      "firebase=redbull-photobooth-fansite",
+      "monday-com-verification=qVsHJCKBqguw6NvEWYm9FSUma88aPXmBM__iEh_LcdU",
+      "adobe-idp-site-verification=f7adf3e3b2e02fdafc5d0da23da483f36bbf68c3d554a3bb94db66190116545f",
+      "canva-site-verification=CpUH3-GXSXlisKiHbnI6kw",
+      "google-site-verification=cAAOttK7KB-rKBmOD7p1Imx6EcdvKD-DLIvoDclN8YA"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:zsrbf6su@ag.eu.dmarcadvisor.com;"
@@ -236,7 +243,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     }
   },
   "ports": {
-    "ip": "23.216.153.150",
+    "ip": "23.216.153.159",
     "open": []
   },
   "https": {
@@ -289,11 +296,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "neat-pulse-domain-verification-W8XZ4xN=35c9459f-5f1d-48dc-a8dc-fcd480a2e5f1",
-    "atlassian-domain-verification=SE0bg/sLbNj/sxFjb5WzNowyB2EHWNhe/j4JbSYgLllAii8XsA",
-    "notion-domain-verification=hN2mHaKh119t9oIeUxOZ3tMcWasvrx4wAOUBR7gEgfY",
-    "adobe-idp-site-verification=f7adf3e3b2e02fdafc5d0da23da483f36bbf68c3d554a3bb94db",
-    "cm.com-domain-verification=648a8834-79b1-4072-9fcc-01a85c8f8c22"
+    "jamf-site-verification=_T1tJfEpBa5y1V4i5ongPw",
+    "apple-domain-verification=odkhNiY1AwjKsHAl",
+    "yandex-verification: a51dcd774998eab8",
+    "figma-domain-verification=7a82465e7631432ddae7da5c5874d4fd7bdefc2c5eabd1baca75d2",
+    "globalsign-domain-verification=hL1YyaIXzf8_UoxDhIMWaHVWUANe7eU7dWvXus7lwI"
   ],
   "tls2": {
     "alpn": "",
@@ -304,11 +311,19 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260813000000",
+      "not_after": "20270227235959"
     }
   },
-  "elapsed_s": 5.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "a23-216-153-159.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 5.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

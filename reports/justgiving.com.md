@@ -7,12 +7,12 @@
 | Target | https://justgiving.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | justgiving.com |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
+Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,7 +29,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 | 11 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 14 | info | CT1 | 38 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 16 | info | CT1 | 38 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -100,7 +102,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: adobe-sign-verification=e1e4662cb4cb8921b04ff65aacba0578; lucid-verification=fcj@cjz6eat.zgj9WMQ; figma-domain-verification=8a13494f101d6ca661f43b722f9d090d5a2a2ac65283628d50cfea
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=a4kUdVdhuRGENeMFXISY5ile-NsMNYxcyAsHknjaeSs; lucid-verification=fcj@cjz6eat.zgj9WMQ; google-site-verification=9Ie7V9M2YudzHmywa873FdLnRJKZY57zwKHzQLgj_Kw
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -115,7 +117,19 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 - **Detail:** robots.txt lists 37 disallow path(s), e.g. /, /, /user-account/, /charity/search, /fundraiser/search
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 14. [INFO] 38 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 14. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://justgiving.com/ carries Cache-Control: public, max-age=60 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 3.169.55.71 carries PTR server-3-169-55-71.tpe54.r.cloudfront.net. for justgiving.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 16. [INFO] 38 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: app.justgiving.com, blog.justgiving.com, csp-report.staging.justgiving.com, fitness.staging.justgiving.com, graphql.staging.justgiving.com, help.justgiving.com, id.staging.justgiving.com, internal.staging.justgiving.com, media.justgiving.com, pagesettings.staging.justgiving.com
@@ -128,47 +142,47 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
   "domain": "justgiving.com",
   "dns": {
     "a": [
-      "3.169.55.28",
-      "3.169.55.116",
       "3.169.55.71",
-      "3.169.55.52"
+      "3.169.55.116",
+      "3.169.55.52",
+      "3.169.55.28"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mx2.blackbaud.iphmx.com (pref 5)",
-      "mx1.blackbaud.iphmx.com (pref 1)"
+      "mx1.blackbaud.iphmx.com (pref 1)",
+      "mx2.blackbaud.iphmx.com (pref 5)"
     ],
     "ns": [
+      "ns-959.awsdns-55.net.",
       "ns-1865.awsdns-41.co.uk.",
       "ns-493.awsdns-61.com.",
-      "ns-959.awsdns-55.net.",
       "ns-1506.awsdns-60.org."
     ],
     "spf": [
+      "MS=ms82130383",
+      "google-site-verification=a4kUdVdhuRGENeMFXISY5ile-NsMNYxcyAsHknjaeSs",
+      "lucid-verification=fcj@cjz6eat.zgj9WMQ",
+      "0TPSldHHJ3AnIIANqD3HTiUcd/40SZ097zvG7L1hCQsTA5IkkNpnVNZhBPjaoZJjwCPHtr8iDe8kdsvHGi9xSA==",
+      "v=spf1 mx a include:cust-spf.exacttarget.com include:mktomail.com include:spf.protection.outlook.com include:mail.zendesk.com include:spf.mandrillapp.com -all",
+      "smartsheet-site-validation=-ukamuNj8Xn3s0SyCGx2Xe5Vt2oDQ46I",
+      "google-site-verification=9Ie7V9M2YudzHmywa873FdLnRJKZY57zwKHzQLgj_Kw",
+      "google-site-verification=2l0z9VQCacbAFBgCmfbC47bnTeHQcq4LWOHoIzYG72Q",
+      "atlassian-domain-verification=S8uXCQd2FYeOlTqNnRo41gCwYfu8sO1gASeWx63dP5j6Yh0iNdqHotTlne8l2f50",
+      "docker-verification=eb8aed88-9460-4fab-9ef2-5ce59854ecc7",
+      "miro-verification=0a2e1dbb2412c140c5fd914272eb7e9480bf1d6e",
+      "anthropic-domain-verification-bkk0a0=vsXwOsqFiYmbQeQS4m4KiVc0Y",
+      "00D200000000iaP=1TBN2000000015l",
+      "stripe-verification=3c386b3bd938d27ee26d142e2d3201f0d49dfd68edc01090aeb71a5d542819aa",
       "_ziryvqp598rhu877n5y4wj0shxxojdp",
-      "CKO=cli_nsgsiliz6ygezevfc2osdkvtju",
       "adobe-sign-verification=e1e4662cb4cb8921b04ff65aacba0578",
       "MS=ms30587875",
-      "lucid-verification=fcj@cjz6eat.zgj9WMQ",
-      "mixpanel-domain-verify=5386caff-2971-4e94-aee0-4d3b5ab42b90",
-      "MS=ms63724168",
-      "figma-domain-verification=8a13494f101d6ca661f43b722f9d090d5a2a2ac65283628d50cfea15ce7e3076-1723691631",
-      "stripe-verification=3c386b3bd938d27ee26d142e2d3201f0d49dfd68edc01090aeb71a5d542819aa",
-      "google-site-verification=a4kUdVdhuRGENeMFXISY5ile-NsMNYxcyAsHknjaeSs",
-      "google-site-verification=2l0z9VQCacbAFBgCmfbC47bnTeHQcq4LWOHoIzYG72Q",
-      "smartsheet-site-validation=-ukamuNj8Xn3s0SyCGx2Xe5Vt2oDQ46I",
-      "atlassian-domain-verification=S8uXCQd2FYeOlTqNnRo41gCwYfu8sO1gASeWx63dP5j6Yh0iNdqHotTlne8l2f50",
-      "miro-verification=0a2e1dbb2412c140c5fd914272eb7e9480bf1d6e",
-      "00D200000000iaP=1TBN2000000015l",
-      "0TPSldHHJ3AnIIANqD3HTiUcd/40SZ097zvG7L1hCQsTA5IkkNpnVNZhBPjaoZJjwCPHtr8iDe8kdsvHGi9xSA==",
-      "MS=ms82130383",
-      "anthropic-domain-verification-bkk0a0=vsXwOsqFiYmbQeQS4m4KiVc0Y",
-      "google-site-verification=9Ie7V9M2YudzHmywa873FdLnRJKZY57zwKHzQLgj_Kw",
-      "MS=ms21109735",
+      "CKO=cli_nsgsiliz6ygezevfc2osdkvtju",
       "CKO=cli_r5yskqycwsle3mrla2l4xig4pa",
-      "docker-verification=eb8aed88-9460-4fab-9ef2-5ce59854ecc7",
-      "v=spf1 mx a include:cust-spf.exacttarget.com include:mktomail.com include:spf.protection.outlook.com include:mail.zendesk.com include:spf.mandrillapp.com -all"
+      "MS=ms21109735",
+      "mixpanel-domain-verify=5386caff-2971-4e94-aee0-4d3b5ab42b90",
+      "figma-domain-verification=8a13494f101d6ca661f43b722f9d090d5a2a2ac65283628d50cfea15ce7e3076-1723691631",
+      "MS=ms63724168"
     ],
     "dmarc": [
       "v=DMARC1; p=none; pct=100; rua=mailto:re+gbzuz3j7wtb@dmarc.postmarkapp.com,mailto:re+or5o1vetcy9@dmarc.postmarkapp.com; sp=none; aspf=r;"
@@ -198,7 +212,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
     }
   },
   "ports": {
-    "ip": "3.169.55.28",
+    "ip": "3.169.55.71",
     "open": []
   },
   "https": {
@@ -291,11 +305,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
     ]
   },
   "apex_txt": [
-    "adobe-sign-verification=e1e4662cb4cb8921b04ff65aacba0578",
+    "google-site-verification=a4kUdVdhuRGENeMFXISY5ile-NsMNYxcyAsHknjaeSs",
     "lucid-verification=fcj@cjz6eat.zgj9WMQ",
-    "figma-domain-verification=8a13494f101d6ca661f43b722f9d090d5a2a2ac65283628d50cfea",
-    "stripe-verification=3c386b3bd938d27ee26d142e2d3201f0d49dfd68edc01090aeb71a5d5428",
-    "google-site-verification=a4kUdVdhuRGENeMFXISY5ile-NsMNYxcyAsHknjaeSs"
+    "google-site-verification=9Ie7V9M2YudzHmywa873FdLnRJKZY57zwKHzQLgj_Kw",
+    "google-site-verification=2l0z9VQCacbAFBgCmfbC47bnTeHQcq4LWOHoIzYG72Q",
+    "atlassian-domain-verification=S8uXCQd2FYeOlTqNnRo41gCwYfu8sO1gASeWx63dP5j6Yh0iNd"
   ],
   "tls2": {
     "alpn": "",
@@ -306,7 +320,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251103000000",
+      "not_after": "20261201235959"
     }
   },
   "http2": {
@@ -329,8 +345,14 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "/fundraiser/search"
     ]
   },
-  "elapsed_s": 12.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "server-3-169-55-71.tpe54.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 12.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://salesforce.com/ |
 | Bug bounty program | Salesforce |
 | Listed scope domain | salesforce.com |
-| Test date | 2026-09-26 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
+Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 | 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -116,7 +117,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: stripe-verification=92ed39e34d3d3361667499947254c2fe1e02c212ca373bf11734c1423133; liveramp-site-verification=EIEl6MgS2nOv3dKtxxVir8tWpKE85lmKSh2s7wGwE4w; hubspot-developer-verification=YjRkOWExNDAtM2JjZS00YWQ0LWExNzItMGVkYzljMDEwM2M3
+- **Detail:** Apex TXT records with verification/token content: canva-site-verification=_abffN3m74Bc2XZ_68lccw; remarkable-domain-verification=394b7d94-d630-4c40-ac32-413a38622f73; vmware-cloud-verification-edb072dd-c0ed-478e-a55f-1aa17364e617
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -125,6 +126,12 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 - **Detail:** Certificate of salesforce.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 104.109.10.129 carries PTR a104-109-10-129.deploy.static.akamaitechnologies.com. for salesforce.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -132,70 +139,70 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
   "domain": "salesforce.com",
   "dns": {
     "a": [
-      "184.31.3.130",
-      "104.109.11.129",
       "104.109.10.129",
-      "184.25.179.132",
-      "23.1.35.132",
+      "23.1.99.130",
+      "104.109.11.129",
       "23.1.106.133",
-      "184.31.10.133",
-      "23.1.99.130"
+      "184.25.179.132",
+      "184.31.3.130",
+      "23.1.35.132",
+      "184.31.10.133"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxb-00177002.gslb.pphosted.com (pref 10)",
-      "mxa-00177002.gslb.pphosted.com (pref 10)"
+      "mxa-00177002.gslb.pphosted.com (pref 10)",
+      "mxb-00177002.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "udns2.salesforce.com.",
       "udns3.salesforce.com.",
-      "pch2.salesforce-dns.com.",
+      "pch1.salesforce-dns.com.",
       "udns1.salesforce.com.",
+      "udns2.salesforce.com.",
       "udns4.salesforce.com.",
-      "pch1.salesforce-dns.com."
+      "pch2.salesforce-dns.com."
     ],
     "spf": [
-      "stripe-verification=92ed39e34d3d3361667499947254c2fe1e02c212ca373bf11734c1423133dcfe",
-      "liveramp-site-verification=EIEl6MgS2nOv3dKtxxVir8tWpKE85lmKSh2s7wGwE4w",
-      "hubspot-developer-verification=YjRkOWExNDAtM2JjZS00YWQ0LWExNzItMGVkYzljMDEwM2M3",
-      "notion-domain-verification=Lh3bZWCwAyG9KMR88UmcLLXPlUj4eIud9Gp4gf85VGJ",
-      "remarkable-domain-verification=394b7d94-d630-4c40-ac32-413a38622f73",
       "canva-site-verification=_abffN3m74Bc2XZ_68lccw",
-      "sending_domain373542=845254d896ac5dfad0d6494e4908a8b6a5e057fdcce30d211eebadeb6b4e87cc",
-      "docker-verification=b238c187-0eb6-4710-ac1f-0d2ed19765b5",
-      "cloudhealth=7fe179e6-9085-4d4a-b2cd-eeb11f0c2468",
-      "pardot220122=922f8d6c355d7ff72ed3e771a2eca71656d0249cfdc70a8cebb481d367d6f006",
-      "google-site-verification=D6BlHxqITDdvcLDrxA3_ltYf9P3rRxm8AKKNT3rk4W8",
-      "00DF0000000gZsumae",
-      "google-site-verification=HV79FO1Y0siBF9WSte-fAOzLI3om9c1V08sBXq2p39M",
-      "5/1ESlGdIH/mwCF+T9SOo3PjURgk0lqakv0VJ8er4Ss=",
-      "google-site-verification=AgWPJ-RJmfrnOtIUUO5mTFDFVNb5XJPAJAUduwbF9PE",
-      "google-site-verification=OXivRKiSmufeLZHqZHxzvbEU_LFMiy4XwYtJiSS1BhQ",
-      "jamf-site-verification=6VMo4NqTt2upSV1B7wb8sw",
-      "hcp-domain-verification=92c617d35c9102aa0d57a73ea5894ce0a593b2ec34bb05486eeb69f6ef15f7fd",
-      "stripe-verification=B20840C7B159BD229B805ABB54423AE52404E97B4697AA9C23ECF43BA3E8BC37",
-      "DirectFedAuthUrl=https://salesforce.okta.com/app/salesforce_pwcidentitypro_1/exk12ojlg6rjhBkTY698/sso/saml",
-      "zoom-domain-verification=ZOOM_verify_6429ec4f4e4f49e58350c473496f0f18",
-      "SFMC-cGJQFeEomoQQt-tQ3c_QXefdwzOGuj_Tjl4oWwrW",
-      "google-site-verification=YWwSjixMcFJ1lVJe2XyMsPgFOe8E5vaW6xV-pVmxQQs",
-      "mixpanel-domain-verify=f2151de7-1e89-41b1-8968-b7cdd8df6740",
-      "stripe-verification=7a979e02f78e0a07950be0a127275cc4866db0a196913cfceaaa8035b8dbf959",
-      "zoom-domain-verification=ZOOM_verify_d9d75d3013184f4ba571502ca24dfaf6",
-      "stripe-verification=9ca4e73f9b5286bdcdbd5b91f97ad519544e5ee56eebb2f2dc6b48dbec579fe0",
-      "sending_domain182062=ecf3eec4d6ebcf61c5f77be11dffd322fd0f57d8d10fc75c7ae07ffc21d427a7",
+      "remarkable-domain-verification=394b7d94-d630-4c40-ac32-413a38622f73",
       "vmware-cloud-verification-edb072dd-c0ed-478e-a55f-1aa17364e617",
-      "google-site-verification=AF6Xx_zcM9CpPWi0iT5dSiHH05tVgT3Gr2ERgAZ0-m0",
-      "google-site-verification=h5tEfIPH1oMV9hxvFY7mWCS870JmVhm-bpbKTTg5L4A",
-      "neat-pulse-domain-verification-zDvG1kM=5074fe39-a4bb-479e-9018-9ef1878fd2f1",
-      "pardot1=6eae4d5ab80fc91a64539164ab421392a58d97551b230b12152dffb7553ea905",
-      "00DF0000000gZsuMAE",
-      "DirectFedAuthUrl=https://salesforce.okta.com/app/salesforce_w19107268_1/exky1kgawwTUSZCb2697/sso/saml",
-      "google-site-verification=XHgruaJj29eI7YjqDkEWZivuT0wlakIWgB2N4DRa_QM",
-      "atlassian-domain-verification=vTF7JaBo8Jpp/uhUFDPztkIr5aildFzbq9aLIcBbwK5aIdI9s8WQRGPTnKRONIiM",
       "1password-site-verification=IIVOBJGQRBCNTB3RNSU7CCAFQY",
+      "google-site-verification=AF6Xx_zcM9CpPWi0iT5dSiHH05tVgT3Gr2ERgAZ0-m0",
+      "stripe-verification=92ed39e34d3d3361667499947254c2fe1e02c212ca373bf11734c1423133dcfe",
+      "00DF0000000gZsumae",
+      "liveramp-site-verification=EIEl6MgS2nOv3dKtxxVir8tWpKE85lmKSh2s7wGwE4w",
+      "v=spf1 include:_spf.google.com include:_spf.salesforce.com exists:%{i}._spf.corp.salesforce.com ~all",
+      "00DF0000000gZsuMAE",
+      "sending_domain373542=845254d896ac5dfad0d6494e4908a8b6a5e057fdcce30d211eebadeb6b4e87cc",
+      "5/1ESlGdIH/mwCF+T9SOo3PjURgk0lqakv0VJ8er4Ss=",
+      "zoom-domain-verification=ZOOM_verify_6429ec4f4e4f49e58350c473496f0f18",
+      "stripe-verification=7a979e02f78e0a07950be0a127275cc4866db0a196913cfceaaa8035b8dbf959",
+      "jamf-site-verification=6VMo4NqTt2upSV1B7wb8sw",
+      "neat-pulse-domain-verification-zDvG1kM=5074fe39-a4bb-479e-9018-9ef1878fd2f1",
+      "DirectFedAuthUrl=https://salesforce.okta.com/app/salesforce_pwcidentitypro_1/exk12ojlg6rjhBkTY698/sso/saml",
+      "hubspot-developer-verification=YjRkOWExNDAtM2JjZS00YWQ0LWExNzItMGVkYzljMDEwM2M3",
+      "SFMC-cGJQFeEomoQQt-tQ3c_QXefdwzOGuj_Tjl4oWwrW",
+      "mixpanel-domain-verify=f2151de7-1e89-41b1-8968-b7cdd8df6740",
+      "google-site-verification=HV79FO1Y0siBF9WSte-fAOzLI3om9c1V08sBXq2p39M",
+      "pardot1=6eae4d5ab80fc91a64539164ab421392a58d97551b230b12152dffb7553ea905",
+      "stripe-verification=9ca4e73f9b5286bdcdbd5b91f97ad519544e5ee56eebb2f2dc6b48dbec579fe0",
+      "cloudhealth=7fe179e6-9085-4d4a-b2cd-eeb11f0c2468",
+      "google-site-verification=XHgruaJj29eI7YjqDkEWZivuT0wlakIWgB2N4DRa_QM",
+      "DirectFedAuthUrl=https://salesforce.okta.com/app/salesforce_w19107268_1/exky1kgawwTUSZCb2697/sso/saml",
+      "google-site-verification=AgWPJ-RJmfrnOtIUUO5mTFDFVNb5XJPAJAUduwbF9PE",
+      "pardot220122=922f8d6c355d7ff72ed3e771a2eca71656d0249cfdc70a8cebb481d367d6f006",
+      "hcp-domain-verification=92c617d35c9102aa0d57a73ea5894ce0a593b2ec34bb05486eeb69f6ef15f7fd",
+      "atlassian-domain-verification=vTF7JaBo8Jpp/uhUFDPztkIr5aildFzbq9aLIcBbwK5aIdI9s8WQRGPTnKRONIiM",
+      "zoom-domain-verification=ZOOM_verify_d9d75d3013184f4ba571502ca24dfaf6",
+      "google-site-verification=OXivRKiSmufeLZHqZHxzvbEU_LFMiy4XwYtJiSS1BhQ",
       "tiktok-developers-site-verification=6SG6XJHEtcx9rqix8FICiM4RxxkC4g1L",
-      "v=spf1 include:_spf.google.com include:_spf.salesforce.com exists:%{i}._spf.corp.salesforce.com ~all"
+      "google-site-verification=D6BlHxqITDdvcLDrxA3_ltYf9P3rRxm8AKKNT3rk4W8",
+      "stripe-verification=B20840C7B159BD229B805ABB54423AE52404E97B4697AA9C23ECF43BA3E8BC37",
+      "google-site-verification=h5tEfIPH1oMV9hxvFY7mWCS870JmVhm-bpbKTTg5L4A",
+      "google-site-verification=YWwSjixMcFJ1lVJe2XyMsPgFOe8E5vaW6xV-pVmxQQs",
+      "sending_domain182062=ecf3eec4d6ebcf61c5f77be11dffd322fd0f57d8d10fc75c7ae07ffc21d427a7",
+      "docker-verification=b238c187-0eb6-4710-ac1f-0d2ed19765b5",
+      "notion-domain-verification=Lh3bZWCwAyG9KMR88UmcLLXPlUj4eIud9Gp4gf85VGJ"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;fo=1:d:s;pct=100;rua=mailto:dmarc_agg@vali.email,mailto:0e5a5c34@inbox.ondmarc.com;ruf=mailto:0e5a5c34@inbox.ondmarc.com"
@@ -292,7 +299,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
     }
   },
   "ports": {
-    "ip": "184.31.3.130",
+    "ip": "104.109.10.129",
     "open": []
   },
   "https": {
@@ -345,11 +352,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "stripe-verification=92ed39e34d3d3361667499947254c2fe1e02c212ca373bf11734c1423133",
-    "liveramp-site-verification=EIEl6MgS2nOv3dKtxxVir8tWpKE85lmKSh2s7wGwE4w",
-    "hubspot-developer-verification=YjRkOWExNDAtM2JjZS00YWQ0LWExNzItMGVkYzljMDEwM2M3",
-    "notion-domain-verification=Lh3bZWCwAyG9KMR88UmcLLXPlUj4eIud9Gp4gf85VGJ",
-    "remarkable-domain-verification=394b7d94-d630-4c40-ac32-413a38622f73"
+    "canva-site-verification=_abffN3m74Bc2XZ_68lccw",
+    "remarkable-domain-verification=394b7d94-d630-4c40-ac32-413a38622f73",
+    "vmware-cloud-verification-edb072dd-c0ed-478e-a55f-1aa17364e617",
+    "1password-site-verification=IIVOBJGQRBCNTB3RNSU7CCAFQY",
+    "google-site-verification=AF6Xx_zcM9CpPWi0iT5dSiHH05tVgT3Gr2ERgAZ0-m0"
   ],
   "tls2": {
     "alpn": "",
@@ -360,14 +367,22 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260923000000",
+      "not_after": "20270409235959"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
-  "elapsed_s": 38.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "a104-109-10-129.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 41.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

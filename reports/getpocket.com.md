@@ -7,12 +7,12 @@
 | Target | https://getpocket.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | getpocket.com |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -125,7 +126,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=zfNlIIbTnH55o0_E1S6GQdIQl6jtefL-vdk_xCyBQrE; google-site-verification=O73K4GuIvQ3SbegpcgVVBVm-ob8wnBQAd4V8KdXf-oI; google-site-verification=Ip41qYBewmXa5vTZEKlBpwrqymJbbzzNXCDd5eyQryk
+- **Detail:** Apex TXT records with verification/token content: stripe-verification=12da43cd3189cf99e5c3ecdfdae9c97c7d4230aed93a22ae62892f0cee02; facebook-domain-verification=7onzfhlxkl6r3tyrkywbqx1ybt66jx; google-site-verification=BznukNV2feXYAk09zg1tD-zMQPL_wHoVvfbHa8g2g18
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -140,6 +141,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - **Detail:** robots.txt lists 13 disallow path(s), e.g. /v2/*, /v3/*, /create*, /mini_login*, /button*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 3.169.121.10 carries PTR server-3-169-121-10.tpe53.r.cloudfront.net. for getpocket.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -147,10 +154,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "domain": "getpocket.com",
   "dns": {
     "a": [
-      "3.169.121.84",
+      "3.169.121.10",
       "3.169.121.118",
       "3.169.121.32",
-      "3.169.121.10"
+      "3.169.121.84"
     ],
     "aaaa": [],
     "cname": null,
@@ -163,21 +170,21 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     ],
     "ns": [
       "ns-351.awsdns-43.com.",
-      "ns-1605.awsdns-08.co.uk.",
+      "ns-704.awsdns-24.net.",
       "ns-1518.awsdns-61.org.",
-      "ns-704.awsdns-24.net."
+      "ns-1605.awsdns-08.co.uk."
     ],
     "spf": [
-      "google-site-verification=zfNlIIbTnH55o0_E1S6GQdIQl6jtefL-vdk_xCyBQrE",
-      "google-site-verification=O73K4GuIvQ3SbegpcgVVBVm-ob8wnBQAd4V8KdXf-oI",
-      "google-site-verification=Ip41qYBewmXa5vTZEKlBpwrqymJbbzzNXCDd5eyQryk",
       "stripe-verification=12da43cd3189cf99e5c3ecdfdae9c97c7d4230aed93a22ae62892f0cee028e0c",
-      "apple-domain-verification=YQkH_odwWd6t5jf8ay7uZ7SdgCl7gOnggLxglPtPf-A",
+      "facebook-domain-verification=7onzfhlxkl6r3tyrkywbqx1ybt66jx",
       "google-site-verification=BznukNV2feXYAk09zg1tD-zMQPL_wHoVvfbHa8g2g18",
       "atlassian-domain-verification=ZKdUkLuFwGhwbs6AqGb09CzrQ1EGoENusL8drKXt3+3DVnPgvbvEKhpaA0w3Crhd",
+      "google-site-verification=zfNlIIbTnH55o0_E1S6GQdIQl6jtefL-vdk_xCyBQrE",
       "docusign=e569f89d-0082-4ffd-8973-5c7f739cdd02",
-      "facebook-domain-verification=7onzfhlxkl6r3tyrkywbqx1ybt66jx",
-      "v=spf1 include:sendgrid.net include:_spf.google.com include:helpscoutemail.com include:mail.zendesk.com ip4:63.245.208.103 ~all"
+      "apple-domain-verification=YQkH_odwWd6t5jf8ay7uZ7SdgCl7gOnggLxglPtPf-A",
+      "v=spf1 include:sendgrid.net include:_spf.google.com include:helpscoutemail.com include:mail.zendesk.com ip4:63.245.208.103 ~all",
+      "google-site-verification=Ip41qYBewmXa5vTZEKlBpwrqymJbbzzNXCDd5eyQryk",
+      "google-site-verification=O73K4GuIvQ3SbegpcgVVBVm-ob8wnBQAd4V8KdXf-oI"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:dmarc_agg@dmarc.250ok.net; fo=1; sp=none; aspf=r;"
@@ -216,7 +223,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     }
   },
   "ports": {
-    "ip": "3.169.121.84",
+    "ip": "3.169.121.10",
     "open": []
   },
   "https": {
@@ -269,11 +276,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=zfNlIIbTnH55o0_E1S6GQdIQl6jtefL-vdk_xCyBQrE",
-    "google-site-verification=O73K4GuIvQ3SbegpcgVVBVm-ob8wnBQAd4V8KdXf-oI",
-    "google-site-verification=Ip41qYBewmXa5vTZEKlBpwrqymJbbzzNXCDd5eyQryk",
     "stripe-verification=12da43cd3189cf99e5c3ecdfdae9c97c7d4230aed93a22ae62892f0cee02",
-    "apple-domain-verification=YQkH_odwWd6t5jf8ay7uZ7SdgCl7gOnggLxglPtPf-A"
+    "facebook-domain-verification=7onzfhlxkl6r3tyrkywbqx1ybt66jx",
+    "google-site-verification=BznukNV2feXYAk09zg1tD-zMQPL_wHoVvfbHa8g2g18",
+    "atlassian-domain-verification=ZKdUkLuFwGhwbs6AqGb09CzrQ1EGoENusL8drKXt3+3DVnPgvb",
+    "google-site-verification=zfNlIIbTnH55o0_E1S6GQdIQl6jtefL-vdk_xCyBQrE"
   ],
   "tls2": {
     "alpn": "",
@@ -284,7 +291,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260428000000",
+      "not_after": "20261111235959"
     }
   },
   "http2": {
@@ -304,8 +313,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "/save*"
     ]
   },
-  "elapsed_s": 10.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "server-3-169-121-10.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 10.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

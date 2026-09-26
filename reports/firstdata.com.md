@@ -7,8 +7,8 @@
 | Target | https://firstdata.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | firstdata.com |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -80,7 +80,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
 ### 8. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=UUQbbVvMvjF4/Haa4wZPYq9FxrYqfMLH3E6gI2ri2gGiM1YehJ; google-site-verification=26Qcgnci2XPHOXsfUzhn4urYuxuzAZoiD_V9JmsbwbA; google-site-verification=N6XdNnf_haEL8arPehDiAPoYLKH5SPbLr-_6-EGFvA8
+- **Detail:** Apex TXT records with verification/token content: flexera-domain-verification-fddzqvzijueazdba; google-site-verification=26Qcgnci2XPHOXsfUzhn4urYuxuzAZoiD_V9JmsbwbA; atlassian-domain-verification=bwfGSdfnH94uNI9lzvKPvl6Xx6BGuAMdPRwDp6G9XAfFReRFHB
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 9. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -115,64 +115,64 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
   "dns": {
     "a": [
       "151.101.3.10",
-      "151.101.195.10",
+      "151.101.131.10",
       "151.101.67.10",
-      "151.101.131.10"
+      "151.101.195.10"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxa-00265f01.gslb.pphosted.com (pref 10)",
-      "mxb-00265f01.gslb.pphosted.com (pref 10)"
+      "mxb-00265f01.gslb.pphosted.com (pref 10)",
+      "mxa-00265f01.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
+      "dns4.p07.nsone.net.",
       "dns2.p07.nsone.net.",
       "ns2.p201.dns.oraclecloud.net.",
-      "dns4.p07.nsone.net.",
       "ns1.p201.dns.oraclecloud.net."
     ],
     "spf": [
-      "VISA=50A1277B5BDE5E4EFB009D04C1270052",
-      "_2ronacfit0dlj82vq1smryoviyg476a",
-      "atlassian-domain-verification=UUQbbVvMvjF4/Haa4wZPYq9FxrYqfMLH3E6gI2ri2gGiM1YehJSYASzKT5Kfz2hn",
-      "google-site-verification=26Qcgnci2XPHOXsfUzhn4urYuxuzAZoiD_V9JmsbwbA",
-      "VISA=BBA97F5F900D99EE7A70768DC4E6302B",
-      "citrix.mobile.ads.otp=5iepmqqj2gwg4fki3uxoh81",
-      "google-site-verification=N6XdNnf_haEL8arPehDiAPoYLKH5SPbLr-_6-EGFvA8",
-      "flexera-domain-verification-fddzqvzijueazdba",
-      "VISA=BB846B1356DBAEC50AABC2EAC27251C4",
-      "status-page-domain-verification=qhcz5lpgpkhm",
-      "MS=ms12481784",
-      "_tmhwbqqay6pmvj46jbz8ygq4v1qdnbd",
-      "VISA=B42E0A2235D43D9F1A30FCF136EFBBE1",
-      "00DRL00000GkGyg=1TBRL0000000YOH",
-      "VISA= 971F17AC7C2EA9F76D1B4399ACDD8AF8",
-      "VISA= 8B44CCB91191FE803D19007A17C3D271",
-      "MS=ABB1BE2F85FB33A30DEC1C7264489333E3C1200F",
-      "0PvnqG+rTIOOb7OBR8TRrF3sAejgz0OAbJ9ijKq3T7BQ9Cp0OTN+U7Lov+lrTt/L8Kv/xiMPuV9vZwuOFwT3GA==",
       "VISA= 3AE81DAB19A78A9EF5F7BB7E5538ADA3",
-      "VISA = E086293AA5EBACE091D6F079311621E3",
-      "hcp-domain-verification=d7eeb26b7066067aabfb44e977a62f8629c2c4003e4b5ff27e8296a60e74b8d2",
-      "00DA0000000Yhcv=1TBUJ0000000Fez",
-      "VISA= QOHYOGX571VGUJW8RSJUP39HTRRTZITN",
-      "VISA=0DF7ED8CA76B25E8E433992B7F0AEEA8",
-      "VISA=2A880877BD3A4783B5D65152D0479BEA",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
-      "VISA=32A1FA0269CCD3FEB9497B54209C50ED",
-      "MS=ms52820778",
-      "VISA=58B7F8092117EFC2B048E1D063C7381B",
-      "VISA=6647EA50224BACA094BAB45F9A1DD003",
       "VISA=875D6E9B71BCD2951AAAED28DEE8B317",
-      "_k7wm3b9cqot77wpu829xdomkm0s1gbz",
+      "flexera-domain-verification-fddzqvzijueazdba",
+      "google-site-verification=26Qcgnci2XPHOXsfUzhn4urYuxuzAZoiD_V9JmsbwbA",
+      "VISA=B42E0A2235D43D9F1A30FCF136EFBBE1",
+      "citrix.mobile.ads.otp=5iepmqqj2gwg4fki3uxoh81",
+      "VISA=32A1FA0269CCD3FEB9497B54209C50ED",
+      "VISA= 45376BBCD9B74696522F84B27AD772AA",
+      "MS=ms12481784",
+      "00DA0000000Yhcv=1TBUJ0000000Fez",
+      "0PvnqG+rTIOOb7OBR8TRrF3sAejgz0OAbJ9ijKq3T7BQ9Cp0OTN+U7Lov+lrTt/L8Kv/xiMPuV9vZwuOFwT3GA==",
+      "VISA= 8B44CCB91191FE803D19007A17C3D271",
+      "MS=ms52820778",
+      "atlassian-domain-verification=bwfGSdfnH94uNI9lzvKPvl6Xx6BGuAMdPRwDp6G9XAfFReRFHBj398p8n4tJRp1u",
+      "VISA= 2E83EF65759F5F147DBDFC1C423F1CF1",
+      "VISA=0DF7ED8CA76B25E8E433992B7F0AEEA8",
       "VISA=E8C6EF412551A5ED20EFB7D270035456",
       "citrix-verification-code=b49394b7-fec3-45b1-9598-81f10a16746d",
+      "VISA = E086293AA5EBACE091D6F079311621E3",
+      "VISA=58B7F8092117EFC2B048E1D063C7381B",
+      "_k7wm3b9cqot77wpu829xdomkm0s1gbz",
+      "hcp-domain-verification=d7eeb26b7066067aabfb44e977a62f8629c2c4003e4b5ff27e8296a60e74b8d2",
+      "MS=ABB1BE2F85FB33A30DEC1C7264489333E3C1200F",
+      "VISA=2A880877BD3A4783B5D65152D0479BEA",
       "_bqjvwc1revtk7b6umibs4dk66005gcc",
-      "docusign=5335d3f2-83aa-4ed0-91a8-716365eb0641",
-      "atlassian-domain-verification=bwfGSdfnH94uNI9lzvKPvl6Xx6BGuAMdPRwDp6G9XAfFReRFHBj398p8n4tJRp1u",
+      "VISA= 971F17AC7C2EA9F76D1B4399ACDD8AF8",
+      "VISA= F09D890A2DAB504AAE78586229A231BB",
+      "_tmhwbqqay6pmvj46jbz8ygq4v1qdnbd",
+      "VISA= QOHYOGX571VGUJW8RSJUP39HTRRTZITN",
+      "status-page-domain-verification=qhcz5lpgpkhm",
+      "00DRL00000GkGyg=1TBRL0000000YOH",
+      "VISA=50A1277B5BDE5E4EFB009D04C1270052",
+      "atlassian-domain-verification=UUQbbVvMvjF4/Haa4wZPYq9FxrYqfMLH3E6gI2ri2gGiM1YehJSYASzKT5Kfz2hn",
+      "VISA=6647EA50224BACA094BAB45F9A1DD003",
+      "VISA=BB846B1356DBAEC50AABC2EAC27251C4",
       "_gtyampd6jk2kk0vasl1zp2t4zwtc66i",
-      "VISA= 2E83EF65759F5F147DBDFC1C423F1CF1",
-      "VISA= 45376BBCD9B74696522F84B27AD772AA",
-      "VISA= F09D890A2DAB504AAE78586229A231BB"
+      "docusign=5335d3f2-83aa-4ed0-91a8-716365eb0641",
+      "VISA=BBA97F5F900D99EE7A70768DC4E6302B",
+      "_2ronacfit0dlj82vq1smryoviyg476a",
+      "google-site-verification=N6XdNnf_haEL8arPehDiAPoYLKH5SPbLr-_6-EGFvA8",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=0; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -319,11 +319,11 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
     ]
   },
   "apex_txt": [
-    "atlassian-domain-verification=UUQbbVvMvjF4/Haa4wZPYq9FxrYqfMLH3E6gI2ri2gGiM1YehJ",
-    "google-site-verification=26Qcgnci2XPHOXsfUzhn4urYuxuzAZoiD_V9JmsbwbA",
-    "google-site-verification=N6XdNnf_haEL8arPehDiAPoYLKH5SPbLr-_6-EGFvA8",
     "flexera-domain-verification-fddzqvzijueazdba",
-    "status-page-domain-verification=qhcz5lpgpkhm"
+    "google-site-verification=26Qcgnci2XPHOXsfUzhn4urYuxuzAZoiD_V9JmsbwbA",
+    "atlassian-domain-verification=bwfGSdfnH94uNI9lzvKPvl6Xx6BGuAMdPRwDp6G9XAfFReRFHB",
+    "citrix-verification-code=b49394b7-fec3-45b1-9598-81f10a16746d",
+    "hcp-domain-verification=d7eeb26b7066067aabfb44e977a62f8629c2c4003e4b5ff27e8296a6"
   ],
   "tls2": {
     "alpn": "",
@@ -334,11 +334,16 @@ Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260114000000",
+      "not_after": "20270120235959"
     }
   },
-  "elapsed_s": 28.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 26.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

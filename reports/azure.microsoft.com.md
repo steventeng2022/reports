@@ -7,12 +7,12 @@
 | Target | https://azure.microsoft.com/ |
 | Bug bounty program | Microsoft Online Services |
 | Listed scope domain | azure.microsoft.com |
-| Test date | 2026-09-26 17:39 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
+Total findings: **7** (High: 0, Medium: 0, Low: 1, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -20,8 +20,9 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
 | 2 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 3 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 4 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 5 | info | CT1 | 31 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 6 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 5 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 6 | info | CT1 | 31 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 7 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -49,13 +50,19 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
 - **Detail:** robots.txt lists 25 disallow path(s), e.g. /*/searchresults/, /*/search/?q=*, /*/patterns/, /api/, /debug/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 5. [INFO] 31 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 5. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.209.218.179 carries PTR a23-209-218-179.deploy.static.akamaitechnologies.com. for azure.microsoft.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 6. [INFO] 31 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: aef-alt.onedscollector.dev.azure.microsoft.com, aef.onedscollector.dev.azure.microsoft.com, assessment.changeguard.fcm.azure.microsoft.com, azure.microsoft.com, azurelocalsolutions.azure.microsoft.com, azurestackhcisolutions.azure.microsoft.com, changeexplorer.fcm.azure.microsoft.com, changeguard.fcm.azure.microsoft.com, emails-ppe.azure.microsoft.com, emails.azure.microsoft.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 6. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 7. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: aef-alt.onedscollector.dev.azure.microsoft.com, aef.onedscollector.dev.azure.microsoft.com; content may still be served via virtual-host fallback.
@@ -182,7 +189,9 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260916190538",
+      "not_after": "20270402190538"
     }
   },
   "http2": {
@@ -204,8 +213,14 @@ Total findings: **6** (High: 0, Medium: 0, Low: 1, Info: 5)
       "/*?p="
     ]
   },
-  "elapsed_s": 97.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "a23-209-218-179.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 106.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

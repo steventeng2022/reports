@@ -7,12 +7,12 @@
 | Target | https://stackoverflow.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | stackoverflow.com |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
+Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 | 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 
 ## Detailed findings
 
@@ -130,7 +131,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=O9jlnJXAQ7sNSZqC; work-os-domain-verification-43a3e0=GoDUTSc5MMjDaiIC3s5yRKqMD; openai-domain-verification=dv-GLNufzbWDzAq0fDXHD6jxeCK
+- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-GLNufzbWDzAq0fDXHD6jxeCK; anthropic-domain-verification-q70207=cKyy0llXkD10O4rDQpWz8tQ5K; profound-domain-verification-5p599x=hWudYd2Du6WOYOod5ko9Rwnp8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -138,6 +139,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 - **CWE:** CWE-603
 - **Detail:** Certificate of stackoverflow.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 17. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of stackoverflow.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
 ## Evidence (raw response observations)
 
@@ -151,39 +158,39 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt4.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "sureena.ns.cloudflare.com.",
-      "damian.ns.cloudflare.com."
+      "damian.ns.cloudflare.com.",
+      "sureena.ns.cloudflare.com."
     ],
     "spf": [
-      "apple-domain-verification=O9jlnJXAQ7sNSZqC",
-      "v=MCPv1; k=ed25519; p=VhBofO8RaYvTvHT7q5tTty+HQeCU8R6h5Y8k/sj20So=",
-      "work-os-domain-verification-43a3e0=GoDUTSc5MMjDaiIC3s5yRKqMD",
       "openai-domain-verification=dv-GLNufzbWDzAq0fDXHD6jxeCK",
-      "google-site-verification=2Bi6SYw5skkRexdtdLPL2gpxeIhLxnYVqITVP9Htl3w",
-      "onetrust-domain-verification=0d9d67f856334905a54256085a5768b3",
-      "docker-verification=d65aee54-9091-4ceb-b792-61f5d5804050",
-      "v=spf1 ip4:52.38.191.241 include:_spf.google.com include:mailgun.org include:sendgrid.net include:mail.zendesk.com include:spf.tipalti.com ~all",
-      "onetrust-domain-verification=e445562296a64c649ae3d520230b8c4c",
-      "adobe-idp-site-verification=25ba5203f3687c9cd6ee3223ee5de1528917828d1da3ebd3bd9a44094cbfc4ac",
-      "google-site-verification=o3EMam8yBGo1yEjyybIiZcOunGHOQKpo8JmOtp9n1BU",
-      "cursor-domain-verification-sb0ayf=Pk6AyptQuTpzpcuSlfYGWloxv",
-      "ZOOM_verify_AbkNwz5bBl0eurcDKyhhuk",
-      "google-site-verification=rdWtMbplKjbRHGr2dNONfwkqithlUvjr3u6i8QEz_mo",
-      "atlassian-domain-verification=byLeZgl3MIcfOqwWuMhq8Fhr/1zem/jIaouJegvDZbBKUU5OqhwDjdpkyYg5CTzm",
-      "docusign=4262531d-29f4-4a62-9f33-ae9f66f5247b",
-      "make-domain-verification=eec31159-f381-4f38-9d89-e59123dd023e",
-      "ibmid=4e7cbbb3-5f12-40b4-96c7-5b064347b822",
+      "anthropic-domain-verification-q70207=cKyy0llXkD10O4rDQpWz8tQ5K",
       "profound-domain-verification-5p599x=hWudYd2Du6WOYOod5ko9Rwnp8",
-      "google-site-verification=ctogLnZNAdc_CXq8yOhODMLpmugGynjxKecKHDz4oL8",
+      "make-domain-verification=eec31159-f381-4f38-9d89-e59123dd023e",
+      "cursor-domain-verification-sb0ayf=Pk6AyptQuTpzpcuSlfYGWloxv",
+      "onetrust-domain-verification=0d9d67f856334905a54256085a5768b3",
+      "work-os-domain-verification-43a3e0=GoDUTSc5MMjDaiIC3s5yRKqMD",
+      "ibmid=4e7cbbb3-5f12-40b4-96c7-5b064347b822",
+      "docker-verification=d65aee54-9091-4ceb-b792-61f5d5804050",
       "MS=ms52592611",
-      "anthropic-domain-verification-q70207=cKyy0llXkD10O4rDQpWz8tQ5K"
+      "v=MCPv1; k=ed25519; p=VhBofO8RaYvTvHT7q5tTty+HQeCU8R6h5Y8k/sj20So=",
+      "google-site-verification=rdWtMbplKjbRHGr2dNONfwkqithlUvjr3u6i8QEz_mo",
+      "ZOOM_verify_AbkNwz5bBl0eurcDKyhhuk",
+      "google-site-verification=o3EMam8yBGo1yEjyybIiZcOunGHOQKpo8JmOtp9n1BU",
+      "atlassian-domain-verification=byLeZgl3MIcfOqwWuMhq8Fhr/1zem/jIaouJegvDZbBKUU5OqhwDjdpkyYg5CTzm",
+      "adobe-idp-site-verification=25ba5203f3687c9cd6ee3223ee5de1528917828d1da3ebd3bd9a44094cbfc4ac",
+      "v=spf1 ip4:52.38.191.241 include:_spf.google.com include:mailgun.org include:sendgrid.net include:mail.zendesk.com include:spf.tipalti.com ~all",
+      "apple-domain-verification=O9jlnJXAQ7sNSZqC",
+      "docusign=4262531d-29f4-4a62-9f33-ae9f66f5247b",
+      "google-site-verification=ctogLnZNAdc_CXq8yOhODMLpmugGynjxKecKHDz4oL8",
+      "google-site-verification=2Bi6SYw5skkRexdtdLPL2gpxeIhLxnYVqITVP9Htl3w",
+      "onetrust-domain-verification=e445562296a64c649ae3d520230b8c4c"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:dmarc-aggregates@stackoverflow.com; ruf=mailto:dmarc-forensics@stackoverflow.com; fo=1"
@@ -285,11 +292,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "apple-domain-verification=O9jlnJXAQ7sNSZqC",
-    "work-os-domain-verification-43a3e0=GoDUTSc5MMjDaiIC3s5yRKqMD",
     "openai-domain-verification=dv-GLNufzbWDzAq0fDXHD6jxeCK",
-    "google-site-verification=2Bi6SYw5skkRexdtdLPL2gpxeIhLxnYVqITVP9Htl3w",
-    "onetrust-domain-verification=0d9d67f856334905a54256085a5768b3"
+    "anthropic-domain-verification-q70207=cKyy0llXkD10O4rDQpWz8tQ5K",
+    "profound-domain-verification-5p599x=hWudYd2Du6WOYOod5ko9Rwnp8",
+    "make-domain-verification=eec31159-f381-4f38-9d89-e59123dd023e",
+    "cursor-domain-verification-sb0ayf=Pk6AyptQuTpzpcuSlfYGWloxv"
   ],
   "tls2": {
     "alpn": "",
@@ -300,11 +307,16 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260815123906",
+      "not_after": "20261113123905"
     }
   },
-  "elapsed_s": 6.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 429
+  },
+  "elapsed_s": 6.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

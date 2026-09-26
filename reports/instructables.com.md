@@ -7,12 +7,12 @@
 | Target | https://instructables.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | instructables.com |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -132,7 +133,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=aJwf2CzmW8LrvqB3rvJz3QIA7ogz4xXhPS94jzaMpNw; google-site-verification=wezeEJNzmS1TwrPQOStlFIw9ZA_22X3pFv_7Ll4vu24; facebook-domain-verification=qg9kaa5826ixuz46vsm5kmzkqa0hqc
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=qg9kaa5826ixuz46vsm5kmzkqa0hqc; facebook-domain-verification=j8ezjcbwhfykmj7wqvqpe34zrx81wy; google-site-verification=aJwf2CzmW8LrvqB3rvJz3QIA7ogz4xXhPS94jzaMpNw
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -147,6 +148,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** robots.txt lists 8 disallow path(s), e.g. User-agent:, User-agent:, /*.pdf$, /*.txt$, /*.html$
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 54.192.248.11 carries PTR server-54-192-248-11.tpe53.r.cloudfront.net. for instructables.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -154,20 +161,20 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "instructables.com",
   "dns": {
     "a": [
-      "54.192.248.126",
-      "54.192.248.51",
       "54.192.248.11",
-      "54.192.248.43"
+      "54.192.248.51",
+      "54.192.248.43",
+      "54.192.248.126"
     ],
     "aaaa": [
+      "2600:9000:202f:de00:c:1faa:6800:93a1",
+      "2600:9000:202f:f600:c:1faa:6800:93a1",
       "2600:9000:202f:4a00:c:1faa:6800:93a1",
-      "2600:9000:202f:fe00:c:1faa:6800:93a1",
-      "2600:9000:202f:1400:c:1faa:6800:93a1",
-      "2600:9000:202f:0:c:1faa:6800:93a1",
-      "2600:9000:202f:4800:c:1faa:6800:93a1",
-      "2600:9000:202f:5000:c:1faa:6800:93a1",
-      "2600:9000:202f:d400:c:1faa:6800:93a1",
-      "2600:9000:202f:800:c:1faa:6800:93a1"
+      "2600:9000:202f:da00:c:1faa:6800:93a1",
+      "2600:9000:202f:3400:c:1faa:6800:93a1",
+      "2600:9000:202f:b600:c:1faa:6800:93a1",
+      "2600:9000:202f:5600:c:1faa:6800:93a1",
+      "2600:9000:202f:7000:c:1faa:6800:93a1"
     ],
     "cname": null,
     "mx": [
@@ -175,20 +182,20 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     ],
     "ns": [
       "ns-1777.awsdns-30.co.uk.",
-      "ns-104.awsdns-13.com.",
       "ns-1163.awsdns-17.org.",
-      "ns-557.awsdns-05.net."
+      "ns-557.awsdns-05.net.",
+      "ns-104.awsdns-13.com."
     ],
     "spf": [
-      "_vjui4yoynntanopqab3559plrudsc8a",
-      "MS=ms97751969",
-      "8ymdk8vbmflslk0gsn5cwf493vgxkfcn",
-      "v=spf1 include:u1654969.wl.sendgrid.net include:spf.protection.outlook.com -all",
-      "google-site-verification=aJwf2CzmW8LrvqB3rvJz3QIA7ogz4xXhPS94jzaMpNw",
-      "google-site-verification=wezeEJNzmS1TwrPQOStlFIw9ZA_22X3pFv_7Ll4vu24",
       "554kz8j691dnm1t21mwm87jctmnnsdzj",
       "facebook-domain-verification=qg9kaa5826ixuz46vsm5kmzkqa0hqc",
-      "facebook-domain-verification=j8ezjcbwhfykmj7wqvqpe34zrx81wy"
+      "v=spf1 include:u1654969.wl.sendgrid.net include:spf.protection.outlook.com -all",
+      "facebook-domain-verification=j8ezjcbwhfykmj7wqvqpe34zrx81wy",
+      "google-site-verification=aJwf2CzmW8LrvqB3rvJz3QIA7ogz4xXhPS94jzaMpNw",
+      "MS=ms97751969",
+      "8ymdk8vbmflslk0gsn5cwf493vgxkfcn",
+      "google-site-verification=wezeEJNzmS1TwrPQOStlFIw9ZA_22X3pFv_7Ll4vu24",
+      "_vjui4yoynntanopqab3559plrudsc8a"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc_agg@vali.email; pct=50;"
@@ -228,7 +235,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "54.192.248.126",
+    "ip": "54.192.248.11",
     "open": []
   },
   "https": {
@@ -281,10 +288,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=aJwf2CzmW8LrvqB3rvJz3QIA7ogz4xXhPS94jzaMpNw",
-    "google-site-verification=wezeEJNzmS1TwrPQOStlFIw9ZA_22X3pFv_7Ll4vu24",
     "facebook-domain-verification=qg9kaa5826ixuz46vsm5kmzkqa0hqc",
-    "facebook-domain-verification=j8ezjcbwhfykmj7wqvqpe34zrx81wy"
+    "facebook-domain-verification=j8ezjcbwhfykmj7wqvqpe34zrx81wy",
+    "google-site-verification=aJwf2CzmW8LrvqB3rvJz3QIA7ogz4xXhPS94jzaMpNw",
+    "google-site-verification=wezeEJNzmS1TwrPQOStlFIw9ZA_22X3pFv_7Ll4vu24"
   ],
   "tls2": {
     "alpn": "",
@@ -295,7 +302,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260818000000",
+      "not_after": "20270303235959"
     }
   },
   "http2": {
@@ -310,8 +319,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/image/*"
     ]
   },
-  "elapsed_s": 5.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "server-54-192-248-11.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 5.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

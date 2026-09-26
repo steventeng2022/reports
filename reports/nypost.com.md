@@ -7,12 +7,12 @@
 | Target | https://nypost.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | nypost.com |
-| Test date | 2026-09-26 17:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
+Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,7 +29,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 14 | info | CT1 | 48 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 15 | info | CT1 | 48 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -93,7 +94,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=Ut_6-La1_H3SIW8cw3Jxn5gBHjCOb1mEm5wEciI90j8; atlassian-domain-verification=uNoIhBXurxzVlQa0FvK2t9Yld5byfvXbFRQaMToGvrieKjBdyl; ValidationTokenValue=be3a705a-0d8d-4c88-91dc-0ebe1d8e2f6d
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=a5ak341y6mn6scu375wpuvy5h38u0; globalsign-domain-verification=E1A5DBF2B0DE3B53A5674C61CAB23AD2; google-site-verification=5uYHzCPszHHLF2QyFiup1p177WJxzsWoUNaUCs_fhkQ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -114,7 +115,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 - **Detail:** robots.txt lists 168 disallow path(s), e.g. /wp-admin/, /wp-json/, /wp-login.php, /tag/credible/, /personal-finance/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 14. [INFO] 48 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 14. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://nypost.com/ carries Cache-Control: private, max-age=60; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 15. [INFO] 48 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: careers.nypost.com, my.nypost.com, shop.nypost.com, store.nypost.com
@@ -132,49 +139,49 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxb-00596a01.gslb.pphosted.com (pref 10)",
-      "mxa-00596a01.gslb.pphosted.com (pref 10)"
+      "mxa-00596a01.gslb.pphosted.com (pref 10)",
+      "mxb-00596a01.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
       "ns-670.awsdns-19.net.",
+      "ns-1469.awsdns-55.org.",
       "ns-112.awsdns-14.com.",
-      "ns-1696.awsdns-20.co.uk.",
-      "ns-1469.awsdns-55.org."
+      "ns-1696.awsdns-20.co.uk."
     ],
     "spf": [
-      "google-site-verification=Ut_6-La1_H3SIW8cw3Jxn5gBHjCOb1mEm5wEciI90j8",
-      "atlassian-domain-verification=uNoIhBXurxzVlQa0FvK2t9Yld5byfvXbFRQaMToGvrieKjBdylMs8jcSXRKQKqao",
-      "64392d9425e042418ac52d053c1ecb2f",
-      "ValidationTokenValue=be3a705a-0d8d-4c88-91dc-0ebe1d8e2f6d",
-      "apple-domain-verification=lPyM98oF1jmNh7Ts",
-      "google-site-verification=S57vRF8jMqWVb1wbslt1vZqTKLBQPRLeihUQGU4LQL4",
-      "google-site-verification=PN2Qi9bdkJ4SDeGCzwK6mosjk_cdEPkd-epRWHrqs7M",
+      "facebook-domain-verification=a5ak341y6mn6scu375wpuvy5h38u0",
+      "globalsign-domain-verification=E1A5DBF2B0DE3B53A5674C61CAB23AD2",
+      "ZOOM_verify_59WiJX6USMK92Hbu6-iuEg",
       "google-site-verification=5uYHzCPszHHLF2QyFiup1p177WJxzsWoUNaUCs_fhkQ",
       "knowbe4-site-verification=0694ce74005828dc4bb8b7299bfb6f61",
-      "v=spf1 ip4:205.203.130.22 ip4:205.203.130.101 ip4:205.203.130.102 ip4:205.203.136.101 ip4:205.203.136.102 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
-      "google-site-verification=pkTc123LIT1uBNNTg9WvGeJjxI0rCnCzmcVYSeFyLFU",
-      "google-site-verification=rqQNsAZmdVyYCBkD6XaUsf_6Aq8knJPcJ_AJm_15mSM",
+      "google-site-verification=Ut_6-La1_H3SIW8cw3Jxn5gBHjCOb1mEm5wEciI90j8",
+      "tollbit-domain-verification=80476469dd961d48a2f36d45785f7b4bf6823867c0b612c475a6b073c762576c",
       "adobe-idp-site-verification=7ef638bb68822798685f96e436bfc87a6f79319dd86369e447b84bb8ea9c6f68",
-      "apple-domain-verification=37Qe0gDvvRCGgED6VegwSRnviuX7KRbEhaVgN8IGXpQ",
-      "globalsign-domain-verification=E1A5DBF2B0DE3B53A5674C61CAB23AD2",
-      "openai-domain-verification=dv-zTDjYaeUtH0Z7a6WRNHJHPNH",
-      "google-site-verification=TfuBznU2bqij21_J2S6N2IDNQta9zajEFCIxJuh033J",
-      "amazonses:C+fSBo78zXZisXWUUbHRXRXY19xolN+ug+xevTtXL+k=",
+      "atlassian-domain-verification=uNoIhBXurxzVlQa0FvK2t9Yld5byfvXbFRQaMToGvrieKjBdylMs8jcSXRKQKqao",
       "google-site-verification=43S5hR4E09EYHuJ0EddR08WUtCjmPb3zJDOY1qaqieg",
-      "facebook-domain-verification=a5ak341y6mn6scu375wpuvy5h38u0",
-      "profound-domain-verification-f8v9td=J1enbUIBGr8ls69bKh4sLheZC",
-      "yahoo-verification-key=ZGc2aNHEalcpUmqoYUCKock6uR7n971BQPyq+avH5js=",
-      "globalsign-domain-verification=DC5FAF3AEB5DC469953A669244E3DABD",
-      "ZOOM_verify_59WiJX6USMK92Hbu6-iuEg",
-      "ZOOM_verify_GgmxWj_4QZCCMGFMQbCp5Q",
+      "apple-domain-verification=lPyM98oF1jmNh7Ts",
       "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDiTxvTgpRaUPa3Zsawin7pRP+CPIij6s1io0EsxRAfrCox6uw/QdKyEiozMHKz14AWPx6gLqb09Om7xmN9Snb5tcnWQdD46XFld1rm+DVwP1UezK/VagJDp6aMhabY1T1hBpK4R/YBnQ70R1AivL6Km7TfNgRU6UMSx2TtQnkFawIDAQAB",
+      "apple-domain-verification=37Qe0gDvvRCGgED6VegwSRnviuX7KRbEhaVgN8IGXpQ",
+      "google-site-verification=pkTc123LIT1uBNNTg9WvGeJjxI0rCnCzmcVYSeFyLFU",
+      "openai-domain-verification=dv-zTDjYaeUtH0Z7a6WRNHJHPNH",
+      "google-site-verification=PN2Qi9bdkJ4SDeGCzwK6mosjk_cdEPkd-epRWHrqs7M",
+      "globalsign-domain-verification=DC5FAF3AEB5DC469953A669244E3DABD",
+      "profound-domain-verification-f8v9td=J1enbUIBGr8ls69bKh4sLheZC",
+      "globalsign-domain-verification=015A85DB506CC703E147E2E1A8234FFA",
+      "google-site-verification=S57vRF8jMqWVb1wbslt1vZqTKLBQPRLeihUQGU4LQL4",
+      "64392d9425e042418ac52d053c1ecb2f",
+      "figma-domain-verification=b411f1d2852c2c7e057a2d6d70fb22896f37ccc1412d1e1bb4f9da14e2b78ad9-1769000244",
       "gc-ai-domain-verification-pqnv2r=6l7d3qRIy8sKfMz0EsSBxqr80",
       "amazonses:nZi4yMmejKgD3iT0h5S+LGrgaQGq6NVUPnD4v+R9htc=",
-      "globalsign-domain-verification=015A85DB506CC703E147E2E1A8234FFA",
-      "figma-domain-verification=b411f1d2852c2c7e057a2d6d70fb22896f37ccc1412d1e1bb4f9da14e2b78ad9-1769000244",
+      "v=spf1 ip4:205.203.130.22 ip4:205.203.130.101 ip4:205.203.130.102 ip4:205.203.136.101 ip4:205.203.136.102 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
       "pinterest-site-verification=8ee9ddd73c0b33e9c9606a95d1763cc7",
+      "google-site-verification=rqQNsAZmdVyYCBkD6XaUsf_6Aq8knJPcJ_AJm_15mSM",
+      "ZOOM_verify_GgmxWj_4QZCCMGFMQbCp5Q",
       "onetrust-domain-verification=e7aaac6a2eba4af5831f665fd4355b18",
-      "tollbit-domain-verification=80476469dd961d48a2f36d45785f7b4bf6823867c0b612c475a6b073c762576c",
+      "yahoo-verification-key=ZGc2aNHEalcpUmqoYUCKock6uR7n971BQPyq+avH5js=",
+      "google-site-verification=TfuBznU2bqij21_J2S6N2IDNQta9zajEFCIxJuh033J",
+      "ValidationTokenValue=be3a705a-0d8d-4c88-91dc-0ebe1d8e2f6d",
+      "amazonses:C+fSBo78zXZisXWUUbHRXRXY19xolN+ug+xevTtXL+k=",
       "globalsign-domain-verification=14BE65E00D7267440AC2843EDFF82780"
     ],
     "dmarc": [
@@ -290,11 +297,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
     ]
   },
   "apex_txt": [
-    "google-site-verification=Ut_6-La1_H3SIW8cw3Jxn5gBHjCOb1mEm5wEciI90j8",
-    "atlassian-domain-verification=uNoIhBXurxzVlQa0FvK2t9Yld5byfvXbFRQaMToGvrieKjBdyl",
-    "ValidationTokenValue=be3a705a-0d8d-4c88-91dc-0ebe1d8e2f6d",
-    "apple-domain-verification=lPyM98oF1jmNh7Ts",
-    "google-site-verification=S57vRF8jMqWVb1wbslt1vZqTKLBQPRLeihUQGU4LQL4"
+    "facebook-domain-verification=a5ak341y6mn6scu375wpuvy5h38u0",
+    "globalsign-domain-verification=E1A5DBF2B0DE3B53A5674C61CAB23AD2",
+    "google-site-verification=5uYHzCPszHHLF2QyFiup1p177WJxzsWoUNaUCs_fhkQ",
+    "knowbe4-site-verification=0694ce74005828dc4bb8b7299bfb6f61",
+    "google-site-verification=Ut_6-La1_H3SIW8cw3Jxn5gBHjCOb1mEm5wEciI90j8"
   ],
   "tls2": {
     "alpn": "",
@@ -305,7 +312,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260811004143",
+      "not_after": "20261109004142"
     }
   },
   "http2": {
@@ -327,8 +336,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "/mortgage-refinance/"
     ]
   },
-  "elapsed_s": 23.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 26.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://chicagotribune.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | chicagotribune.com |
-| Test date | 2026-09-26 17:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
+Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 | 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 19 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 
 ## Detailed findings
 
@@ -138,7 +139,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: knowbe4-site-verification=90309b4eacebd82470e924deb428c541; google-site-verification=WZ1oTeEoyp2ivPsaJjoK2C9YLNIFyuuI3WpcG387MIM; google-site-verification=tCFWENjSprayvXVGaRbGtnlL1DMiF3qL6KwnvJTUdDE
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=tCFWENjSprayvXVGaRbGtnlL1DMiF3qL6KwnvJTUdDE; knowbe4-site-verification=90309b4eacebd82470e924deb428c541; globalsign-domain-verification=KaParXxs1OHDy7o8CMbPpHBN-2m_mzwdPqKMMQ66a6
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -153,6 +154,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 - **Detail:** robots.txt lists 70 disallow path(s), e.g. /wp-admin/, /cgi-bin/, /wp-includes/, /xmlrpc.php, /wp-content/plugins/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 19. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of chicagotribune.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -165,48 +172,48 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)"
+      "aspmx.l.google.com (pref 1)",
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
       "ns-670.awsdns-19.net.",
-      "ns-1929.awsdns-49.co.uk.",
+      "ns-1494.awsdns-58.org.",
       "ns-318.awsdns-39.com.",
-      "ns-1494.awsdns-58.org."
+      "ns-1929.awsdns-49.co.uk."
     ],
     "spf": [
-      "jrrp75hmjgof937m48dfr168tf",
-      "hucq9oebjdhnpo231ru64sqlu4",
-      "qhsioljhf61egi221dmpq75l97",
-      "4qa0gtiqqj7c3qb8ign7j5veae",
-      "knowbe4-site-verification=90309b4eacebd82470e924deb428c541",
-      "google-site-verification=WZ1oTeEoyp2ivPsaJjoK2C9YLNIFyuuI3WpcG387MIM",
-      "1d9ebbcd0e404243947cfbbcd8f50291",
       "google-site-verification=tCFWENjSprayvXVGaRbGtnlL1DMiF3qL6KwnvJTUdDE",
-      "MS=ms20138954",
-      "google-site-verification=KgZD5A9gpsayiGlRAoeE7bgSRBjgujWL4U-Kz_4YS-M",
-      "google-site-verification=7DJm-cs-QXsih9c8YkgDHUv-fEdopAZ-xU8Z2M3oDnc",
-      "_globalsign-domain-verification=eRi2ZQZJ99fAou8jrSC06eUJpasrvj8YgWl21vaW5G",
+      "knowbe4-site-verification=90309b4eacebd82470e924deb428c541",
+      "globalsign-domain-verification=KaParXxs1OHDy7o8CMbPpHBN-2m_mzwdPqKMMQ66a6",
+      "00D6A000000u2db=1TBRP00000001P7",
+      "t26qk4mlm75j2yzsjlcj89w3tr8qml1t",
+      "fuh70icl95j9uk98vh9in27a1v",
+      "qhsioljhf61egi221dmpq75l97",
       "q8qte811etl3vh7t2kjtj5hvef",
+      "facebook-domain-verification=ie1u288563hms698676bmsocuqkst5",
+      "4qa0gtiqqj7c3qb8ign7j5veae",
+      "bw=uBsTlw0gfXBTobeK+x5MDbbYw7z/+6e8St20HrxOzAUC",
+      "_globalsign-domain-verification=eRi2ZQZJ99fAou8jrSC06eUJpasrvj8YgWl21vaW5G",
+      "7e2evqs0fhns3181r2qr7a85h7",
+      "MS=ms20138954",
+      "tollbit-domain-verification=fa0b71753f77d48596d9c864ee65b7243d54641a266abed5cbff240c5388e88f",
+      "dc5c2772ba0747a1b324e08489986f72",
+      "google-site-verification=7DJm-cs-QXsih9c8YkgDHUv-fEdopAZ-xU8Z2M3oDnc",
       "google-site-verification=R1gNl6zO56wI3fvU3rTP5_TVgm9XQX30rXJa2XJzp6I",
-      "bntlt7a869guderdu33t64dms5",
-      "iehg8ub4pkj0fr1muk30236f2h",
-      "google-site-verification=IIMYhaHdVMjr0knA13JlUko59o7aG_WfsRumyBjbOx8",
+      "google-site-verification=WZ1oTeEoyp2ivPsaJjoK2C9YLNIFyuuI3WpcG387MIM",
+      "jrrp75hmjgof937m48dfr168tf",
+      "8fhvtdhi65bc45gilg1icj1b8f",
+      "google-site-verification=7YyRyZ2VOIw6bJi4MEx8_EsHZbGoghhN5nfHVivraY4",
       "v=spf1 include:_spf.google.com include:spf.protection.outlook.com include:de._spf.fagms.net include:sendgrid.net ip4:198.21.3.53 ip4:159.183.220.8 exists:%{i}.spf.sitel.iphmx.com ip4:52.6.112.187 include:navigacloud.com -all",
+      "iehg8ub4pkj0fr1muk30236f2h",
+      "google-site-verification=KgZD5A9gpsayiGlRAoeE7bgSRBjgujWL4U-Kz_4YS-M",
+      "google-site-verification=IIMYhaHdVMjr0knA13JlUko59o7aG_WfsRumyBjbOx8",
+      "hucq9oebjdhnpo231ru64sqlu4",
+      "1d9ebbcd0e404243947cfbbcd8f50291",
       "google-site-verification=W2rzDizmU_fC811E9mwZ2NCwDCPmzcG1LR8chZdf5Rs",
       "google-site-verification=fXz0UUCS6jEN-J8qKswb90LlksOYFKoXQw8fHoUwjsE",
-      "google-site-verification=7YyRyZ2VOIw6bJi4MEx8_EsHZbGoghhN5nfHVivraY4",
-      "bw=uBsTlw0gfXBTobeK+x5MDbbYw7z/+6e8St20HrxOzAUC",
-      "t26qk4mlm75j2yzsjlcj89w3tr8qml1t",
-      "7e2evqs0fhns3181r2qr7a85h7",
-      "dc5c2772ba0747a1b324e08489986f72",
-      "tollbit-domain-verification=fa0b71753f77d48596d9c864ee65b7243d54641a266abed5cbff240c5388e88f",
-      "8fhvtdhi65bc45gilg1icj1b8f",
-      "fuh70icl95j9uk98vh9in27a1v",
-      "facebook-domain-verification=ie1u288563hms698676bmsocuqkst5",
-      "globalsign-domain-verification=KaParXxs1OHDy7o8CMbPpHBN-2m_mzwdPqKMMQ66a6",
-      "00D6A000000u2db=1TBRP00000001P7"
+      "bntlt7a869guderdu33t64dms5"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100"
@@ -289,11 +296,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "knowbe4-site-verification=90309b4eacebd82470e924deb428c541",
-    "google-site-verification=WZ1oTeEoyp2ivPsaJjoK2C9YLNIFyuuI3WpcG387MIM",
     "google-site-verification=tCFWENjSprayvXVGaRbGtnlL1DMiF3qL6KwnvJTUdDE",
-    "google-site-verification=KgZD5A9gpsayiGlRAoeE7bgSRBjgujWL4U-Kz_4YS-M",
-    "google-site-verification=7DJm-cs-QXsih9c8YkgDHUv-fEdopAZ-xU8Z2M3oDnc"
+    "knowbe4-site-verification=90309b4eacebd82470e924deb428c541",
+    "globalsign-domain-verification=KaParXxs1OHDy7o8CMbPpHBN-2m_mzwdPqKMMQ66a6",
+    "facebook-domain-verification=ie1u288563hms698676bmsocuqkst5",
+    "_globalsign-domain-verification=eRi2ZQZJ99fAou8jrSC06eUJpasrvj8YgWl21vaW5G"
   ],
   "tls2": {
     "alpn": "",
@@ -304,7 +311,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260904003850",
+      "not_after": "20261203003849"
     }
   },
   "http2": {
@@ -326,8 +335,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "/"
     ]
   },
-  "elapsed_s": 27.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 29.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

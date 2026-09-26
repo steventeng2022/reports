@@ -7,12 +7,12 @@
 | Target | https://download.microsoft.com/ |
 | Bug bounty program | Microsoft Online Services |
 | Listed scope domain | download.microsoft.com |
-| Test date | 2026-09-26 17:43 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
+Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,8 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 13 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -112,6 +114,18 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - **Detail:** Certificate of download.microsoft.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 13. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://download.microsoft.com/ carries Cache-Control: max-age=900; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.209.218.63 carries PTR a23-209-218-63.deploy.static.akamaitechnologies.com. for download.microsoft.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -122,8 +136,8 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "23.209.218.63"
     ],
     "aaaa": [
-      "2600:1417:76:583::317f",
-      "2600:1417:76:585::317f"
+      "2600:1417:76:585::317f",
+      "2600:1417:76:583::317f"
     ],
     "cname": "dlc-ds-shim.trafficmanager.net.",
     "mx": [],
@@ -222,11 +236,19 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910035529",
+      "not_after": "20270327035529"
     }
   },
-  "elapsed_s": 15.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "a23-209-218-63.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 22.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

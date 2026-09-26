@@ -7,8 +7,8 @@
 | Target | https://stock.adobe.com/ |
 | Bug bounty program | Adobe |
 | Listed scope domain | stock.adobe.com |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -140,15 +140,15 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
   "dns": {
     "a": [
       "151.101.193.55",
+      "151.101.129.55",
       "151.101.1.55",
-      "151.101.65.55",
-      "151.101.129.55"
+      "151.101.65.55"
     ],
     "aaaa": [],
     "cname": "maincdn.adobestock.com.",
     "mx": [
-      "stock-adobe-com.mail.protection.outlook.com (pref 10)",
-      "adobe.mail.protection.outlook.com (pref 50)"
+      "adobe.mail.protection.outlook.com (pref 50)",
+      "stock-adobe-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [],
     "spf": [
@@ -247,7 +247,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260830153852",
+      "not_after": "20261128153851"
     }
   },
   "http2": {
@@ -269,8 +271,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "*/%3Cloc%3E/"
     ]
   },
-  "elapsed_s": 11.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 12.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

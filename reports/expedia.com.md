@@ -7,12 +7,12 @@
 | Target | https://expedia.com/ |
 | Bug bounty program | Expedia Group |
 | Listed scope domain | expedia.com |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -124,7 +125,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: perplexity-ai-domain-verification-kx8cwa=8WA6k9CqOacJLnLYJunqAVGGC; google-site-verification=FpDWRaM4PuuKkac8GS2WnRrOL2ETEawDDPSUqkJHUmc; adobe-idp-site-verification=abcfaaf9-27be-4dca-a1e1-c927aef12f3f
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=0Cq9m86umSJj48Lc; tiktok-developers-site-verification=xu7umPD0SGmugD16amWLt5izfF818tcR; google-site-verification=nK8ds4mXu1b3H3be6v0EFQoBDNL0ehLYho-eRN0mmik
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -139,6 +140,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - **Detail:** Strict-Transport-Security is served but expedia.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.37.92.138 carries PTR a23-37-92-138.deploy.static.akamaitechnologies.com. for expedia.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -146,77 +153,77 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "domain": "expedia.com",
   "dns": {
     "a": [
-      "23.192.45.227",
-      "23.192.45.224"
+      "23.37.92.138",
+      "23.37.92.132"
     ],
     "aaaa": [
-      "2600:1417:4400:26::17c9:6707",
-      "2600:1417:4400:26::17c9:6724"
+      "2600:1417:4400:26::17c9:6724",
+      "2600:1417:4400:26::17c9:6707"
     ],
     "cname": null,
     "mx": [
-      "mxa.expediagroup.com (pref 10)",
-      "mxb.expediagroup.com (pref 10)"
+      "mxb.expediagroup.com (pref 10)",
+      "mxa.expediagroup.com (pref 10)"
     ],
     "ns": [
-      "pdns2.ultradns.net.",
-      "pdns6.ultradns.co.uk.",
-      "dns3.p09.nsone.net.",
-      "pdns3.ultradns.org.",
-      "pdns4.ultradns.org.",
-      "dns4.p09.nsone.net.",
-      "dns1.p09.nsone.net.",
       "pdns5.ultradns.info.",
+      "pdns2.ultradns.net.",
+      "pdns3.ultradns.org.",
+      "dns1.p09.nsone.net.",
       "pdns1.ultradns.net.",
-      "dns2.p09.nsone.net."
+      "dns4.p09.nsone.net.",
+      "dns3.p09.nsone.net.",
+      "pdns4.ultradns.org.",
+      "dns2.p09.nsone.net.",
+      "pdns6.ultradns.co.uk."
     ],
     "spf": [
-      "amazonses:glyQN3VG7+2GwQzW53o2g3FKyzhxfj1s1MoJmxgF/IM=",
-      "perplexity-ai-domain-verification-kx8cwa=8WA6k9CqOacJLnLYJunqAVGGC",
-      "google-site-verification=FpDWRaM4PuuKkac8GS2WnRrOL2ETEawDDPSUqkJHUmc",
-      "amazonses:JqZ7DCH6v3rdHV51NIWOkU7wPgB0aSTP0Z1hF9tr9N8=",
-      "MS=ms41917382",
-      "ZOOM_verify_ofBcMvjmQlCZcaU4dvIkgQ",
-      "adobe-idp-site-verification=abcfaaf9-27be-4dca-a1e1-c927aef12f3f",
-      "docusign=af374066-7f8d-4e9e-aa34-ced1f3929a3d",
-      "google-site-verification=nK8ds4mXu1b3H3be6v0EFQoBDNL0ehLYho-eRN0mmik",
-      "apple-domain-verification=0Cq9m86umSJj48Lc",
-      "amazonses:mDgr5HTfTVGx3+y1oKrXWeGLfIIUB6TYS727YPN+MVM=",
-      "slack-domain-verification=81W2yd6WvPIV2bIiJ0v7Z9CctNAA8jqAQl8WaAJq",
-      "tiktok-developers-site-verification=xu7umPD0SGmugD16amWLt5izfF818tcR",
-      "amazonses:oZ2yR24a2IvFfvd7rTosskhpBLV0+ALRtvkRJIjx0fo=",
-      "mailru-verification: 1b3eba1af3b91214",
-      "amazonses:Qz9hS4Kkufxpp+jJXEYur6QH8sCMrNyMuMgqWDY0res=",
-      "amazonses:GpLcOvJxxnz0UuiDzgnZCnWdvkNwNJNDoZsi+jNLl70=",
-      "amazonses:Fo+DrXJ2hWyGoODXpSHEzYI4Uw9L93rskKKD/pbX9qk=",
-      "x034XVMC1Z3q1tp7Rd2+WV9Cf8GQ7wqakjbNinoZvSGB2K7/oQbi2hLe8HLezV0ia4zePzaZaIAwzuXiMPSM9A==",
-      "facebook-domain-verification=imkvqqxv2t6mzz9o2rqoowbjmebkw9",
-      "miro-verification=d36744c01c72c4c0e036eacc18ffe55264b3bf81",
-      "smartsheet-site-validation=1faPwvohZowpNS7Bl4ROqo9qp0soq7Mo",
-      "amazonses:6N5k7dR50wcCMNvXtEVCL7tVvOqZBQmuFFEJLokVIfE=",
-      "_qhfakp24u4ate3lbyvw1p3veiru4lkd",
-      "facebook-domain-verification=s4h6e1h04jupatgxdgiqjclfwmvxu1",
       "amazonses:LZ0J6MYU9V4K1tMfUCKKyF2lrqYy7/T1a3SGHMTkgdI=",
-      "00D00000000hgBG=1TBa70000000GMX",
-      "atlassian-domain-verification=BoDCBNyHJzHh97Myx/Z4n3grU8sMEGR10Mi8CdpStC01PdMAuIARlKP/odGI7CvN",
-      "openai-domain-verification=dv-LcuXOUafDEymiB6NOaKRg5yD",
-      "amazonses:L/znkTRG3CC7az8kQioGsNeARe/8ERvOQUwjq69Ov8A=",
-      "dropbox-domain-verification=4ujrmug64lqg",
-      "_globalsign-domain-verification=VhFG-UAc8IPlmik4wizjFi149rlyYfubwGgIy_Ila4",
-      "lucid-verification=kfm1DJP5pmf-wyf1qxd",
-      "anthropic-domain-verification-gvhc3w=7DZit0fI0UvkLidnFGXWSj673",
-      "amazonses:sG5OYkWVHIpG/aa9orqZIna+hfMfRpT1SGaCb4D4XVw=",
+      "apple-domain-verification=0Cq9m86umSJj48Lc",
+      "ZOOM_verify_ofBcMvjmQlCZcaU4dvIkgQ",
+      "amazonses:oZ2yR24a2IvFfvd7rTosskhpBLV0+ALRtvkRJIjx0fo=",
+      "tiktok-developers-site-verification=xu7umPD0SGmugD16amWLt5izfF818tcR",
+      "_qhfakp24u4ate3lbyvw1p3veiru4lkd",
+      "amazonses:mDgr5HTfTVGx3+y1oKrXWeGLfIIUB6TYS727YPN+MVM=",
+      "google-site-verification=nK8ds4mXu1b3H3be6v0EFQoBDNL0ehLYho-eRN0mmik",
+      "amazonses:glyQN3VG7+2GwQzW53o2g3FKyzhxfj1s1MoJmxgF/IM=",
+      "amazonses:GpLcOvJxxnz0UuiDzgnZCnWdvkNwNJNDoZsi+jNLl70=",
       "ca3-7a14c6a8346148a8a530cc85edf8eaa2",
-      "docusign=4188e9ec-e035-430e-88b2-7a13724ef5a5",
-      "amazonses:t7uPAmLr+GQsilBGtLdODuKQfxX78F7KKROYzkXeDnk=",
+      "perplexity-ai-domain-verification-kx8cwa=8WA6k9CqOacJLnLYJunqAVGGC",
+      "anthropic-domain-verification-gvhc3w=7DZit0fI0UvkLidnFGXWSj673",
+      "_o4ot2wbs5egjtzzg5r2kjfb5iwrf0mp",
+      "mailru-verification: 1b3eba1af3b91214",
+      "amazonses:6N5k7dR50wcCMNvXtEVCL7tVvOqZBQmuFFEJLokVIfE=",
+      "adobe-idp-site-verification=abcfaaf9-27be-4dca-a1e1-c927aef12f3f",
+      "google-site-verification=FpDWRaM4PuuKkac8GS2WnRrOL2ETEawDDPSUqkJHUmc",
+      "teamviewer-sso-verification=aed054b0717d4220825c45cb229bfdb2",
+      "atlassian-domain-verification=BoDCBNyHJzHh97Myx/Z4n3grU8sMEGR10Mi8CdpStC01PdMAuIARlKP/odGI7CvN",
+      "MS=ms41917382",
+      "facebook-domain-verification=imkvqqxv2t6mzz9o2rqoowbjmebkw9",
+      "cisco-ci-domain-verification=353929ee9fd3a3760facd2437590f676e7cf9395c48c74d21b1df486d09f3374",
       "_slnmbnij2ra2pe5luncgck1q9xp153b",
       "_wona8ky5rjcq7mpv89xu2z03gzgw4ox",
-      "cisco-ci-domain-verification=353929ee9fd3a3760facd2437590f676e7cf9395c48c74d21b1df486d09f3374",
-      "apple-domain-verification=dzOcCMjpBEyl50Bc6Wb_j4B10rRmI1Jan_auP5P2lcQ",
-      "_o4ot2wbs5egjtzzg5r2kjfb5iwrf0mp",
-      "teamviewer-sso-verification=aed054b0717d4220825c45cb229bfdb2",
+      "docusign=af374066-7f8d-4e9e-aa34-ced1f3929a3d",
+      "dropbox-domain-verification=4ujrmug64lqg",
       "v=spf1 include:_spf.expedia.com a:b.spf.service-now.com include:_spf.qemailserver.com include:spf.clearslide.com include:mail.zendesk.com include:_spf.salesforce.com include:_spf.sidetrade.net ip4:212.99.44.68 ip4:212.99.44.69 ip4:83.138.167.180 ip4:195.5",
-      "0.76.198 ip4:83.138.167.180/30 ip4:205.201.128.0/20 ip4:198.2.128.0/18 ip4:148.105.8.0/21 ip4:199.15.213.62 ip4:199.15.213.63 ip4:192.28.150.108 ip4:66.244.67.50 -all"
+      "0.76.198 ip4:83.138.167.180/30 ip4:205.201.128.0/20 ip4:198.2.128.0/18 ip4:148.105.8.0/21 ip4:199.15.213.62 ip4:199.15.213.63 ip4:192.28.150.108 ip4:66.244.67.50 -all",
+      "miro-verification=d36744c01c72c4c0e036eacc18ffe55264b3bf81",
+      "lucid-verification=kfm1DJP5pmf-wyf1qxd",
+      "amazonses:L/znkTRG3CC7az8kQioGsNeARe/8ERvOQUwjq69Ov8A=",
+      "docusign=4188e9ec-e035-430e-88b2-7a13724ef5a5",
+      "apple-domain-verification=dzOcCMjpBEyl50Bc6Wb_j4B10rRmI1Jan_auP5P2lcQ",
+      "slack-domain-verification=81W2yd6WvPIV2bIiJ0v7Z9CctNAA8jqAQl8WaAJq",
+      "amazonses:JqZ7DCH6v3rdHV51NIWOkU7wPgB0aSTP0Z1hF9tr9N8=",
+      "amazonses:Qz9hS4Kkufxpp+jJXEYur6QH8sCMrNyMuMgqWDY0res=",
+      "00D00000000hgBG=1TBa70000000GMX",
+      "smartsheet-site-validation=1faPwvohZowpNS7Bl4ROqo9qp0soq7Mo",
+      "amazonses:sG5OYkWVHIpG/aa9orqZIna+hfMfRpT1SGaCb4D4XVw=",
+      "x034XVMC1Z3q1tp7Rd2+WV9Cf8GQ7wqakjbNinoZvSGB2K7/oQbi2hLe8HLezV0ia4zePzaZaIAwzuXiMPSM9A==",
+      "facebook-domain-verification=s4h6e1h04jupatgxdgiqjclfwmvxu1",
+      "amazonses:Fo+DrXJ2hWyGoODXpSHEzYI4Uw9L93rskKKD/pbX9qk=",
+      "amazonses:t7uPAmLr+GQsilBGtLdODuKQfxX78F7KKROYzkXeDnk=",
+      "openai-domain-verification=dv-LcuXOUafDEymiB6NOaKRg5yD",
+      "_globalsign-domain-verification=VhFG-UAc8IPlmik4wizjFi149rlyYfubwGgIy_Ila4"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:expedia@rua.netcraft.com,mailto:dmarc_agg@dmarc.250ok.net ; ruf=mailto:expedia@ruf.netcraft.com,mailto:dmarc_fr@dmarc.250ok.net"
@@ -245,7 +252,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     }
   },
   "ports": {
-    "ip": "23.192.45.227",
+    "ip": "23.37.92.138",
     "open": []
   },
   "https": {
@@ -298,11 +305,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "perplexity-ai-domain-verification-kx8cwa=8WA6k9CqOacJLnLYJunqAVGGC",
-    "google-site-verification=FpDWRaM4PuuKkac8GS2WnRrOL2ETEawDDPSUqkJHUmc",
-    "adobe-idp-site-verification=abcfaaf9-27be-4dca-a1e1-c927aef12f3f",
+    "apple-domain-verification=0Cq9m86umSJj48Lc",
+    "tiktok-developers-site-verification=xu7umPD0SGmugD16amWLt5izfF818tcR",
     "google-site-verification=nK8ds4mXu1b3H3be6v0EFQoBDNL0ehLYho-eRN0mmik",
-    "apple-domain-verification=0Cq9m86umSJj48Lc"
+    "perplexity-ai-domain-verification-kx8cwa=8WA6k9CqOacJLnLYJunqAVGGC",
+    "anthropic-domain-verification-gvhc3w=7DZit0fI0UvkLidnFGXWSj673"
   ],
   "tls2": {
     "alpn": "",
@@ -313,11 +320,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260925202245",
+      "not_after": "20261224202244"
     }
   },
-  "elapsed_s": 7.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "a23-37-92-138.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 5.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

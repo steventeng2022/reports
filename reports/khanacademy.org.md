@@ -7,12 +7,12 @@
 | Target | https://khanacademy.org/ |
 | Bug bounty program | Khan Academy |
 | Listed scope domain | khanacademy.org |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 | 14 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -125,13 +126,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (rsplwohgqdyj80.khanacademy.org and bb7jhgb3c7rfo0.khanacademy.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (se1uoua2eddo95.khanacademy.org and rnsnstxeizo8un.khanacademy.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=7kTMmLFa8kfzTFffAv659zZAhSvDX5lqnB_yuST-xLY; canva-site-verification=JW5MeXNqA7ezvjIRgLOPaQ; botify-site-verification=sGRcFNKzIkHzx1jtsQ7YkiT8hgWB6RiU
+- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=qV_5Us2mt6FO1Ig5hnG4kYHESYAxuH5-qZ0cRXC-Ig; google-site-verification=BUF9CkP4-zm7sN2rDSq6NGRiEkrvvh2k3UdQxwSusrU; onetrust-domain-verification=4bc2331ed4d24c81b7be278e6e1fb58b
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -140,6 +141,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - **Detail:** Certificate of khanacademy.org has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 65.9.180.111 carries PTR server-65-9-180-111.tpe53.r.cloudfront.net. for khanacademy.org.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -147,54 +154,54 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
   "domain": "khanacademy.org",
   "dns": {
     "a": [
-      "65.9.180.8",
       "65.9.180.111",
-      "65.9.180.126",
-      "65.9.180.53"
+      "65.9.180.8",
+      "65.9.180.53",
+      "65.9.180.126"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
       "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx3.googlemail.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx2.googlemail.com (pref 10)",
-      "aspmx.l.google.com (pref 1)"
+      "aspmx2.googlemail.com (pref 10)"
     ],
     "ns": [
-      "ns-798.awsdns-35.net.",
       "ns-1489.awsdns-58.org.",
       "ns-1664.awsdns-16.co.uk.",
+      "ns-798.awsdns-35.net.",
       "ns-125.awsdns-15.com."
     ],
     "spf": [
-      "google-site-verification=7kTMmLFa8kfzTFffAv659zZAhSvDX5lqnB_yuST-xLY",
-      "canva-site-verification=JW5MeXNqA7ezvjIRgLOPaQ",
-      "botify-site-verification=sGRcFNKzIkHzx1jtsQ7YkiT8hgWB6RiU",
-      "v=spf1 include:_spf.google.com include:sendgrid.net include:aspmx.sailthru.com include:mail.zendesk.com exists:%{i}._spf.mta.salesforce.com include:mg-spf.greenhouse.io -all",
-      "apple-domain-verification=FBF7Yx9o3htFHZ7m",
-      "hibp-verify=dweb_9nibj6s7woei7t5h43qd3yni",
-      "yahoo-verification-key=h5B5VELNOFcyiRDJQWEiNChg+SeClI9Bk9k9daiRPR4=",
-      "openai-domain-verification=dv-E4EGw5ZIgYd9B3mwA3dPV5zY",
-      "_globalsign-domain-verification=Prrz12gznJzJiHaajX3CnPfpqK6hhLae0miMSZ_BGa",
-      "facebook-domain-verification=8kvuco8ljlv8t1aedswjypctrp1pk3",
-      "MS=ms10049948",
-      "google-site-verification=y1w1HGdtmQcg92Uy4JtubYkFtDDshCwmDXTFCgjpr-Y",
-      "stripe-verification=332820F9A5BCCCACBF2F5D8636496EB723C4062C9B878B8BAB77E99A2522E947",
-      "spf2.0/pra include:_spf.google.com include:sendgrid.net include:aspmx.sailthru.com -all",
-      "anthropic-domain-verification-4va7p1=Uuz4j8MkpGFjBjYBqvNGNuK46",
-      "google-site-verification=Jiabx8hC-zV0E8-hAj40dHCY_oWNIvfqkNe7VFnGbCs",
-      "onetrust-domain-verification=4bc2331ed4d24c81b7be278e6e1fb58b",
-      "ZOOM_verify_G7FwqtyEKLkoQGhA3ifQq5",
-      "google-site-verification=SprWzGYoIdXdFrUCSyBhXJtHzFjE8FAQNlTamgKenhU",
       "globalsign-domain-verification=qV_5Us2mt6FO1Ig5hnG4kYHESYAxuH5-qZ0cRXC-Ig",
-      "cl_verification=a568671a-6112-4bc5-997d-1f06d8389b2e",
       "google-site-verification=BUF9CkP4-zm7sN2rDSq6NGRiEkrvvh2k3UdQxwSusrU",
-      "cursor-domain-verification-dc9ngn=XEN4zLZD2K4p5yMB2JFUNxGIk",
-      "_globalsign-domain-verification=e70UZqvudGByIeilV8oO0gubBZi0P7QLakTxKub-zS",
+      "onetrust-domain-verification=4bc2331ed4d24c81b7be278e6e1fb58b",
+      "apple-domain-verification=FBF7Yx9o3htFHZ7m",
+      "cl_verification=a568671a-6112-4bc5-997d-1f06d8389b2e",
+      "openai-domain-verification=dv-E4EGw5ZIgYd9B3mwA3dPV5zY",
+      "spf2.0/pra include:_spf.google.com include:sendgrid.net include:aspmx.sailthru.com -all",
+      "_globalsign-domain-verification=Prrz12gznJzJiHaajX3CnPfpqK6hhLae0miMSZ_BGa",
+      "stripe-verification=332820F9A5BCCCACBF2F5D8636496EB723C4062C9B878B8BAB77E99A2522E947",
+      "canva-site-verification=JW5MeXNqA7ezvjIRgLOPaQ",
+      "hibp-verify=dweb_9nibj6s7woei7t5h43qd3yni",
+      "google-site-verification=y1w1HGdtmQcg92Uy4JtubYkFtDDshCwmDXTFCgjpr-Y",
+      "anthropic-domain-verification-4va7p1=Uuz4j8MkpGFjBjYBqvNGNuK46",
+      "google-site-verification=SprWzGYoIdXdFrUCSyBhXJtHzFjE8FAQNlTamgKenhU",
       "google-site-verification=sHrvDlgokhtbjBWsn8Dhu616EFRRv8GD0C1AU4_1gl4",
       "_globalsign-domain-verification=Ca9ol7KyPTrPtyGjL1BqGx_wv6SymozDmCXhHJveUr",
-      "google-site-verification=JML6gcy7DbE1dA3JB9W4O6EB9uQ8bpOlJTyniVCgd-o"
+      "v=spf1 include:_spf.google.com include:sendgrid.net include:aspmx.sailthru.com include:mail.zendesk.com exists:%{i}._spf.mta.salesforce.com include:mg-spf.greenhouse.io -all",
+      "google-site-verification=Jiabx8hC-zV0E8-hAj40dHCY_oWNIvfqkNe7VFnGbCs",
+      "google-site-verification=7kTMmLFa8kfzTFffAv659zZAhSvDX5lqnB_yuST-xLY",
+      "MS=ms10049948",
+      "google-site-verification=JML6gcy7DbE1dA3JB9W4O6EB9uQ8bpOlJTyniVCgd-o",
+      "cursor-domain-verification-dc9ngn=XEN4zLZD2K4p5yMB2JFUNxGIk",
+      "yahoo-verification-key=h5B5VELNOFcyiRDJQWEiNChg+SeClI9Bk9k9daiRPR4=",
+      "ZOOM_verify_G7FwqtyEKLkoQGhA3ifQq5",
+      "_globalsign-domain-verification=e70UZqvudGByIeilV8oO0gubBZi0P7QLakTxKub-zS",
+      "botify-site-verification=sGRcFNKzIkHzx1jtsQ7YkiT8hgWB6RiU",
+      "facebook-domain-verification=8kvuco8ljlv8t1aedswjypctrp1pk3"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-reports@khanacademy.org; ruf=mailto:dmarc-reports@khanacademy.org"
@@ -257,7 +264,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     }
   },
   "ports": {
-    "ip": "65.9.180.8",
+    "ip": "65.9.180.111",
     "open": []
   },
   "https": {
@@ -311,11 +318,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=7kTMmLFa8kfzTFffAv659zZAhSvDX5lqnB_yuST-xLY",
-    "canva-site-verification=JW5MeXNqA7ezvjIRgLOPaQ",
-    "botify-site-verification=sGRcFNKzIkHzx1jtsQ7YkiT8hgWB6RiU",
+    "globalsign-domain-verification=qV_5Us2mt6FO1Ig5hnG4kYHESYAxuH5-qZ0cRXC-Ig",
+    "google-site-verification=BUF9CkP4-zm7sN2rDSq6NGRiEkrvvh2k3UdQxwSusrU",
+    "onetrust-domain-verification=4bc2331ed4d24c81b7be278e6e1fb58b",
     "apple-domain-verification=FBF7Yx9o3htFHZ7m",
-    "yahoo-verification-key=h5B5VELNOFcyiRDJQWEiNChg+SeClI9Bk9k9daiRPR4="
+    "cl_verification=a568671a-6112-4bc5-997d-1f06d8389b2e"
   ],
   "tls2": {
     "alpn": "",
@@ -326,11 +333,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251111000000",
+      "not_after": "20261210235959"
     }
   },
-  "elapsed_s": 6.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 308,
+    "ptr": [
+      "server-65-9-180-111.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 6.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

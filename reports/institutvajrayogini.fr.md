@@ -7,12 +7,12 @@
 | Target | https://institutvajrayogini.fr/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | institutvajrayogini.fr |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **22** (High: 0, Medium: 1, Low: 4, Info: 17)
+Total findings: **24** (High: 0, Medium: 1, Low: 4, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -38,6 +38,8 @@ Total findings: **22** (High: 0, Medium: 1, Low: 4, Info: 17)
 | 20 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 21 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 22 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 23 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 24 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -182,6 +184,18 @@ Total findings: **22** (High: 0, Medium: 1, Low: 4, Info: 17)
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. Sitemap:
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 23. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://institutvajrayogini.fr/ carries Cache-Control: max-age=3600; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 24. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 109.234.164.204 carries PTR 109-234-164-204.reverse.odns.fr. for institutvajrayogini.fr.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -194,11 +208,11 @@ Total findings: **22** (High: 0, Medium: 1, Low: 4, Info: 17)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
+      "alt3.aspmx.l.google.com (pref 10)",
       "alt4.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
       "dns18.ovh.net.",
@@ -305,7 +319,9 @@ Total findings: **22** (High: 0, Medium: 1, Low: 4, Info: 17)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260831091628",
+      "not_after": "20261129091627"
     }
   },
   "http2": {
@@ -313,8 +329,14 @@ Total findings: **22** (High: 0, Medium: 1, Low: 4, Info: 17)
       "Sitemap:"
     ]
   },
-  "elapsed_s": 55.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "109-234-164-204.reverse.odns.fr."
+    ]
+  },
+  "elapsed_s": 56.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

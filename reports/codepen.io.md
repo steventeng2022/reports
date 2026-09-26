@@ -7,12 +7,12 @@
 | Target | https://codepen.io/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | codepen.io |
-| Test date | 2026-09-26 17:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
+Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,7 +26,8 @@ Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
 | 8 | low | MAIL12 | MTA-STS TXT published but policy file unreachable | CWE-285 |
 | 9 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 11 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 11 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 12 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -92,7 +93,13 @@ Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
 - **Detail:** Certificate of codepen.io has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 11. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 11. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of codepen.io permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 12. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: blog.codepen.io
@@ -115,18 +122,18 @@ Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
     "cname": null,
     "mx": [
       "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx3.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "albert.ns.cloudflare.com.",
-      "kristin.ns.cloudflare.com."
+      "kristin.ns.cloudflare.com.",
+      "albert.ns.cloudflare.com."
     ],
     "spf": [
-      "google-site-verification=ee6yZSYLRMH7NdG8DSox4-fH0btH7GdMbMyY7zHenxY",
-      "v=spf1 include:s43465759.fdmarc.net ~all"
+      "v=spf1 include:s43465759.fdmarc.net ~all",
+      "google-site-verification=ee6yZSYLRMH7NdG8DSox4-fH0btH7GdMbMyY7zHenxY"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:794c09812c0a4c7a8f4d400401c310ac@dmarc-reports.cloudflare.net; aspf=s; adkim=s"
@@ -237,14 +244,19 @@ Total findings: **11** (High: 0, Medium: 0, Low: 1, Info: 10)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260911030025",
+      "not_after": "20261210040021"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
+  "x12": {
+    "status": 403
+  },
   "elapsed_s": 4.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

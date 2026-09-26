@@ -7,12 +7,12 @@
 | Target | https://steamcommunity.com/ |
 | Bug bounty program | Valve Software |
 | Listed scope domain | steamcommunity.com |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -133,6 +134,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - **Detail:** Certificate of steamcommunity.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.209.217.19 carries PTR a23-209-217-19.deploy.static.akamaitechnologies.com. for steamcommunity.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -150,15 +157,15 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     ],
     "ns": [
       "a1-194.akam.net.",
+      "a7-66.akam.net.",
       "a2-64.akam.net.",
       "a24-64.akam.net.",
-      "a7-66.akam.net.",
-      "a9-66.akam.net.",
-      "a22-67.akam.net."
+      "a22-67.akam.net.",
+      "a9-66.akam.net."
     ],
     "spf": [
-      "google-site-verification=vsUrXpDBPSpF6cqB24j-eo8q-GgNzs7MbSUP-6Ch8kc",
-      "v=spf1 mx include:_netblocks.mimecast.com -all"
+      "v=spf1 mx include:_netblocks.mimecast.com -all",
+      "google-site-verification=vsUrXpDBPSpF6cqB24j-eo8q-GgNzs7MbSUP-6Ch8kc"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:e8b9a9244a5c591@rep.dmarcanalyzer.com; ruf=mailto:e8b9a9244a5c591@for.dmarcanalyzer.com; pct=100; sp=reject; adkim=s; aspf=s; fo=1;"
@@ -297,11 +304,19 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260922211643",
+      "not_after": "20261221211642"
     }
   },
-  "elapsed_s": 7.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403,
+    "ptr": [
+      "a23-209-217-19.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 7.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

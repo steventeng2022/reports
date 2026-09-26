@@ -7,12 +7,12 @@
 | Target | https://overcast.fm/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | overcast.fm |
-| Test date | 2026-09-26 17:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
+Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 | 11 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -114,6 +115,12 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 - **Detail:** Strict-Transport-Security is served but overcast.fm is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 45.79.15.101 carries PTR lb1.overcast.fm. for overcast.fm.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -127,16 +134,16 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "in2-smtp.messagingengine.com (pref 20)",
-      "in1-smtp.messagingengine.com (pref 10)"
+      "in1-smtp.messagingengine.com (pref 10)",
+      "in2-smtp.messagingengine.com (pref 20)"
     ],
     "ns": [
-      "rocky.ns.cloudflare.com.",
-      "tegan.ns.cloudflare.com."
+      "tegan.ns.cloudflare.com.",
+      "rocky.ns.cloudflare.com."
     ],
     "spf": [
-      "v=spf1 include:spf.messagingengine.com ?all",
-      "apple-domain-verification=RVG8mJwNCKZ8sqDT"
+      "apple-domain-verification=RVG8mJwNCKZ8sqDT",
+      "v=spf1 include:spf.messagingengine.com ?all"
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -228,11 +235,19 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260921230501",
+      "not_after": "20261220230500"
     }
   },
-  "elapsed_s": 60.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "lb1.overcast.fm."
+    ]
+  },
+  "elapsed_s": 22.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

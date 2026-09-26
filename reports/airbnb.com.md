@@ -7,12 +7,12 @@
 | Target | https://airbnb.com/ |
 | Bug bounty program | Airbnb |
 | Listed scope domain | airbnb.com |
-| Test date | 2026-09-26 17:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,7 +32,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | CT1 | 249 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | CT1 | 249 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -125,7 +126,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-2s2h87=NaRxcN9zTtIb3insUyX7U264A; webexdomainverification.725890277b499457e053ab06fc0a5ef4=b060825b-4db4-4ce3-a61e; canva-site-verification=LTDCDSi1WalQaoEcq8B1WA
+- **Detail:** Apex TXT records with verification/token content: webexdomainverification.=162d362c-c218-48f0-8b53-0017116e6f29; segment-site-verification=ZkxkEuKJrGI9MrWGC0qw795Xkj9ZlcBq; neat-pulse-domain-verification-Kkvm4PN=ab046095-265e-45ae-8816-c61097444bfd
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -140,7 +141,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** robots.txt lists 687 disallow path(s), e.g. /.well-known/assetlinks.json, /*/skeleton, /*/sw_skeleton, /500, /account
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 17. [INFO] 249 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 166.117.27.62 carries PTR a333dda39e3b496ea.awsglobalaccelerator.com. for airbnb.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 18. [INFO] 249 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: admin.airbnb.com, admin.dev.staging.airbnb.com, api.airbnb.com, api.akamai-ci.airbnb.com, api.akamai-dev.airbnb.com, api.dev.staging.airbnb.com, api.preprod.airbnb.com, careers.airbnb.com, careers.next.airbnb.com, dev.staging.airbnb.com
@@ -153,69 +160,69 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "airbnb.com",
   "dns": {
     "a": [
-      "166.117.189.176",
-      "166.117.27.62"
+      "166.117.27.62",
+      "166.117.189.176"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
       "alt2.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "alt3.aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)"
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "dns3.p08.nsone.net.",
+      "ns-558.awsdns-05.net.",
       "ns-474.awsdns-59.com.",
-      "ns-1453.awsdns-53.org.",
-      "dns1.p08.nsone.net.",
-      "dns4.p08.nsone.net.",
       "dns2.p08.nsone.net.",
       "ns-1932.awsdns-49.co.uk.",
-      "ns-558.awsdns-05.net."
+      "dns1.p08.nsone.net.",
+      "dns4.p08.nsone.net.",
+      "ns-1453.awsdns-53.org.",
+      "dns3.p08.nsone.net."
     ],
     "spf": [
-      "anthropic-domain-verification-2s2h87=NaRxcN9zTtIb3insUyX7U264A",
-      "docusign=1c606b88-26ef-48f9-8913-a4251a947532",
-      "webexdomainverification.725890277b499457e053ab06fc0a5ef4=b060825b-4db4-4ce3-a61e-debc56370fc0",
       "datadome-domain-verify=W7kEoUrcETDB4afh6Dg5XcjzGWIxidID",
-      "MS=ms85621737",
-      "canva-site-verification=LTDCDSi1WalQaoEcq8B1WA",
-      "bettercomp-verify=2b6685a8a6a942417057188531c867db5c85bc8aa25f038a77784e6f0f8bc84f",
-      "facebook-domain-verification=t3zulila9jjnrfbyt6vjamhqdxz47f",
-      "wework-site-verification=pnT3RXj0097aqZvB",
-      "miro-verification=c5c6890aa37542fb59662ade09a0778c6e028b2f",
-      "ecostruxure-it-verification=5dd49b15-5fc0-4967-914f-3cc7b2fd6cdf",
-      "adobe-idp-site-verification=e68ae64c-3a65-4439-b368-0042e72c4cc8",
-      "gradle-verification=VV7U686RA4HKV4QKVJ4L85Q6V6CJ6",
-      "cisco-ci-domain-verification=eef9c0a839b89aed57cdd00866d163bb0660fec297c0c1e4b275baec96cfa10",
-      "DirectFedAuthUrl=https://airbnb.okta.com/app/airbnb_pwcprodnewhiddensaml_1/exk223q4dm1BiHGe81d8/sso/saml",
-      "openai-domain-verification=dv-g8FeEwzIIZCUjUpPuF8szG3a",
-      "google-site-verification=A8e2zY9GYwx8D7x0aOz09Vl4gHfPmv86y_TbW1TUDqs",
       "docusign=d56dee1c-0384-4ffa-8801-e6bea308af97",
+      "webexdomainverification.=162d362c-c218-48f0-8b53-0017116e6f29",
+      "segment-site-verification=ZkxkEuKJrGI9MrWGC0qw795Xkj9ZlcBq",
+      "neat-pulse-domain-verification-Kkvm4PN=ab046095-265e-45ae-8816-c61097444bfd",
+      "bettercomp-verify=2b6685a8a6a942417057188531c867db5c85bc8aa25f038a77784e6f0f8bc84f",
+      "google-site-verification=_e6Ayd8GN0S5dR116WkaM5ds5tx3ekRD5DC9-51pGrg",
+      "openai-domain-verification=dv-g8FeEwzIIZCUjUpPuF8szG3a",
       "atlassian-domain-verification=mvMbea0qZ4IoMr8/xjkRYgjiHikXBbF04PZnZYv1Nj9UgppCnagnNaSo4T8QnCnP",
-      "apple-domain-verification=KVJVb0VKHY0IkzDH",
-      "reejig-platform-domain-verification-0dc5cd=a9i760YDrujxnHMEEoXwZP5bD",
-      "google-site-verification=Dz--VdnW2R_4K45T0eM8i0vNpFlip_o10WidHL5a3cg",
+      "rzp-site-verification=31fa3e1cd566e8d7347ed9bb16424c59",
+      "google-site-verification=A8e2zY9GYwx8D7x0aOz09Vl4gHfPmv86y_TbW1TUDqs",
       "masv=MDSVaBxDxTKiIngeAbltVvdnlTkAhnci",
       "status-page-domain-verification=vxdvtv6jn2y9",
-      "google-site-verification=_e6Ayd8GN0S5dR116WkaM5ds5tx3ekRD5DC9-51pGrg",
       "paloaltonetworks-site-verification=4df1258d8366090409f33305a49c27e5e867aa6dfd8d8d936c60bdee3396ee04",
-      "google-site-verification=HEoQR0xvby-BYv7pNt06jkvTF44l6rvMnREUZSTyfYQ",
-      "segment-site-verification=ZkxkEuKJrGI9MrWGC0qw795Xkj9ZlcBq",
+      "miro-verification=c5c6890aa37542fb59662ade09a0778c6e028b2f",
       "dtm-domain-verification=pKWJVhJM8WfWtDBjyfKZjwxGurB9fiCf1TpvWO_Kvmw",
-      "google-site-verification=EFtD_37EY5f55YpAvM8rJ-e6Mwi1I3HF9Xuym2-ZlY8",
-      "yahoo-verification-key=YbxdxsyS96Uy5zQpwbZnLfjBY3tMlG2qWTSLHvVrsZ8=",
-      "webexdomainverification.=162d362c-c218-48f0-8b53-0017116e6f29",
-      "stripe-verification=271cb9609512aa1a36ff5693b0a5cd9f04d19e089e8abae29dde633abc19749d",
+      "canva-site-verification=LTDCDSi1WalQaoEcq8B1WA",
       "elevenlabs=igH15TA-6-8aXgxhsL6--iDut7kibGkXsl3Qrvth8gY",
-      "1password-site-verification=2UO5LR7CZBAKBDNJPUTRIFTUJM",
-      "lucidlink-verification=B2MS39YZ6H92VYF0X75CJHKRC4",
+      "facebook-domain-verification=t3zulila9jjnrfbyt6vjamhqdxz47f",
+      "gradle-verification=VV7U686RA4HKV4QKVJ4L85Q6V6CJ6",
+      "ecostruxure-it-verification=5dd49b15-5fc0-4967-914f-3cc7b2fd6cdf",
+      "wework-site-verification=pnT3RXj0097aqZvB",
+      "apple-domain-verification=KVJVb0VKHY0IkzDH",
+      "DirectFedAuthUrl=https://airbnb.okta.com/app/airbnb_pwcprodnewhiddensaml_1/exk223q4dm1BiHGe81d8/sso/saml",
+      "google-site-verification=HEoQR0xvby-BYv7pNt06jkvTF44l6rvMnREUZSTyfYQ",
+      "stripe-verification=271cb9609512aa1a36ff5693b0a5cd9f04d19e089e8abae29dde633abc19749d",
       "v=spf1 include:spf1.airbnb.com ip6:2c0f:fb50:4864::/56 ip6:2a00:1450:4864::/56 ip6:2800:3f0:4864::/56 ip6:2607:f8b0:4864::/56 ip6:2404:6800:4864::/56 ip6:2001:4860:4864::/56 ip4:98.77.0.0/16 ip4:87.253.232.0/21 ip4:76.223.176.0/20 ip4:76.223.128.0/19 -all",
+      "reejig-platform-domain-verification-0dc5cd=a9i760YDrujxnHMEEoXwZP5bD",
       "status-page-domain-verification=tb81t2ndk8pb",
-      "rzp-site-verification=31fa3e1cd566e8d7347ed9bb16424c59",
-      "neat-pulse-domain-verification-Kkvm4PN=ab046095-265e-45ae-8816-c61097444bfd"
+      "yahoo-verification-key=YbxdxsyS96Uy5zQpwbZnLfjBY3tMlG2qWTSLHvVrsZ8=",
+      "webexdomainverification.725890277b499457e053ab06fc0a5ef4=b060825b-4db4-4ce3-a61e-debc56370fc0",
+      "MS=ms85621737",
+      "docusign=1c606b88-26ef-48f9-8913-a4251a947532",
+      "google-site-verification=EFtD_37EY5f55YpAvM8rJ-e6Mwi1I3HF9Xuym2-ZlY8",
+      "anthropic-domain-verification-2s2h87=NaRxcN9zTtIb3insUyX7U264A",
+      "1password-site-verification=2UO5LR7CZBAKBDNJPUTRIFTUJM",
+      "adobe-idp-site-verification=e68ae64c-3a65-4439-b368-0042e72c4cc8",
+      "google-site-verification=Dz--VdnW2R_4K45T0eM8i0vNpFlip_o10WidHL5a3cg",
+      "lucidlink-verification=B2MS39YZ6H92VYF0X75CJHKRC4",
+      "cisco-ci-domain-verification=eef9c0a839b89aed57cdd00866d163bb0660fec297c0c1e4b275baec96cfa10"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;sp=reject;pct=100;ruf=mailto:dmarc.forensic@airbnb.com;rua=mailto:dmarc.aggregate@airbnb.com;aspf=r;adkim=r;fo=1;ri=3600"
@@ -321,7 +328,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "166.117.189.176",
+    "ip": "166.117.27.62",
     "open": []
   },
   "https": {
@@ -414,11 +421,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     ]
   },
   "apex_txt": [
-    "anthropic-domain-verification-2s2h87=NaRxcN9zTtIb3insUyX7U264A",
-    "webexdomainverification.725890277b499457e053ab06fc0a5ef4=b060825b-4db4-4ce3-a61e",
-    "canva-site-verification=LTDCDSi1WalQaoEcq8B1WA",
-    "facebook-domain-verification=t3zulila9jjnrfbyt6vjamhqdxz47f",
-    "wework-site-verification=pnT3RXj0097aqZvB"
+    "webexdomainverification.=162d362c-c218-48f0-8b53-0017116e6f29",
+    "segment-site-verification=ZkxkEuKJrGI9MrWGC0qw795Xkj9ZlcBq",
+    "neat-pulse-domain-verification-Kkvm4PN=ab046095-265e-45ae-8816-c61097444bfd",
+    "google-site-verification=_e6Ayd8GN0S5dR116WkaM5ds5tx3ekRD5DC9-51pGrg",
+    "openai-domain-verification=dv-g8FeEwzIIZCUjUpPuF8szG3a"
   ],
   "tls2": {
     "alpn": "",
@@ -429,7 +436,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260625000000",
+      "not_after": "20261022235959"
     }
   },
   "http2": {
@@ -452,8 +461,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/experiences/*?*scheduled_id"
     ]
   },
-  "elapsed_s": 23.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "a333dda39e3b496ea.awsglobalaccelerator.com."
+    ]
+  },
+  "elapsed_s": 24.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

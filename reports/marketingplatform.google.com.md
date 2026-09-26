@@ -7,12 +7,12 @@
 | Target | https://marketingplatform.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | marketingplatform.google.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
+Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -118,6 +120,18 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 14. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://marketingplatform.google.com/ carries Cache-Control: public, max-age=1800; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 142.250.157.139 carries PTR ta-in-f139.1e100.net. for marketingplatform.google.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -125,18 +139,18 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
   "domain": "marketingplatform.google.com",
   "dns": {
     "a": [
-      "173.194.174.139",
-      "173.194.174.102",
-      "173.194.174.113",
-      "173.194.174.101",
-      "173.194.174.138",
-      "173.194.174.100"
+      "142.250.157.139",
+      "142.250.157.102",
+      "142.250.157.100",
+      "142.250.157.138",
+      "142.250.157.113",
+      "142.250.157.101"
     ],
     "aaaa": [
-      "2404:6800:4008:c1b::66",
-      "2404:6800:4008:c1b::8b",
-      "2404:6800:4008:c1b::71",
-      "2404:6800:4008:c1b::65"
+      "2404:6800:4008:c13::66",
+      "2404:6800:4008:c13::8b",
+      "2404:6800:4008:c13::71",
+      "2404:6800:4008:c13::8a"
     ],
     "cname": null,
     "mx": [],
@@ -231,7 +245,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
     }
   },
   "ports": {
-    "ip": "173.194.174.139",
+    "ip": "142.250.157.139",
     "open": []
   },
   "https": {
@@ -292,7 +306,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192201",
+      "not_after": "20261203192200"
     }
   },
   "http2": {
@@ -300,8 +316,14 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "/"
     ]
   },
-  "elapsed_s": 22.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ta-in-f139.1e100.net."
+    ]
+  },
+  "elapsed_s": 21.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

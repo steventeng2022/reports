@@ -7,12 +7,12 @@
 | Target | https://cargocollective.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | cargocollective.com |
-| Test date | 2026-09-26 17:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
+Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 20 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -162,6 +163,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 - **Detail:** robots.txt lists 7 disallow path(s), e.g. /, /login, /_api/, /admin/, /webdesigners
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 20. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.23.180.22 carries PTR ec2-23-23-180-22.compute-1.amazonaws.com. for cargocollective.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -169,25 +176,25 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
   "domain": "cargocollective.com",
   "dns": {
     "a": [
-      "184.192.66.36",
-      "23.23.180.22"
+      "23.23.180.22",
+      "184.192.66.36"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mx1.emailsrvr.com (pref 10)",
-      "mx2.emailsrvr.com (pref 20)"
+      "mx2.emailsrvr.com (pref 20)",
+      "mx1.emailsrvr.com (pref 10)"
     ],
     "ns": [
-      "ns-1229.awsdns-25.org.",
-      "ns-660.awsdns-18.net.",
       "ns-1996.awsdns-57.co.uk.",
-      "ns-184.awsdns-23.com."
+      "ns-184.awsdns-23.com.",
+      "ns-660.awsdns-18.net.",
+      "ns-1229.awsdns-25.org."
     ],
     "spf": [
+      "v=spf1 ip4:64.49.217.119 ip4:64.49.217.117 ip4:64.49.217.116 ip4:64.49.217.118 a mx include:emailsrvr.com ~all",
       "facebook-domain-verification=xhn4dzr9agutlpm8ilphherijydjx3",
       "v=spf1 include:emailsrvr.com ~all",
-      "v=spf1 ip4:64.49.217.119 ip4:64.49.217.117 ip4:64.49.217.116 ip4:64.49.217.118 a mx include:emailsrvr.com ~all",
       "google-site-verification=bcBS4YranTaAZVF490BZrZxc40-CdBLBft74SxZ_Sxo"
     ],
     "dmarc": [],
@@ -216,7 +223,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     }
   },
   "ports": {
-    "ip": "184.192.66.36",
+    "ip": "23.23.180.22",
     "open": []
   },
   "https": {
@@ -281,7 +288,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260112000000",
+      "not_after": "20270209235959"
     }
   },
   "http2": {
@@ -295,8 +304,14 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "/"
     ]
   },
-  "elapsed_s": 31.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "ec2-23-23-180-22.compute-1.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 31.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

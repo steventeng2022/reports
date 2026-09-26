@@ -7,12 +7,12 @@
 | Target | https://it.linkedin.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | it.linkedin.com |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
+Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 | 12 | low | CK4 | Session-like cookie without HttpOnly | CWE-1004 |
 | 13 | info | CK5 | Cookie scoped to parent domain (linkedin.com) | CWE-200 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 16 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 
 ## Detailed findings
 
@@ -42,13 +44,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.41.41:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.64.146.215:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.41.41:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.64.146.215:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -121,6 +123,18 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 - **Detail:** robots.txt lists 4398 disallow path(s), e.g. /addContacts*, /addressBookExport*, /ambry, /analytics/, /answers*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 15. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of it.linkedin.com permits unsafe-inline; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 16. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of it.linkedin.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -128,12 +142,12 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
   "domain": "it.linkedin.com",
   "dns": {
     "a": [
-      "104.18.41.41",
-      "172.64.146.215"
+      "172.64.146.215",
+      "104.18.41.41"
     ],
     "aaaa": [
-      "2a06:98c1:310b::ac40:92d7",
-      "2a06:98c1:3109::6812:2929"
+      "2a06:98c1:3109::6812:2929",
+      "2a06:98c1:310b::ac40:92d7"
     ],
     "cname": "cctld.linkedin.com.",
     "mx": [],
@@ -240,7 +254,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
     }
   },
   "ports": {
-    "ip": "104.18.41.41",
+    "ip": "172.64.146.215",
     "open": [
       8080,
       8443
@@ -336,7 +350,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260903000000",
+      "not_after": "20270303235959"
     }
   },
   "http2": {
@@ -358,8 +374,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "/edurec*"
     ]
   },
-  "elapsed_s": 10.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 11.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://speakerdeck.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | speakerdeck.com |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
+Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 17 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -108,7 +110,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=3ggCXuHu3Wkywh0QJ4MVBy9jz0MMfAEVJGNVQP56eyY; google-site-verification=U0zznvYUS5x_csx7-HqM5TJh-EGrTvjQOR7wCPGyv74; facebook-domain-verification=5rzw9hjdxxzobpi4p6lk9tlvpldfej
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=U0zznvYUS5x_csx7-HqM5TJh-EGrTvjQOR7wCPGyv74; facebook-domain-verification=5rzw9hjdxxzobpi4p6lk9tlvpldfej; google-site-verification=3ggCXuHu3Wkywh0QJ4MVBy9jz0MMfAEVJGNVQP56eyY
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -129,6 +131,18 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 - **Detail:** robots.txt lists 7 disallow path(s), e.g. /search, /*signin?*, /*kolkata*, /*call-0821*, /*return_to=*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 16. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of speakerdeck.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 17. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://speakerdeck.com/ carries Cache-Control: max-age=0, private, must-revalidate; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -145,22 +159,22 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
     ],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "aspmx3.googlemail.com (pref 10)"
     ],
     "ns": [
-      "nola.ns.cloudflare.com.",
-      "john.ns.cloudflare.com."
+      "john.ns.cloudflare.com.",
+      "nola.ns.cloudflare.com."
     ],
     "spf": [
-      "google-site-verification=3ggCXuHu3Wkywh0QJ4MVBy9jz0MMfAEVJGNVQP56eyY",
-      "google-site-verification=U0zznvYUS5x_csx7-HqM5TJh-EGrTvjQOR7wCPGyv74",
-      "facebook-domain-verification=5rzw9hjdxxzobpi4p6lk9tlvpldfej",
       "ALIAS for speakerdeck.com.herokudns.com",
       "v=spf1 include:mailgun.org include:userlist.com include:spf.auth.aws.groovehq.com ~all",
+      "google-site-verification=U0zznvYUS5x_csx7-HqM5TJh-EGrTvjQOR7wCPGyv74",
+      "facebook-domain-verification=5rzw9hjdxxzobpi4p6lk9tlvpldfej",
+      "google-site-verification=3ggCXuHu3Wkywh0QJ4MVBy9jz0MMfAEVJGNVQP56eyY",
       "stripe-verification=51e5bf1257eaab3496a4c15cdce19f2c27d591dd7d87097e936b1fbc2e84a855"
     ],
     "dmarc": [
@@ -253,9 +267,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=3ggCXuHu3Wkywh0QJ4MVBy9jz0MMfAEVJGNVQP56eyY",
     "google-site-verification=U0zznvYUS5x_csx7-HqM5TJh-EGrTvjQOR7wCPGyv74",
     "facebook-domain-verification=5rzw9hjdxxzobpi4p6lk9tlvpldfej",
+    "google-site-verification=3ggCXuHu3Wkywh0QJ4MVBy9jz0MMfAEVJGNVQP56eyY",
     "stripe-verification=51e5bf1257eaab3496a4c15cdce19f2c27d591dd7d87097e936b1fbc2e84"
   ],
   "tls2": {
@@ -267,7 +281,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260919203022",
+      "not_after": "20261218203021"
     }
   },
   "http2": {
@@ -281,8 +297,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
       "/*.atom*"
     ]
   },
-  "elapsed_s": 11.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 11.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

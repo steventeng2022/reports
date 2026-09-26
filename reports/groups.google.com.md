@@ -7,12 +7,12 @@
 | Target | https://groups.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | groups.google.com |
-| Test date | 2026-09-26 17:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 13 | info | CK5 | Cookie scoped to parent domain (.google.com) | CWE-200 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 16 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -121,6 +124,24 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 - **Detail:** robots.txt lists 68 disallow path(s), e.g. /groups/search, /groups/dir?*q=, /a/*.*/groups/search, /a/*.*/groups/dir?*q=, /d/search*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 15. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of groups.google.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 16. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of groups.google.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 108.177.97.102 carries PTR tm-in-f102.1e100.net. for groups.google.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -128,24 +149,26 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
   "domain": "groups.google.com",
   "dns": {
     "a": [
-      "216.239.36.177",
-      "216.239.34.177",
-      "216.239.38.177",
-      "216.239.32.177"
+      "108.177.97.102",
+      "108.177.97.138",
+      "108.177.97.113",
+      "108.177.97.101",
+      "108.177.97.139",
+      "108.177.97.100"
     ],
     "aaaa": [
-      "2001:4860:4802:38::177",
-      "2001:4860:4802:36::177",
-      "2001:4860:4802:32::177",
-      "2001:4860:4802:34::177"
+      "2404:6800:4008:c00::71",
+      "2404:6800:4008:c00::64",
+      "2404:6800:4008:c00::8a",
+      "2404:6800:4008:c00::8b"
     ],
     "cname": null,
     "mx": [
+      "gmr-smtp-in.l.google.com (pref 5)",
       "alt1.gmr-smtp-in.l.google.com (pref 10)",
       "alt4.gmr-smtp-in.l.google.com (pref 40)",
-      "gmr-smtp-in.l.google.com (pref 5)",
-      "alt2.gmr-smtp-in.l.google.com (pref 20)",
-      "alt3.gmr-smtp-in.l.google.com (pref 30)"
+      "alt3.gmr-smtp-in.l.google.com (pref 30)",
+      "alt2.gmr-smtp-in.l.google.com (pref 20)"
     ],
     "ns": [],
     "spf": [
@@ -240,7 +263,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
     }
   },
   "ports": {
-    "ip": "216.239.36.177",
+    "ip": "108.177.97.102",
     "open": []
   },
   "https": {
@@ -309,7 +332,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192201",
+      "not_after": "20261203192200"
     }
   },
   "http2": {
@@ -331,8 +356,14 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
       "/*_escaped_fragment_=starred"
     ]
   },
-  "elapsed_s": 20.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "tm-in-f102.1e100.net."
+    ]
+  },
+  "elapsed_s": 13.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://cell.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | cell.com |
-| Test date | 2026-09-26 17:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
+Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,7 +30,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 15 | info | CT1 | 14 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 16 | info | CT1 | 14 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -43,13 +44,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.66.0.112:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 162.159.140.114:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.66.0.112:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 162.159.140.114:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -99,7 +100,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: pendo-domain-verification=f1e205fa-06f4-4a13-a73a-3e0f82e7f104; onetrust-domain-verification=509af418dcce43c5a6330cd2128ee529; atlassian-domain-verification=2ckcJUmjEfh8TAauQPrWb9eLXpM1UyNHPk+6SmzC3X0tqBzJKZ
+- **Detail:** Apex TXT records with verification/token content: miro-verification=edd5a54fc20add96505c5c718975977b28f370a9; anthropic-domain-verification-ssq6py=6YMLbUb5ERHhYY7Heuk7JKNHt; atlassian-domain-verification=2ckcJUmjEfh8TAauQPrWb9eLXpM1UyNHPk+6SmzC3X0tqBzJKZ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -120,7 +121,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 - **Detail:** robots.txt lists 38 disallow path(s), e.g. /action, /help, /search, /feedback, /rss
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 15. [INFO] 14 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 15. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of cell.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 16. [INFO] 14 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: staging.www.cell.com
@@ -133,8 +140,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
   "domain": "cell.com",
   "dns": {
     "a": [
-      "172.66.0.112",
-      "162.159.140.114"
+      "162.159.140.114",
+      "172.66.0.112"
     ],
     "aaaa": [],
     "cname": null,
@@ -143,21 +150,21 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
     ],
     "ns": [
       "ns3.reedelsevier.com.",
-      "ns1.reedelsevier.com.",
-      "ns2.reedelsevier.com."
+      "ns2.reedelsevier.com.",
+      "ns1.reedelsevier.com."
     ],
     "spf": [
-      "ZOOM_verify_W4AuTEx9ROGD4kK_ePkcBA",
+      "miro-verification=edd5a54fc20add96505c5c718975977b28f370a9",
+      "anthropic-domain-verification-ssq6py=6YMLbUb5ERHhYY7Heuk7JKNHt",
+      "atlassian-domain-verification=2ckcJUmjEfh8TAauQPrWb9eLXpM1UyNHPk+6SmzC3X0tqBzJKZFYmm9rbKXfVm0v",
       "pendo-domain-verification=f1e205fa-06f4-4a13-a73a-3e0f82e7f104",
+      "adobe-idp-site-verification=fd4fae74b683e6e22ef9b491871ae9f0faf7856b8a8588d267e24565628d2dbd",
       "onetrust-domain-verification=509af418dcce43c5a6330cd2128ee529",
       "MS=ms13784580",
-      "atlassian-domain-verification=2ckcJUmjEfh8TAauQPrWb9eLXpM1UyNHPk+6SmzC3X0tqBzJKZFYmm9rbKXfVm0v",
-      "miro-verification=edd5a54fc20add96505c5c718975977b28f370a9",
-      "adobe-idp-site-verification=fd4fae74b683e6e22ef9b491871ae9f0faf7856b8a8588d267e24565628d2dbd",
+      "ZOOM_verify_W4AuTEx9ROGD4kK_ePkcBA",
       "onetrust-domain-verification=703cad9baa55456ab0ed05c40cd00445",
       "v=spf1 include:spf.protection.outlook.com include:519224.spf06.hubspotemail.net ip4:202.54.185.101 ip4:210.18.134.82 ip4:202.54.183.83 ip4:203.129.255.210 ip4:122.187.94.54 ip4:115.110.117.138 ip4:103.130.89.242 ip4:47.247.140.234 ip4:47.247.140.230",
       " include:rnmk.com -all",
-      "anthropic-domain-verification-ssq6py=6YMLbUb5ERHhYY7Heuk7JKNHt",
       "NNaG7DvrFpIe+hqV6axdB2BDDbaBT5OUuQ8dl5fRyvYVFnuNb39lU9OREInFizJw5B3FZ91RQjKgRLOa+7BJXA=="
     ],
     "dmarc": [
@@ -187,7 +194,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
     }
   },
   "ports": {
-    "ip": "172.66.0.112",
+    "ip": "162.159.140.114",
     "open": [
       8080,
       8443
@@ -264,10 +271,10 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
     ]
   },
   "apex_txt": [
-    "pendo-domain-verification=f1e205fa-06f4-4a13-a73a-3e0f82e7f104",
-    "onetrust-domain-verification=509af418dcce43c5a6330cd2128ee529",
-    "atlassian-domain-verification=2ckcJUmjEfh8TAauQPrWb9eLXpM1UyNHPk+6SmzC3X0tqBzJKZ",
     "miro-verification=edd5a54fc20add96505c5c718975977b28f370a9",
+    "anthropic-domain-verification-ssq6py=6YMLbUb5ERHhYY7Heuk7JKNHt",
+    "atlassian-domain-verification=2ckcJUmjEfh8TAauQPrWb9eLXpM1UyNHPk+6SmzC3X0tqBzJKZ",
+    "pendo-domain-verification=f1e205fa-06f4-4a13-a73a-3e0f82e7f104",
     "adobe-idp-site-verification=fd4fae74b683e6e22ef9b491871ae9f0faf7856b8a8588d267e2"
   ],
   "tls2": {
@@ -279,7 +286,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260807194631",
+      "not_after": "20261105204629"
     }
   },
   "http2": {
@@ -301,8 +310,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "/doi/mlt/"
     ]
   },
-  "elapsed_s": 8.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 8.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

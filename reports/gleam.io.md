@@ -7,8 +7,8 @@
 | Target | https://gleam.io/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | gleam.io |
-| Test date | 2026-09-26 17:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -123,7 +123,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=E6-eQ8w6PaDhy4OM-RhbVH2gk4EezZBiMlTz9BEPXz0; hubspot-developer-verification=YTdhYzEyMmEtOTE1ZC00MjcwLWE4Y2QtNzBlNzhiM2UxMTQx; 1password-site-verification=GDHGMUTFKNB57DFFCO4U4GF3TU
+- **Detail:** Apex TXT records with verification/token content: hubspot-developer-verification=YTdhYzEyMmEtOTE1ZC00MjcwLWE4Y2QtNzBlNzhiM2UxMTQx; google-site-verification=E6-eQ8w6PaDhy4OM-RhbVH2gk4EezZBiMlTz9BEPXz0; hubspot-developer-verification=NmVjZWE0ZTQtZDUxYS00ODA4LWJlZDYtZDRlMTMwODE4Y2E3
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -163,24 +163,24 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx2.googlemail.com (pref 10)",
-      "aspmx3.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx2.googlemail.com (pref 10)",
+      "aspmx3.googlemail.com (pref 10)"
     ],
     "ns": [
       "tegan.ns.cloudflare.com.",
       "anirban.ns.cloudflare.com."
     ],
     "spf": [
-      "google-site-verification=E6-eQ8w6PaDhy4OM-RhbVH2gk4EezZBiMlTz9BEPXz0",
-      "v=spf1 a mx include:mailgun.org include:_spf.google.com include:amazonses.com -all",
       "hubspot-developer-verification=YTdhYzEyMmEtOTE1ZC00MjcwLWE4Y2QtNzBlNzhiM2UxMTQx",
-      "1password-site-verification=GDHGMUTFKNB57DFFCO4U4GF3TU",
+      "google-site-verification=E6-eQ8w6PaDhy4OM-RhbVH2gk4EezZBiMlTz9BEPXz0",
       "hubspot-developer-verification=NmVjZWE0ZTQtZDUxYS00ODA4LWJlZDYtZDRlMTMwODE4Y2E3",
+      "facebook-domain-verification=lnpnymx2u5fo84xka7q96uvwyjturq",
       "google-site-verification=Mqt6LB8YixoNmUrYX15T1wBhmC21gdvDey2B1l_tZUo",
-      "facebook-domain-verification=lnpnymx2u5fo84xka7q96uvwyjturq"
+      "1password-site-verification=GDHGMUTFKNB57DFFCO4U4GF3TU",
+      "v=spf1 a mx include:mailgun.org include:_spf.google.com include:amazonses.com -all"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine;"
@@ -285,10 +285,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     ]
   },
   "apex_txt": [
-    "google-site-verification=E6-eQ8w6PaDhy4OM-RhbVH2gk4EezZBiMlTz9BEPXz0",
     "hubspot-developer-verification=YTdhYzEyMmEtOTE1ZC00MjcwLWE4Y2QtNzBlNzhiM2UxMTQx",
-    "1password-site-verification=GDHGMUTFKNB57DFFCO4U4GF3TU",
+    "google-site-verification=E6-eQ8w6PaDhy4OM-RhbVH2gk4EezZBiMlTz9BEPXz0",
     "hubspot-developer-verification=NmVjZWE0ZTQtZDUxYS00ODA4LWJlZDYtZDRlMTMwODE4Y2E3",
+    "facebook-domain-verification=lnpnymx2u5fo84xka7q96uvwyjturq",
     "google-site-verification=Mqt6LB8YixoNmUrYX15T1wBhmC21gdvDey2B1l_tZUo"
   ],
   "tls2": {
@@ -300,7 +300,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260821162836",
+      "not_after": "20261119172826"
     }
   },
   "http2": {
@@ -322,8 +324,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "/access-entry/*"
     ]
   },
-  "elapsed_s": 5.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 5.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

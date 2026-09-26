@@ -7,8 +7,8 @@
 | Target | https://dailycaller.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | dailycaller.com |
-| Test date | 2026-09-26 17:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -55,13 +55,13 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.20.7.240:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.20.6.240:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.20.7.240:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.20.6.240:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -154,7 +154,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 ### 18. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=4AD9l3jnq_7mC91UBXtTJ2SVAQF65R2NqW2SzB0fyWY; pinterest-site-verification=b357bf035fef44e634ab43bf435d2592; google-site-verification=R_HWsuGY5D2jhyrsiBYoNdou3xQM7mfMvmLNRIf5uNk
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-7vzw58=TbcPUP7giRsFaeMjcj5Le3Y0y; google-site-verification=MMCR7ys_IcnzoxvIgPvkIZqhaPjcnoD1xv6MX13EoGs; brave-ledger-verification=e8997655e682114364452598541e771c9848cc4a344ed9c9381f3c
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 19. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -182,8 +182,8 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
   "domain": "dailycaller.com",
   "dns": {
     "a": [
-      "104.20.7.240",
-      "104.20.6.240"
+      "104.20.6.240",
+      "104.20.7.240"
     ],
     "aaaa": [
       "2606:4700:10::6814:6f0",
@@ -191,33 +191,33 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     ],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx3.googlemail.com (pref 50)",
-      "aspmx.l.google.com (pref 10)",
       "aspmx2.googlemail.com (pref 40)",
-      "alt2.aspmx.l.google.com (pref 30)"
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 30)",
+      "aspmx3.googlemail.com (pref 50)"
     ],
     "ns": [
-      "nile.ns.cloudflare.com.",
-      "cortney.ns.cloudflare.com."
+      "cortney.ns.cloudflare.com.",
+      "nile.ns.cloudflare.com."
     ],
     "spf": [
-      "google-site-verification=4AD9l3jnq_7mC91UBXtTJ2SVAQF65R2NqW2SzB0fyWY",
-      "pinterest-site-verification=b357bf035fef44e634ab43bf435d2592",
-      "google-site-verification=R_HWsuGY5D2jhyrsiBYoNdou3xQM7mfMvmLNRIf5uNk",
+      "v=spf1 mx ip4:74.203.48.0/23 ip4:74.203.57.0/24 ip4:174.46.206.0/23 include:amazonses.com include:spf.mandrillapp.com include:sendgrid.net include:_spf.genoomail.com include:spf.mtasv.net include:_spf.google.com ~all",
+      "anthropic-domain-verification-7vzw58=TbcPUP7giRsFaeMjcj5Le3Y0y",
       "hiryanfromdisqus",
+      "google-site-verification=MMCR7ys_IcnzoxvIgPvkIZqhaPjcnoD1xv6MX13EoGs",
       "brave-ledger-verification=e8997655e682114364452598541e771c9848cc4a344ed9c9381f3c95c1caf5fd",
-      "yandex-verification: a8cb98c870b639cc",
-      "google-site-verification=aDLIgzpZsWhltTo0byY4JIrXErh2FSZC7gTNA-pcado",
+      "google-site-verification=2rfEL1JNH_PfDnvN8sg2Mv121z8XI-0UrVGGBiaL3NM",
+      "google-site-verification=JdrtZ9wr1Q1g22ntrYqNUiKtYX5TMbcrERLij2gcw6g",
+      "google-site-verification=R_HWsuGY5D2jhyrsiBYoNdou3xQM7mfMvmLNRIf5uNk",
       "facebook-domain-verification=cu97te0w4snsvnklnozd4wdzpmdusx",
       "dailymotion-domain-verification=dmz0onmsz1bovllha",
       "klaviyo-site-verification=VymSM6",
-      "google-site-verification=MMCR7ys_IcnzoxvIgPvkIZqhaPjcnoD1xv6MX13EoGs",
-      "notion-domain-verification=wlPIL0HDvUMkeXcyPQiHB1EnfOwwhQ1vxpmiCcLY9w3",
-      "anthropic-domain-verification-7vzw58=TbcPUP7giRsFaeMjcj5Le3Y0y",
-      "google-site-verification=JdrtZ9wr1Q1g22ntrYqNUiKtYX5TMbcrERLij2gcw6g",
-      "v=spf1 mx ip4:74.203.48.0/23 ip4:74.203.57.0/24 ip4:174.46.206.0/23 include:amazonses.com include:spf.mandrillapp.com include:sendgrid.net include:_spf.genoomail.com include:spf.mtasv.net include:_spf.google.com ~all",
-      "google-site-verification=2rfEL1JNH_PfDnvN8sg2Mv121z8XI-0UrVGGBiaL3NM"
+      "pinterest-site-verification=b357bf035fef44e634ab43bf435d2592",
+      "yandex-verification: a8cb98c870b639cc",
+      "google-site-verification=aDLIgzpZsWhltTo0byY4JIrXErh2FSZC7gTNA-pcado",
+      "google-site-verification=4AD9l3jnq_7mC91UBXtTJ2SVAQF65R2NqW2SzB0fyWY",
+      "notion-domain-verification=wlPIL0HDvUMkeXcyPQiHB1EnfOwwhQ1vxpmiCcLY9w3"
     ],
     "dmarc": [
       "v=DMARC1; p=none"
@@ -247,7 +247,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     }
   },
   "ports": {
-    "ip": "104.20.7.240",
+    "ip": "104.20.6.240",
     "open": [
       8080,
       8443
@@ -332,11 +332,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     ]
   },
   "apex_txt": [
-    "google-site-verification=4AD9l3jnq_7mC91UBXtTJ2SVAQF65R2NqW2SzB0fyWY",
-    "pinterest-site-verification=b357bf035fef44e634ab43bf435d2592",
-    "google-site-verification=R_HWsuGY5D2jhyrsiBYoNdou3xQM7mfMvmLNRIf5uNk",
+    "anthropic-domain-verification-7vzw58=TbcPUP7giRsFaeMjcj5Le3Y0y",
+    "google-site-verification=MMCR7ys_IcnzoxvIgPvkIZqhaPjcnoD1xv6MX13EoGs",
     "brave-ledger-verification=e8997655e682114364452598541e771c9848cc4a344ed9c9381f3c",
-    "yandex-verification: a8cb98c870b639cc"
+    "google-site-verification=2rfEL1JNH_PfDnvN8sg2Mv121z8XI-0UrVGGBiaL3NM",
+    "google-site-verification=JdrtZ9wr1Q1g22ntrYqNUiKtYX5TMbcrERLij2gcw6g"
   ],
   "tls2": {
     "alpn": "",
@@ -347,7 +347,9 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260904201531",
+      "not_after": "20261203211510"
     }
   },
   "http2": {
@@ -366,8 +368,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "/"
     ]
   },
-  "elapsed_s": 11.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 13.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

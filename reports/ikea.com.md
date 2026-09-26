@@ -7,8 +7,8 @@
 | Target | https://ikea.com/ |
 | Bug bounty program | IKEA |
 | Listed scope domain | ikea.com |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -134,7 +134,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=eJkdNhxbvSwwMjpJCul26vIgWgojR_DQtUXD9CZMXZY; adobe-sign-verification=cedca323afb86422862e301984996075; airtable-verification=1a7ed489e90d747183dc48f953dc38e2
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY; airtable-verification=1a7ed489e90d747183dc48f953dc38e2; verification=4b7a9cf113659b548dd81c74867cc6e8cdb666dcdedd89006a4b6df841436db9
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -172,8 +172,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "104.18.13.173"
     ],
     "aaaa": [
-      "2606:4700::6812:cad",
-      "2606:4700::6812:dad"
+      "2606:4700::6812:dad",
+      "2606:4700::6812:cad"
     ],
     "cname": null,
     "mx": [
@@ -184,36 +184,36 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "udns1.cscdns.net."
     ],
     "spf": [
-      "c7w8ywlzkqtsjrj37zwx3rls92xtg2v2",
-      "google-site-verification=eJkdNhxbvSwwMjpJCul26vIgWgojR_DQtUXD9CZMXZY",
-      "vuc9hf2qrdsa1rht6jbsvlmm63",
-      "ipimblog.azurewebsites.net",
-      "c1uaul3js4qk63pu2rlbbipukl",
-      "bc3r1bhgiiv5glji4a4e5q7feq",
-      "_0f5qdsfyf94runrfkk8kj91gwjunhv1",
-      "v=spf1 include:_spf.ikea.com include:spf.protection.outlook.com -all",
-      "adobe-sign-verification=cedca323afb86422862e301984996075",
-      "r9l0gn0j4tfvikcnfsoabna4he",
-      "airtable-verification=1a7ed489e90d747183dc48f953dc38e2",
-      "ibmid= 402dfd6a-c923-4b4b-8b0b-d48321ad0c03",
-      "yf27ml09h67l135bgfj8r7k8l06ct0b0",
-      "google-site-verification=E6gWPPnFbnlfZhWvziCK1jbFr7ovdO740_nfJIsM26g",
       "google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY",
-      "ad44n1huq06eqo04mlhp525gs8",
-      "9gk35lcm87nrdcur8l5jc95ffg",
-      "ecostruxure-it-verification=aed1c019-11ed-4ef4-985a-9d57e6880300",
-      "google-site-verification=6HRUbiMS72DqS9m1xZA7e2lERsd76qlRP3wjZdbrrr4",
-      "openai-domain-verification=dv-ruk8aBZomN7tKPUudFE6f4xB",
-      "apple-domain-verification=z2IPRZRTU1JvIXzc",
-      "openai-domain-verification=dv-NuhNTz6e8ZuA6QC8JPuNWQVI",
-      "google-site-verification=5BcCWPMkzRJlhB6Kj1oxpQD-XIiBf1I4axz_YKZhPt8",
-      "1gsbjx5k4dg72szsrycjtvbjdxnz7f9w",
-      "apple-domain-verification=lcR3r6mOMUXCfIBeISYyewJZUPc9Z7njjsCWH3wMJTU",
+      "airtable-verification=1a7ed489e90d747183dc48f953dc38e2",
       "verification=4b7a9cf113659b548dd81c74867cc6e8cdb666dcdedd89006a4b6df841436db9",
       "pwr1x9yqrt58dp5q97xdqc2tjvbfdpfv",
+      "_0f5qdsfyf94runrfkk8kj91gwjunhv1",
+      "apple-domain-verification=lcR3r6mOMUXCfIBeISYyewJZUPc9Z7njjsCWH3wMJTU",
+      "apple-domain-verification=z2IPRZRTU1JvIXzc",
+      "google-site-verification=E6gWPPnFbnlfZhWvziCK1jbFr7ovdO740_nfJIsM26g",
+      "bc3r1bhgiiv5glji4a4e5q7feq",
+      "9gk35lcm87nrdcur8l5jc95ffg",
+      "r9l0gn0j4tfvikcnfsoabna4he",
+      "c7w8ywlzkqtsjrj37zwx3rls92xtg2v2",
+      "ecostruxure-it-verification=aed1c019-11ed-4ef4-985a-9d57e6880300",
+      "openai-domain-verification=dv-ruk8aBZomN7tKPUudFE6f4xB",
+      "adobe-sign-verification=cedca323afb86422862e301984996075",
+      "schrgk1ftng0xtbk5hzdm37z1qm50c5x",
+      "openai-domain-verification=dv-NuhNTz6e8ZuA6QC8JPuNWQVI",
+      "ibmid= 402dfd6a-c923-4b4b-8b0b-d48321ad0c03",
       "_0ydey5x097gtj2z92fc6xf342jhw8bm",
+      "1gsbjx5k4dg72szsrycjtvbjdxnz7f9w",
       "pendo-domain-verification=kNv_0V-tt2G-fFDGQQ35qbcUUIk",
-      "schrgk1ftng0xtbk5hzdm37z1qm50c5x"
+      "google-site-verification=5BcCWPMkzRJlhB6Kj1oxpQD-XIiBf1I4axz_YKZhPt8",
+      "ad44n1huq06eqo04mlhp525gs8",
+      "ipimblog.azurewebsites.net",
+      "vuc9hf2qrdsa1rht6jbsvlmm63",
+      "v=spf1 include:_spf.ikea.com include:spf.protection.outlook.com -all",
+      "google-site-verification=6HRUbiMS72DqS9m1xZA7e2lERsd76qlRP3wjZdbrrr4",
+      "c1uaul3js4qk63pu2rlbbipukl",
+      "yf27ml09h67l135bgfj8r7k8l06ct0b0",
+      "google-site-verification=eJkdNhxbvSwwMjpJCul26vIgWgojR_DQtUXD9CZMXZY"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@ikea.com; ruf=mailto:dmarc_ruf@ikea.com"
@@ -342,11 +342,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     ]
   },
   "apex_txt": [
-    "google-site-verification=eJkdNhxbvSwwMjpJCul26vIgWgojR_DQtUXD9CZMXZY",
-    "adobe-sign-verification=cedca323afb86422862e301984996075",
+    "google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY",
     "airtable-verification=1a7ed489e90d747183dc48f953dc38e2",
-    "google-site-verification=E6gWPPnFbnlfZhWvziCK1jbFr7ovdO740_nfJIsM26g",
-    "google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY"
+    "verification=4b7a9cf113659b548dd81c74867cc6e8cdb666dcdedd89006a4b6df841436db9",
+    "apple-domain-verification=lcR3r6mOMUXCfIBeISYyewJZUPc9Z7njjsCWH3wMJTU",
+    "apple-domain-verification=z2IPRZRTU1JvIXzc"
   ],
   "tls2": {
     "alpn": "",
@@ -357,7 +357,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260923003012",
+      "not_after": "20261222013011"
     }
   },
   "http2": {
@@ -379,8 +381,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "*OrderItemDisplay*"
     ]
   },
-  "elapsed_s": 6.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 6.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

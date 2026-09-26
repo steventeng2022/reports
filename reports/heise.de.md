@@ -7,12 +7,12 @@
 | Target | https://heise.de/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | heise.de |
-| Test date | 2026-09-26 17:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 18 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -139,7 +140,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=8kcKAZp-IbbJG7FQzRxIaUXv9Ku4qX0wgMrm_hx_L2s; tollbit-domain-verification=6fd594c990db1742b6cb34f3699d3944885e664c32333cf8cb17; google-site-verification=7CvE9FRS3zv0wnl8KzLmVw0TSlQay6qOX_zGFm2wzWw
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=7CvE9FRS3zv0wnl8KzLmVw0TSlQay6qOX_zGFm2wzWw; miro-verification=601d1e3e9623fe2102de9d6d215a2380ae5c69bd; google-site-verification=8kcKAZp-IbbJG7FQzRxIaUXv9Ku4qX0wgMrm_hx_L2s
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -153,6 +154,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but heise.de is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 193.99.144.80 carries PTR redirector.heise.de. for heise.de.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -168,30 +175,30 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     ],
     "cname": null,
     "mx": [
+      "mx03.hornetsecurity.com (pref 30)",
       "mx04.hornetsecurity.com (pref 40)",
-      "mx01.hornetsecurity.com (pref 10)",
       "mx02.hornetsecurity.com (pref 20)",
-      "mx03.hornetsecurity.com (pref 30)"
+      "mx01.hornetsecurity.com (pref 10)"
     ],
     "ns": [
-      "ns.plusline.de.",
-      "ns.heise.de.",
       "ns2.pop-hannover.net.",
+      "ns.heise.de.",
       "ns.s.plusline.de.",
-      "ns.pop-hannover.de."
+      "ns.pop-hannover.de.",
+      "ns.plusline.de."
     ],
     "spf": [
-      "brevo-code:e09d9e43d8e705fdcf03fb07346ec6f5",
-      "c3ViZG9tYWlu",
-      "google-site-verification=8kcKAZp-IbbJG7FQzRxIaUXv9Ku4qX0wgMrm_hx_L2s",
-      "kT2+bTXGMSIudHQATflucV7vjLhdq9Y18pKTKJxs0O2IebE8seBu4vCAe9MBHYehuRJWwKKt1klytxF4vyuSpA==",
-      "v=spf1 ip4:193.99.144.0/24 ip4:193.99.145.0/24 ip6:2a02:2e0:3fe:1001::/64 ip6:2a00:e68:14:800::/64 ip4:193.100.232.56 ip6:2a00:e68:14:801:bad::beef include:_spfdiv.heise.de include:spf.dsb.net include:spf.hornetsecurity.com ~all",
-      "tollbit-domain-verification=6fd594c990db1742b6cb34f3699d3944885e664c32333cf8cb176da9aac3ab71",
       "google-site-verification=7CvE9FRS3zv0wnl8KzLmVw0TSlQay6qOX_zGFm2wzWw",
-      "docusign=b14b0107-39e4-44c2-b48f-944859786474",
+      "v=spf1 ip4:193.99.144.0/24 ip4:193.99.145.0/24 ip6:2a02:2e0:3fe:1001::/64 ip6:2a00:e68:14:800::/64 ip4:193.100.232.56 ip6:2a00:e68:14:801:bad::beef include:_spfdiv.heise.de include:spf.dsb.net include:spf.hornetsecurity.com ~all",
       "wUIdRqARf1uNkZkPoWGdYvEmK408vvKC3HKme1h/rnswYDphj9Ytgwt6K1Df1PQnW64Oi3t9c9uKoo989wv8xw==",
+      "c3ViZG9tYWlu",
+      "miro-verification=601d1e3e9623fe2102de9d6d215a2380ae5c69bd",
+      "google-site-verification=8kcKAZp-IbbJG7FQzRxIaUXv9Ku4qX0wgMrm_hx_L2s",
       "apple-domain-verification=m53iQZB4O1uMxDGR",
-      "miro-verification=601d1e3e9623fe2102de9d6d215a2380ae5c69bd"
+      "brevo-code:e09d9e43d8e705fdcf03fb07346ec6f5",
+      "docusign=b14b0107-39e4-44c2-b48f-944859786474",
+      "tollbit-domain-verification=6fd594c990db1742b6cb34f3699d3944885e664c32333cf8cb176da9aac3ab71",
+      "kT2+bTXGMSIudHQATflucV7vjLhdq9Y18pKTKJxs0O2IebE8seBu4vCAe9MBHYehuRJWwKKt1klytxF4vyuSpA=="
     ],
     "dmarc": [
       "v=DMARC1; p=none; sp=none; rua=mailto:dmarc.report@heise.de"
@@ -273,11 +280,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=8kcKAZp-IbbJG7FQzRxIaUXv9Ku4qX0wgMrm_hx_L2s",
-    "tollbit-domain-verification=6fd594c990db1742b6cb34f3699d3944885e664c32333cf8cb17",
     "google-site-verification=7CvE9FRS3zv0wnl8KzLmVw0TSlQay6qOX_zGFm2wzWw",
+    "miro-verification=601d1e3e9623fe2102de9d6d215a2380ae5c69bd",
+    "google-site-verification=8kcKAZp-IbbJG7FQzRxIaUXv9Ku4qX0wgMrm_hx_L2s",
     "apple-domain-verification=m53iQZB4O1uMxDGR",
-    "miro-verification=601d1e3e9623fe2102de9d6d215a2380ae5c69bd"
+    "tollbit-domain-verification=6fd594c990db1742b6cb34f3699d3944885e664c32333cf8cb17"
   ],
   "tls2": {
     "alpn": "",
@@ -288,11 +295,19 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260902222304",
+      "not_after": "20261201222303"
     }
   },
-  "elapsed_s": 30.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "redirector.heise.de."
+    ]
+  },
+  "elapsed_s": 32.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://neilpatel.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | neilpatel.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
+Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -130,7 +131,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=pkvlExz1OTIjM2MCDq_1_ojXUvAmQQ5x1c_lSuYE_Ws; google-site-verification=WQg-6qBd_DxoZRDt7E-PjZCAxpObkGECPOQVcV6Vai0; google-site-verification=69oeSF2ynTPY0E5pqUZs-yxPJ-MGACV-Stxi6MJfrC0
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=ysxmqVCxrn2N29tyJtIhAq_3NNSZuZOdy_Ue2Od471g; google-site-verification=DFmjfROYsh4y06UZEacP-UrNM2zGUw6eNDumC2f4WPs; google-site-verification=pkvlExz1OTIjM2MCDq_1_ojXUvAmQQ5x1c_lSuYE_Ws
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -144,6 +145,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 16 disallow path(s), e.g. /*?comments, /wp-content/themes/neilpatel/js/script-comments.js, /wp-comments-post.php, /wp-admin/, /wp-login.php
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 18. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://neilpatel.com/ carries Cache-Control: max-age=600, must-revalidate (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
 ## Evidence (raw response observations)
 
@@ -163,24 +170,24 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     "mx": [
       "aspmx.l.google.com (pref 1)",
       "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx2.googlemail.com (pref 10)",
       "aspmx3.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx2.googlemail.com (pref 10)"
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
       "jamie.ns.cloudflare.com.",
       "guss.ns.cloudflare.com."
     ],
     "spf": [
-      "google-site-verification=pkvlExz1OTIjM2MCDq_1_ojXUvAmQQ5x1c_lSuYE_Ws",
-      "google-site-verification=WQg-6qBd_DxoZRDt7E-PjZCAxpObkGECPOQVcV6Vai0",
       "pardot932143=ab2991169fadcd8b17f47c2cf2be367899e347f60309b20698a506e65539d5df",
-      "google-site-verification=69oeSF2ynTPY0E5pqUZs-yxPJ-MGACV-Stxi6MJfrC0",
-      "google-site-verification=BGqGskkKsGMr0MD39uTedHJVLjanxfypOYRrc-0IJkk",
       "MS=ms35402416",
       "google-site-verification=ysxmqVCxrn2N29tyJtIhAq_3NNSZuZOdy_Ue2Od471g",
       "google-site-verification=DFmjfROYsh4y06UZEacP-UrNM2zGUw6eNDumC2f4WPs",
-      "v=spf1 include:_u.neilpatel.com._spf.dmarcla.com include:mail.zendesk.com -all"
+      "v=spf1 include:_u.neilpatel.com._spf.dmarcla.com include:mail.zendesk.com -all",
+      "google-site-verification=pkvlExz1OTIjM2MCDq_1_ojXUvAmQQ5x1c_lSuYE_Ws",
+      "google-site-verification=BGqGskkKsGMr0MD39uTedHJVLjanxfypOYRrc-0IJkk",
+      "google-site-verification=WQg-6qBd_DxoZRDt7E-PjZCAxpObkGECPOQVcV6Vai0",
+      "google-site-verification=69oeSF2ynTPY0E5pqUZs-yxPJ-MGACV-Stxi6MJfrC0"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:610d622002350@ag.dmarcly.com; ruf=mailto:610d622002350@fo.dmarcly.com; sp=quarantine; fo=0;"
@@ -268,11 +275,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "google-site-verification=ysxmqVCxrn2N29tyJtIhAq_3NNSZuZOdy_Ue2Od471g",
+    "google-site-verification=DFmjfROYsh4y06UZEacP-UrNM2zGUw6eNDumC2f4WPs",
     "google-site-verification=pkvlExz1OTIjM2MCDq_1_ojXUvAmQQ5x1c_lSuYE_Ws",
-    "google-site-verification=WQg-6qBd_DxoZRDt7E-PjZCAxpObkGECPOQVcV6Vai0",
-    "google-site-verification=69oeSF2ynTPY0E5pqUZs-yxPJ-MGACV-Stxi6MJfrC0",
     "google-site-verification=BGqGskkKsGMr0MD39uTedHJVLjanxfypOYRrc-0IJkk",
-    "google-site-verification=ysxmqVCxrn2N29tyJtIhAq_3NNSZuZOdy_Ue2Od471g"
+    "google-site-verification=WQg-6qBd_DxoZRDt7E-PjZCAxpObkGECPOQVcV6Vai0"
   ],
   "tls2": {
     "alpn": "",
@@ -283,7 +290,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260914095336",
+      "not_after": "20261213105330"
     }
   },
   "http2": {
@@ -306,8 +315,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "/"
     ]
   },
-  "elapsed_s": 16.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 7.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

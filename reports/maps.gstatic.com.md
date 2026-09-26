@@ -7,12 +7,12 @@
 | Target | https://maps.gstatic.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | maps.gstatic.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
+Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -118,6 +119,12 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 - **Detail:** robots.txt lists 193 disallow path(s), e.g. /search, /groups, /images, /catalogs, /catalogues
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 142.250.204.35 carries PTR hkg07s38-in-f3.1e100.net., lctsaa-ac-in-f3.1e100.net. for maps.gstatic.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -125,10 +132,10 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
   "domain": "maps.gstatic.com",
   "dns": {
     "a": [
-      "142.250.192.131"
+      "142.250.204.35"
     ],
     "aaaa": [
-      "2404:6800:4012:2::2003"
+      "2404:6800:4012:9::2003"
     ],
     "cname": null,
     "mx": [],
@@ -161,7 +168,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
     }
   },
   "ports": {
-    "ip": "142.250.192.131",
+    "ip": "142.250.204.35",
     "open": []
   },
   "https": {
@@ -221,7 +228,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192322",
+      "not_after": "20261203192321"
     }
   },
   "http2": {
@@ -243,8 +252,15 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "/imgres"
     ]
   },
-  "elapsed_s": 5.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 404,
+    "ptr": [
+      "hkg07s38-in-f3.1e100.net.",
+      "lctsaa-ac-in-f3.1e100.net."
+    ]
+  },
+  "elapsed_s": 3.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

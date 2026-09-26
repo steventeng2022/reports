@@ -7,8 +7,8 @@
 | Target | https://uspto.gov/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | uspto.gov |
-| Test date | 2026-09-26 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -48,13 +48,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.152.64:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.35.192:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.152.64:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.35.192:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -141,7 +141,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: webexdomainverification.7PUPU=2a587b5a-c181-4a6c-9d10-a13dcaa747bd; google-site-verification=MB6vnwbxkyN6STcgBAa5U-W1H7VhU62fSuT95KrWhlk; perplexity-ai-domain-verification-7tdkgd=M7VyHULqPpVV3g4SsM4BNc1mR
+- **Detail:** Apex TXT records with verification/token content: jetbrains-domain-verification=8sj6e0d8s6q4fvu86jcfzp0g5; facebook-domain-verification=6wqv4rmxkothypv5gij5080967l5ws; adobe-idp-site-verification=fd06710ade06e49a5be3b877d16463b3f5f050a1e54eaaa1daff
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -175,38 +175,38 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   "domain": "uspto.gov",
   "dns": {
     "a": [
-      "172.64.152.64",
-      "104.18.35.192"
+      "104.18.35.192",
+      "172.64.152.64"
     ],
     "aaaa": [
-      "2a06:98c1:3101::6812:23c0",
-      "2a06:98c1:310c::ac40:9840"
+      "2a06:98c1:310c::ac40:9840",
+      "2a06:98c1:3101::6812:23c0"
     ],
     "cname": null,
     "mx": [
       "uspto-gov.mail.protection.outlook.com (pref 5)"
     ],
     "ns": [
-      "gold.foundationdns.net.",
+      "gold.foundationdns.org.",
       "gold.foundationdns.com.",
-      "gold.foundationdns.org."
+      "gold.foundationdns.net."
     ],
     "spf": [
-      "webexdomainverification.7PUPU=2a587b5a-c181-4a6c-9d10-a13dcaa747bd",
-      "MS=ms28666523",
-      "google-site-verification=MB6vnwbxkyN6STcgBAa5U-W1H7VhU62fSuT95KrWhlk",
-      "perplexity-ai-domain-verification-7tdkgd=M7VyHULqPpVV3g4SsM4BNc1mR",
-      "apple-domain-verification=DQ6lsHErU2gvVyqF",
-      "_qf2w9oo2ieh425rh0b6gjpp829vih2b",
-      "SnTiaz2QHOuDsjncHy2wc6dZmnzEFxbqKLWgzzrfBidPblmIGRxS9jP28Zb4xPjhhlE2YBm98Mu+DhbxxGOa7A==",
-      "adobe-idp-site-verification=fd06710ade06e49a5be3b877d16463b3f5f050a1e54eaaa1daff14f8da83993f",
-      "facebook-domain-verification=6wqv4rmxkothypv5gij5080967l5ws",
-      "v=spf1 include:uspto.gov._nspf.valigov.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.valigov.email include:spf.protection.outlook.com -all",
-      "google-site-verification=5eOb2YylR8fDTIkmIs3N0CaJ_IHjjikNS-Z7BDb9jvw",
-      "jetbrains-domain-verification=8sj6e0d8s6q4fvu86jcfzp0g5",
       "3FKeZ5CH9TEaLgiiioa9/iDVB0WPJofaHBuumk1YRmcuggWFX3v3gDlSw5uSIbaSuvm/FsOYPRzhM87BHQ+ImA==",
+      "jetbrains-domain-verification=8sj6e0d8s6q4fvu86jcfzp0g5",
+      "facebook-domain-verification=6wqv4rmxkothypv5gij5080967l5ws",
+      "adobe-idp-site-verification=fd06710ade06e49a5be3b877d16463b3f5f050a1e54eaaa1daff14f8da83993f",
+      "v=spf1 include:uspto.gov._nspf.valigov.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.valigov.email include:spf.protection.outlook.com -all",
+      "SnTiaz2QHOuDsjncHy2wc6dZmnzEFxbqKLWgzzrfBidPblmIGRxS9jP28Zb4xPjhhlE2YBm98Mu+DhbxxGOa7A==",
       "_ib4pu1ottna05el605hns0p62bwkg2g",
-      "ms-domain-verification=725c3c35-24ef-43fd-a26b-2736d7cea1a6"
+      "webexdomainverification.7PUPU=2a587b5a-c181-4a6c-9d10-a13dcaa747bd",
+      "google-site-verification=5eOb2YylR8fDTIkmIs3N0CaJ_IHjjikNS-Z7BDb9jvw",
+      "perplexity-ai-domain-verification-7tdkgd=M7VyHULqPpVV3g4SsM4BNc1mR",
+      "_qf2w9oo2ieh425rh0b6gjpp829vih2b",
+      "ms-domain-verification=725c3c35-24ef-43fd-a26b-2736d7cea1a6",
+      "google-site-verification=MB6vnwbxkyN6STcgBAa5U-W1H7VhU62fSuT95KrWhlk",
+      "MS=ms28666523",
+      "apple-domain-verification=DQ6lsHErU2gvVyqF"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@valigov.email,mailto:dmarc_reports@uspto.gov,mailto:reports@dmarc.cyber.dhs.gov"
@@ -235,7 +235,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     }
   },
   "ports": {
-    "ip": "172.64.152.64",
+    "ip": "104.18.35.192",
     "open": [
       8080,
       8443
@@ -339,11 +339,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     ]
   },
   "apex_txt": [
+    "jetbrains-domain-verification=8sj6e0d8s6q4fvu86jcfzp0g5",
+    "facebook-domain-verification=6wqv4rmxkothypv5gij5080967l5ws",
+    "adobe-idp-site-verification=fd06710ade06e49a5be3b877d16463b3f5f050a1e54eaaa1daff",
     "webexdomainverification.7PUPU=2a587b5a-c181-4a6c-9d10-a13dcaa747bd",
-    "google-site-verification=MB6vnwbxkyN6STcgBAa5U-W1H7VhU62fSuT95KrWhlk",
-    "perplexity-ai-domain-verification-7tdkgd=M7VyHULqPpVV3g4SsM4BNc1mR",
-    "apple-domain-verification=DQ6lsHErU2gvVyqF",
-    "adobe-idp-site-verification=fd06710ade06e49a5be3b877d16463b3f5f050a1e54eaaa1daff"
+    "google-site-verification=5eOb2YylR8fDTIkmIs3N0CaJ_IHjjikNS-Z7BDb9jvw"
   ],
   "tls2": {
     "alpn": "",
@@ -354,7 +354,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260824015442",
+      "not_after": "20261122025440"
     }
   },
   "http2": {
@@ -366,8 +368,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "/images/"
     ]
   },
-  "elapsed_s": 6.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 7.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

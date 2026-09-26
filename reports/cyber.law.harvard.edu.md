@@ -7,12 +7,12 @@
 | Target | https://cyber.law.harvard.edu/ |
 | Bug bounty program | Harvard |
 | Listed scope domain | cyber.law.harvard.edu |
-| Test date | 2026-09-26 17:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,7 +33,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 18 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 19 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -147,7 +148,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **Detail:** robots.txt lists 23 disallow path(s), e.g. /team, /lists, /msdoj/discuss/, /zittrain/, /cite/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 18. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 128.103.64.74 carries PTR lists.cyber.harvard.edu., cyber.law.harvard.edu., wiki.cyber.harvard.edu., wikis.cyber.harvard.edu., stats.berkman.harvard.edu., ftp.cyber.harvard.edu., media.cyber.harvard.edu., berkmanklein.harvard.edu., nymity.cyber.harvard.edu., nymity.berkman.harvard.edu., berkman.harvard.edu., cyber.harvard.edu. for cyber.law.harvard.edu.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 19. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -170,8 +177,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "ns": [],
     "spf": [
       "anthropic-domain-verification-z3pw74=5u2BtIL7bt44fIk0GhQjtC1mE",
-      "openai-domain-verification=dv-rjqZJLMKsHPNssvcX5wqw3XO",
-      "v=spf1 mx a ip4:128.103.64.64/26 ?all"
+      "v=spf1 mx a ip4:128.103.64.64/26 ?all",
+      "openai-domain-verification=dv-rjqZJLMKsHPNssvcX5wqw3XO"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:dmarc@cyber.harvard.edu; ruf=mailto:dmarc@cyber.harvard.edu; fo=1:d:s"
@@ -288,7 +295,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260814124727",
+      "not_after": "20261112124726"
     }
   },
   "http2": {
@@ -310,8 +319,25 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "/jamaicavoices"
     ]
   },
-  "elapsed_s": 23.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "lists.cyber.harvard.edu.",
+      "cyber.law.harvard.edu.",
+      "wiki.cyber.harvard.edu.",
+      "wikis.cyber.harvard.edu.",
+      "stats.berkman.harvard.edu.",
+      "ftp.cyber.harvard.edu.",
+      "media.cyber.harvard.edu.",
+      "berkmanklein.harvard.edu.",
+      "nymity.cyber.harvard.edu.",
+      "nymity.berkman.harvard.edu.",
+      "berkman.harvard.edu.",
+      "cyber.harvard.edu."
+    ]
+  },
+  "elapsed_s": 24.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

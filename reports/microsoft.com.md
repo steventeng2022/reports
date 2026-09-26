@@ -7,8 +7,8 @@
 | Target | https://microsoft.com/ |
 | Bug bounty program | Microsoft Online Services |
 | Listed scope domain | microsoft.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -96,7 +96,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-sFtCvKOlWoe31gpoSvs7cqsP; hpe-greenlake-domain-verification=495143304a3330533363357a57684f6335556f316f5565; d365mktkey=wbU64GRacxVEQxwcLSQnx0zisXLYzgUbfvsufIqO9ZUx
+- **Detail:** Apex TXT records with verification/token content: hcp-domain-verification=3ce174a8b9fba88909633ab13eb1d81ce0123454745d66e500052ed8; linear-domain-verification=iuq6saifcnbe; d365mktkey=3l6dste9txazu0Qd2zu4135PUB4E35txLxyzJxjkPbsx
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -127,77 +127,77 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "150.171.110.70"
     ],
     "aaaa": [
-      "2603:1061:14:143::1"
+      "2603:1061:14:141::1"
     ],
     "cname": null,
     "mx": [
       "microsoft-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns3-39.azure-dns.org.",
       "ns1-39.azure-dns.com.",
       "ns2-39.azure-dns.net.",
-      "ns4-39.azure-dns.info."
+      "ns4-39.azure-dns.info.",
+      "ns3-39.azure-dns.org."
     ],
     "spf": [
-      "openai-domain-verification=dv-sFtCvKOlWoe31gpoSvs7cqsP",
-      "hpe-greenlake-domain-verification=495143304a3330533363357a57684f6335556f316f55654675523541464d3954",
-      "d365mktkey=wbU64GRacxVEQxwcLSQnx0zisXLYzgUbfvsufIqO9ZUx",
+      "hcp-domain-verification=3ce174a8b9fba88909633ab13eb1d81ce0123454745d66e500052ed84b7248a1",
+      "v=MCPv1; k=ecdsap384; p=A/78JIxAOlNwq8f0T/l50w7zhwQFpEuB8/Jz9CafdXNX7ewOluYpS/EEcSmLgxsHXg==",
+      "linear-domain-verification=iuq6saifcnbe",
+      "d365mktkey=3l6dste9txazu0Qd2zu4135PUB4E35txLxyzJxjkPbsx",
+      "google-site-verification=M--CVfn_YwsV-2FGbCp_HFaEj23BmT0cTF4l8hXgpvM",
+      "d365mktkey=JlXV17lfZjyvWxNje1qiP390ACSKzTxo5mGqZ3V2BmYx",
+      "google-site-verification=uFg3wr5PWsK8lV029RoXXBBUW0_E6qf1WEWVHhetkOY",
+      "anthropic-domain-verification-phksss=GZrrKDUR4klRLFCvxyOvqcNGE",
+      "v=MCPv1; k=ecdsap384; p=As/XxnDWZFxFwHvRZj+HbG5/ImtAeabLkiOWu1h7wCJQFAR216E9HoYQ5Hy6o7StoQ==",
+      "v=MCPv1; k=ecdsap384; p=AqXeTHJ/1FCYeuvJ8dc1B+X3uHaa7m2W0s31vzL4opnrJlSaBdtbWTY8Ti5WiZnu9Q==",
+      "ms-domain-verification=d6545068-89f7-4432-b947-0b137e8a9fe3",
+      "google-site-verification=GfDnTUdATPsK1230J0mXbfsYw-3A9BVMVaKSd4DcKgI",
+      "facebook-domain-verification=fwzwhbbzwmg5fzgotc2go51olc3566",
+      "d365mktkey=j2qHWq9BHdaa3ZXZH8x64daJZxEWsFa0dxDeilxDoYYx",
+      "1password-site-verification=35ZTURTFFFDC5BW7GFQKRJ77QM",
+      "v=MCPv1; k=ecdsap384; p=An4mJIFLRys9h1EvjX18SJs5p1uEF5MHcs2JJLYPrI48C5Qt9FpaZEM0sQTV4JvNYw==",
+      "d365mktkey=PNcDqkW71x8VOUhcE96aGM4l5PYX1gnlRl6ieXUl5eMx",
       "v=MCPv1; k=ecdsap384; p=A/Mf6IKdZzcHfBvpiVz9rkdPTIcCP5IbRDdEkeP3PgXEXF3mNjorahOwaYlMINBF5A==",
+      "ms-domain-verification=478640ad-6524-43d5-86c4-a914804b9e93",
+      "v=MCPv1; k=ecdsap384; p=Azw9+u4M8RoH+bxJidKAZzGDmsPkzY1N4cO7rB/uC5x1RBoNfMyBlH/ott0lpo4pOQ==",
+      "d365mktkey=3uc1cf82cpv750lzk70v9bvf2",
+      "_zx2p8gpzv720db2aqmozy4jhwk2nl43",
+      "t7sebee51jrj7vm932k531hipa",
+      "v=MCPv1; k=ecdsap384; p=Asc8WWov6gsmCCzn4CSrwRuJIh5SqvaitKz/LlTW+SD54lLC52wzcnWhlTI416p2vw==",
+      "fg2t0gov9424p2tdcuo94goe9j",
+      "hubspot-developer-verification=OTQ5NGIwYWEtODNmZi00YWE1LTkyNmQtNDhjMDMxY2JjNDAx",
+      "MS=ms79629062",
+      "v=spf1 include:_spf-a.microsoft.com include:_spf-b.microsoft.com include:_spf-c.microsoft.com include:_spf-ssg-a.msft.net include:_spf1-meo.microsoft.com -all",
+      "d365mktkey=QDa792dLCZhvaAOOCe2Hz6WTzmTssOp1snABhxWibhMx",
+      "d365mktkey=ZGFU0tlXPekPusNHPo5QQQWpVf0gic0xpuKroNy3NQEx",
+      "d365mktkey=Fu49WtSTeClkHtK7S14227RIVpGwwGrzEsO6RVs1I2Ax",
+      "dobtdihqagnr18hea8uv1h1mvq",
+      "ms-domain-verification=65f91178-9dfb-41cd-929d-08d1a38ed607",
+      "google-site-verification=uhh5_jbxpcQgnb-A7gDIjlrr5Ef34lA2t2_BAveYpnk",
+      "d365mktkey=wbU64GRacxVEQxwcLSQnx0zisXLYzgUbfvsufIqO9ZUx",
+      "v=MCPv1; k=ecdsap384; p=A8qndBCDJGtFF2+3v/IPIMmM0SaVcrJBoSue7rKob6sUeK7QGeFuWkrtvze3AiqUDA==",
+      "v=MCPv1; k=ecdsap384; p=AoHTKEi2W8L2P8cf9CoDicIxYiuttTkwtIeFOqYCewBGoRZiiF+9/92saUkIDERGAA==",
       "zoom-domain-verification=ZOOM_verify_e97a3d385acb4c47b9b924609a280524",
       "d365mktkey=6358r1b7e13hox60tl1uagv14",
-      "v=MCPv1; k=ecdsap384; p=A/78JIxAOlNwq8f0T/l50w7zhwQFpEuB8/Jz9CafdXNX7ewOluYpS/EEcSmLgxsHXg==",
-      "google-site-verification=M--CVfn_YwsV-2FGbCp_HFaEj23BmT0cTF4l8hXgpvM",
-      "d365mktkey=8fEQahTresJms7tZGxGFr94T1zDz36oCbUt1LJc99mox",
-      "hcp-domain-verification=3ce174a8b9fba88909633ab13eb1d81ce0123454745d66e500052ed84b7248a1",
-      "mixpanel-domain-verify=5803bc4c-5bb6-4ce1-8076-753800097373",
-      "ms-domain-verification=25524f4b-1476-489c-a086-30f4c5016ecc",
-      "sitecore-domain-verification=1d46cb5467624e33a408d14324874088",
-      "MS=ms79629062",
-      "fg2t0gov9424p2tdcuo94goe9j",
-      "d365mktkey=PNcDqkW71x8VOUhcE96aGM4l5PYX1gnlRl6ieXUl5eMx",
       "google-site-verification=mEAmcTy1e8jIB9W6ENPk2GDg9hjuNytQQRGlK0hPm0c",
-      "docusign=d5a3737c-c23c-4bd0-9095-d2ff621f2840",
-      "google-site-verification=uFg3wr5PWsK8lV029RoXXBBUW0_E6qf1WEWVHhetkOY",
-      "v=MCPv1; k=ecdsap384; p=A5JeyhIFWFj4/epHJwt29GRUSrFwGSwXhrhDMAUSklMhfXjI7gi/ekY/fQSWToZdCw==",
-      "airtable-verification=79a09e4a8013ff5737798ffb4ea88eee",
-      "ms-domain-verification=478640ad-6524-43d5-86c4-a914804b9e93",
-      "d365mktkey=j2qHWq9BHdaa3ZXZH8x64daJZxEWsFa0dxDeilxDoYYx",
-      "anthropic-domain-verification-phksss=GZrrKDUR4klRLFCvxyOvqcNGE",
-      "d365mktkey=heYmJ57sWrwMjCgIG1xRwTREJrQokUIDtBcNfGuxoWQx",
-      "ms-domain-verification=d6545068-89f7-4432-b947-0b137e8a9fe3",
-      "v=MCPv1; k=ecdsap384; p=Azw9+u4M8RoH+bxJidKAZzGDmsPkzY1N4cO7rB/uC5x1RBoNfMyBlH/ott0lpo4pOQ==",
-      "workplace-domain-verification=lK0QDLk73xymCYMKUXNpfKAT8TY5Mx",
-      "d365mktkey=Fu49WtSTeClkHtK7S14227RIVpGwwGrzEsO6RVs1I2Ax",
-      "v=MCPv1; k=ecdsap384; p=Asc8WWov6gsmCCzn4CSrwRuJIh5SqvaitKz/LlTW+SD54lLC52wzcnWhlTI416p2vw==",
-      "v=MCPv1; k=ecdsap384; p=As/XxnDWZFxFwHvRZj+HbG5/ImtAeabLkiOWu1h7wCJQFAR216E9HoYQ5Hy6o7StoQ==",
-      "facebook-domain-verification=fwzwhbbzwmg5fzgotc2go51olc3566",
-      "d365mktkey=QDa792dLCZhvaAOOCe2Hz6WTzmTssOp1snABhxWibhMx",
-      "1password-site-verification=35ZTURTFFFDC5BW7GFQKRJ77QM",
-      "d365mktkey=ZGFU0tlXPekPusNHPo5QQQWpVf0gic0xpuKroNy3NQEx",
-      "d365mktkey=3uc1cf82cpv750lzk70v9bvf2",
-      "v=MCPv1; k=ecdsap384; p=A8qndBCDJGtFF2+3v/IPIMmM0SaVcrJBoSue7rKob6sUeK7QGeFuWkrtvze3AiqUDA==",
-      "v=MCPv1; k=ecdsap384; p=AqXeTHJ/1FCYeuvJ8dc1B+X3uHaa7m2W0s31vzL4opnrJlSaBdtbWTY8Ti5WiZnu9Q==",
-      "google-site-verification=uhh5_jbxpcQgnb-A7gDIjlrr5Ef34lA2t2_BAveYpnk",
-      "t7sebee51jrj7vm932k531hipa",
-      "d365mktkey=SxDf1EZxLvMwx6eEZUxzjFFgHoapF8DvtWEUjwq7ZTwx",
-      "atlassian-domain-verification=xvoaqRfxSg3PnlVnR4xCSOlKyw1Aln0MMxRiKXnwWroFG7vI76TUC8xYb03MwMXv",
       "ms-domain-verification=1c4e4677-e58f-4117-8d61-e5b2810388c2",
-      "_zx2p8gpzv720db2aqmozy4jhwk2nl43",
-      "google-site-verification=pjPOauSPcrfXOZS9jnPPa5axowcHGCDAl1_86dCqFpk",
+      "hpe-greenlake-domain-verification=495143304a3330533363357a57684f6335556f316f55654675523541464d3954",
+      "workplace-domain-verification=lK0QDLk73xymCYMKUXNpfKAT8TY5Mx",
+      "airtable-verification=79a09e4a8013ff5737798ffb4ea88eee",
       "atlassian-domain-verification=Sn5AwyIdVgkaRaJA/IKj7ZFMnWeCBnppa9bXGLuJvsakRHH4lYoBxS8g7GVlud9M",
-      "hubspot-developer-verification=OTQ5NGIwYWEtODNmZi00YWE1LTkyNmQtNDhjMDMxY2JjNDAx",
-      "d365mktkey=JlXV17lfZjyvWxNje1qiP390ACSKzTxo5mGqZ3V2BmYx",
-      "linear-domain-verification=iuq6saifcnbe",
-      "v=MCPv1; k=ecdsap384; p=An4mJIFLRys9h1EvjX18SJs5p1uEF5MHcs2JJLYPrI48C5Qt9FpaZEM0sQTV4JvNYw==",
-      "d365mktkey=3l6dste9txazu0Qd2zu4135PUB4E35txLxyzJxjkPbsx",
-      "ms-domain-verification=561512fc-b4ba-4ac7-a946-e464c8f49f1b",
+      "sitecore-domain-verification=1d46cb5467624e33a408d14324874088",
+      "ms-domain-verification=25524f4b-1476-489c-a086-30f4c5016ecc",
+      "d365mktkey=8fEQahTresJms7tZGxGFr94T1zDz36oCbUt1LJc99mox",
       "liveramp-site-verification=kxcV8fDH_FUNUZQEcAO6lwgim47f_hNLgMP4VG0PF_Q",
-      "v=spf1 include:_spf-a.microsoft.com include:_spf-b.microsoft.com include:_spf-c.microsoft.com include:_spf-ssg-a.msft.net include:_spf1-meo.microsoft.com -all",
-      "v=MCPv1; k=ecdsap384; p=AoHTKEi2W8L2P8cf9CoDicIxYiuttTkwtIeFOqYCewBGoRZiiF+9/92saUkIDERGAA==",
-      "ms-domain-verification=65f91178-9dfb-41cd-929d-08d1a38ed607",
-      "dobtdihqagnr18hea8uv1h1mvq",
-      "google-site-verification=GfDnTUdATPsK1230J0mXbfsYw-3A9BVMVaKSd4DcKgI"
+      "google-site-verification=pjPOauSPcrfXOZS9jnPPa5axowcHGCDAl1_86dCqFpk",
+      "ms-domain-verification=561512fc-b4ba-4ac7-a946-e464c8f49f1b",
+      "mixpanel-domain-verify=5803bc4c-5bb6-4ce1-8076-753800097373",
+      "v=MCPv1; k=ecdsap384; p=A5JeyhIFWFj4/epHJwt29GRUSrFwGSwXhrhDMAUSklMhfXjI7gi/ekY/fQSWToZdCw==",
+      "openai-domain-verification=dv-sFtCvKOlWoe31gpoSvs7cqsP",
+      "d365mktkey=SxDf1EZxLvMwx6eEZUxzjFFgHoapF8DvtWEUjwq7ZTwx",
+      "docusign=d5a3737c-c23c-4bd0-9095-d2ff621f2840",
+      "d365mktkey=heYmJ57sWrwMjCgIG1xRwTREJrQokUIDtBcNfGuxoWQx",
+      "atlassian-domain-verification=xvoaqRfxSg3PnlVnR4xCSOlKyw1Aln0MMxRiKXnwWroFG7vI76TUC8xYb03MwMXv"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:itex-rua@microsoft.com; ruf=mailto:itex-ruf@microsoft.com; fo=1"
@@ -478,11 +478,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     ]
   },
   "apex_txt": [
-    "openai-domain-verification=dv-sFtCvKOlWoe31gpoSvs7cqsP",
-    "hpe-greenlake-domain-verification=495143304a3330533363357a57684f6335556f316f5565",
-    "d365mktkey=wbU64GRacxVEQxwcLSQnx0zisXLYzgUbfvsufIqO9ZUx",
-    "zoom-domain-verification=ZOOM_verify_e97a3d385acb4c47b9b924609a280524",
-    "d365mktkey=6358r1b7e13hox60tl1uagv14"
+    "hcp-domain-verification=3ce174a8b9fba88909633ab13eb1d81ce0123454745d66e500052ed8",
+    "linear-domain-verification=iuq6saifcnbe",
+    "d365mktkey=3l6dste9txazu0Qd2zu4135PUB4E35txLxyzJxjkPbsx",
+    "google-site-verification=M--CVfn_YwsV-2FGbCp_HFaEj23BmT0cTF4l8hXgpvM",
+    "d365mktkey=JlXV17lfZjyvWxNje1qiP390ACSKzTxo5mGqZ3V2BmYx"
   ],
   "tls2": {
     "alpn": "",
@@ -493,11 +493,16 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260623090417",
+      "not_after": "20261220090417"
     }
   },
-  "elapsed_s": 11.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 10.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

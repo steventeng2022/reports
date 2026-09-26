@@ -7,12 +7,12 @@
 | Target | https://smugmug.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | smugmug.com |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 | 14 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -125,13 +126,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (pmb7xaorud48wz.smugmug.com and ygzyj3mzm45vwv.smugmug.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (encm33wuqyhlun.smugmug.com and x0menxknpjnbd6.smugmug.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=TgOLLHFpQq2Vo30Hxzddllz1ji7PkMt0vV2E5B3rUCP2ICBlTY; miro-verification=57e9f2368bcc8d66648f3d731cb9a81eda2d084b; h1-domain-verification=WGuGC3hnnTu7E31Y7R7KZfvJtMDib9GK1dfYdJ3Uko1oBnKJ
+- **Detail:** Apex TXT records with verification/token content: miro-verification=57e9f2368bcc8d66648f3d731cb9a81eda2d084b; anthropic-domain-verification-ytcjx3=3JXEHEGUIDVMUMf0uDxrNCHeS; status-page-domain-verification=2z6n94xyr5tj
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -139,6 +140,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - **CWE:** CWE-603
 - **Detail:** Certificate of smugmug.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 100.52.94.3 carries PTR ec2-100-52-94-3.compute-1.amazonaws.com. for smugmug.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -148,38 +155,38 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
   "dns": {
     "a": [
       "100.52.94.3",
-      "32.193.115.37",
-      "3.83.200.95"
+      "3.83.200.95",
+      "32.193.115.37"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "aspmx.l.google.com (pref 1)"
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-798.awsdns-35.net.",
-      "ns-160.awsdns-20.com.",
       "ns-1488.awsdns-58.org.",
-      "ns-1569.awsdns-04.co.uk."
+      "ns-798.awsdns-35.net.",
+      "ns-1569.awsdns-04.co.uk.",
+      "ns-160.awsdns-20.com."
     ],
     "spf": [
       "docusign=db2c269a-ec4f-4e67-ae5f-1ef42b248990",
-      "asv=b9dfbae46b15612f6607a68ae19a7e2e",
-      "atlassian-domain-verification=TgOLLHFpQq2Vo30Hxzddllz1ji7PkMt0vV2E5B3rUCP2ICBlTYaOx4ns/CDzkVnf",
-      "TAILSCALE-2SnWDnM6RXvoBqRCJXyE",
       "miro-verification=57e9f2368bcc8d66648f3d731cb9a81eda2d084b",
-      "h1-domain-verification=WGuGC3hnnTu7E31Y7R7KZfvJtMDib9GK1dfYdJ3Uko1oBnKJ",
-      "google-site-verification=-nck5ImlodD2x9hVKFtLY2lgmH0nTzkkhqrYMGTbATQ",
-      "v=spf1 include:_spf.smugmug_com._d.easydmarc.pro ~all",
-      "h1-domain-verification=VswTbgZa19ikLScJDExi1oP55pEEtqbzNnXMsNAbRLGQ5pwf",
       "anthropic-domain-verification-ytcjx3=3JXEHEGUIDVMUMf0uDxrNCHeS",
       "status-page-domain-verification=2z6n94xyr5tj",
+      "TAILSCALE-2SnWDnM6RXvoBqRCJXyE",
+      "h1-domain-verification=WGuGC3hnnTu7E31Y7R7KZfvJtMDib9GK1dfYdJ3Uko1oBnKJ",
+      "v=spf1 include:_spf.smugmug_com._d.easydmarc.pro ~all",
+      "lovable_verification=mUkuMoOCniK09G3hpvMK",
+      "google-site-verification=-nck5ImlodD2x9hVKFtLY2lgmH0nTzkkhqrYMGTbATQ",
       "easydmarc-verification:c41a276a-ac1c-4df4-afb0-24d13abb4082",
-      "lovable_verification=mUkuMoOCniK09G3hpvMK"
+      "h1-domain-verification=VswTbgZa19ikLScJDExi1oP55pEEtqbzNnXMsNAbRLGQ5pwf",
+      "asv=b9dfbae46b15612f6607a68ae19a7e2e",
+      "atlassian-domain-verification=TgOLLHFpQq2Vo30Hxzddllz1ji7PkMt0vV2E5B3rUCP2ICBlTYaOx4ns/CDzkVnf"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;rua=mailto:c707497ded@rua.easydmarc.us;ruf=mailto:c707497ded@ruf.easydmarc.us;fo=1;"
@@ -264,11 +271,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "atlassian-domain-verification=TgOLLHFpQq2Vo30Hxzddllz1ji7PkMt0vV2E5B3rUCP2ICBlTY",
     "miro-verification=57e9f2368bcc8d66648f3d731cb9a81eda2d084b",
+    "anthropic-domain-verification-ytcjx3=3JXEHEGUIDVMUMf0uDxrNCHeS",
+    "status-page-domain-verification=2z6n94xyr5tj",
     "h1-domain-verification=WGuGC3hnnTu7E31Y7R7KZfvJtMDib9GK1dfYdJ3Uko1oBnKJ",
-    "google-site-verification=-nck5ImlodD2x9hVKFtLY2lgmH0nTzkkhqrYMGTbATQ",
-    "h1-domain-verification=VswTbgZa19ikLScJDExi1oP55pEEtqbzNnXMsNAbRLGQ5pwf"
+    "lovable_verification=mUkuMoOCniK09G3hpvMK"
   ],
   "tls2": {
     "alpn": "",
@@ -279,11 +286,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251127000000",
+      "not_after": "20261225235959"
     }
   },
-  "elapsed_s": 23.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 502,
+    "ptr": [
+      "ec2-100-52-94-3.compute-1.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 30.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

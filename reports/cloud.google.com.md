@@ -7,12 +7,12 @@
 | Target | https://cloud.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | cloud.google.com |
-| Test date | 2026-09-26 17:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 0, Info: 9)
+Total findings: **12** (High: 0, Medium: 0, Low: 1, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -24,7 +24,10 @@ Total findings: **9** (High: 0, Medium: 0, Low: 0, Info: 9)
 | 6 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 7 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 8 | info | CK5 | Cookie scoped to parent domain (.google.com) | CWE-200 |
-| 9 | info | CT1 | 15 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 9 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 10 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 11 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 12 | info | CT1 | 15 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -63,7 +66,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 0, Info: 9)
 ### 6. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=FNbpLNxt8J8XYQAudCNFnig_1bP-LAUSeAePJXlfjzU; linkedin-site-verification=665646e8-9b99-454f-86a2-803db5044863; linkedin-site-verification=d232e0a9-aa43-41a4-8fa4-243021df793a
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=jaH5RlwfdutdrKEaZY5nEbcReUEp9rlTOJIuMqh-SV4; facebook-domain-verification=arpzb36y6gfzl22n4jl30bg5fsrgh0; linkedin-site-verification=d232e0a9-aa43-41a4-8fa4-243021df793a
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 7. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -78,7 +81,25 @@ Total findings: **9** (High: 0, Medium: 0, Low: 0, Info: 9)
 - **Detail:** Set-Cookie Domain attribute is broader than the request host cloud.google.com.
 - **Recommendation:** Confirm the wider cookie scope is intended.
 
-### 9. [INFO] 15 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 9. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of cloud.google.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 10. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of cloud.google.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
+### 11. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 142.250.198.78 carries PTR lctsaa-ab-in-f14.1e100.net. for cloud.google.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 12. [INFO] 15 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: console.au.cloud.google.com, console.ca.cloud.google.com, console.ch.cloud.google.com, console.eu.cloud.google.com, console.il.cloud.google.com, console.in.cloud.google.com, console.it.cloud.google.com, console.jp.cloud.google.com, console.sa.cloud.google.com, console.uk.cloud.google.com
@@ -100,12 +121,12 @@ Total findings: **9** (High: 0, Medium: 0, Low: 0, Info: 9)
     "mx": [],
     "ns": [],
     "spf": [
-      "google-site-verification=FNbpLNxt8J8XYQAudCNFnig_1bP-LAUSeAePJXlfjzU",
-      "linkedin-site-verification=665646e8-9b99-454f-86a2-803db5044863",
-      "linkedin-site-verification=d232e0a9-aa43-41a4-8fa4-243021df793a",
       "google-site-verification=jaH5RlwfdutdrKEaZY5nEbcReUEp9rlTOJIuMqh-SV4",
       "facebook-domain-verification=arpzb36y6gfzl22n4jl30bg5fsrgh0",
-      "google-site-verification=6nz-JOcA8VP-mmx29RInf7-g6CTloBX9wpmWHlVSMsw"
+      "linkedin-site-verification=d232e0a9-aa43-41a4-8fa4-243021df793a",
+      "google-site-verification=FNbpLNxt8J8XYQAudCNFnig_1bP-LAUSeAePJXlfjzU",
+      "google-site-verification=6nz-JOcA8VP-mmx29RInf7-g6CTloBX9wpmWHlVSMsw",
+      "linkedin-site-verification=665646e8-9b99-454f-86a2-803db5044863"
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -289,11 +310,11 @@ Total findings: **9** (High: 0, Medium: 0, Low: 0, Info: 9)
     ]
   },
   "apex_txt": [
-    "google-site-verification=FNbpLNxt8J8XYQAudCNFnig_1bP-LAUSeAePJXlfjzU",
-    "linkedin-site-verification=665646e8-9b99-454f-86a2-803db5044863",
-    "linkedin-site-verification=d232e0a9-aa43-41a4-8fa4-243021df793a",
     "google-site-verification=jaH5RlwfdutdrKEaZY5nEbcReUEp9rlTOJIuMqh-SV4",
-    "facebook-domain-verification=arpzb36y6gfzl22n4jl30bg5fsrgh0"
+    "facebook-domain-verification=arpzb36y6gfzl22n4jl30bg5fsrgh0",
+    "linkedin-site-verification=d232e0a9-aa43-41a4-8fa4-243021df793a",
+    "google-site-verification=FNbpLNxt8J8XYQAudCNFnig_1bP-LAUSeAePJXlfjzU",
+    "google-site-verification=6nz-JOcA8VP-mmx29RInf7-g6CTloBX9wpmWHlVSMsw"
   ],
   "tls2": {
     "alpn": "",
@@ -304,14 +325,22 @@ Total findings: **9** (High: 0, Medium: 0, Low: 0, Info: 9)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192153",
+      "not_after": "20261203192152"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
-  "elapsed_s": 7.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "lctsaa-ab-in-f14.1e100.net."
+    ]
+  },
+  "elapsed_s": 12.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://arstechnica.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | arstechnica.com |
-| Test date | 2026-09-26 17:39 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
+Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,8 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 | 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 13 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -80,13 +82,13 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 ### 8. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (4vfgtkv64tigp1.arstechnica.com and sp9yjvu0g2c0ro.arstechnica.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (qc9gmfgbrimtge.arstechnica.com and t9p697osyo6xeh.arstechnica.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 9. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=Xt1q2fpVK6qREDXADvlLz2O5pvmUz9G_xxoGdeEnrH0; google-site-verification=XuFuLW59WRoAbzeQ-wsF0JwpaeYwtdzRmtiktfi3Pmc; google-site-verification=HdFEloOqFNJZvQWa7SK2BRmWVt8aVnPuagqXZ-C2U5U
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=Xt1q2fpVK6qREDXADvlLz2O5pvmUz9G_xxoGdeEnrH0; google-site-verification=HdFEloOqFNJZvQWa7SK2BRmWVt8aVnPuagqXZ-C2U5U; google-site-verification=XuFuLW59WRoAbzeQ-wsF0JwpaeYwtdzRmtiktfi3Pmc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -107,6 +109,18 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 - **Detail:** robots.txt lists 34 disallow path(s), e.g. Allow:, User-agent:, /, /, /cgi-bin/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 13. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of arstechnica.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 18.190.166.196 carries PTR ec2-18-190-166-196.us-east-2.compute.amazonaws.com. for arstechnica.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -120,28 +134,28 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt3.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
+      "alt3.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
       "ns-1285.awsdns-32.org.",
-      "ns-493.awsdns-61.com.",
+      "ns-783.awsdns-33.net.",
       "ns-2008.awsdns-59.co.uk.",
-      "ns-783.awsdns-33.net."
+      "ns-493.awsdns-61.com."
     ],
     "spf": [
-      "loaderio=2fd6086b1c3ba926ae36db37131123f7",
-      "v=spf1 include:_u.arstechnica.com._spf.smart.ondmarc.com ~all",
       "google-site-verification=Xt1q2fpVK6qREDXADvlLz2O5pvmUz9G_xxoGdeEnrH0",
-      "google-site-verification=XuFuLW59WRoAbzeQ-wsF0JwpaeYwtdzRmtiktfi3Pmc",
+      "v=spf1 include:_u.arstechnica.com._spf.smart.ondmarc.com ~all",
       "google-site-verification=HdFEloOqFNJZvQWa7SK2BRmWVt8aVnPuagqXZ-C2U5U",
+      "google-site-verification=XuFuLW59WRoAbzeQ-wsF0JwpaeYwtdzRmtiktfi3Pmc",
       "yahoo-verification-key=bP+HO9s82IBxbotbnF/O1nN4Jo4VfFXq5JNFAPCK8+o=",
       "google-site-verification=nso4GHYIGZwo4gB6AoUxzJWkxOUdx83kbGeREAxnv3A",
+      "google-site-verification=OtVm0j4Rqs4y10N827uQ_n8ZnMtO0vfqw1k5NCzaJvo",
       "facebook-domain-verification=qptjyerza2q11uv3fe6aay6hbsncr8",
-      "google-site-verification=OtVm0j4Rqs4y10N827uQ_n8ZnMtO0vfqw1k5NCzaJvo"
+      "loaderio=2fd6086b1c3ba926ae36db37131123f7"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; sp=reject; rua=mailto:a6816915@inbox.ondmarc.com; ruf=mailto:a6816915@inbox.ondmarc.com; adkim=r; aspf=r; fo=1; rf=afrf; ri=3600"
@@ -225,8 +239,8 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
   "wildcard_dns": true,
   "apex_txt": [
     "google-site-verification=Xt1q2fpVK6qREDXADvlLz2O5pvmUz9G_xxoGdeEnrH0",
-    "google-site-verification=XuFuLW59WRoAbzeQ-wsF0JwpaeYwtdzRmtiktfi3Pmc",
     "google-site-verification=HdFEloOqFNJZvQWa7SK2BRmWVt8aVnPuagqXZ-C2U5U",
+    "google-site-verification=XuFuLW59WRoAbzeQ-wsF0JwpaeYwtdzRmtiktfi3Pmc",
     "yahoo-verification-key=bP+HO9s82IBxbotbnF/O1nN4Jo4VfFXq5JNFAPCK8+o=",
     "google-site-verification=nso4GHYIGZwo4gB6AoUxzJWkxOUdx83kbGeREAxnv3A"
   ],
@@ -239,7 +253,9 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260625000000",
+      "not_after": "20270108235959"
     }
   },
   "http2": {
@@ -261,8 +277,14 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "/category/*/*"
     ]
   },
-  "elapsed_s": 37.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "ec2-18-190-166-196.us-east-2.compute.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 37.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://picasaweb.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | picasaweb.google.com |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
+Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 | 12 | low | RED1 | HTTP redirect points to another host over plain HTTP | CWE-319 |
 | 13 | info | P8 | Missing security.txt | CWE-1038 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -126,6 +127,12 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - **CWE:** CWE-603
 - **Detail:** Certificate of picasaweb.google.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 142.250.204.46 carries PTR lctsaa-ac-in-f14.1e100.net., hkg07s38-in-f14.1e100.net. for picasaweb.google.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -296,11 +303,20 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192153",
+      "not_after": "20261203192152"
     }
   },
-  "elapsed_s": 3.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "lctsaa-ac-in-f14.1e100.net.",
+      "hkg07s38-in-f14.1e100.net."
+    ]
+  },
+  "elapsed_s": 3.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

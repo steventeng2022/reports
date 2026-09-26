@@ -7,12 +7,12 @@
 | Target | https://imdb.com/ |
 | Bug bounty program | IMDB |
 | Listed scope domain | imdb.com |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
+Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -117,7 +118,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=f3PqOeHGPuPaaRAkAPJ4bSO-O8bDQOohrmdwxtJAIIM; docker-verification=800fa4c1-614f-4e2c-9ee5-c43ea1dc7831; kahoot-domain-verification=044996899c64fcdf913eed0ad14e1f19c79bdd590a762d537a2ee
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=f3PqOeHGPuPaaRAkAPJ4bSO-O8bDQOohrmdwxtJAIIM; google-site-verification=uL7Y3ZHRGFE5c6a05OXtn2S2Vq6LfrtqsYlwszK0yl8; atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbD
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -132,6 +133,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 - **Detail:** robots.txt lists 21 disallow path(s), e.g. /register, /*/register, /registration/, /*/registration/, /search/title/*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 44.215.137.99 carries PTR ec2-44-215-137-99.compute-1.amazonaws.com. for imdb.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -139,9 +146,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
   "domain": "imdb.com",
   "dns": {
     "a": [
-      "98.82.158.179",
       "44.215.137.99",
-      "98.82.155.134"
+      "98.82.155.134",
+      "98.82.158.179"
     ],
     "aaaa": [],
     "cname": null,
@@ -149,32 +156,32 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "amazon-smtp.amazon.com (pref 10)"
     ],
     "ns": [
-      "ns2.amzndns.com.",
-      "ns2.amzndns.org.",
-      "ns2.amzndns.net.",
-      "ns1.amzndns.com.",
+      "ns1.amzndns.net.",
       "ns1.amzndns.org.",
+      "ns2.amzndns.net.",
+      "ns2.amzndns.org.",
+      "ns2.amzndns.com.",
+      "ns1.amzndns.com.",
       "ns1.amzndns.co.uk.",
-      "ns2.amzndns.co.uk.",
-      "ns1.amzndns.net."
+      "ns2.amzndns.co.uk."
     ],
     "spf": [
-      "google-site-verification=f3PqOeHGPuPaaRAkAPJ4bSO-O8bDQOohrmdwxtJAIIM",
       "MS=ms74462343",
-      "MS=ms55779356",
-      "docker-verification=800fa4c1-614f-4e2c-9ee5-c43ea1dc7831",
-      "kahoot-domain-verification=044996899c64fcdf913eed0ad14e1f19c79bdd590a762d537a2eeeac7c1ba6c0",
-      "canva-site-verification=knObS_jT07ww5BsgiACF8g",
-      "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814",
-      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
-      "box-domain-verification=ffea95cd0e0d61c302198367155b07e74fd534fa1d867662dc9bf9969b6f535d",
-      "v=spf1 include:amazon.com -all",
       "TS1760027",
+      "google-site-verification=f3PqOeHGPuPaaRAkAPJ4bSO-O8bDQOohrmdwxtJAIIM",
       "google-site-verification=uL7Y3ZHRGFE5c6a05OXtn2S2Vq6LfrtqsYlwszK0yl8",
-      "cisco-ci-domain-verification=5b0cade9b99903b93ec19495d546a72dbb24ecf17c3670b02bbf706bb9ba552a",
-      "IPROTA_D66964-XXX",
+      "MS=ms55779356",
+      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
+      "canva-site-verification=knObS_jT07ww5BsgiACF8g",
+      "bluebeam-verification=jcnffcdt5x1u0ay5kp1ds2xctgv0jj",
+      "docker-verification=800fa4c1-614f-4e2c-9ee5-c43ea1dc7831",
       "apple-domain-verification=0jFtlxygq-YPBzUgTNd2qDiTxb6TpG8Hf1qJcLlFb_w",
-      "bluebeam-verification=jcnffcdt5x1u0ay5kp1ds2xctgv0jj"
+      "cisco-ci-domain-verification=5b0cade9b99903b93ec19495d546a72dbb24ecf17c3670b02bbf706bb9ba552a",
+      "kahoot-domain-verification=044996899c64fcdf913eed0ad14e1f19c79bdd590a762d537a2eeeac7c1ba6c0",
+      "IPROTA_D66964-XXX",
+      "box-domain-verification=ffea95cd0e0d61c302198367155b07e74fd534fa1d867662dc9bf9969b6f535d",
+      "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814",
+      "v=spf1 include:amazon.com -all"
     ],
     "dmarc": [
       "v=DMARC1;",
@@ -216,7 +223,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     }
   },
   "ports": {
-    "ip": "98.82.158.179",
+    "ip": "44.215.137.99",
     "open": []
   },
   "https": {
@@ -270,10 +277,10 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
   },
   "apex_txt": [
     "google-site-verification=f3PqOeHGPuPaaRAkAPJ4bSO-O8bDQOohrmdwxtJAIIM",
-    "docker-verification=800fa4c1-614f-4e2c-9ee5-c43ea1dc7831",
-    "kahoot-domain-verification=044996899c64fcdf913eed0ad14e1f19c79bdd590a762d537a2ee",
+    "google-site-verification=uL7Y3ZHRGFE5c6a05OXtn2S2Vq6LfrtqsYlwszK0yl8",
+    "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbD",
     "canva-site-verification=knObS_jT07ww5BsgiACF8g",
-    "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2a"
+    "bluebeam-verification=jcnffcdt5x1u0ay5kp1ds2xctgv0jj"
   ],
   "tls2": {
     "alpn": "",
@@ -284,7 +291,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260805000000",
+      "not_after": "20270218235959"
     }
   },
   "http2": {
@@ -307,8 +316,14 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "/title/*/review/*"
     ]
   },
-  "elapsed_s": 24.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "ec2-44-215-137-99.compute-1.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 24.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

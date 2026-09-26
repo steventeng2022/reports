@@ -7,8 +7,8 @@
 | Target | https://ouest-france.fr/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ouest-france.fr |
-| Test date | 2026-09-26 18:17 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -58,7 +58,7 @@ Total findings: **6** (High: 0, Medium: 0, Low: 3, Info: 3)
 ### 6. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: abuseipdb-verification=i1e6IPtc; google-site-verification=xoAPL4EODmFkvsSgWpp1N_G1QVArdzGYptCMRkEgP7Q; google-site-verification=ZUoTvo4Vw2HgB_mHnyGiEcIq2mu5DHJ2Ac2Q9vwGs0s
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=t9ZUqxMIqTxQ8XxMdfW0PwDUQwGkcSOz_ms8ScKDjPo; atlassian-domain-verification=qfBCLKrblhZ5lJVxYyobgX6alxrxe7Sj0B6q7q09bGe5rH9uDa; google-site-verification=eAg6DrPLrk1BZ6nKEYWa_ll2aiQPu2gX2i6Kz1iYvEU
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ## Evidence (raw response observations)
@@ -73,8 +73,8 @@ Total findings: **6** (High: 0, Medium: 0, Low: 3, Info: 3)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "de-smtp-inbound-1.mimecast.com (pref 10)",
-      "de-smtp-inbound-2.mimecast.com (pref 10)"
+      "de-smtp-inbound-2.mimecast.com (pref 10)",
+      "de-smtp-inbound-1.mimecast.com (pref 10)"
     ],
     "ns": [
       "ns-39-a.gandi.net.",
@@ -82,47 +82,47 @@ Total findings: **6** (High: 0, Medium: 0, Low: 3, Info: 3)
       "ns-164-c.gandi.net."
     ],
     "spf": [
-      "brevo-code:170df14ad903a66270d2c9f0323b350f",
-      "FBKvDjqQTagp7RvBFclHHIqQ28r5tIqi3cI1cR1U9c3/wMRtxMYDkNLEf7E8xPbqLyXCA9/0vatdcij9iymmDQ==",
-      "brevo-code:dd56c2c0cef8cfcd4aac7723df6350b8",
-      "fastly-domain-delegation-uucxyfkhqkvvq3fchaea-00419161-2025-06-05",
-      "brevo-code:06a75a3dc110e18f5f98049ffda07408",
-      "abuseipdb-verification=i1e6IPtc",
-      "google-site-verification=xoAPL4EODmFkvsSgWpp1N_G1QVArdzGYptCMRkEgP7Q",
-      "iOS-enroll=https://gwclp.ouest-france.fr/rtc/vm-tuva4.domaine.local/MDM/api/v1/enroll/IosEnroll",
-      "google-site-verification=ZUoTvo4Vw2HgB_mHnyGiEcIq2mu5DHJ2Ac2Q9vwGs0s",
-      "wip.runners=51bc4aa7edf5a4e4f291b27d70c8efb7",
-      "google-site-verification=jyMzKhQ4FGuEcxRk-2MYjSYJEu5EedJp8C-_Wnlt1j4",
-      "runners=bc4527faff45d383b007795d503cdf0f",
-      "google-site-verification=w3cKdY5AfvQolHsBRmw_uBipk52BdHZtzT_5Ne4Z2mU",
-      "pardot933693=ed9b61516d69036f47b7cbfe849206c4c014c75cc7e4223017dd418fd272fd02",
-      "google-site-verification=e59tMQ11DGFt6aL7ih4hePR9tHupyiC_4CTcCnH5rE4",
-      "K28NOxnN=f8afadfe6a0207a74cd55996abbbe1c5",
-      "ca3-d335ade3309a4b039fe7c1144d7941b5",
-      "google-site-verification=HgMmSeaM0OJ5Gz-q5j-3_CP6WDBcX88-NPkUIbiiyWU",
-      "google-site-verification=g8siYJiIA2VPb1HQv9w22kXR7lde-h3Zc1T5PTEsVbw",
-      "QiUyHY5CXVZVDZnEXdbXt6OPUWvvMd/K+Yn503PzP+33jGCYgxN4YtW/9yasc9dX6mfACJsGe/C/I9biKDLJzQ==",
-      "GqiFaZKPKNEmhm4ZOxOvS+W4jNPQO5IJWkmCCTiz5ZPbyHrKfQjmIgmRJDe0BB9xLfN9g2B/9bni9KdvDpl+Lg==",
-      "v=spf1 include:de._netblocks.mimecast.com include:spf.protection.outlook.com include:sendgrid.net include:spf.mailjet.com include:spf.sendinblue.com ",
-      " include:aspmx.pardot.com include:_spf.atlassian.net redirect=%{i}.spf-sipaof.fr",
-      "LDLAUNCHPAD=https://mobile.ouest-france.fr/launchpad.cloud",
-      "google-site-verification=eAg6DrPLrk1BZ6nKEYWa_ll2aiQPu2gX2i6Kz1iYvEU",
-      "atlassian-sending-domain-verification=f7647c05-c955-4694-a5c7-ed34a2311490",
-      "anthropic-domain-verification-5vv5rc=kZQQdusyWXhrS4wAEVxK3lKs9",
-      "brevo-code:341ec5d7807d7688ec140d0ea717ab5d",
-      "apple-domain-verification=UM2QXuPiPZ4rNX0q",
-      "wiz-domain-verification=f8adbe81a92b281861d6444a25cf6a256b36400e44f1a93b61b2983161e9c0da",
-      "mgverify=05d569c79ed45260178c0cd5457a415a03bb3cc922f547c90cc61a534d6cd555",
-      "android-enroll=https://gwclp.ouest-france.fr/rtc/vm-tuva4.domaine.local/MDM/api/v1/enroll/AndroidEnroll",
       "google-site-verification=t9ZUqxMIqTxQ8XxMdfW0PwDUQwGkcSOz_ms8ScKDjPo",
       "atlassian-domain-verification=qfBCLKrblhZ5lJVxYyobgX6alxrxe7Sj0B6q7q09bGe5rH9uDaxpfyiJutA1LJOn",
-      "atlassian-domain-verification=VGUBsXBygKvUaItgMF6tj3ENtDha3doy8Ma1ahxB2zTsGYRAGLiZhKIGd5sHrRFP",
-      "google-site-verification=TJBQcdRNba_AAfrYkPBhBKYI-yXP2eovwwitqJ5nzxU",
+      "google-site-verification=eAg6DrPLrk1BZ6nKEYWa_ll2aiQPu2gX2i6Kz1iYvEU",
       "Sendinblue-code:b56bb0021980d6773d8bc7c2b3d3af17",
+      "apple-domain-verification=UM2QXuPiPZ4rNX0q",
       "0ed1fe018acfc94390c49e4ce3bf01f215c2a59ff0",
+      "google-site-verification=ZUoTvo4Vw2HgB_mHnyGiEcIq2mu5DHJ2Ac2Q9vwGs0s",
+      "QiUyHY5CXVZVDZnEXdbXt6OPUWvvMd/K+Yn503PzP+33jGCYgxN4YtW/9yasc9dX6mfACJsGe/C/I9biKDLJzQ==",
+      "google-site-verification=e59tMQ11DGFt6aL7ih4hePR9tHupyiC_4CTcCnH5rE4",
+      "google-site-verification=TJBQcdRNba_AAfrYkPBhBKYI-yXP2eovwwitqJ5nzxU",
+      "ca3-d335ade3309a4b039fe7c1144d7941b5",
+      "atlassian-sending-domain-verification=f7647c05-c955-4694-a5c7-ed34a2311490",
+      "FBKvDjqQTagp7RvBFclHHIqQ28r5tIqi3cI1cR1U9c3/wMRtxMYDkNLEf7E8xPbqLyXCA9/0vatdcij9iymmDQ==",
+      "wip.runners=51bc4aa7edf5a4e4f291b27d70c8efb7",
+      "fastly-domain-delegation-uucxyfkhqkvvq3fchaea-00419161-2025-06-05",
+      "brevo-code:06a75a3dc110e18f5f98049ffda07408",
+      "wiz-domain-verification=f8adbe81a92b281861d6444a25cf6a256b36400e44f1a93b61b2983161e9c0da",
       "yahoo-verification-key=XmMi04u79I4RgfvfYTrACYnP6+60fyt/S5XxV/HOKII=",
+      "brevo-code:dd56c2c0cef8cfcd4aac7723df6350b8",
+      "v=spf1 include:de._netblocks.mimecast.com include:spf.protection.outlook.com include:sendgrid.net include:spf.mailjet.com include:spf.sendinblue.com ",
+      " include:aspmx.pardot.com include:_spf.atlassian.net redirect=%{i}.spf-sipaof.fr",
+      "google-site-verification=w3cKdY5AfvQolHsBRmw_uBipk52BdHZtzT_5Ne4Z2mU",
+      "iOS-enroll=https://gwclp.ouest-france.fr/rtc/vm-tuva4.domaine.local/MDM/api/v1/enroll/IosEnroll",
+      "google-site-verification=HgMmSeaM0OJ5Gz-q5j-3_CP6WDBcX88-NPkUIbiiyWU",
+      "brevo-code:341ec5d7807d7688ec140d0ea717ab5d",
+      "K28NOxnN=f8afadfe6a0207a74cd55996abbbe1c5",
+      "GqiFaZKPKNEmhm4ZOxOvS+W4jNPQO5IJWkmCCTiz5ZPbyHrKfQjmIgmRJDe0BB9xLfN9g2B/9bni9KdvDpl+Lg==",
+      "LDLAUNCHPAD=https://mobile.ouest-france.fr/launchpad.cloud",
+      "anthropic-domain-verification-5vv5rc=kZQQdusyWXhrS4wAEVxK3lKs9",
+      "google-site-verification=jyMzKhQ4FGuEcxRk-2MYjSYJEu5EedJp8C-_Wnlt1j4",
+      "brevo-code:33bd9a6dfe6151cc84461f3f65010a76",
+      "google-site-verification=xoAPL4EODmFkvsSgWpp1N_G1QVArdzGYptCMRkEgP7Q",
+      "android-enroll=https://gwclp.ouest-france.fr/rtc/vm-tuva4.domaine.local/MDM/api/v1/enroll/AndroidEnroll",
+      "runners=bc4527faff45d383b007795d503cdf0f",
+      "brevo-code:170df14ad903a66270d2c9f0323b350f",
       "OSIAGENTREGURL=https://mobile.ouest-france.fr/MobileEnrollment/ld-iosEnroll.aspx",
-      "brevo-code:33bd9a6dfe6151cc84461f3f65010a76"
+      "abuseipdb-verification=i1e6IPtc",
+      "atlassian-domain-verification=VGUBsXBygKvUaItgMF6tj3ENtDha3doy8Ma1ahxB2zTsGYRAGLiZhKIGd5sHrRFP",
+      "mgverify=05d569c79ed45260178c0cd5457a415a03bb3cc922f547c90cc61a534d6cd555",
+      "pardot933693=ed9b61516d69036f47b7cbfe849206c4c014c75cc7e4223017dd418fd272fd02",
+      "google-site-verification=g8siYJiIA2VPb1HQv9w22kXR7lde-h3Zc1T5PTEsVbw"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; rua=mailto:dmarc@ouest-france.fr"
@@ -131,11 +131,11 @@ Total findings: **6** (High: 0, Medium: 0, Low: 3, Info: 3)
   },
   "error": "ConnectionRefusedError(10061, '無法連線，因為目標電腦拒絕連線。', None, 10061, None)",
   "apex_txt": [
-    "abuseipdb-verification=i1e6IPtc",
-    "google-site-verification=xoAPL4EODmFkvsSgWpp1N_G1QVArdzGYptCMRkEgP7Q",
-    "google-site-verification=ZUoTvo4Vw2HgB_mHnyGiEcIq2mu5DHJ2Ac2Q9vwGs0s",
-    "google-site-verification=jyMzKhQ4FGuEcxRk-2MYjSYJEu5EedJp8C-_Wnlt1j4",
-    "google-site-verification=w3cKdY5AfvQolHsBRmw_uBipk52BdHZtzT_5Ne4Z2mU"
+    "google-site-verification=t9ZUqxMIqTxQ8XxMdfW0PwDUQwGkcSOz_ms8ScKDjPo",
+    "atlassian-domain-verification=qfBCLKrblhZ5lJVxYyobgX6alxrxe7Sj0B6q7q09bGe5rH9uDa",
+    "google-site-verification=eAg6DrPLrk1BZ6nKEYWa_ll2aiQPu2gX2i6Kz1iYvEU",
+    "apple-domain-verification=UM2QXuPiPZ4rNX0q",
+    "google-site-verification=ZUoTvo4Vw2HgB_mHnyGiEcIq2mu5DHJ2Ac2Q9vwGs0s"
   ],
   "tls2": {
     "error": "ConnectionRefusedError(10061, '無法連線，因為目標電腦拒絕連線。', None, 10061, None)"
@@ -143,8 +143,11 @@ Total findings: **6** (High: 0, Medium: 0, Low: 3, Info: 3)
   "http2": {
     "error": "root GET failed"
   },
-  "elapsed_s": 11.2,
-  "rechecked": "2026-09-26 18:18 UTC"
+  "x12": {
+    "error": "ConnectionError(MaxRetryError('HTTPSConnectionPool(host=\\'ouest-france.fr\\', por"
+  },
+  "elapsed_s": 14.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

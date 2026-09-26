@@ -7,8 +7,8 @@
 | Target | https://vimeo.com/ |
 | Bug bounty program | Vimeo |
 | Listed scope domain | vimeo.com |
-| Test date | 2026-09-26 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -114,7 +114,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: canva-site-verification=DQAQJSZSFIPE9wLghNGucA; stripe-verification=0905bcb5e5ed859c59ffac03f0580752c43adbd9282bb40aa1d68b6f9374; jetbrains-domain-verification=3ng8i2b2sjr1ojnpfa4akr6ry
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=RcUDKcVx4BFOK12yi3crRyHO0A4ys1NdWSC-q5pA0Aw; apple-domain-verification=hqseHhrDZs9mvnIu; zoho-verification=zb15890134.zmverify.zoho.com
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -143,71 +143,71 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
     "cname": null,
     "mx": [
       "aspmx3.googlemail.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
       "aspmx2.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)"
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
       "ns-70.awsdns-08.com.",
-      "ns-1463.awsdns-54.org.",
       "ns-1886.awsdns-43.co.uk.",
+      "ns-1463.awsdns-54.org.",
       "ns-682.awsdns-21.net."
     ],
     "spf": [
-      "canva-site-verification=DQAQJSZSFIPE9wLghNGucA",
-      "stripe-verification=0905bcb5e5ed859c59ffac03f0580752c43adbd9282bb40aa1d68b6f93742a43",
-      "jetbrains-domain-verification=3ng8i2b2sjr1ojnpfa4akr6ry",
-      "google-site-verification=e8qUoscBYD-sPanSS-r0dcYo9EaoIBbLBoyMaBv3sKg",
-      "MS=ms31258684",
-      "google-site-verification=hMdG7S08M7DLvcHiWDzVzvXxZUsfkruKr0Uo_oCLO0Y",
-      "brave-ledger-verification=ea3ce87b613b3706879f8d5c90b564eaa08b31e0d1c1bd59175aa394ef7c8c63",
-      "_croefc07jkoevgoq7ho4k23j9guzq3t",
-      "_globalsign-domain-verification=-ogVhboN12TmJn3fnj8AgBTj2LhZkXy26R2M6hIT_Q",
-      "zoho-verification=zb15890134.zmverify.zoho.com",
-      "834wn8161vj1q0sw515h2p3pkc3nwwpy",
-      "MS=ms50463091",
-      "yilRhWU2gaWPjUDNJn7Jzxym+9x0hezYabN6SdN0jgD6pU1GgIjgsbqxpR9VIAzo/zsaOf9UCfGqqG0J6onbIw==",
-      "amazonses:aG3MHmiDMfK+ROMMdC2TI3pgSqB/irrc/EffhZm8fpY=",
       "google-site-verification=RcUDKcVx4BFOK12yi3crRyHO0A4ys1NdWSC-q5pA0Aw",
-      "MS=ms11883597",
-      "stripe-verification=c63db8272ec91b68ebacdbe0526f7f976eb7cf5907ce4f45ea6bca970a33659d",
-      "notion-domain-verification=qP73sg1oSUsNT1z0kwxX7qZrqGtWyBWVW39BmrJzRfp",
-      "adobe-idp-site-verification=2b3f171733f9ec79ece6f6deb429f4f4ddf5d3df3e66bf5460e040eb4489cb50",
-      "stripe-verification=E1C768C81651F3AB136567486779A84AAA7BFB9BB069E433B6D2D9396FAD8E69",
-      "ca3-c918c5d16cb8495caffedfd48de3b949",
-      "google-site-verification=UYx7dBka_Zr85ae_GcZlDBs_FkRo3loBwU3GDL0rXkA",
-      "docker-verification=bc8a3b85-f3de-4303-a77b-5963968dd27d",
-      "stripe-verification=ba8501efece26680bae276979f5c24f1248cc3ca389b87a1c20889cec54438b4",
-      "openai-domain-verification=dv-jLpzDoIthu5YP30T9S28cHgn",
-      "sending_domain1125061=22ff236a83e1d42acb8bf0bb257fce1e87eb4b9f3967a3167bf55da342f56f7d",
-      "_x7awpslobtj17k90mhi3bdsfn4fpiqg",
-      "atlassian-domain-verification=OQUW8wO6JYgjdHThsMyRzUbqCNuYUJ1qA4ryjBsCIcdOFxvr5pFrW4Dt27ZDhLRq",
-      "pardot1125061=5dc9fc1db14d4ab197d6d920f4b106693801c1989a52face12b1d76675cfd922",
-      "parallels-domain-verification=6074395df5334b55afeea25a7a158ad484372217232842ebb488297a740e23c1",
-      "smartsheet-site-validation=Z_Zhh94Jn680XCzJ92bQI72bIBCat5Vw",
       "apple-domain-verification=hqseHhrDZs9mvnIu",
-      "google-site-verification=-eOb-DlXc3e9Qy6WVinkTxCyRa0MtgCqrlMMtRcyEa8",
-      "_globalsign-domain-verification=u43aixYwit_P_nZo8n15y__KZcxnZCg08KEe5iho2D",
-      "google-site-verification=hvy1Rpbhxy-S65t34-vb8qhUKGvEGtfPBciS1TQMl3M",
-      "elevenlabs=lagWi04NXUqluH6Z_aJOSAmqqdwRbGllJxQhDj9r1ec",
+      "zoho-verification=zb15890134.zmverify.zoho.com",
       "google-site-verification=henfs-vWflKItEV28eNNiXdcPPLeB8FAkluqr0wm4i0",
-      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email include:mail.zendesk.com include:helpscoutemail.com include:mktomail.com ~all",
-      "facebook-domain-verification=m3jcqq4qg23ihpjh5w5x5iswpyg6by",
-      "notion-domain-verification=1PLl3PgY3bgqYvCAzWFbUF99iW9phzauRb9FYvzQPIa",
-      "mosyle-verification-326584517",
-      "pendo-domain-verification=6b8dfe6a-b123-4af8-a9d1-34f905d0d913",
-      "dropbox-domain-verification=i3wbe0w3wzci",
-      "jamf-site-verification=Ok9tNLMbaiTgFfGONT6keA",
-      "stripe-verification=9C62CFA25412CCA90EEFA2F73D0FAB0569988DAE456E14993A808C05DEBAA460",
       "stripe-verification=515b72a65b4832050e6f4076d2db128f4e88520c3b5fb553475b1df83fdb32e9",
-      "hs-m4HC9yjhxb9JdEsZisAQJEx6",
-      "mongodb-site-verification=SMYuJ9hNJ78bA03BaqnO5p8HrRn5pnIx",
-      "hubspot-developer-verification=NWMyOWIzNzAtNWUwNS00MjVlLTlkMjMtYmIyYmY5YzczNTk3",
-      "stripe-verification=9d282334c83ec1bad81c10522b09ecbe5ab60b559747c606f318bc4071a7899e",
-      "stripe-verification=8c8a6dfe7831b0d791528fb81c0f1302f0d2919a5cce9e455045feb2dda61868",
+      "amazonses:aG3MHmiDMfK+ROMMdC2TI3pgSqB/irrc/EffhZm8fpY=",
+      "stripe-verification=9C62CFA25412CCA90EEFA2F73D0FAB0569988DAE456E14993A808C05DEBAA460",
       "anthropic-domain-verification-c7xc4h=EA7RDQhcYq3danVfSx0B3iMRY",
-      "stripe-verification=8f5465c02af6b9e2739d83ed01d0231504d39f845e6ab2c500ebe9fa5884934c"
+      "mongodb-site-verification=SMYuJ9hNJ78bA03BaqnO5p8HrRn5pnIx",
+      "_globalsign-domain-verification=-ogVhboN12TmJn3fnj8AgBTj2LhZkXy26R2M6hIT_Q",
+      "stripe-verification=0905bcb5e5ed859c59ffac03f0580752c43adbd9282bb40aa1d68b6f93742a43",
+      "facebook-domain-verification=m3jcqq4qg23ihpjh5w5x5iswpyg6by",
+      "google-site-verification=hvy1Rpbhxy-S65t34-vb8qhUKGvEGtfPBciS1TQMl3M",
+      "_x7awpslobtj17k90mhi3bdsfn4fpiqg",
+      "adobe-idp-site-verification=2b3f171733f9ec79ece6f6deb429f4f4ddf5d3df3e66bf5460e040eb4489cb50",
+      "834wn8161vj1q0sw515h2p3pkc3nwwpy",
+      "atlassian-domain-verification=OQUW8wO6JYgjdHThsMyRzUbqCNuYUJ1qA4ryjBsCIcdOFxvr5pFrW4Dt27ZDhLRq",
+      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email include:mail.zendesk.com include:helpscoutemail.com include:mktomail.com ~all",
+      "google-site-verification=e8qUoscBYD-sPanSS-r0dcYo9EaoIBbLBoyMaBv3sKg",
+      "hs-m4HC9yjhxb9JdEsZisAQJEx6",
+      "smartsheet-site-validation=Z_Zhh94Jn680XCzJ92bQI72bIBCat5Vw",
+      "brave-ledger-verification=ea3ce87b613b3706879f8d5c90b564eaa08b31e0d1c1bd59175aa394ef7c8c63",
+      "jetbrains-domain-verification=3ng8i2b2sjr1ojnpfa4akr6ry",
+      "mosyle-verification-326584517",
+      "notion-domain-verification=1PLl3PgY3bgqYvCAzWFbUF99iW9phzauRb9FYvzQPIa",
+      "pardot1125061=5dc9fc1db14d4ab197d6d920f4b106693801c1989a52face12b1d76675cfd922",
+      "google-site-verification=-eOb-DlXc3e9Qy6WVinkTxCyRa0MtgCqrlMMtRcyEa8",
+      "dropbox-domain-verification=i3wbe0w3wzci",
+      "docker-verification=bc8a3b85-f3de-4303-a77b-5963968dd27d",
+      "yilRhWU2gaWPjUDNJn7Jzxym+9x0hezYabN6SdN0jgD6pU1GgIjgsbqxpR9VIAzo/zsaOf9UCfGqqG0J6onbIw==",
+      "sending_domain1125061=22ff236a83e1d42acb8bf0bb257fce1e87eb4b9f3967a3167bf55da342f56f7d",
+      "pendo-domain-verification=6b8dfe6a-b123-4af8-a9d1-34f905d0d913",
+      "openai-domain-verification=dv-jLpzDoIthu5YP30T9S28cHgn",
+      "stripe-verification=8f5465c02af6b9e2739d83ed01d0231504d39f845e6ab2c500ebe9fa5884934c",
+      "stripe-verification=8c8a6dfe7831b0d791528fb81c0f1302f0d2919a5cce9e455045feb2dda61868",
+      "stripe-verification=E1C768C81651F3AB136567486779A84AAA7BFB9BB069E433B6D2D9396FAD8E69",
+      "hubspot-developer-verification=NWMyOWIzNzAtNWUwNS00MjVlLTlkMjMtYmIyYmY5YzczNTk3",
+      "ca3-c918c5d16cb8495caffedfd48de3b949",
+      "MS=ms50463091",
+      "MS=ms31258684",
+      "google-site-verification=UYx7dBka_Zr85ae_GcZlDBs_FkRo3loBwU3GDL0rXkA",
+      "stripe-verification=9d282334c83ec1bad81c10522b09ecbe5ab60b559747c606f318bc4071a7899e",
+      "google-site-verification=hMdG7S08M7DLvcHiWDzVzvXxZUsfkruKr0Uo_oCLO0Y",
+      "stripe-verification=ba8501efece26680bae276979f5c24f1248cc3ca389b87a1c20889cec54438b4",
+      "notion-domain-verification=qP73sg1oSUsNT1z0kwxX7qZrqGtWyBWVW39BmrJzRfp",
+      "stripe-verification=c63db8272ec91b68ebacdbe0526f7f976eb7cf5907ce4f45ea6bca970a33659d",
+      "_globalsign-domain-verification=u43aixYwit_P_nZo8n15y__KZcxnZCg08KEe5iho2D",
+      "_croefc07jkoevgoq7ho4k23j9guzq3t",
+      "MS=ms11883597",
+      "jamf-site-verification=Ok9tNLMbaiTgFfGONT6keA",
+      "canva-site-verification=DQAQJSZSFIPE9wLghNGucA",
+      "parallels-domain-verification=6074395df5334b55afeea25a7a158ad484372217232842ebb488297a740e23c1",
+      "elevenlabs=lagWi04NXUqluH6Z_aJOSAmqqdwRbGllJxQhDj9r1ec"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; pct=100; adkim=r; aspf=r; rua=mailto:dmarc_agg@vali.email,mailto:0bf8497523a6913@rep.dmarcanalyzer.com; ruf=mailto:0bf8497523a6913@for.dmarcanalyzer.com; fo=1"
@@ -300,11 +300,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "canva-site-verification=DQAQJSZSFIPE9wLghNGucA",
-    "stripe-verification=0905bcb5e5ed859c59ffac03f0580752c43adbd9282bb40aa1d68b6f9374",
-    "jetbrains-domain-verification=3ng8i2b2sjr1ojnpfa4akr6ry",
-    "google-site-verification=e8qUoscBYD-sPanSS-r0dcYo9EaoIBbLBoyMaBv3sKg",
-    "google-site-verification=hMdG7S08M7DLvcHiWDzVzvXxZUsfkruKr0Uo_oCLO0Y"
+    "google-site-verification=RcUDKcVx4BFOK12yi3crRyHO0A4ys1NdWSC-q5pA0Aw",
+    "apple-domain-verification=hqseHhrDZs9mvnIu",
+    "zoho-verification=zb15890134.zmverify.zoho.com",
+    "google-site-verification=henfs-vWflKItEV28eNNiXdcPPLeB8FAkluqr0wm4i0",
+    "stripe-verification=515b72a65b4832050e6f4076d2db128f4e88520c3b5fb553475b1df83fdb"
   ],
   "tls2": {
     "alpn": "",
@@ -315,7 +315,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260903122717",
+      "not_after": "20261202132658"
     }
   },
   "http2": {
@@ -338,8 +340,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
       "/search?"
     ]
   },
-  "elapsed_s": 11.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 8.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

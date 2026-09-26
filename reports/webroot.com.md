@@ -7,12 +7,12 @@
 | Target | https://webroot.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | webroot.com |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **42** (High: 0, Medium: 6, Low: 8, Info: 28)
+Total findings: **43** (High: 0, Medium: 6, Low: 9, Info: 28)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -58,6 +58,7 @@ Total findings: **42** (High: 0, Medium: 6, Low: 8, Info: 28)
 | 40 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 41 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 42 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 43 | low | CK6 | Session-like cookie lacks both Secure and SameSite | CWE-614 |
 
 ## Detailed findings
 
@@ -259,14 +260,14 @@ Total findings: **42** (High: 0, Medium: 6, Low: 8, Info: 28)
 ### 32. [LOW] Cookie set without Secure flag over HTTPS (`CK1`)
 
 - **CWE:** CWE-614
-- **Detail:** Cookie 'incap_ses_675_3211517' has no Secure attribute on an HTTPS response.
+- **Detail:** Cookie 'incap_ses_176_3211517' has no Secure attribute on an HTTPS response.
 - **Context:** https response, /
 - **Recommendation:** Set Secure on all cookies over HTTPS.
 
 ### 33. [INFO] Cookie without SameSite attribute (`CK3`)
 
 - **CWE:** CWE-1275
-- **Detail:** Cookie 'incap_ses_675_3211517' has no SameSite attribute.
+- **Detail:** Cookie 'incap_ses_176_3211517' has no SameSite attribute.
 - **Context:** https response, /
 - **Recommendation:** Set SameSite=Lax (or Strict) to reduce CSRF surface.
 
@@ -304,7 +305,7 @@ Total findings: **42** (High: 0, Medium: 6, Low: 8, Info: 28)
 ### 39. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=W342u9ABN8CsWzHJEUTnnprvsso64lGHcBzHIjXtP4A; status-page-domain-verification=2tbgnrpnfp6b; status-page-domain-verification=ry2yxtvp8dt4
+- **Detail:** Apex TXT records with verification/token content: status-page-domain-verification=ry2yxtvp8dt4; google-site-verification=W342u9ABN8CsWzHJEUTnnprvsso64lGHcBzHIjXtP4A; status-page-domain-verification=2tbgnrpnfp6b
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 40. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -325,6 +326,12 @@ Total findings: **42** (High: 0, Medium: 6, Low: 8, Info: 28)
 - **Detail:** robots.txt lists 23 disallow path(s), e.g. /*?trpd=*, /*?loc=*, /*?WRSID=*, /*?lang=*, /au/en/cart
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 43. [LOW] Session-like cookie lacks both Secure and SameSite (`CK6`)
+
+- **CWE:** CWE-614
+- **Detail:** Cookie 'visid_incap_3211517' set on webroot.com has neither the Secure nor the SameSite attribute: interception exposure plus un-gated CSRF usability.
+- **Recommendation:** Set Secure and SameSite=Lax (or Strict) on session-like cookies.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -342,21 +349,21 @@ Total findings: **42** (High: 0, Medium: 6, Low: 8, Info: 28)
       "mxb-00102601.gslb.pphosted.com (pref 1)"
     ],
     "ns": [
-      "dns2.safenames.net.",
       "dns1.safenames.com.",
+      "dns2.safenames.net.",
       "dns3.safenames.org."
     ],
     "spf": [
-      "google-site-verification=W342u9ABN8CsWzHJEUTnnprvsso64lGHcBzHIjXtP4A",
-      "status-page-domain-verification=2tbgnrpnfp6b",
       "MS=ms92726142",
       "F5Bkf8aYNUTZwrEkaw2ss/rMNTWy9wTOKyKrIeQdD5YoMTFkYg9rjW275X1dSx5AWusuVqkf+caFIRtd63kGgw==",
       "amazonses:DUPTZ+5PC5cywK2wrfzQHVsalso6GCYZmw9b2wSAgMo=",
+      "status-page-domain-verification=ry2yxtvp8dt4",
+      "google-site-verification=W342u9ABN8CsWzHJEUTnnprvsso64lGHcBzHIjXtP4A",
+      "status-page-domain-verification=2tbgnrpnfp6b",
+      "hj-ownership=kbD4%B6@fEzJ",
       "v=spf1 ip4:66.35.53.240 ip4:66.35.53.180 ip4:208.87.139.150 ip4:66.35.53.248 ip4:208.74.204.0/22 ip4:46.19.168.0/23 ip4:208.87.139.64 ip4:208.87.139.66 include:spf.protection.outlook.com include:spf.messagelabs.com include:mktomail.com include:stspg-custo",
       "mer.com ip4:52.38.191.241 -all",
-      "635557aa461593e8536643d878d7c78d698bcbb535e185853f5cfd526cafddfe",
-      "hj-ownership=kbD4%B6@fEzJ",
-      "status-page-domain-verification=ry2yxtvp8dt4"
+      "635557aa461593e8536643d878d7c78d698bcbb535e185853f5cfd526cafddfe"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com;fo=1"
@@ -474,9 +481,9 @@ Total findings: **42** (High: 0, Medium: 6, Low: 8, Info: 28)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "status-page-domain-verification=ry2yxtvp8dt4",
     "google-site-verification=W342u9ABN8CsWzHJEUTnnprvsso64lGHcBzHIjXtP4A",
-    "status-page-domain-verification=2tbgnrpnfp6b",
-    "status-page-domain-verification=ry2yxtvp8dt4"
+    "status-page-domain-verification=2tbgnrpnfp6b"
   ],
   "tls2": {
     "alpn": "",
@@ -487,7 +494,9 @@ Total findings: **42** (High: 0, Medium: 6, Low: 8, Info: 28)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20250911000000",
+      "not_after": "20261012235959"
     }
   },
   "http2": {
@@ -509,8 +518,11 @@ Total findings: **42** (High: 0, Medium: 6, Low: 8, Info: 28)
       "/in/en/search"
     ]
   },
-  "elapsed_s": 34.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 307
+  },
+  "elapsed_s": 42.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

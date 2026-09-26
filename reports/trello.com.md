@@ -7,12 +7,12 @@
 | Target | https://trello.com/ |
 | Bug bounty program | Trello |
 | Listed scope domain | trello.com |
-| Test date | 2026-09-26 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:00 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -109,7 +111,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=XiTuMrGYNDAcJ3h6FgJn-qK1wWhcRCTrwK7ihP4lgzQ; google-site-verification=klLlb7yZqSKsDzIEQ_Ck9G8vJZrZUYSl7G6SYm5ugaU; google-site-verification=dk_f7jMXJqZs_HAQ5Qvd1LMExtsW6rL0_3vK6wMWxyM
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=j10V2FxDCOpk-ZtvXbt0csUYbGo4uttk0VIeNN3pMwQ; google-site-verification=XiTuMrGYNDAcJ3h6FgJn-qK1wWhcRCTrwK7ihP4lgzQ; mailru-verification: 26cd15930108c82c
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -130,6 +132,18 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - **Detail:** robots.txt lists 23 disallow path(s), e.g. /search?, /reset?, /confirm?, /confirmDelete?, ^/*/recommend
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 16. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://trello.com/ carries Cache-Control: max-age=0, s-maxage=604800, stale-if-error=604800, no-cache="Set-Cookie", must-revalidate; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 54.192.248.49 carries PTR server-54-192-248-49.tpe53.r.cloudfront.net. for trello.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -138,37 +152,37 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
   "dns": {
     "a": [
       "54.192.248.49",
-      "54.192.248.39",
       "54.192.248.64",
-      "54.192.248.6"
+      "54.192.248.6",
+      "54.192.248.39"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxb-001d9801.gslb.pphosted.com (pref 10)",
-      "mxa-001d9801.gslb.pphosted.com (pref 10)"
+      "mxa-001d9801.gslb.pphosted.com (pref 10)",
+      "mxb-001d9801.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
+      "ns-1442.awsdns-52.org.",
       "ns-2013.awsdns-59.co.uk.",
       "ns-402.awsdns-50.com.",
-      "ns-1442.awsdns-52.org.",
       "ns-722.awsdns-26.net."
     ],
     "spf": [
+      "google-site-verification=j10V2FxDCOpk-ZtvXbt0csUYbGo4uttk0VIeNN3pMwQ",
       "google-site-verification=XiTuMrGYNDAcJ3h6FgJn-qK1wWhcRCTrwK7ihP4lgzQ",
+      "mailru-verification: 26cd15930108c82c",
       "google-site-verification=klLlb7yZqSKsDzIEQ_Ck9G8vJZrZUYSl7G6SYm5ugaU",
-      "google-site-verification=dk_f7jMXJqZs_HAQ5Qvd1LMExtsW6rL0_3vK6wMWxyM",
-      "google-site-verification=lFRc2QYcvrD1x-JP-sbqyEHEVFTzLiYr_s5TMwqDPGE",
-      "google-site-verification=UqQbR3bkx0DW0mTjn4zpy-pFaTOtklFFLgVJPLpWBfg",
       "google-site-verification=rSOg_zfvrFkmPwI-Yg4oLj8SNdFQnPCeo9a0GtDf_y4",
       "atlassian-domain-verification=ZRphniOpyvhHV76mRmxnLkHJVrKnbeOIxmhbxb8PF6AarX0FypthxYB/r5XpVC2E",
-      "google-site-verification=L1Pv1rpciXhbLcwV1z84F6fdeNpGMIDd4nrgAzCQncc",
-      "slack-domain-verification=IQyaWt1Bt2nVwCvOsgj2ObAap344ynM5bV6C8zlZ",
-      "mailru-verification: 26cd15930108c82c",
-      "google-site-verification=m3SBLzut__3UbFT85xIcXyZs4CsOKfX6MrdByMh6xSM",
       "facebook-domain-verification=5g7n6qixu6oqonzuw4igcyn2fd52yi",
+      "google-site-verification=m3SBLzut__3UbFT85xIcXyZs4CsOKfX6MrdByMh6xSM",
+      "slack-domain-verification=IQyaWt1Bt2nVwCvOsgj2ObAap344ynM5bV6C8zlZ",
       "v=spf1 include:_spf.google.com include:_spf.salesforce.com include:spemail.trello.com include:cust-spf.exacttarget.com include:amazonses.com -all",
-      "google-site-verification=j10V2FxDCOpk-ZtvXbt0csUYbGo4uttk0VIeNN3pMwQ"
+      "google-site-verification=lFRc2QYcvrD1x-JP-sbqyEHEVFTzLiYr_s5TMwqDPGE",
+      "google-site-verification=UqQbR3bkx0DW0mTjn4zpy-pFaTOtklFFLgVJPLpWBfg",
+      "google-site-verification=dk_f7jMXJqZs_HAQ5Qvd1LMExtsW6rL0_3vK6wMWxyM",
+      "google-site-verification=L1Pv1rpciXhbLcwV1z84F6fdeNpGMIDd4nrgAzCQncc"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=quarantine; adkim=r; aspf=r; fo=1; pct=100; rua=mailto:dmarc_rua@emaildefense.proofpoint.com,mailto:dmarc-rua@abuse.atlassian.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com,mailto:dmarc-ruf@abuse.atlassian.com;"
@@ -305,11 +319,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "google-site-verification=j10V2FxDCOpk-ZtvXbt0csUYbGo4uttk0VIeNN3pMwQ",
     "google-site-verification=XiTuMrGYNDAcJ3h6FgJn-qK1wWhcRCTrwK7ihP4lgzQ",
+    "mailru-verification: 26cd15930108c82c",
     "google-site-verification=klLlb7yZqSKsDzIEQ_Ck9G8vJZrZUYSl7G6SYm5ugaU",
-    "google-site-verification=dk_f7jMXJqZs_HAQ5Qvd1LMExtsW6rL0_3vK6wMWxyM",
-    "google-site-verification=lFRc2QYcvrD1x-JP-sbqyEHEVFTzLiYr_s5TMwqDPGE",
-    "google-site-verification=UqQbR3bkx0DW0mTjn4zpy-pFaTOtklFFLgVJPLpWBfg"
+    "google-site-verification=rSOg_zfvrFkmPwI-Yg4oLj8SNdFQnPCeo9a0GtDf_y4"
   ],
   "tls2": {
     "alpn": "",
@@ -320,7 +334,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260727000000",
+      "not_after": "20270209235959"
     }
   },
   "http2": {
@@ -342,8 +358,14 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "/organizationInviteDeclined/"
     ]
   },
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "server-54-192-248-49.tpe53.r.cloudfront.net."
+    ]
+  },
   "elapsed_s": 8.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

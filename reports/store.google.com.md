@@ -7,12 +7,12 @@
 | Target | https://store.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | store.google.com |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
+Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,9 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
 | 9 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 10 | info | CK5 | Cookie scoped to parent domain (.google.com) | CWE-200 |
 | 11 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 12 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 13 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -98,6 +101,24 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 75 disallow path(s), e.g. /accessoriesdata, /*/accessoriesdata, /addtocart, /*/addtocart, /archive
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 12. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of store.google.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 13. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of store.google.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 142.250.204.46 carries PTR hkg07s38-in-f14.1e100.net., lctsaa-ac-in-f14.1e100.net. for store.google.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -275,7 +296,9 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192153",
+      "not_after": "20261203192152"
     }
   },
   "http2": {
@@ -297,8 +320,15 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
       "/*/fetchcart"
     ]
   },
-  "elapsed_s": 4.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "hkg07s38-in-f14.1e100.net.",
+      "lctsaa-ac-in-f14.1e100.net."
+    ]
+  },
+  "elapsed_s": 4.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://createspace.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | createspace.com |
-| Test date | 2026-09-26 17:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -124,7 +125,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2a; docker-verification=cda3255c-566d-41a3-9f4d-4b569eb5c158; cisco-ci-domain-verification=30386bb96b9363c94af7ccd9421806d67f2d9343e5d0487371b
+- **Detail:** Apex TXT records with verification/token content: cisco-ci-domain-verification=30386bb96b9363c94af7ccd9421806d67f2d9343e5d0487371b; adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2a; docker-verification=cda3255c-566d-41a3-9f4d-4b569eb5c158
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -133,6 +134,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - **Detail:** Certificate of createspace.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 44.215.140.241 carries PTR ec2-44-215-140-241.compute-1.amazonaws.com. for createspace.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -140,9 +147,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
   "domain": "createspace.com",
   "dns": {
     "a": [
+      "44.215.140.241",
       "44.215.134.235",
-      "44.215.135.28",
-      "44.215.140.241"
+      "44.215.135.28"
     ],
     "aaaa": [],
     "cname": null,
@@ -151,26 +158,26 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     ],
     "ns": [
       "ns1.amzndns.net.",
-      "ns2.amzndns.co.uk.",
-      "ns1.amzndns.co.uk.",
-      "ns2.amzndns.com.",
-      "ns2.amzndns.net.",
-      "ns2.amzndns.org.",
       "ns1.amzndns.com.",
-      "ns1.amzndns.org."
+      "ns1.amzndns.org.",
+      "ns1.amzndns.co.uk.",
+      "ns2.amzndns.org.",
+      "ns2.amzndns.co.uk.",
+      "ns2.amzndns.net.",
+      "ns2.amzndns.com."
     ],
     "spf": [
+      "TS1760027",
       "spf2.0/pra include:amazon.com -all",
       "v=spf1 include:amazon.com -all",
-      "TS1760027",
-      "MS=ms70280809",
+      "cisco-ci-domain-verification=30386bb96b9363c94af7ccd9421806d67f2d9343e5d0487371b5371d70d79bea",
       "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814",
       "docker-verification=cda3255c-566d-41a3-9f4d-4b569eb5c158",
-      "cisco-ci-domain-verification=30386bb96b9363c94af7ccd9421806d67f2d9343e5d0487371b5371d70d79bea",
-      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
       "google-site-verification=ybhBPF34LeQ2WZQ5qa_5gqkUzvCzL4yQ8EBg66OQTlw",
       "MS=ms68074457",
-      "google-site-verification=8RlEiBSDke_93MCF9cb7zb-p7-gXlj3eqFXnN-QSQ1Y"
+      "MS=ms70280809",
+      "google-site-verification=8RlEiBSDke_93MCF9cb7zb-p7-gXlj3eqFXnN-QSQ1Y",
+      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH"
     ],
     "dmarc": [
       "v=DMARC1;",
@@ -206,7 +213,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     }
   },
   "ports": {
-    "ip": "44.215.134.235",
+    "ip": "44.215.140.241",
     "open": []
   },
   "https": {
@@ -259,11 +266,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "cisco-ci-domain-verification=30386bb96b9363c94af7ccd9421806d67f2d9343e5d0487371b",
     "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2a",
     "docker-verification=cda3255c-566d-41a3-9f4d-4b569eb5c158",
-    "cisco-ci-domain-verification=30386bb96b9363c94af7ccd9421806d67f2d9343e5d0487371b",
-    "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbD",
-    "google-site-verification=ybhBPF34LeQ2WZQ5qa_5gqkUzvCzL4yQ8EBg66OQTlw"
+    "google-site-verification=ybhBPF34LeQ2WZQ5qa_5gqkUzvCzL4yQ8EBg66OQTlw",
+    "google-site-verification=8RlEiBSDke_93MCF9cb7zb-p7-gXlj3eqFXnN-QSQ1Y"
   ],
   "tls2": {
     "alpn": "",
@@ -274,11 +281,19 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260810000000",
+      "not_after": "20270223235959"
     }
   },
-  "elapsed_s": 29.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ec2-44-215-140-241.compute-1.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 27.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

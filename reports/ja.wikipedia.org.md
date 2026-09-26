@@ -7,12 +7,12 @@
 | Target | https://ja.wikipedia.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ja.wikipedia.org |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
+Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,8 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 | 9 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 10 | info | CK5 | Cookie scoped to parent domain (.wikipedia.org) | CWE-200 |
 | 11 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 12 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -39,7 +41,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 ### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** Detected: Server: mw-web.eqiad.main-5fb6d6bf94-zt7s4
+- **Detail:** Detected: Server: mw-web.eqiad.main-5fb6d6bf94-djmdm
 - **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
 ### 3. [LOW] Missing CSP header (`H2`)
@@ -80,7 +82,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 ### 8. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** Header reveals: mw-web.eqiad.main-5fb6d6bf94-zt7s4
+- **Detail:** Header reveals: mw-web.eqiad.main-5fb6d6bf94-djmdm
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
@@ -101,6 +103,18 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 338 disallow path(s), e.g. /, /, User-agent:, #, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 12. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://ja.wikipedia.org/ carries Cache-Control: s-maxage=1200, must-revalidate, max-age=0 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 103.102.166.224 carries PTR text-lb.eqsin.wikimedia.org. for ja.wikipedia.org.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -193,7 +207,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
   },
   "mixed_content": [],
   "tech": [
-    "Server: mw-web.eqiad.main-5fb6d6bf94-zt7s4"
+    "Server: mw-web.eqiad.main-5fb6d6bf94-djmdm"
   ],
   "cookies": [
     {},
@@ -265,7 +279,9 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260805191541",
+      "not_after": "20261103191540"
     }
   },
   "http2": {
@@ -288,8 +304,14 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
       "/"
     ]
   },
-  "elapsed_s": 13.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "text-lb.eqsin.wikimedia.org."
+    ]
+  },
+  "elapsed_s": 13.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

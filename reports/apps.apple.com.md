@@ -7,12 +7,12 @@
 | Target | https://apps.apple.com/ |
 | Bug bounty program | Apple |
 | Listed scope domain | apps.apple.com |
-| Test date | 2026-09-26 17:39 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
+Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,7 +29,10 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 | 11 | info | CK5 | Cookie scoped to parent domain (apple.com) | CWE-200 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 13 | info | SEC2 | security.txt published without a contact address | CWE-1038 |
-| 14 | info | CT1 | 23 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 14 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 15 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 16 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 17 | info | CT1 | 23 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -117,7 +120,25 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
 - **Detail:** /.well-known/security.txt returns 200 but contains no mailto:/URL contact.
 - **Recommendation:** Add a Contact: field per RFC 9116.
 
-### 14. [INFO] 23 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 14. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of apps.apple.com permits unsafe-inline; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 15. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of apps.apple.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
+### 16. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://apps.apple.com/ carries Cache-Control: max-age=60; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 17. [INFO] 23 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: amp-account.apps.apple.com, amp-api-ads.apps.apple.com, amp-api-conversation.apps.apple.com, amp-api-edge.apps.apple.com, amp-api-search-edge.apps.apple.com, amp-api-search.apps.apple.com, amp-api-updates.apps.apple.com, amp-api.apps.apple.com, api-edge.apps.apple.com, api-feeds.apps.apple.com
@@ -130,14 +151,16 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
   "domain": "apps.apple.com",
   "dns": {
     "a": [
-      "23.209.216.33"
+      "151.101.3.6",
+      "151.101.67.6",
+      "151.101.131.6",
+      "151.101.195.6"
     ],
     "aaaa": [
-      "2600:1417:76:a85::2a1",
-      "2600:1417:76:a84::2a1",
-      "2600:1417:76:a87::2a1",
-      "2600:1417:76:a81::2a1",
-      "2600:1417:76:a86::2a1"
+      "2a04:4e42:200::774",
+      "2a04:4e42:400::774",
+      "2a04:4e42:600::774",
+      "2a04:4e42::774"
     ],
     "cname": "apps-cdn.itunes-apple.com.akadns.net.",
     "mx": [],
@@ -150,85 +173,19 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
     "status": "ok",
     "chain": "trusted",
     "version": "TLSv1.3",
-    "cipher": "TLS_AES_256_GCM_SHA384",
-    "subject": "businessCategory=Private Organization, jurisdictionCountryName=US, jurisdictionStateOrProvinceName=California, serialNumber=C0806592, countryName=US, stateOrProvinceName=California, localityName=Cupertino, organizationName=Apple Inc., commonName=itunes.apple.com",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "businessCategory=Private Organization, jurisdictionCountryName=US, jurisdictionStateOrProvinceName=California, serialNumber=C0806592, countryName=US, stateOrProvinceName=California, localityName=Cupertino, organizationName=Apple Inc., commonName=apps.apple.com",
     "issuer": "countryName=US, organizationName=Apple Inc., commonName=Apple Public EV Server RSA CA 1 - G1",
-    "notBefore": "Jul  2 21:15:31 2026 GMT",
-    "notAfter": "Jan  7 19:46:05 2027 GMT",
+    "notBefore": "Sep  9 14:28:04 2026 GMT",
+    "notAfter": "Mar 16 19:40:50 2027 GMT",
     "san": [
-      "apps.mzstatic.com",
-      "api.music.apple.com",
-      "configuration.apple.com",
-      "radio-services.itunes.apple.com",
-      "api.videos.apple.com",
-      "is3-ssl.mzstatic.com",
-      "api.podcasts.apple.com",
-      "a5.mzstatic.com",
-      "api.edu.apple.com",
-      "accertify.mzstatic.com",
-      "api.itunes.apple.com",
-      "uts-api-siri.itunes.apple.com",
-      "is1-ssl.mzstatic.com",
-      "itc.mzstatic.com",
-      "bookkeeper.itunes.apple.com",
-      "itunes.apple.com",
-      "upp.itunes.apple.com",
-      "books.apple.com",
-      "a2.mzstatic.com",
-      "amp-api-edge.apps.apple.com",
-      "tv.apple.com",
-      "sb.music.apple.com",
-      "siri-search.itunes.apple.com",
-      "amp-api-edge.music.apple.com",
-      "s2.mzstatic.com",
-      "se.itunes.apple.com",
-      "sf-api-token-service.itunes.apple.com",
-      "sp.itunes.apple.com",
-      "is4-ssl.mzstatic.com",
-      "metrics.mzstatic.com",
-      "radio.itunes.apple.com",
-      "b5.mzstatic.com",
-      "init.itunes.apple.com",
-      "b3.mzstatic.com",
-      "radio-activity.itunes.apple.com",
-      "music.apple.com",
-      "b1.mzstatic.com",
       "podcasts.apple.com",
-      "api.apps.apple.com",
-      "amp-api-search-edge.apps.apple.com",
-      "is5-ssl.mzstatic.com",
-      "s1.mzstatic.com",
-      "api-edge.apps.apple.com",
-      "tf-feedback.itunes.apple.com",
-      "assets-mercury.mzstatic.com",
-      "is2-ssl.mzstatic.com",
-      "b2.mzstatic.com",
-      "b4.mzstatic.com",
-      "videos.apple.com",
-      "s.mzstatic.com",
-      "atve.tv.apple.com",
-      "s5.mzstatic.com",
-      "s3.mzstatic.com",
-      "sync.itunes.apple.com",
-      "a3.mzstatic.com",
-      "images-mercury.mzstatic.com",
-      "a4.mzstatic.com",
-      "api.books.apple.com",
-      "radio-quickplay.itunes.apple.com",
-      "edge.itunes.apple.com",
-      "pd.itunes.apple.com",
+      "music.apple.com",
+      "books.apple.com",
       "apps.apple.com",
-      "su.itunes.apple.com",
-      "search.itunes.apple.com",
-      "sb.tv.apple.com",
-      "s4.mzstatic.com",
-      "store.mzstatic.com",
-      "vocabulary.itunes.apple.com",
-      "a1.mzstatic.com",
-      "desktop-music-legacy.itunes.apple.com",
-      "se-edge.itunes.apple.com"
+      "tv.apple.com"
     ],
-    "days_left": 103,
+    "days_left": 171,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -238,7 +195,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
     }
   },
   "ports": {
-    "ip": "23.209.216.33",
+    "ip": "151.101.3.6",
     "open": []
   },
   "https": {
@@ -348,7 +305,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260909142804",
+      "not_after": "20270316194050"
     }
   },
   "http2": {
@@ -360,8 +319,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 1, Info: 13)
       "*/search?*"
     ]
   },
-  "elapsed_s": 20.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 21.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

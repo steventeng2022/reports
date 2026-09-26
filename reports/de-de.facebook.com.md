@@ -7,12 +7,12 @@
 | Target | https://de-de.facebook.com/ |
 | Bug bounty program | Facebook |
 | Listed scope domain | de-de.facebook.com |
-| Test date | 2026-09-26 17:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
+Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -113,6 +115,18 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 1160 disallow path(s), e.g. /, /, /, /, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 14. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of de-de.facebook.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 57.144.92.141 carries PTR edge-star-shv-01-tpe5.facebook.com. for de-de.facebook.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -234,7 +248,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260706000000",
+      "not_after": "20261004235959"
     }
   },
   "http2": {
@@ -256,8 +272,14 @@ Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
       "/business/help/search*&query="
     ]
   },
-  "elapsed_s": 7.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 400,
+    "ptr": [
+      "edge-star-shv-01-tpe5.facebook.com."
+    ]
+  },
+  "elapsed_s": 7.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

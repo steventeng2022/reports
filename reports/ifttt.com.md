@@ -7,12 +7,12 @@
 | Target | https://ifttt.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ifttt.com |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
+Total findings: **14** (High: 0, Medium: 0, Low: 0, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,8 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
 | 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 13 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -86,7 +88,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
 ### 9. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=sdwLeEbGkwDQnNef_ZybsYYO1nz4RksHjJlL4BFy97c; google-site-verification=LaHtMW5vokuLBZBVhajjw-NS3aQbRMOOz92B-RM_4hQ; facebook-domain-verification=2gbh6mjor9buxlzajjq1hjbnksveuo
+- **Detail:** Apex TXT records with verification/token content: hubspot-developer-verification=ODA3YjI3MGQtOTk1Ni00YzgxLWE2NjAtNzkyYjljZDU4MzVj; google-site-verification=sdwLeEbGkwDQnNef_ZybsYYO1nz4RksHjJlL4BFy97c; have-i-been-pwned-verification=1931e44ce46fd205b3806eff20a8b416
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -107,6 +109,18 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
 - **Detail:** robots.txt lists 14 disallow path(s), e.g. /search/query/, /unsubscribe-from-applet/, /unsubscribe, /missing_link, /create/api/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 13. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://ifttt.com/ carries Cache-Control: max-age=0, public, s-maxage=42405 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 3.169.121.27 carries PTR server-3-169-121-27.tpe53.r.cloudfront.net. for ifttt.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -114,54 +128,54 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
   "domain": "ifttt.com",
   "dns": {
     "a": [
+      "3.169.121.27",
       "3.169.121.41",
       "3.169.121.2",
-      "3.169.121.105",
-      "3.169.121.27"
+      "3.169.121.105"
     ],
     "aaaa": [
-      "2600:9000:284c:7800:1:b1c6:9e40:93a1",
-      "2600:9000:284c:4e00:1:b1c6:9e40:93a1",
-      "2600:9000:284c:9a00:1:b1c6:9e40:93a1",
-      "2600:9000:284c:2600:1:b1c6:9e40:93a1",
-      "2600:9000:284c:ca00:1:b1c6:9e40:93a1",
-      "2600:9000:284c:e800:1:b1c6:9e40:93a1",
-      "2600:9000:284c:3000:1:b1c6:9e40:93a1",
-      "2600:9000:284c:6400:1:b1c6:9e40:93a1"
+      "2600:9000:284c:8a00:1:b1c6:9e40:93a1",
+      "2600:9000:284c:6000:1:b1c6:9e40:93a1",
+      "2600:9000:284c:2800:1:b1c6:9e40:93a1",
+      "2600:9000:284c:b400:1:b1c6:9e40:93a1",
+      "2600:9000:284c:5200:1:b1c6:9e40:93a1",
+      "2600:9000:284c:2c00:1:b1c6:9e40:93a1",
+      "2600:9000:284c:fa00:1:b1c6:9e40:93a1",
+      "2600:9000:284c:ca00:1:b1c6:9e40:93a1"
     ],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "aspmx3.googlemail.com (pref 10)"
+      "aspmx3.googlemail.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-425.awsdns-53.com.",
       "ns-1614.awsdns-09.co.uk.",
-      "ns-676.awsdns-20.net.",
-      "ns-1400.awsdns-47.org."
+      "ns-425.awsdns-53.com.",
+      "ns-1400.awsdns-47.org.",
+      "ns-676.awsdns-20.net."
     ],
     "spf": [
-      "google-site-verification=sdwLeEbGkwDQnNef_ZybsYYO1nz4RksHjJlL4BFy97c",
-      "google-site-verification=LaHtMW5vokuLBZBVhajjw-NS3aQbRMOOz92B-RM_4hQ",
-      "a774vnn3gtgp35cvtd31idrcug",
-      "facebook-domain-verification=2gbh6mjor9buxlzajjq1hjbnksveuo",
-      "edca106a3d3b474e87b5e47c25f607ec",
-      "qrql38igvi0ce4abfi3on0vvke",
-      "v=MCPv1; k=ed25519; p=shhg+Sx/4D+wFvY1jwECmtgaGtpfAC5UDl0mb+mhdNg=",
-      "pinterest-site-verification=8e6e3928621ee8deeaa774c7569bb607",
-      "have-i-been-pwned-verification=1931e44ce46fd205b3806eff20a8b416",
-      "stripe-verification=d9aecd16a51b8f74a32c270d11a6bce84470c737c9d1e1de696edbce60ea7b47",
-      "globalsign-domain-verification=2D384BE73AFA22F600E2F2FD71973C63",
-      "_globalsign-domain-verification=rRjaOlcgFhBuUq2_dp1lnClpS6rvXrnUtycKh8GTEH",
-      "google-site-verification=VdD3iT9gG8si3Zu4-crc2cMxN3b3oiRHtFcEAiDwTLc",
       "hubspot-developer-verification=ODA3YjI3MGQtOTk1Ni00YzgxLWE2NjAtNzkyYjljZDU4MzVj",
-      "status-page-domain-verification=btfx82x3lwwg",
-      "openai-domain-verification=dv-owUo2sHFljJJv2dyVfHqW3bb",
+      "v=MCPv1; k=ed25519; p=shhg+Sx/4D+wFvY1jwECmtgaGtpfAC5UDl0mb+mhdNg=",
       "MS=ms71593285",
-      "v=spf1 include:sendgrid.net include:_spf.google.com include:customeriomail.com include:mail.zendesk.com include:stspg-customer.com -all"
+      "edca106a3d3b474e87b5e47c25f607ec",
+      "v=spf1 include:sendgrid.net include:_spf.google.com include:customeriomail.com include:mail.zendesk.com include:stspg-customer.com -all",
+      "google-site-verification=sdwLeEbGkwDQnNef_ZybsYYO1nz4RksHjJlL4BFy97c",
+      "have-i-been-pwned-verification=1931e44ce46fd205b3806eff20a8b416",
+      "qrql38igvi0ce4abfi3on0vvke",
+      "facebook-domain-verification=2gbh6mjor9buxlzajjq1hjbnksveuo",
+      "_globalsign-domain-verification=rRjaOlcgFhBuUq2_dp1lnClpS6rvXrnUtycKh8GTEH",
+      "google-site-verification=LaHtMW5vokuLBZBVhajjw-NS3aQbRMOOz92B-RM_4hQ",
+      "status-page-domain-verification=btfx82x3lwwg",
+      "a774vnn3gtgp35cvtd31idrcug",
+      "google-site-verification=VdD3iT9gG8si3Zu4-crc2cMxN3b3oiRHtFcEAiDwTLc",
+      "pinterest-site-verification=8e6e3928621ee8deeaa774c7569bb607",
+      "globalsign-domain-verification=2D384BE73AFA22F600E2F2FD71973C63",
+      "stripe-verification=d9aecd16a51b8f74a32c270d11a6bce84470c737c9d1e1de696edbce60ea7b47",
+      "openai-domain-verification=dv-owUo2sHFljJJv2dyVfHqW3bb"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:arqctnow@ag.dmarcian.com;"
@@ -191,7 +205,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
     }
   },
   "ports": {
-    "ip": "3.169.121.41",
+    "ip": "3.169.121.27",
     "open": []
   },
   "https": {
@@ -253,11 +267,11 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "hubspot-developer-verification=ODA3YjI3MGQtOTk1Ni00YzgxLWE2NjAtNzkyYjljZDU4MzVj",
     "google-site-verification=sdwLeEbGkwDQnNef_ZybsYYO1nz4RksHjJlL4BFy97c",
-    "google-site-verification=LaHtMW5vokuLBZBVhajjw-NS3aQbRMOOz92B-RM_4hQ",
+    "have-i-been-pwned-verification=1931e44ce46fd205b3806eff20a8b416",
     "facebook-domain-verification=2gbh6mjor9buxlzajjq1hjbnksveuo",
-    "pinterest-site-verification=8e6e3928621ee8deeaa774c7569bb607",
-    "have-i-been-pwned-verification=1931e44ce46fd205b3806eff20a8b416"
+    "_globalsign-domain-verification=rRjaOlcgFhBuUq2_dp1lnClpS6rvXrnUtycKh8GTEH"
   ],
   "tls2": {
     "alpn": "",
@@ -268,7 +282,9 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251030000000",
+      "not_after": "20261127235959"
     }
   },
   "http2": {
@@ -289,8 +305,14 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
       "/login"
     ]
   },
-  "elapsed_s": 7.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "server-3-169-121-27.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 7.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

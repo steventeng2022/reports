@@ -7,8 +7,8 @@
 | Target | https://pinterest.com/ |
 | Bug bounty program | Pinterest |
 | Listed scope domain | pinterest.com |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -109,7 +109,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: tiktok-developers-site-verification=b3h14NLD33KKuBsuEh2JssxoMIzGTYbw; cursor-domain-verification-vyc8km=a5aBskJG8rDWOTCVrmI6gBHfb; paloaltonetworks-site-verification=87ccfc26e7b2486ad8e407c6ed99e788937e68856e309
+- **Detail:** Apex TXT records with verification/token content: postman-domain-verification=142fa709f30458c470545ae61a557bdc54690989c11d4bc4c1fa; paloaltonetworks-site-verification=87ccfc26e7b2486ad8e407c6ed99e788937e68856e309; twilio-domain-verification=b2a4a22e61255ba1b4a7ca8dd87f861e
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -132,69 +132,69 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
   "dns": {
     "a": [
       "151.101.192.84",
+      "151.101.128.84",
       "151.101.0.84",
-      "151.101.64.84",
-      "151.101.128.84"
+      "151.101.64.84"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt4.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)"
+      "aspmx.l.google.com (pref 1)",
+      "alt4.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns6.pinterest.com.",
       "ns5.pinterest.com.",
-      "ns10.pinterest.com.",
-      "ns9.pinterest.com."
+      "ns9.pinterest.com.",
+      "ns6.pinterest.com.",
+      "ns10.pinterest.com."
     ],
     "spf": [
-      "arkose-domain-verify=2cnrb3du4uwyva8jqv9kun47z36982e6",
-      "mgverify=a37224d064fb37fa047c67fecac02932e7cdc68e4a12addcb9762e52efa7c1f1",
-      "00D1N000000GSLM=1TBPW00000002WT",
-      "tiktok-developers-site-verification=b3h14NLD33KKuBsuEh2JssxoMIzGTYbw",
-      "CKO=cli_cyft6no6jdbuzmltnrp3egprzy",
-      "cursor-domain-verification-vyc8km=a5aBskJG8rDWOTCVrmI6gBHfb",
-      "docusign=7247a7f7-68c2-4f62-bb95-06c52d85d646",
-      "paloaltonetworks-site-verification=87ccfc26e7b2486ad8e407c6ed99e788937e68856e3091665b3a942fb44f7646",
-      "google-site-verification=NL3G6_2q9FrmNnriQD18LIAVfmthnoRMIatQzD_MhTI",
-      "applause-verification:2d72e729-a6d6-47c8-82f9-8adc27830272",
-      "docusign=181669b6-686c-408b-ac15-076711ffc372",
-      "freepik-domain-verification=c716162ae55dce0d8daa58814f14aa8f",
-      "google-site-verification=ROV7s4DFtQ5T6mqp_PnThPrA3J8cLSSfIvmDJCcM-Rk",
-      "browserstack-domain-verification=b57d2484-2df5-41d4-9b7e-5e8fed11b781",
-      "atlassian-domain-verification=VvwbKGkKpnJiNIesXRcvnY12kzfIjT/wvmUb20l7mKjTN9IseYMUKstqdhwnSe59",
-      "00DOt000015E6TZ=1TBOt0000000bfV",
-      "MS=ms18016700",
-      "TAILSCALE-p6rAjPzJIKMJiQCiFQ1p",
-      "work-accounts-domain-verification=xWymOmluA0vPNLJQaf4StWL68TsfRh",
-      "1password-site-verification=WCNWOT5Q6BDF3JCLBGSCDZO4AE",
       "ZOOM_verify_noGVfZnQStK_Xkext4FibQ",
-      "twilio-domain-verification=b2a4a22e61255ba1b4a7ca8dd87f861e",
-      "CKO=cli_2yspwwmpzjpezmdjr5ivf4kbcu",
-      "loom-site-verification=5a36a427d0674ac5b53de45d12741f68",
-      "anthropic-domain-verification-c1b7dr=bBfPNbyIXzGWEhqJ24pOJ6W0u",
-      "dcao2catgy34x.cloudfront.net",
-      "canva-site-verification=a6iVl7OoKkmq61eoJl2EXQ",
-      "docker-verification=b02df65b-3c5d-4537-b019-4537f40d5d6e",
+      "MS=ms18016700",
       "postman-domain-verification=142fa709f30458c470545ae61a557bdc54690989c11d4bc4c1fa0024f2633301472dede2e6f991eb8f711acc29e99803b459917344d52b9bd0c96cdd4e9b9609",
-      "gamma-domain-verification-x88yj9=4PkqRMwC3FhyTAYr0aoXhOCTH",
-      "yandex-verification: 9448cd71fe506a76",
-      "google-site-verification=417aaeLwriDzNgFX-W8AC4BfpRxlO_h-XDkUL0vFflM",
-      "apple-domain-verification=fR4SkeFsfvTQqwcL",
-      "openai-domain-verification=dv-FvRuqwrE1vLdGpJp5PlbPvQr",
-      "liveramp-site-verification=vkCU0rzeleXDe3XcsQSxGrcPwe9HTOJ1Iz9ZXKTXAJg",
-      "miro-verification=8739d427e9a419960e9fbb1f86941c3b74e47415",
-      "00DOt00000pkQbd=1TBOt0000000PmP",
-      "loom-verification=9088334975",
-      "v=spf1 redirect=_spf.pinterest.com",
+      "TAILSCALE-p6rAjPzJIKMJiQCiFQ1p",
+      "paloaltonetworks-site-verification=87ccfc26e7b2486ad8e407c6ed99e788937e68856e3091665b3a942fb44f7646",
+      "twilio-domain-verification=b2a4a22e61255ba1b4a7ca8dd87f861e",
       "c5ce3936-9dec-4ee6-b044-55cb8ea62f04",
-      "happeo-site-verification=38d7bd5177a34890878877d099afe22f",
+      "freepik-domain-verification=c716162ae55dce0d8daa58814f14aa8f",
+      "docker-verification=b02df65b-3c5d-4537-b019-4537f40d5d6e",
+      "loom-site-verification=5a36a427d0674ac5b53de45d12741f68",
+      "00D1N000000GSLM=1TBPW00000002WT",
+      "1password-site-verification=WCNWOT5Q6BDF3JCLBGSCDZO4AE",
+      "apple-domain-verification=fR4SkeFsfvTQqwcL",
+      "miro-verification=8739d427e9a419960e9fbb1f86941c3b74e47415",
+      "liveramp-site-verification=vkCU0rzeleXDe3XcsQSxGrcPwe9HTOJ1Iz9ZXKTXAJg",
+      "00DOt00000pkQbd=1TBOt0000000PmP",
+      "canva-site-verification=a6iVl7OoKkmq61eoJl2EXQ",
+      "google-site-verification=417aaeLwriDzNgFX-W8AC4BfpRxlO_h-XDkUL0vFflM",
+      "v=spf1 redirect=_spf.pinterest.com",
+      "tiktok-developers-site-verification=b3h14NLD33KKuBsuEh2JssxoMIzGTYbw",
       "sprout-social-668b8426-fc96-4bdb-b970-5e3ee11884c9",
-      "facebook-domain-verification=2pkj9rox53bgoy96jten5vrid77mv7"
+      "gamma-domain-verification-x88yj9=4PkqRMwC3FhyTAYr0aoXhOCTH",
+      "google-site-verification=ROV7s4DFtQ5T6mqp_PnThPrA3J8cLSSfIvmDJCcM-Rk",
+      "cursor-domain-verification-vyc8km=a5aBskJG8rDWOTCVrmI6gBHfb",
+      "openai-domain-verification=dv-FvRuqwrE1vLdGpJp5PlbPvQr",
+      "CKO=cli_2yspwwmpzjpezmdjr5ivf4kbcu",
+      "loom-verification=9088334975",
+      "00DOt000015E6TZ=1TBOt0000000bfV",
+      "browserstack-domain-verification=b57d2484-2df5-41d4-9b7e-5e8fed11b781",
+      "happeo-site-verification=38d7bd5177a34890878877d099afe22f",
+      "google-site-verification=NL3G6_2q9FrmNnriQD18LIAVfmthnoRMIatQzD_MhTI",
+      "yandex-verification: 9448cd71fe506a76",
+      "facebook-domain-verification=2pkj9rox53bgoy96jten5vrid77mv7",
+      "applause-verification:2d72e729-a6d6-47c8-82f9-8adc27830272",
+      "mgverify=a37224d064fb37fa047c67fecac02932e7cdc68e4a12addcb9762e52efa7c1f1",
+      "docusign=181669b6-686c-408b-ac15-076711ffc372",
+      "atlassian-domain-verification=VvwbKGkKpnJiNIesXRcvnY12kzfIjT/wvmUb20l7mKjTN9IseYMUKstqdhwnSe59",
+      "work-accounts-domain-verification=xWymOmluA0vPNLJQaf4StWL68TsfRh",
+      "CKO=cli_cyft6no6jdbuzmltnrp3egprzy",
+      "anthropic-domain-verification-c1b7dr=bBfPNbyIXzGWEhqJ24pOJ6W0u",
+      "arkose-domain-verify=2cnrb3du4uwyva8jqv9kun47z36982e6",
+      "dcao2catgy34x.cloudfront.net",
+      "docusign=7247a7f7-68c2-4f62-bb95-06c52d85d646"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; pct=100; rua=mailto:o4khm-8732@rua.dmarc.emailanalyst.com; ruf=mailto:o4khm-8732@ruf.dmarc.emailanalyst.com"
@@ -368,11 +368,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "tiktok-developers-site-verification=b3h14NLD33KKuBsuEh2JssxoMIzGTYbw",
-    "cursor-domain-verification-vyc8km=a5aBskJG8rDWOTCVrmI6gBHfb",
+    "postman-domain-verification=142fa709f30458c470545ae61a557bdc54690989c11d4bc4c1fa",
     "paloaltonetworks-site-verification=87ccfc26e7b2486ad8e407c6ed99e788937e68856e309",
-    "google-site-verification=NL3G6_2q9FrmNnriQD18LIAVfmthnoRMIatQzD_MhTI",
-    "applause-verification:2d72e729-a6d6-47c8-82f9-8adc27830272"
+    "twilio-domain-verification=b2a4a22e61255ba1b4a7ca8dd87f861e",
+    "freepik-domain-verification=c716162ae55dce0d8daa58814f14aa8f",
+    "docker-verification=b02df65b-3c5d-4537-b019-4537f40d5d6e"
   ],
   "tls2": {
     "alpn": "",
@@ -383,7 +383,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260813000000",
+      "not_after": "20270226235959"
     }
   },
   "http2": {
@@ -406,8 +408,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "/*/_followers/*"
     ]
   },
-  "elapsed_s": 11.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 308
+  },
+  "elapsed_s": 13.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

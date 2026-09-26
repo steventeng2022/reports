@@ -7,8 +7,8 @@
 | Target | https://skillshare.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | skillshare.com |
-| Test date | 2026-09-26 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -46,13 +46,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.155.134:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.32.122:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.155.134:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.32.122:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -124,7 +124,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=mcHpWbpzXVe4BOFgp5ijuXXqIf7OMoH1Z7ctm2mlBDc; google-site-verification=DshzQEv8w03dqk3NErt1hlkBaXsKdTMaUfBY1J-8Wic; h1-domain-verification=J1qQPbBWpbBxGVL3i3h1dpw2rX1NwHEZhnWeRNNP5L9qB2DX
+- **Detail:** Apex TXT records with verification/token content: h1-domain-verification=J1qQPbBWpbBxGVL3i3h1dpw2rX1NwHEZhnWeRNNP5L9qB2DX; google-site-verification=DshzQEv8w03dqk3NErt1hlkBaXsKdTMaUfBY1J-8Wic; facebook-domain-verification=va9wk46fanagqpr4rc6sp4d3gap007
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -158,45 +158,45 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "domain": "skillshare.com",
   "dns": {
     "a": [
-      "172.64.155.134",
-      "104.18.32.122"
+      "104.18.32.122",
+      "172.64.155.134"
     ],
     "aaaa": [
-      "2606:4700:440b::ac40:9b86",
-      "2a06:98c1:310c::6812:207a"
+      "2a06:98c1:310c::6812:207a",
+      "2606:4700:440b::ac40:9b86"
     ],
     "cname": null,
     "mx": [
-      "aspmx5.googlemail.com (pref 50)",
-      "alt1.aspmx.l.google.com (pref 20)",
-      "alt2.aspmx.l.google.com (pref 30)",
       "aspmx2.googlemail.com (pref 40)",
+      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx.l.google.com (pref 10)",
+      "aspmx4.googlemail.com (pref 50)",
       "aspmx3.googlemail.com (pref 50)",
-      "aspmx4.googlemail.com (pref 50)"
+      "alt2.aspmx.l.google.com (pref 30)",
+      "aspmx5.googlemail.com (pref 50)"
     ],
     "ns": [
-      "ashe.skillshare.com.",
-      "garen.skillshare.com."
+      "garen.skillshare.com.",
+      "ashe.skillshare.com."
     ],
     "spf": [
-      "google-site-verification=mcHpWbpzXVe4BOFgp5ijuXXqIf7OMoH1Z7ctm2mlBDc",
-      "google-site-verification=DshzQEv8w03dqk3NErt1hlkBaXsKdTMaUfBY1J-8Wic",
-      "fw8mkvj2p2lgsk7crsrgylmvpzf0fkkw",
-      "v=spf1 include:_spf0.skillshare.com include:_spf1.skillshare.com include:_spf2.skillshare.com include:_spf3.skillshare.com include:sendgrid.net include:_spf.google.com include:sendgrid.net include:_spf.google.com ip4:23.21.109.197 ip4:23.21.109.212 ~all",
+      "amazonses:FA3mpwGhZzBmEIrp3iQXIXa3+umrH8ce03vBPry8tuI=",
       "h1-domain-verification=J1qQPbBWpbBxGVL3i3h1dpw2rX1NwHEZhnWeRNNP5L9qB2DX",
+      "google-site-verification=DshzQEv8w03dqk3NErt1hlkBaXsKdTMaUfBY1J-8Wic",
       "facebook-domain-verification=va9wk46fanagqpr4rc6sp4d3gap007",
-      "9p1q7gjsjf6jgqmkdvbdxhxch33lxzsv",
       "anthropic-domain-verification-0j2hh2=VDsV2bFDu3c0IZWFsXlG1WQ4h",
       "jamf-site-verification=jsRO5e76-EWTHTbtESgo9g",
+      "9p1q7gjsjf6jgqmkdvbdxhxch33lxzsv",
       "mixpanel-domain-verify=739bd2fb-b682-4acf-9689-e94b74a61621",
-      "qyylpgj14chmtmds8wgz7j8lqwrd44tt",
-      "openai-domain-verification=dv-98OuGQNGSB3R75FCYqMmzHqw",
-      "firebase=skillshare-creator-dev",
-      "amazonses:FA3mpwGhZzBmEIrp3iQXIXa3+umrH8ce03vBPry8tuI=",
       "miro-verification=2accb01b1b638f37ee0cd64452e2faaa57e1cdf6",
+      "google-site-verification=mcHpWbpzXVe4BOFgp5ijuXXqIf7OMoH1Z7ctm2mlBDc",
       "apple-domain-verification=Hb38JzhNUvqf3hR2",
-      "atlassian-domain-verification=caa1SXVOa/jn5JVpUdP/OCpP1t9l1rz9ikhEsdPLJYGgYWquY6v2tDOvBhNoJG99"
+      "qyylpgj14chmtmds8wgz7j8lqwrd44tt",
+      "v=spf1 include:_spf0.skillshare.com include:_spf1.skillshare.com include:_spf2.skillshare.com include:_spf3.skillshare.com include:sendgrid.net include:_spf.google.com include:sendgrid.net include:_spf.google.com ip4:23.21.109.197 ip4:23.21.109.212 ~all",
+      "firebase=skillshare-creator-dev",
+      "atlassian-domain-verification=caa1SXVOa/jn5JVpUdP/OCpP1t9l1rz9ikhEsdPLJYGgYWquY6v2tDOvBhNoJG99",
+      "openai-domain-verification=dv-98OuGQNGSB3R75FCYqMmzHqw",
+      "fw8mkvj2p2lgsk7crsrgylmvpzf0fkkw"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:f4a1b21ad84d418380c0e4bd42294746@dmarc-reports.cloudflare.net; fo=1;"
@@ -227,7 +227,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     }
   },
   "ports": {
-    "ip": "172.64.155.134",
+    "ip": "104.18.32.122",
     "open": [
       8080,
       8443
@@ -326,11 +326,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     ]
   },
   "apex_txt": [
-    "google-site-verification=mcHpWbpzXVe4BOFgp5ijuXXqIf7OMoH1Z7ctm2mlBDc",
-    "google-site-verification=DshzQEv8w03dqk3NErt1hlkBaXsKdTMaUfBY1J-8Wic",
     "h1-domain-verification=J1qQPbBWpbBxGVL3i3h1dpw2rX1NwHEZhnWeRNNP5L9qB2DX",
+    "google-site-verification=DshzQEv8w03dqk3NErt1hlkBaXsKdTMaUfBY1J-8Wic",
     "facebook-domain-verification=va9wk46fanagqpr4rc6sp4d3gap007",
-    "anthropic-domain-verification-0j2hh2=VDsV2bFDu3c0IZWFsXlG1WQ4h"
+    "anthropic-domain-verification-0j2hh2=VDsV2bFDu3c0IZWFsXlG1WQ4h",
+    "jamf-site-verification=jsRO5e76-EWTHTbtESgo9g"
   ],
   "tls2": {
     "alpn": "",
@@ -341,7 +341,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260819160716",
+      "not_after": "20261117170713"
     }
   },
   "http2": {
@@ -360,8 +362,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "/apple-app-site-association"
     ]
   },
-  "elapsed_s": 10.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 9.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

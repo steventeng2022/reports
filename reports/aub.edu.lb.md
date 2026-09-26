@@ -7,12 +7,12 @@
 | Target | https://aub.edu.lb/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | aub.edu.lb |
-| Test date | 2026-09-26 17:39 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,8 +32,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | CT1 | 299 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 18 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 17 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 18 | info | CT1 | 299 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 19 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -124,7 +125,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=6gAxqrh5UO8G0TgM; google-site-verification=9MsV81Hg7gw2Sgc4tNSXaQktR2FWaGTUeYxZtLBb3Lk; openai-domain-verification=dv-DWZ0HxSw0kUap6jjuTBsOiGk
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=fwk46Yls3T43Nu3xZ677JWvPpfeSfaYF_cesWhonw-Y; apple-domain-verification=6gAxqrh5UO8G0TgM; openai-domain-verification=dv-DWZ0HxSw0kUap6jjuTBsOiGk
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -139,13 +140,19 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **Detail:** robots.txt lists 5 disallow path(s), e.g. /_catalogs/, /_layouts/, /search/, /register/, /*?*/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 17. [INFO] 299 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 17. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://aub.edu.lb/ carries Cache-Control: private, max-age=0 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 18. [INFO] 299 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: ngoi-isplatform.test.ghi.aub.edu.lb, test.aub.edu.lb, vpn.aub.edu.lb
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 18. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 19. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: test.aub.edu.lb; content may still be served via virtual-host fallback.
@@ -169,23 +176,23 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "zeina.aub.edu.lb.",
       "magma.aub.edu.lb.",
       "rose.aub.edu.lb.",
-      "ash.northeurope.cloudapp.azure.com.",
-      "lava.aub.edu.lb."
+      "lava.aub.edu.lb.",
+      "ash.northeurope.cloudapp.azure.com."
     ],
     "spf": [
-      "apple-domain-verification=6gAxqrh5UO8G0TgM",
-      "google-site-verification=9MsV81Hg7gw2Sgc4tNSXaQktR2FWaGTUeYxZtLBb3Lk",
       "mentimeter-7517212d-53b0-454a-a51a-58de590aaad4",
-      "HARICA-Jck6FQFsbhgljuf8FV3",
-      "openai-domain-verification=dv-DWZ0HxSw0kUap6jjuTBsOiGk",
-      "google-site-verification=fwk46Yls3T43Nu3xZ677JWvPpfeSfaYF_cesWhonw-Y",
-      "google-site-verification=NIoCNLajkOt8Tm9mZfAcX2oYc9oWtCG3yxwLDiJXmeU",
       "v=spf1 +ip4:193.188.128.10/32 +ip4:193.188.128.39/32 ",
       "+ip4:193.188.128.41/32 +ip4:193.188.128.50/32 ",
       "+ip4:54.240.35.57/32 +ip4:193.188.129.5/32 ",
       "+ip4:193.188.128.69/32 ip4:193.188.128.16/32 ",
       "include:zeptomail.net include:_spf.salesforce.com +include:spf.protection.outlook.com include:spf.symplicity.com ~all",
-      "ciscocidomainverification=421e71e3fc1322e159b9b2f1506ee2b6e8d9e3b38b975a6c68409d591b5f4c0f"
+      "google-site-verification=fwk46Yls3T43Nu3xZ677JWvPpfeSfaYF_cesWhonw-Y",
+      "apple-domain-verification=6gAxqrh5UO8G0TgM",
+      "openai-domain-verification=dv-DWZ0HxSw0kUap6jjuTBsOiGk",
+      "HARICA-Jck6FQFsbhgljuf8FV3",
+      "ciscocidomainverification=421e71e3fc1322e159b9b2f1506ee2b6e8d9e3b38b975a6c68409d591b5f4c0f",
+      "google-site-verification=9MsV81Hg7gw2Sgc4tNSXaQktR2FWaGTUeYxZtLBb3Lk",
+      "google-site-verification=NIoCNLajkOt8Tm9mZfAcX2oYc9oWtCG3yxwLDiJXmeU"
     ],
     "dmarc": [
       "v=DMARC1; p=none; pct=100; rua=mailto:dmarc@aub.edu.lb,mailto:dmarc-reports@aub.edu.lb; fo=1"
@@ -312,11 +319,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     ]
   },
   "apex_txt": [
-    "apple-domain-verification=6gAxqrh5UO8G0TgM",
-    "google-site-verification=9MsV81Hg7gw2Sgc4tNSXaQktR2FWaGTUeYxZtLBb3Lk",
-    "openai-domain-verification=dv-DWZ0HxSw0kUap6jjuTBsOiGk",
     "google-site-verification=fwk46Yls3T43Nu3xZ677JWvPpfeSfaYF_cesWhonw-Y",
-    "google-site-verification=NIoCNLajkOt8Tm9mZfAcX2oYc9oWtCG3yxwLDiJXmeU"
+    "apple-domain-verification=6gAxqrh5UO8G0TgM",
+    "openai-domain-verification=dv-DWZ0HxSw0kUap6jjuTBsOiGk",
+    "ciscocidomainverification=421e71e3fc1322e159b9b2f1506ee2b6e8d9e3b38b975a6c68409d",
+    "google-site-verification=9MsV81Hg7gw2Sgc4tNSXaQktR2FWaGTUeYxZtLBb3Lk"
   ],
   "tls2": {
     "alpn": "",
@@ -327,7 +334,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 4096,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260722233943",
+      "not_after": "20270206233942"
     }
   },
   "http2": {
@@ -339,8 +348,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "/*?*/"
     ]
   },
-  "elapsed_s": 45.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 41.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,8 +7,8 @@
 | Target | https://socialmediatoday.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | socialmediatoday.com |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -137,9 +137,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
     ],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "aspmx2.googlemail.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx2.googlemail.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
       "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
@@ -147,9 +147,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
       "ivy.ns.cloudflare.com."
     ],
     "spf": [
+      "v=spf1 include:_spf.google.com ~all",
       "JHOEj5VCQIPe4Vr+/Dq1SaDhc04wgHOiZJ3nt/mklyY=",
       "google-site-verification=GaRd7WkrbQXFplJU7VKId-4W4YEvdRYDkZrVDvbLWAM",
-      "v=spf1 include:_spf.google.com ~all",
       "google-site-verification=vMpLWmR1zKkA0E1BRGU3BtUY844nnPUf9Z-fVsKXP_4",
       "facebook-domain-verification=r936kihf4fskxlc8xzrfqa2j3yuisl"
     ],
@@ -254,7 +254,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260818165204",
+      "not_after": "20261116175154"
     }
   },
   "http2": {
@@ -276,8 +278,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
       "/topic/?page=*"
     ]
   },
-  "elapsed_s": 8.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 7.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

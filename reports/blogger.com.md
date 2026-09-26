@@ -7,12 +7,12 @@
 | Target | https://blogger.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | blogger.com |
-| Test date | 2026-09-26 17:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
+Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 | 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 18 | low | RED9 | Redirect chain of 5+ hops on the site root | CWE-601 |
 | 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 20 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 21 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -161,6 +163,18 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 - **Detail:** robots.txt lists 21 disallow path(s), e.g. /blog_this.pyra, /blog-this.g, /comment.g, /comment-iframe.g, /comment/delete/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 20. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://blogger.com/ carries Cache-Control: public, max-age=1800; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 21. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 108.177.97.191 carries PTR tm-in-f191.1e100.net. for blogger.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -168,26 +182,26 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
   "domain": "blogger.com",
   "dns": {
     "a": [
-      "108.177.125.191"
+      "108.177.97.191"
     ],
     "aaaa": [
-      "2404:6800:4008:c01::bf"
+      "2404:6800:4008:c00::bf"
     ],
     "cname": null,
     "mx": [
-      "alt2.gmr-smtp-in.l.google.com (pref 10)",
+      "alt1.gmr-smtp-in.l.google.com (pref 10)",
       "gmr-smtp-in.l.google.com (pref 5)",
-      "alt1.gmr-smtp-in.l.google.com (pref 10)"
+      "alt2.gmr-smtp-in.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns1.google.com.",
-      "ns2.google.com.",
       "ns3.google.com.",
-      "ns4.google.com."
+      "ns4.google.com.",
+      "ns1.google.com.",
+      "ns2.google.com."
     ],
     "spf": [
-      "google-site-verification=-OR7o1cPY_Zi3wrXwQJWk81kffyeNb7Q77lb91jtINY",
-      "v=spf1 redirect=_spf.google.com"
+      "v=spf1 redirect=_spf.google.com",
+      "google-site-verification=-OR7o1cPY_Zi3wrXwQJWk81kffyeNb7Q77lb91jtINY"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=quarantine; rua=mailto:mailauth-reports@google.com"
@@ -219,7 +233,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     }
   },
   "ports": {
-    "ip": "108.177.125.191",
+    "ip": "108.177.97.191",
     "open": []
   },
   "https": {
@@ -283,7 +297,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192151",
+      "not_after": "20261203192150"
     }
   },
   "http2": {
@@ -305,8 +321,14 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "/followers/"
     ]
   },
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "tm-in-f191.1e100.net."
+    ]
+  },
   "elapsed_s": 6.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

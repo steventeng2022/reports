@@ -7,12 +7,12 @@
 | Target | https://getresponse.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | getresponse.com |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 6, Info: 9)
+Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 6, Info: 9)
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -111,13 +112,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 6, Info: 9)
 ### 12. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (3yr6eldg7dnlxt.getresponse.com and 61l7ywrl7geuh8.getresponse.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (03xea3yz2oisr4.getresponse.com and kcjkle1g1uc90p.getresponse.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-venw22=ZeM4NT230jUX4wYrLH2xiewmQ; Dynatrace-site-verification=e1a175f3-bb98-4294-b96d-7da32368958c__5e1a4oqvdp0fv5; atlassian-domain-verification=LK2p1objuTfwluXVqD2rSagYcHzknb4lAGe2sOnklu3lYjE6x2
+- **Detail:** Apex TXT records with verification/token content: miro-verification= 79b13564da36f9da3d95258202fd70c9462a2a62; facebook-domain-verification=hzu8jvt165inp6e47scduae2y0smll; google-site-verification=QeBji-07N-gsBMjY9YfUf5LXyTluvf76nuzqSX3PTsQ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -131,6 +132,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 6, Info: 9)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 145 disallow path(s), e.g. /about/investor-relations, *emailTemplateID=, /features/website-builder/templates/*/*, /features/website-builder/templates/business-and-services/*,*, /features/website-builder/templates*order=
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 104.160.64.8 carries PTR getresponse.com. for getresponse.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -147,34 +154,34 @@ Total findings: **15** (High: 0, Medium: 0, Low: 6, Info: 9)
       "getresponse-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns0.dnsmadeeasy.com.",
-      "ns4.dnsmadeeasy.com.",
       "ns3.dnsmadeeasy.com.",
-      "ns2.dnsmadeeasy.com.",
-      "ns1.dnsmadeeasy.com."
+      "ns4.dnsmadeeasy.com.",
+      "ns1.dnsmadeeasy.com.",
+      "ns0.dnsmadeeasy.com.",
+      "ns2.dnsmadeeasy.com."
     ],
     "spf": [
-      "anthropic-domain-verification-venw22=ZeM4NT230jUX4wYrLH2xiewmQ",
-      "Dynatrace-site-verification=e1a175f3-bb98-4294-b96d-7da32368958c__5e1a4oqvdp0fv5mdkt0iek9bk3",
-      "atlassian-domain-verification=LK2p1objuTfwluXVqD2rSagYcHzknb4lAGe2sOnklu3lYjE6x2o6yfOxo1T4OK5u",
-      "sf9v0knq1ugotc1jqte1ractie",
-      "google-site-verification=j5cNpXTozrVnhuElGV-BdoIZaBOqg8wtr_z2hiO_1CY",
-      "google-site-verification=Z8jVzgnaG8CjbUygDISY-3uP8uIqGzn5At2bo5nzHqQ",
-      "google-site-verification=QeBji-07N-gsBMjY9YfUf5LXyTluvf76nuzqSX3PTsQ",
-      "5ce38e29469ad11f7177b24c1922672b63abf6680d6a0726116fd210c7e8cc6",
       "miro-verification= 79b13564da36f9da3d95258202fd70c9462a2a62",
-      "1password-site-verification=BMMLC4IXRBCU3G5UCBKCF5MINM",
-      "perplexity-ai-domain-verification-xhench=mT1d7pxsOX0OQ99IarJY2WASZ",
-      "google-site-verification=fMdXexz-UeermTKRO7SNU9jaU8iWvBjkLyUjux2p1s8",
-      "openai-domain-verification=dv-Rf8rPeAU2o96nKUYvGJOqGKG",
-      "google-site-verification=Dp1TRtq03Oinzgwpx4tg0nfgchSB7UYGTHaTvgRuvQA",
-      "google-site-verification=zr4OhPflVzGIZtxchXz72jWuNqjvgDlHrPUpiiJY0-k",
-      "google-site-verification=qQY936ygxuK-lM39J2ouZcOYciA1FsHBrh2N6K8aGho",
+      "sf9v0knq1ugotc1jqte1ractie",
       "facebook-domain-verification=hzu8jvt165inp6e47scduae2y0smll",
-      "mojecertpl-site-verification-pTZqxhVN4nRsImMtqYHyUrnng6ILpAqJ",
+      "google-site-verification=QeBji-07N-gsBMjY9YfUf5LXyTluvf76nuzqSX3PTsQ",
+      "1password-site-verification=BMMLC4IXRBCU3G5UCBKCF5MINM",
+      "google-site-verification=qQY936ygxuK-lM39J2ouZcOYciA1FsHBrh2N6K8aGho",
+      "google-site-verification=Z8jVzgnaG8CjbUygDISY-3uP8uIqGzn5At2bo5nzHqQ",
+      "Dynatrace-site-verification=e1a175f3-bb98-4294-b96d-7da32368958c__5e1a4oqvdp0fv5mdkt0iek9bk3",
+      "google-site-verification=j5cNpXTozrVnhuElGV-BdoIZaBOqg8wtr_z2hiO_1CY",
+      "5ce38e29469ad11f7177b24c1922672b63abf6680d6a0726116fd210c7e8cc6",
+      "google-site-verification=fMdXexz-UeermTKRO7SNU9jaU8iWvBjkLyUjux2p1s8",
       "pandadoc-domain-verification=URaRjh7TeRXzEYB2xiZ72o",
+      "mojecertpl-site-verification-pTZqxhVN4nRsImMtqYHyUrnng6ILpAqJ",
+      "google-site-verification=zr4OhPflVzGIZtxchXz72jWuNqjvgDlHrPUpiiJY0-k",
+      "anthropic-domain-verification-venw22=ZeM4NT230jUX4wYrLH2xiewmQ",
+      "v=spf1 mx a ip4:104.160.64.0/23 ip4:104.160.67.63/32 ip4:104.160.67.128/25 ip4:104.160.68.224/27 ip4:104.160.69.0/27 ip4:104.160.66.254 ip4:178.16.117.0/24 include:spf.protection.outlook.com include:_spf.psm.knowbe4.com -all",
+      "atlassian-domain-verification=LK2p1objuTfwluXVqD2rSagYcHzknb4lAGe2sOnklu3lYjE6x2o6yfOxo1T4OK5u",
       "jamf-site-verification=EMDHC_pNcl7T-4-V0hfEIQ",
-      "v=spf1 mx a ip4:104.160.64.0/23 ip4:104.160.67.63/32 ip4:104.160.67.128/25 ip4:104.160.68.224/27 ip4:104.160.69.0/27 ip4:104.160.66.254 ip4:178.16.117.0/24 include:spf.protection.outlook.com include:_spf.psm.knowbe4.com -all"
+      "openai-domain-verification=dv-Rf8rPeAU2o96nKUYvGJOqGKG",
+      "perplexity-ai-domain-verification-xhench=mT1d7pxsOX0OQ99IarJY2WASZ",
+      "google-site-verification=Dp1TRtq03Oinzgwpx4tg0nfgchSB7UYGTHaTvgRuvQA"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; rua=mailto:dmarc_agg@dmarc.everest.email; ruf=mailto:dmarc_fr@dmarc.everest.email; fo=1; pct=100; rf=afrf"
@@ -255,11 +262,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 6, Info: 9)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "anthropic-domain-verification-venw22=ZeM4NT230jUX4wYrLH2xiewmQ",
-    "Dynatrace-site-verification=e1a175f3-bb98-4294-b96d-7da32368958c__5e1a4oqvdp0fv5",
-    "atlassian-domain-verification=LK2p1objuTfwluXVqD2rSagYcHzknb4lAGe2sOnklu3lYjE6x2",
-    "google-site-verification=j5cNpXTozrVnhuElGV-BdoIZaBOqg8wtr_z2hiO_1CY",
-    "google-site-verification=Z8jVzgnaG8CjbUygDISY-3uP8uIqGzn5At2bo5nzHqQ"
+    "miro-verification= 79b13564da36f9da3d95258202fd70c9462a2a62",
+    "facebook-domain-verification=hzu8jvt165inp6e47scduae2y0smll",
+    "google-site-verification=QeBji-07N-gsBMjY9YfUf5LXyTluvf76nuzqSX3PTsQ",
+    "1password-site-verification=BMMLC4IXRBCU3G5UCBKCF5MINM",
+    "google-site-verification=qQY936ygxuK-lM39J2ouZcOYciA1FsHBrh2N6K8aGho"
   ],
   "tls2": {
     "alpn": "",
@@ -270,7 +277,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 6, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260909000000",
+      "not_after": "20270320235959"
     }
   },
   "http2": {
@@ -292,8 +301,14 @@ Total findings: **15** (High: 0, Medium: 0, Low: 6, Info: 9)
       "*/api/v2"
     ]
   },
-  "elapsed_s": 32.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "getresponse.com."
+    ]
+  },
+  "elapsed_s": 32.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

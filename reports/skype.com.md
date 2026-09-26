@@ -7,8 +7,8 @@
 | Target | https://skype.com/ |
 | Bug bounty program | Microsoft Online Services |
 | Listed scope domain | skype.com |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -140,33 +140,33 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
   "dns": {
     "a": [
       "20.70.246.20",
-      "20.231.239.246",
-      "20.112.250.133",
       "20.236.44.162",
-      "20.76.201.171"
+      "20.76.201.171",
+      "20.112.250.133",
+      "20.231.239.246"
     ],
     "aaaa": [
-      "2603:1020:201:10::10f",
       "2603:1030:20e:3::23c",
-      "2603:1030:b:3::152",
+      "2603:1030:c02:8::14",
+      "2603:1020:201:10::10f",
       "2603:1010:3:3::5b",
-      "2603:1030:c02:8::14"
+      "2603:1030:b:3::152"
     ],
     "cname": null,
     "mx": [
       "skype-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns2-205.azure-dns.net.",
-      "ns3-205.azure-dns.org.",
       "ns4-205.azure-dns.info.",
-      "ns1-205.azure-dns.com."
+      "ns3-205.azure-dns.org.",
+      "ns1-205.azure-dns.com.",
+      "ns2-205.azure-dns.net."
     ],
     "spf": [
-      "google-site-verification=R9lBFA5SoH0CKpHuBMa4akNqb8E8YF8fim8qpGF22mg",
-      "facebook-domain-verification=87pranlm54pxjnpg1lp1nc3bcanv3f",
       "v=spf1 include:_spf-ssg-a.microsoft.com ip4:91.190.218.48 ip4:91.190.216.100 -all",
-      "v=msv1 t=6097A7EA-53F7-4028-BA76-6869CB284C54"
+      "v=msv1 t=6097A7EA-53F7-4028-BA76-6869CB284C54",
+      "google-site-verification=R9lBFA5SoH0CKpHuBMa4akNqb8E8YF8fim8qpGF22mg",
+      "facebook-domain-verification=87pranlm54pxjnpg1lp1nc3bcanv3f"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:rua@dmarc.microsoft,mailto:skype@rua.netcraft.com; fo=1; ruf=mailto:rua@dmarc.microsoft,mailto:skype@ruf.netcraft.com;"
@@ -431,11 +431,16 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260904080527",
+      "not_after": "20261213070527"
     }
   },
-  "elapsed_s": 23.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 18.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

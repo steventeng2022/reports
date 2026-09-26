@@ -7,12 +7,12 @@
 | Target | https://trustpilot.com/ |
 | Bug bounty program | Trustpilot |
 | Listed scope domain | trustpilot.com |
-| Test date | 2026-09-26 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:00 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
+Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -110,7 +111,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: onetrust-domain-verification=d9e381bf0e9c411cb5fcff80e6e8a5ad; google-site-verification=eX8LrikiWD5mmqtziAD3DYIjGF1AqsK2n-GvJl6jd2Q; anthropic-domain-verification-qga6j9=93jJxdvry3EauO3oQFZvf8dHx
+- **Detail:** Apex TXT records with verification/token content: atlassian-sending-domain-verification=2448cf59-90a2-4b9f-ab88-6c212605cc8a; h1-domain-verification=K1j4L82MxUY9ci2JywgBgo6FvxyEvTfYou9bBcQ9j5dK7DUC; miro-verification=031ae4a4b2a83d8570b7352bf4c87365ade7cb7b
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -125,6 +126,12 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - **Detail:** robots.txt lists 811 disallow path(s), e.g. /error, /evaluate/, /evaluate-link, /evaluate-unique-link, /pingdom
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 63.33.98.142 carries PTR ec2-63-33-98-142.eu-west-1.compute.amazonaws.com. for trustpilot.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -132,48 +139,48 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
   "domain": "trustpilot.com",
   "dns": {
     "a": [
-      "63.35.41.16",
       "63.33.98.142",
-      "34.251.1.61"
+      "34.251.1.61",
+      "63.35.41.16"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 10)",
-      "aspmx3.googlemail.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx5.googlemail.com (pref 30)",
-      "aspmx4.googlemail.com (pref 30)",
       "aspmx2.googlemail.com (pref 30)",
-      "alt2.aspmx.l.google.com (pref 20)"
+      "aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx4.googlemail.com (pref 30)",
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx3.googlemail.com (pref 30)",
+      "aspmx5.googlemail.com (pref 30)"
     ],
     "ns": [
-      "ns-1198.awsdns-21.org.",
-      "ns-627.awsdns-14.net.",
       "ns-1859.awsdns-40.co.uk.",
+      "ns-627.awsdns-14.net.",
+      "ns-1198.awsdns-21.org.",
       "ns-507.awsdns-63.com."
     ],
     "spf": [
-      "onetrust-domain-verification=d9e381bf0e9c411cb5fcff80e6e8a5ad",
-      "google-site-verification=eX8LrikiWD5mmqtziAD3DYIjGF1AqsK2n-GvJl6jd2Q",
       "SFMC-51XpMfjNiP4EVyMcp4ez89Vu8Wk1q6Q6LJ68PeRh",
-      "anthropic-domain-verification-qga6j9=93jJxdvry3EauO3oQFZvf8dHx",
-      "jamf-site-verification=hCZILKggaY23aId4VBfmVA",
       "atlassian-sending-domain-verification=2448cf59-90a2-4b9f-ab88-6c212605cc8a",
-      "docusign=be55314d-2f73-40d6-b69b-81fe9012c808",
-      "stripe-verification=5309EE27ADA96F87770018A428B9C43D1E0B0CDC5726252873D4BC67C5871789",
-      "v=spf1 include:trustpilotservice.com include:_spf.google.com include:u5760.wl.sendgrid.net include:mail.zendesk.com include:cust-spf.exacttarget.com -all",
       "h1-domain-verification=K1j4L82MxUY9ci2JywgBgo6FvxyEvTfYou9bBcQ9j5dK7DUC",
-      "jetbrains-domain-verification=4x4x2p1njocim1o7bh7dmijxk",
-      "onetrust-domain-verification=f8c9c8fbc2254290a3239ea97107324d",
-      "google-site-verification=KdmHR50ME1X0_bgJJO27tI6Y2ZZh_teVRqF8D2vmBSM",
-      "google-site-verification=QDeDnLx9XehnRUiSDiEMTlo7FC5yIgBaMfhzkg36lQc",
       "miro-verification=031ae4a4b2a83d8570b7352bf4c87365ade7cb7b",
-      "gJn7h6f2m!!%WT@C%m6ox&4pFfcDjvkBYB4hq*0L2im#W#t^MLKcAlh4*Ddm59e2ricfrPUbb&H3X&h*6AjNI8tXONPH#*PluEY",
+      "stripe-verification=5309EE27ADA96F87770018A428B9C43D1E0B0CDC5726252873D4BC67C5871789",
       "apple-domain-verification=MmFgAj5P9HBaVpmv",
+      "gJn7h6f2m!!%WT@C%m6ox&4pFfcDjvkBYB4hq*0L2im#W#t^MLKcAlh4*Ddm59e2ricfrPUbb&H3X&h*6AjNI8tXONPH#*PluEY",
+      "anthropic-domain-verification-qga6j9=93jJxdvry3EauO3oQFZvf8dHx",
+      "google-site-verification=KdmHR50ME1X0_bgJJO27tI6Y2ZZh_teVRqF8D2vmBSM",
+      "onetrust-domain-verification=f8c9c8fbc2254290a3239ea97107324d",
+      "hubspot-developer-verification=MDUzYTcyZDctZTlmYS00YzUxLWE3ZGItMmVlYTM4ZTRlZmJm",
+      "google-site-verification=eX8LrikiWD5mmqtziAD3DYIjGF1AqsK2n-GvJl6jd2Q",
+      "jetbrains-domain-verification=4x4x2p1njocim1o7bh7dmijxk",
+      "docusign=be55314d-2f73-40d6-b69b-81fe9012c808",
       "calendly-site-verification=VExW0uOVuA35JUxpvM76K50anC81mCpUybq3Ts0aX",
-      "atlassian-domain-verification=Eo0XF2YMZT8L2vGyok0CJob7i4RRe1QrfcDxjjnF0pO7j7V05HsJz2qiVFB/zJ1t",
-      "hubspot-developer-verification=MDUzYTcyZDctZTlmYS00YzUxLWE3ZGItMmVlYTM4ZTRlZmJm"
+      "jamf-site-verification=hCZILKggaY23aId4VBfmVA",
+      "google-site-verification=QDeDnLx9XehnRUiSDiEMTlo7FC5yIgBaMfhzkg36lQc",
+      "onetrust-domain-verification=d9e381bf0e9c411cb5fcff80e6e8a5ad",
+      "v=spf1 include:trustpilotservice.com include:_spf.google.com include:u5760.wl.sendgrid.net include:mail.zendesk.com include:cust-spf.exacttarget.com -all",
+      "atlassian-domain-verification=Eo0XF2YMZT8L2vGyok0CJob7i4RRe1QrfcDxjjnF0pO7j7V05HsJz2qiVFB/zJ1t"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:noreply-dmarc@trustpilot.com"
@@ -203,7 +210,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     }
   },
   "ports": {
-    "ip": "63.35.41.16",
+    "ip": "63.33.98.142",
     "open": []
   },
   "https": {
@@ -253,11 +260,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "onetrust-domain-verification=d9e381bf0e9c411cb5fcff80e6e8a5ad",
-    "google-site-verification=eX8LrikiWD5mmqtziAD3DYIjGF1AqsK2n-GvJl6jd2Q",
-    "anthropic-domain-verification-qga6j9=93jJxdvry3EauO3oQFZvf8dHx",
-    "jamf-site-verification=hCZILKggaY23aId4VBfmVA",
-    "atlassian-sending-domain-verification=2448cf59-90a2-4b9f-ab88-6c212605cc8a"
+    "atlassian-sending-domain-verification=2448cf59-90a2-4b9f-ab88-6c212605cc8a",
+    "h1-domain-verification=K1j4L82MxUY9ci2JywgBgo6FvxyEvTfYou9bBcQ9j5dK7DUC",
+    "miro-verification=031ae4a4b2a83d8570b7352bf4c87365ade7cb7b",
+    "stripe-verification=5309EE27ADA96F87770018A428B9C43D1E0B0CDC5726252873D4BC67C587",
+    "apple-domain-verification=MmFgAj5P9HBaVpmv"
   ],
   "tls2": {
     "alpn": "",
@@ -268,7 +275,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251101000000",
+      "not_after": "20261129235959"
     }
   },
   "http2": {
@@ -290,8 +299,14 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "/*?*topics="
     ]
   },
-  "elapsed_s": 29.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ec2-63-33-98-142.eu-west-1.compute.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 30.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

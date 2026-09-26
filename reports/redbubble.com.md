@@ -7,8 +7,8 @@
 | Target | https://redbubble.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | redbubble.com |
-| Test date | 2026-09-26 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -148,13 +148,13 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 ### 17. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (efpnlnt5kx53yg.redbubble.com and ep1hm2z7y3qltw.redbubble.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (9tgle3f8ob5jxr.redbubble.com and hc623aj968gdwh.redbubble.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 18. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-v1dn0a=YD10CWeuzIWWkSgV7ZYRHiAd4; docker-verification=491b95d3-085b-466b-b57d-b5d29755d00d; google-site-verification=sMLzEbifaLFu565adipqN_-EXZ1Kozh2IpU8m6A47-U
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=mi4mkund8oqzwtzhljxcn2yle13ffx; stripe-verification=e6e8859edfcd12d0ddaded758c7e3dbe67aeec5351774319f31234c15cb2; stripe-verification=46a1820652f48421affa0dd0210a8d165ad91d9bf14a923a90db760f25d8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 19. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -188,46 +188,46 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 10)",
-      "aspmx2.googlemail.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx3.googlemail.com (pref 30)",
-      "aspmx4.googlemail.com (pref 30)",
       "alt2.aspmx.l.google.com (pref 20)",
-      "aspmx5.googlemail.com (pref 30)"
+      "aspmx5.googlemail.com (pref 30)",
+      "aspmx2.googlemail.com (pref 30)",
+      "aspmx3.googlemail.com (pref 30)",
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx.l.google.com (pref 10)",
+      "aspmx4.googlemail.com (pref 30)"
     ],
     "ns": [
       "grace.ns.cloudflare.com.",
       "greg.ns.cloudflare.com."
     ],
     "spf": [
-      "asv_domain=d54695e72f4fdce123215a8523dc627d",
-      "asv_domain=0f6dda07f6f2602e0f1c4fd230551738",
-      "anthropic-domain-verification-v1dn0a=YD10CWeuzIWWkSgV7ZYRHiAd4",
-      "docker-verification=491b95d3-085b-466b-b57d-b5d29755d00d",
-      "v=spf1 ip4:167.89.6.96 ip4:208.115.235.221 include:_spf.google.com include:mail.zendesk.com include:amazonses.com include:mg-spf.greenhouse.io include:_netblocks.accellion.com include:mktomail.com ~all",
-      "google-site-verification=sMLzEbifaLFu565adipqN_-EXZ1Kozh2IpU8m6A47-U",
-      "jamf-site-verification=xTuy2iVK1s1LV_4AQBCckA",
-      "stripe-verification=e6e8859edfcd12d0ddaded758c7e3dbe67aeec5351774319f31234c15cb2d535",
-      "docusign=571f0360-1e16-4a6b-8dc8-85f70a1be7bd",
-      "miro-verification=0adebe47a84b71ad1a26f2555c6a1b27980b4036",
-      "google-site-verification=x5ibTJjE09JLrzPNBY7rolMrPqC34YSsjo4qM8HuxWg",
-      "stripe-verification=2aa0eb2936e5371d2ffa34419d0e83e749c1aad5d36dd37f04576c8e9ed902a8",
-      "stripe-verification=66a22dc621b81179418fc86013d8edbe7b964ae18d6de647f27a3d7f1b72de0b",
-      "google-site-verification=tlRDDgpvFfpNsjCfbljRYi5y1vWmKxNTopJCHryCR5k",
-      "google-site-verification=JN-XQ-cYiYftk6pyadcpZlFKzOfjs-NzrsMP7QLHXN4",
-      "apple-domain-verification=NP1bOtQn6J4uDTRz",
-      "google-site-verification=MSr1dnAvSgQfeuYLHcGMzESb6gzav2VrqV2NixQqpyM",
       "facebook-domain-verification=mi4mkund8oqzwtzhljxcn2yle13ffx",
-      "google-site-verification=dK53YMQJIIUQ81uTqbWu99BRP1QrUO2CUGxR_UgeZdA",
-      "BPL=1126064",
-      "atlassian-domain-verification=QXMXSt1Y5pkY3LHuPAvUx0m/baw85nW1IGHuwcRXDSMNAoDAm3dv0ko0LoZwfdKt",
-      "twilio-domain-verification=55db31fdead46a274cfe09c204628020",
-      "stripe-verification=351c3166a566cceb14b5940d1870f386c52a5b7d994c40425ccc5f00203def98",
-      "stripe-verification=dd8b40df9020b0730505fd40b3586c1226b566233663dc5b3428586274d5a661",
+      "stripe-verification=e6e8859edfcd12d0ddaded758c7e3dbe67aeec5351774319f31234c15cb2d535",
       "stripe-verification=46a1820652f48421affa0dd0210a8d165ad91d9bf14a923a90db760f25d8f386",
       "google-site-verification=vkpZiA3YRjBX_kTwrTaxho611iwMN6arP0Ul69qeE-A",
-      "stripe-verification=c0fb77104ce7e865091d6c467967f37efa03dd960596317cbae313dea1101b25"
+      "BPL=1126064",
+      "stripe-verification=351c3166a566cceb14b5940d1870f386c52a5b7d994c40425ccc5f00203def98",
+      "google-site-verification=tlRDDgpvFfpNsjCfbljRYi5y1vWmKxNTopJCHryCR5k",
+      "docker-verification=491b95d3-085b-466b-b57d-b5d29755d00d",
+      "atlassian-domain-verification=QXMXSt1Y5pkY3LHuPAvUx0m/baw85nW1IGHuwcRXDSMNAoDAm3dv0ko0LoZwfdKt",
+      "stripe-verification=66a22dc621b81179418fc86013d8edbe7b964ae18d6de647f27a3d7f1b72de0b",
+      "docusign=571f0360-1e16-4a6b-8dc8-85f70a1be7bd",
+      "google-site-verification=x5ibTJjE09JLrzPNBY7rolMrPqC34YSsjo4qM8HuxWg",
+      "google-site-verification=MSr1dnAvSgQfeuYLHcGMzESb6gzav2VrqV2NixQqpyM",
+      "miro-verification=0adebe47a84b71ad1a26f2555c6a1b27980b4036",
+      "twilio-domain-verification=55db31fdead46a274cfe09c204628020",
+      "anthropic-domain-verification-v1dn0a=YD10CWeuzIWWkSgV7ZYRHiAd4",
+      "asv_domain=0f6dda07f6f2602e0f1c4fd230551738",
+      "apple-domain-verification=NP1bOtQn6J4uDTRz",
+      "stripe-verification=dd8b40df9020b0730505fd40b3586c1226b566233663dc5b3428586274d5a661",
+      "stripe-verification=c0fb77104ce7e865091d6c467967f37efa03dd960596317cbae313dea1101b25",
+      "google-site-verification=dK53YMQJIIUQ81uTqbWu99BRP1QrUO2CUGxR_UgeZdA",
+      "v=spf1 ip4:167.89.6.96 ip4:208.115.235.221 include:_spf.google.com include:mail.zendesk.com include:amazonses.com include:mg-spf.greenhouse.io include:_netblocks.accellion.com include:mktomail.com ~all",
+      "stripe-verification=2aa0eb2936e5371d2ffa34419d0e83e749c1aad5d36dd37f04576c8e9ed902a8",
+      "google-site-verification=sMLzEbifaLFu565adipqN_-EXZ1Kozh2IpU8m6A47-U",
+      "jamf-site-verification=xTuy2iVK1s1LV_4AQBCckA",
+      "google-site-verification=JN-XQ-cYiYftk6pyadcpZlFKzOfjs-NzrsMP7QLHXN4",
+      "asv_domain=d54695e72f4fdce123215a8523dc627d"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; rua=mailto:6950a1d4bd4b4d9889a101aaa7941388@dmarc-reports.cloudflare.net,mailto:dmarc-reports@redbubble.com; ruf=mailto:dmarc-reports@redbubble.com; fo=1;"
@@ -321,11 +321,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "anthropic-domain-verification-v1dn0a=YD10CWeuzIWWkSgV7ZYRHiAd4",
-    "docker-verification=491b95d3-085b-466b-b57d-b5d29755d00d",
-    "google-site-verification=sMLzEbifaLFu565adipqN_-EXZ1Kozh2IpU8m6A47-U",
-    "jamf-site-verification=xTuy2iVK1s1LV_4AQBCckA",
-    "stripe-verification=e6e8859edfcd12d0ddaded758c7e3dbe67aeec5351774319f31234c15cb2"
+    "facebook-domain-verification=mi4mkund8oqzwtzhljxcn2yle13ffx",
+    "stripe-verification=e6e8859edfcd12d0ddaded758c7e3dbe67aeec5351774319f31234c15cb2",
+    "stripe-verification=46a1820652f48421affa0dd0210a8d165ad91d9bf14a923a90db760f25d8",
+    "google-site-verification=vkpZiA3YRjBX_kTwrTaxho611iwMN6arP0Ul69qeE-A",
+    "stripe-verification=351c3166a566cceb14b5940d1870f386c52a5b7d994c40425ccc5f00203d"
   ],
   "tls2": {
     "alpn": "",
@@ -336,7 +336,9 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260827030109",
+      "not_after": "20261125040106"
     }
   },
   "http2": {
@@ -358,8 +360,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
       "/shop*&query=*"
     ]
   },
-  "elapsed_s": 6.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 6.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

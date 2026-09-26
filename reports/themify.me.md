@@ -7,12 +7,12 @@
 | Target | https://themify.me/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | themify.me |
-| Test date | 2026-09-26 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:00 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 15 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -45,13 +46,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.26.0.130:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.26.1.130:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.26.0.130:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.26.1.130:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [LOW] Mixed content: HTTP resources referenced from HTTPS page (`MIX1`)
@@ -129,7 +130,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 15. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (6lmaxmtyqrjvtl.themify.me and 1ty7m0evnwfrvh.themify.me) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (vighgly0fje84t.themify.me and yn73a4wvxzxvk3.themify.me) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -144,6 +145,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** robots.txt lists 7 disallow path(s), e.g. /staging/, /demo/, /dev/, /member/, /wp-admin/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 18. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://themify.me/ carries Cache-Control: max-age=10800 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -151,26 +158,26 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "themify.me",
   "dns": {
     "a": [
+      "104.26.1.130",
       "104.26.0.130",
-      "172.67.70.132",
-      "104.26.1.130"
+      "172.67.70.132"
     ],
     "aaaa": [
-      "2606:4700:20::ac43:4684",
       "2606:4700:20::681a:182",
+      "2606:4700:20::ac43:4684",
       "2606:4700:20::681a:82"
     ],
     "cname": null,
     "mx": [
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx2.googlemail.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
       "aspmx3.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)"
+      "aspmx2.googlemail.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "braden.ns.cloudflare.com.",
-      "journey.ns.cloudflare.com."
+      "journey.ns.cloudflare.com.",
+      "braden.ns.cloudflare.com."
     ],
     "spf": [
       "v=spf1 ip4:50.28.18.33 include:_spf.google.com ~all"
@@ -203,7 +210,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "104.26.0.130",
+    "ip": "104.26.1.130",
     "open": [
       8080,
       8443
@@ -271,7 +278,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260806001632",
+      "not_after": "20261104011620"
     }
   },
   "http2": {
@@ -286,8 +295,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/public-api/"
     ]
   },
-  "elapsed_s": 13.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 28.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

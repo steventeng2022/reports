@@ -7,12 +7,12 @@
 | Target | https://slack.com/ |
 | Bug bounty program | Slack |
 | Listed scope domain | slack.com |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -87,13 +88,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 ### 9. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (iw31q82nncclrc.slack.com and m3bcf8p4seb5hd.slack.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (nrppkpgw77ye9z.slack.com and p8plm1ny7z5kb1.slack.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: spycloud-domain-verification=02e4c0be-cf43-44e4-beaf-4f99702ca632; google-site-verification=v-LLB__IhraaI7ZzuE3jvRFIm2vERPLzWoepAEZJtKQ; google-site-verification=KqX3Ngw0XEjz_0GVx_xwFFlCoO-bskhqU_lxv0Q77mk
+- **Detail:** Apex TXT records with verification/token content: hubspot-developer-verification=OTE4NzYxYTgtMDUwZi00MzgzLTk2YTUtZDAwNjBlODg1MWM0; google-site-verification=v-LLB__IhraaI7ZzuE3jvRFIm2vERPLzWoepAEZJtKQ; google-site-verification=KqX3Ngw0XEjz_0GVx_xwFFlCoO-bskhqU_lxv0Q77mk
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -114,6 +115,12 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - **Detail:** robots.txt lists 15 disallow path(s), e.g. /messages, /quickstart, /go/, /unsub/, /answers/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 52.196.128.139 carries PTR ec2-52-196-128-139.ap-northeast-1.compute.amazonaws.com. for slack.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -121,39 +128,39 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   "domain": "slack.com",
   "dns": {
     "a": [
-      "35.74.58.174",
-      "35.73.126.78",
       "52.196.128.139",
+      "35.73.126.78",
+      "35.74.58.174",
       "52.192.46.121"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx3.googlemail.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
+      "aspmx3.googlemail.com (pref 10)",
       "aspmx2.googlemail.com (pref 10)"
     ],
     "ns": [
-      "ns-1901.awsdns-45.co.uk.",
       "ns-166.awsdns-20.com.",
+      "ns-1901.awsdns-45.co.uk.",
       "ns-606.awsdns-11.net.",
       "ns-1493.awsdns-58.org."
     ],
     "spf": [
-      "spycloud-domain-verification=02e4c0be-cf43-44e4-beaf-4f99702ca632",
-      "google-site-verification=v-LLB__IhraaI7ZzuE3jvRFIm2vERPLzWoepAEZJtKQ",
-      "google-site-verification=KqX3Ngw0XEjz_0GVx_xwFFlCoO-bskhqU_lxv0Q77mk",
-      "v=spf1 include:_spf.qualtrics.com include:mail.zendesk.com include:_spfextra.slack.com -all",
-      "google-site-verification=o2grd1TLmZZ8GrqbhVIFtzO2MRLTtSUpBBIBYfhQVCQ",
-      "google-site-verification=2PK67oVPNyEtS1avSlr3PhH5nSiFuticbQv_bT4pM2k",
-      "_0vidyxobp6x350odqhb4fo7fdxhmtq3",
       "hubspot-developer-verification=OTE4NzYxYTgtMDUwZi00MzgzLTk2YTUtZDAwNjBlODg1MWM0",
-      "google-site-verification=QvelFPjIOe3Vavw0q-aAVYaAPKmWCRjmmVVEAjgfjQc",
-      "google-site-verification=efuXt5-oMr2CdNmVi6A9IO29KMKifpseD1qokxjWwcE",
+      "google-site-verification=v-LLB__IhraaI7ZzuE3jvRFIm2vERPLzWoepAEZJtKQ",
       "OSSRH-54733",
-      "google-site-verification=kB1KvgpSk9YkHsFmsj1VPI5YmDvfKctPxnplhGjyqtE"
+      "google-site-verification=KqX3Ngw0XEjz_0GVx_xwFFlCoO-bskhqU_lxv0Q77mk",
+      "google-site-verification=kB1KvgpSk9YkHsFmsj1VPI5YmDvfKctPxnplhGjyqtE",
+      "google-site-verification=QvelFPjIOe3Vavw0q-aAVYaAPKmWCRjmmVVEAjgfjQc",
+      "spycloud-domain-verification=02e4c0be-cf43-44e4-beaf-4f99702ca632",
+      "google-site-verification=efuXt5-oMr2CdNmVi6A9IO29KMKifpseD1qokxjWwcE",
+      "_0vidyxobp6x350odqhb4fo7fdxhmtq3",
+      "google-site-verification=2PK67oVPNyEtS1avSlr3PhH5nSiFuticbQv_bT4pM2k",
+      "google-site-verification=o2grd1TLmZZ8GrqbhVIFtzO2MRLTtSUpBBIBYfhQVCQ",
+      "v=spf1 include:_spf.qualtrics.com include:mail.zendesk.com include:_spfextra.slack.com -all"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;fo=1:d:s;pct=100;rua=mailto:dmarc_agg@vali.email,mailto:0e5a5c34@inbox.ondmarc.com;ruf=mailto:0e5a5c34@inbox.ondmarc.com"
@@ -183,7 +190,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     }
   },
   "ports": {
-    "ip": "35.74.58.174",
+    "ip": "52.196.128.139",
     "open": []
   },
   "https": {
@@ -254,11 +261,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "spycloud-domain-verification=02e4c0be-cf43-44e4-beaf-4f99702ca632",
+    "hubspot-developer-verification=OTE4NzYxYTgtMDUwZi00MzgzLTk2YTUtZDAwNjBlODg1MWM0",
     "google-site-verification=v-LLB__IhraaI7ZzuE3jvRFIm2vERPLzWoepAEZJtKQ",
     "google-site-verification=KqX3Ngw0XEjz_0GVx_xwFFlCoO-bskhqU_lxv0Q77mk",
-    "google-site-verification=o2grd1TLmZZ8GrqbhVIFtzO2MRLTtSUpBBIBYfhQVCQ",
-    "google-site-verification=2PK67oVPNyEtS1avSlr3PhH5nSiFuticbQv_bT4pM2k"
+    "google-site-verification=kB1KvgpSk9YkHsFmsj1VPI5YmDvfKctPxnplhGjyqtE",
+    "google-site-verification=QvelFPjIOe3Vavw0q-aAVYaAPKmWCRjmmVVEAjgfjQc"
   ],
   "tls2": {
     "alpn": "",
@@ -269,7 +276,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260806093339",
+      "not_after": "20261104093338"
     }
   },
   "http2": {
@@ -291,8 +300,14 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "/files-pri/"
     ]
   },
-  "elapsed_s": 24.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "ec2-52-196-128-139.ap-northeast-1.compute.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 22.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

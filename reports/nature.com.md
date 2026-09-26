@@ -7,12 +7,12 @@
 | Target | https://nature.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | nature.com |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
+Total findings: **21** (High: 0, Medium: 0, Low: 7, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,6 +36,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
 | 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 19 | low | RED9 | Redirect chain of 5+ hops on the site root | CWE-601 |
 | 20 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 21 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -148,7 +149,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: shopify-verification-code=JAHiN7KQ1pbmGdnz9wgaKYgm5VCazy; 1password-site-verification=55KOGYWRMNDKRKUTDFSXF3WSYY; google-site-verification=HHD68pull8xzsrxD3nrcvVeVgIWS8Ou3WfObgKmsAeU
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=ieCNIjjta99aFWzeD9Mhze-lTbXHZo6GAc-MgXlclL4; canva-site-verification=uyK4bK0s0B6XTjkr-evkKA; lovable_verification=RRjvRYYzlyNRyQgjsp9U
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -169,6 +170,12 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
 - **Detail:** robots.txt lists 70 disallow path(s), e.g. /search, */1000$, /*/*/*/pf/, /*.otmi$, /*/*/*/*/otmi/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 21. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://nature.com/ carries Cache-Control: max-age=3600; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -181,58 +188,58 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxa-002c5801.gslb.pphosted.com (pref 10)",
-      "mxb-002c5801.gslb.pphosted.com (pref 10)"
+      "mxb-002c5801.gslb.pphosted.com (pref 10)",
+      "mxa-002c5801.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
       "pdns1.ultradns.net.",
       "pdns4.ultradns.org.",
-      "pdns2.ultradns.net.",
-      "pdns6.ultradns.co.uk.",
+      "pdns3.ultradns.org.",
       "pdns5.ultradns.info.",
-      "pdns3.ultradns.org."
+      "pdns2.ultradns.net.",
+      "pdns6.ultradns.co.uk."
     ],
     "spf": [
-      "MS=ms87841658",
-      "shopify-verification-code=JAHiN7KQ1pbmGdnz9wgaKYgm5VCazy",
-      "1password-site-verification=55KOGYWRMNDKRKUTDFSXF3WSYY",
-      "rpi5f08jedse2mt8382r95tj80.",
-      "google-site-verification=HHD68pull8xzsrxD3nrcvVeVgIWS8Ou3WfObgKmsAeU",
       "google-site-verification=ieCNIjjta99aFWzeD9Mhze-lTbXHZo6GAc-MgXlclL4",
+      "canva-site-verification=uyK4bK0s0B6XTjkr-evkKA",
+      "elevenlabs=IzVhiRt3uxo8ZMX_GxWWnO8BD5tqECcuYRAvtJ9M4_k",
       "lovable_verification=RRjvRYYzlyNRyQgjsp9U",
-      "google-site-verification=MMKRJQfefRehxhwEreFHykRsf_auok6vGwCrP1fz-r4",
+      "klaviyo-site-verification=RGffrp",
+      "onetrust-domain-verification=2fb9af66a4f8427c81ef817cc2fc7e5a",
+      "figma-domain-verification=a02807ceec187285dae088008460ab5e258fd494d08ac0c2c56f3739ff32437f-1713256355",
+      "1password-site-verification=55KOGYWRMNDKRKUTDFSXF3WSYY",
       "_globalsign-domain-verification=IG4UdrI9gc_SVSE132aTagdWhxkvONdbIBhHhhcMlP",
       "atlassian-domain-verification=8YyRB1dGCFU6FTIcUt18raWzPoKaOFUG7xiFOkac8XcGVOZgEtzvjUqsWaClhXdJ",
-      "anthropic-domain-verification-gbdrks=ymGP6KhyvFPcXIZ715PJVvZ3L",
-      "klaviyo-site-verification=RGffrp",
-      "monday-com-verification=gIfsbiBtQzvmY8SR8gmXmURzurNdeyafwCzP_vHk4wk",
-      "facebook-domain-verification=jkc3tvps7b0r4s2a8go26hb3mur2ug",
-      "google-site-verification=tYWiePuSRFUVlICaU0QdGNwirIvpr0YcTjConBwD6Cc",
-      "extensis-domain-verification=247a2c5e-b2c3-477e-a1a1-69522ce10b98",
-      "monday-com-verification=gAZywa4vaGsfLg6nd5lzh_H0u2mYn7u-W075cd-3X78",
-      "onetrust-domain-verification=2fb9af66a4f8427c81ef817cc2fc7e5a",
-      "openai-domain-verification=dv-HAPMMiP9yzTJ3yFoeETfV7vd",
-      "Hello GlobalSign CEOS1602043687",
-      "deepl-domain-verification=b8faec8a0acd4830a6c745d36a104c04",
-      "google-site-verification=k7pclGN55ftDU-TcQZ1EkFy7EBSsxDUY79dYzxeVTQA",
+      "cisco-ci-domain-verification=2994122b15fd1403b4a698555609ab4fa873bf7e2dcbd7c3ab141489d06e9b7c",
+      "docusign=67f44eaf-0dbe-458b-b10f-47bed1b15935",
       "google-site-verification=98cpzBJjv18c55LqVgp5mgYFTzGU6fLcF5t9GoTbbog",
-      "canva-site-verification=uyK4bK0s0B6XTjkr-evkKA",
+      "anthropic-domain-verification-gbdrks=ymGP6KhyvFPcXIZ715PJVvZ3L",
+      "rpi5f08jedse2mt8382r95tj80.",
+      "google-site-verification=tYWiePuSRFUVlICaU0QdGNwirIvpr0YcTjConBwD6Cc",
+      "deepl-domain-verification=b8faec8a0acd4830a6c745d36a104c04",
+      "monday-com-verification=gIfsbiBtQzvmY8SR8gmXmURzurNdeyafwCzP_vHk4wk",
+      "zapier-domain-verification-challenge=3621a905-479a-4476-b1c9-c153c4b7537c",
+      "google-site-verification=HHD68pull8xzsrxD3nrcvVeVgIWS8Ou3WfObgKmsAeU",
+      "klaviyo-site-verification=UzNPXX",
+      "google-site-verification=MMKRJQfefRehxhwEreFHykRsf_auok6vGwCrP1fz-r4",
+      "shopify-verification-code=JAHiN7KQ1pbmGdnz9wgaKYgm5VCazy",
       "docusign=7172e4ac-506c-48bb-9a02-40aa4f5970e4",
+      "openai-domain-verification=dv-HAPMMiP9yzTJ3yFoeETfV7vd",
+      "klaviyo-site-verification=U8sqV2",
+      "v=spf1 ip4:195.128.10.18/32 ip4:195.128.10.15/32 ip4:195.128.10.69/32 ip4:195.128.10.25/32 ip4:195.128.10.24/32 ip4:195.128.10.23/32 ip4:203.200.192.105/32 ip4:203.200.192.109/32 ip4:167.89.16.99/32 ip4:66.159.232.113/32 ip4:66.159.234.15/32 ip4:208.85.55",
+      ".170/32 ip4:208.85.55.173/32 ip4:199.168.14.54/32 ip4:192.87.127.243/32 ip4:192.87.127.244/32 ip4:208.185.229.0/24 ip4:208.185.235.0/24 ip4:52.43.154.216 ip4:192.174.90.93 ip4:52.41.1.125 ip4:192.174.90.94 ip4:192.174.90.91 include:spf.mandrillapp.com inc",
+      "lude:servers.mcsv.net include:spf.flowmailer.net include:spf-002c5801.pphosted.com include:ses.echobox.com include:fc3949.cuenote.jp include:_spf.salesforce.com -all",
+      "MS=ms87841658",
       "cisco-ci-domain-verification=22a12fd0333f8053f7ff6792fa99da4b2a9f4833da46146e49cb65d7cd75ca26",
       "MS=ms77610658",
       "adobe-idp-site-verification=e7d316e26179ad0d4b3f90cf2a0754eec7efe5ffd4e42fd68fb1bf562238e1e5",
-      "elevenlabs=IzVhiRt3uxo8ZMX_GxWWnO8BD5tqECcuYRAvtJ9M4_k",
-      "klaviyo-site-verification=UzNPXX",
-      "figma-domain-verification=a02807ceec187285dae088008460ab5e258fd494d08ac0c2c56f3739ff32437f-1713256355",
-      "zapier-domain-verification-challenge=3621a905-479a-4476-b1c9-c153c4b7537c",
+      "monday-com-verification=gAZywa4vaGsfLg6nd5lzh_H0u2mYn7u-W075cd-3X78",
+      "facebook-domain-verification=jkc3tvps7b0r4s2a8go26hb3mur2ug",
+      "google-site-verification=k7pclGN55ftDU-TcQZ1EkFy7EBSsxDUY79dYzxeVTQA",
       "klaviyo-site-verification=UNZdq4",
-      "klaviyo-site-verification=U8sqV2",
-      "docusign=67f44eaf-0dbe-458b-b10f-47bed1b15935",
-      "cisco-ci-domain-verification=2994122b15fd1403b4a698555609ab4fa873bf7e2dcbd7c3ab141489d06e9b7c",
-      "klaviyo-site-verification=SfRYxc",
-      "v=spf1 ip4:195.128.10.18/32 ip4:195.128.10.15/32 ip4:195.128.10.69/32 ip4:195.128.10.25/32 ip4:195.128.10.24/32 ip4:195.128.10.23/32 ip4:203.200.192.105/32 ip4:203.200.192.109/32 ip4:167.89.16.99/32 ip4:66.159.232.113/32 ip4:66.159.234.15/32 ip4:208.85.55",
-      ".170/32 ip4:208.85.55.173/32 ip4:199.168.14.54/32 ip4:192.87.127.243/32 ip4:192.87.127.244/32 ip4:208.185.229.0/24 ip4:208.185.235.0/24 ip4:52.43.154.216 ip4:192.174.90.93 ip4:52.41.1.125 ip4:192.174.90.94 ip4:192.174.90.91 include:spf.mandrillapp.com inc",
-      "lude:servers.mcsv.net include:spf.flowmailer.net include:spf-002c5801.pphosted.com include:ses.echobox.com include:fc3949.cuenote.jp include:_spf.salesforce.com -all"
+      "extensis-domain-verification=247a2c5e-b2c3-477e-a1a1-69522ce10b98",
+      "Hello GlobalSign CEOS1602043687",
+      "klaviyo-site-verification=SfRYxc"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:re+vcgy2jslus0@dmarc.postmarkapp.com; sp=none; aspf=r;"
@@ -314,11 +321,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "shopify-verification-code=JAHiN7KQ1pbmGdnz9wgaKYgm5VCazy",
-    "1password-site-verification=55KOGYWRMNDKRKUTDFSXF3WSYY",
-    "google-site-verification=HHD68pull8xzsrxD3nrcvVeVgIWS8Ou3WfObgKmsAeU",
     "google-site-verification=ieCNIjjta99aFWzeD9Mhze-lTbXHZo6GAc-MgXlclL4",
-    "lovable_verification=RRjvRYYzlyNRyQgjsp9U"
+    "canva-site-verification=uyK4bK0s0B6XTjkr-evkKA",
+    "lovable_verification=RRjvRYYzlyNRyQgjsp9U",
+    "klaviyo-site-verification=RGffrp",
+    "onetrust-domain-verification=2fb9af66a4f8427c81ef817cc2fc7e5a"
   ],
   "tls2": {
     "alpn": "",
@@ -329,7 +336,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260824205747",
+      "not_after": "20261122205746"
     }
   },
   "http2": {
@@ -351,8 +360,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
       "/*proof=*"
     ]
   },
-  "elapsed_s": 27.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 27.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

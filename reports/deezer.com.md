@@ -7,12 +7,12 @@
 | Target | https://deezer.com/ |
 | Bug bounty program | Deezer |
 | Listed scope domain | deezer.com |
-| Test date | 2026-09-26 17:43 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -124,7 +125,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: docker-verification=2fcbee18-9629-4252-b876-b5f09e7f0d52; gradle-verification=F2ED2BTRLBH4T55MB7BLMAHMU3PKH; google-site-verification=7I-SYis8ZeMmOpyppnK8xwO0zl0svUEAhj8Z2Y9PFcI
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=od_WkSXO534wNFRABA-6zoxUIVwn60Md6SlU2i5i8iE; segment-site-verification=GlpHielfWK2mAxw280lnbJndwol19aGH; tiktok-developers-site-verification=fsHQ2q4rKdukpTPlO15oSq88WsUbzChs
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -133,6 +134,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - **Detail:** Certificate of deezer.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 3.169.55.100 carries PTR server-3-169-55-100.tpe54.r.cloudfront.net. for deezer.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -140,57 +147,57 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
   "domain": "deezer.com",
   "dns": {
     "a": [
-      "3.169.55.75",
+      "3.169.55.100",
       "3.169.55.41",
       "3.169.55.83",
-      "3.169.55.100"
+      "3.169.55.75"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 10)",
-      "aspmx5.googlemail.com (pref 30)",
       "aspmx3.googlemail.com (pref 30)",
+      "aspmx.l.google.com (pref 10)",
       "aspmx2.googlemail.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)",
+      "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx5.googlemail.com (pref 30)",
       "aspmx4.googlemail.com (pref 30)",
-      "alt2.aspmx.l.google.com (pref 20)"
+      "alt1.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
-      "ns-672.awsdns-20.net.",
-      "ns-340.awsdns-42.com.",
       "ns-1935.awsdns-49.co.uk.",
-      "ns-1072.awsdns-06.org."
+      "ns-1072.awsdns-06.org.",
+      "ns-672.awsdns-20.net.",
+      "ns-340.awsdns-42.com."
     ],
     "spf": [
-      "docker-verification=2fcbee18-9629-4252-b876-b5f09e7f0d52",
-      "MS=ms80038696",
-      "gradle-verification=F2ED2BTRLBH4T55MB7BLMAHMU3PKH",
-      "google-site-verification=7I-SYis8ZeMmOpyppnK8xwO0zl0svUEAhj8Z2Y9PFcI",
-      "anthropic-domain-verification-2kxj5s=ldg3Froq5PB3Ue61ZLWcJ120B",
-      "google-site-verification=F8ZbIRsZzJL9xffCHf3E56G59z6HjD2CP6I1SRSDP68",
-      "yandex-verification: ecd5587d4fbf1dc6",
-      "v=spf1 include:_spf.google.com include:sendgrid.net include:mail.zendesk.com include:servers.mcsv.net ip4:78.40.120.128/26 ip4:78.40.121.0/24 ip4:78.40.123.0/24 ip4:78.40.120.244 ip4:185.159.104.113 ip4:35.241.138.172 -all",
-      "facebook-domain-verification=wbu2pxqkdmso2hjz7j14fm2hoccy4z",
-      "apple-domain-verification=P57n1OdYT_c47nnR4KwTymOZrOA0cl32GWqj5pkCGQ0",
-      "tiktok-developers-site-verification=biDigQ8eMAwiHueSlRfgZYYDQnasm3L2",
-      "miro-verification=dfdce60c3dafe475e66cee1a7dff403050e298a9",
-      "tiktok-developers-site-verification=fsHQ2q4rKdukpTPlO15oSq88WsUbzChs",
-      "bvAlPqTZ=c6edbdd62238ef342b47a23d07284dad",
-      "TAILSCALE-35IXkmM36zZhS07BnS3k",
-      "google-site-verification=vvyvPgv8IufaTIaccQQlinaL8TQ85_PHDAfcZWtE6O0",
-      "wsbvv2s5vf",
-      "jamf-site-verification=KLk9LYux1EXjBffu88rVgg",
-      "segment-site-verification=GlpHielfWK2mAxw280lnbJndwol19aGH",
-      "docusign=842e27e7-d700-4873-af3e-0cee181088e5",
       "google-site-verification=od_WkSXO534wNFRABA-6zoxUIVwn60Md6SlU2i5i8iE",
-      "teamviewer-sso-verification=255ec7551d7b4b16bfc94d0cba632b63",
-      "brevo-code:fa2e70dc2bb0553ba7f879cdb321c3f0",
-      "browserstack-domain-verification=79af734f-e88b-487f-9191-55c52b27be0b",
+      "segment-site-verification=GlpHielfWK2mAxw280lnbJndwol19aGH",
+      "bvAlPqTZ=c6edbdd62238ef342b47a23d07284dad",
       "docusign=8d8c13b3-cb80-43af-a6f3-0036bba8d3fc",
+      "tiktok-developers-site-verification=fsHQ2q4rKdukpTPlO15oSq88WsUbzChs",
+      "anthropic-domain-verification-2kxj5s=ldg3Froq5PB3Ue61ZLWcJ120B",
+      "facebook-domain-verification=wbu2pxqkdmso2hjz7j14fm2hoccy4z",
+      "wsbvv2s5vf",
+      "tiktok-developers-site-verification=biDigQ8eMAwiHueSlRfgZYYDQnasm3L2",
+      "v=spf1 include:_spf.google.com include:sendgrid.net include:mail.zendesk.com include:servers.mcsv.net ip4:78.40.120.128/26 ip4:78.40.121.0/24 ip4:78.40.123.0/24 ip4:78.40.120.244 ip4:185.159.104.113 ip4:35.241.138.172 -all",
+      "jamf-site-verification=KLk9LYux1EXjBffu88rVgg",
+      "teamviewer-sso-verification=255ec7551d7b4b16bfc94d0cba632b63",
+      "google-site-verification=F8ZbIRsZzJL9xffCHf3E56G59z6HjD2CP6I1SRSDP68",
+      "MS=ms80038696",
+      "yandex-verification: ecd5587d4fbf1dc6",
+      "browserstack-domain-verification=79af734f-e88b-487f-9191-55c52b27be0b",
+      "google-site-verification=vvyvPgv8IufaTIaccQQlinaL8TQ85_PHDAfcZWtE6O0",
       "teamviewer-sso-verification=f9da86a27d794c74b772287a9d5787c2",
+      "apple-domain-verification=P57n1OdYT_c47nnR4KwTymOZrOA0cl32GWqj5pkCGQ0",
+      "miro-verification=dfdce60c3dafe475e66cee1a7dff403050e298a9",
+      "brevo-code:fa2e70dc2bb0553ba7f879cdb321c3f0",
+      "TAILSCALE-35IXkmM36zZhS07BnS3k",
+      "atlassian-domain-verification=OKs3QGwhDbZrt7WH4gOo+3G6aSPoFiiO04wvktNpPRFGSzbDMhOz5OKfZMCP+F7Q",
+      "gradle-verification=F2ED2BTRLBH4T55MB7BLMAHMU3PKH",
+      "docusign=842e27e7-d700-4873-af3e-0cee181088e5",
+      "google-site-verification=7I-SYis8ZeMmOpyppnK8xwO0zl0svUEAhj8Z2Y9PFcI",
       "bitrise-verification=07f1c1d2f9ad3bc9-LO62dmQufLLX",
-      "atlassian-domain-verification=OKs3QGwhDbZrt7WH4gOo+3G6aSPoFiiO04wvktNpPRFGSzbDMhOz5OKfZMCP+F7Q"
+      "docker-verification=2fcbee18-9629-4252-b876-b5f09e7f0d52"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc_report@deezer.com"
@@ -220,7 +227,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     }
   },
   "ports": {
-    "ip": "3.169.55.75",
+    "ip": "3.169.55.100",
     "open": []
   },
   "https": {
@@ -273,11 +280,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "docker-verification=2fcbee18-9629-4252-b876-b5f09e7f0d52",
-    "gradle-verification=F2ED2BTRLBH4T55MB7BLMAHMU3PKH",
-    "google-site-verification=7I-SYis8ZeMmOpyppnK8xwO0zl0svUEAhj8Z2Y9PFcI",
+    "google-site-verification=od_WkSXO534wNFRABA-6zoxUIVwn60Md6SlU2i5i8iE",
+    "segment-site-verification=GlpHielfWK2mAxw280lnbJndwol19aGH",
+    "tiktok-developers-site-verification=fsHQ2q4rKdukpTPlO15oSq88WsUbzChs",
     "anthropic-domain-verification-2kxj5s=ldg3Froq5PB3Ue61ZLWcJ120B",
-    "google-site-verification=F8ZbIRsZzJL9xffCHf3E56G59z6HjD2CP6I1SRSDP68"
+    "facebook-domain-verification=wbu2pxqkdmso2hjz7j14fm2hoccy4z"
   ],
   "tls2": {
     "alpn": "",
@@ -288,11 +295,19 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260716000000",
+      "not_after": "20270130235959"
     }
   },
-  "elapsed_s": 10.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "server-3-169-55-100.tpe54.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 3.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

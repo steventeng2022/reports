@@ -7,12 +7,12 @@
 | Target | https://xing.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | xing.com |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:02 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 19 | info | CT1 | 370 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -119,13 +121,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (o29e85u5diylqa.xing.com and 9o0mlyzsqe92hu.xing.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (yxyasu4kotk9u1.xing.com and p62zhg4wsfhmmn.xing.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=1CoJURTg2aHLa8bvDoNt_dDrLNmVPE93-cjaxYitSo8; facebook-domain-verification=xxd0q3s7lv62wywvvpver0e8j1j1vw; google-site-verification=whYQbqxkVsb_xI5XKG3U8CQG2Vn75Nhx5HyTxo30gHA
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=jC5_MqgVlYS7He0-uldAaB4z1uYxuZUKL_bTHaIYn-0; atlassian-domain-verification=jQie6vPSfhfQ4wsCwYZtuCQTWC7PhDbv9HmrAzbRc6skBWWB/T; facebook-domain-verification=xxd0q3s7lv62wywvvpver0e8j1j1vw
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -146,6 +148,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** robots.txt lists 235 disallow path(s), e.g. /, /img/users, /app/search, /cgi-bin/search.fpl, /patterns
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 18.154.144.107 carries PTR server-18-154-144-107.lax50.r.cloudfront.net. for xing.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 19. [INFO] 370 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: admin.preview.xing.com, admin.xing.com, api.ams1.xing.com, api.ams2.xing.com, api.preview.ams1.xing.com, api.preview.ams2.xing.com, api.preview.xing.com, api.xing.com, blog.xing.com, dev.preview.xing.com
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -154,8 +168,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "dns": {
     "a": [
       "18.154.144.107",
-      "18.154.144.42",
       "18.154.144.64",
+      "18.154.144.42",
       "18.154.144.78"
     ],
     "aaaa": [],
@@ -165,38 +179,38 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     ],
     "ns": [
       "ns-1321.awsdns-37.org.",
-      "ns-1690.awsdns-19.co.uk.",
+      "ns-633.awsdns-15.net.",
       "ns-291.awsdns-36.com.",
-      "ns-633.awsdns-15.net."
+      "ns-1690.awsdns-19.co.uk."
     ],
     "spf": [
-      "google-site-verification=1CoJURTg2aHLa8bvDoNt_dDrLNmVPE93-cjaxYitSo8",
-      "facebook-domain-verification=xxd0q3s7lv62wywvvpver0e8j1j1vw",
-      "google-site-verification=whYQbqxkVsb_xI5XKG3U8CQG2Vn75Nhx5HyTxo30gHA",
-      "mongodb-site-verification=P5bGlH3I0KYBkV7Lk3ZQPkLsXxb3QN4R",
-      "ZOOM_verify_av-wjAz-T62Xdl1pMRBySA",
-      "miro-verification=3969bd74d34f4d6e10fb42f5233014d2d3dd4f9c",
-      "segment-site-verification=3fA98vkzGDmgoJbj3AG2CJvr8Z9mSQpx",
-      "docusign=73ffe7e4-a802-458a-bad3-3afefc637792",
-      "zoom-domain-verification=5adddeb4-2a0b-4bf0-8eaf-82bc5e2c49d8",
-      "Ml9vw8Cm/Ig/xpmhhDfS9TEjuzw=",
+      "v=spf1 mx include:_netblocks.mail.xing.com include:_spf.zimpel.de include:_spf.salesforce.com include:_spf.abiliware.de ?include:servers.mcsv.net include:spf.protection.outlook.com include:mail.zendesk.com ~all",
+      "_oqnb58q3pbnwofdf7gr0jeab8ik8xs6",
+      "google-site-verification=jC5_MqgVlYS7He0-uldAaB4z1uYxuZUKL_bTHaIYn-0",
       "atlassian-domain-verification=jQie6vPSfhfQ4wsCwYZtuCQTWC7PhDbv9HmrAzbRc6skBWWB/TfL8TpiAqozsb8N",
+      "facebook-domain-verification=xxd0q3s7lv62wywvvpver0e8j1j1vw",
+      "google-site-verification=1CoJURTg2aHLa8bvDoNt_dDrLNmVPE93-cjaxYitSo8",
+      "ZOOM_verify_av-wjAz-T62Xdl1pMRBySA",
+      "segment-site-verification=3fA98vkzGDmgoJbj3AG2CJvr8Z9mSQpx",
+      "figma-domain-verification=021dc2f32684e858eaf9842b7206f9197bbdffa76c83ac711b16ba9702aeca5c-1782465718",
       "astro-domain-verification=clyhbm3ib0dq801kip93vxw0t",
+      "google-site-verification=Flhe3fswMbbqS2VGEy2ODM-1P_PE_Z5l2u5zZZq5UR4",
       "MS=ms45637936",
+      "Ml9vw8Cm/Ig/xpmhhDfS9TEjuzw=",
+      "teamviewer-sso-verification=54188f7fff354a9b92f7652fd3937fb0",
+      "google-site-verification=UqxFvQ_ikK9hga0Qm1unOA9HbMWTTlJ_TTVxRTu9z04",
+      "zoom-domain-verification=5adddeb4-2a0b-4bf0-8eaf-82bc5e2c49d8",
+      "docker-verification=7d460483-f122-4277-b449-0a3a3fe26190",
       "MS=ms63761438",
+      "docusign=73ffe7e4-a802-458a-bad3-3afefc637792",
       "openai-domain-verification=dv-JfWX8IbG0n87GNHoDQvLlbeM",
       "google-site-verification=Qb3_TK55U83JNTsumhQ_7culHoFKMU2dcpvVvfl5h-k",
-      "google-site-verification=UqxFvQ_ikK9hga0Qm1unOA9HbMWTTlJ_TTVxRTu9z04",
-      "figma-domain-verification=021dc2f32684e858eaf9842b7206f9197bbdffa76c83ac711b16ba9702aeca5c-1782465718",
-      "docker-verification=7d460483-f122-4277-b449-0a3a3fe26190",
-      "google-site-verification=Flhe3fswMbbqS2VGEy2ODM-1P_PE_Z5l2u5zZZq5UR4",
-      "google-site-verification=jC5_MqgVlYS7He0-uldAaB4z1uYxuZUKL_bTHaIYn-0",
-      "google-site-verification=UORS-nc4KF2CsNXjoZmD3hLN9gvo3xdmmRXP2UE0N2Y",
-      "_oqnb58q3pbnwofdf7gr0jeab8ik8xs6",
-      "teamviewer-sso-verification=54188f7fff354a9b92f7652fd3937fb0",
-      "paloaltonetworks-site-verification=93e36781f48dc570d80205f59263b53045f9a982b7fcc747a23849d162298d7f",
       "TTmNrvKCKyVmW6wxgBUHPZ3Tv4VvPaUslML0MaJAYdnySEHpD7OX4QTOPBLdgFlKfIL59yXY3x6lm8iIyqWwhw==",
-      "v=spf1 mx include:_netblocks.mail.xing.com include:_spf.zimpel.de include:_spf.salesforce.com include:_spf.abiliware.de ?include:servers.mcsv.net include:spf.protection.outlook.com include:mail.zendesk.com ~all"
+      "miro-verification=3969bd74d34f4d6e10fb42f5233014d2d3dd4f9c",
+      "mongodb-site-verification=P5bGlH3I0KYBkV7Lk3ZQPkLsXxb3QN4R",
+      "google-site-verification=UORS-nc4KF2CsNXjoZmD3hLN9gvo3xdmmRXP2UE0N2Y",
+      "google-site-verification=whYQbqxkVsb_xI5XKG3U8CQG2Vn75Nhx5HyTxo30gHA",
+      "paloaltonetworks-site-verification=93e36781f48dc570d80205f59263b53045f9a982b7fcc747a23849d162298d7f"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:7675016f@in.mailhardener.com"
@@ -307,15 +321,55 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "/api/": 301
   },
   "subdomains": {
-    "status": "ct-pending"
+    "source": "certspotter",
+    "count": 370,
+    "notable": [
+      "admin.preview.xing.com",
+      "admin.xing.com",
+      "api.ams1.xing.com",
+      "api.ams2.xing.com",
+      "api.preview.ams1.xing.com",
+      "api.preview.ams2.xing.com",
+      "api.preview.xing.com",
+      "api.xing.com",
+      "blog.xing.com",
+      "dev.preview.xing.com",
+      "dev.xing.com",
+      "help.xing.com",
+      "login.preview.xing.com",
+      "login.xing.com",
+      "mail.xing.com"
+    ],
+    "sample": [
+      "200ok.preview.xing.com",
+      "admin.preview.xing.com",
+      "admin.xing.com",
+      "adorable-bear.kenv.xing.com",
+      "adorable-boar.kenv.xing.com",
+      "adorable-elk.kenv.xing.com",
+      "adorable-fox.kenv.xing.com",
+      "adorable-goat.kenv.xing.com",
+      "adorable-hippo.kenv.xing.com",
+      "adorable-lion.kenv.xing.com",
+      "adorable-rat.kenv.xing.com",
+      "adorable-rhino.kenv.xing.com",
+      "adorable-sheep.kenv.xing.com",
+      "adorable-sloth.kenv.xing.com",
+      "adorable-tiger.kenv.xing.com",
+      "adorable-wolf.kenv.xing.com",
+      "adorable-yak.kenv.xing.com",
+      "adorable-zebra.kenv.xing.com",
+      "ams1.xing.com",
+      "ams2.xing.com"
+    ]
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=1CoJURTg2aHLa8bvDoNt_dDrLNmVPE93-cjaxYitSo8",
+    "google-site-verification=jC5_MqgVlYS7He0-uldAaB4z1uYxuZUKL_bTHaIYn-0",
+    "atlassian-domain-verification=jQie6vPSfhfQ4wsCwYZtuCQTWC7PhDbv9HmrAzbRc6skBWWB/T",
     "facebook-domain-verification=xxd0q3s7lv62wywvvpver0e8j1j1vw",
-    "google-site-verification=whYQbqxkVsb_xI5XKG3U8CQG2Vn75Nhx5HyTxo30gHA",
-    "mongodb-site-verification=P5bGlH3I0KYBkV7Lk3ZQPkLsXxb3QN4R",
-    "miro-verification=3969bd74d34f4d6e10fb42f5233014d2d3dd4f9c"
+    "google-site-verification=1CoJURTg2aHLa8bvDoNt_dDrLNmVPE93-cjaxYitSo8",
+    "segment-site-verification=3fA98vkzGDmgoJbj3AG2CJvr8Z9mSQpx"
   ],
   "tls2": {
     "alpn": "",
@@ -326,7 +380,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260506000000",
+      "not_after": "20261119235959"
     }
   },
   "http2": {
@@ -348,8 +404,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/start/"
     ]
   },
-  "elapsed_s": 22.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "server-18-154-144-107.lax50.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 23.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

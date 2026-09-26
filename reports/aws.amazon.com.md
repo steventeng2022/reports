@@ -7,12 +7,12 @@
 | Target | https://aws.amazon.com/ |
 | Bug bounty program | Amazon |
 | Listed scope domain | aws.amazon.com |
-| Test date | 2026-09-26 17:39 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
+Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 | 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 12 | info | CK5 | Cookie scoped to parent domain (.amazon.com) | CWE-200 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -117,6 +118,12 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 - **Detail:** robots.txt lists 271 disallow path(s), e.g. /alexaforbusiness/, /blogs/, /*/blogs/, /solutions/case-studies/, /*/solutions/case-studies/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 54.192.248.37 carries PTR server-54-192-248-37.tpe53.r.cloudfront.net. for aws.amazon.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -125,27 +132,27 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
   "dns": {
     "a": [
       "54.192.248.37",
-      "54.192.248.79",
       "54.192.248.69",
-      "54.192.248.11"
+      "54.192.248.11",
+      "54.192.248.79"
     ],
     "aaaa": [
-      "2600:9000:202f:dc00:1c:a813:8500:93a1",
-      "2600:9000:202f:b200:1c:a813:8500:93a1",
-      "2600:9000:202f:8000:1c:a813:8500:93a1",
-      "2600:9000:202f:5600:1c:a813:8500:93a1",
-      "2600:9000:202f:9a00:1c:a813:8500:93a1",
-      "2600:9000:202f:c200:1c:a813:8500:93a1",
-      "2600:9000:202f:9e00:1c:a813:8500:93a1",
-      "2600:9000:202f:1c00:1c:a813:8500:93a1"
+      "2600:9000:202f:e400:1c:a813:8500:93a1",
+      "2600:9000:202f:4c00:1c:a813:8500:93a1",
+      "2600:9000:202f:a200:1c:a813:8500:93a1",
+      "2600:9000:202f:b400:1c:a813:8500:93a1",
+      "2600:9000:202f:5000:1c:a813:8500:93a1",
+      "2600:9000:202f:9600:1c:a813:8500:93a1",
+      "2600:9000:202f:ca00:1c:a813:8500:93a1",
+      "2600:9000:202f:aa00:1c:a813:8500:93a1"
     ],
     "cname": "tp.8e49140c2-frontier.amazon.com.",
     "mx": [],
     "ns": [
       "ns-1860.awsdns-40.co.uk.",
-      "ns-106.awsdns-13.com.",
+      "ns-1402.awsdns-47.org.",
       "ns-905.awsdns-49.net.",
-      "ns-1402.awsdns-47.org."
+      "ns-106.awsdns-13.com."
     ],
     "spf": [],
     "dmarc": [],
@@ -251,7 +258,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260819000000",
+      "not_after": "20270304235959"
     }
   },
   "http2": {
@@ -273,8 +282,14 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
       "*/confirmation/"
     ]
   },
-  "elapsed_s": 9.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "server-54-192-248-37.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 8.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

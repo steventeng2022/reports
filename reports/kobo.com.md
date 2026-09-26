@@ -7,8 +7,8 @@
 | Target | https://kobo.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | kobo.com |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -47,13 +47,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.37.155:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.64.150.101:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.37.155:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.64.150.101:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -147,7 +147,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=TMvqQdCrWZE_zq_PIvMaWObopFipEhVGM3-NQ1D5qfY; status-page-domain-verification=9t2wdqtpqygk; google-site-verification=3aKt7utuf138msKSFHlGaxHSWaUfmh7xexzcZNtlSN0
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=Q25CMQs0FyZeTBTcsd2e3pVmeINoplPPcC0OyZp-cYw; google-site-verification=fubvUR2vWX0-_N-3h9Q6fR9el0Vi-OPTf-ysDQ2alrU; google-site-verification=TPfQLJMxDmDJ7QLK1G7_9WKCyT33Zd4OKl8Y3xcVUmA
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -169,8 +169,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "domain": "kobo.com",
   "dns": {
     "a": [
-      "104.18.37.155",
-      "172.64.150.101"
+      "172.64.150.101",
+      "104.18.37.155"
     ],
     "aaaa": [],
     "cname": null,
@@ -178,28 +178,28 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "kobo-com.mail.protection.outlook.com (pref 5)"
     ],
     "ns": [
-      "ns-cloud-e1.googledomains.com.",
       "ns-cloud-e4.googledomains.com.",
+      "ns-cloud-e1.googledomains.com.",
       "ns-cloud-e3.googledomains.com.",
       "ns-cloud-e2.googledomains.com."
     ],
     "spf": [
-      "google-site-verification=TMvqQdCrWZE_zq_PIvMaWObopFipEhVGM3-NQ1D5qfY",
-      "eI4nDhTkhHLFkVn2I0H86PYkbQzHr26YA6ndMom0SKIrZENOFNfL3EFFlWHcp+r4uBL1NDg63BxMrflvKQkl+w==",
-      "hj-ownership=fvkv30Fnyx78b9M",
-      "status-page-domain-verification=9t2wdqtpqygk",
-      "google-site-verification=3aKt7utuf138msKSFHlGaxHSWaUfmh7xexzcZNtlSN0",
+      "google-site-verification=Q25CMQs0FyZeTBTcsd2e3pVmeINoplPPcC0OyZp-cYw",
       "google-site-verification=fubvUR2vWX0-_N-3h9Q6fR9el0Vi-OPTf-ysDQ2alrU",
-      "MS=ms57345456",
-      "v=spf1 mx include:spf1.kobo.com include:spf.protection.outlook.com include:_spf.alchemer.eu include:stspg-customer.com include:_spf.mlsend.com include:shops.shopify.com include:mail.zendesk.com include:amazonses.com ~all",
-      "ca3-763497e7b6ed42dab28acd1f86e299cf",
-      "facebook-domain-verification=asza9zmotc5y3jf2vvxuox1fh4zwal",
-      "google-site-verification=SN46x048vtTZTeC4pcKIeVtbSbhp22YtkZIaMnlEWKY",
-      "cloudflare_dashboard_sso=9953105deb781640ed8a6f7e927897bf",
       "google-site-verification=TPfQLJMxDmDJ7QLK1G7_9WKCyT33Zd4OKl8Y3xcVUmA",
+      "MS=ms57345456",
+      "ca3-763497e7b6ed42dab28acd1f86e299cf",
+      "eI4nDhTkhHLFkVn2I0H86PYkbQzHr26YA6ndMom0SKIrZENOFNfL3EFFlWHcp+r4uBL1NDg63BxMrflvKQkl+w==",
       "fastly-domain-delegation-fddelt00540045-10-22-25",
+      "v=spf1 mx include:spf1.kobo.com include:spf.protection.outlook.com include:_spf.alchemer.eu include:stspg-customer.com include:_spf.mlsend.com include:shops.shopify.com include:mail.zendesk.com include:amazonses.com ~all",
+      "google-site-verification=TMvqQdCrWZE_zq_PIvMaWObopFipEhVGM3-NQ1D5qfY",
       "17c61b51fd3e47faa7bbb0cb888ecbb0",
-      "google-site-verification=Q25CMQs0FyZeTBTcsd2e3pVmeINoplPPcC0OyZp-cYw"
+      "cloudflare_dashboard_sso=9953105deb781640ed8a6f7e927897bf",
+      "status-page-domain-verification=9t2wdqtpqygk",
+      "hj-ownership=fvkv30Fnyx78b9M",
+      "google-site-verification=3aKt7utuf138msKSFHlGaxHSWaUfmh7xexzcZNtlSN0",
+      "google-site-verification=SN46x048vtTZTeC4pcKIeVtbSbhp22YtkZIaMnlEWKY",
+      "facebook-domain-verification=asza9zmotc5y3jf2vvxuox1fh4zwal"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:kobo-DMARC_Report@mail.rakuten.com,mailto:dmarc-report-a@rx.rakuten.co.jp"
@@ -229,7 +229,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     }
   },
   "ports": {
-    "ip": "104.18.37.155",
+    "ip": "172.64.150.101",
     "open": [
       8080,
       8443
@@ -286,11 +286,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=TMvqQdCrWZE_zq_PIvMaWObopFipEhVGM3-NQ1D5qfY",
-    "status-page-domain-verification=9t2wdqtpqygk",
-    "google-site-verification=3aKt7utuf138msKSFHlGaxHSWaUfmh7xexzcZNtlSN0",
+    "google-site-verification=Q25CMQs0FyZeTBTcsd2e3pVmeINoplPPcC0OyZp-cYw",
     "google-site-verification=fubvUR2vWX0-_N-3h9Q6fR9el0Vi-OPTf-ysDQ2alrU",
-    "facebook-domain-verification=asza9zmotc5y3jf2vvxuox1fh4zwal"
+    "google-site-verification=TPfQLJMxDmDJ7QLK1G7_9WKCyT33Zd4OKl8Y3xcVUmA",
+    "google-site-verification=TMvqQdCrWZE_zq_PIvMaWObopFipEhVGM3-NQ1D5qfY",
+    "status-page-domain-verification=9t2wdqtpqygk"
   ],
   "tls2": {
     "alpn": "",
@@ -301,7 +301,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260819061601",
+      "not_after": "20261117071534"
     }
   },
   "http2": {
@@ -323,8 +325,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "/tracking/verifyhuman"
     ]
   },
-  "elapsed_s": 5.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 5.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://oecd.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | oecd.org |
-| Test date | 2026-09-26 17:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,8 +30,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 15 | info | CT1 | 124 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 16 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 15 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 16 | info | CT1 | 124 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 17 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -105,7 +106,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=ywMTwu2FAsfR60NR80rZ3jMdv8Ku-rr1NVnMGvor75k; google-site-verification=SDEWojQdWXNif-TLtOo9erhxfQLpv29GSU6XhHK1r68; apple-domain-verification=Z7TTmRtTMuoxrVa2
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=SDEWojQdWXNif-TLtOo9erhxfQLpv29GSU6XhHK1r68; hpe-greenlake-domain-verification=4677486a4449536d6173586553475a59354f6761314d47; cisco-ci-domain-verification=295dc971d1c6be2b5403477737c89eac7ec07601440a1e0855e
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -126,13 +127,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - **Detail:** robots.txt lists 2 disallow path(s), e.g. /content/dam/oecd/, /adobe/dynamicmedia/deliver/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 15. [INFO] 124 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 15. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://oecd.org/ carries Cache-Control: max-age=300; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 16. [INFO] 124 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.oecd.org, api.one-pp.oecd.org, api.one.oecd.org, login.my.oecd.org, login.oecd.org
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 16. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 17. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: login.my.oecd.org; content may still be served via virtual-host fallback.
@@ -145,10 +152,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "domain": "oecd.org",
   "dns": {
     "a": [
-      "151.101.195.10",
       "151.101.3.10",
-      "151.101.131.10",
-      "151.101.67.10"
+      "151.101.67.10",
+      "151.101.195.10",
+      "151.101.131.10"
     ],
     "aaaa": [],
     "cname": null,
@@ -156,28 +163,28 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "oecd-org.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns2-03.azure-dns.net.",
-      "ns1-03.azure-dns.com.",
       "ns3-03.azure-dns.org.",
-      "ns4-03.azure-dns.info."
+      "ns4-03.azure-dns.info.",
+      "ns1-03.azure-dns.com.",
+      "ns2-03.azure-dns.net."
     ],
     "spf": [
-      "google-site-verification=ywMTwu2FAsfR60NR80rZ3jMdv8Ku-rr1NVnMGvor75k",
+      "v=spf1 ip4:78.41.128.0/22 include:spf.protection.outlook.com -all",
+      "_c4vs31pucag8knkqzie5i90hhnstnug",
+      "2b065714-2fc1-4d13-b11f-08fbc02c7626",
+      "google-site-verification=SDEWojQdWXNif-TLtOo9erhxfQLpv29GSU6XhHK1r68",
+      "hpe-greenlake-domain-verification=4677486a4449536d6173586553475a59354f6761314d47683048313635694334",
       "d122tnk0lmcb7fw4lzdcvqmw9jdf4qqb",
       "docusign=26a8c1aa-ac33-45f2-9a60-8d2cd96d4b3d",
-      "google-site-verification=SDEWojQdWXNif-TLtOo9erhxfQLpv29GSU6XhHK1r68",
-      "apple-domain-verification=Z7TTmRtTMuoxrVa2",
-      "openai-domain-verification=dv-TmLkx83mPP4k3cYF7dEcKasX",
       "cisco-ci-domain-verification=295dc971d1c6be2b5403477737c89eac7ec07601440a1e0855e475c20aa08f68",
-      "docusign=4a7be657-e630-44fc-87ba-b68287ac2a3d",
-      "hpe-greenlake-domain-verification=4677486a4449536d6173586553475a59354f6761314d47683048313635694334",
-      "v=spf1 ip4:78.41.128.0/22 include:spf.protection.outlook.com -all",
-      "3f6aa5c46d2a4da482b5cb56af96dec1",
-      "_c4vs31pucag8knkqzie5i90hhnstnug",
-      "v/l2fKfgQ+sfAM7ZccgEU41dgW0s412pftzTh7XJzyim4AUo1Wi2WVai364FALz09lut6gJWcS8YLtAjbkatrA==",
-      "2b065714-2fc1-4d13-b11f-08fbc02c7626",
       "adobe-idp-site-verification=fe3732a56cceead6122113a39f9385a693c3367314cdad48789e5cfbf77d5977",
-      "MS=ms12713444"
+      "openai-domain-verification=dv-TmLkx83mPP4k3cYF7dEcKasX",
+      "docusign=4a7be657-e630-44fc-87ba-b68287ac2a3d",
+      "apple-domain-verification=Z7TTmRtTMuoxrVa2",
+      "google-site-verification=ywMTwu2FAsfR60NR80rZ3jMdv8Ku-rr1NVnMGvor75k",
+      "MS=ms12713444",
+      "3f6aa5c46d2a4da482b5cb56af96dec1",
+      "v/l2fKfgQ+sfAM7ZccgEU41dgW0s412pftzTh7XJzyim4AUo1Wi2WVai364FALz09lut6gJWcS8YLtAjbkatrA=="
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:mailincidentreport@oecd.org; ruf=mailto:mailincidentreport@oecd.org; fo=1;"
@@ -207,7 +214,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     }
   },
   "ports": {
-    "ip": "151.101.195.10",
+    "ip": "151.101.3.10",
     "open": []
   },
   "https": {
@@ -216,9 +223,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "title": ""
   },
   "mixed_content": [],
-  "cookies": [
-    {}
-  ],
+  "cookies": [],
   "cors": [
     {
       "origin": "https://evil-auditor.example",
@@ -292,11 +297,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     ]
   },
   "apex_txt": [
-    "google-site-verification=ywMTwu2FAsfR60NR80rZ3jMdv8Ku-rr1NVnMGvor75k",
     "google-site-verification=SDEWojQdWXNif-TLtOo9erhxfQLpv29GSU6XhHK1r68",
-    "apple-domain-verification=Z7TTmRtTMuoxrVa2",
-    "openai-domain-verification=dv-TmLkx83mPP4k3cYF7dEcKasX",
-    "cisco-ci-domain-verification=295dc971d1c6be2b5403477737c89eac7ec07601440a1e0855e"
+    "hpe-greenlake-domain-verification=4677486a4449536d6173586553475a59354f6761314d47",
+    "cisco-ci-domain-verification=295dc971d1c6be2b5403477737c89eac7ec07601440a1e0855e",
+    "adobe-idp-site-verification=fe3732a56cceead6122113a39f9385a693c3367314cdad48789e",
+    "openai-domain-verification=dv-TmLkx83mPP4k3cYF7dEcKasX"
   ],
   "tls2": {
     "alpn": "",
@@ -307,7 +312,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251016000000",
+      "not_after": "20261116235959"
     }
   },
   "http2": {
@@ -316,8 +323,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "/adobe/dynamicmedia/deliver/"
     ]
   },
-  "elapsed_s": 40.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 25.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

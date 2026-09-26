@@ -7,8 +7,8 @@
 | Target | https://netbeans.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | netbeans.org |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -145,7 +145,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 ### 17. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (dg52ozkzfi9rj2.netbeans.org and axc2kel0035iid.netbeans.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (ubj8vl8ucibvlr.netbeans.org and 7tnbl8q8gsakgu.netbeans.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -166,19 +166,19 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "userp2020.oracle.com (pref 100)",
-      "userp2050.oracle.com (pref 100)",
-      "aserp2030.oracle.com (pref 100)",
-      "userp2040.oracle.com (pref 100)",
-      "aserp2040.oracle.com (pref 100)",
+      "userp2060.oracle.com (pref 100)",
+      "aserp2060.oracle.com (pref 100)",
       "aserp2050.oracle.com (pref 100)",
       "userp2030.oracle.com (pref 100)",
-      "aserp2060.oracle.com (pref 100)",
-      "userp2060.oracle.com (pref 100)"
+      "aserp2040.oracle.com (pref 100)",
+      "userp2020.oracle.com (pref 100)",
+      "userp2040.oracle.com (pref 100)",
+      "userp2050.oracle.com (pref 100)",
+      "aserp2030.oracle.com (pref 100)"
     ],
     "ns": [
-      "dns2.registrar-servers.com.",
-      "dns1.registrar-servers.com."
+      "dns1.registrar-servers.com.",
+      "dns2.registrar-servers.com."
     ],
     "spf": [],
     "dmarc": [
@@ -213,7 +213,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
       "TLS1.0": false,
       "TLS1.1": false,
       "TLS1.2": true,
-      "TLS1.3": false
+      "TLS1.3": true
     }
   },
   "ports": {
@@ -282,11 +282,16 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260820000604",
+      "not_after": "20261118000603"
     }
   },
-  "elapsed_s": 39.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 31.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

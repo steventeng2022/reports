@@ -7,12 +7,12 @@
 | Target | https://is.gd/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | is.gd |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
+Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 | 9 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 12 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 
 ## Detailed findings
 
@@ -45,13 +46,13 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.25.234.53:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.67.83.132:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.25.234.53:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.67.83.132:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -98,6 +99,12 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 - **Detail:** Certificate of is.gd has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 12. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of is.gd permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -105,9 +112,9 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
   "domain": "is.gd",
   "dns": {
     "a": [
+      "172.67.83.132",
       "104.25.234.53",
-      "104.25.233.53",
-      "172.67.83.132"
+      "104.25.233.53"
     ],
     "aaaa": [
       "2606:4700:20::ac43:5384",
@@ -117,10 +124,10 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
     "cname": null,
     "mx": [
       "alt3.aspmx.l.google.com (pref 10)",
-      "aspmx.l.google.com (pref 1)",
-      "alt2.aspmx.l.google.com (pref 5)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
       "jerry.ns.cloudflare.com.",
@@ -155,7 +162,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
     }
   },
   "ports": {
-    "ip": "104.25.234.53",
+    "ip": "172.67.83.132",
     "open": [
       8080,
       8443
@@ -228,11 +235,16 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260813104319",
+      "not_after": "20261111114304"
     }
   },
-  "elapsed_s": 7.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 7.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

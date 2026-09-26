@@ -7,12 +7,12 @@
 | Target | https://golang.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | golang.org |
-| Test date | 2026-09-26 17:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,7 +30,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 | 12 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
 | 13 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 15 | info | CT1 | 100 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | info | CT1 | 100 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -116,7 +118,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (xdjl69jfnsp7yo.golang.org and 9kioyhcr876tfd.golang.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (bnwjr77o2sxazh.golang.org and 198wdhcq2bhp79.golang.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -125,7 +127,19 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 - **Detail:** Certificate of golang.org has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 15. [INFO] 100 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 15. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of golang.org permits unsafe-inline; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 142.250.196.209 carries PTR nctsaa-ac-in-f17.1e100.net. for golang.org.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 17. [INFO] 100 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -145,16 +159,16 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     ],
     "cname": null,
     "mx": [
-      "alt3.aspmx.l.google.com (pref 2)",
       "aspmx.l.google.com (pref 1)",
       "alt1.aspmx.l.google.com (pref 2)",
+      "alt3.aspmx.l.google.com (pref 2)",
       "alt2.aspmx.l.google.com (pref 2)"
     ],
     "ns": [
-      "ns4.google.com.",
+      "ns3.google.com.",
       "ns1.google.com.",
       "ns2.google.com.",
-      "ns3.google.com."
+      "ns4.google.com."
     ],
     "spf": [
       "v=spf1 include:_spf.google.com ~all"
@@ -599,14 +613,22 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192223",
+      "not_after": "20261203192222"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
-  "elapsed_s": 10.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "nctsaa-ac-in-f17.1e100.net."
+    ]
+  },
+  "elapsed_s": 11.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

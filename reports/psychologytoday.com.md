@@ -7,12 +7,12 @@
 | Target | https://psychologytoday.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | psychologytoday.com |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
+Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,6 +36,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 | 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 19 | low | RED10 | Host header reflected into redirect Location | CWE-601 |
 | 20 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 21 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -147,7 +148,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: ahrefs-site-verification_c5eacc8f555523e31dce89e9442b03648fc2b7d2fead535dfe8c736; rippling-domain-verification=4d1920958a9eff40; google-site-verification=G-wasBQCXXJoehIaVW5BsO9VYKt4oqmWGo155wSSakQ
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=zvzd8hbx2rbjjfjniv0zv3jlv8r2lg; rippling-domain-verification=4d1920958a9eff40; google-site-verification=G-wasBQCXXJoehIaVW5BsO9VYKt4oqmWGo155wSSakQ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -168,6 +169,12 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 - **Detail:** robots.txt lists 156 disallow path(s), e.g. /, /, /, /, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 21. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 100.50.67.152 carries PTR ec2-100-50-67-152.compute-1.amazonaws.com. for psychologytoday.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -184,22 +191,22 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "psychologytoday-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns-1135.awsdns-13.org.",
       "ns-672.awsdns-20.net.",
       "ns-442.awsdns-55.com.",
+      "ns-1135.awsdns-13.org.",
       "ns-1884.awsdns-43.co.uk."
     ],
     "spf": [
+      "facebook-domain-verification=zvzd8hbx2rbjjfjniv0zv3jlv8r2lg",
+      "rippling-domain-verification=4d1920958a9eff40",
+      "MS=ms39591051",
+      "google-site-verification=G-wasBQCXXJoehIaVW5BsO9VYKt4oqmWGo155wSSakQ",
+      "ahrefs-site-verification_c5eacc8f555523e31dce89e9442b03648fc2b7d2fead535dfe8c7364341ced7a",
+      "google-site-verification=8_DFXIUlkFaRa9nq3ahPGfevCdxMEdkg-0c2T9kA8SM",
       "v=spf1 ip4:64.115.237.0/24  include:spf.protection.outlook.com ",
       "include:mxlogic.net include:servers.mcsv.net include:spf.mandrillapp.com ",
       "ip4:216.250.171.184/28 ip4:65.83.107.192/26 ",
-      "-all",
-      "ahrefs-site-verification_c5eacc8f555523e31dce89e9442b03648fc2b7d2fead535dfe8c7364341ced7a",
-      "MS=ms39591051",
-      "rippling-domain-verification=4d1920958a9eff40",
-      "google-site-verification=G-wasBQCXXJoehIaVW5BsO9VYKt4oqmWGo155wSSakQ",
-      "facebook-domain-verification=zvzd8hbx2rbjjfjniv0zv3jlv8r2lg",
-      "google-site-verification=8_DFXIUlkFaRa9nq3ahPGfevCdxMEdkg-0c2T9kA8SM"
+      "-all"
     ],
     "dmarc": [
       "v=DMARC1;p=none;pct=100;rua=mailto:admin@psychologytoday.com,mailto:re+jtahk01sryk@dmarc.postmarkapp.com;adkim=r;aspf=r;sp=quarantine;"
@@ -282,10 +289,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "ahrefs-site-verification_c5eacc8f555523e31dce89e9442b03648fc2b7d2fead535dfe8c736",
+    "facebook-domain-verification=zvzd8hbx2rbjjfjniv0zv3jlv8r2lg",
     "rippling-domain-verification=4d1920958a9eff40",
     "google-site-verification=G-wasBQCXXJoehIaVW5BsO9VYKt4oqmWGo155wSSakQ",
-    "facebook-domain-verification=zvzd8hbx2rbjjfjniv0zv3jlv8r2lg",
+    "ahrefs-site-verification_c5eacc8f555523e31dce89e9442b03648fc2b7d2fead535dfe8c736",
     "google-site-verification=8_DFXIUlkFaRa9nq3ahPGfevCdxMEdkg-0c2T9kA8SM"
   ],
   "tls2": {
@@ -297,7 +304,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260926000000",
+      "not_after": "20270411235959"
     }
   },
   "http2": {
@@ -319,8 +328,14 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "/themes/"
     ]
   },
-  "elapsed_s": 27.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ec2-100-50-67-152.compute-1.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 31.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

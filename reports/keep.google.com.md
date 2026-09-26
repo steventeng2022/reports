@@ -7,12 +7,12 @@
 | Target | https://keep.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | keep.google.com |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
+Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 | 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 16 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 
 ## Detailed findings
 
@@ -122,6 +124,18 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 - **Detail:** Strict-Transport-Security is served but keep.google.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
+### 15. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of keep.google.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 16. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of keep.google.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -129,7 +143,14 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
   "domain": "keep.google.com",
   "dns": {
     "a": [
-      "142.250.204.46"
+      "142.251.150.176",
+      "142.251.154.176",
+      "142.251.153.176",
+      "142.251.155.176",
+      "142.251.157.176",
+      "142.251.156.176",
+      "142.251.152.176",
+      "142.251.151.176"
     ],
     "aaaa": [
       "2404:6800:4012:9::200e"
@@ -137,10 +158,10 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
     "cname": null,
     "mx": [
       "alt1.gmr-smtp-in.l.google.com (pref 10)",
-      "gmr-smtp-in.l.google.com (pref 5)",
-      "alt4.gmr-smtp-in.l.google.com (pref 40)",
       "alt3.gmr-smtp-in.l.google.com (pref 30)",
-      "alt2.gmr-smtp-in.l.google.com (pref 20)"
+      "alt2.gmr-smtp-in.l.google.com (pref 20)",
+      "gmr-smtp-in.l.google.com (pref 5)",
+      "alt4.gmr-smtp-in.l.google.com (pref 40)"
     ],
     "ns": [],
     "spf": [
@@ -155,9 +176,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=keep.google.com",
-    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
-    "notBefore": "Sep 10 19:21:54 2026 GMT",
-    "notAfter": "Dec  3 19:21:53 2026 GMT",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
+    "notBefore": "Sep 10 19:22:00 2026 GMT",
+    "notAfter": "Dec  3 19:21:59 2026 GMT",
     "san": [
       "keep.google.com",
       "*.keep.google.com",
@@ -173,7 +194,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
     }
   },
   "ports": {
-    "ip": "142.250.204.46",
+    "ip": "142.251.150.176",
     "open": []
   },
   "https": {
@@ -234,11 +255,16 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192154",
+      "not_after": "20261203192153"
     }
   },
-  "elapsed_s": 9.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 12.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

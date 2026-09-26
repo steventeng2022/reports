@@ -7,12 +7,12 @@
 | Target | https://flickr.com/ |
 | Bug bounty program | Flickr |
 | Listed scope domain | flickr.com |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
+Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 | 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -109,6 +110,12 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 - **Detail:** robots.txt lists 21 disallow path(s), e.g. /gp/, /report_abuse.gne, /abuse, /images/*, /apps/*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 54.192.248.15 carries PTR server-54-192-248-15.tpe53.r.cloudfront.net. for flickr.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -124,21 +131,21 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx2.googlemail.com (pref 40)",
+      "aspmx3.googlemail.com (pref 50)",
+      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 30)",
-      "aspmx3.googlemail.com (pref 50)",
-      "alt1.aspmx.l.google.com (pref 20)"
+      "aspmx2.googlemail.com (pref 40)"
     ],
     "ns": [
-      "ns-1683.awsdns-18.co.uk.",
+      "ns-1244.awsdns-27.org.",
       "ns-573.awsdns-07.net.",
       "ns-421.awsdns-52.com.",
-      "ns-1244.awsdns-27.org."
+      "ns-1683.awsdns-18.co.uk."
     ],
     "spf": [
-      "amazonses:fs+dlhaoumf7/MsQOuSQGEmmZp21qPyTRBMyZZJcVIE=",
       "google-site-verification=vifcpDc9v6AtY07tcbYo2qsDIJBhCSbK-_t31zCRWtQ",
+      "amazonses:fs+dlhaoumf7/MsQOuSQGEmmZp21qPyTRBMyZZJcVIE=",
       "google-site-verification=AfO5QqWdCBeh3GDipxTHvznM6-xyiY1LEtqaveo139Q",
       "v=spf1 include:_spf.flickr_com._d.easydmarc.pro ~all",
       "stripe-verification=5f464c3049fdff3a66c89326e235aa36184f9c2cfcd34081f4c26abf7f31840c"
@@ -235,7 +242,9 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251205000000",
+      "not_after": "20270102235959"
     }
   },
   "http2": {
@@ -257,8 +266,14 @@ Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
       "/yss_fragment.gne"
     ]
   },
-  "elapsed_s": 12.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "server-54-192-248-15.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 20.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

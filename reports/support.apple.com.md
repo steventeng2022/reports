@@ -7,12 +7,12 @@
 | Target | https://support.apple.com/ |
 | Bug bounty program | Apple |
 | Listed scope domain | support.apple.com |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
+Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,6 +26,9 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 | 8 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 9 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 10 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 11 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 12 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -93,6 +96,24 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 - **Detail:** robots.txt lists 6 disallow path(s), e.g. /, /kb/index?*page=search*, *src=support_app*, /*/docs/product/*, /docs/product/*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 11. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of support.apple.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 12. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://support.apple.com/ carries Cache-Control: max-age=1800, no-siteapp (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 203.121.225.71 carries PTR n225-h71.121.203.dynamic.da.net.tw. for support.apple.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -104,8 +125,8 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
       "203.121.225.70"
     ],
     "aaaa": [
-      "2600:1417:e800::b81a:7f88",
-      "2600:1417:e800::b81a:7f99"
+      "2600:1417:e800::b81a:7f99",
+      "2600:1417:e800::b81a:7f88"
     ],
     "cname": "prod-support.apple-support.akadns.net.",
     "mx": [],
@@ -128,7 +149,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
       "support.apple.com",
       "www.info.apple.com"
     ],
-    "days_left": 109,
+    "days_left": 108,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -207,7 +228,9 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260703142936",
+      "not_after": "20270113185515"
     }
   },
   "http2": {
@@ -220,8 +243,14 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
       "*/MANUALS/*.pdf$"
     ]
   },
-  "elapsed_s": 6.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "n225-h71.121.203.dynamic.da.net.tw."
+    ]
+  },
+  "elapsed_s": 7.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

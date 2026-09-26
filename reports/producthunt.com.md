@@ -7,12 +7,12 @@
 | Target | https://producthunt.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | producthunt.com |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
+Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,7 +30,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 15 | info | CT1 | 12 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 16 | info | CT1 | 12 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -49,13 +50,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.127.118:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.126.118:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.127.118:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.126.118:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -106,7 +107,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=2jKosM5Q7j1UdhkJdI30kEZcTGSdwba30ce6VK8GNyk; google-site-verification=8qbQNeyJeOoYCS4OjYfdMY7gu3QVQixsMdc6yq4AvUk; google-site-verification=Ey6WtKaEnT1c-5wi8OI864IrUwiDUTH431l_ezI0Fco
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=sWYBxCa1cFh0ExjFp-gWCOLtuIoy8VhLC9Ldg4TTv0M; google-site-verification=Q1HPJR75DAVMk3X5dr1XVya1RwEI69Avb0Z1VQkxaY4; google-site-verification=9K2kzf0i4TZ7L5C_IIr9P_79zceMMDHiCSfgA3gnDXc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -121,7 +122,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
 - **Detail:** Strict-Transport-Security is served but producthunt.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 15. [INFO] 12 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 15. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of producthunt.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 16. [INFO] 12 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: blog.producthunt.com, dev.producthunt.com, internal.producthunt.com
@@ -134,8 +141,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
   "domain": "producthunt.com",
   "dns": {
     "a": [
-      "104.18.127.118",
-      "104.18.126.118"
+      "104.18.126.118",
+      "104.18.127.118"
     ],
     "aaaa": [
       "2606:4700::6812:7e76",
@@ -143,30 +150,30 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
     ],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 10)",
+      "mxa.mailgun.org (pref 10)",
       "alt1.aspmx.l.google.com (pref 1)",
       "aspmx2.googlemail.com (pref 10)",
+      "aspmx3.googlemail.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "mxb.mailgun.org (pref 10)",
-      "mxa.mailgun.org (pref 10)",
-      "alt2.aspmx.l.google.com (pref 10)"
+      "alt2.aspmx.l.google.com (pref 10)",
+      "mxb.mailgun.org (pref 10)"
     ],
     "ns": [
       "tia.ns.cloudflare.com.",
       "alexis.ns.cloudflare.com."
     ],
     "spf": [
-      "google-site-verification=2jKosM5Q7j1UdhkJdI30kEZcTGSdwba30ce6VK8GNyk",
-      "google-site-verification=8qbQNeyJeOoYCS4OjYfdMY7gu3QVQixsMdc6yq4AvUk",
-      "google-site-verification=Ey6WtKaEnT1c-5wi8OI864IrUwiDUTH431l_ezI0Fco",
-      "google-site-verification=GhCGOP8xrz1df0ncSvYMwPTTAEcpVTVeW4rNMziGCFg",
-      "facebook-domain-verification=u33of40eu8wnfhryggfmshexmmsdjy",
-      "v=spf1 include:spf.mail.intercom.io include:spf.mailjet.com include:_spf.mailgun.org include:_spf.eu.mailgun.org include:_spf.google.com -all",
-      "google-site-verification=97bcfxU6IL0_6xbiIIpTrd8vYkjPWmywjQXbt4X9UW4",
-      "google-site-verification=Q1HPJR75DAVMk3X5dr1XVya1RwEI69Avb0Z1VQkxaY4",
       "google-site-verification=sWYBxCa1cFh0ExjFp-gWCOLtuIoy8VhLC9Ldg4TTv0M",
+      "google-site-verification=Q1HPJR75DAVMk3X5dr1XVya1RwEI69Avb0Z1VQkxaY4",
+      "v=spf1 include:spf.mail.intercom.io include:spf.mailjet.com include:_spf.mailgun.org include:_spf.eu.mailgun.org include:_spf.google.com -all",
+      "google-site-verification=9K2kzf0i4TZ7L5C_IIr9P_79zceMMDHiCSfgA3gnDXc",
       "google-site-verification=3kl3Tg8FCPBz_5gLpKzus_04NMD_abDvp2KGxDfikYE",
-      "google-site-verification=9K2kzf0i4TZ7L5C_IIr9P_79zceMMDHiCSfgA3gnDXc"
+      "google-site-verification=GhCGOP8xrz1df0ncSvYMwPTTAEcpVTVeW4rNMziGCFg",
+      "google-site-verification=8qbQNeyJeOoYCS4OjYfdMY7gu3QVQixsMdc6yq4AvUk",
+      "google-site-verification=2jKosM5Q7j1UdhkJdI30kEZcTGSdwba30ce6VK8GNyk",
+      "google-site-verification=97bcfxU6IL0_6xbiIIpTrd8vYkjPWmywjQXbt4X9UW4",
+      "facebook-domain-verification=u33of40eu8wnfhryggfmshexmmsdjy",
+      "google-site-verification=Ey6WtKaEnT1c-5wi8OI864IrUwiDUTH431l_ezI0Fco"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:dmarc-reports@migma.email"
@@ -197,7 +204,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
     }
   },
   "ports": {
-    "ip": "104.18.127.118",
+    "ip": "104.18.126.118",
     "open": [
       8080,
       8443
@@ -279,11 +286,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
     ]
   },
   "apex_txt": [
-    "google-site-verification=2jKosM5Q7j1UdhkJdI30kEZcTGSdwba30ce6VK8GNyk",
-    "google-site-verification=8qbQNeyJeOoYCS4OjYfdMY7gu3QVQixsMdc6yq4AvUk",
-    "google-site-verification=Ey6WtKaEnT1c-5wi8OI864IrUwiDUTH431l_ezI0Fco",
-    "google-site-verification=GhCGOP8xrz1df0ncSvYMwPTTAEcpVTVeW4rNMziGCFg",
-    "facebook-domain-verification=u33of40eu8wnfhryggfmshexmmsdjy"
+    "google-site-verification=sWYBxCa1cFh0ExjFp-gWCOLtuIoy8VhLC9Ldg4TTv0M",
+    "google-site-verification=Q1HPJR75DAVMk3X5dr1XVya1RwEI69Avb0Z1VQkxaY4",
+    "google-site-verification=9K2kzf0i4TZ7L5C_IIr9P_79zceMMDHiCSfgA3gnDXc",
+    "google-site-verification=3kl3Tg8FCPBz_5gLpKzus_04NMD_abDvp2KGxDfikYE",
+    "google-site-verification=GhCGOP8xrz1df0ncSvYMwPTTAEcpVTVeW4rNMziGCFg"
   ],
   "tls2": {
     "alpn": "",
@@ -294,11 +301,16 @@ Total findings: **15** (High: 0, Medium: 0, Low: 1, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260906181705",
+      "not_after": "20261205191643"
     }
   },
-  "elapsed_s": 4.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 4.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

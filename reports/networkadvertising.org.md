@@ -7,12 +7,12 @@
 | Target | https://networkadvertising.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | networkadvertising.org |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 | 14 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -125,7 +126,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (ohvvv5mybqm46z.networkadvertising.org and qp82jloa4eqmlt.networkadvertising.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (kc5p0oftibt9a1.networkadvertising.org and 3t3qw21ay908zc.networkadvertising.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -140,6 +141,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. Sitemap:
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 65.9.180.101 carries PTR server-65-9-180-101.tpe53.r.cloudfront.net. for networkadvertising.org.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -147,25 +154,25 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
   "domain": "networkadvertising.org",
   "dns": {
     "a": [
+      "65.9.180.101",
       "65.9.180.46",
-      "65.9.180.62",
       "65.9.180.15",
-      "65.9.180.101"
+      "65.9.180.62"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "alt2.aspmx.l.google.com (pref 10)",
       "aspmx2.googlemail.com (pref 15)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx3.googlemail.com (pref 20)"
     ],
     "ns": [
+      "ns-695.awsdns-22.net.",
       "ns-335.awsdns-41.com.",
-      "ns-1970.awsdns-54.co.uk.",
       "ns-1099.awsdns-09.org.",
-      "ns-695.awsdns-22.net."
+      "ns-1970.awsdns-54.co.uk."
     ],
     "spf": [
       "v=spf1 include:_spf.google.com include:amazonses.com include:46502962.spf01.hubspotemail.net a -all"
@@ -198,7 +205,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     }
   },
   "ports": {
-    "ip": "65.9.180.46",
+    "ip": "65.9.180.101",
     "open": []
   },
   "https": {
@@ -260,7 +267,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260607000000",
+      "not_after": "20261221235959"
     }
   },
   "http2": {
@@ -268,8 +277,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "Sitemap:"
     ]
   },
-  "elapsed_s": 14.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "server-65-9-180-101.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 19.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

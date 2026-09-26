@@ -7,8 +7,8 @@
 | Target | https://prnewswire.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | prnewswire.com |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -139,7 +139,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=lVuDRlmFWMikpFr3E4XSiDSxRwCfz7umyssdx2_J5es; google-site-verification=xDAXH-iSoJ2LVjsJb88HI03rnWfjQ3sQcczI4-EGotQ; tollbit-domain-verification=48b7f72a5bec6caeaf96f1d5279ad15976dd80bc2deadaa8fb3d
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=lVuDRlmFWMikpFr3E4XSiDSxRwCfz7umyssdx2_J5es; tollbit-domain-verification=48b7f72a5bec6caeaf96f1d5279ad15976dd80bc2deadaa8fb3d; box-domain-verification=d0369ff4a0618ff19f1d7f9c98c9bb65203e8a33febfc79cf2df6db7
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -170,26 +170,26 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     ],
     "cname": null,
     "mx": [
-      "d361799a.ess.barracudanetworks.com (pref 10)",
-      "d361799b.ess.barracudanetworks.com (pref 10)"
+      "d361799b.ess.barracudanetworks.com (pref 10)",
+      "d361799a.ess.barracudanetworks.com (pref 10)"
     ],
     "ns": [
-      "ara.ns.cloudflare.com.",
-      "bart.ns.cloudflare.com."
+      "bart.ns.cloudflare.com.",
+      "ara.ns.cloudflare.com."
     ],
     "spf": [
-      "MS=ms61697390",
+      "lxl3xp6f4hmf9t6wj2byz4t3f25t1j05",
       "google-site-verification=lVuDRlmFWMikpFr3E4XSiDSxRwCfz7umyssdx2_J5es",
-      "MS=ms13051992",
-      "MS=ms28844289",
-      "google-site-verification=xDAXH-iSoJ2LVjsJb88HI03rnWfjQ3sQcczI4-EGotQ",
-      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
       "tollbit-domain-verification=48b7f72a5bec6caeaf96f1d5279ad15976dd80bc2deadaa8fb3d28109f2758fa",
-      "_0vqeb3ihxzgmvavjcrj9dnibwxso61d",
-      "MS=ms25379356",
-      "box-domain-verification=d0369ff4a0618ff19f1d7f9c98c9bb65203e8a33febfc79cf2df6db7eab0fcba",
+      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
       "3zwvw1drxyh3k2mfbybqqzp3xclg4bcs",
-      "lxl3xp6f4hmf9t6wj2byz4t3f25t1j05"
+      "box-domain-verification=d0369ff4a0618ff19f1d7f9c98c9bb65203e8a33febfc79cf2df6db7eab0fcba",
+      "MS=ms28844289",
+      "MS=ms61697390",
+      "_0vqeb3ihxzgmvavjcrj9dnibwxso61d",
+      "MS=ms13051992",
+      "google-site-verification=xDAXH-iSoJ2LVjsJb88HI03rnWfjQ3sQcczI4-EGotQ",
+      "MS=ms25379356"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc_agg@vali.email,mailto:dmarc@prnewswire.com"
@@ -282,9 +282,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   },
   "apex_txt": [
     "google-site-verification=lVuDRlmFWMikpFr3E4XSiDSxRwCfz7umyssdx2_J5es",
-    "google-site-verification=xDAXH-iSoJ2LVjsJb88HI03rnWfjQ3sQcczI4-EGotQ",
     "tollbit-domain-verification=48b7f72a5bec6caeaf96f1d5279ad15976dd80bc2deadaa8fb3d",
-    "box-domain-verification=d0369ff4a0618ff19f1d7f9c98c9bb65203e8a33febfc79cf2df6db7"
+    "box-domain-verification=d0369ff4a0618ff19f1d7f9c98c9bb65203e8a33febfc79cf2df6db7",
+    "google-site-verification=xDAXH-iSoJ2LVjsJb88HI03rnWfjQ3sQcczI4-EGotQ"
   ],
   "tls2": {
     "alpn": "",
@@ -295,7 +295,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260812194023",
+      "not_after": "20261110204020"
     }
   },
   "http2": {
@@ -310,8 +312,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "/multivu/"
     ]
   },
-  "elapsed_s": 21.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 27.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://addthis.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | addthis.com |
-| Test date | 2026-09-26 17:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,7 +31,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 16 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 16 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -134,7 +136,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - **Detail:** Certificate of addthis.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 16. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://addthis.com/ carries Cache-Control: max-age=0; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.210.215.122 carries PTR a23-210-215-122.deploy.static.akamaitechnologies.com. for addthis.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 18. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -160,18 +174,18 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "mxb-00069f01.gslb.pphosted.com (pref 20)"
     ],
     "ns": [
-      "a18-67.akam.net.",
-      "a1-160.akam.net.",
       "a11-66.akam.net.",
-      "a13-65.akam.net."
+      "a18-67.akam.net.",
+      "a13-65.akam.net.",
+      "a1-160.akam.net."
     ],
     "spf": [
+      "v=spf1 -all",
+      "sj0v1trxt209h3xvhhjhky7jzb4ygxcy",
+      "prz8n91rvkmbyl171kwgx2wvwxbt8sg4",
+      "pardot_92742_*=ec3c667bac55ced29c06395c567c68e2ddd44611bd74798e5c7ac890cc4c244a",
       "bzs3z25smxyylvxfjkr6vqmgp2tbgw42",
       "_gx4rm5gnquvvvcpxwfpgkdvy4f0646y",
-      "sj0v1trxt209h3xvhhjhky7jzb4ygxcy",
-      "v=spf1 -all",
-      "pardot_92742_*=ec3c667bac55ced29c06395c567c68e2ddd44611bd74798e5c7ac890cc4c244a",
-      "prz8n91rvkmbyl171kwgx2wvwxbt8sg4",
       "globalsign-domain-verification=Wq9iztGUzQcBBi1OLrEOlXtefwOzX7yfvhbsw-CVdo"
     ],
     "dmarc": [
@@ -308,11 +322,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260626000000",
+      "not_after": "20270110235959"
     }
   },
-  "elapsed_s": 5.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "a23-210-215-122.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 4.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

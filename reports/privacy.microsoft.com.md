@@ -7,12 +7,12 @@
 | Target | https://privacy.microsoft.com/ |
 | Bug bounty program | Microsoft Online Services |
 | Listed scope domain | privacy.microsoft.com |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
+Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,6 +26,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 | 8 | info | P8 | Missing security.txt | CWE-1038 |
 | 9 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 10 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 11 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -96,6 +97,12 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 - **Detail:** Strict-Transport-Security is served but privacy.microsoft.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
+### 11. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.209.218.101 carries PTR a23-209-218-101.deploy.static.akamaitechnologies.com. for privacy.microsoft.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -106,8 +113,8 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
       "23.209.218.101"
     ],
     "aaaa": [
-      "2600:1417:76:480::356e",
-      "2600:1417:76:4a0::356e"
+      "2600:1417:76:4a0::356e",
+      "2600:1417:76:480::356e"
     ],
     "cname": "privacy.microsoft.com.edgekey.net.",
     "mx": [],
@@ -206,11 +213,19 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260122195521",
+      "not_after": "20270117195521"
     }
   },
-  "elapsed_s": 4.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "a23-209-218-101.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 4.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

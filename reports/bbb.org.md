@@ -7,8 +7,8 @@
 | Target | https://bbb.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | bbb.org |
-| Test date | 2026-09-26 17:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -52,13 +52,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.12.85:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.13.85:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.12.85:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.13.85:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -131,7 +131,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: linkedin-site-verification=f1538191-6fff-4d9f-b874-131440fe2859; airtable-verification=c6510236934b04ad8e279c50f5ba261d; google-site-verification=vbCoHJ2AdOVcONDq3HpldnSUFPqkLqLsGqepsvIG3W8
+- **Detail:** Apex TXT records with verification/token content: airtable-verification=c6510236934b04ad8e279c50f5ba261d; google-site-verification=vbCoHJ2AdOVcONDq3HpldnSUFPqkLqLsGqepsvIG3W8; anthropic-domain-verification-1pw1ts=9bt3Q0epDBUzD0U2d9u38ULex
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -159,8 +159,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "domain": "bbb.org",
   "dns": {
     "a": [
-      "104.18.12.85",
-      "104.18.13.85"
+      "104.18.13.85",
+      "104.18.12.85"
     ],
     "aaaa": [
       "2606:4700::6812:d55",
@@ -168,36 +168,36 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     ],
     "cname": null,
     "mx": [
-      "usb-smtp-inbound-2.mimecast.com (pref 10)",
-      "bbb-org.mail.protection.outlook.com (pref 0)"
+      "bbb-org.mail.protection.outlook.com (pref 0)",
+      "usb-smtp-inbound-2.mimecast.com (pref 10)"
     ],
     "ns": [
-      "ben.ns.cloudflare.com.",
-      "sky.ns.cloudflare.com."
+      "sky.ns.cloudflare.com.",
+      "ben.ns.cloudflare.com."
     ],
     "spf": [
-      "linkedin-site-verification=f1538191-6fff-4d9f-b874-131440fe2859",
       "airtable-verification=c6510236934b04ad8e279c50f5ba261d",
-      "TAILSCALE-v5jb4LWi9twmrM7F2iv1",
-      "google-site-verification=vbCoHJ2AdOVcONDq3HpldnSUFPqkLqLsGqepsvIG3W8",
-      "status-page-domain-verification=qg8m0xbmfqv7",
-      "TS-GateMark-XerusPlaty-BishopCastor-MuleArctic",
-      "google-site-verification=z0BQYT93-PT2Fu2bTuVIpYMJo9lEtQJCPRdJsfzMgYo",
       "MS=ms51510006",
       "MS=ms70871153",
-      "brevo-code:0e7907f04aee89146d8699fe9b1e761e",
-      "linkedin-site-verification=01c52a57-4144-410e-9dd7-cdad211a2499",
-      "google-site-verification=sqG5mY8Hhz4UmPAIpQFTicF7UYQNiU_soZvbYouBOcc",
-      "_mp71k0i4mlicenedphurdghi22bzipz",
-      "v=spf1 include:_spf.psm.knowbe4.com include:simplelists.com include:docebosaas.com include:spfbbb.bluebbb.org include:stspg-customer.com include:sendgrid.net -all",
+      "google-site-verification=vbCoHJ2AdOVcONDq3HpldnSUFPqkLqLsGqepsvIG3W8",
       "anthropic-domain-verification-1pw1ts=9bt3Q0epDBUzD0U2d9u38ULex",
-      "atlassian-domain-verification=mir0Y7FBh7vWasF7DQkZu7/P04Fj6MOtgGOTB8pGdjcBZmExhPHag3je/Kgoc54b",
-      "google-gws-recovery-domain-verification=69716138",
-      "linkedin-site-verification=7e3a9aa5-56d0-408f-875b-2f90a2949a8d",
-      "Target: 0ed1fe018a8dab4f1075c24ce291b3534d6253b1c7",
+      "TS-GateMark-XerusPlaty-BishopCastor-MuleArctic",
+      "TAILSCALE-v5jb4LWi9twmrM7F2iv1",
       "canva-site-verification=17rTdC3iGSynnfP0MM3AxA",
+      "atlassian-sending-domain-verification=3439449f-9f47-43a0-b8d4-5547eb95d654",
+      "google-gws-recovery-domain-verification=69716138",
+      "google-site-verification=sqG5mY8Hhz4UmPAIpQFTicF7UYQNiU_soZvbYouBOcc",
+      "brevo-code:0e7907f04aee89146d8699fe9b1e761e",
+      "linkedin-site-verification=f1538191-6fff-4d9f-b874-131440fe2859",
       "MS=ms42622636",
-      "atlassian-sending-domain-verification=3439449f-9f47-43a0-b8d4-5547eb95d654"
+      "v=spf1 include:_spf.psm.knowbe4.com include:simplelists.com include:docebosaas.com include:spfbbb.bluebbb.org include:stspg-customer.com include:sendgrid.net -all",
+      "linkedin-site-verification=01c52a57-4144-410e-9dd7-cdad211a2499",
+      "linkedin-site-verification=7e3a9aa5-56d0-408f-875b-2f90a2949a8d",
+      "_mp71k0i4mlicenedphurdghi22bzipz",
+      "google-site-verification=z0BQYT93-PT2Fu2bTuVIpYMJo9lEtQJCPRdJsfzMgYo",
+      "atlassian-domain-verification=mir0Y7FBh7vWasF7DQkZu7/P04Fj6MOtgGOTB8pGdjcBZmExhPHag3je/Kgoc54b",
+      "Target: 0ed1fe018a8dab4f1075c24ce291b3534d6253b1c7",
+      "status-page-domain-verification=qg8m0xbmfqv7"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:39a3b8628f3f867@rep.dmarcanalyzer.com; ruf=mailto:39a3b8628f3f867@for.dmarcanalyzer.com; fo=1;"
@@ -227,7 +227,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     }
   },
   "ports": {
-    "ip": "104.18.12.85",
+    "ip": "104.18.13.85",
     "open": [
       8080,
       8443
@@ -324,11 +324,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     ]
   },
   "apex_txt": [
-    "linkedin-site-verification=f1538191-6fff-4d9f-b874-131440fe2859",
     "airtable-verification=c6510236934b04ad8e279c50f5ba261d",
     "google-site-verification=vbCoHJ2AdOVcONDq3HpldnSUFPqkLqLsGqepsvIG3W8",
-    "status-page-domain-verification=qg8m0xbmfqv7",
-    "google-site-verification=z0BQYT93-PT2Fu2bTuVIpYMJo9lEtQJCPRdJsfzMgYo"
+    "anthropic-domain-verification-1pw1ts=9bt3Q0epDBUzD0U2d9u38ULex",
+    "canva-site-verification=17rTdC3iGSynnfP0MM3AxA",
+    "atlassian-sending-domain-verification=3439449f-9f47-43a0-b8d4-5547eb95d654"
   ],
   "tls2": {
     "alpn": "",
@@ -339,11 +339,16 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260921203013",
+      "not_after": "20261220212954"
     }
   },
-  "elapsed_s": 5.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 5.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

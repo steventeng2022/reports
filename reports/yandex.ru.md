@@ -7,12 +7,12 @@
 | Target | https://yandex.ru/ |
 | Bug bounty program | Yandex |
 | Listed scope domain | yandex.ru |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:02 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -109,13 +111,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 ### 12. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (78ngxs77luoenl.yandex.ru and h12x98r9v46lc9.yandex.ru) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (doohc9ol2nxx16.yandex.ru and cr47rzox6xb35m.yandex.ru) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: have-i-been-pwned-verification=13c7b50cd0b12f85dabe796e6178fb74; google-site-verification=Xj1hw8lKZK7dkCP6SCfNi98SvjacNHoNCVrFbJCZfio; google-site-verification=bDiyjBjCnMbct5cB1XZXOj5gQ0YcatJqTZUxFBo55nE
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=e750ewnqm68u4f83wvp6qp7iiphkj0; mailru-verification: 530c425b1458283e; have-i-been-pwned-verification=13c7b50cd0b12f85dabe796e6178fb74
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -130,6 +132,18 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 - **Detail:** robots.txt lists 1108 disallow path(s), e.g. /?, /403.html, /404.html, /500.html, /adddata
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 16. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://yandex.ru/ carries Cache-Control: max-age=86400,private; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 77.88.55.88 carries PTR yandex.ru. for yandex.ru.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -138,8 +152,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
   "dns": {
     "a": [
       "77.88.55.88",
-      "5.255.255.77",
-      "77.88.44.55"
+      "77.88.44.55",
+      "5.255.255.77"
     ],
     "aaaa": [
       "2a02:6b8:a::a"
@@ -149,17 +163,17 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "mx.yandex.ru (pref 10)"
     ],
     "ns": [
-      "ns1.yandex.ru.",
-      "ns2.yandex.ru."
+      "ns2.yandex.ru.",
+      "ns1.yandex.ru."
     ],
     "spf": [
-      "MS=ms75457885",
+      "facebook-domain-verification=e750ewnqm68u4f83wvp6qp7iiphkj0",
+      "mailru-verification: 530c425b1458283e",
       "v=spf1 redirect=_spf.yandex.ru",
       "have-i-been-pwned-verification=13c7b50cd0b12f85dabe796e6178fb74",
-      "google-site-verification=Xj1hw8lKZK7dkCP6SCfNi98SvjacNHoNCVrFbJCZfio",
+      "MS=ms75457885",
       "google-site-verification=bDiyjBjCnMbct5cB1XZXOj5gQ0YcatJqTZUxFBo55nE",
-      "mailru-verification: 530c425b1458283e",
-      "facebook-domain-verification=e750ewnqm68u4f83wvp6qp7iiphkj0"
+      "google-site-verification=Xj1hw8lKZK7dkCP6SCfNi98SvjacNHoNCVrFbJCZfio"
     ],
     "dmarc": [
       "v=DMARC1; p=none; fo=1; rua=mailto:dmarc_agg@auth.returnpath.net,mailto:dmarc-rua@yandex.ru; ruf=mailto:dmarc_afrf@auth.returnpath.net"
@@ -323,11 +337,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "have-i-been-pwned-verification=13c7b50cd0b12f85dabe796e6178fb74",
-    "google-site-verification=Xj1hw8lKZK7dkCP6SCfNi98SvjacNHoNCVrFbJCZfio",
-    "google-site-verification=bDiyjBjCnMbct5cB1XZXOj5gQ0YcatJqTZUxFBo55nE",
+    "facebook-domain-verification=e750ewnqm68u4f83wvp6qp7iiphkj0",
     "mailru-verification: 530c425b1458283e",
-    "facebook-domain-verification=e750ewnqm68u4f83wvp6qp7iiphkj0"
+    "have-i-been-pwned-verification=13c7b50cd0b12f85dabe796e6178fb74",
+    "google-site-verification=bDiyjBjCnMbct5cB1XZXOj5gQ0YcatJqTZUxFBo55nE",
+    "google-site-verification=Xj1hw8lKZK7dkCP6SCfNi98SvjacNHoNCVrFbJCZfio"
   ],
   "tls2": {
     "alpn": "",
@@ -338,7 +352,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260701145410",
+      "not_after": "20261229205959"
     }
   },
   "http2": {
@@ -360,8 +376,14 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "/alice/chat/"
     ]
   },
-  "elapsed_s": 30.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "yandex.ru."
+    ]
+  },
+  "elapsed_s": 33.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

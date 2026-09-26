@@ -7,12 +7,12 @@
 | Target | https://online.wsj.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | online.wsj.com |
-| Test date | 2026-09-26 17:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
+Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 | 10 | info | P8 | Missing security.txt | CWE-1038 |
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -111,6 +112,12 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 - **Detail:** robots.txt lists 50 disallow path(s), e.g. /, /article_email/*, /user/*, /pdf/documents/*, /login/*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 54.192.248.71 carries PTR server-54-192-248-71.tpe53.r.cloudfront.net. for online.wsj.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -118,27 +125,27 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
   "domain": "online.wsj.com",
   "dns": {
     "a": [
-      "54.192.248.122",
-      "54.192.248.29",
+      "54.192.248.71",
       "54.192.248.60",
-      "54.192.248.71"
+      "54.192.248.122",
+      "54.192.248.29"
     ],
     "aaaa": [
-      "2600:9000:202f:3a00:19:29eb:8080:93a1",
-      "2600:9000:202f:7400:19:29eb:8080:93a1",
-      "2600:9000:202f:ee00:19:29eb:8080:93a1",
-      "2600:9000:202f:7800:19:29eb:8080:93a1",
-      "2600:9000:202f:6800:19:29eb:8080:93a1",
-      "2600:9000:202f:9c00:19:29eb:8080:93a1",
-      "2600:9000:202f:ec00:19:29eb:8080:93a1",
-      "2600:9000:202f:d400:19:29eb:8080:93a1"
+      "2600:9000:202f:bc00:19:29eb:8080:93a1",
+      "2600:9000:202f:a400:19:29eb:8080:93a1",
+      "2600:9000:202f:5800:19:29eb:8080:93a1",
+      "2600:9000:202f:ba00:19:29eb:8080:93a1",
+      "2600:9000:202f:c400:19:29eb:8080:93a1",
+      "2600:9000:202f:da00:19:29eb:8080:93a1",
+      "2600:9000:202f:8200:19:29eb:8080:93a1",
+      "2600:9000:202f:600:19:29eb:8080:93a1"
     ],
     "cname": "d28vexa60c366a.cloudfront.net.",
     "mx": [],
     "ns": [
       "ns-220.awsdns-27.com.",
-      "ns-730.awsdns-27.net.",
       "ns-2038.awsdns-62.co.uk.",
+      "ns-730.awsdns-27.net.",
       "ns-1165.awsdns-17.org."
     ],
     "spf": [],
@@ -169,7 +176,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
     }
   },
   "ports": {
-    "ip": "54.192.248.122",
+    "ip": "54.192.248.71",
     "open": []
   },
   "https": {
@@ -233,7 +240,9 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260605000000",
+      "not_after": "20261219235959"
     }
   },
   "http2": {
@@ -256,8 +265,14 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "/public/page/wsj-x-marketing.html"
     ]
   },
-  "elapsed_s": 9.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "server-54-192-248-71.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 9.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://poetryfoundation.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | poetryfoundation.org |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,7 +33,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 18 | info | CT1 | 3 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 19 | info | CT1 | 3 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -133,7 +134,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=4xFMdUDqRnAFruznet6_KIrelXUko-ciSliz09zOOsg; facebook-domain-verification=i9rzaba80zh4tl9c9h9v09z9v1w9or; google-site-verification=olQtGIpSFT1Y5GdAxgSXi_p3l1RH2L9qfYmxFTbdWls
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=i9rzaba80zh4tl9c9h9v09z9v1w9or; google-site-verification=olQtGIpSFT1Y5GdAxgSXi_p3l1RH2L9qfYmxFTbdWls; google-site-verification=4xFMdUDqRnAFruznet6_KIrelXUko-ciSliz09zOOsg
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -148,7 +149,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **Detail:** robots.txt lists 8 disallow path(s), e.g. /cpresources/, /vendor/, /.env, /_nuxt/, /proxy/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 18. [INFO] 3 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 3.128.1.19 carries PTR ec2-3-128-1-19.us-east-2.compute.amazonaws.com. for poetryfoundation.org.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 19. [INFO] 3 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -161,31 +168,31 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "poetryfoundation.org",
   "dns": {
     "a": [
-      "77.113.16.118",
       "3.128.1.19",
+      "77.113.16.118",
       "18.227.36.81"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt3.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "alt4.aspmx.l.google.com (pref 10)"
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
       "ns-1321.awsdns-37.org.",
-      "ns-165.awsdns-20.com.",
       "ns-824.awsdns-39.net.",
-      "ns-1755.awsdns-27.co.uk."
+      "ns-1755.awsdns-27.co.uk.",
+      "ns-165.awsdns-20.com."
     ],
     "spf": [
-      "google-site-verification=4xFMdUDqRnAFruznet6_KIrelXUko-ciSliz09zOOsg",
       "facebook-domain-verification=i9rzaba80zh4tl9c9h9v09z9v1w9or",
       "google-site-verification=olQtGIpSFT1Y5GdAxgSXi_p3l1RH2L9qfYmxFTbdWls",
-      "bw=j6Kd57nORwxoXMWVvcMgMSKzv7ziiu7TXppCAuaR6FeO",
       "v=spf1 include:_spf.google.com include:mailgun.org include:servers.mcsv.net -all",
+      "bw=j6Kd57nORwxoXMWVvcMgMSKzv7ziiu7TXppCAuaR6FeO",
+      "google-site-verification=4xFMdUDqRnAFruznet6_KIrelXUko-ciSliz09zOOsg",
       "asv=98955e3c11a7baa9d0e6c14305c8c69a"
     ],
     "dmarc": [
@@ -219,7 +226,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "77.113.16.118",
+    "ip": "3.128.1.19",
     "open": []
   },
   "https": {
@@ -279,9 +286,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     ]
   },
   "apex_txt": [
-    "google-site-verification=4xFMdUDqRnAFruznet6_KIrelXUko-ciSliz09zOOsg",
     "facebook-domain-verification=i9rzaba80zh4tl9c9h9v09z9v1w9or",
-    "google-site-verification=olQtGIpSFT1Y5GdAxgSXi_p3l1RH2L9qfYmxFTbdWls"
+    "google-site-verification=olQtGIpSFT1Y5GdAxgSXi_p3l1RH2L9qfYmxFTbdWls",
+    "google-site-verification=4xFMdUDqRnAFruznet6_KIrelXUko-ciSliz09zOOsg"
   ],
   "tls2": {
     "alpn": "",
@@ -292,7 +299,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260608000000",
+      "not_after": "20261222235959"
     }
   },
   "http2": {
@@ -307,8 +316,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "/categories/"
     ]
   },
-  "elapsed_s": 28.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ec2-3-128-1-19.us-east-2.compute.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 29.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

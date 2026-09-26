@@ -7,26 +7,23 @@
 | Target | https://archives.gov/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | archives.gov |
-| Test date | 2026-09-26 17:39 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
+Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
-| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
-| 3 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 4 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
-| 5 | info | H6 | Server technology disclosure | CWE-200 |
-| 6 | info | P8 | Missing security.txt | CWE-1038 |
-| 7 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
-| 8 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
-| 9 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 11 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 2 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 3 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 4 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 5 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 6 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 7 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 8 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -36,69 +33,47 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
 - **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
 - **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Technology fingerprint (`TECH1`)
-
-- **CWE:** CWE-200
-- **Detail:** Detected: Server: nginx
-- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
-
-### 3. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
-- **Context:** https response, /
-- **Recommendation:** Add a Permissions-Policy restricting unused features.
-
-### 4. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
-
-- **CWE:** CWE-200
-- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
-- **Context:** https response, /
-- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
-
-### 5. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Header reveals: nginx
-- **Context:** https response, /
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 6. [INFO] Missing security.txt (`P8`)
-
-- **CWE:** CWE-1038
-- **Detail:** No .well-known/security.txt found (RFC 9116).
-- **Context:** https response, /
-- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
-
-### 7. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+### 2. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
 
 - **CWE:** CWE-223
 - **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
 - **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
 
-### 8. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+### 3. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
 
 - **CWE:** CWE-223
 - **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
 - **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
 
-### 9. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+### 4. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
 - **Detail:** Apex TXT records with verification/token content: google-site-verification=vzFoKGZ49s-tl4Mw26kJfVRiYukV0lHmZlbG0iAYYMk
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 5. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
 
 - **CWE:** CWE-603
 - **Detail:** Certificate of archives.gov has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 11. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 6. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 4 disallow path(s), e.g. /citizen-archivist/history-hub/hh-test, /developer/artificial-intelligence-and-machine-learning-datasets, /developer/1940-census, /developer/national-archives-catalog-dataset
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 7. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of archives.gov permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 8. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 52.44.89.206 carries PTR ec2-52-44-89-206.compute-1.amazonaws.com. for archives.gov.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -107,24 +82,24 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
   "domain": "archives.gov",
   "dns": {
     "a": [
-      "52.206.136.3",
-      "52.44.89.206"
+      "52.44.89.206",
+      "52.206.136.3"
     ],
     "aaaa": [
-      "2600:1f18:43e8:f301:9046:c05f:75e7:c481",
-      "2600:1f18:43e8:f302:b470:d266:4d03:3ed8"
+      "2600:1f18:43e8:f302:b470:d266:4d03:3ed8",
+      "2600:1f18:43e8:f301:9046:c05f:75e7:c481"
     ],
     "cname": null,
     "mx": [
       "us.etp.fireeyegov.com (pref 10)"
     ],
     "ns": [
-      "ns1.fedmettel.net.",
-      "ns2.fedmettel.net."
+      "ns2.fedmettel.net.",
+      "ns1.fedmettel.net."
     ],
     "spf": [
-      "google-site-verification=vzFoKGZ49s-tl4Mw26kJfVRiYukV0lHmZlbG0iAYYMk",
-      "v=spf1 -all"
+      "v=spf1 -all",
+      "google-site-verification=vzFoKGZ49s-tl4Mw26kJfVRiYukV0lHmZlbG0iAYYMk"
     ],
     "dmarc": [
       "v=DMARC1;",
@@ -164,55 +139,24 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
     }
   },
   "ports": {
-    "ip": "52.206.136.3",
+    "ip": "52.44.89.206",
     "open": []
   },
   "https": {
-    "status": 301,
+    "status": 0,
     "content_type": "",
-    "title": ""
+    "title": "",
+    "error": "https connect failed"
   },
   "mixed_content": [],
-  "tech": [
-    "Server: nginx"
-  ],
   "cookies": [],
-  "cors": [
-    {
-      "origin": "https://evil-auditor.example",
-      "acao": "",
-      "acac": ""
-    },
-    {
-      "origin": "https://sub.archives.gov",
-      "acao": "",
-      "acac": ""
-    }
-  ],
+  "cors": [],
   "http": {
-    "status": 301,
-    "location": "https://archives.gov/"
+    "status": 0,
+    "error": "http connect failed"
   },
-  "redir_probes": [
-    "/redirect?url=https://evil-auditor.example/x -> 301",
-    "/redirect?next=https://evil-auditor.example/x -> 301",
-    "/go?url=https://evil-auditor.example/x -> 301",
-    "/url?url=https://evil-auditor.example/x -> 301"
-  ],
-  "paths": {
-    "/robots.txt": 301,
-    "/sitemap.xml": 301,
-    "/.well-known/security.txt": 301,
-    "/security.txt": 301,
-    "/.git/HEAD": 301,
-    "/.git/config": 301,
-    "/.env": 301,
-    "/.htaccess": 301,
-    "/wp-login.php": 301,
-    "/phpmyadmin/index.php": 301,
-    "/server-status": 301,
-    "/api/": 301
-  },
+  "redir_probes": [],
+  "paths": {},
   "subdomains": {
     "status": "ct-pending"
   },
@@ -228,7 +172,9 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20250930000000",
+      "not_after": "20261031235959"
     }
   },
   "http2": {
@@ -240,8 +186,14 @@ Total findings: **11** (High: 0, Medium: 0, Low: 0, Info: 11)
       "/developer/national-archives-catalog-dataset"
     ]
   },
-  "elapsed_s": 36.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "ec2-52-44-89-206.compute-1.amazonaws.com."
+    ]
+  },
+  "elapsed_s": 25.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://epa.gov/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | epa.gov |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
+Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -117,7 +118,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=6c7001ef-8126-4fbc-8fae83ee039b; google-site-verification=fUmsNQhzYYZmxo4WqfmBkmwUMlk1H9ns-cGuXfwx9IM; google-site-verification=pYOZ4IxrkFyFrh7YCNUqyfudsUvzkm_ArW_NYp2QQfs
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=fUmsNQhzYYZmxo4WqfmBkmwUMlk1H9ns-cGuXfwx9IM; {adobe-idp-site-verification=6c7001ef-8126-4fbc-8ecb-8fae83ee039b}; adobe-idp-site-verification=6c7001ef-8126-4fbc-8fae83ee039b
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -138,6 +139,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - **Detail:** robots.txt lists 28 disallow path(s), e.g. /core/, /profiles/, /README.txt, /web.config, /admin/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 134.67.21.34 carries PTR pubweb.epa.gov. for epa.gov.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -155,24 +162,24 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "usepa.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "dcns2.epa.gov.",
+      "nccns1.epa.gov.",
       "nccns2.epa.gov.",
       "dcns1.epa.gov.",
-      "nccns1.epa.gov."
+      "dcns2.epa.gov."
     ],
     "spf": [
       "00Dt0000000GzSF=1TBSJ00000005Cb",
-      "MS=ms7622314",
-      "adobe-idp-site-verification=6c7001ef-8126-4fbc-8fae83ee039b",
-      "google-site-verification=fUmsNQhzYYZmxo4WqfmBkmwUMlk1H9ns-cGuXfwx9IM",
-      "google-site-verification=pYOZ4IxrkFyFrh7YCNUqyfudsUvzkm_ArW_NYp2QQfs",
-      "adobe-sign-verification=24513cfcab0903ecf5de3fd467be1d7412df57793960e76577f9b27be8efc9ba",
-      "sprout-social-067eb79a-bc98-42f8-a3f2-7d2d895c6253",
       "v=spf1 include:spf.protection.outlook.com include:%{i}._ip.%{h}._ehlo.%{d}._spf.valigov.email ip4:134.67.100.0/24 ip4:161.80.70.0/24 ip4:134.67.208.0/24 ip4:32.65.72.32/26 include:gseg.att.com ~all",
+      "google-site-verification=fUmsNQhzYYZmxo4WqfmBkmwUMlk1H9ns-cGuXfwx9IM",
+      "iContact1869815",
+      "sprout-social-067eb79a-bc98-42f8-a3f2-7d2d895c6253",
       "{adobe-idp-site-verification=6c7001ef-8126-4fbc-8ecb-8fae83ee039b}",
       "cloudflare_dashboard_sso=2c267daaf6145a0917c58fa43a085aee",
+      "adobe-idp-site-verification=6c7001ef-8126-4fbc-8fae83ee039b",
+      "adobe-sign-verification=24513cfcab0903ecf5de3fd467be1d7412df57793960e76577f9b27be8efc9ba",
       "mongodb-site-verification=BlMuSDOkvL0UWUVteO3W2lcTbjGdtzq7",
-      "iContact1869815"
+      "MS=ms7622314",
+      "google-site-verification=pYOZ4IxrkFyFrh7YCNUqyfudsUvzkm_ArW_NYp2QQfs"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@valigov.email,mailto:5373cc68@mxtoolbox.dmarc-report.com,mailto:dmarc_rua_epa.gov@epa.gov,mailto:reports@dmarc.cyber.dhs.gov; ruf=mailto:5373cc68@forensics.dmarc-report.com,mailto:dmarc_ruf_epa.gov@epa.gov; fo=1"
@@ -208,7 +215,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "SSLv3": false,
       "TLS1.0": false,
       "TLS1.1": false,
-      "TLS1.2": false,
+      "TLS1.2": true,
       "TLS1.3": true
     }
   },
@@ -266,11 +273,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "adobe-idp-site-verification=6c7001ef-8126-4fbc-8fae83ee039b",
     "google-site-verification=fUmsNQhzYYZmxo4WqfmBkmwUMlk1H9ns-cGuXfwx9IM",
-    "google-site-verification=pYOZ4IxrkFyFrh7YCNUqyfudsUvzkm_ArW_NYp2QQfs",
+    "{adobe-idp-site-verification=6c7001ef-8126-4fbc-8ecb-8fae83ee039b}",
+    "adobe-idp-site-verification=6c7001ef-8126-4fbc-8fae83ee039b",
     "adobe-sign-verification=24513cfcab0903ecf5de3fd467be1d7412df57793960e76577f9b27b",
-    "{adobe-idp-site-verification=6c7001ef-8126-4fbc-8ecb-8fae83ee039b}"
+    "mongodb-site-verification=BlMuSDOkvL0UWUVteO3W2lcTbjGdtzq7"
   ],
   "tls2": {
     "alpn": "",
@@ -281,7 +288,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 4096,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260416000000",
+      "not_after": "20261021235959"
     }
   },
   "http2": {
@@ -303,8 +312,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "/index.php/comment/reply/"
     ]
   },
-  "elapsed_s": 76.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "pubweb.epa.gov."
+    ]
+  },
+  "elapsed_s": 48.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

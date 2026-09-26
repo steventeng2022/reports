@@ -7,8 +7,8 @@
 | Target | https://ietf.org/ |
 | Bug bounty program | IETF |
 | Listed scope domain | ietf.org |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -56,13 +56,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.45.99:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.44.99:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.45.99:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.44.99:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -189,12 +189,12 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
   "domain": "ietf.org",
   "dns": {
     "a": [
-      "104.16.45.99",
-      "104.16.44.99"
+      "104.16.44.99",
+      "104.16.45.99"
     ],
     "aaaa": [
-      "2606:4700::6810:2d63",
-      "2606:4700::6810:2c63"
+      "2606:4700::6810:2c63",
+      "2606:4700::6810:2d63"
     ],
     "cname": null,
     "mx": [
@@ -205,11 +205,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
       "ken.ns.cloudflare.com."
     ],
     "spf": [
+      "vs58md9pf8hu6knlglfda9lk6g",
+      "ca3-5567e36d3f9947308ac2892e009840cc",
       "google-site-verification=NQpGlv9isd8O_RHzO31C0lOw1XKfQfFoVhZbmir6Lm4",
       "v=spf1 ip4:166.84.6.31 ip4:166.84.7.238 ip6:2602:f977:800:f7f6::/64 ip4:166.84.7.34 ip6:2602:f977:800::e276:63ff:fe66:3400 include:_spf.google.com include:spf.hostedrt.com ~all",
-      "vs58md9pf8hu6knlglfda9lk6g",
-      "google-site-verification=mvpHmuqmM4wrWv5w3S1AAqssmhAITNo2QqPqVLrVWEo",
-      "ca3-5567e36d3f9947308ac2892e009840cc"
+      "google-site-verification=mvpHmuqmM4wrWv5w3S1AAqssmhAITNo2QqPqVLrVWEo"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:dmarc_agg@vali.email,mailto:dmarc-report@ietf.org"
@@ -239,7 +239,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
     }
   },
   "ports": {
-    "ip": "104.16.45.99",
+    "ip": "104.16.44.99",
     "open": [
       8080,
       8443
@@ -351,7 +351,9 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260918120405",
+      "not_after": "20261217130403"
     }
   },
   "http2": {
@@ -360,8 +362,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
       "/search/"
     ]
   },
-  "elapsed_s": 6.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 5.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

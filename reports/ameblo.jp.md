@@ -7,8 +7,8 @@
 | Target | https://ameblo.jp/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ameblo.jp |
-| Test date | 2026-09-26 17:39 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -88,13 +88,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 ### 9. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (sydovzu9dhm1t2.ameblo.jp and 1yoapolzwai14f.ameblo.jp) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (b33oycuvtpzkba.ameblo.jp and if6ye62c3nrwzb.ameblo.jp) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8; tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa97; google-site-verification=26Ps67bWgQGjeNkTT6hV9VEgczhnzjN78yCdM33v-eo
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=26Ps67bWgQGjeNkTT6hV9VEgczhnzjN78yCdM33v-eo; google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8; tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa97
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -122,8 +122,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   "domain": "ameblo.jp",
   "dns": {
     "a": [
-      "199.232.210.133",
-      "199.232.214.133"
+      "199.232.214.133",
+      "199.232.210.133"
     ],
     "aaaa": [],
     "cname": null,
@@ -131,22 +131,22 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "mail.ameblo.jp (pref 10)"
     ],
     "ns": [
+      "ns-863.awsdns-43.net.",
       "ns-124.awsdns-15.com.",
       "ns-1218.awsdns-24.org.",
-      "ns-863.awsdns-43.net.",
       "ns-2038.awsdns-62.co.uk."
     ],
     "spf": [
-      "google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8",
-      "fastly-domain-delegation-@X7yV19EoO6Y-2023-06-30",
-      "cPu1ZpFdt7xvQjanmhmE12k4AmF0MH",
-      "v=spf1 ip4:216.255.232.136/32 include:spf-a.ameba.jp include:spf.repica.jp -all",
       "fastly-domain-delegation-nfkcslan-542735-2022-10-31",
-      "tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa9778f5ed1c8d42",
-      "UHgEILc96z9sKmvYTwgZYiwusQbyqI",
       "_mnobpm3nakzeekpqy6i72p451qgv326",
       "google-site-verification=26Ps67bWgQGjeNkTT6hV9VEgczhnzjN78yCdM33v-eo",
-      "_gmqf0w3hsh1pqlogfw1gkg05zhs88zx"
+      "google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8",
+      "_gmqf0w3hsh1pqlogfw1gkg05zhs88zx",
+      "cPu1ZpFdt7xvQjanmhmE12k4AmF0MH",
+      "v=spf1 ip4:216.255.232.136/32 include:spf-a.ameba.jp include:spf.repica.jp -all",
+      "tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa9778f5ed1c8d42",
+      "UHgEILc96z9sKmvYTwgZYiwusQbyqI",
+      "fastly-domain-delegation-@X7yV19EoO6Y-2023-06-30"
     ],
     "dmarc": [
       "v=DMARC1; p=none"
@@ -176,7 +176,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     }
   },
   "ports": {
-    "ip": "199.232.210.133",
+    "ip": "199.232.214.133",
     "open": []
   },
   "https": {
@@ -251,9 +251,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   },
   "wildcard_dns": true,
   "apex_txt": [
+    "google-site-verification=26Ps67bWgQGjeNkTT6hV9VEgczhnzjN78yCdM33v-eo",
     "google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8",
-    "tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa97",
-    "google-site-verification=26Ps67bWgQGjeNkTT6hV9VEgczhnzjN78yCdM33v-eo"
+    "tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa97"
   ],
   "tls2": {
     "alpn": "",
@@ -264,7 +264,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260803000000",
+      "not_after": "20270216235959"
     }
   },
   "http2": {
@@ -286,8 +288,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "/*/favorite-*.html"
     ]
   },
-  "elapsed_s": 26.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 26.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

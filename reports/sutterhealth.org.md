@@ -7,8 +7,8 @@
 | Target | https://sutterhealth.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | sutterhealth.org |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:00 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -131,7 +131,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: dtm-domain-verification=A5i70Rs02iuV7ZM7VBHmm1NXbUDdVVLR7G7sz9q5zR8; apple-domain-verification=6EmugeAdzqtGatZ7; vmware-cloud-verification-03a26331-13b3-4a4f-8123-a34d1b5466e6
+- **Detail:** Apex TXT records with verification/token content: airtable-verification=480dc28b5f136aeeb9c72e1ffecd2d94; google-site-verification=5suSPLWcnGo4WMF8P2HtDOX0AnzrBIfGv2JpJ89kM_o; apple-domain-verification=6EmugeAdzqtGatZ7
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -155,38 +155,38 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "sutterhealth-org.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns2-05.azure-dns.net.",
       "ns4-05.azure-dns.info.",
-      "ns1-05.azure-dns.com.",
-      "ns3-05.azure-dns.org."
+      "ns2-05.azure-dns.net.",
+      "ns3-05.azure-dns.org.",
+      "ns1-05.azure-dns.com."
     ],
     "spf": [
-      "pardot266982=11b4fde586ddd3585348b584a83b7b24379df66ceea079251091c947935bb3a2",
-      "dtm-domain-verification=A5i70Rs02iuV7ZM7VBHmm1NXbUDdVVLR7G7sz9q5zR8",
-      "427263CA40526231DA0DD17A9899B7423D812E7AA717665DBE16B613DB02B34C",
       "sprout-social-260c110f-d385-4d75-9e75-7d32e5c9e17e",
+      "intersight=2f9f41d547c44be2b28284231fe1c0d3387c68d963a53d504f18cfec349315cd",
+      "airtable-verification=480dc28b5f136aeeb9c72e1ffecd2d94",
+      "smartsheet-site-validation=KG4FnJLPbY4nNo-dVmeX_sNqnmYA11I-",
+      "google-site-verification=5suSPLWcnGo4WMF8P2HtDOX0AnzrBIfGv2JpJ89kM_o",
       "apple-domain-verification=6EmugeAdzqtGatZ7",
       "MS=ms47734453",
-      "A2A2AED6DE5DB1951512FE7F27A0FF20849F36FE5A2086EA578A8F8D618514D0",
+      "tqsshcrdlqd6jz66rb59x85p3mp6xt5j",
       "vmware-cloud-verification-03a26331-13b3-4a4f-8123-a34d1b5466e6",
       "jamf-site-verification=YEnMiAdegNX2xNXsyl81MA",
-      "_5jyz87it742obj4hxmhnp46i4byr8vw",
-      "amazonses:+ouqWoubNLvOffFrO8GNnPJsJqC3k9zvq4fGmF+/JFc=",
-      "intersight=2f9f41d547c44be2b28284231fe1c0d3387c68d963a53d504f18cfec349315cd",
       "google-site-verification=1ut73vMWSdD7vAGFYE6rwNwgZp6sTlzHM4KE_iMO-Wg",
-      "smartsheet-site-validation=KG4FnJLPbY4nNo-dVmeX_sNqnmYA11I-",
-      "airtable-verification=480dc28b5f136aeeb9c72e1ffecd2d94",
-      "_etnz4zr5xfdan0i6arxavk1gj5fzzpo",
-      "twilio-domain-verification=f9445f3342fc1d16bc787547acc675e3",
-      "njH6RDHlABsQmJvITIaqix1L+/Y3ZLr1u/H0Lj/PqqvvNPv8oMwuwaxiZFRNkYdtifBqMGV7Rf7i9r9i/P7uzA==",
-      "28DD0C4B37308B587E99CBDEE640AB744470C72767F36FB82E374F3E94D67B32",
       "atlassian-domain-verification=k/4cB6WdjX8dp8sJrsQpUCv13/jkgZuZB472VFPxuN9TbANMRruC8a5QSriOWHHe",
-      "tqsshcrdlqd6jz66rb59x85p3mp6xt5j",
       "openai-domain-verification=dv-sgDNw1gS2lSTsyf6bdj2f3fh",
-      "google-site-verification=5suSPLWcnGo4WMF8P2HtDOX0AnzrBIfGv2JpJ89kM_o",
+      "28DD0C4B37308B587E99CBDEE640AB744470C72767F36FB82E374F3E94D67B32",
       "_shsq80a8ay3rc5vqi8figqyjpg9xo2h",
+      "A2A2AED6DE5DB1951512FE7F27A0FF20849F36FE5A2086EA578A8F8D618514D0",
+      "_5jyz87it742obj4hxmhnp46i4byr8vw",
+      "v=spf1 ip4:198.217.64.0/24 ip4:198.217.112.0/24 ip4:199.79.205.16/29 ip4:199.79.205.32/29 include:_spf1.sutterhealth.org include:_spf2.sutterhealth.org include:_spf3.sutterhealth.org include:_spf4.sutterhealth.org include:spf.protection.outlook.com -all",
+      "427263CA40526231DA0DD17A9899B7423D812E7AA717665DBE16B613DB02B34C",
+      "pardot266982=11b4fde586ddd3585348b584a83b7b24379df66ceea079251091c947935bb3a2",
+      "amazonses:+ouqWoubNLvOffFrO8GNnPJsJqC3k9zvq4fGmF+/JFc=",
+      "_etnz4zr5xfdan0i6arxavk1gj5fzzpo",
+      "dtm-domain-verification=A5i70Rs02iuV7ZM7VBHmm1NXbUDdVVLR7G7sz9q5zR8",
+      "twilio-domain-verification=f9445f3342fc1d16bc787547acc675e3",
       "flexera-domain-verification-dcafjcaqzcrdbucx",
-      "v=spf1 ip4:198.217.64.0/24 ip4:198.217.112.0/24 ip4:199.79.205.16/29 ip4:199.79.205.32/29 include:_spf1.sutterhealth.org include:_spf2.sutterhealth.org include:_spf3.sutterhealth.org include:_spf4.sutterhealth.org include:spf.protection.outlook.com -all"
+      "njH6RDHlABsQmJvITIaqix1L+/Y3ZLr1u/H0Lj/PqqvvNPv8oMwuwaxiZFRNkYdtifBqMGV7Rf7i9r9i/P7uzA=="
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; rua=mailto:es8rh9mx@ag.dmarcian.com;"
@@ -269,11 +269,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "dtm-domain-verification=A5i70Rs02iuV7ZM7VBHmm1NXbUDdVVLR7G7sz9q5zR8",
+    "airtable-verification=480dc28b5f136aeeb9c72e1ffecd2d94",
+    "google-site-verification=5suSPLWcnGo4WMF8P2HtDOX0AnzrBIfGv2JpJ89kM_o",
     "apple-domain-verification=6EmugeAdzqtGatZ7",
     "vmware-cloud-verification-03a26331-13b3-4a4f-8123-a34d1b5466e6",
-    "jamf-site-verification=YEnMiAdegNX2xNXsyl81MA",
-    "google-site-verification=1ut73vMWSdD7vAGFYE6rwNwgZp6sTlzHM4KE_iMO-Wg"
+    "jamf-site-verification=YEnMiAdegNX2xNXsyl81MA"
   ],
   "tls2": {
     "alpn": "",
@@ -284,11 +284,16 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260323000000",
+      "not_after": "20261007235959"
     }
   },
-  "elapsed_s": 6.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 429
+  },
+  "elapsed_s": 6.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

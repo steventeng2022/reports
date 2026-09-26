@@ -7,12 +7,12 @@
 | Target | https://video.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | video.google.com |
-| Test date | 2026-09-26 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
+Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,8 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 | 10 | low | RED1 | HTTP redirect points to another host over plain HTTP | CWE-319 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 13 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -111,6 +113,18 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - **Detail:** Certificate of video.google.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 13. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://video.google.com/ carries Cache-Control: public, max-age=2592000; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 173.194.174.138 carries PTR td-in-f138.1e100.net. for video.google.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -118,18 +132,18 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
   "domain": "video.google.com",
   "dns": {
     "a": [
-      "173.194.174.139",
-      "173.194.174.102",
       "173.194.174.138",
       "173.194.174.101",
+      "173.194.174.139",
+      "173.194.174.102",
       "173.194.174.100",
       "173.194.174.113"
     ],
     "aaaa": [
       "2404:6800:4008:c1b::66",
-      "2404:6800:4008:c1b::8a",
-      "2404:6800:4008:c1b::8b",
-      "2404:6800:4008:c1b::65"
+      "2404:6800:4008:c1b::71",
+      "2404:6800:4008:c1b::65",
+      "2404:6800:4008:c1b::8a"
     ],
     "cname": "video.l.google.com.",
     "mx": [],
@@ -224,7 +238,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
     }
   },
   "ports": {
-    "ip": "173.194.174.139",
+    "ip": "173.194.174.138",
     "open": []
   },
   "https": {
@@ -288,11 +302,19 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192201",
+      "not_after": "20261203192200"
     }
   },
-  "elapsed_s": 6.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "td-in-f138.1e100.net."
+    ]
+  },
+  "elapsed_s": 6.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

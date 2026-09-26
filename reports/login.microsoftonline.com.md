@@ -7,12 +7,12 @@
 | Target | https://login.microsoftonline.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | login.microsoftonline.com |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
+Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -23,9 +23,8 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 | 5 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 6 | info | RED2 | Soft redirect (302/303) for HTTP to HTTPS | CWE-319 |
 | 7 | info | P8 | Missing security.txt | CWE-1038 |
-| 8 | low | DNS4 | Deep CNAME chain (>4 hops) | CWE-345 |
-| 9 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 10 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 8 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 9 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 
 ## Detailed findings
 
@@ -77,19 +76,13 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 8. [LOW] Deep CNAME chain (>4 hops) (`DNS4`)
-
-- **CWE:** CWE-345
-- **Detail:** CNAME chain depth 5 for login.microsoftonline.com.
-- **Recommendation:** Shorten the CNAME chain.
-
-### 9. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 8. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
 
 - **CWE:** CWE-603
 - **Detail:** Certificate of login.microsoftonline.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 10. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 9. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but login.microsoftonline.com is not listed in the HSTS preload list.
@@ -102,23 +95,23 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
   "domain": "login.microsoftonline.com",
   "dns": {
     "a": [
-      "20.190.141.33",
-      "40.126.13.8",
-      "40.126.13.9",
-      "20.190.141.39",
       "20.190.141.32",
-      "20.190.141.38",
       "20.190.141.37",
-      "20.190.141.35"
+      "20.190.141.39",
+      "20.190.141.33",
+      "20.190.141.36",
+      "40.126.13.8",
+      "20.190.141.35",
+      "40.126.13.9"
     ],
     "aaaa": [
-      "2603:1046:2000:148::5",
       "2603:1047:1:150::3",
+      "2603:1046:2000:148::4",
+      "2603:1046:2000:148::5",
+      "2603:1046:2000:158::5",
       "2603:1047:1:150::1",
-      "2603:1046:2000:148::3",
-      "2603:1047:1:150::2",
-      "2603:1046:2000:158::4",
       "2603:1046:2000:148::2",
+      "2603:1046:2000:148::3",
       "2603:1046:2000:158::3"
     ],
     "cname": "login.mso.msidentity.com.",
@@ -158,7 +151,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
     }
   },
   "ports": {
-    "ip": "20.190.141.33",
+    "ip": "20.190.141.32",
     "open": []
   },
   "https": {
@@ -224,24 +217,27 @@ Total findings: **10** (High: 0, Medium: 0, Low: 3, Info: 7)
   "cname_chain": [
     "login.mso.msidentity.com",
     "ak.privatelink.msidentity.com",
-    "www.tm.a.prd.aadg.akadns.net",
-    "www.current.a.prd.aadg.akadns.net",
-    "osa-lb.current.a.prd.aadg.akadns.net"
+    "www.tm.a.prd.aadg.trafficmanager.net"
   ],
   "tls2": {
     "alpn": "",
     "tls_ver": "TLSv1.3",
     "subject": "None",
     "cert": {
-      "sig_oid": "1.2.840.113549.1.1.12",
+      "sig_oid": "1.2.840.113549.1.1.11",
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260813000000",
+      "not_after": "20261121235959"
     }
   },
-  "elapsed_s": 9.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 8.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

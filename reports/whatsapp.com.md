@@ -7,12 +7,12 @@
 | Target | https://whatsapp.com/ |
 | Bug bounty program | Facebook |
 | Listed scope domain | whatsapp.com |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -131,7 +132,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: dropbox-domain-verification=lfq0o9x85s8s; google-site-verification=MXbDGih8wW-64G5maXGw8iIkFbH7iv_vLobZd-kxdNo; slack-domain-verification=nRBGtO4znsPRYjkw5QqoXTNMh0Um600moF3unj2I
+- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=a0d9793b-fc40-430b-9ab4-d3c75e4dcfba; facebook-domain-verification=ziojpt80hl1748lx6agku0kpttifb2; google-site-verification=MXbDGih8wW-64G5maXGw8iIkFbH7iv_vLobZd-kxdNo
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -145,6 +146,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 25 disallow path(s), e.g. /, /, /, /, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 57.144.93.32 carries PTR whatsapp-cdn-shv-01-tpe5.fbcdn.net. for whatsapp.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -160,28 +167,28 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     ],
     "cname": null,
     "mx": [
-      "mx0a-00082601.pphosted.com (pref 20)",
       "mxb-00082601.gslb.pphosted.com (pref 10)",
       "mx0b-00082601.pphosted.com (pref 20)",
-      "mxa-00082601.gslb.pphosted.com (pref 10)"
+      "mxa-00082601.gslb.pphosted.com (pref 10)",
+      "mx0a-00082601.pphosted.com (pref 20)"
     ],
     "ns": [
-      "a.ns.whatsapp.net.",
-      "b.ns.whatsapp.net.",
       "d.ns.whatsapp.net.",
-      "c.ns.whatsapp.net."
+      "c.ns.whatsapp.net.",
+      "b.ns.whatsapp.net.",
+      "a.ns.whatsapp.net."
     ],
     "spf": [
-      "dropbox-domain-verification=lfq0o9x85s8s",
       "v=spf1 include:_spf.fb.com include:facebookmail.com -all",
-      "google-site-verification=MXbDGih8wW-64G5maXGw8iIkFbH7iv_vLobZd-kxdNo",
       "b42e0aa4-9d21-4a73-a111-fba236f1a835",
-      "slack-domain-verification=nRBGtO4znsPRYjkw5QqoXTNMh0Um600moF3unj2I",
-      "adobe-idp-site-verification=a0d9793b-fc40-430b-9ab4-d3c75e4dcfba",
-      "Ghm7XCdpYQEendZNsepA80OBAhbN9sfITvUxiy9FNdOGBxeAQICCmLbuXm23hNaysns+wZ6GskJWMtWD1/Ha9Q==",
-      "facebook-domain-verification=ziojpt80hl1748lx6agku0kpttifb2",
       "MS=ms22994725",
-      "bFwlY7J2JzFYHw5qkQFcBD6EOr9JL4VBpYSXSk3p8lA"
+      "adobe-idp-site-verification=a0d9793b-fc40-430b-9ab4-d3c75e4dcfba",
+      "facebook-domain-verification=ziojpt80hl1748lx6agku0kpttifb2",
+      "google-site-verification=MXbDGih8wW-64G5maXGw8iIkFbH7iv_vLobZd-kxdNo",
+      "Ghm7XCdpYQEendZNsepA80OBAhbN9sfITvUxiy9FNdOGBxeAQICCmLbuXm23hNaysns+wZ6GskJWMtWD1/Ha9Q==",
+      "dropbox-domain-verification=lfq0o9x85s8s",
+      "bFwlY7J2JzFYHw5qkQFcBD6EOr9JL4VBpYSXSk3p8lA",
+      "slack-domain-verification=nRBGtO4znsPRYjkw5QqoXTNMh0Um600moF3unj2I"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:a@dmarc.facebookmail.com; pct=100"
@@ -269,11 +276,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "dropbox-domain-verification=lfq0o9x85s8s",
-    "google-site-verification=MXbDGih8wW-64G5maXGw8iIkFbH7iv_vLobZd-kxdNo",
-    "slack-domain-verification=nRBGtO4znsPRYjkw5QqoXTNMh0Um600moF3unj2I",
     "adobe-idp-site-verification=a0d9793b-fc40-430b-9ab4-d3c75e4dcfba",
-    "facebook-domain-verification=ziojpt80hl1748lx6agku0kpttifb2"
+    "facebook-domain-verification=ziojpt80hl1748lx6agku0kpttifb2",
+    "google-site-verification=MXbDGih8wW-64G5maXGw8iIkFbH7iv_vLobZd-kxdNo",
+    "dropbox-domain-verification=lfq0o9x85s8s",
+    "slack-domain-verification=nRBGtO4znsPRYjkw5QqoXTNMh0Um600moF3unj2I"
   ],
   "tls2": {
     "alpn": "",
@@ -284,7 +291,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260706000000",
+      "not_after": "20261004235959"
     }
   },
   "http2": {
@@ -307,8 +316,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/*cursor="
     ]
   },
-  "elapsed_s": 4.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "whatsapp-cdn-shv-01-tpe5.fbcdn.net."
+    ]
+  },
+  "elapsed_s": 5.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

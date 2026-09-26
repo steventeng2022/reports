@@ -7,12 +7,12 @@
 | Target | https://moma.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | moma.org |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
+Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 
 ## Detailed findings
 
@@ -106,7 +107,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=3vrESLJUNQb4JqQa8uIUtVm0gkEsm5oafDbFFb-Gmfg; goodnotes-verification=94d9f771-8767-4f8d-a3c3-4c17bf561900; jamf-site-verification=6kUWqIVkyYyYgf0RoJ_ZHQ
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=96ykiggrug8zd9zhq3ejj0o2xjaa5a; google-site-verification=3vrESLJUNQb4JqQa8uIUtVm0gkEsm5oafDbFFb-Gmfg; have-i-been-pwned-verification=3bd956232b1c0dad85b7b5242f3720df
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -127,6 +128,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
 - **Detail:** robots.txt lists 20 disallow path(s), e.g. /dist/robots.*.js, /assets/robots-*.js, /calendar/events/9322, /calendar/programs/46, /calendar/programs/50
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 16. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of moma.org permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -138,36 +145,36 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "104.18.8.51"
     ],
     "aaaa": [
-      "2606:4700::6812:933",
-      "2606:4700::6812:833"
+      "2606:4700::6812:833",
+      "2606:4700::6812:933"
     ],
     "cname": null,
     "mx": [
-      "mxb-004c0e03.gslb.pphosted.com (pref 0)",
-      "mxa-004c0e03.gslb.pphosted.com (pref 0)"
+      "mxa-004c0e03.gslb.pphosted.com (pref 0)",
+      "mxb-004c0e03.gslb.pphosted.com (pref 0)"
     ],
     "ns": [
-      "wren.ns.cloudflare.com.",
-      "logan.ns.cloudflare.com."
+      "logan.ns.cloudflare.com.",
+      "wren.ns.cloudflare.com."
     ],
     "spf": [
-      "google-site-verification=3vrESLJUNQb4JqQa8uIUtVm0gkEsm5oafDbFFb-Gmfg",
-      "goodnotes-verification=94d9f771-8767-4f8d-a3c3-4c17bf561900",
-      "jamf-site-verification=6kUWqIVkyYyYgf0RoJ_ZHQ",
-      "google-site-verification=Pr3kjMN9vtOp3O8BqAWWYoelYopZAUO7Q8eqYosiMTI",
+      "MS=9B2FE3DB81DB00D53D1BFA0F1D9897DCB7619E42",
       "dptqjki8g3tpucjbno6bv0r3ed",
       "facebook-domain-verification=96ykiggrug8zd9zhq3ejj0o2xjaa5a",
-      "have-i-been-pwned-verification=3bd956232b1c0dad85b7b5242f3720df",
-      "adobe-idp-site-verification=0c9cf8b4135f0a8731823b237d8cf4a91045693c783f74dbce5f0a469f13a3a6",
-      "MS=9B2FE3DB81DB00D53D1BFA0F1D9897DCB7619E42",
-      "4c0pp3f0d6bo3int3c8jkj2fjs",
       "v=spf1 include:_spf.google.com ip4:63.117.124.0/24 ip4:65.211.53.131 ip4:38.125.15.118 ip4:107.20.210.250 ip4:52.1.14.157 ip4:23.253.211.221/32 ip4:184.106.16.5/32 ip4:52.36.126.62/32 ip4:35.163.139.47/32 ip4:69.164.65.171 include:mail.zendesk.com include",
       ":_spf.ultipro.com include:spf-004c0e03.pphosted.com include:docebosaas.com ~all",
-      "anthropic-domain-verification-5jmb3h=HkL8hTUNs7yxLr4I6dZEQ6iau",
+      "google-site-verification=3vrESLJUNQb4JqQa8uIUtVm0gkEsm5oafDbFFb-Gmfg",
+      "have-i-been-pwned-verification=3bd956232b1c0dad85b7b5242f3720df",
       "apple-domain-verification=30ovqro8hjqtAhgr",
-      "6c7i0ouo1f4lfseov2dnbc1di4",
       "google-site-verification=Y-uTmVZnxgZVfkpYVvi7X3qlAYSc1xdliEpLwZoIFao",
-      "asv=5af33c11b29472a1d1f53d055ae36eb5"
+      "4c0pp3f0d6bo3int3c8jkj2fjs",
+      "google-site-verification=Pr3kjMN9vtOp3O8BqAWWYoelYopZAUO7Q8eqYosiMTI",
+      "adobe-idp-site-verification=0c9cf8b4135f0a8731823b237d8cf4a91045693c783f74dbce5f0a469f13a3a6",
+      "goodnotes-verification=94d9f771-8767-4f8d-a3c3-4c17bf561900",
+      "asv=5af33c11b29472a1d1f53d055ae36eb5",
+      "6c7i0ouo1f4lfseov2dnbc1di4",
+      "anthropic-domain-verification-5jmb3h=HkL8hTUNs7yxLr4I6dZEQ6iau",
+      "jamf-site-verification=6kUWqIVkyYyYgf0RoJ_ZHQ"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:x0bskx3o@ag.dmarcian.com"
@@ -187,7 +194,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "moma.org",
       "*.moma.org"
     ],
-    "days_left": 77,
+    "days_left": 76,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -254,11 +261,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "facebook-domain-verification=96ykiggrug8zd9zhq3ejj0o2xjaa5a",
     "google-site-verification=3vrESLJUNQb4JqQa8uIUtVm0gkEsm5oafDbFFb-Gmfg",
-    "goodnotes-verification=94d9f771-8767-4f8d-a3c3-4c17bf561900",
-    "jamf-site-verification=6kUWqIVkyYyYgf0RoJ_ZHQ",
-    "google-site-verification=Pr3kjMN9vtOp3O8BqAWWYoelYopZAUO7Q8eqYosiMTI",
-    "facebook-domain-verification=96ykiggrug8zd9zhq3ejj0o2xjaa5a"
+    "have-i-been-pwned-verification=3bd956232b1c0dad85b7b5242f3720df",
+    "apple-domain-verification=30ovqro8hjqtAhgr",
+    "google-site-verification=Y-uTmVZnxgZVfkpYVvi7X3qlAYSc1xdliEpLwZoIFao"
   ],
   "tls2": {
     "alpn": "",
@@ -269,7 +276,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260913174726",
+      "not_after": "20261212184724"
     }
   },
   "http2": {
@@ -291,8 +300,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 2, Info: 13)
       "/visit/calendar/search"
     ]
   },
-  "elapsed_s": 7.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 6.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

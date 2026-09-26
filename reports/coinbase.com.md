@@ -7,8 +7,8 @@
 | Target | https://coinbase.com/ |
 | Bug bounty program | Coinbase |
 | Listed scope domain | coinbase.com |
-| Test date | 2026-09-26 17:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -116,7 +116,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: verification_token=fsUf5PQLIwq7nf4HOoQN6ZUCz; apple-domain-verification=8HpWlON81jar5xva; atlassian-domain-verification=hDuZ4Ho1Rts/J4kaoxR9K2Qnywy2Uo+GV8bDIwXEsE4uovTo0v
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=veWhMcRP5-ISDr7tSAI7Mjh9ELqQ7ndOvbHY-xcsl9o; google-site-verification=gwL0hNTFdVrIO_MRAN6m07GJs7aZFGC-XkJcaq8We2s; dropbox-domain-verification=ap29irieph9f
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -148,9 +148,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     "cname": null,
     "mx": [
       "aspmx.l.google.com (pref 1)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
@@ -158,48 +158,48 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "sue.ns.cloudflare.com."
     ],
     "spf": [
-      "TSW_ODg1dGVyYXN3aXRjaA==",
-      "verification_token=fsUf5PQLIwq7nf4HOoQN6ZUCz",
-      "apple-domain-verification=8HpWlON81jar5xva",
-      "de7f455f-f2f0-4669-8193-08e31bfab40f",
-      "atlassian-domain-verification=hDuZ4Ho1Rts/J4kaoxR9K2Qnywy2Uo+GV8bDIwXEsE4uovTo0vcL+8AVpI4+3j2V",
-      "openai-domain-verification=dv-lWXbBpm6xG2ptEFodATJULvV",
-      "stripe-verification=f66cbde9148f67d1bb992cfe5ae3fc1efa829c816b726b0bb28ff243325344dc",
-      "google-site-verification=5Vrsjlgs1uhwN5AU2Vg1TPuEBasNdhX3CgxtfTdXOQQ",
-      "google-site-verification=8ww1MRKa0mZPc-WdoZ7YdL64qIE_2bJuIyIagaQqzFo",
-      "ahrefs-site-verification_cc6fbe8f6b26b9b07f97892536cda45b7ce7917b040baacf81facc14e820e887",
-      "docusign=642eb6c3-8697-4ebd-8a51-a48a05713018",
-      "verification_token=KH5SwHZXz5rsFGMABj81aGBnF",
-      "DirectFedAuthUrl=https://coinbase.okta.com/app/coinbase_pwc_1/exk1ke47d0l3gh5gp0x8/sso/saml",
-      "jumio-up-idp-domain-verification=59dc5c59-80b3-4697-a85f-e4432d7ba047",
-      "1password-site-verification=2JYSQ7TWXVDP7DWPHTZRLBRESI",
-      "slack-domain-verification=MlD3gzX7txujPKkmWsULE6w264DyKkTkxbT7nPTd",
-      "MS=ms23710130",
-      "google-site-verification=F0pv18D2VaKyH77hhpE9OZuDVipTi_YUGqKGzSOUfnQ",
-      "tiktok-developers-site-verification=HrFgIdc7KnV2NknroIrwPpiieVmSJjYz",
-      "mongodb-site-verification=hME8tDWzya9rzZbckAxwpiEiv12KX8Gd",
-      "apple-domain-verification=7XHeC6zhfdUOulBSjnUyABNhGLx2RMnjebZj2HMPH4w",
-      "verification_token=N5mizUogMNMbNmoFTKuh7KCwg",
-      "smartsheet-site-validation=kyRJbpapnk1ExowiffTo0f3Pc-9XKoSh",
-      "miro-verification=790dc2010116c659230c25705d7a5358cd78d99b",
-      "pylon-domain-verification-sc64gk=B7nJiLr0KeZ0CRv2aVkYTNfjs",
-      "google-site-verification=Mf-1A418PKg0c9t2nAaK4zjWv2A_N8uNGu078EWqCZc",
-      "vercel-domain-verification-zvp7d4=jvZ5HXRxnwIhxdzt26biEw6Oh",
-      "docusign=8ace657e-b7bc-4ed2-9cb3-8aa55e7d0597",
-      "cursor-domain-verification-tqme34=zHJPl1GeHjzl9e5kOqNqpcepA",
-      "facebook-domain-verification=qbphvvib286cbvluswam0qypj99ofm",
-      "onetrust-domain-verification=f131f1d66b1b445cb8edc36b8edd78e8",
-      "keybase-site-verification=UlVJ6_FMc2ceBGKC2cjhy8FF1iGw-iuvdc1WzRX7foU",
+      "google-site-verification=veWhMcRP5-ISDr7tSAI7Mjh9ELqQ7ndOvbHY-xcsl9o",
       "google-site-verification=gwL0hNTFdVrIO_MRAN6m07GJs7aZFGC-XkJcaq8We2s",
       "dropbox-domain-verification=ap29irieph9f",
-      "google-site-verification=veWhMcRP5-ISDr7tSAI7Mjh9ELqQ7ndOvbHY-xcsl9o",
+      "google-site-verification=F0pv18D2VaKyH77hhpE9OZuDVipTi_YUGqKGzSOUfnQ",
+      "mongodb-site-verification=hME8tDWzya9rzZbckAxwpiEiv12KX8Gd",
+      "plain-domain-verification-5y5tn9=TNqQhlpQ8Bn39aDEnApFcwOxC",
+      "cursor-domain-verification-tqme34=zHJPl1GeHjzl9e5kOqNqpcepA",
+      "de7f455f-f2f0-4669-8193-08e31bfab40f",
+      "google-site-verification=Mf-1A418PKg0c9t2nAaK4zjWv2A_N8uNGu078EWqCZc",
+      "1password-site-verification=2JYSQ7TWXVDP7DWPHTZRLBRESI",
+      "smartsheet-site-validation=kyRJbpapnk1ExowiffTo0f3Pc-9XKoSh",
+      "jumio-up-idp-domain-verification=59dc5c59-80b3-4697-a85f-e4432d7ba047",
       "v=spf1 include:amazonses.com include:_spf.google.com -all",
-      "cloudflare_dashboard_sso=2306d311a1bc9c50590c204bf0e527d8",
-      "giga-domain-verification-956jz3=BliOUPqeH2xWvVWYcEmFCxcwC",
-      "amp-by-sourcegraph-domain-verification-h888ba=g5N2hQggP0wSY4x7gSMgfvyyg",
-      "applause-verification:4e8f0335-526a-4a52-8da4-f4ecedc931ef",
       "google-site-verification=qyTrwiATuVJMBGXPOYPOr-NSYW90-idNJU7uTh6-v7Y",
-      "plain-domain-verification-5y5tn9=TNqQhlpQ8Bn39aDEnApFcwOxC"
+      "TSW_ODg1dGVyYXN3aXRjaA==",
+      "keybase-site-verification=UlVJ6_FMc2ceBGKC2cjhy8FF1iGw-iuvdc1WzRX7foU",
+      "verification_token=fsUf5PQLIwq7nf4HOoQN6ZUCz",
+      "amp-by-sourcegraph-domain-verification-h888ba=g5N2hQggP0wSY4x7gSMgfvyyg",
+      "MS=ms23710130",
+      "apple-domain-verification=7XHeC6zhfdUOulBSjnUyABNhGLx2RMnjebZj2HMPH4w",
+      "google-site-verification=5Vrsjlgs1uhwN5AU2Vg1TPuEBasNdhX3CgxtfTdXOQQ",
+      "DirectFedAuthUrl=https://coinbase.okta.com/app/coinbase_pwc_1/exk1ke47d0l3gh5gp0x8/sso/saml",
+      "facebook-domain-verification=qbphvvib286cbvluswam0qypj99ofm",
+      "google-site-verification=8ww1MRKa0mZPc-WdoZ7YdL64qIE_2bJuIyIagaQqzFo",
+      "miro-verification=790dc2010116c659230c25705d7a5358cd78d99b",
+      "applause-verification:4e8f0335-526a-4a52-8da4-f4ecedc931ef",
+      "giga-domain-verification-956jz3=BliOUPqeH2xWvVWYcEmFCxcwC",
+      "verification_token=N5mizUogMNMbNmoFTKuh7KCwg",
+      "stripe-verification=f66cbde9148f67d1bb992cfe5ae3fc1efa829c816b726b0bb28ff243325344dc",
+      "docusign=8ace657e-b7bc-4ed2-9cb3-8aa55e7d0597",
+      "cloudflare_dashboard_sso=2306d311a1bc9c50590c204bf0e527d8",
+      "onetrust-domain-verification=f131f1d66b1b445cb8edc36b8edd78e8",
+      "openai-domain-verification=dv-lWXbBpm6xG2ptEFodATJULvV",
+      "vercel-domain-verification-zvp7d4=jvZ5HXRxnwIhxdzt26biEw6Oh",
+      "slack-domain-verification=MlD3gzX7txujPKkmWsULE6w264DyKkTkxbT7nPTd",
+      "ahrefs-site-verification_cc6fbe8f6b26b9b07f97892536cda45b7ce7917b040baacf81facc14e820e887",
+      "verification_token=KH5SwHZXz5rsFGMABj81aGBnF",
+      "pylon-domain-verification-sc64gk=B7nJiLr0KeZ0CRv2aVkYTNfjs",
+      "docusign=642eb6c3-8697-4ebd-8a51-a48a05713018",
+      "tiktok-developers-site-verification=HrFgIdc7KnV2NknroIrwPpiieVmSJjYz",
+      "atlassian-domain-verification=hDuZ4Ho1Rts/J4kaoxR9K2Qnywy2Uo+GV8bDIwXEsE4uovTo0vcL+8AVpI4+3j2V",
+      "apple-domain-verification=8HpWlON81jar5xva"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; adkim=s; aspf=s; fo=1; rua=mailto:jpohmdhp@ag.dmarcian.com; ruf=mailto:jpohmdhp@fr.dmarcian.com;"
@@ -295,11 +295,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "verification_token=fsUf5PQLIwq7nf4HOoQN6ZUCz",
-    "apple-domain-verification=8HpWlON81jar5xva",
-    "atlassian-domain-verification=hDuZ4Ho1Rts/J4kaoxR9K2Qnywy2Uo+GV8bDIwXEsE4uovTo0v",
-    "openai-domain-verification=dv-lWXbBpm6xG2ptEFodATJULvV",
-    "stripe-verification=f66cbde9148f67d1bb992cfe5ae3fc1efa829c816b726b0bb28ff2433253"
+    "google-site-verification=veWhMcRP5-ISDr7tSAI7Mjh9ELqQ7ndOvbHY-xcsl9o",
+    "google-site-verification=gwL0hNTFdVrIO_MRAN6m07GJs7aZFGC-XkJcaq8We2s",
+    "dropbox-domain-verification=ap29irieph9f",
+    "google-site-verification=F0pv18D2VaKyH77hhpE9OZuDVipTi_YUGqKGzSOUfnQ",
+    "mongodb-site-verification=hME8tDWzya9rzZbckAxwpiEiv12KX8Gd"
   ],
   "tls2": {
     "alpn": "",
@@ -310,7 +310,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260921013431",
+      "not_after": "20261220023419"
     }
   },
   "http2": {
@@ -333,8 +335,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "/partner/"
     ]
   },
-  "elapsed_s": 10.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 10.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

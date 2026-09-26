@@ -7,12 +7,12 @@
 | Target | https://slashgear.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | slashgear.com |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
+Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,7 +32,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -125,7 +126,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=vcw5ice4xutsws6rj3cpxdpslwu6qd; google-site-verification=hLM8LlkEvTqibiu5LlpaUI7FcUqPRYajAd7kqdQ8yIE; pinterest-site-verification=99ff81df9daa6ad32e804c775f922a47
+- **Detail:** Apex TXT records with verification/token content: pinterest-site-verification=99ff81df9daa6ad32e804c775f922a47; facebook-domain-verification=vcw5ice4xutsws6rj3cpxdpslwu6qd; google-site-verification=hLM8LlkEvTqibiu5LlpaUI7FcUqPRYajAd7kqdQ8yIE
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -140,7 +141,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 - **Detail:** robots.txt lists 7 disallow path(s), e.g. /wp-admin/, /wp-includes/, /*?*ajax=, /*/s/*, /*/sl/*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 17. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 65.9.180.30 carries PTR server-65-9-180-30.tpe53.r.cloudfront.net. for slashgear.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 18. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -154,31 +161,31 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
   "dns": {
     "a": [
       "65.9.180.30",
-      "65.9.180.36",
+      "65.9.180.100",
       "65.9.180.10",
-      "65.9.180.100"
+      "65.9.180.36"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx3.googlemail.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "aspmx3.googlemail.com (pref 10)"
     ],
     "ns": [
-      "ns-1080.awsdns-07.org.",
       "ns-432.awsdns-54.com.",
+      "ns-1080.awsdns-07.org.",
       "ns-1985.awsdns-56.co.uk.",
       "ns-518.awsdns-00.net."
     ],
     "spf": [
-      "facebook-domain-verification=vcw5ice4xutsws6rj3cpxdpslwu6qd",
-      "sv8nbg16pjbbc11nh7l86zjw21zg20sq",
-      "google-site-verification=hLM8LlkEvTqibiu5LlpaUI7FcUqPRYajAd7kqdQ8yIE",
       "pinterest-site-verification=99ff81df9daa6ad32e804c775f922a47",
-      "v=spf1 include:_spf.google.com ~all"
+      "facebook-domain-verification=vcw5ice4xutsws6rj3cpxdpslwu6qd",
+      "google-site-verification=hLM8LlkEvTqibiu5LlpaUI7FcUqPRYajAd7kqdQ8yIE",
+      "v=spf1 include:_spf.google.com ~all",
+      "sv8nbg16pjbbc11nh7l86zjw21zg20sq"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; fo=1; rua=mailto:dmarc@slashgear.com; ruf=mailto:dmarc@slashgear.com"
@@ -267,9 +274,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     ]
   },
   "apex_txt": [
+    "pinterest-site-verification=99ff81df9daa6ad32e804c775f922a47",
     "facebook-domain-verification=vcw5ice4xutsws6rj3cpxdpslwu6qd",
-    "google-site-verification=hLM8LlkEvTqibiu5LlpaUI7FcUqPRYajAd7kqdQ8yIE",
-    "pinterest-site-verification=99ff81df9daa6ad32e804c775f922a47"
+    "google-site-verification=hLM8LlkEvTqibiu5LlpaUI7FcUqPRYajAd7kqdQ8yIE"
   ],
   "tls2": {
     "alpn": "",
@@ -280,7 +287,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260905000000",
+      "not_after": "20270321235959"
     }
   },
   "http2": {
@@ -294,8 +303,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "/sponsored/"
     ]
   },
-  "elapsed_s": 7.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "server-65-9-180-30.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 7.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,8 +7,8 @@
 | Target | https://maps.googleapis.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | maps.googleapis.com |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -118,7 +118,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (ss50e83ha7r9r9.maps.googleapis.com and y62vjckld1y2hr.maps.googleapis.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (60cs5zdx7h3bji.maps.googleapis.com and ky3dsejn3ezakh.maps.googleapis.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -140,24 +140,24 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
   "domain": "maps.googleapis.com",
   "dns": {
     "a": [
+      "172.217.114.4",
+      "172.217.116.4",
+      "172.217.117.4",
       "172.217.115.4",
       "172.217.112.4",
-      "172.217.113.4",
-      "172.217.118.4",
       "172.217.119.4",
-      "172.217.117.4",
-      "172.217.114.4",
-      "172.217.116.4"
+      "172.217.113.4",
+      "172.217.118.4"
     ],
     "aaaa": [
-      "2001:4860:4845:400::",
-      "2001:4860:4843:400::",
-      "2001:4860:4844:400::",
+      "2001:4860:4846:400::",
       "2001:4860:4841:400::",
       "2001:4860:4847:400::",
+      "2001:4860:4844:400::",
+      "2001:4860:4843:400::",
+      "2001:4860:4842:400::",
       "2001:4860:4840:400::",
-      "2001:4860:4846:400::",
-      "2001:4860:4842:400::"
+      "2001:4860:4845:400::"
     ],
     "cname": null,
     "mx": [],
@@ -172,9 +172,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=upload.video.google.com",
-    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
-    "notBefore": "Sep 10 19:23:29 2026 GMT",
-    "notAfter": "Dec  3 19:23:28 2026 GMT",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
+    "notBefore": "Sep 10 19:23:23 2026 GMT",
+    "notAfter": "Dec  3 19:23:22 2026 GMT",
     "san": [
       "upload.video.google.com",
       "*.clients.google.com",
@@ -204,7 +204,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     }
   },
   "ports": {
-    "ip": "172.217.115.4",
+    "ip": "172.217.114.4",
     "open": []
   },
   "https": {
@@ -269,7 +269,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192329",
+      "not_after": "20261203192328"
     }
   },
   "http2": {
@@ -291,8 +293,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "/$rpc/google.internal.maps.mapsjs.v1.MapsJsInternalService/"
     ]
   },
-  "elapsed_s": 4.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 4.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

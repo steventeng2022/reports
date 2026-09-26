@@ -7,12 +7,12 @@
 | Target | https://sellfy.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | sellfy.com |
-| Test date | 2026-09-26 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
+Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,8 +34,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 19 | info | CT1 | 38 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 20 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 19 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 20 | info | CT1 | 38 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 21 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -134,7 +135,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=ZJw64F0rZxNTUajWkexgLICKwT80PoLkOyWv19c4gco; ahrefs-site-verification_fa14fdfac7d1156d8a1e0e663bc7a8a0848638879cf0a667418f172; 1password-site-verification=4CBCWU2SDVBF7IZSRABLDVIZEM
+- **Detail:** Apex TXT records with verification/token content: 1password-site-verification=4CBCWU2SDVBF7IZSRABLDVIZEM; google-site-verification=ZJw64F0rZxNTUajWkexgLICKwT80PoLkOyWv19c4gco; ahrefs-site-verification_fa14fdfac7d1156d8a1e0e663bc7a8a0848638879cf0a667418f172
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -155,13 +156,19 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - **Detail:** robots.txt lists 15 disallow path(s), e.g. /*/edit/, /*/checkout/*, /*/thankyou/*, /*/paymentcompleted/*, /p/*/buy/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 19. [INFO] 38 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 19. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://sellfy.com/ carries Cache-Control: public, max-age=0, must-revalidate; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 20. [INFO] 38 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: app.sellfy.com, assets.sellfy.com, blog.sellfy.com, cdn.blog.sellfy.com, demo.sellfy.com, dev.emails.sellfy.com, docs.sellfy.com, domains.demo.sellfy.com, jobs.sellfy.com, media.sellfy.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 20. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 21. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: cdn.blog.sellfy.com, demo.sellfy.com; content may still be served via virtual-host fallback.
@@ -183,21 +190,21 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     ],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "alt3.aspmx.l.google.com (pref 10)"
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "kara.ns.cloudflare.com.",
-      "will.ns.cloudflare.com."
+      "will.ns.cloudflare.com.",
+      "kara.ns.cloudflare.com."
     ],
     "spf": [
-      "v=spf1 include:helpscoutemail.com include:emsd1.com include:amazonses.com include:_spf.google.com include:mailgun.org -all",
+      "1password-site-verification=4CBCWU2SDVBF7IZSRABLDVIZEM",
       "google-site-verification=ZJw64F0rZxNTUajWkexgLICKwT80PoLkOyWv19c4gco",
       "ahrefs-site-verification_fa14fdfac7d1156d8a1e0e663bc7a8a0848638879cf0a667418f172e3bd78402",
-      "1password-site-verification=4CBCWU2SDVBF7IZSRABLDVIZEM"
+      "v=spf1 include:helpscoutemail.com include:emsd1.com include:amazonses.com include:_spf.google.com include:mailgun.org -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; fo=1; ri=3600; sp=reject; aspf=r; rua=mailto:d6930f9c@dmarc.mailgun.org,mailto:1a7214da@inbox.ondmarc.com; ruf=mailto:d6930f9c@dmarc.mailgun.org,mailto:1a7214da@inbox.ondmarc.com;"
@@ -332,9 +339,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     ]
   },
   "apex_txt": [
+    "1password-site-verification=4CBCWU2SDVBF7IZSRABLDVIZEM",
     "google-site-verification=ZJw64F0rZxNTUajWkexgLICKwT80PoLkOyWv19c4gco",
-    "ahrefs-site-verification_fa14fdfac7d1156d8a1e0e663bc7a8a0848638879cf0a667418f172",
-    "1password-site-verification=4CBCWU2SDVBF7IZSRABLDVIZEM"
+    "ahrefs-site-verification_fa14fdfac7d1156d8a1e0e663bc7a8a0848638879cf0a667418f172"
   ],
   "tls2": {
     "alpn": "",
@@ -345,7 +352,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260814131422",
+      "not_after": "20261112141418"
     }
   },
   "http2": {
@@ -367,8 +376,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "/payments/"
     ]
   },
-  "elapsed_s": 12.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 12.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

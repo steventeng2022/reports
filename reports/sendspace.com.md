@@ -7,8 +7,8 @@
 | Target | https://sendspace.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | sendspace.com |
-| Test date | 2026-09-26 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -162,12 +162,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "mx.sendspace.com (pref 5)"
     ],
     "ns": [
-      "rudy.ns.cloudflare.com.",
-      "macy.ns.cloudflare.com."
+      "macy.ns.cloudflare.com.",
+      "rudy.ns.cloudflare.com."
     ],
     "spf": [
-      "google-site-verification=CEUPSe_6cWhvpyL-kasIhlsmKAPyUCdqfd_aYiITfuQ",
-      "v=spf1 mx ~all"
+      "v=spf1 mx ~all",
+      "google-site-verification=CEUPSe_6cWhvpyL-kasIhlsmKAPyUCdqfd_aYiITfuQ"
     ],
     "dmarc": [
       "v=DMARC1;p=none;rua=mailto:dmarc-feedback@sendspace.com"
@@ -261,7 +261,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260528000000",
+      "not_after": "20261212235959"
     }
   },
   "http2": {
@@ -277,8 +279,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/p/"
     ]
   },
-  "elapsed_s": 32.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 35.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

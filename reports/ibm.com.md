@@ -7,12 +7,12 @@
 | Target | https://ibm.com/ |
 | Bug bounty program | IBM |
 | Listed scope domain | ibm.com |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
+Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 19 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 20 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -133,7 +135,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-gws-recovery-domain-verification=48225137; atlassian-sending-domain-verification=79afa9af-6e0f-47e6-b636-2786f8772f66; google-site-verification=tzdngH5fWH-k8uQoDVovOFJQZTwaGtDOP6S2cQlOvCs
+- **Detail:** Apex TXT records with verification/token content: onetrust-domain-verification=e7e09cedfb9b4ff386f1274e4c214d55; docker-verification=7c4d4e40-e7ee-4183-94c2-db97d0873269; mongodb-site-verification=gEevYaKFpagtLmrYxomtpE2QmYwnd29i
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -154,6 +156,18 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
 - **Detail:** robots.txt lists 154 disallow path(s), e.g. /account/registration, /account/mypro, /account/myint, /Admin, /cgi-
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 19. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://ibm.com/ carries Cache-Control: max-age=0; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 20. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 184.84.207.120 carries PTR a184-84-207-120.deploy.static.akamaitechnologies.com. for ibm.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -164,8 +178,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
       "184.84.207.120"
     ],
     "aaaa": [
-      "2600:1417:8400:1782::3831",
-      "2600:1417:8400:17b9::3831"
+      "2600:140b:1c00:1b83::3831",
+      "2600:140b:1c00:1b8d::3831"
     ],
     "cname": null,
     "mx": [
@@ -173,60 +187,60 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
       "mx0b-001b2d05.pphosted.com (pref 5)"
     ],
     "ns": [
-      "dns4.p05.nsone.net.",
-      "dns3.p05.nsone.net.",
       "dns2.p05.nsone.net.",
-      "dns1.p05.nsone.net."
+      "dns1.p05.nsone.net.",
+      "dns4.p05.nsone.net.",
+      "dns3.p05.nsone.net."
     ],
     "spf": [
-      "google-gws-recovery-domain-verification=48225137",
-      "atlassian-sending-domain-verification=79afa9af-6e0f-47e6-b636-2786f8772f66",
-      "google-site-verification=tzdngH5fWH-k8uQoDVovOFJQZTwaGtDOP6S2cQlOvCs",
-      "DomainVerification=CYICZMSWT62KDTQWZ1YCKKU763NN36BQJ4TD5BV606K3FLDUR3UOJE58E30FTIVL",
-      "ms-domain-verification=1adbc779-89ce-47cf-8167-c4e4a3b4a6aa",
-      "atlassian-domain-verification=79ZnqmRPyDwm6b99GAF3ymzBmjtRZU9oCfgMwVMAUGlrPPenDc6esgO62jafAXUI",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
-      "onetrust-domain-verification=e7e09cedfb9b4ff386f1274e4c214d55",
-      "ms-domain-verification=bedcd06e-7e1c-4906-9b6a-b4a1095fa4ed",
-      "mongodb-site-verification=3d0wR0KvanH3yTbll0sXEJ0QGBQffOkv",
-      "yandex-verification: 5f458b477256c50c",
-      "intersight=cfe6f48b59e7428442b9aab04765ca0953e01c480a685ca5cf6939ef9e505532",
-      "google-gws-recovery-domain-verification=42135076",
-      "mongodb-site-verification=Gcqpap80hVonXfV2VnYC6AlEr2Z9vvf3",
-      "figma-domain-verification=6db9259c4472f3e5ba44c7ae284b4f4b8aa0268c0797659a5e1a28ccfe912ddf-1741206863",
-      "google-site-verification=I-empodMpM7n5Px1doUgIaOKHKeIMXXf6k8Ea5ENyO4",
-      "google-site-verification=Jck8mLbYYfCnrmi_nRy4MG2fbUN3UGhC29KdspGLd9Y",
-      "asv=e8bb80eeac60e62a4dd07f03d1d36829",
-      "docker-verification=846278f4-7e2c-4586-ae26-e1a9f0f0aecd",
-      "40a21f5affe343c6b37e0a5af80dcd93",
       "00D10000000biEb=1TBQ80000000b2n",
-      "docker-verification=7c4d4e40-e7ee-4183-94c2-db97d0873269",
-      "facebook-domain-verification=7w4exj2revwpv5u708s6bji5j6tswy",
-      "smartsheet-site-validation=TaCpXPZ-qFfOgfHXuMrfF8_d6GZjICNl",
-      "apple-domain-verification=M3o953J0rN1B0P2a",
-      "Dynatrace-site-verification=76b6b299-fe43-4f31-889b-a8a467193478__8q74sg9dg5udjppn95utrb8bct",
-      "00D3h000004YkeYEAS",
-      "wework-site-verification=hhWLSbG4qiaKhsXU",
-      "_github-challenge-ibm.ibm.com=2613e984bc",
-      "00d00000000hedieay",
-      "anthropic-domain-verification-ym2t7s=RPDdVAMpzgbooX0kxhqstuM2D",
-      "coursera-domain-verification=To0Ej5CrewXrC0FcCjVxXG1lTcLLJQjvrW2gdUt8rCxFxTGMdA0vA54nUlgLfbyO",
-      "amazonses:79ShwQazteb+WkCt8e297sAC2mwZVRditsrzaoxiHjU=",
-      "google-site-verification=ewe2QcP5aMj3DKuSfxscZME5wip4EpoTxCXPNvr0-J0",
-      "atlassian-domain-verification=WAjTH82C5Zx475WLKAA2nrdlsoA/kN0ej9igrLrED4h15KMHPOm+A5H3GndKAxDC",
-      "adobe-idp-site-verification=5f8adca7-512f-44e1-a5b2-b62c5e3763f2",
-      "google-site-verification=aH5jG_abrxRKeKZKOrX9CuXlXdFSCQxVkmAVoYwzNcc",
-      "MS=ms61389031",
-      "atlassian-domain-verification=a32Aj0uoXQRh6QseDFFrlufYlkbeSdok7az3sY0DQNVXpW1Iqj8zlsuXFZgHMojH",
-      "intersight=1439768961d2f6d736c38b947d235947681cd817abea13eab3daee9ecbdc6c3d",
-      "mongodb-site-verification=gEevYaKFpagtLmrYxomtpE2QmYwnd29i",
-      "00df40000004784eaa",
-      "00d50000000c9mweay",
-      "h1-domain-verification=m9jGKLYa5hDdU5AHUfK9jrBmWVhx3h9t9ztfDFMaxZfgChvk",
-      "figma-domain-verification=b8b3862b529816383e0e7ec9ad2757f8f7b4a0f4da290136796f1aa36d558841-1785230801",
+      "onetrust-domain-verification=e7e09cedfb9b4ff386f1274e4c214d55",
       "smartsheet-site-validation=I-lI3gCPdvKbKQ6KTki96Ream6Yjs1gU",
+      "amazonses:79ShwQazteb+WkCt8e297sAC2mwZVRditsrzaoxiHjU=",
       "_analyst_ng_validation=f6702989-83f3-42b8-be39-19cf8f1c33f5",
-      "jamf-site-verification=CN4bHigc1ZnD6ZQX_2c6XQ"
+      "docker-verification=7c4d4e40-e7ee-4183-94c2-db97d0873269",
+      "mongodb-site-verification=gEevYaKFpagtLmrYxomtpE2QmYwnd29i",
+      "Dynatrace-site-verification=76b6b299-fe43-4f31-889b-a8a467193478__8q74sg9dg5udjppn95utrb8bct",
+      "intersight=cfe6f48b59e7428442b9aab04765ca0953e01c480a685ca5cf6939ef9e505532",
+      "facebook-domain-verification=7w4exj2revwpv5u708s6bji5j6tswy",
+      "google-site-verification=ewe2QcP5aMj3DKuSfxscZME5wip4EpoTxCXPNvr0-J0",
+      "atlassian-domain-verification=79ZnqmRPyDwm6b99GAF3ymzBmjtRZU9oCfgMwVMAUGlrPPenDc6esgO62jafAXUI",
+      "figma-domain-verification=b8b3862b529816383e0e7ec9ad2757f8f7b4a0f4da290136796f1aa36d558841-1785230801",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
+      "adobe-idp-site-verification=5f8adca7-512f-44e1-a5b2-b62c5e3763f2",
+      "_github-challenge-ibm.ibm.com=2613e984bc",
+      "google-site-verification=I-empodMpM7n5Px1doUgIaOKHKeIMXXf6k8Ea5ENyO4",
+      "00D3h000004YkeYEAS",
+      "intersight=1439768961d2f6d736c38b947d235947681cd817abea13eab3daee9ecbdc6c3d",
+      "coursera-domain-verification=To0Ej5CrewXrC0FcCjVxXG1lTcLLJQjvrW2gdUt8rCxFxTGMdA0vA54nUlgLfbyO",
+      "40a21f5affe343c6b37e0a5af80dcd93",
+      "DomainVerification=CYICZMSWT62KDTQWZ1YCKKU763NN36BQJ4TD5BV606K3FLDUR3UOJE58E30FTIVL",
+      "google-gws-recovery-domain-verification=48225137",
+      "asv=e8bb80eeac60e62a4dd07f03d1d36829",
+      "atlassian-domain-verification=WAjTH82C5Zx475WLKAA2nrdlsoA/kN0ej9igrLrED4h15KMHPOm+A5H3GndKAxDC",
+      "google-site-verification=tzdngH5fWH-k8uQoDVovOFJQZTwaGtDOP6S2cQlOvCs",
+      "google-gws-recovery-domain-verification=42135076",
+      "atlassian-sending-domain-verification=79afa9af-6e0f-47e6-b636-2786f8772f66",
+      "smartsheet-site-validation=TaCpXPZ-qFfOgfHXuMrfF8_d6GZjICNl",
+      "h1-domain-verification=m9jGKLYa5hDdU5AHUfK9jrBmWVhx3h9t9ztfDFMaxZfgChvk",
+      "MS=ms61389031",
+      "mongodb-site-verification=3d0wR0KvanH3yTbll0sXEJ0QGBQffOkv",
+      "apple-domain-verification=M3o953J0rN1B0P2a",
+      "00d00000000hedieay",
+      "mongodb-site-verification=Gcqpap80hVonXfV2VnYC6AlEr2Z9vvf3",
+      "ms-domain-verification=bedcd06e-7e1c-4906-9b6a-b4a1095fa4ed",
+      "00df40000004784eaa",
+      "yandex-verification: 5f458b477256c50c",
+      "ms-domain-verification=1adbc779-89ce-47cf-8167-c4e4a3b4a6aa",
+      "google-site-verification=aH5jG_abrxRKeKZKOrX9CuXlXdFSCQxVkmAVoYwzNcc",
+      "00d50000000c9mweay",
+      "anthropic-domain-verification-ym2t7s=RPDdVAMpzgbooX0kxhqstuM2D",
+      "google-site-verification=Jck8mLbYYfCnrmi_nRy4MG2fbUN3UGhC29KdspGLd9Y",
+      "docker-verification=846278f4-7e2c-4586-ae26-e1a9f0f0aecd",
+      "atlassian-domain-verification=a32Aj0uoXQRh6QseDFFrlufYlkbeSdok7az3sY0DQNVXpW1Iqj8zlsuXFZgHMojH",
+      "jamf-site-verification=CN4bHigc1ZnD6ZQX_2c6XQ",
+      "wework-site-verification=hhWLSbG4qiaKhsXU",
+      "figma-domain-verification=6db9259c4472f3e5ba44c7ae284b4f4b8aa0268c0797659a5e1a28ccfe912ddf-1741206863"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=none; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -331,11 +345,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-gws-recovery-domain-verification=48225137",
-    "atlassian-sending-domain-verification=79afa9af-6e0f-47e6-b636-2786f8772f66",
-    "google-site-verification=tzdngH5fWH-k8uQoDVovOFJQZTwaGtDOP6S2cQlOvCs",
-    "DomainVerification=CYICZMSWT62KDTQWZ1YCKKU763NN36BQJ4TD5BV606K3FLDUR3UOJE58E30FT",
-    "ms-domain-verification=1adbc779-89ce-47cf-8167-c4e4a3b4a6aa"
+    "onetrust-domain-verification=e7e09cedfb9b4ff386f1274e4c214d55",
+    "docker-verification=7c4d4e40-e7ee-4183-94c2-db97d0873269",
+    "mongodb-site-verification=gEevYaKFpagtLmrYxomtpE2QmYwnd29i",
+    "Dynatrace-site-verification=76b6b299-fe43-4f31-889b-a8a467193478__8q74sg9dg5udjp",
+    "facebook-domain-verification=7w4exj2revwpv5u708s6bji5j6tswy"
   ],
   "tls2": {
     "alpn": "",
@@ -346,7 +360,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251017000000",
+      "not_after": "20261017235959"
     }
   },
   "http2": {
@@ -368,8 +384,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 6, Info: 12)
       "/fscripts"
     ]
   },
-  "elapsed_s": 7.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "a184-84-207-120.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 7.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,8 +7,8 @@
 | Target | https://businessinsider.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | businessinsider.com |
-| Test date | 2026-09-26 17:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -120,7 +120,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=MeuJIyKOrXf6e1Foju5Tqkzoms8KH0IoP01G5KhB-m8; apple-domain-verification=G59n_HIhMNvtkyEDlx0g1LdxhRL8neVCOkZ-NcIa0cQ; google-site-verification=HA4gcc-DAPuEX5Z3gfg-LTrtafWTIr40orlRHKZSLy0
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=HA4gcc-DAPuEX5Z3gfg-LTrtafWTIr40orlRHKZSLy0; _globalsign-domain-verification=O81xyb7YxpdGeHWkniit_VBT4vTXz9__NFrNMoTwFg; google-site-verification=E4A9jU1go8SQoOYqjwybQIyUhIqPRDUF2Fu5nYC77oM
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -160,58 +160,58 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "businessinsider.com",
   "dns": {
     "a": [
-      "151.101.1.171",
+      "151.101.193.171",
       "151.101.65.171",
       "151.101.129.171",
-      "151.101.193.171"
+      "151.101.1.171"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx3.googlemail.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
       "aspmx2.googlemail.com (pref 10)"
     ],
     "ns": [
-      "ns21.constellix.com.",
-      "ns11.constellix.com.",
-      "dns3.p03.nsone.net.",
-      "dns4.p03.nsone.net.",
       "ns61.constellix.net.",
-      "dns1.p03.nsone.net.",
-      "ns41.constellix.net.",
+      "ns11.constellix.com.",
+      "dns2.p03.nsone.net.",
+      "dns4.p03.nsone.net.",
+      "ns21.constellix.com.",
       "ns31.constellix.com.",
-      "ns51.constellix.net.",
-      "dns2.p03.nsone.net."
+      "dns1.p03.nsone.net.",
+      "dns3.p03.nsone.net.",
+      "ns41.constellix.net.",
+      "ns51.constellix.net."
     ],
     "spf": [
-      "google-site-verification=MeuJIyKOrXf6e1Foju5Tqkzoms8KH0IoP01G5KhB-m8",
-      "MS=49384EFC2AA5C920CC726E72850EA7250E18356F",
-      "apple-domain-verification=G59n_HIhMNvtkyEDlx0g1LdxhRL8neVCOkZ-NcIa0cQ",
       "google-site-verification=HA4gcc-DAPuEX5Z3gfg-LTrtafWTIr40orlRHKZSLy0",
-      "atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXlTSpjtg1iNnMasAJ3GsD",
-      "openai-domain-verification=dv-jTz4KfMtiA6SiWiVpka2QDFr",
+      "_globalsign-domain-verification=O81xyb7YxpdGeHWkniit_VBT4vTXz9__NFrNMoTwFg",
       "google-site-verification=E4A9jU1go8SQoOYqjwybQIyUhIqPRDUF2Fu5nYC77oM",
-      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:_spf.salesforce.com ~all",
-      "globalsign-domain-verification=qhllLTVNbc63_k7N_0u2VjkgHnq48qKQ8gKVvHWkHI",
-      "google-site-verification=dsTQoEYtkhKJUiHaf7NXBGBP5wRxmQ2ia56y9UnTeZc",
-      "asv=4f7bed0ed9307319569dca0dc413d303",
-      "lucidlink-verification=H13VJ94S9GRFM6ZX539Q5EB8MG",
-      "google-site-verification=6siIDX8Eh0aPCTSxDF2-GFuuFff1H1aPGm3SfPvP7aI",
       "canva-site-verification=yOD8mjIYFWLM6qJQW-rwgg",
+      "google-site-verification=5khzg7Aljjht1XobmkoQeX_2L4E5UJO9C1Z9_zfFTYs",
+      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:_spf.salesforce.com ~all",
+      "atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXITSpjtg1iNnMasAJ3GsD",
+      "apple-domain-verification=G59n_HIhMNvtkyEDlx0g1LdxhRL8neVCOkZ-NcIa0cQ",
+      "google-site-verification=6siIDX8Eh0aPCTSxDF2-GFuuFff1H1aPGm3SfPvP7aI",
+      "atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXlTSpjtg1iNnMasAJ3GsD",
+      "zapier-domain-verification-challenge=e10fad84-5944-470d-ae77-5d7697d0af05",
       "slack-domain-verification=p1y98UQQ7JwUhAuHWXgLsJqM1VDqn56eErx227bu",
-      "facebook-domain-verification=jz79wu26i92i5zpxpqra4s1p1ois9j",
+      "openai-domain-verification=dv-jTz4KfMtiA6SiWiVpka2QDFr",
+      "00Dd0000000cyqM=1TBQK00000000rF",
+      "globalsign-domain-verification=qhllLTVNbc63_k7N_0u2VjkgHnq48qKQ8gKVvHWkHI",
       "openai-domain-verification=dv-gEVeLfZWhh8fDqhgX7be0VGh",
       "google-site-verification=hVwc4FIT_C_8DNSPQSBmv84brU443LMUlfiyDqrByVA",
       "google-site-verification=lhkw5_yE2VpatfjtNqFeTXshSdHOmye2FSHCz4_IZwE",
-      "atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXITSpjtg1iNnMasAJ3GsD",
-      "google-site-verification=5khzg7Aljjht1XobmkoQeX_2L4E5UJO9C1Z9_zfFTYs",
-      "_globalsign-domain-verification=O81xyb7YxpdGeHWkniit_VBT4vTXz9__NFrNMoTwFg",
+      "facebook-domain-verification=jz79wu26i92i5zpxpqra4s1p1ois9j",
+      "lucidlink-verification=H13VJ94S9GRFM6ZX539Q5EB8MG",
       "ZOOM_verify_BiuNcpuc03G4NjRCC8crLr",
-      "00Dd0000000cyqM=1TBQK00000000rF",
-      "zapier-domain-verification-challenge=e10fad84-5944-470d-ae77-5d7697d0af05"
+      "google-site-verification=MeuJIyKOrXf6e1Foju5Tqkzoms8KH0IoP01G5KhB-m8",
+      "google-site-verification=dsTQoEYtkhKJUiHaf7NXBGBP5wRxmQ2ia56y9UnTeZc",
+      "asv=4f7bed0ed9307319569dca0dc413d303",
+      "MS=49384EFC2AA5C920CC726E72850EA7250E18356F"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-reports@insider.com; ruf=mailto:dmarc-reports@insider.com"
@@ -240,7 +240,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "151.101.1.171",
+    "ip": "151.101.193.171",
     "open": []
   },
   "https": {
@@ -324,11 +324,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     ]
   },
   "apex_txt": [
-    "google-site-verification=MeuJIyKOrXf6e1Foju5Tqkzoms8KH0IoP01G5KhB-m8",
-    "apple-domain-verification=G59n_HIhMNvtkyEDlx0g1LdxhRL8neVCOkZ-NcIa0cQ",
     "google-site-verification=HA4gcc-DAPuEX5Z3gfg-LTrtafWTIr40orlRHKZSLy0",
-    "atlassian-domain-verification=EnHue3UwYSfo4DXgk/Bvg3WcQ2JVjyt6zf38Dox2HOZXlTSpjt",
-    "openai-domain-verification=dv-jTz4KfMtiA6SiWiVpka2QDFr"
+    "_globalsign-domain-verification=O81xyb7YxpdGeHWkniit_VBT4vTXz9__NFrNMoTwFg",
+    "google-site-verification=E4A9jU1go8SQoOYqjwybQIyUhIqPRDUF2Fu5nYC77oM",
+    "canva-site-verification=yOD8mjIYFWLM6qJQW-rwgg",
+    "google-site-verification=5khzg7Aljjht1XobmkoQeX_2L4E5UJO9C1Z9_zfFTYs"
   ],
   "tls2": {
     "alpn": "",
@@ -339,7 +339,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260211190025",
+      "not_after": "20270315190024"
     }
   },
   "http2": {
@@ -361,8 +363,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "/document/"
     ]
   },
-  "elapsed_s": 19.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 19.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

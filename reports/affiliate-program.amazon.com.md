@@ -7,12 +7,12 @@
 | Target | https://affiliate-program.amazon.com/ |
 | Bug bounty program | Amazon |
 | Listed scope domain | affiliate-program.amazon.com |
-| Test date | 2026-09-26 17:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,7 +32,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 14 | low | CK4 | Session-like cookie without HttpOnly | CWE-1004 |
 | 15 | info | CK5 | Cookie scoped to parent domain (.amazon.com) | CWE-200 |
 | 16 | low | CK4 | Session-like cookie without HttpOnly | CWE-1004 |
-| 17 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 17 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 19 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -141,7 +143,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - **Detail:** Cookie 'session-id-time' looks session-related and has no HttpOnly attribute.
 - **Recommendation:** Set HttpOnly on session cookies.
 
-### 17. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 17. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of affiliate-program.amazon.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 3.169.136.137 carries PTR server-3-169-136-137.tpe54.r.cloudfront.net. for affiliate-program.amazon.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 19. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -160,9 +174,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "cname": "tp.a0bb234b7-frontier.amazon.com.",
     "mx": [],
     "ns": [
+      "ns-1333.awsdns-38.org.",
       "ns-246.awsdns-30.com.",
       "ns-776.awsdns-33.net.",
-      "ns-1333.awsdns-38.org.",
       "ns-1802.awsdns-33.co.uk."
     ],
     "spf": [],
@@ -279,11 +293,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260614000000",
+      "not_after": "20261228235959"
     }
   },
-  "elapsed_s": 12.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "server-3-169-136-137.tpe54.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 12.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,8 +7,8 @@
 | Target | https://hostinger.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | hostinger.com |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -47,13 +47,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.19.149.80:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.19.150.80:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.19.149.80:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.19.150.80:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -139,7 +139,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=XJK8F7iNQk3gsKAzIMisoRaKR1K3wU11K0QCw662ENGLiGUAYN; google-site-verification=RLEBWxPy5k2j9nDF2u1A6hcvktrjchIs_6--G1DmgEQ; mailru-verification: a8a9886e0072b036
+- **Detail:** Apex TXT records with verification/token content: atlassian-sending-domain-verification=42cc4d24-81df-49d0-9693-a168df8fc223; google-site-verification=RLEBWxPy5k2j9nDF2u1A6hcvktrjchIs_6--G1DmgEQ; figma-domain-verification=bb2a3852187101c21a8a019813cb47acd28c3d9b84f1747c8cbdb7
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -167,8 +167,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "domain": "hostinger.com",
   "dns": {
     "a": [
-      "104.19.149.80",
-      "104.19.150.80"
+      "104.19.150.80",
+      "104.19.149.80"
     ],
     "aaaa": [
       "2606:4700::6813:9650",
@@ -176,40 +176,40 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     ],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx3.googlemail.com (pref 10)",
+      "aspmx2.googlemail.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx2.googlemail.com (pref 10)"
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
       "dns1.hostinger.com.",
       "dns2.hostinger.com."
     ],
     "spf": [
-      "atlassian-domain-verification=XJK8F7iNQk3gsKAzIMisoRaKR1K3wU11K0QCw662ENGLiGUAYNDUNHX/Ol5F4yyK",
-      "docusign=2992f799-e2b5-4a59-9478-d87ff226e65b",
-      "google-site-verification=RLEBWxPy5k2j9nDF2u1A6hcvktrjchIs_6--G1DmgEQ",
-      "_sslnkubllu80rt3klnta5jj78ohfe31",
-      "mailru-verification: a8a9886e0072b036",
-      "9dz88hzqmv6f9qp6h6n81ccknqt5qsj5",
-      "cursor-domain-verification-ed8vgx=HaftGMosCA7Suow43DgMeAz0z",
-      "figma-domain-verification=bb2a3852187101c21a8a019813cb47acd28c3d9b84f1747c8cbdb7244c36bfda-1737460010",
-      "h1-domain-verification=47Qxwxj28Ps2M1vAa5opS7wHmEMswKJq2rDjd5tem6ZuN7PB",
-      "google-site-verification=4EfGmYRIEIPWA_ACJsA5zFGUzzY1pa8Du2tiHb8EKuI",
-      "nordpass-domain-verification=6b627232b00e4e9ea70693c7994f2d50",
-      "google-site-verification=OVQopdHgqSSImLDPT0sUNZZRdXpLVBwDaSqloVGyK6Q",
-      "MS=ms37476243",
-      "v=spf1 include:_spf.google.com include:amazonses.com include:_spf.hostedemail.com include:_spf.psm.knowbe4.com include:_spf.atlassian.net -all",
-      "apple-domain-verification=IyFbOUpTx9DUOFwL",
-      "anthropic-domain-verification-sbpz2r=8X9I3m1TfwoIB68L9whmSnNoc",
       "atlassian-sending-domain-verification=42cc4d24-81df-49d0-9693-a168df8fc223",
-      "notion-domain-verification=BtpwrYPzJa32VMexOuoqItloklD9vb0uNmMu357qaif",
-      "google-site-verification=MOjKs17dYrFXyEPndU4bK505my3D0dyC63-c5mvaNGU",
-      "miro-verification=5d62135ad61fab8158906087fb92a56d0c945430",
+      "google-site-verification=RLEBWxPy5k2j9nDF2u1A6hcvktrjchIs_6--G1DmgEQ",
+      "figma-domain-verification=bb2a3852187101c21a8a019813cb47acd28c3d9b84f1747c8cbdb7244c36bfda-1737460010",
+      "MS=ms37476243",
+      "google-site-verification=4EfGmYRIEIPWA_ACJsA5zFGUzzY1pa8Du2tiHb8EKuI",
+      "apple-domain-verification=IyFbOUpTx9DUOFwL",
+      "cursor-domain-verification-ed8vgx=HaftGMosCA7Suow43DgMeAz0z",
+      "_sslnkubllu80rt3klnta5jj78ohfe31",
+      "v=spf1 include:_spf.google.com include:amazonses.com include:_spf.hostedemail.com include:_spf.psm.knowbe4.com include:_spf.atlassian.net -all",
+      "docusign=2992f799-e2b5-4a59-9478-d87ff226e65b",
       "openai-domain-verification=dv-9okZFix3JJIj9RBphlsAvfbi",
+      "notion-domain-verification=BtpwrYPzJa32VMexOuoqItloklD9vb0uNmMu357qaif",
+      "mailru-verification: a8a9886e0072b036",
+      "miro-verification=5d62135ad61fab8158906087fb92a56d0c945430",
       "yahoo-verification-key=YU6422jppAaWZKxEmokKU9sZrUatIZbu69iKw6p2zsI=",
-      "cwj6bz8hbrb0362ql3rp9pqlt1wryp6y"
+      "atlassian-domain-verification=XJK8F7iNQk3gsKAzIMisoRaKR1K3wU11K0QCw662ENGLiGUAYNDUNHX/Ol5F4yyK",
+      "cwj6bz8hbrb0362ql3rp9pqlt1wryp6y",
+      "h1-domain-verification=47Qxwxj28Ps2M1vAa5opS7wHmEMswKJq2rDjd5tem6ZuN7PB",
+      "google-site-verification=MOjKs17dYrFXyEPndU4bK505my3D0dyC63-c5mvaNGU",
+      "nordpass-domain-verification=6b627232b00e4e9ea70693c7994f2d50",
+      "9dz88hzqmv6f9qp6h6n81ccknqt5qsj5",
+      "anthropic-domain-verification-sbpz2r=8X9I3m1TfwoIB68L9whmSnNoc",
+      "google-site-verification=OVQopdHgqSSImLDPT0sUNZZRdXpLVBwDaSqloVGyK6Q"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; rua=mailto:1dfdc22fb72e416c8609bbda0450f278@dmarc-reports.cloudflare.net;"
@@ -239,7 +239,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     }
   },
   "ports": {
-    "ip": "104.19.149.80",
+    "ip": "104.19.150.80",
     "open": [
       8080,
       8443
@@ -336,11 +336,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     ]
   },
   "apex_txt": [
-    "atlassian-domain-verification=XJK8F7iNQk3gsKAzIMisoRaKR1K3wU11K0QCw662ENGLiGUAYN",
+    "atlassian-sending-domain-verification=42cc4d24-81df-49d0-9693-a168df8fc223",
     "google-site-verification=RLEBWxPy5k2j9nDF2u1A6hcvktrjchIs_6--G1DmgEQ",
-    "mailru-verification: a8a9886e0072b036",
-    "cursor-domain-verification-ed8vgx=HaftGMosCA7Suow43DgMeAz0z",
-    "figma-domain-verification=bb2a3852187101c21a8a019813cb47acd28c3d9b84f1747c8cbdb7"
+    "figma-domain-verification=bb2a3852187101c21a8a019813cb47acd28c3d9b84f1747c8cbdb7",
+    "google-site-verification=4EfGmYRIEIPWA_ACJsA5zFGUzzY1pa8Du2tiHb8EKuI",
+    "apple-domain-verification=IyFbOUpTx9DUOFwL"
   ],
   "tls2": {
     "alpn": "",
@@ -351,7 +351,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260202000000",
+      "not_after": "20270304235959"
     }
   },
   "http2": {
@@ -373,8 +375,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "*/tag/*"
     ]
   },
-  "elapsed_s": 4.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 4.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

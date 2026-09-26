@@ -7,8 +7,8 @@
 | Target | https://blockchain.info/ |
 | Bug bounty program | Blockchain |
 | Listed scope domain | blockchain.info |
-| Test date | 2026-09-26 17:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -52,13 +52,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.118.55:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.117.55:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.16.118.55:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.117.55:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -131,7 +131,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-yd7a79=MXqAD8dd4IelKFle1JyrIkOOs; google-site-verification=N70QW1CLbk8SytHhHLNHc-J8DCxNPmgyAP2ueTaxono; google-site-verification=qgYS2zBag9OWLnZ9Xj4HRihaVR0vPlx11_HRRAizW3Y
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=FcNnFGROYe6Yh5FMJ6T3XdwvIkbWtIwzREMEEbnX0YQ; yandex-verification: d9f3f2859b58ce6d; google-site-verification=qRCbhQsR3fxD3ylXPxNwUGUA5DD53PT3Wt9HSzZkPE8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -159,32 +159,32 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "domain": "blockchain.info",
   "dns": {
     "a": [
-      "104.16.118.55",
-      "104.16.117.55"
+      "104.16.117.55",
+      "104.16.118.55"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 20)",
-      "alt2.aspmx.l.google.com (pref 20)",
-      "aspmx3.googlemail.com (pref 30)",
       "aspmx2.googlemail.com (pref 30)",
-      "aspmx.l.google.com (pref 10)"
+      "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx.l.google.com (pref 10)",
+      "aspmx3.googlemail.com (pref 30)",
+      "alt1.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
-      "jay.ns.cloudflare.com.",
-      "beth.ns.cloudflare.com."
+      "beth.ns.cloudflare.com.",
+      "jay.ns.cloudflare.com."
     ],
     "spf": [
-      "anthropic-domain-verification-yd7a79=MXqAD8dd4IelKFle1JyrIkOOs",
-      "google-site-verification=N70QW1CLbk8SytHhHLNHc-J8DCxNPmgyAP2ueTaxono",
-      "google-site-verification=qgYS2zBag9OWLnZ9Xj4HRihaVR0vPlx11_HRRAizW3Y",
       "v=spf1 include:sendgrid.net include:_spf.google.com -all",
       "google-site-verification=FcNnFGROYe6Yh5FMJ6T3XdwvIkbWtIwzREMEEbnX0YQ",
-      "google-site-verification=qRCbhQsR3fxD3ylXPxNwUGUA5DD53PT3Wt9HSzZkPE8",
-      "_t0jbgqd8x84sclv1k8ycz5xupbcxf92",
       "yandex-verification: d9f3f2859b58ce6d",
-      "atlassian-domain-verification=3Nau9JDz9R67dqvzkIEpQsriloeNPy4vI/eh5acyDnEsG255ANV5Qyed2nE0WK/o"
+      "google-site-verification=qRCbhQsR3fxD3ylXPxNwUGUA5DD53PT3Wt9HSzZkPE8",
+      "atlassian-domain-verification=3Nau9JDz9R67dqvzkIEpQsriloeNPy4vI/eh5acyDnEsG255ANV5Qyed2nE0WK/o",
+      "anthropic-domain-verification-yd7a79=MXqAD8dd4IelKFle1JyrIkOOs",
+      "_t0jbgqd8x84sclv1k8ycz5xupbcxf92",
+      "google-site-verification=qgYS2zBag9OWLnZ9Xj4HRihaVR0vPlx11_HRRAizW3Y",
+      "google-site-verification=N70QW1CLbk8SytHhHLNHc-J8DCxNPmgyAP2ueTaxono"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc-reports@blockchain.info;"
@@ -219,7 +219,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     }
   },
   "ports": {
-    "ip": "104.16.118.55",
+    "ip": "104.16.117.55",
     "open": [
       8080,
       8443
@@ -316,11 +316,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     ]
   },
   "apex_txt": [
-    "anthropic-domain-verification-yd7a79=MXqAD8dd4IelKFle1JyrIkOOs",
-    "google-site-verification=N70QW1CLbk8SytHhHLNHc-J8DCxNPmgyAP2ueTaxono",
-    "google-site-verification=qgYS2zBag9OWLnZ9Xj4HRihaVR0vPlx11_HRRAizW3Y",
     "google-site-verification=FcNnFGROYe6Yh5FMJ6T3XdwvIkbWtIwzREMEEbnX0YQ",
-    "google-site-verification=qRCbhQsR3fxD3ylXPxNwUGUA5DD53PT3Wt9HSzZkPE8"
+    "yandex-verification: d9f3f2859b58ce6d",
+    "google-site-verification=qRCbhQsR3fxD3ylXPxNwUGUA5DD53PT3Wt9HSzZkPE8",
+    "atlassian-domain-verification=3Nau9JDz9R67dqvzkIEpQsriloeNPy4vI/eh5acyDnEsG255AN",
+    "anthropic-domain-verification-yd7a79=MXqAD8dd4IelKFle1JyrIkOOs"
   ],
   "tls2": {
     "alpn": "",
@@ -331,7 +331,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20250925000000",
+      "not_after": "20261026235959"
     }
   },
   "http2": {
@@ -345,8 +347,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "/static/*.pdf"
     ]
   },
-  "elapsed_s": 9.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 9.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

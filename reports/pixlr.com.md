@@ -7,12 +7,12 @@
 | Target | https://pixlr.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | pixlr.com |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
+Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | low | CK6 | Session-like cookie lacks both Secure and SameSite | CWE-614 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -118,7 +120,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=oC5rI2lcVHXzAzkL2Vcnv8ez_a2pXfr32PRK_EOlIRo; google-site-verification=_F1goepkCbExM9t92PYov0hJfY-m9PWKiVolh71vagw; slack-domain-verification=5kgVYpgjVRSEHfLOcRqd6mlCTU3YkAb5iWOilrds
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=2sAfia6TJBsNEuFQ1XdubGruwVdRE5fQvmtwIYFuwTg; google-site-verification=oC5rI2lcVHXzAzkL2Vcnv8ez_a2pXfr32PRK_EOlIRo; google-site-verification=_F1goepkCbExM9t92PYov0hJfY-m9PWKiVolh71vagw
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -139,6 +141,18 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 - **Detail:** robots.txt lists 3 disallow path(s), e.g. /proxy/, */feed/*, *?*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 17. [LOW] Session-like cookie lacks both Secure and SameSite (`CK6`)
+
+- **CWE:** CWE-614
+- **Detail:** Cookie 'connect.sid' set on pixlr.com has neither the Secure nor the SameSite attribute: interception exposure plus un-gated CSRF usability.
+- **Recommendation:** Set Secure and SameSite=Lax (or Strict) on session-like cookies.
+
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 54.192.248.68 carries PTR server-54-192-248-68.tpe53.r.cloudfront.net. for pixlr.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -146,35 +160,35 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
   "domain": "pixlr.com",
   "dns": {
     "a": [
-      "54.192.248.5",
       "54.192.248.68",
+      "54.192.248.74",
       "54.192.248.47",
-      "54.192.248.74"
+      "54.192.248.5"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx3.googlemail.com (pref 30)",
+      "aspmx2.googlemail.com (pref 30)",
       "alt2.aspmx.l.google.com (pref 20)",
       "aspmx5.googlemail.com (pref 30)",
-      "aspmx4.googlemail.com (pref 30)",
+      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx.l.google.com (pref 10)",
-      "aspmx2.googlemail.com (pref 30)"
+      "aspmx4.googlemail.com (pref 30)",
+      "aspmx3.googlemail.com (pref 30)"
     ],
     "ns": [
       "ns-1182.awsdns-19.org.",
-      "ns-1843.awsdns-38.co.uk.",
+      "ns-634.awsdns-15.net.",
       "ns-104.awsdns-13.com.",
-      "ns-634.awsdns-15.net."
+      "ns-1843.awsdns-38.co.uk."
     ],
     "spf": [
+      "google-site-verification=2sAfia6TJBsNEuFQ1XdubGruwVdRE5fQvmtwIYFuwTg",
       "google-site-verification=oC5rI2lcVHXzAzkL2Vcnv8ez_a2pXfr32PRK_EOlIRo",
       "google-site-verification=_F1goepkCbExM9t92PYov0hJfY-m9PWKiVolh71vagw",
-      "slack-domain-verification=5kgVYpgjVRSEHfLOcRqd6mlCTU3YkAb5iWOilrds",
       "atlassian-domain-verification=cCPJ1EYoiy66aDDkvHVMU7dcWs5rEVEtNQPXSW9E8BaKlKMnS2wVIwqgy3lrmRva",
+      "slack-domain-verification=5kgVYpgjVRSEHfLOcRqd6mlCTU3YkAb5iWOilrds",
       "v=spf1 include:sendgrid.net include:_spf.google.com -all",
-      "google-site-verification=2sAfia6TJBsNEuFQ1XdubGruwVdRE5fQvmtwIYFuwTg",
       "google-site-verification=b28UohbFAQzwv5bAN1UONccLHV3ijI3m59RnZ0VNfbU"
     ],
     "dmarc": [
@@ -205,7 +219,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     }
   },
   "ports": {
-    "ip": "54.192.248.5",
+    "ip": "54.192.248.68",
     "open": []
   },
   "https": {
@@ -266,11 +280,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "google-site-verification=2sAfia6TJBsNEuFQ1XdubGruwVdRE5fQvmtwIYFuwTg",
     "google-site-verification=oC5rI2lcVHXzAzkL2Vcnv8ez_a2pXfr32PRK_EOlIRo",
     "google-site-verification=_F1goepkCbExM9t92PYov0hJfY-m9PWKiVolh71vagw",
-    "slack-domain-verification=5kgVYpgjVRSEHfLOcRqd6mlCTU3YkAb5iWOilrds",
     "atlassian-domain-verification=cCPJ1EYoiy66aDDkvHVMU7dcWs5rEVEtNQPXSW9E8BaKlKMnS2",
-    "google-site-verification=2sAfia6TJBsNEuFQ1XdubGruwVdRE5fQvmtwIYFuwTg"
+    "slack-domain-verification=5kgVYpgjVRSEHfLOcRqd6mlCTU3YkAb5iWOilrds"
   ],
   "tls2": {
     "alpn": "",
@@ -281,7 +295,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260602000000",
+      "not_after": "20261216235959"
     }
   },
   "http2": {
@@ -291,8 +307,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "*?*"
     ]
   },
-  "elapsed_s": 13.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "server-54-192-248-68.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 12.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

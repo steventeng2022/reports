@@ -7,8 +7,8 @@
 | Target | https://spiegel.de/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | spiegel.de |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -44,7 +44,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 2. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
 - **CWE:** CWE-200
-- **Detail:** Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000
 - **Recommendation:** Verify the advertised protocol endpoints are configured.
 
 ### 3. [LOW] Missing CSP header (`H2`)
@@ -111,7 +111,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=qkv0u2nj3emGh9UVqNl/2AOp/BxahFJ7m2Bbv8bUPlGhytfsEA; google-site-verification=MPW2epf3b4liwmBTYP8FJEH80rywYRbvVjEeZmcZX_0; apple-domain-verification=ABQrqpdvNdt43ZXd
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=d2wrdnHq-bRRkqVOBRvGWuxjCYVnXIiaoOp6U79jKag; anthropic-domain-verification-199cnz=roKzFqEYT6AZRSPy7A7lASgkj; apple-domain-verification=ABQrqpdvNdt43ZXd
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -153,25 +153,25 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "spiegel-de.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "pns103.cloudns.net.",
-      "pns102.cloudns.net.",
       "pns104.cloudns.net.",
-      "pns101.cloudns.net."
+      "pns101.cloudns.net.",
+      "pns102.cloudns.net.",
+      "pns103.cloudns.net."
     ],
     "spf": [
-      "00DD0000000mZzl=1TBVl00000000Pp",
-      "01119681",
-      "atlassian-domain-verification=qkv0u2nj3emGh9UVqNl/2AOp/BxahFJ7m2Bbv8bUPlGhytfsEAB3Zyd8AvXOEHVW",
-      "google-site-verification=MPW2epf3b4liwmBTYP8FJEH80rywYRbvVjEeZmcZX_0",
-      "apple-domain-verification=ABQrqpdvNdt43ZXd",
-      "v=spf1 ip4:18.196.136.27 ip4:185.45.16.170 ip4:185.45.16.70 include:spf.protection.outlook.com include:amazonses.com include:_spf.salesforce.com -all",
-      "jamf-site-verification=mDxSkZxQSP3_MF8_pHR9BA",
       "google-site-verification=d2wrdnHq-bRRkqVOBRvGWuxjCYVnXIiaoOp6U79jKag",
       "anthropic-domain-verification-199cnz=roKzFqEYT6AZRSPy7A7lASgkj",
+      "01119681",
+      "apple-domain-verification=ABQrqpdvNdt43ZXd",
+      "atlassian-domain-verification=qkv0u2nj3emGh9UVqNl/2AOp/BxahFJ7m2Bbv8bUPlGhytfsEAB3Zyd8AvXOEHVW",
       "MS=ms15909706",
-      "adobe-idp-site-verification=1ab58e56a7c5cfcf85df9cf0e34dc26505b7982a08fd338b70244c5611b99242",
+      "mgverify=ae2a244a3a76e9bcdbe6865e4b169acb67d1168d1ab6518bcfcc3eb11e394afc",
       "atlassian-domain-verification=rnDZY6SZaJnSOpSEvPr0kzhgihiqUPn3g8W0pFQfopQhaMO4jkTWsvLmIj5TeGNB",
-      "mgverify=ae2a244a3a76e9bcdbe6865e4b169acb67d1168d1ab6518bcfcc3eb11e394afc"
+      "google-site-verification=MPW2epf3b4liwmBTYP8FJEH80rywYRbvVjEeZmcZX_0",
+      "jamf-site-verification=mDxSkZxQSP3_MF8_pHR9BA",
+      "00DD0000000mZzl=1TBVl00000000Pp",
+      "adobe-idp-site-verification=1ab58e56a7c5cfcf85df9cf0e34dc26505b7982a08fd338b70244c5611b99242",
+      "v=spf1 ip4:18.196.136.27 ip4:185.45.16.170 ip4:185.45.16.70 include:spf.protection.outlook.com include:amazonses.com include:_spf.salesforce.com -all"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:report.dmarc@spiegel.de; ruf=mailto:report.dmarc@spiegel.de; sp=reject; fo=1"
@@ -292,11 +292,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     ]
   },
   "apex_txt": [
-    "atlassian-domain-verification=qkv0u2nj3emGh9UVqNl/2AOp/BxahFJ7m2Bbv8bUPlGhytfsEA",
-    "google-site-verification=MPW2epf3b4liwmBTYP8FJEH80rywYRbvVjEeZmcZX_0",
+    "google-site-verification=d2wrdnHq-bRRkqVOBRvGWuxjCYVnXIiaoOp6U79jKag",
+    "anthropic-domain-verification-199cnz=roKzFqEYT6AZRSPy7A7lASgkj",
     "apple-domain-verification=ABQrqpdvNdt43ZXd",
-    "jamf-site-verification=mDxSkZxQSP3_MF8_pHR9BA",
-    "google-site-verification=d2wrdnHq-bRRkqVOBRvGWuxjCYVnXIiaoOp6U79jKag"
+    "atlassian-domain-verification=qkv0u2nj3emGh9UVqNl/2AOp/BxahFJ7m2Bbv8bUPlGhytfsEA",
+    "atlassian-domain-verification=rnDZY6SZaJnSOpSEvPr0kzhgihiqUPn3g8W0pFQfopQhaMO4jk"
   ],
   "tls2": {
     "alpn": "",
@@ -307,7 +307,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251205000000",
+      "not_after": "20261204235959"
     }
   },
   "http2": {
@@ -329,8 +331,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "/"
     ]
   },
-  "elapsed_s": 19.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 19.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

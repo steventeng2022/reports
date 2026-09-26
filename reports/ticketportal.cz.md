@@ -7,8 +7,8 @@
 | Target | https://ticketportal.cz/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ticketportal.cz |
-| Test date | 2026-09-26 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:00 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -154,13 +154,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 ### 18. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (lzuips2ii7xtcx.ticketportal.cz and 6yqoywvo9fb5y6.ticketportal.cz) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (8ipdxxy71ingd5.ticketportal.cz and vpwgbh36dyjtzx.ticketportal.cz) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 19. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-nOIh2ZoJdrqoLQLPmaNsxwIB; openai-domain-verification=dv-pEi0oIn9tEXy4E1JmrCEmGfQ; google-site-verification=mwAZIzAR9lJl5tzbx4fEzHNqC27472KcfbdBjHYFmmQ
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=mwAZIzAR9lJl5tzbx4fEzHNqC27472KcfbdBjHYFmmQ; google-site-verification=pmPjhB3MwtvGa4Cnu9OiMKw7j5kxfpjnpEbHtXaFSv8; openai-domain-verification=dv-pEi0oIn9tEXy4E1JmrCEmGfQ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 20. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -185,20 +185,20 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "ticketportal-cz.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "irena.ns.cloudflare.com.",
-      "alfred.ns.cloudflare.com."
+      "alfred.ns.cloudflare.com.",
+      "irena.ns.cloudflare.com."
     ],
     "spf": [
-      "MS=ms18067497",
-      "MS=ms25692022",
-      "openai-domain-verification=dv-nOIh2ZoJdrqoLQLPmaNsxwIB",
-      "openai-domain-verification=dv-pEi0oIn9tEXy4E1JmrCEmGfQ",
-      "MS=ms16199301",
       "google-site-verification=mwAZIzAR9lJl5tzbx4fEzHNqC27472KcfbdBjHYFmmQ",
+      "MS=ms25692022",
+      "MS=ms18067497",
       "google-site-verification=pmPjhB3MwtvGa4Cnu9OiMKw7j5kxfpjnpEbHtXaFSv8",
+      "openai-domain-verification=dv-pEi0oIn9tEXy4E1JmrCEmGfQ",
       "v=spf1 mx a ip4:194.79.55.92 ip4:194.228.62.41 ip4:194.228.62.42 ip4:194.228.62.43 ip4:194.228.62.44 ip4:194.228.63.178 ip4:194.228.63.179 a:darmas.denax.sk ip4:185.17.119.232 include:spf.mandrillapp.com include:sparkpostmail.com ip4:185.17.118.144/28 a:m",
       "x1.mafra.cz a:plgmta1.infra.tpapp.cz i",
-      "nclude:spf.protection.outlook.com include:mail.zendesk.com -all"
+      "nclude:spf.protection.outlook.com include:mail.zendesk.com -all",
+      "MS=ms16199301",
+      "openai-domain-verification=dv-nOIh2ZoJdrqoLQLPmaNsxwIB"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:mailauth-reports@ticketportal.cz; ruf=mailto:mailauth-reports@ticketportal.cz"
@@ -286,10 +286,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "openai-domain-verification=dv-nOIh2ZoJdrqoLQLPmaNsxwIB",
-    "openai-domain-verification=dv-pEi0oIn9tEXy4E1JmrCEmGfQ",
     "google-site-verification=mwAZIzAR9lJl5tzbx4fEzHNqC27472KcfbdBjHYFmmQ",
-    "google-site-verification=pmPjhB3MwtvGa4Cnu9OiMKw7j5kxfpjnpEbHtXaFSv8"
+    "google-site-verification=pmPjhB3MwtvGa4Cnu9OiMKw7j5kxfpjnpEbHtXaFSv8",
+    "openai-domain-verification=dv-pEi0oIn9tEXy4E1JmrCEmGfQ",
+    "openai-domain-verification=dv-nOIh2ZoJdrqoLQLPmaNsxwIB"
   ],
   "tls2": {
     "alpn": "",
@@ -300,11 +300,16 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260907195859",
+      "not_after": "20261206195858"
     }
   },
-  "elapsed_s": 16.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 16.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

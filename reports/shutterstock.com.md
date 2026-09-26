@@ -7,12 +7,12 @@
 | Target | https://shutterstock.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | shutterstock.com |
-| Test date | 2026-09-26 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -126,13 +127,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (w5h6q0sjy6z844.shutterstock.com and wy8i9vnvn03hvp.shutterstock.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (k2kcjaq0dcrwsl.shutterstock.com and hqp9nhpwjqkwho.shutterstock.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: yandex-verification: 021e3a8511fca527; miro-verification=6836d18a57e57b86b38ad342b7a099736f1541e8; uber-domain-verification=df6f9b33-269c-49d9-96c0-945a2cac42bf
+- **Detail:** Apex TXT records with verification/token content: yandex-verification: 0b8e9d2a0806468c; google-site-verification=WvdE_Kl6RWC4uUxKPVGw1Rgw2AW22mvF-vfPfGN-mJM; atlassian-domain-verification=ICd4kCPJdxkAWAAFMmIHHO9PFolvLRxUWjkjtn4b8BT2t66x72
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -147,6 +148,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - **Detail:** robots.txt lists 257 disallow path(s), e.g. */login, */base/logout, */account, /subscribe_success, /download
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 75.2.58.105 carries PTR a0b8838bbcb103e9f.awsglobalaccelerator.com. for shutterstock.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -154,64 +161,64 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "domain": "shutterstock.com",
   "dns": {
     "a": [
-      "99.83.219.164",
-      "75.2.58.105"
+      "75.2.58.105",
+      "99.83.219.164"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 20)",
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx5.googlemail.com (pref 30)",
       "aspmx4.googlemail.com (pref 30)",
       "aspmx2.googlemail.com (pref 30)",
-      "aspmx.l.google.com (pref 10)",
-      "aspmx3.googlemail.com (pref 30)",
-      "aspmx5.googlemail.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)"
+      "aspmx3.googlemail.com (pref 30)"
     ],
     "ns": [
+      "ns-1105.awsdns-10.org.",
       "ns-2006.awsdns-58.co.uk.",
-      "ns-715.awsdns-25.net.",
       "ns-231.awsdns-28.com.",
-      "ns-1105.awsdns-10.org."
+      "ns-715.awsdns-25.net."
     ],
     "spf": [
-      "yandex-verification: 021e3a8511fca527",
+      "yandex-verification: 0b8e9d2a0806468c",
+      "google-site-verification=WvdE_Kl6RWC4uUxKPVGw1Rgw2AW22mvF-vfPfGN-mJM",
+      "atlassian-domain-verification=ICd4kCPJdxkAWAAFMmIHHO9PFolvLRxUWjkjtn4b8BT2t66x72YUm4iLcwIH1dVi",
       "miro-verification=6836d18a57e57b86b38ad342b7a099736f1541e8",
+      "datadome-domain-verify=6jjzntehvWqKMZ6IyeA0N2gFwaCKgmde",
+      "atlassian-domain-verification=2FUGwVxsNLgKbCtS6ZpRcSLRksocMk9dV4gY5iBpwed0LbhaI2g5UUzoYaMzgD8e",
+      "DirectFedAuthUrl=https://shutterstock.okta.com/app/shutterstock_foreseenewprod_1/exk14x7ojphmsUFk20x8/sso/saml",
+      "google-site-verification=btTybBnUhrrIJjM2XavVzjtct5J_mGbt3G3UezinYV0",
+      "yandex-verification: 021e3a8511fca527",
+      "facebook-domain-verification=lrocxr79ofwtm82chaj8h4luuqpms7",
+      "apple-domain-verification=mPQtvq6REj40T5tn",
+      "jumpdesktop=4da40494ff58c7df38b610d468b6f2574dd6f35a22bbcd360b9c518d0f60",
+      "lucidlink-verification=GFVJHTFJTFSNKF50BF27AYAGNG",
+      "jamf-site-verification=TCI4tRcGn7UCfT-xuLp9yQ",
+      "google-site-verification=vzI-qM-ENlsNGmQtR0Z29HRf0q9_mcXW7xCulDreLpc",
+      "onetrust-domain-verification=f7acfe615ec343eeb1d812ca09165a48",
+      "MS=ms49836191",
+      "v=spf1 include:_spf.shutterstock_com._d.easydmarc.pro -all",
+      "stripe-verification=b35adcb1d91d94699ec1de23631872c0e4df024e15686e6fb119003035bd6520",
+      "ZOOM_verify_ZqCIeMn-RJ-laQ4kBcAyCw",
+      "562761548-4810558",
+      "mongodb-site-verification=EDpZVE7z02krpxdHZGxyBzQLgQw4A0EY",
+      "mixpanel-domain-verify=1da3b141-95bc-4208-81df-f1b640703314",
+      "atlassian-domain-verification=xnSgqTwgP81yyzKQEzb87CY1/U+sIbPROxNSG7TYBnUCwr2Qs+s7NuupIWceDPtG",
+      "pendo-domain-verification=3671eb79-ab80-461d-bf11-63959a0dbc83",
+      "invisionapp-verification=2241045992350101631628366167042829157218",
+      "00d30000001ggscea0",
+      "Foxit-domain-verification=0da244e9b4a363d00a75502cb83590bf",
+      "mongodb-site-verification=lcCyzLUHMQCfa4oCJCqmn1grbdQ5HPEp",
+      "DirectFedAuthUrl=https://shutterstock.okta.com/app/shutterstock_foreseenewpreview_1/exk14qwevlkQpSFEg0x8/sso/saml",
+      "easydmarc-verification:36a2aa07-0843-411c-a39e-e90464a50a78",
+      "globalsign-domain-verification=8frsHcE2ag-0ccaaP5BTpPmUJC8ob8pdjDQchfAWzD",
+      "docker-verification=45ca3fb0-da99-4edd-8e14-2ffaffa7ce08",
       "docusign=93b1131d-22fa-467a-ac46-27e8a3ed4e34",
       "uber-domain-verification=df6f9b33-269c-49d9-96c0-945a2cac42bf",
-      "atlassian-domain-verification=xnSgqTwgP81yyzKQEzb87CY1/U+sIbPROxNSG7TYBnUCwr2Qs+s7NuupIWceDPtG",
-      "jumpdesktop=4da40494ff58c7df38b610d468b6f2574dd6f35a22bbcd360b9c518d0f60",
-      "google-site-verification=btTybBnUhrrIJjM2XavVzjtct5J_mGbt3G3UezinYV0",
-      "yandex-verification: 0b8e9d2a0806468c",
-      "MS=ms49836191",
-      "mongodb-site-verification=EDpZVE7z02krpxdHZGxyBzQLgQw4A0EY",
-      "invisionapp-verification=2241045992350101631628366167042829157218",
-      "jamf-site-verification=TCI4tRcGn7UCfT-xuLp9yQ",
-      "DirectFedAuthUrl=https://shutterstock.okta.com/app/shutterstock_foreseenewpreview_1/exk14qwevlkQpSFEg0x8/sso/saml",
-      "v=spf1 include:_spf.shutterstock_com._d.easydmarc.pro -all",
-      "google-site-verification=WvdE_Kl6RWC4uUxKPVGw1Rgw2AW22mvF-vfPfGN-mJM",
-      "ZOOM_verify_ZqCIeMn-RJ-laQ4kBcAyCw",
-      "Foxit-domain-verification=0da244e9b4a363d00a75502cb83590bf",
       "openai-domain-verification=dv-btq9bkTqojCc09hLIoBq5Wz7",
-      "00d30000001ggscea0",
-      "docker-verification=45ca3fb0-da99-4edd-8e14-2ffaffa7ce08",
-      "globalsign-domain-verification=8frsHcE2ag-0ccaaP5BTpPmUJC8ob8pdjDQchfAWzD",
-      "google-site-verification=vzI-qM-ENlsNGmQtR0Z29HRf0q9_mcXW7xCulDreLpc",
-      "atlassian-domain-verification=ICd4kCPJdxkAWAAFMmIHHO9PFolvLRxUWjkjtn4b8BT2t66x72YUm4iLcwIH1dVi",
-      "atlassian-domain-verification=2FUGwVxsNLgKbCtS6ZpRcSLRksocMk9dV4gY5iBpwed0LbhaI2g5UUzoYaMzgD8e",
-      "apple-domain-verification=mPQtvq6REj40T5tn",
-      "pendo-domain-verification=3671eb79-ab80-461d-bf11-63959a0dbc83",
-      "mixpanel-domain-verify=1da3b141-95bc-4208-81df-f1b640703314",
-      "lucidlink-verification=GFVJHTFJTFSNKF50BF27AYAGNG",
-      "DirectFedAuthUrl=https://shutterstock.okta.com/app/shutterstock_foreseenewprod_1/exk14x7ojphmsUFk20x8/sso/saml",
-      "atlassian-sending-domain-verification=b3c336a7-a32b-42e1-87a3-c9223137b95c",
-      "facebook-domain-verification=lrocxr79ofwtm82chaj8h4luuqpms7",
-      "onetrust-domain-verification=f7acfe615ec343eeb1d812ca09165a48",
-      "datadome-domain-verify=6jjzntehvWqKMZ6IyeA0N2gFwaCKgmde",
-      "easydmarc-verification:36a2aa07-0843-411c-a39e-e90464a50a78",
-      "562761548-4810558",
-      "mongodb-site-verification=lcCyzLUHMQCfa4oCJCqmn1grbdQ5HPEp",
-      "stripe-verification=b35adcb1d91d94699ec1de23631872c0e4df024e15686e6fb119003035bd6520"
+      "atlassian-sending-domain-verification=b3c336a7-a32b-42e1-87a3-c9223137b95c"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:add78bd9e2@rua.easydmarc.us; ruf=mailto:dmarc-reports@shutterstock.com; fo=1; pct=100; rf=afrf"
@@ -263,7 +270,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     }
   },
   "ports": {
-    "ip": "99.83.219.164",
+    "ip": "75.2.58.105",
     "open": []
   },
   "https": {
@@ -317,11 +324,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "yandex-verification: 021e3a8511fca527",
+    "yandex-verification: 0b8e9d2a0806468c",
+    "google-site-verification=WvdE_Kl6RWC4uUxKPVGw1Rgw2AW22mvF-vfPfGN-mJM",
+    "atlassian-domain-verification=ICd4kCPJdxkAWAAFMmIHHO9PFolvLRxUWjkjtn4b8BT2t66x72",
     "miro-verification=6836d18a57e57b86b38ad342b7a099736f1541e8",
-    "uber-domain-verification=df6f9b33-269c-49d9-96c0-945a2cac42bf",
-    "atlassian-domain-verification=xnSgqTwgP81yyzKQEzb87CY1/U+sIbPROxNSG7TYBnUCwr2Qs+",
-    "google-site-verification=btTybBnUhrrIJjM2XavVzjtct5J_mGbt3G3UezinYV0"
+    "atlassian-domain-verification=2FUGwVxsNLgKbCtS6ZpRcSLRksocMk9dV4gY5iBpwed0LbhaI2"
   ],
   "tls2": {
     "alpn": "",
@@ -332,7 +339,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260524000000",
+      "not_after": "20261207235959"
     }
   },
   "http2": {
@@ -354,8 +363,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "*/music/cart"
     ]
   },
-  "elapsed_s": 18.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "a0b8838bbcb103e9f.awsglobalaccelerator.com."
+    ]
+  },
+  "elapsed_s": 19.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

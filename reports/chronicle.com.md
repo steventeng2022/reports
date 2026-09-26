@@ -7,12 +7,12 @@
 | Target | https://chronicle.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | chronicle.com |
-| Test date | 2026-09-26 17:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -125,7 +126,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=ghHJlxYD0vKv90DHLyYMvjwNw3N71lfB8Je5KWITGNA; slack-domain-verification=cPqGwGQvXliSCN0WXKB0T7c5XIp4jUmsetX1uf9f; facebook-domain-verification=5v4h15h1mtrkdbw27xfkld161mllwf
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=ydfkHmEE4bq_pfx6_0wsxAdmetG8VpL2XkZbLCV1gX0; adobe-idp-site-verification=3380a292c5fe92c10b4bb843f70c593f5149d40060a2b049e944; google-site-verification=ghHJlxYD0vKv90DHLyYMvjwNw3N71lfB8Je5KWITGNA
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -140,6 +141,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - **Detail:** robots.txt lists 32 disallow path(s), e.g. /, /, /, /, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 18.154.144.30 carries PTR server-18-154-144-30.lax50.r.cloudfront.net. for chronicle.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -147,9 +154,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "domain": "chronicle.com",
   "dns": {
     "a": [
-      "18.154.144.24",
-      "18.154.144.115",
       "18.154.144.30",
+      "18.154.144.115",
+      "18.154.144.24",
       "18.154.144.26"
     ],
     "aaaa": [],
@@ -159,26 +166,26 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "mxa-008c5001.gslb.pphosted.com (pref 0)"
     ],
     "ns": [
-      "ns-1045.awsdns-02.org.",
-      "ns-1997.awsdns-57.co.uk.",
       "ns-817.awsdns-38.net.",
-      "ns-140.awsdns-17.com."
+      "ns-1997.awsdns-57.co.uk.",
+      "ns-140.awsdns-17.com.",
+      "ns-1045.awsdns-02.org."
     ],
     "spf": [
-      "google-site-verification=ghHJlxYD0vKv90DHLyYMvjwNw3N71lfB8Je5KWITGNA",
-      "slack-domain-verification=cPqGwGQvXliSCN0WXKB0T7c5XIp4jUmsetX1uf9f",
-      "facebook-domain-verification=5v4h15h1mtrkdbw27xfkld161mllwf",
-      "v=spf1 ip4:192.91.251.26 ip4:34.236.219.51 ip4:52.0.131.254 ip4:54.156.195.156 include:spf.protection.outlook.com include:spf-008c5001.pphosted.com include:mailgun.org include:shops.shopify.com include:_spf.psm.knowbe4.com include:mktomail.com ~all",
-      "adobe-idp-site-verification=3380a292c5fe92c10b4bb843f70c593f5149d40060a2b049e94403db570c0c36",
-      "globalsign-domain-verification=2f87c0c7172380296838e8ef63e87230",
       "google-site-verification=ydfkHmEE4bq_pfx6_0wsxAdmetG8VpL2XkZbLCV1gX0",
+      "adobe-idp-site-verification=3380a292c5fe92c10b4bb843f70c593f5149d40060a2b049e94403db570c0c36",
+      "google-site-verification=ghHJlxYD0vKv90DHLyYMvjwNw3N71lfB8Je5KWITGNA",
       "google-site-verification=qqA6Dr8C3MGWEEYqj7Vwdh4QwHjsga0IGj_RWoJpvE0",
-      "d2sg0aymvy0li1.cloudfront.net",
-      "globalsign-domain-verification=3699a4ef96609176f46cef43837026f4",
-      "openai-domain-verification=dv-UuAcQejjXeQjTt0J8xqa5Vr5",
-      "ZOOM_verify_hoCYRVTuQQXOotdMVCVWsx",
+      "v=spf1 ip4:192.91.251.26 ip4:34.236.219.51 ip4:52.0.131.254 ip4:54.156.195.156 include:spf.protection.outlook.com include:spf-008c5001.pphosted.com include:mailgun.org include:shops.shopify.com include:_spf.psm.knowbe4.com include:mktomail.com ~all",
+      "globalsign-domain-verification=2f87c0c7172380296838e8ef63e87230",
       "_globalsign-domain-verification=Dqd8I0hWasEjsEu2h5gF7evwjvRwfcjM-jfbkxfhb-",
-      "apple-domain-verification=Kgru6DqpweYQr97c"
+      "globalsign-domain-verification=3699a4ef96609176f46cef43837026f4",
+      "slack-domain-verification=cPqGwGQvXliSCN0WXKB0T7c5XIp4jUmsetX1uf9f",
+      "apple-domain-verification=Kgru6DqpweYQr97c",
+      "facebook-domain-verification=5v4h15h1mtrkdbw27xfkld161mllwf",
+      "ZOOM_verify_hoCYRVTuQQXOotdMVCVWsx",
+      "d2sg0aymvy0li1.cloudfront.net",
+      "openai-domain-verification=dv-UuAcQejjXeQjTt0J8xqa5Vr5"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:re+ejbk6oq7sij@dmarc.postmarkapp.com,mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com; sp=reject; adkim=r;"
@@ -210,7 +217,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     }
   },
   "ports": {
-    "ip": "18.154.144.24",
+    "ip": "18.154.144.30",
     "open": []
   },
   "https": {
@@ -263,10 +270,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=ghHJlxYD0vKv90DHLyYMvjwNw3N71lfB8Je5KWITGNA",
-    "slack-domain-verification=cPqGwGQvXliSCN0WXKB0T7c5XIp4jUmsetX1uf9f",
-    "facebook-domain-verification=5v4h15h1mtrkdbw27xfkld161mllwf",
+    "google-site-verification=ydfkHmEE4bq_pfx6_0wsxAdmetG8VpL2XkZbLCV1gX0",
     "adobe-idp-site-verification=3380a292c5fe92c10b4bb843f70c593f5149d40060a2b049e944",
+    "google-site-verification=ghHJlxYD0vKv90DHLyYMvjwNw3N71lfB8Je5KWITGNA",
+    "google-site-verification=qqA6Dr8C3MGWEEYqj7Vwdh4QwHjsga0IGj_RWoJpvE0",
     "globalsign-domain-verification=2f87c0c7172380296838e8ef63e87230"
   ],
   "tls2": {
@@ -278,7 +285,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260629000000",
+      "not_after": "20270112235959"
     }
   },
   "http2": {
@@ -300,8 +309,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "/"
     ]
   },
-  "elapsed_s": 24.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "server-18-154-144-30.lax50.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 27.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

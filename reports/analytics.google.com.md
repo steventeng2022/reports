@@ -7,12 +7,12 @@
 | Target | https://analytics.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | analytics.google.com |
-| Test date | 2026-09-26 17:39 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
+Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,6 +28,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 | 10 | info | H6 | Server technology disclosure | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 13 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -111,6 +112,12 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 - **Detail:** Certificate of analytics.google.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 13. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://analytics.google.com/ carries Cache-Control: public, max-age=1800; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -118,12 +125,18 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
   "domain": "analytics.google.com",
   "dns": {
     "a": [
-      "142.250.198.78"
+      "216.239.36.181",
+      "216.239.32.181",
+      "216.239.38.181",
+      "216.239.34.181"
     ],
     "aaaa": [
-      "2404:6800:4012:8::200e"
+      "2001:4860:4802:34::181",
+      "2001:4860:4802:36::181",
+      "2001:4860:4802:38::181",
+      "2001:4860:4802:32::181"
     ],
-    "cname": null,
+    "cname": "analytics-alv.google.com.",
     "mx": [],
     "ns": [],
     "spf": [],
@@ -216,7 +229,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
     }
   },
   "ports": {
-    "ip": "142.250.198.78",
+    "ip": "216.239.36.181",
     "open": []
   },
   "https": {
@@ -268,9 +281,6 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
   "subdomains": {
     "status": "ct-pending"
   },
-  "cname_chain": [
-    "analytics-alv.google.com"
-  ],
   "tls2": {
     "alpn": "",
     "tls_ver": "TLSv1.3",
@@ -280,11 +290,16 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192153",
+      "not_after": "20261203192152"
     }
   },
-  "elapsed_s": 6.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 5.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

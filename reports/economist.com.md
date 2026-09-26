@@ -7,8 +7,8 @@
 | Target | https://economist.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | economist.com |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -146,7 +146,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: miro-verification=f342c1be96026976f75e811e572741cd2b7dc4cf; tollbit-domain-verification=a4ca26ee57be1d61750a8376fd838114dfc91be8c429fdf9c095; globalsign-domain-verification=YHnWXL-7NA_q79ZvMwQDblw1lRYrh6nXXIoWOab5Fd
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=Qb5YYUgxi34zMjL_BuQQ_Najf2Rw51HKl3CRIL43Pcc; miro-verification=f342c1be96026976f75e811e572741cd2b7dc4cf; adobe-idp-site-verification=fe3563308082627876b00fed079b9b07fa742f53e1dbad27a04d
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -174,64 +174,64 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "alt4.aspmx.l.google.com (pref 10)"
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "dns4.p02.nsone.net.",
-      "dns1.p02.nsone.net.",
+      "dns2.p02.nsone.net.",
       "dns3.p02.nsone.net.",
-      "dns2.p02.nsone.net."
+      "dns1.p02.nsone.net.",
+      "dns4.p02.nsone.net."
     ],
     "spf": [
-      "miro-verification=f342c1be96026976f75e811e572741cd2b7dc4cf",
-      "tollbit-domain-verification=a4ca26ee57be1d61750a8376fd838114dfc91be8c429fdf9c09590cba54b046a",
-      "globalsign-domain-verification=YHnWXL-7NA_q79ZvMwQDblw1lRYrh6nXXIoWOab5Fd",
-      "1c1f838c-c20e-4116-b628-2fd519dfc4f3",
-      "docker-verification=b3049f71-60ff-4ab5-8e4b-af12071ad9ef",
-      "_globalsign-domain-verification=h7hNxzyjxWcMmQGgdPl1sYiG5V-Bjrl_CsJqpKbIU4",
-      "4971555iboa4dcf2se7ndmucc",
       "google-site-verification=Qb5YYUgxi34zMjL_BuQQ_Najf2Rw51HKl3CRIL43Pcc",
+      "miro-verification=f342c1be96026976f75e811e572741cd2b7dc4cf",
+      "v=spf2.0/pra a mx include:spf.rimanggis.com ~all",
+      "adobe-idp-site-verification=fe3563308082627876b00fed079b9b07fa742f53e1dbad27a04d4066c84e4e52",
+      "anthropic-domain-verification-zzt4eb=hxHesCzVCR69nkH6qtjvnMN87",
+      "_globalsign-domain-verification=h7hNxzyjxWcMmQGgdPl1sYiG5V-Bjrl_CsJqpKbIU4",
+      "google-site-verification=J-5vS04lUpwFu33fb1lVeIiM0fhsBtzi5O-C3lhtPfU",
+      "duo_sso_verification=M08QexH6Mc7fVPS7jsm3WEdvzoVJZz18LlXKjgCyGE39wQQXycZ0H1VKzu34KD3T",
+      "cloudhealth=056432f7-cc47-40f2-a7ff-f94e38ab420e",
+      "atlassian-domain-verification=ijxvw3ZV5ymQqnxv80sk3KF8m68Y5zejPUmA24aR3X1gDYFZLr1KJnthnreXeb3O",
+      "ca3-3bc5fae524474e949511aadca9ffb68d",
+      "google-site-verification=w_R93wx06QyNfts4iAvHnfcVpRQkm-WpiBg_xs26kxk",
+      "google-site-verification=umYQJmRxpXTIiMNaF4IsR6apNajC4YwAQ0098xDaU3k",
+      "MS=24621E8BD1E72EEF43C436A16E7DA57F77130691",
       "new-relic-domain-verification=6ed4883fe01f4350a7c2d6e4b70440ac",
-      "UK-federation-domain-verification=d262373b2f27d3cad1db8a568d706c79",
-      "google-site-verification=6JINqi8eBX4Cq2IQuMDqx-zcEVrqIGsUwn67akjL_NQ",
+      "OPE0071241",
+      "zoho-verification=zb52015705.zmverify.zoho.e",
+      "docker-verification=b3049f71-60ff-4ab5-8e4b-af12071ad9ef",
+      "v=spf1 include:_spf.google.com include:amazonses.com include:_spf.salesforce.com include:servers.mcsv.net include:spfa.cpmails.com include:spf1.economist.com ~all",
+      "1c1f838c-c20e-4116-b628-2fd519dfc4f3",
+      "stripe-verification=89A5BEC017BC1A0474BEB086C5CD9ED1C5064FEC53663120E30568AD843E5350",
+      "4971555iboa4dcf2se7ndmucc",
+      "lucidlink-verification=87PF6BE3MBWNVC1A1HSPVEYFBM",
+      "21inh0ishkm6dc2p9vk3qlam0l",
+      "google-site-verification=dzY0WjX5aDMkfAz45NIzTiq4STvJFQVLKardBINrGdU",
+      "1password-site-verification=LMMTFIQ3UNB4PHRN4PIDK3XRYY",
+      "_998iskp70idb7xlds6nagvu9g13yf8d",
       "google-site-verification=SjXraZgTJjBr9KW8fGa51r5znTl_bHN0l_l-HryKg0c",
       "cursor-domain-verification-62734j=SxJ3sl8QlA292FmfZ1F5ITe71",
-      "qb506uja0p70oalro6ufvvqgt8",
-      "google-site-verification=QbYbPDNp9mefRCIxiwdP-pwbPHZdRB2ULKa5W-8WJlw",
-      "atlassian-domain-verification=ijxvw3ZV5ymQqnxv80sk3KF8m68Y5zejPUmA24aR3X1gDYFZLr1KJnthnreXeb3O",
+      "UK-federation-domain-verification=d262373b2f27d3cad1db8a568d706c79",
       "openai-domain-verification=dv-ihHQTdhnTvKLha6AwMHkRkXz",
-      "duo_sso_verification=M08QexH6Mc7fVPS7jsm3WEdvzoVJZz18LlXKjgCyGE39wQQXycZ0H1VKzu34KD3T",
-      "ca3-397b89c6332644339a66e5474039efb1",
-      "stripe-verification=89A5BEC017BC1A0474BEB086C5CD9ED1C5064FEC53663120E30568AD843E5350",
-      "cloudhealth=056432f7-cc47-40f2-a7ff-f94e38ab420e",
-      "zoho-verification=zb52015705.zmverify.zoho.e",
-      "lucidlink-verification=87PF6BE3MBWNVC1A1HSPVEYFBM",
-      "1password-site-verification=LMMTFIQ3UNB4PHRN4PIDK3XRYY",
-      "OPE0071241",
-      "google-site-verification=w_R93wx06QyNfts4iAvHnfcVpRQkm-WpiBg_xs26kxk",
-      "datadome-domain-verify=tjdVhvbvz12jNxbmlOOatTgehZm77CeH",
-      "21inh0ishkm6dc2p9vk3qlam0l",
-      "adobe-idp-site-verification=fe3563308082627876b00fed079b9b07fa742f53e1dbad27a04d4066c84e4e52",
-      "google-site-verification=J-5vS04lUpwFu33fb1lVeIiM0fhsBtzi5O-C3lhtPfU",
-      "ff9e2be8158dcbdc8f4cc0ff3a7aac77005532d6f7817d8798",
-      "_globalsign-domain-verification=_MvaGBHROp0lO8jfRBlUhVvNlSY3UqwMW2MKrFQD0j",
-      "ca3-3bc5fae524474e949511aadca9ffb68d",
+      "google-site-verification=QbYbPDNp9mefRCIxiwdP-pwbPHZdRB2ULKa5W-8WJlw",
+      "tollbit-domain-verification=a4ca26ee57be1d61750a8376fd838114dfc91be8c429fdf9c09590cba54b046a",
+      "qb506uja0p70oalro6ufvvqgt8",
       "docusign=b54578ae-aff9-4dea-834d-db831e2aa957",
-      "lucidlink-verification=DF38QZV72ECT76YYFSM1MZQZR8",
-      "v=spf2.0/pra a mx include:spf.rimanggis.com ~all",
-      "google-site-verification=umYQJmRxpXTIiMNaF4IsR6apNajC4YwAQ0098xDaU3k",
-      "anthropic-domain-verification-zzt4eb=hxHesCzVCR69nkH6qtjvnMN87",
+      "_globalsign-domain-verification=_MvaGBHROp0lO8jfRBlUhVvNlSY3UqwMW2MKrFQD0j",
+      "globalsign-domain-verification=YHnWXL-7NA_q79ZvMwQDblw1lRYrh6nXXIoWOab5Fd",
+      "ff9e2be8158dcbdc8f4cc0ff3a7aac77005532d6f7817d8798",
+      "google-site-verification=6JINqi8eBX4Cq2IQuMDqx-zcEVrqIGsUwn67akjL_NQ",
       "facebook-domain-verification=2i21rtf1fbvf27qxahaf05x68twhjy",
-      "_998iskp70idb7xlds6nagvu9g13yf8d",
-      "v=spf1 include:_spf.google.com include:amazonses.com include:_spf.salesforce.com include:servers.mcsv.net include:spfa.cpmails.com include:spf1.economist.com ~all",
-      "google-site-verification=-IZ_bGbCMjxT7R9muUSQC8U2CmTbX4Jl-xXf5kkqzeA",
+      "datadome-domain-verify=tjdVhvbvz12jNxbmlOOatTgehZm77CeH",
+      "ca3-397b89c6332644339a66e5474039efb1",
+      "lucidlink-verification=DF38QZV72ECT76YYFSM1MZQZR8",
       "ca3-b658fbd113a84fc7a2457785e2a028cb",
-      "google-site-verification=dzY0WjX5aDMkfAz45NIzTiq4STvJFQVLKardBINrGdU",
-      "MS=24621E8BD1E72EEF43C436A16E7DA57F77130691"
+      "google-site-verification=-IZ_bGbCMjxT7R9muUSQC8U2CmTbX4Jl-xXf5kkqzeA"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=quarantine; pct=100; rua=mailto:rua-import-31438@sendforensics.com"
@@ -326,10 +326,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "google-site-verification=Qb5YYUgxi34zMjL_BuQQ_Najf2Rw51HKl3CRIL43Pcc",
     "miro-verification=f342c1be96026976f75e811e572741cd2b7dc4cf",
-    "tollbit-domain-verification=a4ca26ee57be1d61750a8376fd838114dfc91be8c429fdf9c095",
-    "globalsign-domain-verification=YHnWXL-7NA_q79ZvMwQDblw1lRYrh6nXXIoWOab5Fd",
-    "docker-verification=b3049f71-60ff-4ab5-8e4b-af12071ad9ef",
+    "adobe-idp-site-verification=fe3563308082627876b00fed079b9b07fa742f53e1dbad27a04d",
+    "anthropic-domain-verification-zzt4eb=hxHesCzVCR69nkH6qtjvnMN87",
     "_globalsign-domain-verification=h7hNxzyjxWcMmQGgdPl1sYiG5V-Bjrl_CsJqpKbIU4"
   ],
   "tls2": {
@@ -341,7 +341,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260813040637",
+      "not_after": "20261111050620"
     }
   },
   "http2": {
@@ -363,8 +365,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "/"
     ]
   },
-  "elapsed_s": 7.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 7.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

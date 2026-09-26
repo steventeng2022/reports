@@ -7,12 +7,12 @@
 | Target | https://raw.githubusercontent.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | raw.githubusercontent.com |
-| Test date | 2026-09-26 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
+Total findings: **12** (High: 0, Medium: 0, Low: 2, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,6 +26,8 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 | 8 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 9 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 10 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 11 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 12 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -80,7 +82,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 ### 8. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (xnfly4dw9rvpoq.raw.githubusercontent.com and h0kw7ocicsjy0y.raw.githubusercontent.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (vgwimhtiwf8ad3.raw.githubusercontent.com and vcio5fz1ak4toq.raw.githubusercontent.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 9. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -95,6 +97,18 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
 - **Detail:** Strict-Transport-Security is served but raw.githubusercontent.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
+### 11. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of raw.githubusercontent.com permits unsafe-inline; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 12. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 185.199.109.133 carries PTR cdn-185-199-109-133.github.com. for raw.githubusercontent.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -103,15 +117,15 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
   "dns": {
     "a": [
       "185.199.109.133",
-      "185.199.111.133",
       "185.199.110.133",
+      "185.199.111.133",
       "185.199.108.133"
     ],
     "aaaa": [
-      "2606:50c0:8000::154",
+      "2606:50c0:8003::154",
       "2606:50c0:8001::154",
       "2606:50c0:8002::154",
-      "2606:50c0:8003::154"
+      "2606:50c0:8000::154"
     ],
     "cname": null,
     "mx": [],
@@ -206,11 +220,19 @@ Total findings: **10** (High: 0, Medium: 0, Low: 1, Info: 9)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260802233802",
+      "not_after": "20261031233801"
     }
   },
-  "elapsed_s": 23.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "cdn-185-199-109-133.github.com."
+    ]
+  },
+  "elapsed_s": 25.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

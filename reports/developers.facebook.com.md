@@ -7,12 +7,12 @@
 | Target | https://developers.facebook.com/ |
 | Bug bounty program | Facebook |
 | Listed scope domain | developers.facebook.com |
-| Test date | 2026-09-26 17:43 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
+Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,6 +25,8 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 | 7 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 8 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 9 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 10 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 11 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -85,6 +87,18 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
 - **CWE:** CWE-603
 - **Detail:** Certificate of developers.facebook.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 10. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of developers.facebook.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 11. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 57.144.92.141 carries PTR edge-star-shv-01-tpe5.facebook.com. for developers.facebook.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -207,14 +221,22 @@ Total findings: **9** (High: 0, Medium: 0, Low: 2, Info: 7)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260706000000",
+      "not_after": "20261004235959"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
-  "elapsed_s": 10.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 400,
+    "ptr": [
+      "edge-star-shv-01-tpe5.facebook.com."
+    ]
+  },
+  "elapsed_s": 11.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

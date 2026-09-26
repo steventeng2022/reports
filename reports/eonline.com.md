@@ -7,12 +7,12 @@
 | Target | https://eonline.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | eonline.com |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -123,7 +124,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=4ibctlm5ihzdeufrc19auxqcmcctj8; google-site-verification=jOadQCDbZTkKw5sn27yXszjIb9c3PdMPHENN92uPWy8; google-site-verification=lL5I6oAU0a5eh4ZS-hLM_iC6cPa32T1eVqTQKBw9i_U
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=4ibctlm5ihzdeufrc19auxqcmcctj8; google-site-verification=jOadQCDbZTkKw5sn27yXszjIb9c3PdMPHENN92uPWy8; atlassian-domain-verification=GLdM+/NLCFfEabD6ehBftAdFAnqPMwq2xU9TtdxKbIEMPaNDD7
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -137,6 +138,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but eonline.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.210.215.216 carries PTR a23-210-215-216.deploy.static.akamaitechnologies.com. for eonline.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -158,27 +165,27 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "ns1-161.akam.net.",
       "eur4.akam.net.",
       "use3.akam.net.",
-      "aus1.akam.net.",
-      "asia2.akam.net.",
       "asia3.akam.net.",
-      "eur3.akam.net.",
       "ns1-102.akam.net.",
-      "usw1.akam.net."
+      "eur3.akam.net.",
+      "aus1.akam.net.",
+      "usw1.akam.net.",
+      "asia2.akam.net."
     ],
     "spf": [
-      "_zavqrou6cwfkug7nq3x143m5kcj8c1l",
-      "facebook-domain-verification=4ibctlm5ihzdeufrc19auxqcmcctj8",
-      "v=spf1 ip:208.78.120.150 -all",
       "v=spf1 ip:12.46.7.226 -all",
-      "a019e5e8a9ff451d9342f0be28384892",
-      "amazonses:qQ+mkErgudZpnvNGBxI2Zan33i9hBjOhugRT6rS5seo=",
+      "facebook-domain-verification=4ibctlm5ihzdeufrc19auxqcmcctj8",
       "google-site-verification=jOadQCDbZTkKw5sn27yXszjIb9c3PdMPHENN92uPWy8",
-      "google-site-verification=lL5I6oAU0a5eh4ZS-hLM_iC6cPa32T1eVqTQKBw9i_U",
-      "google-site-verification=HRqGVq6H23RBoZpkjqRgJLFx8SOq9GVxinDBE2A8LFw",
-      "v=spf1 a:mx0a-00176a04.pphosted.com a:mx0b-00176a04.pphosted.com ip:208.78.120.145 include:aspmx.sailthru.com ~all",
+      "v=spf1 ip:208.78.120.150 -all",
       "atlassian-domain-verification=GLdM+/NLCFfEabD6ehBftAdFAnqPMwq2xU9TtdxKbIEMPaNDD7sJ8oAxMVye/caJ",
+      "a019e5e8a9ff451d9342f0be28384892",
+      "google-site-verification=lL5I6oAU0a5eh4ZS-hLM_iC6cPa32T1eVqTQKBw9i_U",
+      "v=spf1 a:mx0a-00176a04.pphosted.com a:mx0b-00176a04.pphosted.com ip:208.78.120.145 include:aspmx.sailthru.com ~all",
+      "2rhzbzb6r6p8z5hqxjxwdhw3rd57dgms",
+      "amazonses:qQ+mkErgudZpnvNGBxI2Zan33i9hBjOhugRT6rS5seo=",
       "yahoo-verification-key=BA7cyZWD/bUcAWHacbiv/mlU3TAoXO1mVUtdRH+IjhI=",
-      "2rhzbzb6r6p8z5hqxjxwdhw3rd57dgms"
+      "_zavqrou6cwfkug7nq3x143m5kcj8c1l",
+      "google-site-verification=HRqGVq6H23RBoZpkjqRgJLFx8SOq9GVxinDBE2A8LFw"
     ],
     "dmarc": [
       "v=DMARC1; p=none; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -267,9 +274,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
   "apex_txt": [
     "facebook-domain-verification=4ibctlm5ihzdeufrc19auxqcmcctj8",
     "google-site-verification=jOadQCDbZTkKw5sn27yXszjIb9c3PdMPHENN92uPWy8",
+    "atlassian-domain-verification=GLdM+/NLCFfEabD6ehBftAdFAnqPMwq2xU9TtdxKbIEMPaNDD7",
     "google-site-verification=lL5I6oAU0a5eh4ZS-hLM_iC6cPa32T1eVqTQKBw9i_U",
-    "google-site-verification=HRqGVq6H23RBoZpkjqRgJLFx8SOq9GVxinDBE2A8LFw",
-    "atlassian-domain-verification=GLdM+/NLCFfEabD6ehBftAdFAnqPMwq2xU9TtdxKbIEMPaNDD7"
+    "yahoo-verification-key=BA7cyZWD/bUcAWHacbiv/mlU3TAoXO1mVUtdRH+IjhI="
   ],
   "tls2": {
     "alpn": "",
@@ -280,11 +287,19 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260618000000",
+      "not_after": "20270102235959"
     }
   },
-  "elapsed_s": 4.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403,
+    "ptr": [
+      "a23-210-215-216.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 5.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

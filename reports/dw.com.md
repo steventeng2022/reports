@@ -7,12 +7,12 @@
 | Target | https://dw.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | dw.com |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
+Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,7 +32,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | CT1 | 17 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 17 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 19 | info | CT1 | 17 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -125,7 +127,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: teamviewer-sso-verification=57fb36a8398445fc808d31a8bee8edca; jamf-site-verification=VzImhW6bKsbg86C4ZMCWfg; apple-domain-verification=vBdShnLUGnPMCvIg
+- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=dd7ac996-1443-4180-9755-342404d53a4c; miro-verification=5b57a1504272050f14683cddfb29af797bfa1133; teamviewer-sso-verification=57fb36a8398445fc808d31a8bee8edca
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -140,7 +142,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
 - **Detail:** robots.txt lists 67 disallow path(s), e.g. /search/, /*/search/, /overlay/, /popups/mediaplayer/, /popups/popup_gallery/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 17. [INFO] 17 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 17. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://dw.com/ carries Cache-Control: max-age=60, s-maxage=300, public; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 194.55.30.46 carries PTR hoelderlin.dwelle.de. for dw.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 19. [INFO] 17 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: jobs.dw.com
@@ -168,18 +182,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
       "dns3.netcologne.de."
     ],
     "spf": [
+      "adobe-idp-site-verification=dd7ac996-1443-4180-9755-342404d53a4c",
+      "miro-verification=5b57a1504272050f14683cddfb29af797bfa1133",
       "v=spf1 ip4:194.55.30.155 ip4:194.55.30.156 ip4:194.55.26.155 ip4:194.55.26.156 ip4:81.209.250.80 ip4:81.209.250.76 ip4:81.209.250.78 ip4:83.133.243.211 ip4:185.17.245.132 ip4:185.17.245.28",
       " include:spf.umantis.com include:spf.de.umantis.com include:spf.protection.outlook.com",
       " include:spf1.checkinserver.com include:spf.vizito.be include:spf.send.business-beat.eu -all",
       "teamviewer-sso-verification=57fb36a8398445fc808d31a8bee8edca",
-      "jamf-site-verification=VzImhW6bKsbg86C4ZMCWfg",
       "apple-domain-verification=vBdShnLUGnPMCvIg",
+      "apple-domain-verification=71lMwTH6feCf0VJS",
       "MS=ms20961559",
-      "KewQ0sSdpaTF58pY71mtuZuuRhTip0nkIZQXczy8YI3flbo0X0MX2ymCjtQSHysSX/tHB691GLsOAB4ob9g+rA==",
-      "miro-verification=5b57a1504272050f14683cddfb29af797bfa1133",
       "amazonses:NcKjDbDrJqvaflTjJpYU24E8SwJhcD8L4P8f0UYl7rQ=",
-      "adobe-idp-site-verification=dd7ac996-1443-4180-9755-342404d53a4c",
-      "apple-domain-verification=71lMwTH6feCf0VJS"
+      "KewQ0sSdpaTF58pY71mtuZuuRhTip0nkIZQXczy8YI3flbo0X0MX2ymCjtQSHysSX/tHB691GLsOAB4ob9g+rA==",
+      "jamf-site-verification=VzImhW6bKsbg86C4ZMCWfg"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;ruf=mailto:dmarc-report@dw.com"
@@ -282,11 +296,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
     ]
   },
   "apex_txt": [
-    "teamviewer-sso-verification=57fb36a8398445fc808d31a8bee8edca",
-    "jamf-site-verification=VzImhW6bKsbg86C4ZMCWfg",
-    "apple-domain-verification=vBdShnLUGnPMCvIg",
+    "adobe-idp-site-verification=dd7ac996-1443-4180-9755-342404d53a4c",
     "miro-verification=5b57a1504272050f14683cddfb29af797bfa1133",
-    "adobe-idp-site-verification=dd7ac996-1443-4180-9755-342404d53a4c"
+    "teamviewer-sso-verification=57fb36a8398445fc808d31a8bee8edca",
+    "apple-domain-verification=vBdShnLUGnPMCvIg",
+    "apple-domain-verification=71lMwTH6feCf0VJS"
   ],
   "tls2": {
     "alpn": "",
@@ -297,7 +311,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260217000000",
+      "not_after": "20270320235959"
     }
   },
   "http2": {
@@ -319,8 +335,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 6, Info: 11)
       "/popups/"
     ]
   },
-  "elapsed_s": 33.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "hoelderlin.dwelle.de."
+    ]
+  },
+  "elapsed_s": 36.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

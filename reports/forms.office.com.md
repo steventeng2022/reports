@@ -7,8 +7,8 @@
 | Target | https://forms.office.com/ |
 | Bug bounty program | Microsoft Online Services |
 | Listed scope domain | forms.office.com |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -118,8 +118,8 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
   "domain": "forms.office.com",
   "dns": {
     "a": [
-      "150.171.73.13",
-      "150.171.74.13"
+      "150.171.74.13",
+      "150.171.73.13"
     ],
     "aaaa": [
       "2603:1061:10:1::13",
@@ -163,7 +163,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
     }
   },
   "ports": {
-    "ip": "150.171.73.13",
+    "ip": "150.171.74.13",
     "open": []
   },
   "https": {
@@ -226,7 +226,9 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260828104615",
+      "not_after": "20270224104615"
     }
   },
   "http2": {
@@ -235,8 +237,11 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "/"
     ]
   },
-  "elapsed_s": 6.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 6.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

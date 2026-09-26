@@ -7,12 +7,12 @@
 | Target | https://blog.us.playstation.com/ |
 | Bug bounty program | Playstation |
 | Listed scope domain | blog.us.playstation.com |
-| Test date | 2026-09-26 17:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
+Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 | 12 | info | P8 | Missing security.txt | CWE-1038 |
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -126,6 +127,12 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - **Detail:** robots.txt lists 13 disallow path(s), e.g. /wp-admin/, /category/, /tag/, /author/, /?s=*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 3.169.121.91 carries PTR server-3-169-121-91.tpe53.r.cloudfront.net. for blog.us.playstation.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -133,10 +140,10 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
   "domain": "blog.us.playstation.com",
   "dns": {
     "a": [
-      "3.169.121.86",
       "3.169.121.91",
-      "3.169.121.27",
-      "3.169.121.121"
+      "3.169.121.86",
+      "3.169.121.121",
+      "3.169.121.27"
     ],
     "aaaa": [],
     "cname": "playstation-prod.altis.cloud.",
@@ -187,7 +194,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     }
   },
   "ports": {
-    "ip": "3.169.121.86",
+    "ip": "3.169.121.91",
     "open": []
   },
   "https": {
@@ -251,7 +258,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260909000000",
+      "not_after": "20270325235959"
     }
   },
   "http2": {
@@ -271,8 +280,14 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "/2007/"
     ]
   },
-  "elapsed_s": 13.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "server-3-169-121-91.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 12.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

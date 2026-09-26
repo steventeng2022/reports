@@ -7,12 +7,12 @@
 | Target | https://espn.com/ |
 | Bug bounty program | The Walt Disney Company |
 | Listed scope domain | espn.com |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
+Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,8 +35,9 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 20 | info | CT1 | 118 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 21 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 20 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 21 | info | CT1 | 118 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 22 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -150,7 +151,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=d5RkNYJAq7RNqkZUNx-NjrdsUxYH77Qs7zl2ZqRj2Sc; google-site-verification=DM1CrNK7K2cq6YvNdmMPeIZBNQxxqw0a6ENutWnHoJQ; google-gws-recovery-domain-verification=41057864
+- **Detail:** Apex TXT records with verification/token content: cisco-ci-domain-verification=48652156c723cc0989fbc1c14af4f05c20b2c7b50fa948e499c; ciscocidomainverification=2c2658d02e94ce88b29494db432d2c911fc43abd373e5e485b5856; dropbox-domain-verification=f8opl8j5mr5e
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -165,13 +166,19 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 - **Detail:** robots.txt lists 113 disallow path(s), e.g. /, /, /, /, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 20. [INFO] 118 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 20. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 54.192.248.80 carries PTR server-54-192-248-80.tpe53.r.cloudfront.net. for espn.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 21. [INFO] 118 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: affiliate.api.qa.espn.com, artwork.api.qa.espn.com, assets.espn.com, cdp-nifi-eks-prod.aws.dp.hosted.espn.com, dcs7deportes-preview.us-west-2.aws.internal.espn.com, dcs7deportes.us-west-2.aws.internal.espn.com, dcs7domestic-preview.us-west-2.aws.internal.espn.com, dcs7domestic.us-west-2.aws.internal.espn.com, dcs7espn3.us-west-2.aws.internal.espn.com, dcs7soccernet-preview.us-west-2.aws.internal.espn.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 21. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 22. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: affiliate.api.qa.espn.com, cdp-nifi-eks-prod.aws.dp.hosted.espn.com; content may still be served via virtual-host fallback.
@@ -184,53 +191,53 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
   "domain": "espn.com",
   "dns": {
     "a": [
-      "54.192.248.40",
       "54.192.248.80",
-      "54.192.248.106",
-      "54.192.248.14"
+      "54.192.248.14",
+      "54.192.248.40",
+      "54.192.248.106"
     ],
     "aaaa": [
-      "2600:9000:202f:2a00:d:ac18:e2c0:93a1",
-      "2600:9000:202f:5a00:d:ac18:e2c0:93a1",
-      "2600:9000:202f:9e00:d:ac18:e2c0:93a1",
-      "2600:9000:202f:800:d:ac18:e2c0:93a1",
+      "2600:9000:202f:ee00:d:ac18:e2c0:93a1",
+      "2600:9000:202f:4200:d:ac18:e2c0:93a1",
+      "2600:9000:202f:1000:d:ac18:e2c0:93a1",
+      "2600:9000:202f:a400:d:ac18:e2c0:93a1",
+      "2600:9000:202f:9200:d:ac18:e2c0:93a1",
       "2600:9000:202f:8a00:d:ac18:e2c0:93a1",
-      "2600:9000:202f:0:d:ac18:e2c0:93a1",
-      "2600:9000:202f:f600:d:ac18:e2c0:93a1",
-      "2600:9000:202f:200:d:ac18:e2c0:93a1"
+      "2600:9000:202f:7c00:d:ac18:e2c0:93a1",
+      "2600:9000:202f:800:d:ac18:e2c0:93a1"
     ],
     "cname": null,
     "mx": [
       "espn-com.mail.protection.outlook.com (pref 5)"
     ],
     "ns": [
-      "ns-122.awsdns-15.com.",
       "ns-1045.awsdns-02.org.",
+      "ns-122.awsdns-15.com.",
       "ns-1936.awsdns-50.co.uk.",
       "ns-846.awsdns-41.net."
     ],
     "spf": [
-      "google-site-verification=d5RkNYJAq7RNqkZUNx-NjrdsUxYH77Qs7zl2ZqRj2Sc",
-      "google-site-verification=DM1CrNK7K2cq6YvNdmMPeIZBNQxxqw0a6ENutWnHoJQ",
-      "google-gws-recovery-domain-verification=41057864",
-      "docusign=e95b2d67-24b3-4e1e-9402-902d0b5e0c63",
-      "smartsheet-site-validation=vnu8x72WuY2SpP5LfwpJ3QEgKvaywdIx",
-      "pzhuVdOHPcxbY0BufDtyUHwrXoU8KikclnWWDgxOWNCyyCXtpK1Ws+A4mpps+Rtq0GARiBCA+IVLiCYcDhlSLw==",
-      "ciscocidomainverification=2c2658d02e94ce88b29494db432d2c911fc43abd373e5e485b58562f8dd78c80",
-      "extensis-domain-verification=17bb048b-06af-47a8-b8e5-d4a1155683c7",
       "cisco-ci-domain-verification=48652156c723cc0989fbc1c14af4f05c20b2c7b50fa948e499ca824f79f41b69",
-      "facebook-domain-verification=0y89pokpwmy3a9yqhuqx0wg8r23l9p",
-      "D074-DF5F-73F8-42A6-65B8-DCED-DDCF-F835",
+      "ciscocidomainverification=2c2658d02e94ce88b29494db432d2c911fc43abd373e5e485b58562f8dd78c80",
       "dropbox-domain-verification=f8opl8j5mr5e",
-      "atlassian-domain-verification=5lqJwtfJPMHqC/aGvT/7s2BR53IHCs9P6vFjCQYA5nkQ4mvoHKTqNTW7gucscGW7",
-      "asv=1cfe02e3a81e8e65022ac143e0107fdd",
-      "MS=ms54940749",
       "canva-site-verification=WmByBdRldeLifoeVTzfTgA",
-      "adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e02bd5d0dc3916",
+      "extensis-domain-verification=17bb048b-06af-47a8-b8e5-d4a1155683c7",
+      "asv=1cfe02e3a81e8e65022ac143e0107fdd",
+      "adobe-idp-site-verification=bb3da93fff816c4b9c75b5b87e7afbf88dff2c0dce3c5d8f6357552992c65903",
       "v=spf1 include:servers.mcsv.net mx ip4:74.123.203.125 ip4:74.123.200.120 ip4:74.123.200.35 ip4:74.123.200.36 ip4:74.123.203.98 ip4:74.123.200.222 ip4:192.234.2.39 include:_spf.emailcampaigns.net include:userinclude.dme3ds1.com include:spf.disney.com ~all",
-      "q1sjrk62qcsk7u2g2q8f46lhp",
+      "google-gws-recovery-domain-verification=41057864",
+      "google-site-verification=DM1CrNK7K2cq6YvNdmMPeIZBNQxxqw0a6ENutWnHoJQ",
+      "google-site-verification=d5RkNYJAq7RNqkZUNx-NjrdsUxYH77Qs7zl2ZqRj2Sc",
+      "facebook-domain-verification=0y89pokpwmy3a9yqhuqx0wg8r23l9p",
+      "pzhuVdOHPcxbY0BufDtyUHwrXoU8KikclnWWDgxOWNCyyCXtpK1Ws+A4mpps+Rtq0GARiBCA+IVLiCYcDhlSLw==",
+      "adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e02bd5d0dc3916",
+      "D074-DF5F-73F8-42A6-65B8-DCED-DDCF-F835",
       "docusign=0f5ff8fc-4420-4d52-9877-33f1485d191f",
-      "adobe-idp-site-verification=bb3da93fff816c4b9c75b5b87e7afbf88dff2c0dce3c5d8f6357552992c65903"
+      "MS=ms54940749",
+      "atlassian-domain-verification=5lqJwtfJPMHqC/aGvT/7s2BR53IHCs9P6vFjCQYA5nkQ4mvoHKTqNTW7gucscGW7",
+      "q1sjrk62qcsk7u2g2q8f46lhp",
+      "docusign=e95b2d67-24b3-4e1e-9402-902d0b5e0c63",
+      "smartsheet-site-validation=vnu8x72WuY2SpP5LfwpJ3QEgKvaywdIx"
     ],
     "dmarc": [
       "v=DMARC1;p=none;fo=1;rua=mailto:Corp.Dmarc_RUA@disney.com;ruf=mailto:Corp.Dmarc_RUF@disney.com"
@@ -356,7 +363,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
     }
   },
   "ports": {
-    "ip": "54.192.248.40",
+    "ip": "54.192.248.80",
     "open": []
   },
   "https": {
@@ -452,10 +459,10 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
     ]
   },
   "apex_txt": [
-    "google-site-verification=d5RkNYJAq7RNqkZUNx-NjrdsUxYH77Qs7zl2ZqRj2Sc",
-    "google-site-verification=DM1CrNK7K2cq6YvNdmMPeIZBNQxxqw0a6ENutWnHoJQ",
-    "google-gws-recovery-domain-verification=41057864",
+    "cisco-ci-domain-verification=48652156c723cc0989fbc1c14af4f05c20b2c7b50fa948e499c",
     "ciscocidomainverification=2c2658d02e94ce88b29494db432d2c911fc43abd373e5e485b5856",
+    "dropbox-domain-verification=f8opl8j5mr5e",
+    "canva-site-verification=WmByBdRldeLifoeVTzfTgA",
     "extensis-domain-verification=17bb048b-06af-47a8-b8e5-d4a1155683c7"
   ],
   "tls2": {
@@ -467,7 +474,9 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251110000000",
+      "not_after": "20261110235959"
     }
   },
   "http2": {
@@ -489,8 +498,14 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
       "*/conversation?"
     ]
   },
-  "elapsed_s": 5.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 202,
+    "ptr": [
+      "server-54-192-248-80.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 4.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,8 +7,8 @@
 | Target | https://prnt.sc/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | prnt.sc |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -53,13 +53,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.67.72.27:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.26.14.80:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.67.72.27:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.26.14.80:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [LOW] Mixed content: HTTP resources referenced from HTTPS page (`MIX1`)
@@ -167,9 +167,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   "domain": "prnt.sc",
   "dns": {
     "a": [
-      "172.67.72.27",
+      "104.26.14.80",
       "104.26.15.80",
-      "104.26.14.80"
+      "172.67.72.27"
     ],
     "aaaa": [],
     "cname": null,
@@ -209,7 +209,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     }
   },
   "ports": {
-    "ip": "172.67.72.27",
+    "ip": "104.26.14.80",
     "open": [
       8080,
       8443
@@ -276,7 +276,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260907185803",
+      "not_after": "20261206195801"
     }
   },
   "http2": {
@@ -284,8 +286,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "Allow:"
     ]
   },
-  "elapsed_s": 25.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 28.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

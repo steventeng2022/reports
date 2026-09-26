@@ -7,12 +7,12 @@
 | Target | https://bild.de/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | bild.de |
-| Test date | 2026-09-26 17:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -132,7 +133,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: figma-domain-verification=0a2753e7829cecbb7be239a2021677e64fb8c3603b24e4bb473e7c; openai-domain-verification=dv-QcSSDilElWZgs6xle7DozExl; google-site-verification=wSGR6qpcbZeGKdQUKg6ipsQj_7AeNxrPHVEcIiWgpRE
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=wSGR6qpcbZeGKdQUKg6ipsQj_7AeNxrPHVEcIiWgpRE; tollbit-domain-verification=ef1aafa3100448786098f1b0fd1cf9c371f06a3d95599485935c; openai-domain-verification=dv-QcSSDilElWZgs6xle7DozExl
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -146,6 +147,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 26 disallow path(s), e.g. /, /partner/, /jobs/api/gmapi, /community/, /sonstiges/vorproduktion/
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.210.215.203 carries PTR a23-210-215-203.deploy.static.akamaitechnologies.com. for bild.de.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -163,27 +170,27 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "bild-de.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "a7-67.akam.net.",
       "a16-65.akam.net.",
-      "a11-67.akam.net.",
-      "a14-64.akam.net.",
       "a6-66.akam.net.",
-      "a1-130.akam.net."
+      "a1-130.akam.net.",
+      "a11-67.akam.net.",
+      "a7-67.akam.net.",
+      "a14-64.akam.net."
     ],
     "spf": [
-      "figma-domain-verification=0a2753e7829cecbb7be239a2021677e64fb8c3603b24e4bb473e7cf21d9a351b-1787909594",
-      "openai-domain-verification=dv-QcSSDilElWZgs6xle7DozExl",
-      "eqtr0qnhkpp5vj7krpo4ai3g3n",
       "google-site-verification=wSGR6qpcbZeGKdQUKg6ipsQj_7AeNxrPHVEcIiWgpRE",
-      "adobe-idp-site-verification=62bcde131337d67652c5065053b7b1bf966f7bb65d0b3b51fdbe1ca653239533",
-      "_7zhs4nhu5pu1abphvwem9ivimuxjuth",
       "tollbit-domain-verification=ef1aafa3100448786098f1b0fd1cf9c371f06a3d95599485935c0f8014c36dc7",
+      "openai-domain-verification=dv-QcSSDilElWZgs6xle7DozExl",
       "v=spf1 include:spf.asv.de include:spf.protection.outlook.com include:em6919.bild.de a:static.85-10-194-80.clients.your-server.de ?all",
-      "MS=ms99535522",
+      "_7zhs4nhu5pu1abphvwem9ivimuxjuth",
+      "google-site-verification=GIwP8nvMGCphDvQq77TEZC32YbjuCGwW4sSunpEYSlk",
       "QFpSE9bKoWuwVmDnsk9WcN2uDM+gd4XFp4U+KOUCJ/dZ6a2PymbU3qNhP8lsAMC0k2ClaLcBIjPCEDASk8XO6A==",
       "pulvcolf3k6tosp096g2c9q9jo",
       "google-site-verification=0uD0nmX-Cw8fSCHOlf_TfTZRyXjOPNih1lRM3L1jC0Q",
-      "google-site-verification=GIwP8nvMGCphDvQq77TEZC32YbjuCGwW4sSunpEYSlk"
+      "adobe-idp-site-verification=62bcde131337d67652c5065053b7b1bf966f7bb65d0b3b51fdbe1ca653239533",
+      "MS=ms99535522",
+      "eqtr0qnhkpp5vj7krpo4ai3g3n",
+      "figma-domain-verification=0a2753e7829cecbb7be239a2021677e64fb8c3603b24e4bb473e7cf21d9a351b-1787909594"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=none; rua=mailto:dmarc-rua@dkim10888.de; ruf=mailto:dmarc-ruf@dkim10888.de"
@@ -285,11 +292,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "figma-domain-verification=0a2753e7829cecbb7be239a2021677e64fb8c3603b24e4bb473e7c",
-    "openai-domain-verification=dv-QcSSDilElWZgs6xle7DozExl",
     "google-site-verification=wSGR6qpcbZeGKdQUKg6ipsQj_7AeNxrPHVEcIiWgpRE",
-    "adobe-idp-site-verification=62bcde131337d67652c5065053b7b1bf966f7bb65d0b3b51fdbe",
-    "tollbit-domain-verification=ef1aafa3100448786098f1b0fd1cf9c371f06a3d95599485935c"
+    "tollbit-domain-verification=ef1aafa3100448786098f1b0fd1cf9c371f06a3d95599485935c",
+    "openai-domain-verification=dv-QcSSDilElWZgs6xle7DozExl",
+    "google-site-verification=GIwP8nvMGCphDvQq77TEZC32YbjuCGwW4sSunpEYSlk",
+    "google-site-verification=0uD0nmX-Cw8fSCHOlf_TfTZRyXjOPNih1lRM3L1jC0Q"
   ],
   "tls2": {
     "alpn": "",
@@ -300,7 +307,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251224000000",
+      "not_after": "20270124235959"
     }
   },
   "http2": {
@@ -322,8 +331,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "/sonstiges/vorproduktion/"
     ]
   },
-  "elapsed_s": 18.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "a23-210-215-203.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 7.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

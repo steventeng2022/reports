@@ -7,8 +7,8 @@
 | Target | https://timesofindia.indiatimes.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | timesofindia.indiatimes.com |
-| Test date | 2026-09-26 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:00 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -23,10 +23,10 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 | 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
 | 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
 | 7 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
-| 8 | info | CORS4 | CORS: wildcard Access-Control-Allow-Origin | CWE-942 |
-| 9 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
-| 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 8 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
+| 9 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 10 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 11 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -76,31 +76,30 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 8. [INFO] CORS: wildcard Access-Control-Allow-Origin (`CORS4`)
-
-- **CWE:** CWE-942
-- **Detail:** Access-Control-Allow-Origin: * is set for cross-origin requests.
-- **Context:** https response, /
-- **Recommendation:** Restrict the allowed origins if sensitive data is exposed via the API.
-
-### 9. [INFO] CORS: subdomain origin origin accepted (no credentials) (`CORS2`)
+### 8. [INFO] CORS: subdomain origin origin accepted (no credentials) (`CORS2`)
 
 - **CWE:** CWE-942
 - **Detail:** Origin https://sub.timesofindia.indiatimes.com was echoed in Access-Control-Allow-Origin.
 - **Context:** https response, /
 - **Recommendation:** Confirm whether arbitrary origin echoing is intended.
 
-### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 9. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
 
 - **CWE:** CWE-603
 - **Detail:** Certificate of timesofindia.indiatimes.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 10. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but timesofindia.indiatimes.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 11. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 104.116.243.83 carries PTR a104-116-243-83.deploy.static.akamaitechnologies.com. for timesofindia.indiatimes.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -256,7 +255,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
   "cors": [
     {
       "origin": "https://evil-auditor.example",
-      "acao": "*",
+      "acao": "",
       "acac": "false"
     },
     {
@@ -305,11 +304,19 @@ Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260729053837",
+      "not_after": "20261027053836"
     }
   },
-  "elapsed_s": 16.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "a104-116-243-83.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 11.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

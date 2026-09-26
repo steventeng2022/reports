@@ -7,12 +7,12 @@
 | Target | https://facebook.com/ |
 | Bug bounty program | Facebook |
 | Listed scope domain | facebook.com |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 7, Info: 10)
+Total findings: **18** (High: 0, Medium: 0, Low: 7, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,7 +32,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 7, Info: 10)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | CT1 | 56 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 18 | info | CT1 | 56 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -125,7 +126,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 7, Info: 10)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: zoom-domain-verification=ZOOM_verify_e6c41daeb8a04c56b2c1d1702e312f88; google-site-verification=wdH5DTJTc9AYNwVunSVFeK0hYDGUIEOGb-RReU6pJlY; zoom-domain-verification=4b2ef4e1-6dee-4483-9869-9bef353fd147
+- **Detail:** Apex TXT records with verification/token content: zoom-domain-verification=4b2ef4e1-6dee-4483-9869-9bef353fd147; google-site-verification=A2WZWCNQHrGV_TWwKh6KHY90tY0SHZo_RnyMJoDaG0s; facebook-domain-verification=y7isfmi3kzyg1r4wophh9vyb6pgbda
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -140,7 +141,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 7, Info: 10)
 - **Detail:** robots.txt lists 1160 disallow path(s), e.g. /, /, /, /, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 17. [INFO] 56 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 57.144.92.1 carries PTR edge-star-mini-shv-01-tpe5.facebook.com. for facebook.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 18. [INFO] 56 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: beta.facebook.com, dev.facebook.com, fb.beta.facebook.com, hr.facebook.com, interngraph.staging.scgraph.facebook.com, m.beta.facebook.com, secure.beta.facebook.com, smtpin.mx.facebook.com, staging.scgraph.facebook.com
@@ -164,18 +171,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 7, Info: 10)
     ],
     "ns": [
       "a.ns.facebook.com.",
-      "d.ns.facebook.com.",
       "b.ns.facebook.com.",
+      "d.ns.facebook.com.",
       "c.ns.facebook.com."
     ],
     "spf": [
-      "zoom-domain-verification=ZOOM_verify_e6c41daeb8a04c56b2c1d1702e312f88",
-      "google-site-verification=wdH5DTJTc9AYNwVunSVFeK0hYDGUIEOGb-RReU6pJlY",
       "zoom-domain-verification=4b2ef4e1-6dee-4483-9869-9bef353fd147",
       "google-site-verification=A2WZWCNQHrGV_TWwKh6KHY90tY0SHZo_RnyMJoDaG0s",
-      "v=spf1 redirect=_spf.facebook.com",
       "facebook-domain-verification=y7isfmi3kzyg1r4wophh9vyb6pgbda",
-      "google-site-verification=sK6uY9x7eaMoEMfn3OILqwTFYgaNp4llmguKI-C3_iA"
+      "zoom-domain-verification=ZOOM_verify_e6c41daeb8a04c56b2c1d1702e312f88",
+      "google-site-verification=sK6uY9x7eaMoEMfn3OILqwTFYgaNp4llmguKI-C3_iA",
+      "google-site-verification=wdH5DTJTc9AYNwVunSVFeK0hYDGUIEOGb-RReU6pJlY",
+      "v=spf1 redirect=_spf.facebook.com"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:a@dmarc.facebookmail.com; pct=100"
@@ -298,11 +305,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 7, Info: 10)
     ]
   },
   "apex_txt": [
-    "zoom-domain-verification=ZOOM_verify_e6c41daeb8a04c56b2c1d1702e312f88",
-    "google-site-verification=wdH5DTJTc9AYNwVunSVFeK0hYDGUIEOGb-RReU6pJlY",
     "zoom-domain-verification=4b2ef4e1-6dee-4483-9869-9bef353fd147",
     "google-site-verification=A2WZWCNQHrGV_TWwKh6KHY90tY0SHZo_RnyMJoDaG0s",
-    "facebook-domain-verification=y7isfmi3kzyg1r4wophh9vyb6pgbda"
+    "facebook-domain-verification=y7isfmi3kzyg1r4wophh9vyb6pgbda",
+    "zoom-domain-verification=ZOOM_verify_e6c41daeb8a04c56b2c1d1702e312f88",
+    "google-site-verification=sK6uY9x7eaMoEMfn3OILqwTFYgaNp4llmguKI-C3_iA"
   ],
   "tls2": {
     "alpn": "",
@@ -313,7 +320,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 7, Info: 10)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260706000000",
+      "not_after": "20261004235959"
     }
   },
   "http2": {
@@ -336,8 +345,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 7, Info: 10)
       "/business/help/search*&query="
     ]
   },
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "edge-star-mini-shv-01-tpe5.facebook.com."
+    ]
+  },
   "elapsed_s": 7.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

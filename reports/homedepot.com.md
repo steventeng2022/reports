@@ -7,12 +7,12 @@
 | Target | https://homedepot.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | homedepot.com |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -138,7 +139,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: bv-domain-verification=e51f90f4244f97973230f42f1a8485fc03995b331b6a856ee883e7262; Dynatrace-site-verification=5218cc8f-b799-466b-81e2-151902ea9493__b7hius6gka10pc; vmware-cloud-verification-e1ffc876-3a8b-4242-94c1-9e8db12d03f1
+- **Detail:** Apex TXT records with verification/token content: vmware-cloud-verification-e1ffc876-3a8b-4242-94c1-9e8db12d03f1; google-site-verification=dtvgbq00CxnP6nJC7dgLEOVtLcoKKXtdj90AImFCbuM; adobe-idp-site-verification=3fbd7a09e2fe24031aad0a4a8c68e8242e227010cef9e40aeebc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -146,6 +147,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - **CWE:** CWE-603
 - **Detail:** Certificate of homedepot.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 35.201.95.83 carries PTR 83.95.201.35.bc.googleusercontent.com. for homedepot.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -159,46 +166,46 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxa-000e6608.gslb.pphosted.com (pref 10)",
+      "mx0a-000e6608.pphosted.com (pref 20)",
       "exchanger1.homedepot.com (pref 30)",
-      "exchanger2.homedepot.com (pref 30)",
-      "mxb-000e6608.gslb.pphosted.com (pref 10)",
       "mx0b-000e6608.pphosted.com (pref 20)",
-      "mx0a-000e6608.pphosted.com (pref 20)"
+      "mxb-000e6608.gslb.pphosted.com (pref 10)",
+      "mxa-000e6608.gslb.pphosted.com (pref 10)",
+      "exchanger2.homedepot.com (pref 30)"
     ],
     "ns": [
+      "a16-66.akam.net.",
       "a1-27.akam.net.",
       "a7-66.akam.net.",
-      "a16-66.akam.net.",
-      "a6-65.akam.net.",
       "a3-64.akam.net.",
-      "a18-67.akam.net."
+      "a18-67.akam.net.",
+      "a6-65.akam.net."
     ],
     "spf": [
-      "bv-domain-verification=e51f90f4244f97973230f42f1a8485fc03995b331b6a856ee883e72624c85d3d",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ip4:148.163.149.217 ip4:148.163.153.207 include:mail.zendesk.com ~all",
-      "mk-org-sso-967a2df0-7b8d-405b-b414-4627a3d6311e",
-      "Dynatrace-site-verification=5218cc8f-b799-466b-81e2-151902ea9493__b7hius6gka10pcd61m5vcgio0c",
       "vmware-cloud-verification-e1ffc876-3a8b-4242-94c1-9e8db12d03f1",
-      "ms-domain-verification=1851d99d-d9bb-4eb8-b800-8e86a71b0fcc",
-      "google-site-verification=dtvgbq00CxnP6nJC7dgLEOVtLcoKKXtdj90AImFCbuM",
-      "18aa0eb980e5432c9ac85035050b628",
-      "b93b75bb-c0c7-445c-89eb-8560cef8dba9",
-      "ciscocidomainverification=2a19d56e7ed441cd6cd10c84d904c0f8828fba1455df76c984284b5d85fa5c2e",
-      "OSIAGENTREGURL=https://mdm.homedepot.com/athena/enrollment/athenaiosenroll.aspx",
-      "pendo-domain-verification=6163daa5-67e0-4c5d-9607-d97d6a0c9ab4",
-      "pardot757373=218869be8ba439583983ba0ae0f7bfe67956ead606a3deb3f20bdfc1fd42b8cd",
-      "adobe-idp-site-verification=3fbd7a09e2fe24031aad0a4a8c68e8242e227010cef9e40aeebcf4bc7addb8a0",
-      "liveramp-site-verification=C7ahcr0qXYCzwhdiK-pcYbtLNhwzEvcgbvbgjovyRy0",
-      "astro-domain-verification=cmqshn0vh1hv101nynj90s660",
-      "atlassian-domain-verification=xqfqkDq+B7CyObHlKTiLqquR1QTlpKQeek64YJoRwFWeUm0Tihwqz8GA0enUIHSs",
-      "google-site-verification=94tM-sDACvy_JNGSU6fp8GOaI6k5OuzXZN8PPYCtdRI",
-      "google-site-verification=3NvwcCmI2tiaqvhxEx918MCg-AfY9OOwxB3NpSQwTjw.",
-      "smartsheet-site-validation=UQZXQ9whIKMhr-lD3a9QxQbUGhnacn2o",
-      "ms-domain-verification=3a3a542a-71c8-45ad-ab04-7152bfba2a64",
-      "onetrust-domain-verification=9be9c479e03f424d939ac18286224476",
       "hj-ownership=a4r4Ms7CqBFe1WU",
-      "google-site-verification=wpZpi9YRPHBYFY7AfQOaVZSOnXuiN_LYpOsuCJRiEyQ"
+      "18aa0eb980e5432c9ac85035050b628",
+      "mk-org-sso-967a2df0-7b8d-405b-b414-4627a3d6311e",
+      "google-site-verification=dtvgbq00CxnP6nJC7dgLEOVtLcoKKXtdj90AImFCbuM",
+      "b93b75bb-c0c7-445c-89eb-8560cef8dba9",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ip4:148.163.149.217 ip4:148.163.153.207 include:mail.zendesk.com ~all",
+      "adobe-idp-site-verification=3fbd7a09e2fe24031aad0a4a8c68e8242e227010cef9e40aeebcf4bc7addb8a0",
+      "pardot757373=218869be8ba439583983ba0ae0f7bfe67956ead606a3deb3f20bdfc1fd42b8cd",
+      "google-site-verification=94tM-sDACvy_JNGSU6fp8GOaI6k5OuzXZN8PPYCtdRI",
+      "atlassian-domain-verification=xqfqkDq+B7CyObHlKTiLqquR1QTlpKQeek64YJoRwFWeUm0Tihwqz8GA0enUIHSs",
+      "ms-domain-verification=1851d99d-d9bb-4eb8-b800-8e86a71b0fcc",
+      "ciscocidomainverification=2a19d56e7ed441cd6cd10c84d904c0f8828fba1455df76c984284b5d85fa5c2e",
+      "liveramp-site-verification=C7ahcr0qXYCzwhdiK-pcYbtLNhwzEvcgbvbgjovyRy0",
+      "Dynatrace-site-verification=5218cc8f-b799-466b-81e2-151902ea9493__b7hius6gka10pcd61m5vcgio0c",
+      "ms-domain-verification=3a3a542a-71c8-45ad-ab04-7152bfba2a64",
+      "bv-domain-verification=e51f90f4244f97973230f42f1a8485fc03995b331b6a856ee883e72624c85d3d",
+      "smartsheet-site-validation=UQZXQ9whIKMhr-lD3a9QxQbUGhnacn2o",
+      "OSIAGENTREGURL=https://mdm.homedepot.com/athena/enrollment/athenaiosenroll.aspx",
+      "onetrust-domain-verification=9be9c479e03f424d939ac18286224476",
+      "google-site-verification=wpZpi9YRPHBYFY7AfQOaVZSOnXuiN_LYpOsuCJRiEyQ",
+      "astro-domain-verification=cmqshn0vh1hv101nynj90s660",
+      "google-site-verification=3NvwcCmI2tiaqvhxEx918MCg-AfY9OOwxB3NpSQwTjw.",
+      "pendo-domain-verification=6163daa5-67e0-4c5d-9607-d97d6a0c9ab4"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com;"
@@ -280,11 +287,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "bv-domain-verification=e51f90f4244f97973230f42f1a8485fc03995b331b6a856ee883e7262",
-    "Dynatrace-site-verification=5218cc8f-b799-466b-81e2-151902ea9493__b7hius6gka10pc",
     "vmware-cloud-verification-e1ffc876-3a8b-4242-94c1-9e8db12d03f1",
-    "ms-domain-verification=1851d99d-d9bb-4eb8-b800-8e86a71b0fcc",
-    "google-site-verification=dtvgbq00CxnP6nJC7dgLEOVtLcoKKXtdj90AImFCbuM"
+    "google-site-verification=dtvgbq00CxnP6nJC7dgLEOVtLcoKKXtdj90AImFCbuM",
+    "adobe-idp-site-verification=3fbd7a09e2fe24031aad0a4a8c68e8242e227010cef9e40aeebc",
+    "google-site-verification=94tM-sDACvy_JNGSU6fp8GOaI6k5OuzXZN8PPYCtdRI",
+    "atlassian-domain-verification=xqfqkDq+B7CyObHlKTiLqquR1QTlpKQeek64YJoRwFWeUm0Tih"
   ],
   "tls2": {
     "alpn": "",
@@ -295,11 +302,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260403000000",
+      "not_after": "20261018235959"
     }
   },
-  "elapsed_s": 9.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "83.95.201.35.bc.googleusercontent.com."
+    ]
+  },
+  "elapsed_s": 9.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

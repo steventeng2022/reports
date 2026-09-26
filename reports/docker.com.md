@@ -7,8 +7,8 @@
 | Target | https://docker.com/ |
 | Bug bounty program | Docker |
 | Listed scope domain | docker.com |
-| Test date | 2026-09-26 17:43 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -125,7 +125,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=CFmV0geNs1hCxK0mBEpjWaDoNwBIiDxIRjTvt3YGRDM; jamf-site-verification=jqNgc5MzMp4UnSANweyyEQ; opine-verification=14d8ea53-d8ae-406f-93b0-76dc879d9b46
+- **Detail:** Apex TXT records with verification/token content: airtable-verification=7f122efe7db6b16848108e469042c39c; google-site-verification=GjEZ_3KyjpDbmRzGdMUtqMeuXdh7HCSc8uRsPGYL-I0; jamf-site-verification=jqNgc5MzMp4UnSANweyyEQ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -155,50 +155,50 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     ],
     "cname": null,
     "mx": [
-      "alt3.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "alt4.aspmx.l.google.com (pref 10)",
+      "alt3.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
       "ns-1289.awsdns-33.org.",
+      "ns-207.awsdns-25.com.",
       "ns-1981.awsdns-55.co.uk.",
-      "ns-568.awsdns-07.net.",
-      "ns-207.awsdns-25.com."
+      "ns-568.awsdns-07.net."
     ],
     "spf": [
-      "google-site-verification=CFmV0geNs1hCxK0mBEpjWaDoNwBIiDxIRjTvt3YGRDM",
-      "jamf-site-verification=jqNgc5MzMp4UnSANweyyEQ",
-      "opine-verification=14d8ea53-d8ae-406f-93b0-76dc879d9b46",
-      "cursor-domain-verification-pkwbtp=KD6kIrkeudCadzeviiVJgEWnd",
-      "adobe-idp-site-verification=a8d1a71d0cba44c2521bcb451d9dc708ee20d93c7b5b04791f699d128bbe6ec2",
-      "detectify-verification=87a64c3bf3301354588d90672bd1b74e",
-      "zapier-domain-verification-challenge=c3e7ddaf-20bf-40ca-9374-1a917b16be06",
-      "google-site-verification=rCKOZlVmB_xuu9DiT-urSmmXAEUGn5RI8PxdyCW5LJg",
-      "docusign=aeb25cd4-f743-4efc-b6fb-b8bc5dd1d0e8",
-      "google-site-verification=Nyiwo5q4kkaD5V-sEiXsW74HXyVRtKVyxYFfZuFLG7M",
-      "MS=ms98031138",
-      "stripe-verification=804359af3a919b4a46343227e384abdf33e10ad5bb81ea9f1d17ed4e74486ab4",
-      "onetrust-domain-verification=fb12882ae6344670a7b91077bd57c0f1",
-      "MS=ms42223923",
-      "d0vcwvtyam",
-      "google-site-verification=GjEZ_3KyjpDbmRzGdMUtqMeuXdh7HCSc8uRsPGYL-I0",
-      "google-site-verification=4PyKLfy_lowkc_qcu-byUkmF1kxAUT7tfho7ZiP353s",
-      "openai-domain-verification=dv-tj9VEsgExQvdNl9SCOa2Awju",
-      "google-site-verification=i6hYWAXRYCtHNnyiQAYXiy_4StkAMJQiNCfH-3olY-I",
-      "google-site-verification=VbuWA5NflxQMko2x9BJFIPVYrbuxHQll4UP4gZ4Fm08",
-      "google-site-verification=5e33xBJIwW1XU49IqmIYtN7yi2Iq0GNnWwN4ujn4G_M",
-      "apple-domain-verification=S580UenDqcwy2I1X",
-      "sinch-domain-verification=d8a66194-44cf-49c3-96ab-74325ad6e7be",
-      "atlassian-domain-verification=I1f5bgOm9sPUEcK/2JTD6weNlWt+Wwsyo5dwvJe1fGjf9V+x3kyqxZRrl9z7ILEK",
       "airtable-verification=7f122efe7db6b16848108e469042c39c",
-      "sonatype-domain-verification=OSSRH-62474",
+      "google-site-verification=GjEZ_3KyjpDbmRzGdMUtqMeuXdh7HCSc8uRsPGYL-I0",
+      "jamf-site-verification=jqNgc5MzMp4UnSANweyyEQ",
+      "d0vcwvtyam",
+      "openai-domain-verification=dv-tj9VEsgExQvdNl9SCOa2Awju",
+      "cursor-domain-verification-pkwbtp=KD6kIrkeudCadzeviiVJgEWnd",
       "docker-verification=4b72827b-32c1-4fe6-a843-2256c0df8a31",
+      "sonatype-domain-verification=OSSRH-62474",
+      "google-site-verification=i6hYWAXRYCtHNnyiQAYXiy_4StkAMJQiNCfH-3olY-I",
+      "opine-verification=14d8ea53-d8ae-406f-93b0-76dc879d9b46",
+      "stripe-verification=804359af3a919b4a46343227e384abdf33e10ad5bb81ea9f1d17ed4e74486ab4",
       "v=spf1 include:_spf.google.com include:spf.tipalti.com include:_spf.salesforce.com include:mktomail.com include:mail.zendesk.com -all",
+      "apple-domain-verification=S580UenDqcwy2I1X",
+      "MS=ms42223923",
       "anthropic-domain-verification-p1ks1q=BmUzJzzDzqNXVWLXmZVoEvTr3",
+      "google-site-verification=Nyiwo5q4kkaD5V-sEiXsW74HXyVRtKVyxYFfZuFLG7M",
+      "google-site-verification=rCKOZlVmB_xuu9DiT-urSmmXAEUGn5RI8PxdyCW5LJg",
+      "atlassian-domain-verification=I1f5bgOm9sPUEcK/2JTD6weNlWt+Wwsyo5dwvJe1fGjf9V+x3kyqxZRrl9z7ILEK",
       "miro-verification=116f0987438eb5a48c070e080a68e7d7b3087e5f",
-      "astro-domain-verification=cljrj1fgz00hm01lvtaq65gnn"
+      "astro-domain-verification=cljrj1fgz00hm01lvtaq65gnn",
+      "zapier-domain-verification-challenge=c3e7ddaf-20bf-40ca-9374-1a917b16be06",
+      "onetrust-domain-verification=fb12882ae6344670a7b91077bd57c0f1",
+      "MS=ms98031138",
+      "google-site-verification=CFmV0geNs1hCxK0mBEpjWaDoNwBIiDxIRjTvt3YGRDM",
+      "google-site-verification=VbuWA5NflxQMko2x9BJFIPVYrbuxHQll4UP4gZ4Fm08",
+      "adobe-idp-site-verification=a8d1a71d0cba44c2521bcb451d9dc708ee20d93c7b5b04791f699d128bbe6ec2",
+      "google-site-verification=5e33xBJIwW1XU49IqmIYtN7yi2Iq0GNnWwN4ujn4G_M",
+      "google-site-verification=4PyKLfy_lowkc_qcu-byUkmF1kxAUT7tfho7ZiP353s",
+      "sinch-domain-verification=d8a66194-44cf-49c3-96ab-74325ad6e7be",
+      "docusign=aeb25cd4-f743-4efc-b6fb-b8bc5dd1d0e8",
+      "detectify-verification=87a64c3bf3301354588d90672bd1b74e"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; rua=mailto:q1xwnepx@ag.dmarcian.com; ruf=mailto:q1xwnepx@fr.dmarcian.com;"
@@ -281,11 +281,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=CFmV0geNs1hCxK0mBEpjWaDoNwBIiDxIRjTvt3YGRDM",
+    "airtable-verification=7f122efe7db6b16848108e469042c39c",
+    "google-site-verification=GjEZ_3KyjpDbmRzGdMUtqMeuXdh7HCSc8uRsPGYL-I0",
     "jamf-site-verification=jqNgc5MzMp4UnSANweyyEQ",
-    "opine-verification=14d8ea53-d8ae-406f-93b0-76dc879d9b46",
-    "cursor-domain-verification-pkwbtp=KD6kIrkeudCadzeviiVJgEWnd",
-    "adobe-idp-site-verification=a8d1a71d0cba44c2521bcb451d9dc708ee20d93c7b5b04791f69"
+    "openai-domain-verification=dv-tj9VEsgExQvdNl9SCOa2Awju",
+    "cursor-domain-verification-pkwbtp=KD6kIrkeudCadzeviiVJgEWnd"
   ],
   "tls2": {
     "alpn": "",
@@ -296,7 +296,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260730103224",
+      "not_after": "20261028103223"
     }
   },
   "http2": {
@@ -318,8 +320,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
       "/ja-jp/pricing/contact-sales/bss-cc-thankyou/"
     ]
   },
-  "elapsed_s": 22.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 23.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

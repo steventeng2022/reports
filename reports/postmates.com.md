@@ -7,12 +7,12 @@
 | Target | https://postmates.com/ |
 | Bug bounty program | Postmates |
 | Listed scope domain | postmates.com |
-| Test date | 2026-09-26 17:51 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
+Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 17 | low | CK4 | Session-like cookie without HttpOnly | CWE-1004 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 19 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 
 ## Detailed findings
 
@@ -123,7 +124,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba65; status-page-domain-verification=vbzgm2f4x75m; google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=2Ilvgbr78yRVip_eIEMEDS5i2w9I8WqlkC5MGwtT9mc; status-page-domain-verification=vbzgm2f4x75m; google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -150,6 +151,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 - **Detail:** robots.txt lists 2250 disallow path(s), e.g. */delivery-details, */group-orders/, */search?, */select-language, */checkout
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 19. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of postmates.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -166,26 +173,26 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
       "aspmx3.googlemail.com (pref 10)",
       "aspmx5.googlemail.com (pref 10)",
       "aspmx4.googlemail.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
+      "edns126.ultradns.com.",
       "edns126.ultradns.net.",
       "edns126.ultradns.org.",
-      "edns126.ultradns.com.",
       "edns126.ultradns.biz."
     ],
     "spf": [
-      "hkjvwlbv3sdq8x3n7k7xg6814fktgwt9",
-      "stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba6578d6",
-      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
-      "status-page-domain-verification=vbzgm2f4x75m",
-      "google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4",
-      "ZOOM_verify_38TrrxQgRki7d9IxN3-DPw",
       "fhtfbm1hh3v7nwps06d0t8410d5r93tc",
       "google-site-verification=2Ilvgbr78yRVip_eIEMEDS5i2w9I8WqlkC5MGwtT9mc",
-      "facebook-domain-verification=lanbzff5xfbystm65ipwykm0arewgy"
+      "status-page-domain-verification=vbzgm2f4x75m",
+      "ZOOM_verify_38TrrxQgRki7d9IxN3-DPw",
+      "google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4",
+      "facebook-domain-verification=lanbzff5xfbystm65ipwykm0arewgy",
+      "v=spf1 include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
+      "stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba6578d6",
+      "hkjvwlbv3sdq8x3n7k7xg6814fktgwt9"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc_agg@vali.email"
@@ -304,11 +311,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba65",
+    "google-site-verification=2Ilvgbr78yRVip_eIEMEDS5i2w9I8WqlkC5MGwtT9mc",
     "status-page-domain-verification=vbzgm2f4x75m",
     "google-site-verification=H0kH4zM_GueUZtOBxqzPVtLNFV4044GyQ0f70CKXFp4",
-    "google-site-verification=2Ilvgbr78yRVip_eIEMEDS5i2w9I8WqlkC5MGwtT9mc",
-    "facebook-domain-verification=lanbzff5xfbystm65ipwykm0arewgy"
+    "facebook-domain-verification=lanbzff5xfbystm65ipwykm0arewgy",
+    "stripe-verification=ef5ba81f76af72dabfe40a67c5a713896d4ae363bf1edede7a7b62b5ba65"
   ],
   "tls2": {
     "alpn": "",
@@ -319,7 +326,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260924021606",
+      "not_after": "20261223021605"
     }
   },
   "http2": {
@@ -341,8 +350,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
       "/_/diagnostics"
     ]
   },
-  "elapsed_s": 20.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 19.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

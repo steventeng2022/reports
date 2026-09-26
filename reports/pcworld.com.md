@@ -7,8 +7,8 @@
 | Target | https://pcworld.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | pcworld.com |
-| Test date | 2026-09-26 17:50 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:57 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -51,13 +51,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.20.152:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.21.152:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.20.152:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.21.152:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -136,7 +136,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=W8kbARs47UCUzgTKc21W7esvf-2rBZR3xP4TXQVbV9g; google-site-verification=RRh2VqZJ1OfoNXToDCvLdBtikGUgu9cQ5aTrCUMrM5I; tinfoil-site-verification: e4d40a123f4c86c4715f499a135c8cd72ba758c2=1d6569db0306
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=W8kbARs47UCUzgTKc21W7esvf-2rBZR3xP4TXQVbV9g; tinfoil-site-verification: e4d40a123f4c86c4715f499a135c8cd72ba758c2=1d6569db0306; google-site-verification=RRh2VqZJ1OfoNXToDCvLdBtikGUgu9cQ5aTrCUMrM5I
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -152,12 +152,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "pcworld.com",
   "dns": {
     "a": [
-      "104.18.20.152",
-      "104.18.21.152"
+      "104.18.21.152",
+      "104.18.20.152"
     ],
     "aaaa": [
-      "2606:4700::6812:1498",
-      "2606:4700::6812:1598"
+      "2606:4700::6812:1598",
+      "2606:4700::6812:1498"
     ],
     "cname": null,
     "mx": [
@@ -165,20 +165,20 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "usb-smtp-inbound-2.mimecast.com (pref 10)"
     ],
     "ns": [
-      "elle.ns.cloudflare.com.",
-      "michael.ns.cloudflare.com."
+      "michael.ns.cloudflare.com.",
+      "elle.ns.cloudflare.com."
     ],
     "spf": [
-      "5s7gr0kgebvicaklsdklt35tt3",
+      "v=spf1include:_spf.google.com include:spf.protection.outlook.com include:spfa.cpmails.com include:usb._netblocks.mimecast.com -all",
       "google-site-verification=W8kbARs47UCUzgTKc21W7esvf-2rBZR3xP4TXQVbV9g",
-      "MS=ms69394546",
       "docusign=7896a39e-0e3c-4e90-811d-665c6cbc11e2",
-      "google-site-verification=RRh2VqZJ1OfoNXToDCvLdBtikGUgu9cQ5aTrCUMrM5I",
+      "5s7gr0kgebvicaklsdklt35tt3",
+      "MS=ms69394546",
       "tinfoil-site-verification: e4d40a123f4c86c4715f499a135c8cd72ba758c2=1d6569db0306e3fab6012887799c42e4e659c3bf",
+      "google-site-verification=RRh2VqZJ1OfoNXToDCvLdBtikGUgu9cQ5aTrCUMrM5I",
       "google-site-verification=1H09WMeTUU6orIIrwvQ41VkbQZeK5hwGX79V0jeG6B0",
       "detectify-verification=0880c8d2cdea81c2f244f727d58f275a",
       "google-site-verification=l_XFk3YyYntxKqx9qdSZ2_71HbGkVmCPygH6dpRvx5A",
-      "v=spf1include:_spf.google.com include:spf.protection.outlook.com include:spfa.cpmails.com include:usb._netblocks.mimecast.com -all",
       "facebook-domain-verification=l95gq1drnat2did30r1wgljl1zsykb"
     ],
     "dmarc": [
@@ -209,7 +209,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "104.18.20.152",
+    "ip": "104.18.21.152",
     "open": [
       8080,
       8443
@@ -271,8 +271,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   },
   "apex_txt": [
     "google-site-verification=W8kbARs47UCUzgTKc21W7esvf-2rBZR3xP4TXQVbV9g",
-    "google-site-verification=RRh2VqZJ1OfoNXToDCvLdBtikGUgu9cQ5aTrCUMrM5I",
     "tinfoil-site-verification: e4d40a123f4c86c4715f499a135c8cd72ba758c2=1d6569db0306",
+    "google-site-verification=RRh2VqZJ1OfoNXToDCvLdBtikGUgu9cQ5aTrCUMrM5I",
     "google-site-verification=1H09WMeTUU6orIIrwvQ41VkbQZeK5hwGX79V0jeG6B0",
     "detectify-verification=0880c8d2cdea81c2f244f727d58f275a"
   ],
@@ -285,11 +285,16 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260912151727",
+      "not_after": "20261211151726"
     }
   },
-  "elapsed_s": 5.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 6.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

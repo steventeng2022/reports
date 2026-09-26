@@ -7,8 +7,8 @@
 | Target | https://flow.microsoft.com/ |
 | Bug bounty program | Microsoft Online Services |
 | Listed scope domain | flow.microsoft.com |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -107,7 +107,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
       "150.171.110.68"
     ],
     "aaaa": [
-      "2603:1061:14:145::1"
+      "2603:1061:14:16b::1"
     ],
     "cname": "portal.processsimple.trafficmanager.net.",
     "mx": [],
@@ -247,11 +247,16 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260829045307",
+      "not_after": "20270225045307"
     }
   },
-  "elapsed_s": 8.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 307
+  },
+  "elapsed_s": 8.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

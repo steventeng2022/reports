@@ -7,12 +7,12 @@
 | Target | https://zoom.us/ |
 | Bug bounty program | Zoom |
 | Listed scope domain | zoom.us |
-| Test date | 2026-09-26 17:56 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:02 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **38** (High: 0, Medium: 9, Low: 4, Info: 25)
+Total findings: **39** (High: 0, Medium: 9, Low: 4, Info: 26)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -54,6 +54,7 @@ Total findings: **38** (High: 0, Medium: 9, Low: 4, Info: 25)
 | 36 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 37 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 38 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 39 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -278,7 +279,7 @@ Total findings: **38** (High: 0, Medium: 9, Low: 4, Info: 25)
 ### 36. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: stripe-verification=56bc5cf2da44b2033da49b45ed3789209db29432268975666693a750ecfd; stripe-verification=c9c277e76c265ef8b27ee1fb8b7f6e6240daacf25d36f96d586c05301b03; google-site-verification=yofTND47qXdSBHRBZSkPUrP0QQ-WF76h-K-F05IHmj0
+- **Detail:** Apex TXT records with verification/token content: paloaltonetworks-site-verification=ab6a946a97f44c0b83b5cc59ba90e5f0c768666814ce8; adobe-idp-site-verification=7116ab50a89b2c2402382aea3362209410eac90f2a590f358ce1; mongodb-site-verification=LuLsVGWKjIwOk54WdscqbRmXgqU2kGIc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 37. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -292,6 +293,12 @@ Total findings: **38** (High: 0, Medium: 9, Low: 4, Info: 25)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 28 disallow path(s), e.g. /download/*/Zoom_launcher.exe, /download/*/zoomusLauncher.zip, /docs/image/new/brand/outdated/, /docs/doc/2-Page-All-Products.pdf, /docs/doc/zoom-apps-security-privacy-faq.pdf
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 39. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://zoom.us/ carries Cache-Control: max-age=3600; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
 ## Evidence (raw response observations)
 
@@ -307,61 +314,61 @@ Total findings: **38** (High: 0, Medium: 9, Low: 4, Info: 25)
     ],
     "cname": null,
     "mx": [
-      "mxb-00569201.gslb.pphosted.com (pref 10)",
-      "mxa-00569201.gslb.pphosted.com (pref 10)"
+      "mxa-00569201.gslb.pphosted.com (pref 10)",
+      "mxb-00569201.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns-888.awsdns-47.net.",
-      "ns-387.awsdns-48.com.",
+      "ns-1772.awsdns-29.co.uk.",
       "ns-1137.awsdns-14.org.",
-      "ns-1772.awsdns-29.co.uk."
+      "ns-387.awsdns-48.com.",
+      "ns-888.awsdns-47.net."
     ],
     "spf": [
-      "stripe-verification=56bc5cf2da44b2033da49b45ed3789209db29432268975666693a750ecfde757",
-      "stripe-verification=c9c277e76c265ef8b27ee1fb8b7f6e6240daacf25d36f96d586c05301b0306eb",
-      "SFMC-FEDGKE8lGkIFM2TngfZtUoES_Ep-nR1DSOvRZFxz",
-      "google-site-verification=yofTND47qXdSBHRBZSkPUrP0QQ-WF76h-K-F05IHmj0",
-      "v=DMARC1; p=reject; ri=3600; rua=mailto:sesbounce@zoom.us,mailto:dmarc_rua@emaildefense.proofpoint.com",
-      "nintex.5e7289cea709bf0d10e77561",
-      "slack-domain-verification=DPFh88HZR7KVwJkwlh98Y0PgSABl6BKgY1hVlwhC",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com include:_spf.google.com include:amazonses.com ip4:52.38.191.241 include:servers.mcsv.net include:_spf.salesforce.com ip4:13.110.78.0/24 ~all",
-      "smartsheet-site-validation=DYfGXuyJc7oq-_D05ZZyl6QGXpRWSWpR",
-      "oo414pse7fk8ntk80qoms9poc1",
-      "facebook-domain-verification=r9u6lu6z5wy3yokf7yd52l6k08xqsx",
-      "knowbe4-site-verification=c3a762336824e50b8902fc5d47a79dd9",
-      "docusign=b21dec83-4d62-479c-b2aa-43a0cd4c125a",
-      "teamviewer-sso-verification=4f42e066d37d4305b4091646efd91add",
-      "stripe-verification=f613690c5cef6193bdc4638549691d7c4b80994cd6b47c182d9ce9afa560b964",
-      "google-site-verification=kzxH5gxEvbMw9EUX-uQNCNxzoHNk7eksOJdaOLt-WYA",
-      "v=zoomadn us.zoom.idp.commercial=zoom.okta.com",
-      "stripe-verification=64a9e3b2f28cc3bb2182307c5c2ea98aa78bfe6a36ed5f22bd3d0bc9667a2510",
-      "anthropic-domain-verification-8fadf7=uwajz3dDn6eAq3Yl6LtArZNBA",
-      "docker-verification=e55e0281-9c6f-4cba-8788-e50c50899b3f",
-      "google-site-verification=RA1o2A5KlW67SrvzJ4JovDWlkMzOtxJnS6Lq4MWso1Q",
-      "apple-domain-verification=CbBNkhNvbPFzgvvv",
       "paloaltonetworks-site-verification=ab6a946a97f44c0b83b5cc59ba90e5f0c768666814ce8347703af032dbeff05c",
-      "autodesk-domain-verification=oPP5RpbpIX2AL7W7H2p2",
+      "SFMC-FEDGKE8lGkIFM2TngfZtUoES_Ep-nR1DSOvRZFxz",
+      "adobe-idp-site-verification=7116ab50a89b2c2402382aea3362209410eac90f2a590f358ce1189d0ca1a8c4",
+      "v=zoomadn us.zoom.idp.commercial=zoom.okta.com",
       "mongodb-site-verification=LuLsVGWKjIwOk54WdscqbRmXgqU2kGIc",
-      "atlassian-domain-verification=4y6yoGrdYbj4zq5bMXvpGI1KFVEzSVuWMYG4/Gv4BuFjIthTVBWnV8qf47TYfL5Q",
-      "canva-site-verification=Fxuo9x2-ohLElGZ9w9XYHw",
-      "google-site-verification=JvBsPulrJw4xeN9DV9oeGqFDDUlAsJv-vLu1PriMw1g",
-      "stripe-verification=933cf52c0e93778a0f3fbdc96954c1f6bd9813b6356cdc71667df03b44336c1e",
-      "status-page-domain-verification=pc76p1k8712r",
-      "vmware-cloud-verification-4d68d199-43dd-455f-ad71-18141d5d09c8",
-      "h1-domain-verification=5yw85Ewx1obuckMSkZQokfDYewnzdBw9JqKmZWMXqFs2F3cq",
-      "google-site-verification=r5_uj4r2YuGNrhng2dLo4xfDAvaYGhNuqv6icJiQdxA",
+      "stripe-verification=f613690c5cef6193bdc4638549691d7c4b80994cd6b47c182d9ce9afa560b964",
       "HaFoSdUeCSdJo9U8lG@NWZ6vnoRltUteEAl&yuY$$eE25sKJguFH58Lss%9@e73OK#XigH^i3mCDjax&gfZq*90lw4k4Vi3UMpC",
-      "google-site-verification=G6mELnMFHZrRpJ_rAqHPDP2voFX3_g-lN78U-eJ7xJY",
       "pardot_84442_*=f0bf83bf261ad77163f6e86fc94ae06036d153cc65df5531309b396933da9591",
-      "stripe-verification=29700ec8c3d8a93a634139f4dfe8a23a87f6b97829d3e6ea123d07f7e58504d0",
-      "stripe-verification=68b6edce67880909a44aad0af814c3afe0bf8e053e70f81c70264bf9156c4861",
-      "spycloud-domain-verification=889b71d1-9e56-48da-a7cc-f3bc6497ca2f",
-      "dropbox-domain-verification=3s15m13l23wp",
-      "ljtjrbvpt98v132shnhkm0thlt",
-      "cui69v35i9t5lj9360gajgt1tc",
-      "atlassian-domain-verification=o4YG+mXlOE6uTJb7uGimcl9DJZnVg4aimBCf/4UrplRJvMk84JnXh2zF8jZz21Fx",
+      "docker-verification=e55e0281-9c6f-4cba-8788-e50c50899b3f",
+      "stripe-verification=64a9e3b2f28cc3bb2182307c5c2ea98aa78bfe6a36ed5f22bd3d0bc9667a2510",
+      "status-page-domain-verification=pc76p1k8712r",
+      "nintex.5e7289cea709bf0d10e77561",
+      "anthropic-domain-verification-8fadf7=uwajz3dDn6eAq3Yl6LtArZNBA",
+      "canva-site-verification=Fxuo9x2-ohLElGZ9w9XYHw",
+      "teamviewer-sso-verification=4f42e066d37d4305b4091646efd91add",
       "stripe-verification=0628546b6023b9d18ecddf4eec9658f8513bb619d4ae413b1143f81b31ee7018",
-      "adobe-idp-site-verification=7116ab50a89b2c2402382aea3362209410eac90f2a590f358ce1189d0ca1a8c4"
+      "atlassian-domain-verification=o4YG+mXlOE6uTJb7uGimcl9DJZnVg4aimBCf/4UrplRJvMk84JnXh2zF8jZz21Fx",
+      "dropbox-domain-verification=3s15m13l23wp",
+      "google-site-verification=JvBsPulrJw4xeN9DV9oeGqFDDUlAsJv-vLu1PriMw1g",
+      "v=DMARC1; p=reject; ri=3600; rua=mailto:sesbounce@zoom.us,mailto:dmarc_rua@emaildefense.proofpoint.com",
+      "oo414pse7fk8ntk80qoms9poc1",
+      "atlassian-domain-verification=4y6yoGrdYbj4zq5bMXvpGI1KFVEzSVuWMYG4/Gv4BuFjIthTVBWnV8qf47TYfL5Q",
+      "stripe-verification=68b6edce67880909a44aad0af814c3afe0bf8e053e70f81c70264bf9156c4861",
+      "google-site-verification=yofTND47qXdSBHRBZSkPUrP0QQ-WF76h-K-F05IHmj0",
+      "knowbe4-site-verification=c3a762336824e50b8902fc5d47a79dd9",
+      "smartsheet-site-validation=DYfGXuyJc7oq-_D05ZZyl6QGXpRWSWpR",
+      "google-site-verification=G6mELnMFHZrRpJ_rAqHPDP2voFX3_g-lN78U-eJ7xJY",
+      "ljtjrbvpt98v132shnhkm0thlt",
+      "vmware-cloud-verification-4d68d199-43dd-455f-ad71-18141d5d09c8",
+      "slack-domain-verification=DPFh88HZR7KVwJkwlh98Y0PgSABl6BKgY1hVlwhC",
+      "cui69v35i9t5lj9360gajgt1tc",
+      "stripe-verification=29700ec8c3d8a93a634139f4dfe8a23a87f6b97829d3e6ea123d07f7e58504d0",
+      "google-site-verification=r5_uj4r2YuGNrhng2dLo4xfDAvaYGhNuqv6icJiQdxA",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com include:_spf.google.com include:amazonses.com ip4:52.38.191.241 include:servers.mcsv.net include:_spf.salesforce.com ip4:13.110.78.0/24 ~all",
+      "stripe-verification=933cf52c0e93778a0f3fbdc96954c1f6bd9813b6356cdc71667df03b44336c1e",
+      "google-site-verification=kzxH5gxEvbMw9EUX-uQNCNxzoHNk7eksOJdaOLt-WYA",
+      "h1-domain-verification=5yw85Ewx1obuckMSkZQokfDYewnzdBw9JqKmZWMXqFs2F3cq",
+      "stripe-verification=c9c277e76c265ef8b27ee1fb8b7f6e6240daacf25d36f96d586c05301b0306eb",
+      "apple-domain-verification=CbBNkhNvbPFzgvvv",
+      "docusign=b21dec83-4d62-479c-b2aa-43a0cd4c125a",
+      "stripe-verification=56bc5cf2da44b2033da49b45ed3789209db29432268975666693a750ecfde757",
+      "facebook-domain-verification=r9u6lu6z5wy3yokf7yd52l6k08xqsx",
+      "autodesk-domain-verification=oPP5RpbpIX2AL7W7H2p2",
+      "spycloud-domain-verification=889b71d1-9e56-48da-a7cc-f3bc6497ca2f",
+      "google-site-verification=RA1o2A5KlW67SrvzJ4JovDWlkMzOtxJnS6Lq4MWso1Q"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;ri=3600;rua=mailto:sesbounce@zoom.us,mailto:dmarc_rua@emaildefense.proofpoint.com;"
@@ -468,11 +475,11 @@ Total findings: **38** (High: 0, Medium: 9, Low: 4, Info: 25)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "stripe-verification=56bc5cf2da44b2033da49b45ed3789209db29432268975666693a750ecfd",
-    "stripe-verification=c9c277e76c265ef8b27ee1fb8b7f6e6240daacf25d36f96d586c05301b03",
-    "google-site-verification=yofTND47qXdSBHRBZSkPUrP0QQ-WF76h-K-F05IHmj0",
-    "slack-domain-verification=DPFh88HZR7KVwJkwlh98Y0PgSABl6BKgY1hVlwhC",
-    "facebook-domain-verification=r9u6lu6z5wy3yokf7yd52l6k08xqsx"
+    "paloaltonetworks-site-verification=ab6a946a97f44c0b83b5cc59ba90e5f0c768666814ce8",
+    "adobe-idp-site-verification=7116ab50a89b2c2402382aea3362209410eac90f2a590f358ce1",
+    "mongodb-site-verification=LuLsVGWKjIwOk54WdscqbRmXgqU2kGIc",
+    "stripe-verification=f613690c5cef6193bdc4638549691d7c4b80994cd6b47c182d9ce9afa560",
+    "docker-verification=e55e0281-9c6f-4cba-8788-e50c50899b3f"
   ],
   "tls2": {
     "alpn": "",
@@ -483,7 +490,9 @@ Total findings: **38** (High: 0, Medium: 9, Low: 4, Info: 25)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251229000000",
+      "not_after": "20261229235959"
     }
   },
   "http2": {
@@ -505,8 +514,11 @@ Total findings: **38** (High: 0, Medium: 9, Low: 4, Info: 25)
       "/w/*"
     ]
   },
-  "elapsed_s": 6.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 6.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

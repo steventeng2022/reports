@@ -7,8 +7,8 @@
 | Target | https://discordapp.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | discordapp.com |
-| Test date | 2026-09-26 17:43 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -45,13 +45,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 162.159.133.233:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 162.159.135.233:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 162.159.133.233:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 162.159.135.233:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -131,7 +131,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: gc-ai-domain-verification-h4p9zv=mTSLyVQqkAlNuctKXdWWZ7MLC; logmein-verification-code=2d4b306a-e291-4dc9-a09f-2cc3277288cc; onetrust-domain-verification=3e11024ff11441678e3d59aa6b3a87bc
+- **Detail:** Apex TXT records with verification/token content: stripe-verification=1d56fec5a0f745dabfbe48592806853324fe50a8d4448c10e524136d1fac; onetrust-domain-verification=3e11024ff11441678e3d59aa6b3a87bc; adobe-idp-site-verification=954e966634e7f12b8a9a2876a989bf5e7f5050a5192c3f529b99
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -153,56 +153,56 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "domain": "discordapp.com",
   "dns": {
     "a": [
-      "162.159.133.233",
-      "162.159.130.233",
       "162.159.135.233",
       "162.159.129.233",
-      "162.159.134.233"
+      "162.159.134.233",
+      "162.159.130.233",
+      "162.159.133.233"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx2.googlemail.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
       "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
+      "aspmx2.googlemail.com (pref 10)",
       "aspmx3.googlemail.com (pref 10)"
     ],
     "ns": [
-      "gabe.ns.cloudflare.com.",
-      "sima.ns.cloudflare.com."
+      "sima.ns.cloudflare.com.",
+      "gabe.ns.cloudflare.com."
     ],
     "spf": [
-      "gc-ai-domain-verification-h4p9zv=mTSLyVQqkAlNuctKXdWWZ7MLC",
-      "logmein-verification-code=2d4b306a-e291-4dc9-a09f-2cc3277288cc",
+      "stripe-verification=1d56fec5a0f745dabfbe48592806853324fe50a8d4448c10e524136d1fac1cae",
+      "HjRfQW6OV2YOkDOgNju3gYI0_cx9H1iF",
       "onetrust-domain-verification=3e11024ff11441678e3d59aa6b3a87bc",
       "adobe-idp-site-verification=954e966634e7f12b8a9a2876a989bf5e7f5050a5192c3f529b9917cc4a7d1436",
-      "apple-domain-verification=xPWro2NHlvCQs7LI",
-      "dropbox-domain-verification=66jnk5y945ew",
-      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:sendgrid.net include:3885857.spf06.hubspotemail.net include:_spf.salesforce.com -all",
-      "google-site-verification=ihjYpERVTt6QLWL2IBBLsEZroHPjP3vVQHQG97oXZlI",
-      "loom-site-verification=3b8db7a74102494ba9569c862bbc5587",
-      "hubspot-domain-verification=YmIxMDNhZDEtMzI3Mi00ZWNjLTk4MTYtNmViZGU5NzYyZDM5",
-      "adobe-sign-verification=d19200aacd69c1b8e10cd1a5b47c91c3",
-      "google-site-verification=jtVaxAcfspCN94ECrH12n9XJhdqO6Y2j2u3eh1XsApE",
-      "docker-verification=f765b7ff-5ce5-4f27-b00a-28091eddacce",
-      "jamf-site-verification=xf0BRLPJ0fkW9oZxiDbxaQ",
-      "dust-domain-verification-kz9236=gJamMWiktWPTDezEQ9uvTDzyS",
-      "MS=CD44642CAC1658ABE588B1F34173984181355D4E",
-      "zapier-domain-verification-challenge=d87a2680-bf27-4b61-8174-5ceed32bb8c7",
-      "google-site-verification=PmQRNDYVKwgF3tM6HulK5Fmmna3DSKklkjl-epmhplA",
-      "5508A8F48F",
       "logmein-verification-code=e675be17-2988-4b0b-9e19-d6793fc28655",
-      "atlassian-domain-verification=JNe2Ze7P8p623k8f7xRaHDyQWb6VzLxjFga1tu8M7lmVXC0bo1XgdnEsYuGIRFHv",
-      "slack-domain-verification=wmXS8pleSDJ3LgREcHasvMfdkHmBbUvNI6nHNnJl",
-      "stripe-verification=b449d3730bb78d03e0744aa61ae3fa2f35f80572bff9e48ad9a1927508291ea1",
-      "notion_verify_A}38XvVG2tiA3b6w4kU89}p~hasV-%G^E8U0.Evvp?^a==pC1]12+eXq]BgW+%hmodpfn]",
+      "google-site-verification=ihjYpERVTt6QLWL2IBBLsEZroHPjP3vVQHQG97oXZlI",
+      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:sendgrid.net include:3885857.spf06.hubspotemail.net include:_spf.salesforce.com -all",
       "google-site-verification=DGERr7gTRtGPVmghE_qE_w3X2kyTXdqiDVR2pBDpndQ",
-      "stripe-verification=1d56fec5a0f745dabfbe48592806853324fe50a8d4448c10e524136d1fac1cae",
+      "MS=CD44642CAC1658ABE588B1F34173984181355D4E",
+      "apple-domain-verification=xPWro2NHlvCQs7LI",
+      "loom-site-verification=3b8db7a74102494ba9569c862bbc5587",
+      "logmein-verification-code=2d4b306a-e291-4dc9-a09f-2cc3277288cc",
+      "5508A8F48F",
+      "stripe-verification=b449d3730bb78d03e0744aa61ae3fa2f35f80572bff9e48ad9a1927508291ea1",
+      "google-site-verification=PmQRNDYVKwgF3tM6HulK5Fmmna3DSKklkjl-epmhplA",
       "jetbrains-domain-verification=b5av2j0mg51z6vn0dpigrxbxx",
+      "zapier-domain-verification-challenge=d87a2680-bf27-4b61-8174-5ceed32bb8c7",
+      "google-site-verification=jtVaxAcfspCN94ECrH12n9XJhdqO6Y2j2u3eh1XsApE",
+      "jamf-site-verification=xf0BRLPJ0fkW9oZxiDbxaQ",
+      "notion_verify_A}38XvVG2tiA3b6w4kU89}p~hasV-%G^E8U0.Evvp?^a==pC1]12+eXq]BgW+%hmodpfn]",
+      "dust-domain-verification-kz9236=gJamMWiktWPTDezEQ9uvTDzyS",
+      "atlassian-domain-verification=JNe2Ze7P8p623k8f7xRaHDyQWb6VzLxjFga1tu8M7lmVXC0bo1XgdnEsYuGIRFHv",
+      "adobe-sign-verification=d19200aacd69c1b8e10cd1a5b47c91c3",
+      "slack-domain-verification=wmXS8pleSDJ3LgREcHasvMfdkHmBbUvNI6nHNnJl",
       "google-site-verification=27NMadvvj0pSQl1hkMaX3X5bwpjdFmE_FvX-MAgdLBE",
-      "autodesk-domain-verification=2sh4O6xiIc4ReP9Aee8h",
-      "HjRfQW6OV2YOkDOgNju3gYI0_cx9H1iF"
+      "hubspot-domain-verification=YmIxMDNhZDEtMzI3Mi00ZWNjLTk4MTYtNmViZGU5NzYyZDM5",
+      "dropbox-domain-verification=66jnk5y945ew",
+      "gc-ai-domain-verification-h4p9zv=mTSLyVQqkAlNuctKXdWWZ7MLC",
+      "docker-verification=f765b7ff-5ce5-4f27-b00a-28091eddacce",
+      "autodesk-domain-verification=2sh4O6xiIc4ReP9Aee8h"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:eb13ef68c6894cf0bc517e8303852ee3@dmarc-reports.cloudflare.net;"
@@ -232,7 +232,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     }
   },
   "ports": {
-    "ip": "162.159.133.233",
+    "ip": "162.159.135.233",
     "open": [
       8080,
       8443
@@ -294,11 +294,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "gc-ai-domain-verification-h4p9zv=mTSLyVQqkAlNuctKXdWWZ7MLC",
-    "logmein-verification-code=2d4b306a-e291-4dc9-a09f-2cc3277288cc",
+    "stripe-verification=1d56fec5a0f745dabfbe48592806853324fe50a8d4448c10e524136d1fac",
     "onetrust-domain-verification=3e11024ff11441678e3d59aa6b3a87bc",
     "adobe-idp-site-verification=954e966634e7f12b8a9a2876a989bf5e7f5050a5192c3f529b99",
-    "apple-domain-verification=xPWro2NHlvCQs7LI"
+    "logmein-verification-code=e675be17-2988-4b0b-9e19-d6793fc28655",
+    "google-site-verification=ihjYpERVTt6QLWL2IBBLsEZroHPjP3vVQHQG97oXZlI"
   ],
   "tls2": {
     "alpn": "",
@@ -309,7 +309,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260828220952",
+      "not_after": "20261126230941"
     }
   },
   "http2": {
@@ -331,8 +333,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "/api"
     ]
   },
-  "elapsed_s": 4.6,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 4.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,12 +7,12 @@
 | Target | https://maps.google.co.jp/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | maps.google.co.jp |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
+Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 | 12 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 13 | info | CK5 | Cookie scoped to parent domain (.google.co.jp) | CWE-200 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -125,6 +126,12 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 - **Detail:** robots.txt lists 178 disallow path(s), e.g. /search, /sdch, /groups, /index.html?, /?
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 142.250.77.195 carries PTR del11s08-in-f3.1e100.net., lctsaa-ah-in-f3.1e100.net. for maps.google.co.jp.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -132,10 +139,10 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
   "domain": "maps.google.co.jp",
   "dns": {
     "a": [
-      "142.251.8.94"
+      "142.250.77.195"
     ],
     "aaaa": [
-      "2404:6800:4008:c13::5e"
+      "2404:6800:4012::2003"
     ],
     "cname": "maps-cctld.l.google.com.",
     "mx": [],
@@ -150,9 +157,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=*.google.co.jp",
-    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
-    "notBefore": "Sep 10 19:24:31 2026 GMT",
-    "notAfter": "Dec  3 19:24:30 2026 GMT",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
+    "notBefore": "Sep 10 19:24:25 2026 GMT",
+    "notAfter": "Dec  3 19:24:24 2026 GMT",
     "san": [
       "*.google.co.jp",
       "google.co.jp"
@@ -167,7 +174,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     }
   },
   "ports": {
-    "ip": "142.251.8.94",
+    "ip": "142.250.77.195",
     "open": []
   },
   "https": {
@@ -247,11 +254,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     "tls_ver": "TLSv1.3",
     "subject": "None",
     "cert": {
-      "sig_oid": "1.2.840.10045.4.3.2",
+      "sig_oid": "1.2.840.113549.1.1.11",
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192425",
+      "not_after": "20261203192424"
     }
   },
   "http2": {
@@ -273,8 +282,15 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "/wml/?"
     ]
   },
-  "elapsed_s": 5.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "del11s08-in-f3.1e100.net.",
+      "lctsaa-ah-in-f3.1e100.net."
+    ]
+  },
+  "elapsed_s": 5.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

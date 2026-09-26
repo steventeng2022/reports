@@ -7,12 +7,12 @@
 | Target | https://note.mu/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | note.mu |
-| Test date | 2026-09-26 17:49 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:56 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
+Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,7 +33,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 18 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 19 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -148,7 +149,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 - **Detail:** robots.txt lists 42 disallow path(s), e.g. /embed/*, /intent/*, /preview/*, /api/*, /pdf/*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 18. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 54.192.248.101 carries PTR server-54-192-248-101.tpe53.r.cloudfront.net. for note.mu.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 19. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -161,10 +168,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   "domain": "note.mu",
   "dns": {
     "a": [
+      "54.192.248.101",
       "54.192.248.77",
       "54.192.248.123",
-      "54.192.248.55",
-      "54.192.248.101"
+      "54.192.248.55"
     ],
     "aaaa": [],
     "cname": null,
@@ -172,15 +179,15 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "inbound-smtp.us-east-1.amazonaws.com (pref 10)"
     ],
     "ns": [
-      "ns-1551.awsdns-01.co.uk.",
+      "ns-726.awsdns-26.net.",
       "ns-1377.awsdns-44.org.",
       "ns-395.awsdns-49.com.",
-      "ns-726.awsdns-26.net."
+      "ns-1551.awsdns-01.co.uk."
     ],
     "spf": [
-      "vax7rtNWeKhYXcyfqXCH1hJejCtHty2Bi+dfdUNapjY=",
+      "v=spf1 +ip6:2001:e42:102:1106:153:121:44:224 +ip4:153.121.44.224 include:amazonses.com a:note.mu include:mail.zendesk.com ~all",
       "google-site-verification=pygojOeujxnzFmgZCEygVTkWlsjhDGtT6AXh-5Gqa4A",
-      "v=spf1 +ip6:2001:e42:102:1106:153:121:44:224 +ip4:153.121.44.224 include:amazonses.com a:note.mu include:mail.zendesk.com ~all"
+      "vax7rtNWeKhYXcyfqXCH1hJejCtHty2Bi+dfdUNapjY="
     ],
     "dmarc": [
       "v=DMARC1;p=quarantine;pct=100;fo=1"
@@ -210,7 +217,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     }
   },
   "ports": {
-    "ip": "54.192.248.77",
+    "ip": "54.192.248.101",
     "open": []
   },
   "https": {
@@ -279,7 +286,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260515000000",
+      "not_after": "20261128235959"
     }
   },
   "http2": {
@@ -301,8 +310,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "/*/likes"
     ]
   },
-  "elapsed_s": 12.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "server-54-192-248-101.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 7.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

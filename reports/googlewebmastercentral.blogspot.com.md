@@ -7,12 +7,12 @@
 | Target | https://googlewebmastercentral.blogspot.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | googlewebmastercentral.blogspot.com |
-| Test date | 2026-09-26 17:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
+Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,6 +27,8 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 | 9 | info | P8 | Missing security.txt | CWE-1038 |
 | 10 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 12 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -93,7 +95,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 ### 10. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (4c3ecrx8kkfil5.googlewebmastercentral.blogspot.com and wo1cp3soqivsgr.googlewebmastercentral.blogspot.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (ahvgujd4z2mxaa.googlewebmastercentral.blogspot.com and 0zf10ess32yjss.googlewebmastercentral.blogspot.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -102,6 +104,18 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 - **Detail:** Certificate of googlewebmastercentral.blogspot.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 12. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://googlewebmastercentral.blogspot.com/ carries Cache-Control: private, max-age=0; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 142.250.204.33 carries PTR lctsaa-ac-in-f1.1e100.net., hkg07s38-in-f1.1e100.net. for googlewebmastercentral.blogspot.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -109,10 +123,10 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
   "domain": "googlewebmastercentral.blogspot.com",
   "dns": {
     "a": [
-      "142.250.192.129"
+      "142.250.204.33"
     ],
     "aaaa": [
-      "2404:6800:4012:2::2001"
+      "2404:6800:4012:9::2001"
     ],
     "cname": "blogspot.l.googleusercontent.com.",
     "mx": [],
@@ -281,7 +295,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
     }
   },
   "ports": {
-    "ip": "142.250.192.129",
+    "ip": "142.250.204.33",
     "open": []
   },
   "https": {
@@ -345,11 +359,20 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192303",
+      "not_after": "20261203192302"
     }
   },
-  "elapsed_s": 25.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 404,
+    "ptr": [
+      "lctsaa-ac-in-f1.1e100.net.",
+      "hkg07s38-in-f1.1e100.net."
+    ]
+  },
+  "elapsed_s": 26.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

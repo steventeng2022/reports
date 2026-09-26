@@ -7,12 +7,12 @@
 | Target | https://starwars.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | starwars.com |
-| Test date | 2026-09-26 17:53 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:59 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -138,7 +139,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=ave4Otl9BlVJ0Zd2j4GVdJ4s4brlgM3fqPZ-_mM6EFY; google-site-verification=GohBbB11BuN1VTA3oFWu3tmiM_pM4Bw_nzKAonQmDb8; google-site-verification=4WbE24gb_6cUVXrWnFJ__9_I6dzVBEhlIAQvtZdA97U
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=q9DUzemhBxxc345W41MPTn3fzRuQaID_5R4GLRSgl80; google-site-verification=4WbE24gb_6cUVXrWnFJ__9_I6dzVBEhlIAQvtZdA97U; google-site-verification=ave4Otl9BlVJ0Zd2j4GVdJ4s4brlgM3fqPZ-_mM6EFY
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -146,6 +147,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - **CWE:** CWE-603
 - **Detail:** Certificate of starwars.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
+
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 23.210.215.217 carries PTR a23-210-215-217.deploy.static.akamaitechnologies.com. for starwars.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -158,32 +165,32 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "23.210.215.219"
     ],
     "aaaa": [
-      "2600:1417:76::17c7:22a0",
-      "2600:1417:76::17c7:2291"
+      "2600:1417:76::17c7:2291",
+      "2600:1417:76::17c7:22a0"
     ],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt1.aspx.l.google.com (pref 5)",
       "aspmx3.googlemail.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt1.aspx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)"
     ],
     "ns": [
-      "a12-66.akam.net.",
-      "a1-127.akam.net.",
-      "a9-66.akam.net.",
       "a18-64.akam.net.",
+      "a9-66.akam.net.",
+      "a1-127.akam.net.",
+      "a28-65.akam.net.",
       "a13-67.akam.net.",
-      "a28-65.akam.net."
+      "a12-66.akam.net."
     ],
     "spf": [
-      "google-site-verification=ave4Otl9BlVJ0Zd2j4GVdJ4s4brlgM3fqPZ-_mM6EFY",
-      "google-site-verification=GohBbB11BuN1VTA3oFWu3tmiM_pM4Bw_nzKAonQmDb8",
-      "google-site-verification=4WbE24gb_6cUVXrWnFJ__9_I6dzVBEhlIAQvtZdA97U",
-      "v=spf1 include:_spf.google.com include:mail.zendesk.com ip4:208.72.12.43 ip4:208.72.12.44 ip4:208.72.12.58 ~all",
       "google-site-verification=q9DUzemhBxxc345W41MPTn3fzRuQaID_5R4GLRSgl80",
+      "google-site-verification=4WbE24gb_6cUVXrWnFJ__9_I6dzVBEhlIAQvtZdA97U",
+      "google-site-verification=ave4Otl9BlVJ0Zd2j4GVdJ4s4brlgM3fqPZ-_mM6EFY",
       "google-site-verification=291PSk69uu3M3SOrPTBsYGz8yvl16K1ZhbP6YMQytxU",
+      "v=spf1 include:_spf.google.com include:mail.zendesk.com ip4:208.72.12.43 ip4:208.72.12.44 ip4:208.72.12.58 ~all",
+      "google-site-verification=GohBbB11BuN1VTA3oFWu3tmiM_pM4Bw_nzKAonQmDb8",
       "google-site-verification=3qYuZ0m5YJdjmVslnraXZKQtXmO_3YI9wv6nCY1CPHM"
     ],
     "dmarc": [],
@@ -356,11 +363,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=ave4Otl9BlVJ0Zd2j4GVdJ4s4brlgM3fqPZ-_mM6EFY",
-    "google-site-verification=GohBbB11BuN1VTA3oFWu3tmiM_pM4Bw_nzKAonQmDb8",
-    "google-site-verification=4WbE24gb_6cUVXrWnFJ__9_I6dzVBEhlIAQvtZdA97U",
     "google-site-verification=q9DUzemhBxxc345W41MPTn3fzRuQaID_5R4GLRSgl80",
-    "google-site-verification=291PSk69uu3M3SOrPTBsYGz8yvl16K1ZhbP6YMQytxU"
+    "google-site-verification=4WbE24gb_6cUVXrWnFJ__9_I6dzVBEhlIAQvtZdA97U",
+    "google-site-verification=ave4Otl9BlVJ0Zd2j4GVdJ4s4brlgM3fqPZ-_mM6EFY",
+    "google-site-verification=291PSk69uu3M3SOrPTBsYGz8yvl16K1ZhbP6YMQytxU",
+    "google-site-verification=GohBbB11BuN1VTA3oFWu3tmiM_pM4Bw_nzKAonQmDb8"
   ],
   "tls2": {
     "alpn": "",
@@ -371,11 +378,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260824034953",
+      "not_after": "20261122034952"
     }
   },
-  "elapsed_s": 4.3,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403,
+    "ptr": [
+      "a23-210-215-217.deploy.static.akamaitechnologies.com."
+    ]
+  },
+  "elapsed_s": 4.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

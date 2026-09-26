@@ -7,8 +7,8 @@
 | Target | https://chrisjdavis.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | chrisjdavis.org |
-| Test date | 2026-09-26 17:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -33,7 +33,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 19 | info | CT1 | 5 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
@@ -127,13 +127,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (xudg95f9qjmo8t.chrisjdavis.org and 4pdsepii3by2yw.chrisjdavis.org) both resolve to distinct addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (9b2gnk5sykyzax.chrisjdavis.org and ms3sv6iblsy2ds.chrisjdavis.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: brave-ledger-verification=2d3773df8ba0789c8e382dd8de095065e6cf0381f45eb2416d6004; protonmail-verification=d541f2d99ed79d5ef7eda87b958b02d732530823
+- **Detail:** Apex TXT records with verification/token content: protonmail-verification=d541f2d99ed79d5ef7eda87b958b02d732530823; brave-ledger-verification=2d3773df8ba0789c8e382dd8de095065e6cf0381f45eb2416d6004
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -148,11 +148,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - **Detail:** Strict-Transport-Security is served but chrisjdavis.org is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 18. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
 
-- **CWE:** CWE-200
-- **Detail:** robots.txt lists 45 disallow path(s), e.g. /admin/, /preview/, /login, /register, /reset-password/
-- **Recommendation:** Review disallowed paths; robots is not access control.
+- **CWE:** CWE-922
+- **Detail:** Response for https://chrisjdavis.org/ carries Cache-Control: public, max-age=0, must-revalidate; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
 ### 19. [INFO] 5 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
@@ -167,8 +167,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   "domain": "chrisjdavis.org",
   "dns": {
     "a": [
-      "216.150.1.1",
-      "216.150.16.1"
+      "216.150.1.193",
+      "216.150.16.193"
     ],
     "aaaa": [],
     "cname": null,
@@ -177,13 +177,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "mailsec.protonmail.ch (pref 20)"
     ],
     "ns": [
-      "fattouche.ns.cloudflare.com.",
-      "sonia.ns.cloudflare.com."
+      "sonia.ns.cloudflare.com.",
+      "fattouche.ns.cloudflare.com."
     ],
     "spf": [
-      "brave-ledger-verification=2d3773df8ba0789c8e382dd8de095065e6cf0381f45eb2416d60048a88b6c34d",
       "protonmail-verification=d541f2d99ed79d5ef7eda87b958b02d732530823",
-      "v=spf1 include:_spf.protonmail.ch ~all"
+      "v=spf1 include:_spf.protonmail.ch ~all",
+      "brave-ledger-verification=2d3773df8ba0789c8e382dd8de095065e6cf0381f45eb2416d60048a88b6c34d"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine"
@@ -212,7 +212,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     }
   },
   "ports": {
-    "ip": "216.150.1.1",
+    "ip": "216.150.1.193",
     "open": []
   },
   "https": {
@@ -275,8 +275,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "brave-ledger-verification=2d3773df8ba0789c8e382dd8de095065e6cf0381f45eb2416d6004",
-    "protonmail-verification=d541f2d99ed79d5ef7eda87b958b02d732530823"
+    "protonmail-verification=d541f2d99ed79d5ef7eda87b958b02d732530823",
+    "brave-ledger-verification=2d3773df8ba0789c8e382dd8de095065e6cf0381f45eb2416d6004"
   ],
   "tls2": {
     "alpn": "",
@@ -287,30 +287,16 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260806132609",
+      "not_after": "20261104132608"
     }
   },
-  "http2": {
-    "robots_disallow": [
-      "/admin/",
-      "/preview/",
-      "/login",
-      "/register",
-      "/reset-password/",
-      "/admin/",
-      "/preview/",
-      "/login",
-      "/register",
-      "/reset-password/",
-      "/admin/",
-      "/preview/",
-      "/login",
-      "/register",
-      "/reset-password/"
-    ]
+  "x12": {
+    "status": 308
   },
-  "elapsed_s": 7.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "elapsed_s": 6.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

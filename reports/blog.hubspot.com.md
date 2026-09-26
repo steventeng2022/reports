@@ -7,12 +7,12 @@
 | Target | https://blog.hubspot.com/ |
 | Bug bounty program | HubSpot |
 | Listed scope domain | blog.hubspot.com |
-| Test date | 2026-09-26 17:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 1, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,9 +25,14 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
 | 7 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 8 | info | H6 | Server technology disclosure | CWE-200 |
 | 9 | info | P8 | Missing security.txt | CWE-1038 |
-| 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 10 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 16 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 17 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -40,13 +45,13 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.154.108:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.33.148:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.154.108:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.33.148:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -89,23 +94,53 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+### 10. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+
+- **CWE:** CWE-223
+- **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
+- **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 11. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+
+- **CWE:** CWE-223
+- **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
+- **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
+
+### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
 - **Detail:** Apex TXT records with verification/token content: google-gws-recovery-domain-verification=49109286
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
 
 - **CWE:** CWE-603
 - **Detail:** Certificate of blog.hubspot.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 79 disallow path(s), e.g. /wt-assets/static-files/mktg-analytics, /_hcms/iplookup, /_hcms/perf, *?portalId=, *?inpageEditorUI=
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 15. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of blog.hubspot.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 16. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of blog.hubspot.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
+### 17. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://blog.hubspot.com/ carries Cache-Control: s-maxage=36000, max-age=5 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
 ## Evidence (raw response observations)
 
@@ -114,18 +149,20 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
   "domain": "blog.hubspot.com",
   "dns": {
     "a": [
-      "172.64.154.108",
-      "104.18.33.148"
+      "104.18.33.148",
+      "172.64.154.108"
     ],
     "aaaa": [
       "2606:4700:4407::6812:2194",
       "2606:4700:440a::ac40:9a6c"
     ],
     "cname": null,
-    "mx": [],
+    "mx": [
+      "smtp.google.com (pref 1)"
+    ],
     "ns": [
-      "archer.ns.cloudflare.com.",
-      "rosalyn.ns.cloudflare.com."
+      "rosalyn.ns.cloudflare.com.",
+      "archer.ns.cloudflare.com."
     ],
     "spf": [
       "google-gws-recovery-domain-verification=49109286"
@@ -158,7 +195,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
     }
   },
   "ports": {
-    "ip": "172.64.154.108",
+    "ip": "104.18.33.148",
     "open": [
       8080,
       8443
@@ -231,7 +268,9 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260826210758",
+      "not_after": "20261124220749"
     }
   },
   "http2": {
@@ -254,8 +293,11 @@ Total findings: **12** (High: 0, Medium: 0, Low: 0, Info: 12)
       "*?preview_theme="
     ]
   },
-  "elapsed_s": 19.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 12.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

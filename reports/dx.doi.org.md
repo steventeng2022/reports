@@ -7,12 +7,12 @@
 | Target | https://dx.doi.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | dx.doi.org |
-| Test date | 2026-09-26 17:44 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:50 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
+Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,6 +30,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 | 12 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
 | 13 | info | P8 | Missing security.txt | CWE-1038 |
 | 14 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 15 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 
 ## Detailed findings
 
@@ -42,13 +43,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.26.5.132:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.26.4.132:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.26.5.132:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.26.4.132:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -125,6 +126,12 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 - **Detail:** Certificate of dx.doi.org has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 15. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://dx.doi.org/ carries Cache-Control: max-age=14400 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -132,14 +139,14 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
   "domain": "dx.doi.org",
   "dns": {
     "a": [
-      "104.26.5.132",
       "104.26.4.132",
-      "172.67.69.3"
+      "172.67.69.3",
+      "104.26.5.132"
     ],
     "aaaa": [
-      "2606:4700:20::ac43:4503",
       "2606:4700:20::681a:484",
-      "2606:4700:20::681a:584"
+      "2606:4700:20::681a:584",
+      "2606:4700:20::ac43:4503"
     ],
     "cname": null,
     "mx": [],
@@ -171,7 +178,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
     }
   },
   "ports": {
-    "ip": "104.26.5.132",
+    "ip": "104.26.4.132",
     "open": [
       8080,
       8443
@@ -236,14 +243,19 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260914160353",
+      "not_after": "20261213170345"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
-  "elapsed_s": 24.5,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 22.9,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

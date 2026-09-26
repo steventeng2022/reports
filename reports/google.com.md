@@ -7,12 +7,12 @@
 | Target | https://google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | google.com |
-| Test date | 2026-09-26 17:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,7 +30,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 15 | info | CT1 | 47 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 15 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | info | CT1 | 47 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -110,7 +112,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: arcules-domain-verification=2R4t5G7nI6tRCo61lpxxbLksPYstxhGmtV75cpr8x9K; onetrust-domain-verification=6d685f1d41a94696ad7ef771f68993e0; google-site-verification=4ibFUgB-wXLQ_S7vsXVomSTVamuOXBiVAzpR5IZ87D0
+- **Detail:** Apex TXT records with verification/token content: onetrust-domain-verification=6d685f1d41a94696ad7ef771f68993e0; arcules-domain-verification=2R4t5G7nI6tRCo61lpxxbLksPYstxhGmtV75cpr8x9K; google-site-verification=4ibFUgB-wXLQ_S7vsXVomSTVamuOXBiVAzpR5IZ87D0
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -125,7 +127,19 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 - **Detail:** robots.txt lists 178 disallow path(s), e.g. /search, /sdch, /groups, /index.html?, /?
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 15. [INFO] 47 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 15. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://google.com/ carries Cache-Control: public, max-age=2592000; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 142.250.196.206 carries PTR nctsaa-ac-in-f14.1e100.net. for google.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 17. [INFO] 47 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: console.au.cloud.google.com, console.ca.cloud.google.com, console.ch.cloud.google.com, console.eu.cloud.google.com, console.il.cloud.google.com, console.in.cloud.google.com, console.it.cloud.google.com, console.jp.cloud.google.com, console.sa.cloud.google.com, console.uk.cloud.google.com
@@ -138,7 +152,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
   "domain": "google.com",
   "dns": {
     "a": [
-      "142.250.198.78"
+      "142.250.196.206"
     ],
     "aaaa": [
       "2404:6800:4012:6::200e"
@@ -148,29 +162,29 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "smtp.google.com (pref 10)"
     ],
     "ns": [
-      "ns2.google.com.",
-      "ns4.google.com.",
+      "ns3.google.com.",
       "ns1.google.com.",
-      "ns3.google.com."
+      "ns2.google.com.",
+      "ns4.google.com."
     ],
     "spf": [
+      "docusign=05958488-4752-4ef2-95eb-aa7ba8a3bd0e",
+      "onetrust-domain-verification=6d685f1d41a94696ad7ef771f68993e0",
       "docusign=1b0a6754-49b1-4db5-8540-d2c12664b289",
       "arcules-domain-verification=2R4t5G7nI6tRCo61lpxxbLksPYstxhGmtV75cpr8x9K",
-      "Z29vZ2xl",
-      "_r4rd1pvwyrpi7sw4a3hzmw8e51yh9td",
-      "onetrust-domain-verification=6d685f1d41a94696ad7ef771f68993e0",
       "google-site-verification=4ibFUgB-wXLQ_S7vsXVomSTVamuOXBiVAzpR5IZ87D0",
+      "google-site-verification=TV9-DBe4R80X4v0M4U_bd_J9cpOJM0nikft0jAgjmsQ",
       "apple-domain-verification=30afIBcvSuDV2PLX",
-      "globalsign-smime-dv=CDYX+XFHUw2wml6/Gb8+59BsH31KzUr6c1l2BPvqKX8=",
-      "cisco-ci-domain-verification=47c38bc8c4b74b7233e9053220c1bbe76bcc1cd33c7acf7acd36cd6a5332004b",
-      "MS=E4A68B9AB2BB9670BCE15412F62916164C0B20BB",
-      "facebook-domain-verification=22rm551cu4k0ab0bxsw536tlds4h95",
       "google-site-verification=wD8N7i1JTNTkezJ49swvWW48f8_9xveREV4oB-0Hf5o",
       "work-accounts-domain-verification=Tcj6JjIMZOw2KsSEw2Nt2rLae89tN6",
-      "onetrust-domain-verification=0d477fe608074e6f9c12bca7826035cc",
-      "google-site-verification=TV9-DBe4R80X4v0M4U_bd_J9cpOJM0nikft0jAgjmsQ",
       "v=spf1 include:_spf.google.com ~all",
-      "docusign=05958488-4752-4ef2-95eb-aa7ba8a3bd0e"
+      "facebook-domain-verification=22rm551cu4k0ab0bxsw536tlds4h95",
+      "onetrust-domain-verification=0d477fe608074e6f9c12bca7826035cc",
+      "_r4rd1pvwyrpi7sw4a3hzmw8e51yh9td",
+      "cisco-ci-domain-verification=47c38bc8c4b74b7233e9053220c1bbe76bcc1cd33c7acf7acd36cd6a5332004b",
+      "Z29vZ2xl",
+      "globalsign-smime-dv=CDYX+XFHUw2wml6/Gb8+59BsH31KzUr6c1l2BPvqKX8=",
+      "MS=E4A68B9AB2BB9670BCE15412F62916164C0B20BB"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:mailauth-reports@google.com"
@@ -263,7 +277,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
     }
   },
   "ports": {
-    "ip": "142.250.198.78",
+    "ip": "142.250.196.206",
     "open": []
   },
   "https": {
@@ -356,11 +370,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
     ]
   },
   "apex_txt": [
-    "arcules-domain-verification=2R4t5G7nI6tRCo61lpxxbLksPYstxhGmtV75cpr8x9K",
     "onetrust-domain-verification=6d685f1d41a94696ad7ef771f68993e0",
+    "arcules-domain-verification=2R4t5G7nI6tRCo61lpxxbLksPYstxhGmtV75cpr8x9K",
     "google-site-verification=4ibFUgB-wXLQ_S7vsXVomSTVamuOXBiVAzpR5IZ87D0",
-    "apple-domain-verification=30afIBcvSuDV2PLX",
-    "cisco-ci-domain-verification=47c38bc8c4b74b7233e9053220c1bbe76bcc1cd33c7acf7acd3"
+    "google-site-verification=TV9-DBe4R80X4v0M4U_bd_J9cpOJM0nikft0jAgjmsQ",
+    "apple-domain-verification=30afIBcvSuDV2PLX"
   ],
   "tls2": {
     "alpn": "",
@@ -371,7 +385,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192153",
+      "not_after": "20261203192152"
     }
   },
   "http2": {
@@ -393,8 +409,14 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "/wml/?"
     ]
   },
-  "elapsed_s": 5.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "nctsaa-ac-in-f14.1e100.net."
+    ]
+  },
+  "elapsed_s": 4.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

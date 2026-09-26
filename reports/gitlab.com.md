@@ -7,12 +7,12 @@
 | Target | https://gitlab.com/ |
 | Bug bounty program | GitLab |
 | Listed scope domain | gitlab.com |
-| Test date | 2026-09-26 17:46 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **32** (High: 0, Medium: 9, Low: 0, Info: 23)
+Total findings: **34** (High: 0, Medium: 9, Low: 1, Info: 24)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -48,6 +48,8 @@ Total findings: **32** (High: 0, Medium: 9, Low: 0, Info: 23)
 | 30 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 31 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 32 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 33 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 34 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 
 ## Detailed findings
 
@@ -224,7 +226,7 @@ Total findings: **32** (High: 0, Medium: 9, Low: 0, Info: 23)
 ### 29. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: zapier-domain-verification-challenge=a1d665be-8176-4ada-9707-4332dfa7a2cc; _globalsign-domain-verification=4azHJ7gL04Dr8r2VR0txu7OrWg7uZpU6v7LOHVP1b3; openai-domain-verification=dv-Uq90dak9n7LidGh0WsdFOOUu
+- **Detail:** Apex TXT records with verification/token content: uber-domain-verification=38ba2b7b-5ae3-4694-9701-086b20ea3d36; google-site-verification=6Cb3PPpoMp6-xRavXf2HZz03s7pplQeG5MiUaPGIu_Q; google-site-verification=iWR2UGQb3MvVY83zY47ZFrGFVFLG6ADfpjqchlQjnok
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 30. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -245,6 +247,18 @@ Total findings: **32** (High: 0, Medium: 9, Low: 0, Info: 23)
 - **Detail:** robots.txt lists 86 disallow path(s), e.g. /autocomplete/users, /autocomplete/projects, /search, /admin, /profile
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 33. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of gitlab.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 34. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+
+- **CWE:** CWE-200
+- **Detail:** CSP of gitlab.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
+- **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -259,47 +273,47 @@ Total findings: **32** (High: 0, Medium: 9, Low: 0, Info: 23)
     ],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)",
       "alt4.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
       "diva.ns.cloudflare.com.",
       "jermaine.ns.cloudflare.com."
     ],
     "spf": [
-      "zapier-domain-verification-challenge=a1d665be-8176-4ada-9707-4332dfa7a2cc",
-      "_globalsign-domain-verification=4azHJ7gL04Dr8r2VR0txu7OrWg7uZpU6v7LOHVP1b3",
-      "asv=3f763643512ad5bdcc0d42caea1b3951",
-      "openai-domain-verification=dv-Uq90dak9n7LidGh0WsdFOOUu",
-      "serval-domain-verification-rahzqw=w9adwbCM3CJ9BrXnAleSWuMqz",
-      "google-site-verification=vPPg6DGiVgf5vhzQg5zGISLao6-07-lVzzpqvmCFe5Y",
-      "decagon-domain-verification-cmrbvs=Lb6bOM0iABwwrWBstDaKWS3U8",
-      "stripe-verification=E331E16D59119AEFB547211475C2E225C1BF6EB8CB885D300536B2852EAD3D74",
-      "v=spf1 include:mail.zendesk.com include:_spf.google.com include:mktomail.com include:_spf.salesforce.com include:_spf-ip.gitlab.com a:zgateway.zuora.com include:mailgun.org include:_spf.sendergen.com ip4:35.80.141.6/32 ip4:44.229.121.55/32 -all",
-      "google-site-verification=uT9dAMjaTlnkbC0VnN5flFWp0Bsze7zHObWjZwkd2p8",
-      "drift-domain-verification=fa583cfff88c496bcc62651057550656a98ab3e689c314255a1a6ae848e3e56d",
-      "google-site-verification=XDRo7LEOqv6OV0RfGDFh7G2XgpzdycygGJBqde334q4",
-      "google-site-verification=lnPjOx5EAxmESH8FSn4colWVMAxe18K4ZIopDB1IEDY",
-      "onetrust-domain-verification=84b59aa2659244d486b0b86f5db073dd",
-      "docusign=1a7d6818-2cf5-4956-a9fb-c3d2e9a578dd",
-      "apple-domain-verification=UNUD9vY0Jp9z5TjO",
+      "uber-domain-verification=38ba2b7b-5ae3-4694-9701-086b20ea3d36",
       "google-site-verification=6Cb3PPpoMp6-xRavXf2HZz03s7pplQeG5MiUaPGIu_Q",
       "google-site-verification=iWR2UGQb3MvVY83zY47ZFrGFVFLG6ADfpjqchlQjnok",
-      "uber-domain-verification=38ba2b7b-5ae3-4694-9701-086b20ea3d36",
-      "v=MCPv1; k=ed25519; p=MmZM6XexKcX4jiWqHtn3M0av9Q7HDmonAdP6PqktwX0=",
-      "MS=ms83893381",
-      "mgverify=2dd945066758840fe3bfbd9ccf90e2c6000458f13345baa576338880dcc86658",
-      "mgverify=9549a96a4bc9886fbf483bcd56872eaf2b5b9e690d264024041cf446664cb114",
-      "adobe-idp-site-verification=5a5e001556a2c0595ed571d2a1f7b5f8a749a00742853e035eb909bdd31622b8",
-      "jamf-site-verification=nRPNM9HJGzWzUkvBtgvBrg",
-      "MS=ms60523131",
       "smartsheet-site-validation=wTADkxxpf97DU9ZxO4RuFpZJyRvP7MRm",
-      "onetrust-domain-verification=af5b5fda116e45a9b4c4abcd9e571923",
+      "asv=3f763643512ad5bdcc0d42caea1b3951",
+      "apple-domain-verification=UNUD9vY0Jp9z5TjO",
+      "gitlab-pages-verification-code=5228e61c992af7e65f5f5160f0587fb4",
+      "drift-domain-verification=fa583cfff88c496bcc62651057550656a98ab3e689c314255a1a6ae848e3e56d",
+      "MS=ms60523131",
+      "v=spf1 include:mail.zendesk.com include:_spf.google.com include:mktomail.com include:_spf.salesforce.com include:_spf-ip.gitlab.com a:zgateway.zuora.com include:mailgun.org include:_spf.sendergen.com ip4:35.80.141.6/32 ip4:44.229.121.55/32 -all",
+      "onetrust-domain-verification=84b59aa2659244d486b0b86f5db073dd",
+      "zapier-domain-verification-challenge=a1d665be-8176-4ada-9707-4332dfa7a2cc",
+      "google-site-verification=vPPg6DGiVgf5vhzQg5zGISLao6-07-lVzzpqvmCFe5Y",
+      "v=MCPv1; k=ed25519; p=MmZM6XexKcX4jiWqHtn3M0av9Q7HDmonAdP6PqktwX0=",
       "google-site-verification=QiG7NTIWpedorFi71mMN7OVe2Fo_yA6RclsxO8stOa8",
-      "gitlab-pages-verification-code=5228e61c992af7e65f5f5160f0587fb4"
+      "serval-domain-verification-rahzqw=w9adwbCM3CJ9BrXnAleSWuMqz",
+      "mgverify=2dd945066758840fe3bfbd9ccf90e2c6000458f13345baa576338880dcc86658",
+      "jamf-site-verification=nRPNM9HJGzWzUkvBtgvBrg",
+      "_globalsign-domain-verification=4azHJ7gL04Dr8r2VR0txu7OrWg7uZpU6v7LOHVP1b3",
+      "google-site-verification=XDRo7LEOqv6OV0RfGDFh7G2XgpzdycygGJBqde334q4",
+      "google-site-verification=uT9dAMjaTlnkbC0VnN5flFWp0Bsze7zHObWjZwkd2p8",
+      "MS=ms83893381",
+      "openai-domain-verification=dv-Uq90dak9n7LidGh0WsdFOOUu",
+      "mgverify=9549a96a4bc9886fbf483bcd56872eaf2b5b9e690d264024041cf446664cb114",
+      "decagon-domain-verification-cmrbvs=Lb6bOM0iABwwrWBstDaKWS3U8",
+      "google-site-verification=lnPjOx5EAxmESH8FSn4colWVMAxe18K4ZIopDB1IEDY",
+      "adobe-idp-site-verification=5a5e001556a2c0595ed571d2a1f7b5f8a749a00742853e035eb909bdd31622b8",
+      "stripe-verification=E331E16D59119AEFB547211475C2E225C1BF6EB8CB885D300536B2852EAD3D74",
+      "docusign=1a7d6818-2cf5-4956-a9fb-c3d2e9a578dd",
+      "onetrust-domain-verification=af5b5fda116e45a9b4c4abcd9e571923"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:dmarc_agg@vali.email;"
@@ -415,11 +429,11 @@ Total findings: **32** (High: 0, Medium: 9, Low: 0, Info: 23)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "zapier-domain-verification-challenge=a1d665be-8176-4ada-9707-4332dfa7a2cc",
-    "_globalsign-domain-verification=4azHJ7gL04Dr8r2VR0txu7OrWg7uZpU6v7LOHVP1b3",
-    "openai-domain-verification=dv-Uq90dak9n7LidGh0WsdFOOUu",
-    "serval-domain-verification-rahzqw=w9adwbCM3CJ9BrXnAleSWuMqz",
-    "google-site-verification=vPPg6DGiVgf5vhzQg5zGISLao6-07-lVzzpqvmCFe5Y"
+    "uber-domain-verification=38ba2b7b-5ae3-4694-9701-086b20ea3d36",
+    "google-site-verification=6Cb3PPpoMp6-xRavXf2HZz03s7pplQeG5MiUaPGIu_Q",
+    "google-site-verification=iWR2UGQb3MvVY83zY47ZFrGFVFLG6ADfpjqchlQjnok",
+    "apple-domain-verification=UNUD9vY0Jp9z5TjO",
+    "gitlab-pages-verification-code=5228e61c992af7e65f5f5160f0587fb4"
   ],
   "tls2": {
     "alpn": "",
@@ -430,7 +444,9 @@ Total findings: **32** (High: 0, Medium: 9, Low: 0, Info: 23)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260426000000",
+      "not_after": "20261110235959"
     }
   },
   "http2": {
@@ -452,8 +468,11 @@ Total findings: **32** (High: 0, Medium: 9, Low: 0, Info: 23)
       "/-/experiment"
     ]
   },
-  "elapsed_s": 13.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 13.3,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

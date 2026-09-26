@@ -7,8 +7,8 @@
 | Target | https://funnyordie.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | funnyordie.com |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:52 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -47,13 +47,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.67.170.17:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.21.47.25:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.67.170.17:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.21.47.25:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -147,7 +147,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=r4WFzLVAo80duIoNrrHqZQspq2iqw0N5XAFL2uIl-fE; globalsign-domain-verification=Hp1a1n-YT2KmtWA97-EwK-EucshRieoftaEz5LLJf_; _globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3
+- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=Hp1a1n-YT2KmtWA97-EwK-EucshRieoftaEz5LLJf_; tiktok-developers-site-verification=G16jwn0FwrjqYiFI4aOUCNciJx7AxKr3; _globalsign-domain-verification=-awtonA3izZim7M9dNMwrH07WjvKC5se353wYCAliP
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -169,8 +169,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   "domain": "funnyordie.com",
   "dns": {
     "a": [
-      "172.67.170.17",
-      "104.21.47.25"
+      "104.21.47.25",
+      "172.67.170.17"
     ],
     "aaaa": [
       "2606:4700:3032::6815:2f19",
@@ -179,27 +179,27 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "cname": null,
     "mx": [
       "alt4.aspmx.l.google.com (pref 10)",
-      "aspmx.l.google.com (pref 1)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
       "elsa.ns.cloudflare.com.",
       "dane.ns.cloudflare.com."
     ],
     "spf": [
-      "v=spf1 include:_spf.google.com include:servers.mcsv.net include:spf.us.exclaimer.net include:mailgun.org -all",
       "43184D9B5E",
-      "google-site-verification=r4WFzLVAo80duIoNrrHqZQspq2iqw0N5XAFL2uIl-fE",
-      "MS=23613F937D84FE8567BA8919901223B5D76C2347",
-      "MS=ms72354247",
       "globalsign-domain-verification=Hp1a1n-YT2KmtWA97-EwK-EucshRieoftaEz5LLJf_",
-      "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
       "tiktok-developers-site-verification=G16jwn0FwrjqYiFI4aOUCNciJx7AxKr3",
       "fastly-domain-delegation--80022-23L4bj524Kh5lj-2018-04-18",
+      "MS=23613F937D84FE8567BA8919901223B5D76C2347",
+      "_globalsign-domain-verification=-awtonA3izZim7M9dNMwrH07WjvKC5se353wYCAliP",
       "apple-domain-verification=r6hjBNamBHVgTLEJ",
-      "_globalsign-domain-verification=-awtonA3izZim7M9dNMwrH07WjvKC5se353wYCAliP"
+      "v=spf1 include:_spf.google.com include:servers.mcsv.net include:spf.us.exclaimer.net include:mailgun.org -all",
+      "google-site-verification=r4WFzLVAo80duIoNrrHqZQspq2iqw0N5XAFL2uIl-fE",
+      "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
+      "MS=ms72354247"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:0dc2fa88d82945778e0ffdfd237821d1@dmarc-reports.cloudflare.net"
@@ -229,7 +229,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     }
   },
   "ports": {
-    "ip": "172.67.170.17",
+    "ip": "104.21.47.25",
     "open": [
       8080,
       8443
@@ -288,11 +288,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=r4WFzLVAo80duIoNrrHqZQspq2iqw0N5XAFL2uIl-fE",
     "globalsign-domain-verification=Hp1a1n-YT2KmtWA97-EwK-EucshRieoftaEz5LLJf_",
-    "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
     "tiktok-developers-site-verification=G16jwn0FwrjqYiFI4aOUCNciJx7AxKr3",
-    "apple-domain-verification=r6hjBNamBHVgTLEJ"
+    "_globalsign-domain-verification=-awtonA3izZim7M9dNMwrH07WjvKC5se353wYCAliP",
+    "apple-domain-verification=r6hjBNamBHVgTLEJ",
+    "google-site-verification=r4WFzLVAo80duIoNrrHqZQspq2iqw0N5XAFL2uIl-fE"
   ],
   "tls2": {
     "alpn": "",
@@ -303,11 +303,16 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260901190023",
+      "not_after": "20261130190022"
     }
   },
-  "elapsed_s": 6.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 6.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

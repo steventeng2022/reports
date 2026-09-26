@@ -7,8 +7,8 @@
 | Target | https://i.redd.it/ |
 | Bug bounty program | Reddit |
 | Listed scope domain | i.redd.it |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -133,16 +133,16 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
   "domain": "i.redd.it",
   "dns": {
     "a": [
+      "151.101.193.140",
       "151.101.65.140",
-      "151.101.129.140",
       "151.101.1.140",
-      "151.101.193.140"
+      "151.101.129.140"
     ],
     "aaaa": [
-      "2a04:4e42:600::396",
-      "2a04:4e42::396",
       "2a04:4e42:400::396",
-      "2a04:4e42:200::396"
+      "2a04:4e42:200::396",
+      "2a04:4e42::396",
+      "2a04:4e42:600::396"
     ],
     "cname": "dualstack.reddit.map.fastly.net.",
     "mx": [],
@@ -174,7 +174,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     }
   },
   "ports": {
-    "ip": "151.101.65.140",
+    "ip": "151.101.193.140",
     "open": []
   },
   "https": {
@@ -237,7 +237,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260822000000",
+      "not_after": "20270217235959"
     }
   },
   "http2": {
@@ -246,8 +248,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "/h3-opt-out"
     ]
   },
-  "elapsed_s": 23.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 404
+  },
+  "elapsed_s": 23.4,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

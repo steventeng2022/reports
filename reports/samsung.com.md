@@ -7,8 +7,8 @@
 | Target | https://samsung.com/ |
 | Bug bounty program | Samsung TV |
 | Listed scope domain | samsung.com |
-| Test date | 2026-09-26 17:52 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:58 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -123,7 +123,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: mongodb-site-verification=OK5ChSTjOEnRssN4ZNjB6y7xoqWBSraL; openai-domain-verification=dv-geyHaAZ2x2iRSG5mPLgCehBU; canva-site-verification=Lz0E97jjjyiBnq4nGgrBzg
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=Tb4utn-Cz0GYEzmsVzHfYhi6kv6XU--QYrYkfsVLwO0; google-site-verification=If15ip-WHY67QHEaM6ka9WKCcxgFHbS1oaXJswpUbHQ; box-domain-verification=b82590942dde67b52e8c41dc0e492a02ade277c5aede0e6de0b3b8de
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -147,69 +147,69 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "mailin.samsung.com (pref 10)"
     ],
     "ns": [
-      "dnsst.samsung.com.",
       "dnssm.samsung.com.",
-      "dns-gi2.samsung.com.",
+      "dns-awskr1.samsung.com.",
       "dnssm2.samsung.com.",
-      "auth01.sam.ic.",
       "dns-gi1.samsung.com.",
       "dnsst2.samsung.com.",
-      "dns-awskr1.samsung.com."
+      "dns-gi2.samsung.com.",
+      "auth01.sam.ic.",
+      "dnsst.samsung.com."
     ],
     "spf": [
-      "mongodb-site-verification=OK5ChSTjOEnRssN4ZNjB6y7xoqWBSraL",
-      "openai-domain-verification=dv-geyHaAZ2x2iRSG5mPLgCehBU",
-      "canva-site-verification=Lz0E97jjjyiBnq4nGgrBzg",
-      " amazonses:GabQpmRJN86a4HQqoLu1IEu/b6hqbMTlQSHol1cVzhA=",
-      "globalsign-domain-verification=E636433F4A5B2209D29402CE4AE96D29",
-      "globalsign-domain-verification=BD8E0953267AFCAEF59AFBF5F00BEB67",
-      "asv=bbc7c9d6c4c6acdc2124368f94efe110",
-      "atlassian-domain-verification=YJdK2oq4udj7wXxpQw52IsGEJue0ar/5JYtGr9lwcGNCffiKwPSGDZIQH0JlESij",
-      "google-site-verification=4pYi1ZoA5M9sNwJ39mlfRLPA5w_J2lqCVFEVUPyojp8",
-      "miro-verification=16f39e2d161837f1d97cfb17ff7e81f243c68683",
-      "cisco-ci-domain-verification=37f06378ba0e1526ad9a057438e3f2a1d0888e4e21d4ce75160ac7475679e080",
-      "google-site-verification=2Qn3FwdHxOdx-U2EBlX2Aq6OPFHM-JGRpo5fN2vEr88",
-      "globalsign-domain-verification=142A59A6E9D02E64F922A9C6893534A2",
-      "globalsign-domain-verification=9382b64f06fad76d1ebac344380ab28b",
+      "google-site-verification=Tb4utn-Cz0GYEzmsVzHfYhi6kv6XU--QYrYkfsVLwO0",
+      "google-site-verification=If15ip-WHY67QHEaM6ka9WKCcxgFHbS1oaXJswpUbHQ",
       "box-domain-verification=b82590942dde67b52e8c41dc0e492a02ade277c5aede0e6de0b3b8de28a0085a",
-      "google-site-verification=XioIPzfjKziFDv7svS2vFxobJ1j6ApORgnD43-La5jc",
-      "MS=ms51591264",
-      "google-site-verification=gVlQpmwAi4l7c9YZ6vgGKB",
-      "smartsheet-site-validation=E2jBYaDqtbMgG1u9Jzz2eQBNGVL2eea-",
-      "pardot1061372=cd7a8dc7dac11576e3160df3645c3be60beb48d38262fe75e1b83b6ed4547e2f",
-      "pardot1061392=f1c7431aa41d5e18d6f425faa7ee4bef2cc82af55471991546af317ad4988f6f",
-      "pardot1005352=4bf1edcafe2d5f7ea48b1ab4c669194f7fb8492acec4617e4b3af673899d0f05",
-      "apple-domain-verification=1f6od6-lOUHNPseuv2qlLXryA-4aMi97KboxR65PVb0",
-      " docusign=022189ea-ba76-432a-abd7-19343970da7e",
+      "pardot1061362=d72ade8848a288815d8cd7fcdedf8e2ea1ffdf37f2e6199b9c6d2b118b260b11",
       "google-gws-recovery-domain-verification=57248779",
       "samsung-domain-verification=9a471672-ab8b-442c-a646-b6fda8a9e698",
-      "v=spf1 include:_spf.samsung.com ~all",
-      "pardot1061362=d72ade8848a288815d8cd7fcdedf8e2ea1ffdf37f2e6199b9c6d2b118b260b11",
+      "apple-domain-verification=1f6od6-lOUHNPseuv2qlLXryA-4aMi97KboxR65PVb0",
+      "smartsheet-site-validation=E2jBYaDqtbMgG1u9Jzz2eQBNGVL2eea-",
       "pardot848313=94e68189fc6e698e53ab66f68f9fa66f68b14ab1837bac98f0a5b5b4dd57503d",
-      "pardot880362=0579f4b1009200bd5629bc294b593112ab1438df4ebedf4de300d36b4a35e5bf",
-      "google-site-verification=Tb4utn-Cz0GYEzmsVzHfYhi6kv6XU--QYrYkfsVLwO0",
-      "asv=8c95d437a5f5281bf0b46412ea6410ff",
-      " globalsign-domain-verification=d7cac74e387872153b45a1cf21f819ee",
-      "google-gws-recovery-domain-verification=69734317",
-      " 7029addd-cf82-4d9e-9ac6-45cd3e47e467",
-      "cisco-ci-domain-verification=4d1fed540ceae17bd020e5d248bb657c382c66454d32a5984edd4871be659cea",
-      "figma-domain-verification=74d791d52b49cbb05822c432d058f86bb47d2d97aa815d0ca470c6ef74a99003-1742422683 ",
-      "google-site-verification=qKOICuq5bpeTBLMOeQs-pQ4fR4YdzZVLyFvahSDaRqc",
       "figma-domain-verification=fff7a09ce23c2d8329d368316712f1dcb0a29cb4c71a406f8f41dce4ef671081-1767768682",
+      " amazonses:GabQpmRJN86a4HQqoLu1IEu/b6hqbMTlQSHol1cVzhA=",
       "pardot1061382=ee554f6d1abf83530c2b3bd50be47bc5e417bb833dc9b2686e5c5c384d2e174c",
-      "dtm-domain-verification=sj6QpVm4qndJLuG0vmv2lv2WLlZ3g1EGLq9OItKaBQI",
-      "globalsign-domain-verification=A931337188D2EF719A821F0016D8552E",
-      "docker-verification=a98547c5-d702-4b4b-9516-4331ed5171c8",
+      "google-site-verification=XioIPzfjKziFDv7svS2vFxobJ1j6ApORgnD43-La5jc",
+      "canva-site-verification=Lz0E97jjjyiBnq4nGgrBzg",
       "google-site-verification=gVlQpmwAi4l7c9YZ6vgGKBrqIjduXkSx7ekuOPsOAlg",
-      "pardot1061372=4fedddc5665b4f323efd74d4970852e6a46f8df316987974967da26bef35bf24",
+      " 7029addd-cf82-4d9e-9ac6-45cd3e47e467",
+      "cisco-ci-domain-verification=37f06378ba0e1526ad9a057438e3f2a1d0888e4e21d4ce75160ac7475679e080",
+      "globalsign-domain-verification=BD8E0953267AFCAEF59AFBF5F00BEB67",
+      " globalsign-domain-verification=d7cac74e387872153b45a1cf21f819ee",
+      "globalsign-domain-verification=E636433F4A5B2209D29402CE4AE96D29",
+      "google-site-verification=gVlQpmwAi4l7c9YZ6vgGKB",
+      "openai-domain-verification=dv-geyHaAZ2x2iRSG5mPLgCehBU",
+      "globalsign-domain-verification=A931337188D2EF719A821F0016D8552E",
+      "google-site-verification=2Qn3FwdHxOdx-U2EBlX2Aq6OPFHM-JGRpo5fN2vEr88",
+      "google-site-verification=4pYi1ZoA5M9sNwJ39mlfRLPA5w_J2lqCVFEVUPyojp8",
+      "globalsign-domain-verification=9382b64f06fad76d1ebac344380ab28b",
+      "docker-verification=a98547c5-d702-4b4b-9516-4331ed5171c8",
       "globalsign-domain-verification=D4FBC243F3CA31BC63C84A1CE7856D69",
-      "liveramp-site-verification=bLTcKGTyyCkVh8Zt5X8IYY9T4Uns9ZRoAEG6NPzTd-c",
-      "pardot1123213=e21329a1ef7ab24c2a6a00afb2c9cdf6409a12ea19fd8c37c70c53eb8cbd3176",
-      " globalsign-domain-verification=BF9A67D3968C1D5FEC1440B12347B6AF",
-      "google-site-verification=If15ip-WHY67QHEaM6ka9WKCcxgFHbS1oaXJswpUbHQ",
       "pardot848313=56b423327c6bbcc73c4888f1e7a74aa35be107baa0d8dbc0d60d3078016cdedb",
+      "figma-domain-verification=74d791d52b49cbb05822c432d058f86bb47d2d97aa815d0ca470c6ef74a99003-1742422683 ",
+      " globalsign-domain-verification=BF9A67D3968C1D5FEC1440B12347B6AF",
+      "pardot1123213=e21329a1ef7ab24c2a6a00afb2c9cdf6409a12ea19fd8c37c70c53eb8cbd3176",
+      "google-gws-recovery-domain-verification=69734317",
+      "MS=ms51591264",
+      "dtm-domain-verification=sj6QpVm4qndJLuG0vmv2lv2WLlZ3g1EGLq9OItKaBQI",
+      "google-site-verification=qKOICuq5bpeTBLMOeQs-pQ4fR4YdzZVLyFvahSDaRqc",
+      "asv=bbc7c9d6c4c6acdc2124368f94efe110",
+      "cisco-ci-domain-verification=4d1fed540ceae17bd020e5d248bb657c382c66454d32a5984edd4871be659cea",
+      "pardot1061392=f1c7431aa41d5e18d6f425faa7ee4bef2cc82af55471991546af317ad4988f6f",
+      "dtm-domain-verification=5gAZbUOV4mzm7FcNMxN3Z_8Og_vvyqJh5FxCE_rh0zE",
+      "pardot1005352=4bf1edcafe2d5f7ea48b1ab4c669194f7fb8492acec4617e4b3af673899d0f05",
+      "mongodb-site-verification=OK5ChSTjOEnRssN4ZNjB6y7xoqWBSraL",
+      "miro-verification=16f39e2d161837f1d97cfb17ff7e81f243c68683",
+      "atlassian-domain-verification=YJdK2oq4udj7wXxpQw52IsGEJue0ar/5JYtGr9lwcGNCffiKwPSGDZIQH0JlESij",
+      "v=spf1 include:_spf.samsung.com ~all",
       "pardot1061372=7f77a7e9d20bced708628f16f6245665a0b5d0ab840f492e5b8b9d0616ff8bff",
-      "dtm-domain-verification=5gAZbUOV4mzm7FcNMxN3Z_8Og_vvyqJh5FxCE_rh0zE"
+      "pardot1061372=4fedddc5665b4f323efd74d4970852e6a46f8df316987974967da26bef35bf24",
+      " docusign=022189ea-ba76-432a-abd7-19343970da7e",
+      "asv=8c95d437a5f5281bf0b46412ea6410ff",
+      "pardot880362=0579f4b1009200bd5629bc294b593112ab1438df4ebedf4de300d36b4a35e5bf",
+      "liveramp-site-verification=bLTcKGTyyCkVh8Zt5X8IYY9T4Uns9ZRoAEG6NPzTd-c",
+      "pardot1061372=cd7a8dc7dac11576e3160df3645c3be60beb48d38262fe75e1b83b6ed4547e2f",
+      "globalsign-domain-verification=142A59A6E9D02E64F922A9C6893534A2"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:postmaster@samsung.com; ruf=mailto:postmaster@samsung.com"
@@ -289,11 +289,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "mongodb-site-verification=OK5ChSTjOEnRssN4ZNjB6y7xoqWBSraL",
-    "openai-domain-verification=dv-geyHaAZ2x2iRSG5mPLgCehBU",
-    "canva-site-verification=Lz0E97jjjyiBnq4nGgrBzg",
-    "globalsign-domain-verification=E636433F4A5B2209D29402CE4AE96D29",
-    "globalsign-domain-verification=BD8E0953267AFCAEF59AFBF5F00BEB67"
+    "google-site-verification=Tb4utn-Cz0GYEzmsVzHfYhi6kv6XU--QYrYkfsVLwO0",
+    "google-site-verification=If15ip-WHY67QHEaM6ka9WKCcxgFHbS1oaXJswpUbHQ",
+    "box-domain-verification=b82590942dde67b52e8c41dc0e492a02ade277c5aede0e6de0b3b8de",
+    "google-gws-recovery-domain-verification=57248779",
+    "samsung-domain-verification=9a471672-ab8b-442c-a646-b6fda8a9e698"
   ],
   "tls2": {
     "alpn": "",
@@ -304,11 +304,16 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260408000000",
+      "not_after": "20261023235959"
     }
   },
-  "elapsed_s": 19.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 18.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

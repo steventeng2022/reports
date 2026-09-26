@@ -7,8 +7,8 @@
 | Target | https://chris.pirillo.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | chris.pirillo.com |
-| Test date | 2026-09-26 17:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -44,13 +44,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.21.18.214:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.67.183.97:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.21.18.214:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.67.183.97:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -144,8 +144,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
   "domain": "chris.pirillo.com",
   "dns": {
     "a": [
-      "104.21.18.214",
-      "172.67.183.97"
+      "172.67.183.97",
+      "104.21.18.214"
     ],
     "aaaa": [
       "2606:4700:3033::ac43:b761",
@@ -183,7 +183,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
     }
   },
   "ports": {
-    "ip": "104.21.18.214",
+    "ip": "172.67.183.97",
     "open": [
       8080,
       8443
@@ -256,7 +256,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260908021608",
+      "not_after": "20261207031555"
     }
   },
   "http2": {
@@ -271,8 +273,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
       "/"
     ]
   },
-  "elapsed_s": 15.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200
+  },
+  "elapsed_s": 13.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

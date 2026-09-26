@@ -7,8 +7,8 @@
 | Target | https://filezilla-project.org/ |
 | Bug bounty program | FileZilla |
 | Listed scope domain | filezilla-project.org |
-| Test date | 2026-09-26 17:45 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:51 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -134,7 +134,7 @@ Total findings: **17** (High: 0, Medium: 1, Low: 4, Info: 12)
 ### 16. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (vrjmgn0fcq6znj.filezilla-project.org and 4a2efx12d7k0yu.filezilla-project.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (wppvufddx2p3ls.filezilla-project.org and k92ws885vrq71t.filezilla-project.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
@@ -160,13 +160,13 @@ Total findings: **17** (High: 0, Medium: 1, Low: 4, Info: 12)
       "filezilla-project.org (pref 10)"
     ],
     "ns": [
+      "ns2.domaindiscount24.net.",
       "ns3.domaindiscount24.net.",
-      "ns1.domaindiscount24.net.",
-      "ns2.domaindiscount24.net."
+      "ns1.domaindiscount24.net."
     ],
     "spf": [
-      "v=spf1 mx ip4:49.12.121.47/32 ip6:2a01:4f8:242:52d0::2/64 -all",
-      "google-site-verification=VMSIrNYAVoMPTFK6VdS6swSnzPeV9u3oDl2KraQnLI8"
+      "google-site-verification=VMSIrNYAVoMPTFK6VdS6swSnzPeV9u3oDl2KraQnLI8",
+      "v=spf1 mx ip4:49.12.121.47/32 ip6:2a01:4f8:242:52d0::2/64 -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject"
@@ -266,8 +266,11 @@ Total findings: **17** (High: 0, Medium: 1, Low: 4, Info: 12)
   "http2": {
     "error": "root GET failed"
   },
-  "elapsed_s": 118.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "error": "ConnectTimeout(MaxRetryError(\"HTTPSConnectionPool(host='filezilla-project.org', "
+  },
+  "elapsed_s": 134.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

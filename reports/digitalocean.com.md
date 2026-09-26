@@ -7,8 +7,8 @@
 | Target | https://digitalocean.com/ |
 | Bug bounty program | DigitalOcean |
 | Listed scope domain | digitalocean.com |
-| Test date | 2026-09-26 17:43 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -46,13 +46,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.19.174.68:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.19.173.68:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.19.174.68:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.19.173.68:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -139,7 +139,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=fuHvbNU2hYfbN9RoK0XFtSLh0qAMAI9Ucw42eYDUTOc; parallels-domain-verification=fa1f1607144e4383bb6e48e2e045d550c15ce091b4894845b9; anthropic-domain-verification-dh0bxk=TJRyEfjJC38Zqu4LB1dulxSBf
+- **Detail:** Apex TXT records with verification/token content: status-page-domain-verification=tj3q88fkv3j1; anthropic-domain-verification-dh0bxk=TJRyEfjJC38Zqu4LB1dulxSBf; stripe-verification=2BCFA2CD117F45F83F39DEDA5A7E6106299C28A23B5010E6E3BA5FDB2F61
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -161,60 +161,60 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "digitalocean.com",
   "dns": {
     "a": [
-      "104.19.174.68",
-      "104.19.173.68"
+      "104.19.173.68",
+      "104.19.174.68"
     ],
     "aaaa": [
-      "2606:4700::6813:ad44",
-      "2606:4700::6813:ae44"
+      "2606:4700::6813:ae44",
+      "2606:4700::6813:ad44"
     ],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx3.googlemail.com (pref 10)",
+      "aspmx2.googlemail.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "aspmx2.googlemail.com (pref 10)"
+      "aspmx3.googlemail.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "kim.ns.cloudflare.com.",
-      "walt.ns.cloudflare.com."
+      "walt.ns.cloudflare.com.",
+      "kim.ns.cloudflare.com."
     ],
     "spf": [
-      "google-site-verification=fuHvbNU2hYfbN9RoK0XFtSLh0qAMAI9Ucw42eYDUTOc",
-      "parallels-domain-verification=fa1f1607144e4383bb6e48e2e045d550c15ce091b4894845b934496071c81db0",
-      "anthropic-domain-verification-dh0bxk=TJRyEfjJC38Zqu4LB1dulxSBf",
-      "dtuqIuOjtDLiAl7YTXvTJJ78bbQq6ACm",
-      "stripe-verification=F691FE072DF56977FEC2B21F484548F5F150CA5A9E9B972A2479AE04C2C60F35",
-      "stripe-verification=b69a661304f47463194cd46b2c35c8f8e1862539e29f1bddbb69579426a53ef9",
-      "mixpanel-domain-verify=4ff6bde2-746a-4794-87e3-6f17921293c8",
-      "stripe-verification=1C9C705D562471C3AA3D743AB2EC0ABBF75B3A775CA7A086A3F65835BACFB2CB",
-      "cursor-domain-verification-362gj0=wtPDNjMWC1AkVAKVJ5hz5JACn",
-      "MS=ms33165602",
-      "v=spf1 include:spf.digitalocean.com include:_spf.google.com include:_spf.salesforce.com include:mg-spf.greenhouse.io include:helpscoutemail.com -all",
-      "stripe-verification=9FCE4410B23190F9C5C7EF5FDFEFEE821AF589CB703E6C8C6DA924FD4A99475C",
-      "stripe-verification=8BF765DED74005431CDF0A65578C22B307C4B648290C808972410FE2DA6BB589",
-      "teamviewer-sso-verification=614425da1843404ebe7504af4bff0dcd",
-      "stripe-verification=dab9251d3476acbdb63d9c93c21c8371c4d9143bdfc7214ee2611326f3b051d3",
-      "jamf-site-verification=WcdOvJYHqFoQ42iFjqJVsg",
-      "google-site-verification=6_lXIKeIJtrPwaQhZcDcaXQja4ByeiFU2gDcTMuTijQ",
-      "stripe-verification=2BCFA2CD117F45F83F39DEDA5A7E6106299C28A23B5010E6E3BA5FDB2F61F54D",
-      "stripe-verification=7744401ba1e29e328fe564961edab72baa98a6e918e0079bb22df62cb5bf6f23",
-      "stripe-verification=8DF3E7E1EAC07BB343B0BDF23F93163838648386C6114E107E085B6F170E67DE",
-      "stripe-verification=45e8c480f3cd8e399a5a575cd6907be931bdb63ffa4a474b08e220d8c391a2b2",
-      "stripe-verification=3fe3198a843102a2e47a8eb52f0953da4c982db06a26d5dce9a7624cad785d5e",
-      "asv=b5f543d370a3a7fee9ff29f31d312e65",
-      "stripe-verification=ef8010dac57762d5dbc26b1aab014279f3ef0ebc3f06c5ae6c42c33dba2233b0",
-      "stripe-verification=a973e20b4ad2b58603dc6df1e1511f1f0974766512c2ff5c5533099a59fb115c",
-      "stripe-verification=de7b481fb94c6c8a20a9c55ff303f96a039ef4fc3131ea11364d9916c4e9a21f",
-      "jetbrains-domain-verification=1hmiczqdw7qr1se179z8tqxfy",
-      "atlassian-domain-verification=vNGhwIzzcLrF7H9pazlsH17hC9W5zBEPX6o0C8f4hFfguiPaZdwZg3O4wSS8cYZ0",
-      "teamviewer-sso-verification=5c39eae7664e4e80a7e5bae6bc4d3991",
-      "stripe-verification=421878fd7101a929f0ea36163be2295b3fc012b9a0bc99ffd484a83e60996e01",
-      "_uz7uxsojbrthbcfwkfhrsd3abwyzryf",
-      "smartsheet-site-validation=TLcMGw2JGRoifAi2GdDaLat1-825u5vb",
       "status-page-domain-verification=tj3q88fkv3j1",
-      "sprout-social-db4e46f7-f461-4675-b4d5-a172a9a30ade"
+      "anthropic-domain-verification-dh0bxk=TJRyEfjJC38Zqu4LB1dulxSBf",
+      "stripe-verification=2BCFA2CD117F45F83F39DEDA5A7E6106299C28A23B5010E6E3BA5FDB2F61F54D",
+      "stripe-verification=de7b481fb94c6c8a20a9c55ff303f96a039ef4fc3131ea11364d9916c4e9a21f",
+      "google-site-verification=fuHvbNU2hYfbN9RoK0XFtSLh0qAMAI9Ucw42eYDUTOc",
+      "teamviewer-sso-verification=614425da1843404ebe7504af4bff0dcd",
+      "sprout-social-db4e46f7-f461-4675-b4d5-a172a9a30ade",
+      "stripe-verification=3fe3198a843102a2e47a8eb52f0953da4c982db06a26d5dce9a7624cad785d5e",
+      "mixpanel-domain-verify=4ff6bde2-746a-4794-87e3-6f17921293c8",
+      "atlassian-domain-verification=vNGhwIzzcLrF7H9pazlsH17hC9W5zBEPX6o0C8f4hFfguiPaZdwZg3O4wSS8cYZ0",
+      "stripe-verification=b69a661304f47463194cd46b2c35c8f8e1862539e29f1bddbb69579426a53ef9",
+      "jetbrains-domain-verification=1hmiczqdw7qr1se179z8tqxfy",
+      "cursor-domain-verification-362gj0=wtPDNjMWC1AkVAKVJ5hz5JACn",
+      "parallels-domain-verification=fa1f1607144e4383bb6e48e2e045d550c15ce091b4894845b934496071c81db0",
+      "google-site-verification=6_lXIKeIJtrPwaQhZcDcaXQja4ByeiFU2gDcTMuTijQ",
+      "dtuqIuOjtDLiAl7YTXvTJJ78bbQq6ACm",
+      "stripe-verification=45e8c480f3cd8e399a5a575cd6907be931bdb63ffa4a474b08e220d8c391a2b2",
+      "stripe-verification=7744401ba1e29e328fe564961edab72baa98a6e918e0079bb22df62cb5bf6f23",
+      "stripe-verification=8BF765DED74005431CDF0A65578C22B307C4B648290C808972410FE2DA6BB589",
+      "stripe-verification=a973e20b4ad2b58603dc6df1e1511f1f0974766512c2ff5c5533099a59fb115c",
+      "_uz7uxsojbrthbcfwkfhrsd3abwyzryf",
+      "stripe-verification=dab9251d3476acbdb63d9c93c21c8371c4d9143bdfc7214ee2611326f3b051d3",
+      "asv=b5f543d370a3a7fee9ff29f31d312e65",
+      "teamviewer-sso-verification=5c39eae7664e4e80a7e5bae6bc4d3991",
+      "stripe-verification=9FCE4410B23190F9C5C7EF5FDFEFEE821AF589CB703E6C8C6DA924FD4A99475C",
+      "stripe-verification=1C9C705D562471C3AA3D743AB2EC0ABBF75B3A775CA7A086A3F65835BACFB2CB",
+      "v=spf1 include:spf.digitalocean.com include:_spf.google.com include:_spf.salesforce.com include:mg-spf.greenhouse.io include:helpscoutemail.com -all",
+      "smartsheet-site-validation=TLcMGw2JGRoifAi2GdDaLat1-825u5vb",
+      "stripe-verification=ef8010dac57762d5dbc26b1aab014279f3ef0ebc3f06c5ae6c42c33dba2233b0",
+      "stripe-verification=8DF3E7E1EAC07BB343B0BDF23F93163838648386C6114E107E085B6F170E67DE",
+      "stripe-verification=F691FE072DF56977FEC2B21F484548F5F150CA5A9E9B972A2479AE04C2C60F35",
+      "jamf-site-verification=WcdOvJYHqFoQ42iFjqJVsg",
+      "MS=ms33165602",
+      "stripe-verification=421878fd7101a929f0ea36163be2295b3fc012b9a0bc99ffd484a83e60996e01"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:fdpfb1lo@ag.dmarcian.com; ruf=mailto:fdpfb1lo@fr.dmarcian.com;"
@@ -244,7 +244,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "104.19.174.68",
+    "ip": "104.19.173.68",
     "open": [
       8080,
       8443
@@ -306,11 +306,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=fuHvbNU2hYfbN9RoK0XFtSLh0qAMAI9Ucw42eYDUTOc",
-    "parallels-domain-verification=fa1f1607144e4383bb6e48e2e045d550c15ce091b4894845b9",
+    "status-page-domain-verification=tj3q88fkv3j1",
     "anthropic-domain-verification-dh0bxk=TJRyEfjJC38Zqu4LB1dulxSBf",
-    "stripe-verification=F691FE072DF56977FEC2B21F484548F5F150CA5A9E9B972A2479AE04C2C6",
-    "stripe-verification=b69a661304f47463194cd46b2c35c8f8e1862539e29f1bddbb69579426a5"
+    "stripe-verification=2BCFA2CD117F45F83F39DEDA5A7E6106299C28A23B5010E6E3BA5FDB2F61",
+    "stripe-verification=de7b481fb94c6c8a20a9c55ff303f96a039ef4fc3131ea11364d9916c4e9",
+    "google-site-verification=fuHvbNU2hYfbN9RoK0XFtSLh0qAMAI9Ucw42eYDUTOc"
   ],
   "tls2": {
     "alpn": "",
@@ -321,7 +321,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260911031256",
+      "not_after": "20261210041247"
     }
   },
   "http2": {
@@ -332,8 +334,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "/community/register"
     ]
   },
-  "elapsed_s": 5.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 5.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

@@ -7,8 +7,8 @@
 | Target | https://aboutads.info/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | aboutads.info |
-| Test date | 2026-09-26 17:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -45,13 +45,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.26.3.98:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.26.2.98:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.26.3.98:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.26.2.98:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -154,14 +154,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "aboutads.info",
   "dns": {
     "a": [
-      "104.26.3.98",
       "104.26.2.98",
-      "172.67.72.200"
+      "172.67.72.200",
+      "104.26.3.98"
     ],
     "aaaa": [
-      "2606:4700:20::681a:262",
+      "2606:4700:20::681a:362",
       "2606:4700:20::ac43:48c8",
-      "2606:4700:20::681a:362"
+      "2606:4700:20::681a:262"
     ],
     "cname": null,
     "mx": [
@@ -169,8 +169,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "mx2-us1.ppe-hosted.com (pref 20)"
     ],
     "ns": [
-      "abdullah.ns.cloudflare.com.",
-      "kinsley.ns.cloudflare.com."
+      "kinsley.ns.cloudflare.com.",
+      "abdullah.ns.cloudflare.com."
     ],
     "spf": [
       "v=spf1 include:_spf.google.com include:spf.constantcontact.com include:_spf-us.ppe-hosted.com include:_spf.salesforce.com ~all",
@@ -204,7 +204,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "104.26.3.98",
+    "ip": "104.26.2.98",
     "open": [
       8080,
       8443
@@ -287,11 +287,16 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260908103858",
+      "not_after": "20261207113853"
     }
   },
-  "elapsed_s": 28.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 27.8,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

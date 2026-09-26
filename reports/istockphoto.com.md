@@ -7,12 +7,12 @@
 | Target | https://istockphoto.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | istockphoto.com |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:54 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -124,7 +125,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=Kxr9iK44cHpakxQbI3si0Gt0rTaKT-P-ldoGPvB8u8c; facebook-domain-verification=4cqoes9ia3bfzqzq69xntb7iar6mkr
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=4cqoes9ia3bfzqzq69xntb7iar6mkr; google-site-verification=Kxr9iK44cHpakxQbI3si0Gt0rTaKT-P-ldoGPvB8u8c
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -133,6 +134,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - **Detail:** Certificate of istockphoto.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 54.192.248.52 carries PTR server-54-192-248-52.tpe53.r.cloudfront.net. for istockphoto.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -140,38 +147,38 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
   "domain": "istockphoto.com",
   "dns": {
     "a": [
-      "54.192.248.56",
-      "54.192.248.113",
+      "54.192.248.52",
       "54.192.248.91",
-      "54.192.248.52"
+      "54.192.248.56",
+      "54.192.248.113"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "us-smtp-inbound-2.mimecast.com (pref 10)",
-      "us-smtp-inbound-1.mimecast.com (pref 10)"
+      "us-smtp-inbound-1.mimecast.com (pref 10)",
+      "us-smtp-inbound-2.mimecast.com (pref 10)"
     ],
     "ns": [
-      "ns-692.awsdns-22.net.",
-      "ns-1600.awsdns-08.co.uk.",
+      "ns-1269.awsdns-30.org.",
       "ns-194.awsdns-24.com.",
-      "ns-1269.awsdns-30.org."
+      "ns-1600.awsdns-08.co.uk.",
+      "ns-692.awsdns-22.net."
     ],
     "spf": [
-      "nqSz5i7",
-      "gcrarlo4jnuv6jucvsu25us37t",
-      "v=spf1 include:_spf1.gettyimages.com include:_spf2.gettyimages.com include:_spf3.gettyimages.com ~all",
-      "iblvsbv3q12clku4odkv5q2kns",
-      "imtrdblip7oaja1eqnsm5vv1da",
-      "google-site-verification=Kxr9iK44cHpakxQbI3si0Gt0rTaKT-P-ldoGPvB8u8c",
-      "70aheif64ef26ttmml0v1s8u44",
-      "rZ82I61",
-      "mApBQbj",
-      "6gndatn3ep6iuuuj60pnavq47b",
       "0OX00lOBevmMwBKqx+i4VEYt3Hh4BSEqvj5eywR4LcmQZA7wJO2GOeAy63AfjOZCwJ13Jk8zSgWKEqa4B3xXsw==",
-      "CVimwsmxpGLA8Zz848NLFIp4MJqMzgn0K2DiVr0Rv7TrsCMNn9xjh2L71nEXuXKriJGVfu67jJpAzqQxns8TOg==",
-      "ozECEJCtCPL1buHkf0i1XhVu9bUhJxFEZX3QRAZp41iUI+YlumJIhPc9Uhxj/m7yJspJ0sy3Is3V1stL5vDijw==",
+      "rZ82I61",
+      "6gndatn3ep6iuuuj60pnavq47b",
       "facebook-domain-verification=4cqoes9ia3bfzqzq69xntb7iar6mkr",
+      "google-site-verification=Kxr9iK44cHpakxQbI3si0Gt0rTaKT-P-ldoGPvB8u8c",
+      "mApBQbj",
+      "gcrarlo4jnuv6jucvsu25us37t",
+      "CVimwsmxpGLA8Zz848NLFIp4MJqMzgn0K2DiVr0Rv7TrsCMNn9xjh2L71nEXuXKriJGVfu67jJpAzqQxns8TOg==",
+      "imtrdblip7oaja1eqnsm5vv1da",
+      "ozECEJCtCPL1buHkf0i1XhVu9bUhJxFEZX3QRAZp41iUI+YlumJIhPc9Uhxj/m7yJspJ0sy3Is3V1stL5vDijw==",
+      "70aheif64ef26ttmml0v1s8u44",
+      "iblvsbv3q12clku4odkv5q2kns",
+      "v=spf1 include:_spf1.gettyimages.com include:_spf2.gettyimages.com include:_spf3.gettyimages.com ~all",
+      "nqSz5i7",
       "v=msv1 t=56E21521-0012-4C74-BAF5-371A005951A8"
     ],
     "dmarc": [
@@ -216,7 +223,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     }
   },
   "ports": {
-    "ip": "54.192.248.56",
+    "ip": "54.192.248.52",
     "open": []
   },
   "https": {
@@ -269,8 +276,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=Kxr9iK44cHpakxQbI3si0Gt0rTaKT-P-ldoGPvB8u8c",
-    "facebook-domain-verification=4cqoes9ia3bfzqzq69xntb7iar6mkr"
+    "facebook-domain-verification=4cqoes9ia3bfzqzq69xntb7iar6mkr",
+    "google-site-verification=Kxr9iK44cHpakxQbI3si0Gt0rTaKT-P-ldoGPvB8u8c"
   ],
   "tls2": {
     "alpn": "",
@@ -281,11 +288,19 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260617000000",
+      "not_after": "20261231235959"
     }
   },
-  "elapsed_s": 4.0,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403,
+    "ptr": [
+      "server-54-192-248-52.tpe53.r.cloudfront.net."
+    ]
+  },
+  "elapsed_s": 4.1,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

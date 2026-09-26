@@ -7,12 +7,12 @@
 | Target | https://m.me/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | m.me |
-| Test date | 2026-09-26 17:48 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:55 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
+Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,7 +25,9 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 | 7 | info | P8 | Missing security.txt | CWE-1038 |
 | 8 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 9 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 10 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 10 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 11 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 12 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -77,7 +79,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 ### 8. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (h6rdfp9xddn9it.m.me and 0971tnwl9pb5at.m.me) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (ay5ixwn5lhfkra.m.me and n2j2fudnunhht2.m.me) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 9. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -86,7 +88,19 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
 - **Detail:** Certificate of m.me has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 10. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 10. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+
+- **CWE:** CWE-1021
+- **Detail:** Content-Security-Policy of m.me permits unsafe-inline; inline script injection still executes.
+- **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
+
+### 11. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 57.144.92.141 carries PTR edge-star-shv-01-tpe5.facebook.com. for m.me.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 12. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: m.me
@@ -107,10 +121,10 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
     "cname": null,
     "mx": [],
     "ns": [
-      "b.ns.facebook.com.",
-      "c.ns.facebook.com.",
       "a.ns.facebook.com.",
-      "d.ns.facebook.com."
+      "d.ns.facebook.com.",
+      "c.ns.facebook.com.",
+      "b.ns.facebook.com."
     ],
     "spf": [
       "v=spf1 a ~all"
@@ -179,15 +193,15 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
     "/robots.txt": 400,
     "/sitemap.xml": 400,
     "/.well-known/security.txt": 404,
-    "/security.txt": 302,
+    "/security.txt": 400,
     "/.git/HEAD": 404,
     "/.git/config": 404,
-    "/.env": 302,
-    "/.htaccess": 302,
-    "/wp-login.php": 302,
+    "/.env": 400,
+    "/.htaccess": 400,
+    "/wp-login.php": 400,
     "/phpmyadmin/index.php": 404,
-    "/server-status": 302,
-    "/api/": 302
+    "/server-status": 400,
+    "/api/": 400
   },
   "subdomains": {
     "source": "certspotter",
@@ -209,14 +223,22 @@ Total findings: **10** (High: 0, Medium: 0, Low: 2, Info: 8)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260706000000",
+      "not_after": "20261004235959"
     }
   },
   "http2": {
     "hsts_preloaded": true
   },
+  "x12": {
+    "status": 400,
+    "ptr": [
+      "edge-star-shv-01-tpe5.facebook.com."
+    ]
+  },
   "elapsed_s": 7.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

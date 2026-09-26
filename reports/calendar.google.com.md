@@ -7,12 +7,12 @@
 | Target | https://calendar.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | calendar.google.com |
-| Test date | 2026-09-26 17:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | CK5 | Cookie scoped to parent domain (.google.com) | CWE-200 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 19 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 20 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -153,6 +155,18 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
+### 19. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://calendar.google.com/ carries Cache-Control: private, max-age=7776000; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 20. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 64.233.189.100 carries PTR tl-in-f100.1e100.net. for calendar.google.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -160,19 +174,24 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "calendar.google.com",
   "dns": {
     "a": [
-      "142.250.196.206"
+      "64.233.189.100",
+      "64.233.189.102",
+      "64.233.189.113",
+      "64.233.189.139",
+      "64.233.189.101",
+      "64.233.189.138"
     ],
     "aaaa": [
-      "2404:6800:4008:c00::8a",
-      "2404:6800:4008:c00::65",
-      "2404:6800:4008:c00::64",
-      "2404:6800:4008:c00::8b"
+      "2404:6800:4008:c07::66",
+      "2404:6800:4008:c07::71",
+      "2404:6800:4008:c07::8b",
+      "2404:6800:4008:c07::8a"
     ],
     "cname": null,
     "mx": [
-      "alt1.gmr-smtp-in.l.google.com (pref 10)",
+      "alt2.gmr-smtp-in.l.google.com (pref 10)",
       "gmr-smtp-in.l.google.com (pref 5)",
-      "alt2.gmr-smtp-in.l.google.com (pref 10)"
+      "alt1.gmr-smtp-in.l.google.com (pref 10)"
     ],
     "ns": [],
     "spf": [
@@ -187,9 +206,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=*.google.com",
-    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
-    "notBefore": "Sep 10 19:21:53 2026 GMT",
-    "notAfter": "Dec  3 19:21:52 2026 GMT",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
+    "notBefore": "Sep 10 19:22:01 2026 GMT",
+    "notAfter": "Dec  3 19:22:00 2026 GMT",
     "san": [
       "*.google.com",
       "*.appengine.google.com",
@@ -267,7 +286,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "142.250.196.206",
+    "ip": "64.233.189.100",
     "open": []
   },
   "https": {
@@ -332,11 +351,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "tls_ver": "TLSv1.3",
     "subject": "None",
     "cert": {
-      "sig_oid": "1.2.840.113549.1.1.11",
+      "sig_oid": "1.2.840.10045.4.3.2",
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260910192201",
+      "not_after": "20261203192200"
     }
   },
   "http2": {
@@ -344,8 +365,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "/"
     ]
   },
-  "elapsed_s": 8.7,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302,
+    "ptr": [
+      "tl-in-f100.1e100.net."
+    ]
+  },
+  "elapsed_s": 8.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

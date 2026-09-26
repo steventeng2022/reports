@@ -7,8 +7,8 @@
 | Target | https://indiewire.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | indiewire.com |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -119,13 +119,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (tpyxx01oa76g9z.indiewire.com and 6m8b94yjomynxj.indiewire.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (ol5e1ugc1tg839.indiewire.com and otnv5t2nbpu5xo.indiewire.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=djqre622ebz2cxze8oo9bjau7k0hls; google-site-verification=c4llyUIufdlEQ0etHFqmwo_ZhjRlUzYk0Has-1oWkvI; _globalsign-domain-verification=-dLoamn_W8k1SJs3XuoC2JQZYSqmsrjSq07J0B0nq9
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=c4llyUIufdlEQ0etHFqmwo_ZhjRlUzYk0Has-1oWkvI; _globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0; google-site-verification=W1En6n_PulGSkVU4HgXmvfYxM74cY5j_LZPYJxqUdqY
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -161,26 +161,26 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "indiewire-com.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "ns-1227.awsdns-25.org.",
       "ns-772.awsdns-32.net.",
+      "ns-474.awsdns-59.com.",
       "ns-1920.awsdns-48.co.uk.",
-      "ns-474.awsdns-59.com."
+      "ns-1227.awsdns-25.org."
     ],
     "spf": [
-      "facebook-domain-verification=djqre622ebz2cxze8oo9bjau7k0hls",
       "google-site-verification=c4llyUIufdlEQ0etHFqmwo_ZhjRlUzYk0Has-1oWkvI",
+      "_globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0",
+      "fastly-domain-delegation-0921110196-212101-2020-02-06",
+      "google-site-verification=W1En6n_PulGSkVU4HgXmvfYxM74cY5j_LZPYJxqUdqY",
+      "MS=ms85960270",
       "v=spf1 include:spf.protection.outlook.com ~all",
       "_globalsign-domain-verification=-dLoamn_W8k1SJs3XuoC2JQZYSqmsrjSq07J0B0nq9",
-      "google-site-verification=W1En6n_PulGSkVU4HgXmvfYxM74cY5j_LZPYJxqUdqY",
-      "_globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0",
       "google-site-verification=8sD-MmpsXYb6gPK8rRJWUO72s2gvtr52gjvP5LGDfRA",
-      "atlassian-domain-verification=nprFKP7f9bTtDxCbcLk3c0Ag6DYYRzhq/pIp/XJkAvuuP9aQ2b6LA84i7QeoUxAt",
-      "MS=ms85960270",
-      "spf2.0/pra include:spf.protection.outlook.com ~all",
-      "fastly-domain-delegation-0921110196-212101-2020-02-06",
-      "_globalsign-domain-verification=wK5OaJLRBlfjH5kAcbmp8K56NCtstth4bjNiNCo2j2",
       "adobe-idp-site-verification=5f299ac5ccddedab8418f37aad62a1ff499e5979c3b247bd4229ca57071848e8",
-      "tollbit-domain-verification=2bf983cad01adc204c9f8842d71138ebce16e853d4d282afe13f7fea844cc7cd"
+      "tollbit-domain-verification=2bf983cad01adc204c9f8842d71138ebce16e853d4d282afe13f7fea844cc7cd",
+      "facebook-domain-verification=djqre622ebz2cxze8oo9bjau7k0hls",
+      "atlassian-domain-verification=nprFKP7f9bTtDxCbcLk3c0Ag6DYYRzhq/pIp/XJkAvuuP9aQ2b6LA84i7QeoUxAt",
+      "spf2.0/pra include:spf.protection.outlook.com ~all",
+      "_globalsign-domain-verification=wK5OaJLRBlfjH5kAcbmp8K56NCtstth4bjNiNCo2j2"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:q4BQvTOlLL@dmarc.inboxmonster.com;"
@@ -264,11 +264,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "facebook-domain-verification=djqre622ebz2cxze8oo9bjau7k0hls",
     "google-site-verification=c4llyUIufdlEQ0etHFqmwo_ZhjRlUzYk0Has-1oWkvI",
-    "_globalsign-domain-verification=-dLoamn_W8k1SJs3XuoC2JQZYSqmsrjSq07J0B0nq9",
+    "_globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0",
     "google-site-verification=W1En6n_PulGSkVU4HgXmvfYxM74cY5j_LZPYJxqUdqY",
-    "_globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0"
+    "_globalsign-domain-verification=-dLoamn_W8k1SJs3XuoC2JQZYSqmsrjSq07J0B0nq9",
+    "google-site-verification=8sD-MmpsXYb6gPK8rRJWUO72s2gvtr52gjvP5LGDfRA"
   ],
   "tls2": {
     "alpn": "",
@@ -279,7 +279,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260818144910",
+      "not_after": "20261116144909"
     }
   },
   "http2": {
@@ -301,8 +303,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "/"
     ]
   },
-  "elapsed_s": 21.1,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301
+  },
+  "elapsed_s": 19.7,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

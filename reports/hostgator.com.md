@@ -7,8 +7,8 @@
 | Target | https://hostgator.com/ |
 | Bug bounty program | Host Gator |
 | Listed scope domain | hostgator.com |
-| Test date | 2026-09-26 17:47 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -56,13 +56,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.144.208:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.43.48:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.144.208:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.43.48:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -173,7 +173,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 ### 21. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=XD3tFbXKRYV0fG-3zRGEzPC2irkiXg9Rz2eIKCG-0IQ; google-site-verification=WH8320OT9w-ZORb35j4X4VbeUNoMrUyhXoAzISUhEo0; knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=268NzFe_2w_P3-j4fg2PDTwC5tgY0m__CQR9hYG7hSA; google-site-verification=XD3tFbXKRYV0fG-3zRGEzPC2irkiXg9Rz2eIKCG-0IQ; google-site-verification=0vcyIt2ASVGA-Hnox9hZPXaaLIX5pYSm8dZd0_0HLyU
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 22. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -189,8 +189,8 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
   "domain": "hostgator.com",
   "dns": {
     "a": [
-      "172.64.144.208",
-      "104.18.43.48"
+      "104.18.43.48",
+      "172.64.144.208"
     ],
     "aaaa": [],
     "cname": null,
@@ -198,22 +198,22 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
       "hostgator-com.mail.eo.outlook.com (pref 0)"
     ],
     "ns": [
-      "erin.ns.cloudflare.com.",
-      "cody.ns.cloudflare.com."
+      "cody.ns.cloudflare.com.",
+      "erin.ns.cloudflare.com."
     ],
     "spf": [
+      "google-site-verification=268NzFe_2w_P3-j4fg2PDTwC5tgY0m__CQR9hYG7hSA",
       "google-site-verification=XD3tFbXKRYV0fG-3zRGEzPC2irkiXg9Rz2eIKCG-0IQ",
-      "google-site-verification=WH8320OT9w-ZORb35j4X4VbeUNoMrUyhXoAzISUhEo0",
-      "knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77",
       "MS=ms19427866",
+      "google-site-verification=0vcyIt2ASVGA-Hnox9hZPXaaLIX5pYSm8dZd0_0HLyU",
       "v=spf1 ip4:209.17.115.0/24 ip4:64.69.218.0/24 include:spf.constantcontact.com include:_spf.salesforce.com include:_spf2.hostgator.com include:spf.protection.outlook.com include:eig.spf.a.cloudfilter.net include:_spf.myorderbox.com include:spf.websitewelco",
       "me.com -all",
-      "google-site-verification=268NzFe_2w_P3-j4fg2PDTwC5tgY0m__CQR9hYG7hSA",
-      "google-site-verification=pj2LYTgRxkGunX03DSguHxBxwaBABFEUxEDsLgOdlys",
-      "google-site-verification=0vcyIt2ASVGA-Hnox9hZPXaaLIX5pYSm8dZd0_0HLyU",
       "google-site-verification=HUY22ADwgB0ij1JaYucTVtUI6dAvbNp5g4nQQ9tKHHc",
+      "google-site-verification=pj2LYTgRxkGunX03DSguHxBxwaBABFEUxEDsLgOdlys",
       "google-site-verification=yx1ED4Liv7PN2PvYnLuop_CVyyyxLz8lc5M2MRnSNWk",
-      "google-site-verification=oYqxGxAsuHwvRDo4FqADW6ToV1nf8ITUfcw728UUvuI"
+      "google-site-verification=oYqxGxAsuHwvRDo4FqADW6ToV1nf8ITUfcw728UUvuI",
+      "knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77",
+      "google-site-verification=WH8320OT9w-ZORb35j4X4VbeUNoMrUyhXoAzISUhEo0"
     ],
     "dmarc": [
       "v=DMARC1; p=none; pct=100; rua=mailto:re+kgjw4j9bykj@dmarc.postmarkapp.com; sp=none; aspf=r;"
@@ -243,7 +243,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
     }
   },
   "ports": {
-    "ip": "172.64.144.208",
+    "ip": "104.18.43.48",
     "open": [
       8080,
       8443
@@ -304,10 +304,10 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=XD3tFbXKRYV0fG-3zRGEzPC2irkiXg9Rz2eIKCG-0IQ",
-    "google-site-verification=WH8320OT9w-ZORb35j4X4VbeUNoMrUyhXoAzISUhEo0",
-    "knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77",
     "google-site-verification=268NzFe_2w_P3-j4fg2PDTwC5tgY0m__CQR9hYG7hSA",
+    "google-site-verification=XD3tFbXKRYV0fG-3zRGEzPC2irkiXg9Rz2eIKCG-0IQ",
+    "google-site-verification=0vcyIt2ASVGA-Hnox9hZPXaaLIX5pYSm8dZd0_0HLyU",
+    "google-site-verification=HUY22ADwgB0ij1JaYucTVtUI6dAvbNp5g4nQQ9tKHHc",
     "google-site-verification=pj2LYTgRxkGunX03DSguHxBxwaBABFEUxEDsLgOdlys"
   ],
   "tls2": {
@@ -319,11 +319,16 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260825164243",
+      "not_after": "20261123174238"
     }
   },
+  "x12": {
+    "status": 301
+  },
   "elapsed_s": 4.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

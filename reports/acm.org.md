@@ -7,8 +7,8 @@
 | Target | https://acm.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | acm.org |
-| Test date | 2026-09-26 17:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -107,7 +107,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=8gUY1AtsZ3BzLVSHLSv3wXIE8MpnWrGgVrmvVxM1MjE; duo_sso_verification=oFRYT7Y1MADnakU5K1wxwe47F9TsTRZ76IZL8bgH2J0NFoipvgi5tAE6kTm; abuseipdb-verification=D4c0J6WF
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=lqxyh1_UaHYvgAfZ3gvxIDJi3quBVO_5Lq_pDUOKdNw; duo_sso_verification=oFRYT7Y1MADnakU5K1wxwe47F9TsTRZ76IZL8bgH2J0NFoipvgi5tAE6kTm; abuseipdb-verification=D4c0J6WF
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -149,17 +149,17 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     ],
     "spf": [
       "3w6lthcz5h4qpgtd8n8szx1m474v73tz",
-      "_isyuzeobyu2bijfg78028dab2ac4f5r",
-      "google-site-verification=8gUY1AtsZ3BzLVSHLSv3wXIE8MpnWrGgVrmvVxM1MjE",
+      "google-site-verification=lqxyh1_UaHYvgAfZ3gvxIDJi3quBVO_5Lq_pDUOKdNw",
+      "brevo-code:e7393522d4f06661f44afbccb0cebfc6",
+      "MS=F1C3025E76F2E7036C9EAF6DBC2DF0C8D2D4AA87",
       "duo_sso_verification=oFRYT7Y1MADnakU5K1wxwe47F9TsTRZ76IZL8bgH2J0NFoipvgi5tAE6kTmlRfY8",
       "abuseipdb-verification=D4c0J6WF",
-      "v=spf1 include:_spf.acm_org._d.easydmarc.pro ~all",
-      "brevo-code:e7393522d4f06661f44afbccb0cebfc6",
-      "p0yygcm8ljrr9v47xkgrk4cjdvpctb6t",
+      "google-site-verification=8gUY1AtsZ3BzLVSHLSv3wXIE8MpnWrGgVrmvVxM1MjE",
       "_ead5vviqjla5mjijrh4zvhsujcx843n",
+      "_isyuzeobyu2bijfg78028dab2ac4f5r",
+      "p0yygcm8ljrr9v47xkgrk4cjdvpctb6t",
       "83zn0ndgz9jvwx563vp9qbyz38hqb7kl",
-      "google-site-verification=lqxyh1_UaHYvgAfZ3gvxIDJi3quBVO_5Lq_pDUOKdNw",
-      "MS=F1C3025E76F2E7036C9EAF6DBC2DF0C8D2D4AA87"
+      "v=spf1 include:_spf.acm_org._d.easydmarc.pro ~all"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;sp=quarantine;pct=100;rua=mailto:9adb8cf49b@rua.easydmarc.us;ruf=mailto:9adb8cf49b@ruf.easydmarc.us;fo=1;"
@@ -251,10 +251,10 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=8gUY1AtsZ3BzLVSHLSv3wXIE8MpnWrGgVrmvVxM1MjE",
+    "google-site-verification=lqxyh1_UaHYvgAfZ3gvxIDJi3quBVO_5Lq_pDUOKdNw",
     "duo_sso_verification=oFRYT7Y1MADnakU5K1wxwe47F9TsTRZ76IZL8bgH2J0NFoipvgi5tAE6kTm",
     "abuseipdb-verification=D4c0J6WF",
-    "google-site-verification=lqxyh1_UaHYvgAfZ3gvxIDJi3quBVO_5Lq_pDUOKdNw"
+    "google-site-verification=8gUY1AtsZ3BzLVSHLSv3wXIE8MpnWrGgVrmvVxM1MjE"
   ],
   "tls2": {
     "alpn": "",
@@ -265,7 +265,9 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260401000000",
+      "not_after": "20261016235959"
     }
   },
   "http2": {
@@ -287,8 +289,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "/amg.html"
     ]
   },
-  "elapsed_s": 7.8,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 403
+  },
+  "elapsed_s": 6.6,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

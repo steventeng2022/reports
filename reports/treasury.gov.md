@@ -7,8 +7,8 @@
 | Target | https://treasury.gov/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | treasury.gov |
-| Test date | 2026-09-26 17:54 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:00 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -109,7 +109,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: box-domain-verification=907e0bde6b92f9b565218a2fcba8a7adaa9501f4838624d4efe57f69; openai-domain-verification=dv-URa4cQaZUt7TuzEHuA4cT3QK; apple-domain-verification=Agf1IhJ01yW5m4ka
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=Agf1IhJ01yW5m4ka; box-domain-verification=907e0bde6b92f9b565218a2fcba8a7adaa9501f4838624d4efe57f69; openai-domain-verification=dv-URa4cQaZUt7TuzEHuA4cT3QK
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -142,16 +142,16 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "cwmailhub1in.treasury.gov (pref 10)"
     ],
     "ns": [
-      "tadeo.ns.cloudflare.com.",
-      "margot.ns.cloudflare.com."
+      "margot.ns.cloudflare.com.",
+      "tadeo.ns.cloudflare.com."
     ],
     "spf": [
-      "box-domain-verification=907e0bde6b92f9b565218a2fcba8a7adaa9501f4838624d4efe57f69031f9e0d",
-      "VRvAtqJ/zwPkVlZktq8MLIFnN/s7AgCvN4mqqqj1rX+IlRTOdWVyRhqiHZoDXnPt7rRshcAOZx5TsxFLIlY0gg==",
-      "openai-domain-verification=dv-URa4cQaZUt7TuzEHuA4cT3QK",
       "apple-domain-verification=Agf1IhJ01yW5m4ka",
+      "MS=ms62206556",
+      "VRvAtqJ/zwPkVlZktq8MLIFnN/s7AgCvN4mqqqj1rX+IlRTOdWVyRhqiHZoDXnPt7rRshcAOZx5TsxFLIlY0gg==",
+      "box-domain-verification=907e0bde6b92f9b565218a2fcba8a7adaa9501f4838624d4efe57f69031f9e0d",
       "v=spf1 redirect=_spfnew.treasury.gov",
-      "MS=ms62206556"
+      "openai-domain-verification=dv-URa4cQaZUt7TuzEHuA4cT3QK"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:us-treasury@rua.dmp.cisco.com,mailto:reports@dmarc.cyber.dhs.gov; ruf=mailto:us-treasury@ruf.dmp.cisco.com"
@@ -251,9 +251,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "apple-domain-verification=Agf1IhJ01yW5m4ka",
     "box-domain-verification=907e0bde6b92f9b565218a2fcba8a7adaa9501f4838624d4efe57f69",
-    "openai-domain-verification=dv-URa4cQaZUt7TuzEHuA4cT3QK",
-    "apple-domain-verification=Agf1IhJ01yW5m4ka"
+    "openai-domain-verification=dv-URa4cQaZUt7TuzEHuA4cT3QK"
   ],
   "tls2": {
     "alpn": "",
@@ -264,11 +264,16 @@ Total findings: **14** (High: 0, Medium: 0, Low: 4, Info: 10)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20251008000000",
+      "not_after": "20261108235959"
     }
   },
-  "elapsed_s": 90.4,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 302
+  },
+  "elapsed_s": 45.5,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

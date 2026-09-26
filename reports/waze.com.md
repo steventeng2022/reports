@@ -7,12 +7,12 @@
 | Target | https://waze.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | waze.com |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -118,13 +119,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (kfg9pkpzy37yik.waze.com and r4xpx7i0rv0yes.waze.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (txkhwdizlsj6jj.waze.com and xxgcmxd0gpegka.waze.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=nSaHA9lIP9L3gFJQEYxtSwHY88MBSrwRXlZ-vLztW04; google-site-verification=k0_7da8Nm3RA9ZFG-8Nj2895hmeUdDr3RuP1vQVNyOs; google-site-verification=A2cp78UVYzrRvmujIIRO1QGJ2qIduJDJEPaJSxy0RsI
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=A2cp78UVYzrRvmujIIRO1QGJ2qIduJDJEPaJSxy0RsI; google-site-verification=N2mW-L25o-v4q4LkryQS55pL_C8CnsIL8-FpZUZtKEg; google-site-verification=k0_7da8Nm3RA9ZFG-8Nj2895hmeUdDr3RuP1vQVNyOs
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -138,6 +139,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 37 disallow path(s), e.g. /discuss/, /discuss/, /discuss/, /discuss/, /discuss/
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 130.211.9.172 carries PTR 172.9.211.130.bc.googleusercontent.com. for waze.com.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
 
@@ -153,28 +160,28 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     ],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx2.googlemail.com (pref 40)",
+      "aspmx3.googlemail.com (pref 50)",
       "alt2.aspmx.l.google.com (pref 30)",
       "aspmx.l.google.com (pref 10)",
-      "aspmx3.googlemail.com (pref 50)"
+      "alt1.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
-      "ns-cloud-b3.googledomains.com.",
       "ns-cloud-b1.googledomains.com.",
       "ns-cloud-b4.googledomains.com.",
+      "ns-cloud-b3.googledomains.com.",
       "ns-cloud-b2.googledomains.com."
     ],
     "spf": [
-      "google-site-verification=nSaHA9lIP9L3gFJQEYxtSwHY88MBSrwRXlZ-vLztW04",
-      "16ra/0Xa4iKpOWPnK72tHaroVGQsuMznJmDEDmBusu1C6e/4+b4E3SeTLrx5fR986eGa7tZpf7eLhzEZcUwy/E5+xOYAmRhIXkWN1AukAurkqYFfWb0GpJBDnRvh8GPeG/S+P5wLQEe/LZMD1EN0gwjPELlE/j6JzrITIHejrJjdPDdJblqYibXrV8QqKc5LyK9I6dFjwWlRtuCC91hX21YxkRz+4QIDAQAB",
-      "google-site-verification=k0_7da8Nm3RA9ZFG-8Nj2895hmeUdDr3RuP1vQVNyOs",
-      "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCQdUTtXUOIXQ+FrspRD1S4uLnWT2EjlztTB9/3upH3HsuOArbtSJoWXFuFj7ehPG47hmvBSr0lRHIB3rpb79WfgbntQ1p4wVO9U4RYA+Cbq7M++7n2BSjvFFOkQ9IC8TWJYeOM6ECO1Namizw1EsiTzOSqHQ5D0zWZbyHKom1aWQIDAQAB",
-      "v=spf1 include:_spf.google.com ~all",
-      "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCYDCQ5ZlVEeUdMEopVa0bdjsTo+5JTdS+25aP+kPGoFNtzNG7No+64qoX9HuZvCe7sjmUncSCV2oEbdxgJvB/ODQ5cS3Px/qaqagn/ZXUBzgbtvHSEXV+ugH52us0i/i041qd0KHa6v/82Dg5XofyuDi+QgUoBa+hcw5JsqfKssQIDAQAB",
       "google-site-verification=A2cp78UVYzrRvmujIIRO1QGJ2qIduJDJEPaJSxy0RsI",
+      "16ra/0Xa4iKpOWPnK72tHaroVGQsuMznJmDEDmBusu1C6e/4+b4E3SeTLrx5fR986eGa7tZpf7eLhzEZcUwy/E5+xOYAmRhIXkWN1AukAurkqYFfWb0GpJBDnRvh8GPeG/S+P5wLQEe/LZMD1EN0gwjPELlE/j6JzrITIHejrJjdPDdJblqYibXrV8QqKc5LyK9I6dFjwWlRtuCC91hX21YxkRz+4QIDAQAB",
+      "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCQdUTtXUOIXQ+FrspRD1S4uLnWT2EjlztTB9/3upH3HsuOArbtSJoWXFuFj7ehPG47hmvBSr0lRHIB3rpb79WfgbntQ1p4wVO9U4RYA+Cbq7M++7n2BSjvFFOkQ9IC8TWJYeOM6ECO1Namizw1EsiTzOSqHQ5D0zWZbyHKom1aWQIDAQAB",
       "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAssPYphcnIMFiOS7ol1k6dJs14MLaA1cEiw8WOe8cNnLbvtcOtGBqhQmgvGGCapKX+B18HKCUTbnduTuOmKxzAThqoqMu2F22kSSWBf5q5mL5aM7XEc7w9wKG",
-      "google-site-verification=N2mW-L25o-v4q4LkryQS55pL_C8CnsIL8-FpZUZtKEg"
+      "google-site-verification=N2mW-L25o-v4q4LkryQS55pL_C8CnsIL8-FpZUZtKEg",
+      "v=spf1 include:_spf.google.com ~all",
+      "google-site-verification=k0_7da8Nm3RA9ZFG-8Nj2895hmeUdDr3RuP1vQVNyOs",
+      "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCYDCQ5ZlVEeUdMEopVa0bdjsTo+5JTdS+25aP+kPGoFNtzNG7No+64qoX9HuZvCe7sjmUncSCV2oEbdxgJvB/ODQ5cS3Px/qaqagn/ZXUBzgbtvHSEXV+ugH52us0i/i041qd0KHa6v/82Dg5XofyuDi+QgUoBa+hcw5JsqfKssQIDAQAB",
+      "google-site-verification=nSaHA9lIP9L3gFJQEYxtSwHY88MBSrwRXlZ-vLztW04"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:mailauth-reports@google.com"
@@ -262,10 +269,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=nSaHA9lIP9L3gFJQEYxtSwHY88MBSrwRXlZ-vLztW04",
-    "google-site-verification=k0_7da8Nm3RA9ZFG-8Nj2895hmeUdDr3RuP1vQVNyOs",
     "google-site-verification=A2cp78UVYzrRvmujIIRO1QGJ2qIduJDJEPaJSxy0RsI",
-    "google-site-verification=N2mW-L25o-v4q4LkryQS55pL_C8CnsIL8-FpZUZtKEg"
+    "google-site-verification=N2mW-L25o-v4q4LkryQS55pL_C8CnsIL8-FpZUZtKEg",
+    "google-site-verification=k0_7da8Nm3RA9ZFG-8Nj2895hmeUdDr3RuP1vQVNyOs",
+    "google-site-verification=nSaHA9lIP9L3gFJQEYxtSwHY88MBSrwRXlZ-vLztW04"
   ],
   "tls2": {
     "alpn": "",
@@ -276,7 +283,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "key_alg": "1.2.840.113549.1.1.1",
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260830195601",
+      "not_after": "20261128205155"
     }
   },
   "http2": {
@@ -299,8 +308,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "/discuss/auth/"
     ]
   },
-  "elapsed_s": 25.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 301,
+    "ptr": [
+      "172.9.211.130.bc.googleusercontent.com."
+    ]
+  },
+  "elapsed_s": 26.0,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

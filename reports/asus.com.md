@@ -7,8 +7,8 @@
 | Target | https://asus.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | asus.com |
-| Test date | 2026-09-26 17:39 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 18:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -66,7 +66,7 @@ Total findings: **8** (High: 0, Medium: 1, Low: 1, Info: 6)
 ### 7. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=jxVtO6D77cvTtzPiqZUe8DiTmI1mqdbU0jqM66bYHskWVDfx5k; apple-domain-verification=YVSgEqQtJRjmdVBu; google-site-verification=71RHI7e5zrzhwOgNIz8aT-pbh6LGw1zQ7VWTAnhlpF8
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=71RHI7e5zrzhwOgNIz8aT-pbh6LGw1zQ7VWTAnhlpF8; google-site-verification=iA3Ko0FQtp-yaka9tibkFlF98ZMkxrnu5ofKd9QQ-QE; google-site-verification=eUHxhIYbA4kM7heyt2W2onNhJHLTXuDgo4VE3snEBKw
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 8. [INFO] 118 hostnames found via Certificate Transparency (certspotter) (`CT1`)
@@ -88,8 +88,8 @@ Total findings: **8** (High: 0, Medium: 1, Low: 1, Info: 6)
     "cname": null,
     "mx": [
       "mg2.asus.com (pref 100)",
-      "mg1.asus.com (pref 20)",
-      "mg.asus.com (pref 10)"
+      "mg.asus.com (pref 10)",
+      "mg1.asus.com (pref 20)"
     ],
     "ns": [
       "ns-1875.awsdns-42.co.uk.",
@@ -98,32 +98,32 @@ Total findings: **8** (High: 0, Medium: 1, Low: 1, Info: 6)
       "ns-1039.awsdns-01.org."
     ],
     "spf": [
-      "atlassian-domain-verification=jxVtO6D77cvTtzPiqZUe8DiTmI1mqdbU0jqM66bYHskWVDfx5kiqtfOWcKBZMAVC",
-      "hT5pYl5FKR/fwLMKrJ1KQPnZrNC8YzgJ7REPX6Wux1cRehEIzwrOuyB9ASXckqMz+rHto/UaM/44UfPgbQFjYg==",
-      "apple-domain-verification=YVSgEqQtJRjmdVBu",
-      "zzldvfj08yfss0ydft85bbysmy1cj96x.",
-      "v=spf1 ip4:103.10.4.0/22 ip4:213.61.92.115 ip4:218.211.38.242 ip4:118.163.110.210 ip4:213.61.152.30 include:spf.protection.outlook.com -all",
       "google-site-verification=71RHI7e5zrzhwOgNIz8aT-pbh6LGw1zQ7VWTAnhlpF8",
-      "google-site-verification=eUHxhIYbA4kM7heyt2W2onNhJHLTXuDgo4VE3snEBKw",
-      "5YA7LJMOVXX399OL065GX65G87UKJ20FFDBUVX2M",
-      "bv-domain-verification=e134f5546cb5c93ee5ffb1f47c8015873876076d9c43dda13d85dfc6341f65ca",
-      "mu56Kq__Cg9v_aczc5degR_4sMXtsDa2AeU3-oEsihw",
-      "atlassian-domain-verification=2Z9J5op7FAXNJxHd0AExZaq7IBe8R8DFbq6Lh6Qx/fhUeEWmSeGtuSYud7tFYjGn",
-      "docusign=f0d1ec0b-94f3-4abf-bf6f-e5c894776e57",
-      "adobe-idp-site-verification=382f5b6399951cb3de1a5d1dbd06bb8eb8d701f88c4ea5db38aa69347dd9a13f",
-      "facebook-domain-verification=tkhj31qarb9901xcperg0w0yfcdazh",
       "pardot922413=75629e802092cb0ac07329098a29b2cec1b3d86f4470d27f5643addd5bc78707",
-      "1dbc8bc7963d4b0e90bbb0e474e38e2e",
-      "google-site-verification=44buYvNtZHvSRVcj2dOJGZMtmPAaLOa9zPSVMMVwbaY",
-      "google-site-verification=va5g5RuEWw-pwEJ7ssCrnyBAggf7yCLxugRggQY8Udc",
-      "7894A73F0CFEDD51A6EA5C7E4CCD13A3965623132C7519E917382CF0131AA3F2",
-      "docusign=9c43421e-314b-49f7-82ae-fe698bce40bd",
-      "google-site-verification=Rs_zuu4Gqxki8VVX5xNs63-tIOcut0qvdvYvW2KLY38",
+      "v=spf1 ip4:103.10.4.0/22 ip4:213.61.92.115 ip4:218.211.38.242 ip4:118.163.110.210 ip4:213.61.152.30 include:spf.protection.outlook.com -all",
+      "hT5pYl5FKR/fwLMKrJ1KQPnZrNC8YzgJ7REPX6Wux1cRehEIzwrOuyB9ASXckqMz+rHto/UaM/44UfPgbQFjYg==",
+      "docusign=f0d1ec0b-94f3-4abf-bf6f-e5c894776e57",
       "google-site-verification=iA3Ko0FQtp-yaka9tibkFlF98ZMkxrnu5ofKd9QQ-QE",
-      "wiz-domain-verification=6e11efe846bf3a2f81870077d571d06c8650aff084bd960c34cfc32434dac695",
-      "trend-micro-v1-domain-verification.e5d263b0eb2014dbafc1625a7865e267=1ea4ccc7-05b5-476d-aff9-5272fc7c5d2e",
+      "google-site-verification=eUHxhIYbA4kM7heyt2W2onNhJHLTXuDgo4VE3snEBKw",
+      "atlassian-domain-verification=2Z9J5op7FAXNJxHd0AExZaq7IBe8R8DFbq6Lh6Qx/fhUeEWmSeGtuSYud7tFYjGn",
+      "google-site-verification=va5g5RuEWw-pwEJ7ssCrnyBAggf7yCLxugRggQY8Udc",
       "google-site-verification=ZAxDQWYWbQka8_PwpGcJnv38NFkB1kp4ZeamtqNEjLw",
-      "MS=ms94547556"
+      "facebook-domain-verification=tkhj31qarb9901xcperg0w0yfcdazh",
+      "1dbc8bc7963d4b0e90bbb0e474e38e2e",
+      "MS=ms94547556",
+      "mu56Kq__Cg9v_aczc5degR_4sMXtsDa2AeU3-oEsihw",
+      "7894A73F0CFEDD51A6EA5C7E4CCD13A3965623132C7519E917382CF0131AA3F2",
+      "apple-domain-verification=YVSgEqQtJRjmdVBu",
+      "google-site-verification=Rs_zuu4Gqxki8VVX5xNs63-tIOcut0qvdvYvW2KLY38",
+      "docusign=9c43421e-314b-49f7-82ae-fe698bce40bd",
+      "trend-micro-v1-domain-verification.e5d263b0eb2014dbafc1625a7865e267=1ea4ccc7-05b5-476d-aff9-5272fc7c5d2e",
+      "atlassian-domain-verification=jxVtO6D77cvTtzPiqZUe8DiTmI1mqdbU0jqM66bYHskWVDfx5kiqtfOWcKBZMAVC",
+      "zzldvfj08yfss0ydft85bbysmy1cj96x.",
+      "google-site-verification=44buYvNtZHvSRVcj2dOJGZMtmPAaLOa9zPSVMMVwbaY",
+      "wiz-domain-verification=6e11efe846bf3a2f81870077d571d06c8650aff084bd960c34cfc32434dac695",
+      "bv-domain-verification=e134f5546cb5c93ee5ffb1f47c8015873876076d9c43dda13d85dfc6341f65ca",
+      "adobe-idp-site-verification=382f5b6399951cb3de1a5d1dbd06bb8eb8d701f88c4ea5db38aa69347dd9a13f",
+      "5YA7LJMOVXX399OL065GX65G87UKJ20FFDBUVX2M"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; sp=quarantine"
@@ -199,11 +199,11 @@ Total findings: **8** (High: 0, Medium: 1, Low: 1, Info: 6)
     ]
   },
   "apex_txt": [
-    "atlassian-domain-verification=jxVtO6D77cvTtzPiqZUe8DiTmI1mqdbU0jqM66bYHskWVDfx5k",
-    "apple-domain-verification=YVSgEqQtJRjmdVBu",
     "google-site-verification=71RHI7e5zrzhwOgNIz8aT-pbh6LGw1zQ7VWTAnhlpF8",
+    "google-site-verification=iA3Ko0FQtp-yaka9tibkFlF98ZMkxrnu5ofKd9QQ-QE",
     "google-site-verification=eUHxhIYbA4kM7heyt2W2onNhJHLTXuDgo4VE3snEBKw",
-    "bv-domain-verification=e134f5546cb5c93ee5ffb1f47c8015873876076d9c43dda13d85dfc63"
+    "atlassian-domain-verification=2Z9J5op7FAXNJxHd0AExZaq7IBe8R8DFbq6Lh6Qx/fhUeEWmSe",
+    "google-site-verification=va5g5RuEWw-pwEJ7ssCrnyBAggf7yCLxugRggQY8Udc"
   ],
   "tls2": {
     "error": "ConnectionResetError(10054, '遠端主機已強制關閉一個現存的連線。', None, 10054, None)"
@@ -211,8 +211,11 @@ Total findings: **8** (High: 0, Medium: 1, Low: 1, Info: 6)
   "http2": {
     "error": "root GET failed"
   },
-  "elapsed_s": 34.2,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "error": "ConnectionError(ProtocolError('Connection aborted.', ConnectionResetError(10054,"
+  },
+  "elapsed_s": 38.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 

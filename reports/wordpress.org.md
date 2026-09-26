@@ -7,12 +7,12 @@
 | Target | https://wordpress.org/ |
 | Bug bounty program | WordPress |
 | Listed scope domain | wordpress.org |
-| Test date | 2026-09-26 17:55 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, HSTS preload-list membership). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-26 19:01 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 7, Info: 12)
+Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,8 +33,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 7, Info: 12)
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 18 | info | CT1 | 10 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 19 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 19 | info | CT1 | 10 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 20 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -120,13 +121,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 7, Info: 12)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (y303v2bd4eqqmi.wordpress.org and mtv6dhboisu92s.wordpress.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (bbbcj5zzttjcp6.wordpress.org and jk1ey38h3l1twl.wordpress.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=t8FjG1vzC4OFZJ8qL4SkR8xxtLyKldXKbswyeemQS5w; google-site-verification=UL0sGJ1dZbCT4J7pGrLW3hqM_I1LJ8pUi2WBEI_98kI
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=UL0sGJ1dZbCT4J7pGrLW3hqM_I1LJ8pUi2WBEI_98kI; google-site-verification=t8FjG1vzC4OFZJ8qL4SkR8xxtLyKldXKbswyeemQS5w
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -147,13 +148,19 @@ Total findings: **19** (High: 0, Medium: 0, Low: 7, Info: 12)
 - **Detail:** robots.txt lists 4 disallow path(s), e.g. /wp-admin/, /search, /?s=, /plugins/search/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 18. [INFO] 10 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 66.6.42.252 carries PTR wordpress.org. for wordpress.org.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 19. [INFO] 10 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: git.wordpress.org, status.wordpress.org, wiki.wordpress.org
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 19. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 20. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: git.wordpress.org; content may still be served via virtual-host fallback.
@@ -173,19 +180,19 @@ Total findings: **19** (High: 0, Medium: 0, Low: 7, Info: 12)
     ],
     "cname": null,
     "mx": [
-      "smtp1-dca.wordpress.org (pref 10)",
-      "smtp2-dca.wordpress.org (pref 10)"
+      "smtp2-dca.wordpress.org (pref 10)",
+      "smtp1-dca.wordpress.org (pref 10)"
     ],
     "ns": [
-      "ns3.wordpress.org.",
       "ns2.wordpress.org.",
+      "ns3.wordpress.org.",
       "ns4.wordpress.org.",
       "ns1.wordpress.org."
     ],
     "spf": [
+      "google-site-verification=UL0sGJ1dZbCT4J7pGrLW3hqM_I1LJ8pUi2WBEI_98kI",
       "v=spf1 ip4:66.6.42.0/24 ip4:66.155.40.0/24 include:helpscoutemail.com -all",
-      "google-site-verification=t8FjG1vzC4OFZJ8qL4SkR8xxtLyKldXKbswyeemQS5w",
-      "google-site-verification=UL0sGJ1dZbCT4J7pGrLW3hqM_I1LJ8pUi2WBEI_98kI"
+      "google-site-verification=t8FjG1vzC4OFZJ8qL4SkR8xxtLyKldXKbswyeemQS5w"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:0bqp2jnw@ag.dmarcian.com; ruf=mailto:0bqp2jnw@fr.dmarcian.com;"
@@ -292,8 +299,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 7, Info: 12)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=t8FjG1vzC4OFZJ8qL4SkR8xxtLyKldXKbswyeemQS5w",
-    "google-site-verification=UL0sGJ1dZbCT4J7pGrLW3hqM_I1LJ8pUi2WBEI_98kI"
+    "google-site-verification=UL0sGJ1dZbCT4J7pGrLW3hqM_I1LJ8pUi2WBEI_98kI",
+    "google-site-verification=t8FjG1vzC4OFZJ8qL4SkR8xxtLyKldXKbswyeemQS5w"
   ],
   "tls2": {
     "alpn": "",
@@ -304,7 +311,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 7, Info: 12)
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null
+      "aia_ocsp": null,
+      "not_before": "20260923194358",
+      "not_after": "20261222194357"
     }
   },
   "http2": {
@@ -315,8 +324,14 @@ Total findings: **19** (High: 0, Medium: 0, Low: 7, Info: 12)
       "/plugins/search/"
     ]
   },
-  "elapsed_s": 40.9,
-  "rechecked": "2026-09-26 17:38 UTC"
+  "x12": {
+    "status": 200,
+    "ptr": [
+      "wordpress.org."
+    ]
+  },
+  "elapsed_s": 31.2,
+  "rechecked": "2026-09-26 18:44 UTC"
 }
 ```
 
