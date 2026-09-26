@@ -8,6 +8,7 @@ Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---:|---:|---:|---:|---:|---|
+| skillshare.com | 3 | 0 | 0 | 3 | 0 | top-websites gist (no active program match) |
 | 1.bp.blogspot.com | 10 | 0 | 0 | 3 | 7 | top-websites gist (no active program match) |
 | 1.usa.gov | 9 | 0 | 0 | 1 | 8 | [TTS Bug Bounty](https://hackerone.com/tts) |
 | 1drv.ms | 14 | 0 | 0 | 3 | 11 | top-websites gist (no active program match) |
