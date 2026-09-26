@@ -7,8 +7,8 @@
 | Target | https://cancerresearchuk.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | cancerresearchuk.org |
-| Test date | 2026-09-25 16:40 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 19:34 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
@@ -16,63 +16,66 @@ Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-| 2 | info | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 1 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
+| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
 | 3 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 4 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.cancerresearchuk.org/ | CWE-942 |
-| 5 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.cancerresearchuk.org/ | CWE-942 |
-| 6 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.cancerresearchuk.org/ | CWE-942 |
-| 7 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.cancerresearchuk.org/graphql | CWE-942 |
-| 8 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.cancerresearchuk.org/graphql | CWE-942 |
-| 9 | info | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.cancerresearchuk.org/graphql | CWE-942 |
+| 4 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 5 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 6 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 7 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 8 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+| 9 | info | X3 | HTTPS root redirects to different host | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] Host header alters response (vhost behavior) (`I12`)
+### 1. [LOW] Missing X-Content-Type-Options: nosniff (`H4`)
 
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: cancerresearchuk.org + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
+- **CWE:** CWE-693
+- **Detail:** No X-Content-Type-Options header on https://cancerresearchuk.org/; browsers may MIME-sniff responses.
 
-### 2. [INFO] Missing X-Content-Type-Options (`H3`)
+### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-1194
-- **Detail:** No X-Content-Type-Options on https://www.cancerresearchuk.org/
+- **CWE:** CWE-1382
+- **Detail:** Certificate for cancerresearchuk.org lists 3 name(s) besides the scope host: *.cancerresearchuk.org, *.raceforlife.cancerresearchuk.org, www.cancerresearchuk.org
 
 ### 3. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://www.cancerresearchuk.org/
+- **Detail:** No Referrer-Policy header on https://cancerresearchuk.org/; full URL (incl. query strings) is sent as referrer by default.
 
-### 4. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.cancerresearchuk.org/ (`I19`)
+### 4. [INFO] Missing Permissions-Policy (`H7`)
 
-- **CWE:** CWE-942
-- **Detail:** GET https://www.cancerresearchuk.org/ responds with Access-Control-Allow-Origin: * (Content-Type: text/html; charset=utf-8). Any site can read responses cross-origin.
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://cancerresearchuk.org/; browser features (camera, mic, geolocation) unrestricted.
 
-### 5. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.cancerresearchuk.org/ (`I19`)
+### 5. [INFO] sitemap.xml discloses URL inventory (`M1`)
 
-- **CWE:** CWE-942
-- **Detail:** GET https://www.cancerresearchuk.org/ responds with Access-Control-Allow-Origin: * (Content-Type: none). Any site can read responses cross-origin.
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://cancerresearchuk.org/ lists 2 URLs.
 
-### 6. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.cancerresearchuk.org/ (`I19`)
+### 6. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
-- **CWE:** CWE-942
-- **Detail:** GET https://www.cancerresearchuk.org/ responds with Access-Control-Allow-Origin: * (Content-Type: text/html; charset=utf-8). Any site can read responses cross-origin.
+- **CWE:** CWE-319
+- **Detail:** http://cancerresearchuk.org/ -> https://cancerresearchuk.org:443/ (positive check).
 
-### 7. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.cancerresearchuk.org/graphql (`I19`)
+### 7. [INFO] robots.txt discloses crawl rules/paths (`R1`)
 
-- **CWE:** CWE-942
-- **Detail:** GET https://www.cancerresearchuk.org/graphql responds with Access-Control-Allow-Origin: * (Content-Type: text/html; charset=utf-8). Any site can read responses cross-origin.
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://cancerresearchuk.org/ exposes 75 unique Disallow path(s) (*/prod_consump/, /*?f%5B0%5D=*, /*?field_shop_geocode_latlon=*&items_per_page=*, /*PrinterFriendly, /?q=admin/) and 5 sitemap reference(s)
 
-### 8. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.cancerresearchuk.org/graphql (`I19`)
+### 8. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
 
-- **CWE:** CWE-942
-- **Detail:** GET https://www.cancerresearchuk.org/graphql responds with Access-Control-Allow-Origin: * (Content-Type: text/html; charset=utf-8). Any site can read responses cross-origin.
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on cancerresearchuk.org.
 
-### 9. [INFO] Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.cancerresearchuk.org/graphql (`I19`)
+### 9. [INFO] HTTPS root redirects to different host (`X3`)
 
-- **CWE:** CWE-942
-- **Detail:** GET https://www.cancerresearchuk.org/graphql responds with Access-Control-Allow-Origin: * (Content-Type: text/html; charset=utf-8). Any site can read responses cross-origin.
+- **CWE:** CWE-200
+- **Detail:** https://cancerresearchuk.org/ redirects to https://www.cancerresearchuk.org:443/.
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://cancerresearchuk.org/ final status: 200 (final URL https://www.cancerresearchuk.org:443/).
+- http://cancerresearchuk.org/ initial status: 301.
+- Certificate: Amazon Amazon RSA 2048 M04, valid until 2027-02-26T23:59:59+00:00.

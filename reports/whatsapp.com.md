@@ -7,7 +7,7 @@
 | Target | https://whatsapp.com/ |
 | Bug bounty program | [Facebook](https://www.facebook.com/whitehat) |
 | Listed scope domain | whatsapp.com |
-| Test date | 2026-09-25 15:44 UTC |
+| Test date | 2026-09-25 19:34 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -29,7 +29,7 @@ Total findings: **7** (High: 0, Medium: 0, Low: 1, Info: 6)
 ### 1. [LOW] TLS certificate expiring within 30 days (`T3`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires 2026-10-02T23:59:59+00:00 (7 days left) for whatsapp.com.
+- **Detail:** Certificate expires 2026-10-03T23:59:59+00:00 (8 days left) for whatsapp.com.
 
 ### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
@@ -63,7 +63,7 @@ Total findings: **7** (High: 0, Medium: 0, Low: 1, Info: 6)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://whatsapp.com/ final status: 400 (final URL https://www.whatsapp.com/).
 - http://whatsapp.com/ initial status: 301.
-- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-02T23:59:59+00:00.
+- Certificate: DigiCert Inc DigiCert Global G2 TLS RSA SHA256 2020 CA1, valid until 2026-10-03T23:59:59+00:00.

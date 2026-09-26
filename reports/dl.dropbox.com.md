@@ -7,7 +7,7 @@
 | Target | https://dl.dropbox.com/ |
 | Bug bounty program | [DropBox](https://bugcrowd.com/dropbox) |
 | Listed scope domain | dl.dropbox.com |
-| Test date | 2026-09-25 15:44 UTC |
+| Test date | 2026-09-25 19:34 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -49,22 +49,22 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 ### 4. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
 - **CWE:** CWE-1382
-- **Detail:** Certificate for dl.dropbox.com lists 30 name(s) besides the scope host: *.app.dl-au.dropboxusercontent.com, *.app.dl-eu.dropboxusercontent.com, *.app.dl-jp.dropboxusercontent.com, *.app.dl-uk.dropboxusercontent.com, *.app.dl.dropboxusercontent.com, *.dl-au.dropboxusercontent.com, *.dl-eu.dropboxusercontent.com, *.dl-jp.dropboxusercontent.com... (5 no longer resolve)
+- **Detail:** Certificate for dl.dropbox.com lists 34 name(s) besides the scope host: *.dl-au.app.dropboxusercontent.com, *.dl-au.dropboxusercontent.com, *.dl-eu.app.dropboxusercontent.com, *.dl-eu.dropboxusercontent.com, *.dl-jp.app.dropboxusercontent.com, *.dl-jp.dropboxusercontent.com, *.dl-uk.app.dropboxusercontent.com, *.dl-uk.dropboxusercontent.com... (4 no longer resolve)
 
 ### 5. [INFO] Possible dangling subdomain (`D2`)
 
 - **CWE:** CWE-1382
-- **Detail:** Certificate lists `app.dl.dropbox.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+- **Detail:** Certificate lists `dl-au.dropboxusercontent.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
 ### 6. [INFO] Possible dangling subdomain (`D2`)
 
 - **CWE:** CWE-1382
-- **Detail:** Certificate lists `dl-au.dropboxusercontent.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+- **Detail:** Certificate lists `dl-eu.dropboxusercontent.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
 ### 7. [INFO] Possible dangling subdomain (`D2`)
 
 - **CWE:** CWE-1382
-- **Detail:** Certificate lists `dl-eu.dropboxusercontent.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
+- **Detail:** Certificate lists `dl-jp.dropboxusercontent.com` but it no longer resolves in DNS; stale DNS/CNAME may point at a taken-over service.
 
 ### 8. [INFO] Missing Referrer-Policy (`H5`)
 
@@ -93,7 +93,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://dl.dropbox.com/ final status: 404 (final URL https://dl.dropbox.com/).
 - http://dl.dropbox.com/ initial status: 301.
 - Certificate: DigiCert Inc DigiCert Global G3 TLS ECC SHA384 2020 CA1, valid until 2027-03-10T23:59:59+00:00.

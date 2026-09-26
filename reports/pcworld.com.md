@@ -7,7 +7,7 @@
 | Target | https://pcworld.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | pcworld.com |
-| Test date | 2026-09-25 15:44 UTC |
+| Test date | 2026-09-25 19:34 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -22,7 +22,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 | 4 | low | H4 | Missing X-Content-Type-Options: nosniff | CWE-693 |
 | 5 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
 | 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 7 | info | N3 | Plain HTTP returns non-redirect status | CWE-319 |
+| 7 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
 | 8 | info | R1 | robots.txt protected | CWE-200 |
 | 9 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 | 10 | info | X2 | HTTPS homepage returned HTTP 403 | CWE-200 |
@@ -59,10 +59,10 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 - **CWE:** CWE-200
 - **Detail:** No Permissions-Policy header on https://pcworld.com/; browser features (camera, mic, geolocation) unrestricted.
 
-### 7. [INFO] Plain HTTP returns non-redirect status (`N3`)
+### 7. [INFO] HTTP correctly redirects to HTTPS (`N2`)
 
 - **CWE:** CWE-319
-- **Detail:** http://pcworld.com/ returns 403 (no redirect to HTTPS).
+- **Detail:** http://pcworld.com/ -> https://pcworld.com/ (positive check).
 
 ### 8. [INFO] robots.txt protected (`R1`)
 
@@ -81,7 +81,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://pcworld.com/ final status: 403 (final URL https://pcworld.com/).
-- http://pcworld.com/ initial status: 403.
+- http://pcworld.com/ initial status: 301.
 - Certificate: Let's Encrypt YE1, valid until 2026-12-11T15:17:26+00:00.

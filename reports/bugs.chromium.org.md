@@ -7,7 +7,7 @@
 | Target | https://bugs.chromium.org/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | bugs.chromium.org |
-| Test date | 2026-09-25 15:44 UTC |
+| Test date | 2026-09-25 19:34 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -75,7 +75,7 @@ Total findings: **9** (High: 0, Medium: 0, Low: 4, Info: 5)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://bugs.chromium.org/ final status: 404 (final URL https://bugs.chromium.org/).
 - http://bugs.chromium.org/ initial status: 302.
 - Certificate: Google Trust Services WR3, valid until 2026-12-04T21:41:12+00:00.

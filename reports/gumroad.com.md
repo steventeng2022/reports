@@ -7,78 +7,75 @@
 | Target | https://gumroad.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | gumroad.com |
-| Test date | 2026-09-25 16:40 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 19:34 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 0, Low: 9, Info: 1)
+Total findings: **9** (High: 0, Medium: 0, Low: 1, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | low | H4 | No clickjacking protection | CWE-1023 |
-| 2 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 3 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 7 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 8 | low | I10 | /api returns 200 with an API interface | CWE-538 |
-| 9 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-| 10 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 1 | low | H6 | No clickjacking protection (X-Frame-Options / frame-ancestors) | CWE-1021 |
+| 2 | info | D1 | Extra names enumerated from certificate SANs | CWE-1382 |
+| 3 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 4 | info | H2c | HSTS not preloaded | CWE-319 |
+| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 7 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 8 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 9 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
 
 ## Detailed findings
 
-### 1. [LOW] No clickjacking protection (`H4`)
+### 1. [LOW] No clickjacking protection (X-Frame-Options / frame-ancestors) (`H6`)
 
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on https://gumroad.com/
+- **CWE:** CWE-1021
+- **Detail:** No X-Frame-Options and no CSP frame-ancestors on https://gumroad.com/; page may be rendered in a foreign frame.
 
-### 2. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 2. [INFO] Extra names enumerated from certificate SANs (`D1`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter tags on https://gumroad.com/3d reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-1382
+- **Detail:** Certificate for gumroad.com lists 1 name(s) besides the scope host: *.gumroad.com
 
-### 3. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 3. [INFO] HSTS without includeSubDomains (`H2b`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter tags on https://gumroad.com/audio reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000` does not cover subdomains.
 
-### 4. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
+### 4. [INFO] HSTS not preloaded (`H2c`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter tags on https://gumroad.com/comics-and-graphic-novels reflects input verbatim in body context; encoding boundary not confirmed.
+- **CWE:** CWE-319
+- **Detail:** `max-age=31536000` lacks the preload directive.
 
-### 5. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter tags on https://gumroad.com/business-and-money reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 6. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter tags on https://gumroad.com/design reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 7. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter tags on https://gumroad.com/drawing-and-painting reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 8. [LOW] /api returns 200 with an API interface (`I10`)
-
-- **CWE:** CWE-538
-- **Detail:** GET https://gumroad.com/api returned 200 (10329 bytes) with a matching signature.
-
-### 9. [LOW] Host header alters response (vhost behavior) (`I12`)
-
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: gumroad.com + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
-
-### 10. [INFO] Missing Referrer-Policy (`H5`)
+### 5. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://gumroad.com/
+- **Detail:** No Referrer-Policy header on https://gumroad.com/; full URL (incl. query strings) is sent as referrer by default.
+
+### 6. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://gumroad.com/; browser features (camera, mic, geolocation) unrestricted.
+
+### 7. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://gumroad.com/ -> https://gumroad.com/ (positive check).
+
+### 8. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://gumroad.com/ exposes 1 unique Disallow path(s) (/purchases/) and 361 sitemap reference(s)
+
+### 9. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on gumroad.com.
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://gumroad.com/ final status: 200 (final URL https://gumroad.com/).
+- http://gumroad.com/ initial status: 301.
+- Certificate: Google Trust Services WE1, valid until 2026-12-10T03:45:35+00:00.

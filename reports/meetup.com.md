@@ -7,12 +7,94 @@
 | Target | https://meetup.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | meetup.com |
-| Test date | 2026-09-25 16:40 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-25 19:34 UTC |
+| Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 1, Low: 7, Info: 1)
+Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
+
+| # | Severity | ID | Finding | CWE |
+|---|---|---|---|---|
+| 1 | low | C1 | Cookies set without HttpOnly | CWE-1004 |
+| 2 | low | C3 | Cookies set without SameSite Lax/Strict | CWE-1004 |
+| 3 | info | H2 | Short HSTS max-age | CWE-319 |
+| 4 | info | H2b | HSTS without includeSubDomains | CWE-319 |
+| 5 | info | H2c | HSTS not preloaded | CWE-319 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | M1 | sitemap.xml discloses URL inventory | CWE-200 |
+| 9 | info | N2 | HTTP correctly redirects to HTTPS | CWE-319 |
+| 10 | info | R1 | robots.txt discloses crawl rules/paths | CWE-200 |
+| 11 | info | S1 | No security.txt (no public vulnerability disclosure policy) | CWE-200 |
+
+## Detailed findings
+
+### 1. [LOW] Cookies set without HttpOnly (`C1`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://meetup.com/ without HttpOnly: MEETUP_BROWSER_ID, SIFT_SESSION_ID. Readable by client-side script.
+
+### 2. [LOW] Cookies set without SameSite Lax/Strict (`C3`)
+
+- **CWE:** CWE-1004
+- **Detail:** Set on https://meetup.com/ without SameSite=Lax/Strict: MEETUP_BROWSER_ID. Cross-site request cookies.
+
+### 3. [INFO] Short HSTS max-age (`H2`)
+
+- **CWE:** CWE-319
+- **Detail:** HSTS max-age=7776000 (< 1 year): `max-age=7776000`.
+
+### 4. [INFO] HSTS without includeSubDomains (`H2b`)
+
+- **CWE:** CWE-319
+- **Detail:** `max-age=7776000` does not cover subdomains.
+
+### 5. [INFO] HSTS not preloaded (`H2c`)
+
+- **CWE:** CWE-319
+- **Detail:** `max-age=7776000` lacks the preload directive.
+
+### 6. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header on https://meetup.com/; full URL (incl. query strings) is sent as referrer by default.
+
+### 7. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header on https://meetup.com/; browser features (camera, mic, geolocation) unrestricted.
+
+### 8. [INFO] sitemap.xml discloses URL inventory (`M1`)
+
+- **CWE:** CWE-200
+- **Detail:** sitemap.xml on https://meetup.com/ lists 0 URLs.
+
+### 9. [INFO] HTTP correctly redirects to HTTPS (`N2`)
+
+- **CWE:** CWE-319
+- **Detail:** http://meetup.com/ -> https://meetup.com/ (positive check).
+
+### 10. [INFO] robots.txt discloses crawl rules/paths (`R1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt on https://meetup.com/ exposes 115 unique Disallow path(s) (*/calendar/*atom*, */calendar/*rss*, */calendar/*xml*, */events/atom/*, */events/rss/*) and 14 sitemap reference(s)
+
+### 11. [INFO] No security.txt (no public vulnerability disclosure policy) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /.well-known/security.txt returned 404 on meetup.com.
+
+## Reproduction notes
+
+- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- https://meetup.com/ final status: 200 (final URL https://www.meetup.com/).
+- http://meetup.com/ initial status: 301.
+- Certificate: GlobalSign nv-sa GlobalSign Atlas R3 DV TLS CA 2025 Q4, valid until 2027-01-10T17:39:11+00:00.
+
+## Active agent cross-check (wave 10 aggressive scan on main - meetup.com)
+
+Total findings: **9** - latest aggressive-method scan (main branch). Full detailed findings remain in the main-branch version of this file; passive re-audit above is the non-injection view.
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,54 +107,3 @@ Total findings: **9** (High: 0, Medium: 1, Low: 7, Info: 1)
 | 7 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 8 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
 | 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
-
-## Detailed findings
-
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
-
-- **CWE:** CWE-538
-- **Detail:** robots.txt disallows /files/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
-
-### 2. [LOW] Cookies without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** MEETUP_BROWSER_ID, SIFT_SESSION_ID set without HttpOnly on https://www.meetup.com/
-
-### 3. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter source on https://www.meetup.com/find/ reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 4. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter eventType on https://www.meetup.com/find/ reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 5. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter location on https://www.meetup.com/find/ reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 6. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter eventOrigin on https://www.meetup.com/meetup-group-lpygwlve/events/314505089/ reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 7. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://www.meetup.com/ reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 8. [LOW] Host header alters response (vhost behavior) (`I12`)
-
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: meetup.com + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
-
-### 9. [INFO] Missing Referrer-Policy (`H5`)
-
-- **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://www.meetup.com/
-
-## Reproduction notes
-
-- Scanned 2026-09-25 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).

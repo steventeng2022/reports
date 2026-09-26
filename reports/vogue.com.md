@@ -7,12 +7,11 @@
 | Target | https://vogue.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | vogue.com |
-| Test date | 2026-09-25 15:44 UTC |
+| Test date | 2026-09-25 19:34 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
 
-<<<<<<< HEAD
 Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
@@ -33,33 +32,6 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 ## Detailed findings
 
 ### 1. [LOW] Cookies set without HttpOnly (`C1`)
-=======
-Total findings: **5** (High: 0, Medium: 0, Low: 3, Info: 2)
-
-| # | Severity | ID | Finding | CWE |
-|---|---|---|---|---|
-| 1 | info | I7 | Server-side template injection (SSTI) - REFUTED (verified 2026-09-26) | CWE-94 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
-| 4 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
-
-## Detailed findings
-
-### 1. [INFO] Server-side template injection (SSTI) - REFUTED (`I7`)
-
-- **CWE:** CWE-94
-- **Detail:** Parameter q on https://www.vogue.com/search: payload #{17*19} is evaluated server-side (response contains 323; control #{17*18} contains 306 instead; token not reflected).
-
-- **Verification (2026-09-26, rule 4):** REFUTED. Stronger arithmetic pairs re-tested: #{199*37}=7363 and #{1009*101}=101909 do NOT appear in the response (nor their controls); original 323/1600 hits were coincidental matches inside CSS unicode-range / max-width declarations. The token string itself is never reflected.
-
-### 2. [LOW] Missing HSTS header (`H1`)
-
-- **CWE:** CWE-319
-- **Detail:** No Strict-Transport-Security on https://www.vogue.com/
-
-### 3. [LOW] Cookies without HttpOnly flag (`C2`)
->>>>>>> 856185b (verify pass: webmd 19x I1, typekit 4x I1, ca.linkedin I2+4xI5, vogue SSTI all REFUTED (token matrices); reports+README updated; wave 10 shipped (122); chat)
 
 - **CWE:** CWE-1004
 - **Detail:** Set on https://vogue.com/ without HttpOnly: CN_geo_country_code, CN_segments, CN_xid, xid1. Readable by client-side script.
@@ -121,7 +93,7 @@ Total findings: **5** (High: 0, Medium: 0, Low: 3, Info: 2)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://vogue.com/ final status: 200 (final URL https://www.vogue.com/).
 - http://vogue.com/ initial status: 301.
 - Certificate: Amazon Amazon RSA 2048 M04, valid until 2026-11-21T23:59:59+00:00.

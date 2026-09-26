@@ -7,7 +7,7 @@
 | Target | https://googletagmanager.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | googletagmanager.com |
-| Test date | 2026-09-25 15:44 UTC |
+| Test date | 2026-09-25 19:34 UTC |
 | Method | Passive / non-intrusive testing: TLS protocol, cipher and certificate analysis; security-header audit (HSTS, CSP, nosniff, clickjacking, referrer, permissions); cookie flag audit (HttpOnly, Secure, SameSite, domain scope); plain-HTTP vs HTTPS behavior; well-known file probing (robots.txt, security.txt, sitemap.xml); passive DNS and certificate-SAN subdomain discovery. No parameter injection, no forms submitted, no authenticated sessions. |
 
 ## Summary
@@ -81,7 +81,7 @@ Total findings: **10** (High: 0, Medium: 0, Low: 4, Info: 6)
 
 ## Reproduction notes
 
-- Scanned 2026-09-25 15:44 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
+- Scanned 2026-09-25 19:34 UTC from Asia/Taipei (UTC+8); passive GET/TLS/DNS only; no payloads injected into request parameters; single pass per endpoint; no authenticated sessions.
 - https://googletagmanager.com/ final status: 404 (final URL https://googletagmanager.com/).
 - http://googletagmanager.com/ initial status: 404.
 - Certificate: Google Trust Services WE2, valid until 2026-12-03T19:21:59+00:00.
