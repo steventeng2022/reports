@@ -8,6 +8,7 @@ Hunt dates: 2026-09-24 to 2026-09-26 (Asia/Taipei). This repository combines the
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---:|---:|---:|---:|---:|---|
+| download.macromedia.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | python.org | 32 | 0 | 1 | 27 | 4 | PSF |
 | poetryfoundation.org | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | spiegel.de | 9 | 0 | 0 | 7 | 2 | top-websites gist (no active program match) |
