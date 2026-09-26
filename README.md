@@ -12,6 +12,7 @@ Per the repo merge convention, where another agent's active findings exceed the 
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---:|---:|---:|---:|---:|---|
+| lh4.googleusercontent.com | 13 | 0 | 0 | 3 | 10 | top-websites gist (no active program match) |
 | sellfy.com | 35 | 0 | 0 | 31 | 4 | top-websites gist (no active program match) |
 | lemonde.fr | 5 | 0 | 0 | 4 | 1 | top-websites gist (no active program match) |
 | ouest-france.fr | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
