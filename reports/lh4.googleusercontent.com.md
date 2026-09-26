@@ -1,18 +1,18 @@
-# Security Audit Report — lh3.googleusercontent.com
+# Security Audit Report — lh4.googleusercontent.com
 
 ## Scope and authorization
 
 | Item | Value |
 |---|---|
-| Target | https://lh3.googleusercontent.com/ |
-| Bug bounty program | Google |
-| Listed scope domain | lh3.googleusercontent.com |
-| Test date | 2026-09-26 14:53 UTC |
+| Target | https://lh4.googleusercontent.com/ |
+| Bug bounty program | top-websites gist (no active program match) |
+| Listed scope domain | lh4.googleusercontent.com |
+| Test date | 2026-09-26 16:42 UTC |
 | Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
+Total findings: **13** (High: 0, Medium: 0, Low: 3, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,7 +29,6 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 | 11 | info | CORS4 | CORS: wildcard Access-Control-Allow-Origin | CWE-942 |
 | 12 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
 | 13 | info | P8 | Missing security.txt | CWE-1038 |
-| 14 | info | CT1 | 1 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
 
 ## Detailed findings
 
@@ -110,7 +109,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 ### 12. [INFO] CORS: subdomain origin origin accepted (no credentials) (`CORS2`)
 
 - **CWE:** CWE-942
-- **Detail:** Origin https://sub.lh3.googleusercontent.com was echoed in Access-Control-Allow-Origin.
+- **Detail:** Origin https://sub.lh4.googleusercontent.com was echoed in Access-Control-Allow-Origin.
 - **Context:** https response, /
 - **Recommendation:** Confirm whether arbitrary origin echoing is intended.
 
@@ -121,23 +120,17 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 14. [INFO] 1 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
-
-- **CWE:** CWE-200
-- **Detail:** Notable hostnames: none flagged
-- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
-
 ## Evidence (raw response observations)
 
 ```json
 {
-  "domain": "lh3.googleusercontent.com",
+  "domain": "lh4.googleusercontent.com",
   "dns": {
     "a": [
-      "74.125.203.132"
+      "142.251.170.132"
     ],
     "aaaa": [
-      "2404:6800:4008:c07::84"
+      "2404:6800:4008:c19::84"
     ],
     "cname": "googlehosted.l.googleusercontent.com.",
     "mx": [],
@@ -320,7 +313,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
     }
   },
   "ports": {
-    "ip": "74.125.203.132",
+    "ip": "142.251.170.132",
     "open": []
   },
   "https": {
@@ -340,7 +333,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
       "acac": ""
     },
     {
-      "origin": "https://sub.lh3.googleusercontent.com",
+      "origin": "https://sub.lh4.googleusercontent.com",
       "acao": "*",
       "acac": ""
     }
@@ -369,15 +362,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
     "/api/": 400
   },
   "subdomains": {
-    "source": "crt.sh",
-    "count": 1,
+    "source": "certspotter",
+    "count": 0,
     "notable": [],
-    "sample": [
-      "manifest.lh3.googleusercontent.com"
-    ]
+    "sample": []
   },
-  "elapsed_s": 18.5,
-  "rechecked": "2026-09-26 14:53 UTC"
+  "elapsed_s": 3.8,
+  "rechecked": "2026-09-26 16:42 UTC"
 }
 ```
 

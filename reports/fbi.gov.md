@@ -1,18 +1,18 @@
-# Security Audit Report — skillshare.com
+# Security Audit Report — fbi.gov
 
 ## Scope and authorization
 
 | Item | Value |
 |---|---|
-| Target | https://skillshare.com/ |
+| Target | https://fbi.gov/ |
 | Bug bounty program | top-websites gist (no active program match) |
-| Listed scope domain | skillshare.com |
-| Test date | 2026-09-26 14:55 UTC |
+| Listed scope domain | fbi.gov |
+| Test date | 2026-09-26 16:42 UTC |
 | Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
+Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -23,10 +23,13 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 | 5 | info | TECH2 | HTTP upgrade advertised (Alt-Svc) | CWE-200 |
 | 6 | low | H2 | Missing CSP header | CWE-1021 |
 | 7 | low | H4 | No clickjacking protection | CWE-1023 |
-| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
-| 11 | info | P8 | Missing security.txt | CWE-1038 |
+| 8 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 11 | info | H6 | Server technology disclosure | CWE-200 |
+| 12 | info | P8 | Missing security.txt | CWE-1038 |
+| 13 | info | CT1 | 424 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 14 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -39,13 +42,13 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.32.122:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.148.244:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.32.122:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.16.148.244:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -74,83 +77,96 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
 - **Context:** https response, /
 - **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 8. [INFO] Missing Permissions-Policy (`H7`)
+### 8. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+
+### 9. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
 - **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
 - **Context:** https response, /
 - **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+### 10. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
 - **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
 - **Context:** https response, /
 - **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 10. [INFO] Server technology disclosure (`H6`)
+### 11. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
 - **Detail:** Header reveals: cloudflare
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
-### 11. [INFO] Missing security.txt (`P8`)
+### 12. [INFO] Missing security.txt (`P8`)
 
 - **CWE:** CWE-1038
 - **Detail:** No .well-known/security.txt found (RFC 9116).
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 13. [INFO] 424 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: alpha-sifts-staging.apps.dcap.fbi.gov, alpha-sifts.apps.dcap.fbi.gov, api.fbi.gov, api.sos.fbi.gov, avalanche.dv.apps.dcap.fbi.gov, avalanche.va.apps.dcap.fbi.gov, circe.va.apps.dcap.fbi.gov, denali.dv.apps.dcap.fbi.gov, denali.va.apps.dcap.fbi.gov, frost.va.apps.dcap.fbi.gov
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+### 14. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+
+- **CWE:** CWE-200
+- **Detail:** Historical subdomains no longer have A/AAAA records: alpha-sifts-staging.apps.dcap.fbi.gov, alpha-sifts.apps.dcap.fbi.gov, api.sos.fbi.gov; content may still be served via virtual-host fallback.
+- **Recommendation:** Reclaim or delete dangling subdomains to reduce virtual-hosting attack surface.
+
 ## Evidence (raw response observations)
 
 ```json
 {
-  "domain": "skillshare.com",
+  "domain": "fbi.gov",
   "dns": {
     "a": [
-      "104.18.32.122",
-      "172.64.155.134"
+      "104.16.148.244",
+      "104.16.149.244"
     ],
     "aaaa": [
-      "2a06:98c1:310c::6812:207a",
-      "2606:4700:440b::ac40:9b86"
+      "2606:4700::6810:94f4",
+      "2606:4700::6810:95f4"
     ],
     "cname": null,
     "mx": [
-      "aspmx2.googlemail.com (pref 40)",
-      "aspmx3.googlemail.com (pref 50)",
-      "aspmx.l.google.com (pref 10)",
-      "aspmx4.googlemail.com (pref 50)",
-      "alt1.aspmx.l.google.com (pref 20)",
-      "alt2.aspmx.l.google.com (pref 30)",
-      "aspmx5.googlemail.com (pref 50)"
+      "mx-west.fbi.gov (pref 20)",
+      "mx-east.fbi.gov (pref 10)"
     ],
     "ns": [
-      "ashe.skillshare.com.",
-      "garen.skillshare.com."
+      "ns-cloud-e3.googledomains.com.",
+      "ns-cloud-e1.googledomains.com.",
+      "ns-cloud-e2.googledomains.com.",
+      "ns-cloud-e4.googledomains.com."
     ],
     "spf": [
-      "jamf-site-verification=jsRO5e76-EWTHTbtESgo9g",
-      "qyylpgj14chmtmds8wgz7j8lqwrd44tt",
-      "v=spf1 include:_spf0.skillshare.com include:_spf1.skillshare.com include:_spf2.skillshare.com include:_spf3.skillshare.com include:sendgrid.net include:_spf.google.com include:sendgrid.net include:_spf.google.com ip4:23.21.109.197 ip4:23.21.109.212 ~all",
-      "anthropic-domain-verification-0j2hh2=VDsV2bFDu3c0IZWFsXlG1WQ4h",
-      "miro-verification=2accb01b1b638f37ee0cd64452e2faaa57e1cdf6",
-      "firebase=skillshare-creator-dev",
-      "google-site-verification=DshzQEv8w03dqk3NErt1hlkBaXsKdTMaUfBY1J-8Wic",
-      "apple-domain-verification=Hb38JzhNUvqf3hR2",
-      "h1-domain-verification=J1qQPbBWpbBxGVL3i3h1dpw2rX1NwHEZhnWeRNNP5L9qB2DX",
-      "facebook-domain-verification=va9wk46fanagqpr4rc6sp4d3gap007",
-      "9p1q7gjsjf6jgqmkdvbdxhxch33lxzsv",
-      "google-site-verification=mcHpWbpzXVe4BOFgp5ijuXXqIf7OMoH1Z7ctm2mlBDc",
-      "mixpanel-domain-verify=739bd2fb-b682-4acf-9689-e94b74a61621",
-      "amazonses:FA3mpwGhZzBmEIrp3iQXIXa3+umrH8ce03vBPry8tuI=",
-      "fw8mkvj2p2lgsk7crsrgylmvpzf0fkkw",
-      "atlassian-domain-verification=caa1SXVOa/jn5JVpUdP/OCpP1t9l1rz9ikhEsdPLJYGgYWquY6v2tDOvBhNoJG99",
-      "openai-domain-verification=dv-98OuGQNGSB3R75FCYqMmzHqw"
+      "C8WWN4MbK7z5BL4Ivc/DSxEeVsr18DB5/P8GxlM1S3OfCxexrFpFzpY7MBDBoid3h/OxYU+1H0pFrKWhj1j3cw==",
+      "v=spf1 +mx ip4:153.31.0.0/16 -all",
+      "MS=ms39271050",
+      "kiro-site-verification=31a85f50-8d2b-4be7-9175-d16a469190ee",
+      "ublrZj1CzpSEiwtiRFKDAyiek8hRqkqaTTApxvhwai14i8JqVBOauW4cA06i39H5Lhl3HnALCM/xfTxIPEXEpA==",
+      "adobe-idp-site-verification=101945e35b37c6efd526cf706f04bc9545a02f9cdc58dbf718678c506697d67d",
+      "google-site-verification=L8cauHJF4MANoTCkMbrLkAVfHBta28ctva9n1IDekTo",
+      "625558384-8740534",
+      "google-gws-recovery-domain-verification=74752930",
+      "_globalsign-domain-verification=xZMJnzdDAgURaBjUZ6qbqWaaYmV5W3sfo3TF8mUxne",
+      "amazonses: iUbfpGEqhMPlcmJ0aykJZREltK6pWio9wOgRngnJOQE=",
+      "google-site-verification=6UEk-jfg1xPNjz_rQGcRFJOBGxMy1aARDZUTXgSNAqw",
+      "google-site-verification=uTH4Vg-Xcc9hTqSdeThbT9UnYvuphObtVSpCEgaGr78",
+      "apple-domain-verification=oOspXl6Jvnx9HzLM"
     ],
     "dmarc": [
-      "v=DMARC1; p=reject; pct=100; rua=mailto:f4a1b21ad84d418380c0e4bd42294746@dmarc-reports.cloudflare.net; fo=1;"
+      "v=DMARC1; p=reject; rua=mailto:dmarc-feedback@fbi.gov,mailto:reports@dmarc.cyber.dhs.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100"
     ],
     "dnssec_authenticated": false
   },
@@ -159,16 +175,15 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
     "chain": "trusted",
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
-    "subject": "commonName=skillshare.com",
+    "subject": "commonName=fbi.gov",
     "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE1",
-    "notBefore": "Aug 19 16:07:16 2026 GMT",
-    "notAfter": "Nov 17 17:07:13 2026 GMT",
+    "notBefore": "Sep 14 12:18:41 2026 GMT",
+    "notAfter": "Dec 13 13:18:21 2026 GMT",
     "san": [
-      "skillshare.com",
-      "phoenix-demo.skillshare.com",
-      "*.phoenix-demo.skillshare.com"
+      "fbi.gov",
+      "*.fbi.gov"
     ],
-    "days_left": 52,
+    "days_left": 77,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -178,7 +193,7 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
     }
   },
   "ports": {
-    "ip": "104.18.32.122",
+    "ip": "104.16.148.244",
     "open": [
       8080,
       8443
@@ -196,7 +211,11 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
   ],
   "cookies": [
     {
-      "domain": "skillshare.com",
+      "domain": "fbi.gov",
+      "samesite": "none"
+    },
+    {
+      "domain": "fbi.gov",
       "samesite": "none"
     }
   ],
@@ -207,14 +226,14 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
       "acac": ""
     },
     {
-      "origin": "https://sub.skillshare.com",
+      "origin": "https://sub.fbi.gov",
       "acao": "",
       "acac": ""
     }
   ],
   "http": {
     "status": 301,
-    "location": "https://skillshare.com/"
+    "location": "https://fbi.gov/"
   },
   "redir_probes": [
     "/redirect?url=https://evil-auditor.example/x -> 301",
@@ -231,16 +250,61 @@ Total findings: **11** (High: 0, Medium: 0, Low: 2, Info: 9)
     "/.git/config": 403,
     "/.env": 403,
     "/.htaccess": 403,
-    "/wp-login.php": 301,
-    "/phpmyadmin/index.php": 301,
+    "/wp-login.php": 403,
+    "/phpmyadmin/index.php": 403,
     "/server-status": 301,
     "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "source": "crt.sh",
+    "count": 424,
+    "notable": [
+      "alpha-sifts-staging.apps.dcap.fbi.gov",
+      "alpha-sifts.apps.dcap.fbi.gov",
+      "api.fbi.gov",
+      "api.sos.fbi.gov",
+      "avalanche.dv.apps.dcap.fbi.gov",
+      "avalanche.va.apps.dcap.fbi.gov",
+      "circe.va.apps.dcap.fbi.gov",
+      "denali.dv.apps.dcap.fbi.gov",
+      "denali.va.apps.dcap.fbi.gov",
+      "frost.va.apps.dcap.fbi.gov",
+      "gw-tidal.dv.apps.dcap.fbi.gov",
+      "gw-user-portal.dv.apps.dcap.fbi.gov",
+      "jira.cjis.fbi.gov",
+      "jira.ctp-prev.cjis.fbi.gov",
+      "lenz.dv.apps.dcap.fbi.gov"
+    ],
+    "sample": [
+      "acts-csdb-ndcac.fbi.gov",
+      "acts-ndcac.fbi.gov",
+      "adfs-elab.fbi.gov",
+      "adfs-ndcac.fbi.gov",
+      "admincenter.certauth.fbi.gov",
+      "admincenter.certauth.fs1.fbi.gov",
+      "admincenter.fact.fbi.gov",
+      "alpha-sifts-staging.apps.dcap.fbi.gov",
+      "alpha-sifts.apps.dcap.fbi.gov",
+      "api.fbi.gov",
+      "api.sos.fbi.gov",
+      "archives.fbi.gov",
+      "artcrimes.fbi.gov",
+      "askcalea.fbi.gov",
+      "astra.va.fbi.gov",
+      "atlas.fbi.gov",
+      "atlasbeta.fbi.gov",
+      "autodiscover.fbi.gov",
+      "autodiscover.ic.fbi.gov",
+      "avalanche.dv.apps.dcap.fbi.gov"
+    ],
+    "dangling": [
+      "alpha-sifts-staging.apps.dcap.fbi.gov",
+      "alpha-sifts.apps.dcap.fbi.gov",
+      "api.sos.fbi.gov"
+    ]
   },
-  "elapsed_s": 8.2,
-  "rechecked": "2026-09-26 14:53 UTC"
+  "elapsed_s": 30.5,
+  "rechecked": "2026-09-26 16:42 UTC"
 }
 ```
 

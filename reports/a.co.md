@@ -1,29 +1,34 @@
-# Security Audit Report — meta.wikimedia.org
+# Security Audit Report — a.co
 
 ## Scope and authorization
 
 | Item | Value |
 |---|---|
-| Target | https://meta.wikimedia.org/ |
+| Target | https://a.co/ |
 | Bug bounty program | top-websites gist (no active program match) |
-| Listed scope domain | meta.wikimedia.org |
-| Test date | 2026-09-26 14:53 UTC |
+| Listed scope domain | a.co |
+| Test date | 2026-09-26 16:42 UTC |
 | Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
+Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
 | 2 | info | TECH1 | Technology fingerprint | CWE-200 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H4 | No clickjacking protection | CWE-1023 |
-| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 7 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
-| 8 | info | H6 | Server technology disclosure | CWE-200 |
+| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 5 | low | H4 | No clickjacking protection | CWE-1023 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 9 | info | H6 | Server technology disclosure | CWE-200 |
+| 10 | low | RED7 | HTTPS root redirects to plain HTTP | CWE-319 |
+| 11 | low | RED1 | HTTP redirect points to another host over plain HTTP | CWE-319 |
+| 12 | info | P8 | Missing security.txt | CWE-1038 |
+| 13 | info | CT1 | 2 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
 
 ## Detailed findings
 
@@ -36,7 +41,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
 ### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** Detected: Server: mw-web.eqiad.main-5fb6d6bf94-jfxjc
+- **Detail:** Detected: Server: Server
 - **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
 ### 3. [LOW] Missing CSP header (`H2`)
@@ -46,113 +51,121 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
 - **Context:** https response, /
 - **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 4. [LOW] No clickjacking protection (`H4`)
+### 4. [LOW] Missing X-Content-Type-Options (`H3`)
+
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
+
+### 5. [LOW] No clickjacking protection (`H4`)
 
 - **CWE:** CWE-1023
 - **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
 - **Context:** https response, /
 - **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 5. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
 - **Context:** https response, /
 - **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 6. [INFO] Missing Permissions-Policy (`H7`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
 - **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
 - **Context:** https response, /
 - **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 7. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
 - **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
 - **Context:** https response, /
 - **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 8. [INFO] Server technology disclosure (`H6`)
+### 9. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** Header reveals: mw-web.eqiad.main-5fb6d6bf94-jfxjc
+- **Detail:** Header reveals: Server
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
+
+### 10. [LOW] HTTPS root redirects to plain HTTP (`RED7`)
+
+- **CWE:** CWE-319
+- **Detail:** Location: http://www.amazon.com/
+- **Context:** https response, /
+- **Recommendation:** Redirect to an https:// target.
+
+### 11. [LOW] HTTP redirect points to another host over plain HTTP (`RED1`)
+
+- **CWE:** CWE-319
+- **Detail:** Location: http://www.amazon.com/
+- **Context:** https response, /
+- **Recommendation:** Redirect to the same host over HTTPS.
+
+### 12. [INFO] Missing security.txt (`P8`)
+
+- **CWE:** CWE-1038
+- **Detail:** No .well-known/security.txt found (RFC 9116).
+- **Context:** https response, /
+- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
+
+### 13. [INFO] 2 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: none flagged
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
 ## Evidence (raw response observations)
 
 ```json
 {
-  "domain": "meta.wikimedia.org",
+  "domain": "a.co",
   "dns": {
     "a": [
-      "103.102.166.224"
+      "98.87.170.8",
+      "44.215.138.88",
+      "98.87.170.202"
     ],
-    "aaaa": [
-      "2001:df2:e500:ed1a::1"
-    ],
-    "cname": "dyna.wikimedia.org.",
+    "aaaa": [],
+    "cname": null,
     "mx": [],
-    "ns": [],
-    "spf": [],
-    "dmarc": [],
+    "ns": [
+      "pdns3.ultradns.org.",
+      "pdns1.ultradns.net.",
+      "pdns2.ultradns.net.",
+      "pdns6.ultradns.co.uk.",
+      "pdns4.ultradns.org.",
+      "pdns5.ultradns.info."
+    ],
+    "spf": [
+      "v=spf1 -all"
+    ],
+    "dmarc": [
+      "v=DMARC1; p=reject; rua=mailto:report@dmarc.amazon.com; ruf=mailto:report@dmarc.amazon.com"
+    ],
     "dnssec_authenticated": false
   },
   "tls": {
     "status": "ok",
     "chain": "trusted",
     "version": "TLSv1.3",
-    "cipher": "TLS_AES_128_GCM_SHA256",
-    "subject": "commonName=*.wikipedia.org",
-    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YE2",
-    "notBefore": "Aug  5 19:15:41 2026 GMT",
-    "notAfter": "Nov  3 19:15:40 2026 GMT",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "commonName=www.amz.onl",
+    "issuer": "countryName=US, organizationName=Amazon, commonName=Amazon RSA 2048 M04",
+    "notBefore": "Jun 20 00:00:00 2026 GMT",
+    "notAfter": "Jan  3 23:59:59 2027 GMT",
     "san": [
-      "*.m.mediawiki.org",
-      "*.m.wikibooks.org",
-      "*.m.wikidata.org",
-      "*.m.wikimedia.org",
-      "*.m.wikinews.org",
-      "*.m.wikipedia.org",
-      "*.m.wikiquote.org",
-      "*.m.wikisource.org",
-      "*.m.wikiversity.org",
-      "*.m.wikivoyage.org",
-      "*.m.wiktionary.org",
-      "*.mediawiki.org",
-      "*.planet.wikimedia.org",
-      "*.wikibooks.org",
-      "*.wikidata.org",
-      "*.wikifunctions.org",
-      "*.wikimedia.org",
-      "*.wikimediafoundation.org",
-      "*.wikinews.org",
-      "*.wikipedia.org",
-      "*.wikiquote.org",
-      "*.wikisource.org",
-      "*.wikiversity.org",
-      "*.wikivoyage.org",
-      "*.wiktionary.org",
-      "*.wmfusercontent.org",
-      "mediawiki.org",
-      "w.wiki",
-      "wikibooks.org",
-      "wikidata.org",
-      "wikifunctions.org",
-      "wikimedia.org",
-      "wikimediafoundation.org",
-      "wikinews.org",
-      "wikipedia.org",
-      "wikiquote.org",
-      "wikisource.org",
-      "wikiversity.org",
-      "wikivoyage.org",
-      "wiktionary.org",
-      "wmfusercontent.org"
+      "www.amz.onl",
+      "a.co",
+      "www.a.co",
+      "amz.onl"
     ],
-    "days_left": 38,
+    "days_left": 99,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -162,31 +175,19 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
     }
   },
   "ports": {
-    "ip": "103.102.166.224",
+    "ip": "98.87.170.8",
     "open": []
   },
   "https": {
-    "status": 301,
+    "status": 302,
     "content_type": "",
     "title": ""
   },
   "mixed_content": [],
   "tech": [
-    "Server: mw-web.eqiad.main-5fb6d6bf94-jfxjc"
+    "Server: Server"
   ],
-  "cookies": [
-    {},
-    {
-      "domain": ".wikimedia.org"
-    },
-    {
-      "samesite": "none"
-    },
-    {
-      "domain": "meta.wikimedia.org",
-      "samesite": "none"
-    }
-  ],
+  "cookies": [],
   "cors": [
     {
       "origin": "https://evil-auditor.example",
@@ -194,14 +195,14 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
       "acac": ""
     },
     {
-      "origin": "https://sub.meta.wikimedia.org",
+      "origin": "https://sub.a.co",
       "acao": "",
       "acac": ""
     }
   ],
   "http": {
     "status": 301,
-    "location": "https://meta.wikimedia.org/"
+    "location": "https://a.co/"
   },
   "redir_probes": [
     "/redirect?url=https://evil-auditor.example/x -> 404",
@@ -210,27 +211,30 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
     "/url?url=https://evil-auditor.example/x -> 404"
   ],
   "paths": {
-    "/robots.txt": 200,
+    "/robots.txt": 404,
     "/sitemap.xml": 404,
-    "/.well-known/security.txt": 200,
+    "/.well-known/security.txt": 404,
     "/security.txt": 404,
     "/.git/HEAD": 404,
     "/.git/config": 404,
     "/.env": 404,
-    "/.htaccess": 403,
+    "/.htaccess": 404,
     "/wp-login.php": 404,
     "/phpmyadmin/index.php": 404,
-    "/server-status": 403,
-    "/api/": 200
+    "/server-status": 404,
+    "/api/": 404
   },
   "subdomains": {
     "source": "crt.sh",
-    "count": 0,
+    "count": 2,
     "notable": [],
-    "sample": []
+    "sample": [
+      "a.co",
+      "www.a.co"
+    ]
   },
-  "elapsed_s": 25.9,
-  "rechecked": "2026-09-26 14:53 UTC"
+  "elapsed_s": 46.0,
+  "rechecked": "2026-09-26 16:42 UTC"
 }
 ```
 

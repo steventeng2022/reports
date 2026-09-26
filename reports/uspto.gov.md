@@ -1,18 +1,18 @@
-# Security Audit Report — sciencedaily.com
+# Security Audit Report — uspto.gov
 
 ## Scope and authorization
 
 | Item | Value |
 |---|---|
-| Target | https://sciencedaily.com/ |
+| Target | https://uspto.gov/ |
 | Bug bounty program | top-websites gist (no active program match) |
-| Listed scope domain | sciencedaily.com |
-| Test date | 2026-09-26 14:56 UTC |
+| Listed scope domain | uspto.gov |
+| Test date | 2026-09-26 16:43 UTC |
 | Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 | 11 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 12 | info | H6 | Server technology disclosure | CWE-200 |
 | 13 | info | P8 | Missing security.txt | CWE-1038 |
+| 14 | info | CT1 | 2383 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 15 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -41,13 +43,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.26.4.15:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.35.192:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.26.4.15:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.35.192:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -119,45 +121,60 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
+### 14. [INFO] 2383 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: admin.etc.uspto.gov, antivirus.gd.aws.uspto.gov, api.dev.efile.awslab.uspto.gov, api.dev.tm-efile.awslab.uspto.gov, api.stable.efile.awslab.uspto.gov, api.stable.tm-efile.awslab.uspto.gov, api.uspto.gov, assets.uspto.gov, auth.uspto.gov, bdr-q318-pui-httpd-0.dev.uspto.gov
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+### 15. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+
+- **CWE:** CWE-200
+- **Detail:** Historical subdomains no longer have A/AAAA records: admin.etc.uspto.gov, antivirus.gd.aws.uspto.gov, api.dev.efile.awslab.uspto.gov, api.dev.tm-efile.awslab.uspto.gov, api.stable.efile.awslab.uspto.gov; content may still be served via virtual-host fallback.
+- **Recommendation:** Reclaim or delete dangling subdomains to reduce virtual-hosting attack surface.
+
 ## Evidence (raw response observations)
 
 ```json
 {
-  "domain": "sciencedaily.com",
+  "domain": "uspto.gov",
   "dns": {
     "a": [
-      "104.26.4.15",
-      "172.67.75.166",
-      "104.26.5.15"
+      "104.18.35.192",
+      "172.64.152.64"
     ],
     "aaaa": [
-      "2606:4700:20::681a:40f",
-      "2606:4700:20::681a:50f",
-      "2606:4700:20::ac43:4ba6"
+      "2a06:98c1:310c::ac40:9840",
+      "2a06:98c1:3101::6812:23c0"
     ],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx3.googlemail.com (pref 10)",
-      "aspmx2.googlemail.com (pref 10)"
+      "uspto-gov.mail.protection.outlook.com (pref 5)"
     ],
     "ns": [
-      "beth.ns.cloudflare.com.",
-      "noah.ns.cloudflare.com."
+      "gold.foundationdns.net.",
+      "gold.foundationdns.org.",
+      "gold.foundationdns.com."
     ],
     "spf": [
-      "globalsign-domain-verification=QNggA5G6QQDkhq8HwwSkk3Pq-pS-ocYFv594GxNfmw",
-      "google-site-verification=WM-ZBKOaI9fmMYiqOsm8UuIlbUdNfbiii4HFgt-XxZc",
-      "58piam3mhj3hac4u0msb49h9jo",
-      "google-site-verification=VTa387KessSeUKIk82l7wxHCJBfSkQSXbazhfOPXc_c",
-      "facebook-domain-verification=5oq14nyaskwhbumbv9ciq9u6673us5",
-      "irjlmconcnkfmetvds6djpfhga",
-      "v=spf1 include:_spf.google.com -all"
+      "3FKeZ5CH9TEaLgiiioa9/iDVB0WPJofaHBuumk1YRmcuggWFX3v3gDlSw5uSIbaSuvm/FsOYPRzhM87BHQ+ImA==",
+      "_qf2w9oo2ieh425rh0b6gjpp829vih2b",
+      "SnTiaz2QHOuDsjncHy2wc6dZmnzEFxbqKLWgzzrfBidPblmIGRxS9jP28Zb4xPjhhlE2YBm98Mu+DhbxxGOa7A==",
+      "google-site-verification=5eOb2YylR8fDTIkmIs3N0CaJ_IHjjikNS-Z7BDb9jvw",
+      "google-site-verification=MB6vnwbxkyN6STcgBAa5U-W1H7VhU62fSuT95KrWhlk",
+      "jetbrains-domain-verification=8sj6e0d8s6q4fvu86jcfzp0g5",
+      "apple-domain-verification=DQ6lsHErU2gvVyqF",
+      "webexdomainverification.7PUPU=2a587b5a-c181-4a6c-9d10-a13dcaa747bd",
+      "MS=ms28666523",
+      "perplexity-ai-domain-verification-7tdkgd=M7VyHULqPpVV3g4SsM4BNc1mR",
+      "adobe-idp-site-verification=fd06710ade06e49a5be3b877d16463b3f5f050a1e54eaaa1daff14f8da83993f",
+      "facebook-domain-verification=6wqv4rmxkothypv5gij5080967l5ws",
+      "_ib4pu1ottna05el605hns0p62bwkg2g",
+      "v=spf1 include:uspto.gov._nspf.valigov.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.valigov.email include:spf.protection.outlook.com -all",
+      "ms-domain-verification=725c3c35-24ef-43fd-a26b-2736d7cea1a6"
     ],
     "dmarc": [
-      "v=DMARC1; p=reject; pct=100; adkim=s; aspf=s"
+      "v=DMARC1; p=reject; rua=mailto:dmarc_agg@valigov.email,mailto:dmarc_reports@uspto.gov,mailto:reports@dmarc.cyber.dhs.gov"
     ],
     "dnssec_authenticated": false
   },
@@ -166,15 +183,14 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     "chain": "trusted",
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
-    "subject": "commonName=sciencedaily.com",
+    "subject": "commonName=uspto.gov",
     "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE1",
-    "notBefore": "Sep 19 17:34:48 2026 GMT",
-    "notAfter": "Dec 18 18:34:44 2026 GMT",
+    "notBefore": "Aug 24 01:54:42 2026 GMT",
+    "notAfter": "Nov 22 02:54:40 2026 GMT",
     "san": [
-      "sciencedaily.com",
-      "*.sciencedaily.com"
+      "uspto.gov"
     ],
-    "days_left": 83,
+    "days_left": 56,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -184,16 +200,16 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     }
   },
   "ports": {
-    "ip": "104.26.4.15",
+    "ip": "104.18.35.192",
     "open": [
       8080,
       8443
     ]
   },
   "https": {
-    "status": 200,
-    "content_type": "text/html",
-    "title": "ScienceDaily: Your source for the latest research news"
+    "status": 301,
+    "content_type": "",
+    "title": ""
   },
   "mixed_content": [],
   "tech": [
@@ -208,39 +224,87 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "acac": ""
     },
     {
-      "origin": "https://sub.sciencedaily.com",
+      "origin": "https://sub.uspto.gov",
       "acao": "",
       "acac": ""
     }
   ],
   "http": {
-    "status": 200
+    "status": 301,
+    "location": "https://www.uspto.gov/"
   },
   "redir_probes": [
-    "/redirect?url=https://evil-auditor.example/x -> 404",
-    "/redirect?next=https://evil-auditor.example/x -> 404",
-    "/go?url=https://evil-auditor.example/x -> 404",
-    "/url?url=https://evil-auditor.example/x -> 404"
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
   ],
   "paths": {
-    "/robots.txt": 200,
-    "/sitemap.xml": 404,
-    "/.well-known/security.txt": 404,
-    "/security.txt": 404,
-    "/.git/HEAD": 403,
-    "/.git/config": 403,
-    "/.env": 403,
-    "/.htaccess": 403,
-    "/wp-login.php": 404,
-    "/phpmyadmin/index.php": 404,
-    "/server-status": 404,
-    "/api/": 404
+    "/robots.txt": 301,
+    "/sitemap.xml": 301,
+    "/.well-known/security.txt": 301,
+    "/security.txt": 301,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
+    "/.env": 301,
+    "/.htaccess": 301,
+    "/wp-login.php": 301,
+    "/phpmyadmin/index.php": 301,
+    "/server-status": 301,
+    "/api/": 301
   },
   "subdomains": {
-    "status": "crt.sh 429 (certspotter 429)"
+    "source": "crt.sh",
+    "count": 2383,
+    "notable": [
+      "admin.etc.uspto.gov",
+      "antivirus.gd.aws.uspto.gov",
+      "api.dev.efile.awslab.uspto.gov",
+      "api.dev.tm-efile.awslab.uspto.gov",
+      "api.stable.efile.awslab.uspto.gov",
+      "api.stable.tm-efile.awslab.uspto.gov",
+      "api.uspto.gov",
+      "assets.uspto.gov",
+      "auth.uspto.gov",
+      "bdr-q318-pui-httpd-0.dev.uspto.gov",
+      "bdr-q318-pui-httpd-2.dev.uspto.gov",
+      "bdr-q318-tmui-httpd-0.dev.uspto.gov",
+      "bdr-q318-tmui-httpd-1.dev.uspto.gov",
+      "bdr-q418-ptui-httpd-0.dev.uspto.gov",
+      "careers.uspto.gov"
+    ],
+    "sample": [
+      "10millionpatents-aws.etc.uspto.gov",
+      "10millionpatents-aws.uspto.gov",
+      "10millionpatents-www-sit-web.etc.uspto.gov",
+      "10millionpatents-www-trn-web.uspto.gov",
+      "10millionpatents.etc.uspto.gov",
+      "10millionpatents.uspto.gov",
+      "access-dmz.etc.uspto.gov",
+      "access.etc.uspto.gov",
+      "access.uspto.gov",
+      "account-dev.etc.uspto.gov",
+      "account-dmz-alx1-passive.uspto.gov",
+      "account-dmz-alx1.uspto.gov",
+      "account-fqt.etc.uspto.gov",
+      "account-passive.uspto.gov",
+      "account-pvt-dmz-alx1.etc.uspto.gov",
+      "account-pvt-passive.etc.uspto.gov",
+      "account-pvt-proto.etc.uspto.gov",
+      "account-pvt.etc.uspto.gov",
+      "account-rbac-fqt.etc.uspto.gov",
+      "account-rbac-passive.uspto.gov"
+    ],
+    "dangling": [
+      "admin.etc.uspto.gov",
+      "antivirus.gd.aws.uspto.gov",
+      "api.dev.efile.awslab.uspto.gov",
+      "api.dev.tm-efile.awslab.uspto.gov",
+      "api.stable.efile.awslab.uspto.gov"
+    ]
   },
-  "elapsed_s": 24.7,
-  "rechecked": "2026-09-26 14:53 UTC"
+  "elapsed_s": 27.0,
+  "rechecked": "2026-09-26 16:42 UTC"
 }
 ```
 

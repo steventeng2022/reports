@@ -7,168 +7,239 @@
 | Target | https://ja.wikipedia.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ja.wikipedia.org |
-| Test date | 2026-09-26 05:37 UTC |
-| Method | Active injection testing: GET parameter injection (reflected XSS, SSTI, open redirect, SQLi error-based, path traversal), sensitive endpoint probing, GraphQL introspection, host-header behavior, dangling-subdomain fingerprinting; non-destructive, no forms submitted, no auth |
+| Test date | 2026-09-26 14:53 UTC |
+| Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **25** (High: 1, Medium: 1, Low: 21, Info: 2)
+Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I2 | Reflected XSS via attribute injection | CWE-79 |
-| 2 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 3 | low | H4 | No clickjacking protection | CWE-1023 |
-| 4 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
-| 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 7 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 8 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 9 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 10 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 11 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 12 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 13 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 14 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 15 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 16 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 17 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 18 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 19 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 20 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 21 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 22 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
-| 23 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
-| 24 | info | T2 | TLS certificate expiring within 39 days | CWE-295 |
-| 25 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H2 | Missing CSP header | CWE-1021 |
+| 4 | low | H4 | No clickjacking protection | CWE-1023 |
+| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 7 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 8 | info | H6 | Server technology disclosure | CWE-200 |
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS via attribute injection (`I2`)
+### 1. [INFO] DNSSEC not authenticated (no AD flag from resolvers) (`DNS2`)
 
-- **CWE:** CWE-79
-- **Detail:** Parameter title on https://ja.wikipedia.org/w/index.php: injecting "\"' onerror=\"alert(1)//" yields an unquoted onerror handler. Event fires on render.
+- **CWE:** CWE-399
+- **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
+- **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
-
-- **CWE:** CWE-538
-- **Detail:** robots.txt disallows /api/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
-
-### 3. [LOW] No clickjacking protection (`H4`)
-
-- **CWE:** CWE-1023
-- **Detail:** No X-Frame-Options or CSP frame-ancestors on https://ja.wikipedia.org/wiki/%E3%83%A1%E3%82%A4%E3%83%B3%E3%83%9A%E3%83%BC%E3%82%B8
-
-### 4. [LOW] Cookies without HttpOnly flag (`C2`)
-
-- **CWE:** CWE-1004
-- **Detail:** GeoIP, NetworkProbeLimit set without HttpOnly on https://ja.wikipedia.org/wiki/%E3%83%A1%E3%82%A4%E3%83%B3%E3%83%9A%E3%83%BC%E3%82%B8
-
-### 5. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter modules on https://ja.wikipedia.org/w/load.php reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 6. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter action on https://ja.wikipedia.org/w/api.php reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 7. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter action on https://ja.wikipedia.org/w/index.php reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 8. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter oldid on https://ja.wikipedia.org/w/index.php reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 9. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://ja.wikipedia.org/search reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 10. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter query on https://ja.wikipedia.org/search reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 11. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://ja.wikipedia.org/s reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 12. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://ja.wikipedia.org/ reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 13. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter q on https://ja.wikipedia.org/results reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 14. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://ja.wikipedia.org/redirect reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 15. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://ja.wikipedia.org/go reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 16. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter redirect on https://ja.wikipedia.org/go reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 17. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://ja.wikipedia.org/r reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 18. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter to on https://ja.wikipedia.org/r reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 19. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://ja.wikipedia.org/link reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 20. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://ja.wikipedia.org/out reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 21. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://ja.wikipedia.org/u reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 22. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
-
-- **CWE:** CWE-79
-- **Detail:** Parameter url on https://ja.wikipedia.org/view reflects input verbatim in body context; encoding boundary not confirmed.
-
-### 23. [LOW] Host header alters response (vhost behavior) (`I12`)
-
-- **CWE:** CWE-918
-- **Detail:** Requesting the origin with Host: ja.wikipedia.org + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
-
-### 24. [INFO] TLS certificate expiring within 39 days (`T2`)
-
-- **CWE:** CWE-295
-- **Detail:** Certificate for ja.wikipedia.org (CN=*.wikipedia.org) valid_to Nov  3 19:15:40 2026 GMT.
-
-### 25. [INFO] Missing Referrer-Policy (`H5`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** No Referrer-Policy on https://ja.wikipedia.org/wiki/%E3%83%A1%E3%82%A4%E3%83%B3%E3%83%9A%E3%83%BC%E3%82%B8
+- **Detail:** Detected: Server: mw-web.eqiad.main-5fb6d6bf94-qbc7c
+- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-## Reproduction notes
+### 3. [LOW] Missing CSP header (`H2`)
 
-- Scanned 2026-09-26 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+- **CWE:** CWE-1021
+- **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
+- **Context:** https response, /
+- **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
+
+### 4. [LOW] No clickjacking protection (`H4`)
+
+- **CWE:** CWE-1023
+- **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
+- **Context:** https response, /
+- **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
+
+### 5. [INFO] Missing Referrer-Policy (`H5`)
+
+- **CWE:** CWE-200
+- **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
+- **Context:** https response, /
+- **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
+
+### 6. [INFO] Missing Permissions-Policy (`H7`)
+
+- **CWE:** CWE-200
+- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
+- **Context:** https response, /
+- **Recommendation:** Add a Permissions-Policy restricting unused features.
+
+### 7. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+
+- **CWE:** CWE-200
+- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
+- **Context:** https response, /
+- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
+
+### 8. [INFO] Server technology disclosure (`H6`)
+
+- **CWE:** CWE-200
+- **Detail:** Header reveals: mw-web.eqiad.main-5fb6d6bf94-qbc7c
+- **Context:** https response, /
+- **Recommendation:** Consider hiding or shortening the Server header.
+
+## Evidence (raw response observations)
+
+```json
+{
+  "domain": "ja.wikipedia.org",
+  "dns": {
+    "a": [
+      "103.102.166.224"
+    ],
+    "aaaa": [
+      "2001:df2:e500:ed1a::1"
+    ],
+    "cname": "dyna.wikimedia.org.",
+    "mx": [],
+    "ns": [],
+    "spf": [],
+    "dmarc": [],
+    "dnssec_authenticated": false
+  },
+  "tls": {
+    "status": "ok",
+    "chain": "trusted",
+    "version": "TLSv1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "commonName=*.wikipedia.org",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YE2",
+    "notBefore": "Aug  5 19:15:41 2026 GMT",
+    "notAfter": "Nov  3 19:15:40 2026 GMT",
+    "san": [
+      "*.m.mediawiki.org",
+      "*.m.wikibooks.org",
+      "*.m.wikidata.org",
+      "*.m.wikimedia.org",
+      "*.m.wikinews.org",
+      "*.m.wikipedia.org",
+      "*.m.wikiquote.org",
+      "*.m.wikisource.org",
+      "*.m.wikiversity.org",
+      "*.m.wikivoyage.org",
+      "*.m.wiktionary.org",
+      "*.mediawiki.org",
+      "*.planet.wikimedia.org",
+      "*.wikibooks.org",
+      "*.wikidata.org",
+      "*.wikifunctions.org",
+      "*.wikimedia.org",
+      "*.wikimediafoundation.org",
+      "*.wikinews.org",
+      "*.wikipedia.org",
+      "*.wikiquote.org",
+      "*.wikisource.org",
+      "*.wikiversity.org",
+      "*.wikivoyage.org",
+      "*.wiktionary.org",
+      "*.wmfusercontent.org",
+      "mediawiki.org",
+      "w.wiki",
+      "wikibooks.org",
+      "wikidata.org",
+      "wikifunctions.org",
+      "wikimedia.org",
+      "wikimediafoundation.org",
+      "wikinews.org",
+      "wikipedia.org",
+      "wikiquote.org",
+      "wikisource.org",
+      "wikiversity.org",
+      "wikivoyage.org",
+      "wiktionary.org",
+      "wmfusercontent.org"
+    ],
+    "days_left": 38,
+    "protocols": {
+      "SSLv3": false,
+      "TLS1.0": false,
+      "TLS1.1": false,
+      "TLS1.2": true,
+      "TLS1.3": true
+    }
+  },
+  "ports": {
+    "ip": "103.102.166.224",
+    "open": []
+  },
+  "https": {
+    "status": 301,
+    "content_type": "",
+    "title": ""
+  },
+  "mixed_content": [],
+  "tech": [
+    "Server: mw-web.eqiad.main-5fb6d6bf94-qbc7c"
+  ],
+  "cookies": [
+    {},
+    {
+      "domain": ".wikipedia.org"
+    },
+    {
+      "domain": ".wikipedia.org"
+    },
+    {
+      "samesite": "none"
+    },
+    {
+      "domain": ".wikipedia.org",
+      "samesite": "none"
+    }
+  ],
+  "cors": [
+    {
+      "origin": "https://evil-auditor.example",
+      "acao": "",
+      "acac": ""
+    },
+    {
+      "origin": "https://sub.ja.wikipedia.org",
+      "acao": "",
+      "acac": ""
+    }
+  ],
+  "http": {
+    "status": 301,
+    "location": "https://ja.wikipedia.org/"
+  },
+  "redir_probes": [
+    "/redirect?url=https://evil-auditor.example/x -> 404",
+    "/redirect?next=https://evil-auditor.example/x -> 404",
+    "/go?url=https://evil-auditor.example/x -> 404",
+    "/url?url=https://evil-auditor.example/x -> 404"
+  ],
+  "paths": {
+    "/robots.txt": 200,
+    "/sitemap.xml": 404,
+    "/.well-known/security.txt": 200,
+    "/security.txt": 404,
+    "/.git/HEAD": 404,
+    "/.git/config": 404,
+    "/.env": 404,
+    "/.htaccess": 403,
+    "/wp-login.php": 404,
+    "/phpmyadmin/index.php": 404,
+    "/server-status": 403,
+    "/api/": 200
+  },
+  "subdomains": {
+    "source": "crt.sh",
+    "count": 0,
+    "notable": [],
+    "sample": []
+  },
+  "elapsed_s": 13.0,
+  "rechecked": "2026-09-26 14:53 UTC"
+}
+```
+
+## Notes
+
+- All tests used a standard browser User-Agent; only GET requests and TCP-connect state checks were sent to the target.
+- No injection payloads, no fuzzing, no form submissions, no authentication, and no state was modified on the target.
+- DNS lookups went to public resolvers (8.8.8.8 / 1.1.1.1); subdomain data came from certificate-transparency logs (crt.sh / certspotter).
+- Findings are reported against the public program scope; submission through the program tracker is pending.

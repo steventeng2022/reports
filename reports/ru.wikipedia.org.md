@@ -1,13 +1,13 @@
-# Security Audit Report — meta.wikimedia.org
+# Security Audit Report — ru.wikipedia.org
 
 ## Scope and authorization
 
 | Item | Value |
 |---|---|
-| Target | https://meta.wikimedia.org/ |
+| Target | https://ru.wikipedia.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
-| Listed scope domain | meta.wikimedia.org |
-| Test date | 2026-09-26 14:53 UTC |
+| Listed scope domain | ru.wikipedia.org |
+| Test date | 2026-09-26 16:43 UTC |
 | Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
@@ -36,7 +36,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
 ### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** Detected: Server: mw-web.eqiad.main-5fb6d6bf94-jfxjc
+- **Detail:** Detected: Server: mw-web.eqiad.main-5fb6d6bf94-sthkh
 - **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
 ### 3. [LOW] Missing CSP header (`H2`)
@@ -77,7 +77,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
 ### 8. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** Header reveals: mw-web.eqiad.main-5fb6d6bf94-jfxjc
+- **Detail:** Header reveals: mw-web.eqiad.main-5fb6d6bf94-sthkh
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
@@ -85,7 +85,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
 
 ```json
 {
-  "domain": "meta.wikimedia.org",
+  "domain": "ru.wikipedia.org",
   "dns": {
     "a": [
       "103.102.166.224"
@@ -172,18 +172,21 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
   },
   "mixed_content": [],
   "tech": [
-    "Server: mw-web.eqiad.main-5fb6d6bf94-jfxjc"
+    "Server: mw-web.eqiad.main-5fb6d6bf94-sthkh"
   ],
   "cookies": [
     {},
     {
-      "domain": ".wikimedia.org"
+      "domain": ".wikipedia.org"
+    },
+    {
+      "domain": ".wikipedia.org"
     },
     {
       "samesite": "none"
     },
     {
-      "domain": "meta.wikimedia.org",
+      "domain": ".wikipedia.org",
       "samesite": "none"
     }
   ],
@@ -194,14 +197,14 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
       "acac": ""
     },
     {
-      "origin": "https://sub.meta.wikimedia.org",
+      "origin": "https://sub.ru.wikipedia.org",
       "acao": "",
       "acac": ""
     }
   ],
   "http": {
     "status": 301,
-    "location": "https://meta.wikimedia.org/"
+    "location": "https://ru.wikipedia.org/"
   },
   "redir_probes": [
     "/redirect?url=https://evil-auditor.example/x -> 404",
@@ -229,8 +232,8 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
     "notable": [],
     "sample": []
   },
-  "elapsed_s": 25.9,
-  "rechecked": "2026-09-26 14:53 UTC"
+  "elapsed_s": 38.9,
+  "rechecked": "2026-09-26 16:42 UTC"
 }
 ```
 

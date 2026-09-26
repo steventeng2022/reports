@@ -1,29 +1,32 @@
-# Security Audit Report — meta.wikimedia.org
+# Security Audit Report — opinionator.blogs.nytimes.com
 
 ## Scope and authorization
 
 | Item | Value |
 |---|---|
-| Target | https://meta.wikimedia.org/ |
+| Target | https://opinionator.blogs.nytimes.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
-| Listed scope domain | meta.wikimedia.org |
-| Test date | 2026-09-26 14:53 UTC |
+| Listed scope domain | opinionator.blogs.nytimes.com |
+| Test date | 2026-09-26 16:42 UTC |
 | Method | Non-aggressive: passive recon (DNS records, DNSSEC, SPF/DMARC, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags, CORS with Origin header, GET-only open-redirect probes, GET-only sensitive-path checks, TCP-connect port state, TLS certificate/protocol/cipher analysis). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
+Total findings: **11** (High: 0, Medium: 0, Low: 4, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
 | 2 | info | TECH1 | Technology fingerprint | CWE-200 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H4 | No clickjacking protection | CWE-1023 |
-| 5 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 6 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 7 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
-| 8 | info | H6 | Server technology disclosure | CWE-200 |
+| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 5 | low | H4 | No clickjacking protection | CWE-1023 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 9 | info | H6 | Server technology disclosure | CWE-200 |
+| 10 | low | CK1 | Cookie set without Secure flag over HTTPS | CWE-614 |
+| 11 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
 
 ## Detailed findings
 
@@ -36,7 +39,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
 ### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** Detected: Server: mw-web.eqiad.main-5fb6d6bf94-jfxjc
+- **Detail:** Detected: Server: envoy
 - **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
 ### 3. [LOW] Missing CSP header (`H2`)
@@ -46,54 +49,76 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
 - **Context:** https response, /
 - **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 4. [LOW] No clickjacking protection (`H4`)
+### 4. [LOW] Missing X-Content-Type-Options (`H3`)
+
+- **CWE:** CWE-1194
+- **Detail:** No nosniff directive; browsers may MIME-sniff responses.
+- **Context:** https response, /
+- **Recommendation:** Set X-Content-Type-Options: nosniff.
+
+### 5. [LOW] No clickjacking protection (`H4`)
 
 - **CWE:** CWE-1023
 - **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
 - **Context:** https response, /
 - **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 5. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
 - **Context:** https response, /
 - **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 6. [INFO] Missing Permissions-Policy (`H7`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
 - **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
 - **Context:** https response, /
 - **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 7. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
 - **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
 - **Context:** https response, /
 - **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 8. [INFO] Server technology disclosure (`H6`)
+### 9. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** Header reveals: mw-web.eqiad.main-5fb6d6bf94-jfxjc
+- **Detail:** Header reveals: envoy
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
+
+### 10. [LOW] Cookie set without Secure flag over HTTPS (`CK1`)
+
+- **CWE:** CWE-614
+- **Detail:** Cookie 'nyt-gdpr' has no Secure attribute on an HTTPS response.
+- **Context:** https response, /
+- **Recommendation:** Set Secure on all cookies over HTTPS.
+
+### 11. [INFO] Cookie without SameSite attribute (`CK3`)
+
+- **CWE:** CWE-1275
+- **Detail:** Cookie 'nyt-gdpr' has no SameSite attribute.
+- **Context:** https response, /
+- **Recommendation:** Set SameSite=Lax (or Strict) to reduce CSRF surface.
 
 ## Evidence (raw response observations)
 
 ```json
 {
-  "domain": "meta.wikimedia.org",
+  "domain": "opinionator.blogs.nytimes.com",
   "dns": {
     "a": [
-      "103.102.166.224"
+      "151.101.1.164",
+      "151.101.65.164",
+      "151.101.193.164",
+      "151.101.129.164"
     ],
-    "aaaa": [
-      "2001:df2:e500:ed1a::1"
-    ],
-    "cname": "dyna.wikimedia.org.",
+    "aaaa": [],
+    "cname": "blogs.nytimes.com.",
     "mx": [],
     "ns": [],
     "spf": [],
@@ -105,54 +130,42 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
     "chain": "trusted",
     "version": "TLSv1.3",
     "cipher": "TLS_AES_128_GCM_SHA256",
-    "subject": "commonName=*.wikipedia.org",
-    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YE2",
-    "notBefore": "Aug  5 19:15:41 2026 GMT",
-    "notAfter": "Nov  3 19:15:40 2026 GMT",
+    "subject": "commonName=nytimes.com",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, organizationalUnitName=www.digicert.com, commonName=Thawte TLS RSA CA G1",
+    "notBefore": "Sep  2 00:00:00 2026 GMT",
+    "notAfter": "Mar 19 23:59:59 2027 GMT",
     "san": [
-      "*.m.mediawiki.org",
-      "*.m.wikibooks.org",
-      "*.m.wikidata.org",
-      "*.m.wikimedia.org",
-      "*.m.wikinews.org",
-      "*.m.wikipedia.org",
-      "*.m.wikiquote.org",
-      "*.m.wikisource.org",
-      "*.m.wikiversity.org",
-      "*.m.wikivoyage.org",
-      "*.m.wiktionary.org",
-      "*.mediawiki.org",
-      "*.planet.wikimedia.org",
-      "*.wikibooks.org",
-      "*.wikidata.org",
-      "*.wikifunctions.org",
-      "*.wikimedia.org",
-      "*.wikimediafoundation.org",
-      "*.wikinews.org",
-      "*.wikipedia.org",
-      "*.wikiquote.org",
-      "*.wikisource.org",
-      "*.wikiversity.org",
-      "*.wikivoyage.org",
-      "*.wiktionary.org",
-      "*.wmfusercontent.org",
-      "mediawiki.org",
-      "w.wiki",
-      "wikibooks.org",
-      "wikidata.org",
-      "wikifunctions.org",
-      "wikimedia.org",
-      "wikimediafoundation.org",
-      "wikinews.org",
-      "wikipedia.org",
-      "wikiquote.org",
-      "wikisource.org",
-      "wikiversity.org",
-      "wikivoyage.org",
-      "wiktionary.org",
-      "wmfusercontent.org"
+      "nytimes.com",
+      "www.homedelivery.nytimes.com",
+      "*.api.dev.nytimes.com",
+      "*.api.nytimes.com",
+      "*.api.stg.nytimes.com",
+      "*.blogs.nytimes.com",
+      "*.blogs.stg.nytimes.com",
+      "*.dev.nyt.com",
+      "*.dev.nyt.net",
+      "*.dev.nytimes.com",
+      "*.newsdev.nyt.net",
+      "*.newsdev.nytimes.com",
+      "*.nyt.com",
+      "*.nyt.net",
+      "*.nytco.com",
+      "*.nytimes.com",
+      "*.payflow.sbx.nytimes.com",
+      "*.sbx.nytimes.com",
+      "*.stg.newsdev.nyt.net",
+      "*.stg.newsdev.nytimes.com",
+      "*.stg.nyt.com",
+      "*.stg.nyt.net",
+      "*.stg.nytimes.com",
+      "*.timestalks.com",
+      "nyt.com",
+      "nyt.net",
+      "nytco.com",
+      "timestalks.com",
+      "*.myaccount-preview.stg.nytimes.com"
     ],
-    "days_left": 38,
+    "days_left": 174,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -162,7 +175,7 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
     }
   },
   "ports": {
-    "ip": "103.102.166.224",
+    "ip": "151.101.1.164",
     "open": []
   },
   "https": {
@@ -172,19 +185,11 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
   },
   "mixed_content": [],
   "tech": [
-    "Server: mw-web.eqiad.main-5fb6d6bf94-jfxjc"
+    "Server: envoy"
   ],
   "cookies": [
-    {},
     {
-      "domain": ".wikimedia.org"
-    },
-    {
-      "samesite": "none"
-    },
-    {
-      "domain": "meta.wikimedia.org",
-      "samesite": "none"
+      "domain": ".nytimes.com"
     }
   ],
   "cors": [
@@ -194,34 +199,34 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
       "acac": ""
     },
     {
-      "origin": "https://sub.meta.wikimedia.org",
+      "origin": "https://sub.opinionator.blogs.nytimes.com",
       "acao": "",
       "acac": ""
     }
   ],
   "http": {
     "status": 301,
-    "location": "https://meta.wikimedia.org/"
+    "location": "https://archive.nytimes.com/opinionator.blogs.nytimes.com/"
   },
   "redir_probes": [
-    "/redirect?url=https://evil-auditor.example/x -> 404",
-    "/redirect?next=https://evil-auditor.example/x -> 404",
-    "/go?url=https://evil-auditor.example/x -> 404",
-    "/url?url=https://evil-auditor.example/x -> 404"
+    "/redirect?url=https://evil-auditor.example/x -> 301",
+    "/redirect?next=https://evil-auditor.example/x -> 301",
+    "/go?url=https://evil-auditor.example/x -> 301",
+    "/url?url=https://evil-auditor.example/x -> 301"
   ],
   "paths": {
-    "/robots.txt": 200,
+    "/robots.txt": 301,
     "/sitemap.xml": 404,
     "/.well-known/security.txt": 200,
-    "/security.txt": 404,
-    "/.git/HEAD": 404,
-    "/.git/config": 404,
+    "/security.txt": 200,
+    "/.git/HEAD": 301,
+    "/.git/config": 301,
     "/.env": 404,
-    "/.htaccess": 403,
+    "/.htaccess": 404,
     "/wp-login.php": 404,
     "/phpmyadmin/index.php": 404,
-    "/server-status": 403,
-    "/api/": 200
+    "/server-status": 301,
+    "/api/": 301
   },
   "subdomains": {
     "source": "crt.sh",
@@ -229,8 +234,8 @@ Total findings: **8** (High: 0, Medium: 0, Low: 2, Info: 6)
     "notable": [],
     "sample": []
   },
-  "elapsed_s": 25.9,
-  "rechecked": "2026-09-26 14:53 UTC"
+  "elapsed_s": 39.6,
+  "rechecked": "2026-09-26 16:42 UTC"
 }
 ```
 
