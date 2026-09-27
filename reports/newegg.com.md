@@ -7,12 +7,12 @@
 | Target | https://newegg.com/ |
 | Bug bounty program | Newegg |
 | Listed scope domain | newegg.com |
-| Test date | 2026-09-27 00:26 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:28 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
+Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,9 +29,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 | 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 14 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
+| 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 
 ## Detailed findings
 
@@ -118,22 +119,28 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: cursor-domain-verification-w61mwq=TQrKtOakRs3OBorucA3sDlbEQ; anthropic-domain-verification-1k1kwv=sA28xQK50TxxHO9tIaJbCEP60; google-site-verification=ajXtDle0UfsPUgtjCZ37T8opwg2zvXLzkHNjZTlIVFI
+- **Detail:** Apex TXT records with verification/token content: cursor-domain-verification-w61mwq=TQrKtOakRs3OBorucA3sDlbEQ; anthropic-domain-verification-1k1kwv=sA28xQK50TxxHO9tIaJbCEP60; apple-domain-verification=fookR9-T71Tb7G4opXgos6kiHa32YIsCriQxJY4SNU8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 14. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 14. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
+
+- **CWE:** CWE-603
+- **Detail:** OCSP check via http://ocsp.digicert.com -> http-200
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
+
+### 15. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but newegg.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 86 disallow path(s), e.g. /Common/BML/, /Common/ThirdParty/, /App/, /Application/, /Configuration/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 104.115.226.136 carries PTR a104-115-226-136.deploy.static.akamaitechnologies.com. for newegg.com.
@@ -155,31 +162,31 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "mxa-004ed001.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns0197.secondary.cloudflare.com.",
-      "a28-64.akam.net.",
-      "a24-67.akam.net.",
-      "a16-66.akam.net.",
       "ns0011.secondary.cloudflare.com.",
-      "a1-21.akam.net.",
+      "a16-66.akam.net.",
+      "a24-67.akam.net.",
       "a7-65.akam.net.",
+      "a28-64.akam.net.",
+      "a1-21.akam.net.",
+      "ns0197.secondary.cloudflare.com.",
       "a9-66.akam.net."
     ],
     "caa": [
-      "0 issue \"digicert.com\"",
-      "0 issue \"amazon.com\"",
       "0 issue \"pki.goog\"",
       "0 issue \"letsencrypt.org\"",
+      "0 issue \"digicert.com\"",
+      "0 issue \"amazon.com\"",
       "0 issue \"sectigo.com\""
     ],
     "spf": [
       "cursor-domain-verification-w61mwq=TQrKtOakRs3OBorucA3sDlbEQ",
       "v=spf1 ip4:107.20.210.250/32 ip4:52.1.14.157/32 ip4:216.52.208.0/24 ip4:204.14.213.0/24 ip4:204.89.152.0/24 ip4:50.79.138.221 include:spf-004ed001.pphosted.com include:u1970239.wl.sendgrid.net include:spf.protection.outlook.com -all",
-      "anthropic-domain-verification-1k1kwv=sA28xQK50TxxHO9tIaJbCEP60",
-      "google-site-verification=ajXtDle0UfsPUgtjCZ37T8opwg2zvXLzkHNjZTlIVFI",
       "_a4kh6j7awcaw7fxqj5shnpuurxqqwy8",
-      "yahoo-verification-key=UuN8VB7V7E4fK9e6tGDxdS2LNdDFfDU50tLmkOQftws=",
+      "ca3-d55519625ba84c9aa83e9e9a416063ba",
+      "anthropic-domain-verification-1k1kwv=sA28xQK50TxxHO9tIaJbCEP60",
       "apple-domain-verification=fookR9-T71Tb7G4opXgos6kiHa32YIsCriQxJY4SNU8",
-      "ca3-d55519625ba84c9aa83e9e9a416063ba"
+      "yahoo-verification-key=UuN8VB7V7E4fK9e6tGDxdS2LNdDFfDU50tLmkOQftws=",
+      "google-site-verification=ajXtDle0UfsPUgtjCZ37T8opwg2zvXLzkHNjZTlIVFI"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:dmarc-reports@newegg.com; ruf=mailto:dmarcruf@newegg.com"
@@ -317,9 +324,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
   "apex_txt": [
     "cursor-domain-verification-w61mwq=TQrKtOakRs3OBorucA3sDlbEQ",
     "anthropic-domain-verification-1k1kwv=sA28xQK50TxxHO9tIaJbCEP60",
-    "google-site-verification=ajXtDle0UfsPUgtjCZ37T8opwg2zvXLzkHNjZTlIVFI",
+    "apple-domain-verification=fookR9-T71Tb7G4opXgos6kiHa32YIsCriQxJY4SNU8",
     "yahoo-verification-key=UuN8VB7V7E4fK9e6tGDxdS2LNdDFfDU50tLmkOQftws=",
-    "apple-domain-verification=fookR9-T71Tb7G4opXgos6kiHa32YIsCriQxJY4SNU8"
+    "google-site-verification=ajXtDle0UfsPUgtjCZ37T8opwg2zvXLzkHNjZTlIVFI"
   ],
   "tls2": {
     "alpn": "",
@@ -344,7 +351,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "not_before": "20260429000000",
       "not_after": "20261113235959"
     },
-    "ocsp": "explicit-status"
+    "ocsp": "http-200"
   },
   "http2": {
     "robots_disallow": [
@@ -396,8 +403,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 21.3,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301
+  },
+  "elapsed_s": 23.3,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -410,4 +420,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

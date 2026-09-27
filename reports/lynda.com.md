@@ -7,12 +7,12 @@
 | Target | https://lynda.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | lynda.com |
-| Test date | 2026-09-27 00:25 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:26 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **22** (High: 0, Medium: 0, Low: 7, Info: 15)
+Total findings: **23** (High: 0, Medium: 0, Low: 7, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,8 +36,9 @@ Total findings: **22** (High: 0, Medium: 0, Low: 7, Info: 15)
 | 18 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
 | 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 20 | info | CK11 | Session-like cookie value has low entropy | CWE-340 |
-| 21 | info | CT1 | 103 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 22 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 21 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 22 | info | CT1 | 103 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 23 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -167,16 +168,22 @@ Total findings: **22** (High: 0, Medium: 0, Low: 7, Info: 15)
 ### 20. [INFO] Session-like cookie value has low entropy (`CK11`)
 
 - **CWE:** CWE-340
-- **Detail:** Cookie 'JSESSIONID' on lynda.com is 24 chars with ~3.36 bits/char of entropy; low-entropy tokens are easier to guess.
+- **Detail:** Cookie 'JSESSIONID' on lynda.com is 24 chars with ~3.26 bits/char of entropy; low-entropy tokens are easier to guess.
 - **Recommendation:** Generate session identifiers from a CSPRNG with sufficient entropy.
 
-### 21. [INFO] 103 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 21. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
+
+- **CWE:** CWE-200
+- **Detail:** The root response of lynda.com carries alt-svc h3=":443"; ma=2592000; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
+- **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
+
+### 22. [INFO] 103 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: admin.integration.lynda.com, admin.lynda.com, admin.release.lynda.com, admin.stage.lynda.com, api-1.stage.lynda.com, api.integration.lynda.com, api.release.lynda.com, api.stage.lynda.com, author.stage.lynda.com, authors.stage.lynda.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 22. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 23. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: admin.integration.lynda.com, admin.lynda.com, admin.release.lynda.com, admin.stage.lynda.com, api-1.stage.lynda.com; content may still be served via virtual-host fallback.
@@ -196,32 +203,32 @@ Total findings: **22** (High: 0, Medium: 0, Low: 7, Info: 15)
     ],
     "cname": null,
     "mx": [
-      "mail-c.linkedin.com (pref 15)",
       "mail-a.linkedin.com (pref 10)",
       "mail-d.linkedin.com (pref 15)",
+      "mail-c.linkedin.com (pref 15)",
       "mail.linkedin.com (pref 20)"
     ],
     "ns": [
-      "dns3.p09.nsone.net.",
-      "dns1.p09.nsone.net.",
-      "ns2-42.azure-dns.net.",
       "ns1-42.azure-dns.com.",
-      "ns3-42.azure-dns.org.",
+      "ns4-42.azure-dns.info.",
       "dns2.p09.nsone.net.",
+      "ns2-42.azure-dns.net.",
+      "dns1.p09.nsone.net.",
+      "ns3-42.azure-dns.org.",
       "dns4.p09.nsone.net.",
-      "ns4-42.azure-dns.info."
+      "dns3.p09.nsone.net."
     ],
     "caa": [
       "0 contactemail \"caarecordaware@microsoft.com\""
     ],
     "spf": [
-      "v=spf1 ip4:216.84.189.0/24 ip4:64.18.0.0/20 ip4:91.143.106.55 ip4:107.21.2.3 a:zgateway.zuora.com include:_spf.google.com include:mktomail.com include:_spf1.lynda.com include:linkedin.com ~all",
+      "wz2pkrghvpwld0jlvm13jqlqxqjtq6bn",
+      "MS=ms48400913",
+      "google-site-verification=otgwTIY9F-b-FfbfbUI2VALTkgGcwyo7qhoj6vzSDIA",
       "_xqfeq9o3rn2e8qlraki47908h5c9mf1",
       "MS=ms56649312",
-      "wz2pkrghvpwld0jlvm13jqlqxqjtq6bn",
-      "google-site-verification=otgwTIY9F-b-FfbfbUI2VALTkgGcwyo7qhoj6vzSDIA",
-      "_6xxhaq98xaeb80aazhyzt7z0gdcbn8k",
-      "MS=ms48400913"
+      "v=spf1 ip4:216.84.189.0/24 ip4:64.18.0.0/20 ip4:91.143.106.55 ip4:107.21.2.3 a:zgateway.zuora.com include:_spf.google.com include:mktomail.com include:_spf1.lynda.com include:linkedin.com ~all",
+      "_6xxhaq98xaeb80aazhyzt7z0gdcbn8k"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:linkedin@rua.agari.com; ruf=mailto:linkedin@ruf.agari.com"
@@ -426,8 +433,12 @@ Total findings: **22** (High: 0, Medium: 0, Low: 7, Info: 15)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 23.0,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301,
+    "alt_svc": "h3=\":443\"; ma=2592000"
+  },
+  "elapsed_s": 24.3,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -440,4 +451,5 @@ Total findings: **22** (High: 0, Medium: 0, Low: 7, Info: 15)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

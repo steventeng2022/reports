@@ -7,12 +7,12 @@
 | Target | https://europarl.europa.eu/ |
 | Bug bounty program | European Central Bank |
 | Listed scope domain | europarl.europa.eu |
-| Test date | 2026-09-27 00:17 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:19 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
+Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,10 +31,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 15 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
-| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 18 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -127,7 +126,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: cisco-ci-domain-verification=18335c80bc24811455d7efc1f94edae0da5e8d126b83f5b3a41; flexera-domain-verification-dwtjdzijulkjpxak; flexera-domain-verification-nwvxicwkiqqnfbfq
+- **Detail:** Apex TXT records with verification/token content: cisco-ci-domain-verification=18335c80bc24811455d7efc1f94edae0da5e8d126b83f5b3a41; webexdomainverification.=b646d9da-b47b-4aab-bef6-239fa2ea87d5; flexera-domain-verification-lpktsstialtzvdbc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -136,25 +135,19 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - **Detail:** OCSP check via http://ocsp.globalsign.com/ca/gsatlasr3ovtlsca2026q2 -> http-400
 - **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
-### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** robots.txt lists 31 disallow path(s), e.g. /, /calendar/, /debats/, /pv1/, /pv2/
-- **Recommendation:** Review disallowed paths; robots is not access control.
-
-### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
-
-- **CWE:** CWE-200
-- **Detail:** 136.173.69.97 carries PTR audiovisual.europarl.europa.eu., sciencemediahub.eu. for europarl.europa.eu.
+- **Detail:** 136.173.69.97 carries PTR sciencemediahub.eu., audiovisual.europarl.europa.eu. for europarl.europa.eu.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for europarl.europa.eu; apex europa.eu, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 19. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+### 18. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
 
 - **CWE:** CWE-298
 - **Detail:** The europarl.europa.eu certificate lists an AIA OCSP responder (http://ocsp.globalsign.com/ca/gsatlasr3ovtlsca2026q2) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
@@ -172,33 +165,33 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "ucsgusrbp002.ep.europa.eu (pref 100)",
-      "ucsgusrlp004.ep.europa.eu (pref 100)",
-      "ucsgusrbp003.ep.europa.eu (pref 100)",
-      "ucsgusrbp004.ep.europa.eu (pref 100)",
       "ucsgusrlp001.ep.europa.eu (pref 100)",
+      "ucsgusrbp004.ep.europa.eu (pref 100)",
+      "ucsgusrbp003.ep.europa.eu (pref 100)",
+      "ucsgusrbp002.ep.europa.eu (pref 100)",
       "ucsgusrbp001.ep.europa.eu (pref 100)",
       "ucsgusrlp002.ep.europa.eu (pref 100)",
+      "ucsgusrlp004.ep.europa.eu (pref 100)",
       "ucsgusrlp003.ep.europa.eu (pref 100)"
     ],
     "ns": [
-      "ans1.cw.net.",
-      "ans2.cw.net.",
       "itecbruadnsout.europarl.europa.eu.",
+      "ans2.cw.net.",
+      "ans1.cw.net.",
       "itecluxadnsout.europarl.europa.eu."
     ],
     "caa": [],
     "spf": [
+      "MS=ms56498925",
       "cisco-ci-domain-verification=18335c80bc24811455d7efc1f94edae0da5e8d126b83f5b3a4124f0e6437f9",
-      "flexera-domain-verification-dwtjdzijulkjpxak",
-      "flexera-domain-verification-nwvxicwkiqqnfbfq",
       "webexdomainverification.=b646d9da-b47b-4aab-bef6-239fa2ea87d5",
       "v=spf1 redirect=_spf.ep.europa.eu",
-      "apple-domain-verification=qKbdxzkhADwOAk4X",
-      "globalsign-domain-verification=288574904BAFBDAD213CEFABB639A762",
       "flexera-domain-verification-lpktsstialtzvdbc",
-      "MS=ms56498925",
       "flexera-domain-verification-zqsztipmwceljguc",
+      "flexera-domain-verification-nwvxicwkiqqnfbfq",
+      "globalsign-domain-verification=288574904BAFBDAD213CEFABB639A762",
+      "flexera-domain-verification-dwtjdzijulkjpxak",
+      "apple-domain-verification=qKbdxzkhADwOAk4X",
       "globalsign-domain-verification=BD0D62B15C7A7E05066B725206878608"
     ],
     "dmarc": [
@@ -283,10 +276,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   },
   "apex_txt": [
     "cisco-ci-domain-verification=18335c80bc24811455d7efc1f94edae0da5e8d126b83f5b3a41",
-    "flexera-domain-verification-dwtjdzijulkjpxak",
-    "flexera-domain-verification-nwvxicwkiqqnfbfq",
     "webexdomainverification.=b646d9da-b47b-4aab-bef6-239fa2ea87d5",
-    "apple-domain-verification=qKbdxzkhADwOAk4X"
+    "flexera-domain-verification-lpktsstialtzvdbc",
+    "flexera-domain-verification-zqsztipmwceljguc",
+    "flexera-domain-verification-nwvxicwkiqqnfbfq"
   ],
   "tls2": {
     "alpn": "",
@@ -312,30 +305,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     },
     "ocsp": "http-400"
   },
-  "http2": {
-    "robots_disallow": [
-      "/",
-      "/calendar/",
-      "/debats/",
-      "/pv1/",
-      "/pv2/",
-      "/searchdeb/",
-      "/guidemep_info_2009/",
-      "/votre-europarl/",
-      "/comparl/",
-      "/parliament/public/traineeship/secured/",
-      "/parliament/public/transltraineeship/secured",
-      "/activities/committees/studies/",
-      "/activities/committees/studiesCom/",
-      "/meps/*/pdf*",
-      "/meps/*/xml*"
-    ]
-  },
   "x12": {
     "status": 301,
     "ptr": [
-      "audiovisual.europarl.europa.eu.",
-      "sciencemediahub.eu."
+      "sciencemediahub.eu.",
+      "audiovisual.europarl.europa.eu."
     ]
   },
   "x13": {
@@ -362,8 +336,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 47.5,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301
+  },
+  "elapsed_s": 48.1,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -376,4 +353,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://drupal.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | drupal.org |
-| Test date | 2026-09-27 00:16 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
+Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,11 +34,12 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 | 16 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 18 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
-| 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 20 | info | SEC2 | security.txt published without a contact address | CWE-1038 |
-| 21 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 22 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
-| 23 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 19 | info | SEC2 | security.txt published without a contact address | CWE-1038 |
+| 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 21 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 22 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
+| 23 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 24 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -144,13 +145,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 ### 16. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (jg4uc6xlx2x3de.drupal.org and wc5ik6ft2s5w9a.drupal.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (l78zbujqib8p0d.drupal.org and kkqtilhytqxh75.drupal.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: brave-ledger-verification=39d2f4e207f7abc8b6f064d91672f3908d99079a2c03e6cbd60ef6; globalsign-domain-verification=wvdz6fqNpGYoUxoyCbEUOYrkz-Z8Nh2zXAoS8lsLRh; google-site-verification=Qd0lcd0D9W_oK9TbiAFqQ7PDpBsCyChyHvQnKn0CGgM
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=Qd0lcd0D9W_oK9TbiAFqQ7PDpBsCyChyHvQnKn0CGgM; _globalsign-domain-verification=ckxXdoIq27XGYE4ATbBYQOBeV7PTJWRxYe-PXDyzMX; globalsign-domain-verification=wvdz6fqNpGYoUxoyCbEUOYrkz-Z8Nh2zXAoS8lsLRh
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -159,31 +160,37 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 - **Detail:** OCSP check via http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2025q4 -> http-400
 - **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
 
-### 19. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt lists 56 disallow path(s), e.g. /includes/, /misc/, /modules/, /profiles/, /scripts/
-- **Recommendation:** Review disallowed paths; robots is not access control.
-
-### 20. [INFO] security.txt published without a contact address (`SEC2`)
+### 19. [INFO] security.txt published without a contact address (`SEC2`)
 
 - **CWE:** CWE-1038
 - **Detail:** /.well-known/security.txt returns 200 but contains no mailto:/URL contact.
 - **Recommendation:** Add a Contact: field per RFC 9116.
 
-### 21. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for drupal.org, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 22. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+### 21. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
 
 - **CWE:** CWE-298
 - **Detail:** The drupal.org certificate lists an AIA OCSP responder (http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2025q4) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
-### 23. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 22. [INFO] TLS 1.2 ceiling: 1.3 not negotiated with a modern client (`TLS27`)
+
+- **CWE:** CWE-327
+- **Detail:** The quiet handshake to drupal.org negotiated TLSv1.2 even though the client offered TLS 1.3; the edge caps at 1.2 (legacy/compatibility configuration).
+- **Recommendation:** Enable TLS 1.3 at the edge.
+
+### 23. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on drupal.org identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
+### 24. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -196,36 +203,36 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
   "domain": "drupal.org",
   "dns": {
     "a": [
-      "151.101.194.217",
       "151.101.2.217",
+      "151.101.66.217",
       "151.101.130.217",
-      "151.101.66.217"
+      "151.101.194.217"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "smtp1.osuosl.org (pref 5)",
-      "smtp2.osuosl.org (pref 5)",
       "smtp3.osuosl.org (pref 5)",
+      "smtp2.osuosl.org (pref 5)",
       "smtp4.osuosl.org (pref 5)"
     ],
     "ns": [
-      "ns4.dnsmadeeasy.com.",
       "ns3.dnsmadeeasy.com.",
-      "ns1.dnsmadeeasy.com.",
       "ns2.dnsmadeeasy.com.",
+      "ns4.dnsmadeeasy.com.",
+      "ns1.dnsmadeeasy.com.",
       "ns0.dnsmadeeasy.com."
     ],
     "caa": [],
     "spf": [
-      "brave-ledger-verification=39d2f4e207f7abc8b6f064d91672f3908d99079a2c03e6cbd60ef6d7daefa520",
+      "google-site-verification=Qd0lcd0D9W_oK9TbiAFqQ7PDpBsCyChyHvQnKn0CGgM",
+      "_globalsign-domain-verification=ckxXdoIq27XGYE4ATbBYQOBeV7PTJWRxYe-PXDyzMX",
       "libera-MuhFCh9oKFAX8JRaWuLfdx9f",
       "globalsign-domain-verification=wvdz6fqNpGYoUxoyCbEUOYrkz-Z8Nh2zXAoS8lsLRh",
-      "v=spf1 mx include:amazonses.com include:servers.mcsv.net -all",
-      "google-site-verification=Qd0lcd0D9W_oK9TbiAFqQ7PDpBsCyChyHvQnKn0CGgM",
+      "atlassian-domain-verification=ZePKtfBRwyzfk4yeRCOiU1xgjIPOxn9JC3ioSM/K/SIYzHxrw6mfbg39K7xejmhA",
+      "brave-ledger-verification=39d2f4e207f7abc8b6f064d91672f3908d99079a2c03e6cbd60ef6d7daefa520",
       "google-site-verification=oA6bw_SaWeTbyrjWNmQG7adq0075ki6d4pKaNZ4aui0",
-      "_globalsign-domain-verification=ckxXdoIq27XGYE4ATbBYQOBeV7PTJWRxYe-PXDyzMX",
-      "atlassian-domain-verification=ZePKtfBRwyzfk4yeRCOiU1xgjIPOxn9JC3ioSM/K/SIYzHxrw6mfbg39K7xejmhA"
+      "v=spf1 mx include:amazonses.com include:servers.mcsv.net -all"
     ],
     "dmarc": [
       "v=DMARC1; p=none; pct=100; rua=mailto:re+myecnlkddmo@dmarc.postmarkapp.com; sp=none; aspf=r;"
@@ -254,7 +261,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
     }
   },
   "ports": {
-    "ip": "151.101.194.217",
+    "ip": "151.101.2.217",
     "open": []
   },
   "https": {
@@ -314,11 +321,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "brave-ledger-verification=39d2f4e207f7abc8b6f064d91672f3908d99079a2c03e6cbd60ef6",
-    "globalsign-domain-verification=wvdz6fqNpGYoUxoyCbEUOYrkz-Z8Nh2zXAoS8lsLRh",
     "google-site-verification=Qd0lcd0D9W_oK9TbiAFqQ7PDpBsCyChyHvQnKn0CGgM",
-    "google-site-verification=oA6bw_SaWeTbyrjWNmQG7adq0075ki6d4pKaNZ4aui0",
-    "_globalsign-domain-verification=ckxXdoIq27XGYE4ATbBYQOBeV7PTJWRxYe-PXDyzMX"
+    "_globalsign-domain-verification=ckxXdoIq27XGYE4ATbBYQOBeV7PTJWRxYe-PXDyzMX",
+    "globalsign-domain-verification=wvdz6fqNpGYoUxoyCbEUOYrkz-Z8Nh2zXAoS8lsLRh",
+    "atlassian-domain-verification=ZePKtfBRwyzfk4yeRCOiU1xgjIPOxn9JC3ioSM/K/SIYzHxrw6",
+    "brave-ledger-verification=39d2f4e207f7abc8b6f064d91672f3908d99079a2c03e6cbd60ef6"
   ],
   "tls2": {
     "alpn": "",
@@ -343,25 +350,6 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
       "not_after": "20270109200017"
     },
     "ocsp": "http-400"
-  },
-  "http2": {
-    "robots_disallow": [
-      "/includes/",
-      "/misc/",
-      "/modules/",
-      "/profiles/",
-      "/scripts/",
-      "/themes/",
-      "/CHANGELOG.txt",
-      "/cron.php",
-      "/INSTALL.mysql.txt",
-      "/INSTALL.pgsql.txt",
-      "/INSTALL.sqlite.txt",
-      "/install.php",
-      "/INSTALL.txt",
-      "/LICENSE.txt",
-      "/MAINTAINERS.txt"
-    ]
   },
   "x12": {
     "status": 302
@@ -390,8 +378,14 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
     "cipher_ver": "TLSv1.2",
     "root_status": 302
   },
-  "elapsed_s": 26.0,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 302,
+    "cdn": [
+      "Fastly"
+    ]
+  },
+  "elapsed_s": 29.8,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -404,4 +398,5 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

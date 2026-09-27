@@ -7,12 +7,12 @@
 | Target | https://data.worldbank.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | data.worldbank.org |
-| Test date | 2026-09-27 00:15 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:15 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
+Total findings: **21** (High: 0, Medium: 0, Low: 3, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,11 +30,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 | 12 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 13 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
 | 14 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
-| 15 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 16 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
-| 17 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
-| 18 | info | HTML7 | Insecure http:// references inside an HTTPS document | CWE-319 |
-| 19 | info | HTML11 | Document references many third-party domains | CWE-200 |
+| 15 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 17 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
+| 18 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 19 | info | HTML7 | Insecure http:// references inside an HTTPS document | CWE-319 |
+| 20 | info | HTML11 | Document references many third-party domains | CWE-200 |
+| 21 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
 
 ## Detailed findings
 
@@ -127,35 +129,47 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 - **Detail:** Cookie '_cfuvid' set on data.worldbank.org indicates Cloudflare visitor cookie.
 - **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
 
-### 15. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 15. [INFO] Error-page technology fingerprint (`ERR1`)
+
+- **CWE:** CWE-200
+- **Detail:** GET /xk3fbl7dqtfmfc.html -> 404; error page/headers match: Cloudflare.
+- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
+
+### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for data.worldbank.org; apex worldbank.org, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 16. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+### 17. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
 
 - **CWE:** CWE-345
 - **Detail:** Root document of data.worldbank.org loads 1 cross-origin script(s) without an integrity attribute, e.g. https://assets.adobedtm.com/223f6e2cf7c9/3eb6c9b72a93/launch-7bc0cdc67098.min.js; a compromise of any such third-party host can inject code.
 - **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
 
-### 17. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+### 18. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
 
 - **CWE:** CWE-200
 - **Detail:** /sitemap.xml on data.worldbank.org lists 21 <loc> URL(s) across 22 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
-### 18. [INFO] Insecure http:// references inside an HTTPS document (`HTML7`)
+### 19. [INFO] Insecure http:// references inside an HTTPS document (`HTML7`)
 
 - **CWE:** CWE-319
 - **Detail:** Root document of data.worldbank.org references 291 distinct http:// URL(s) (e.g. http://blogs.worldbank.org/opendata, http://blogs.worldbank.org/opendata/ar, http://blogs.worldbank.org/opendata/ch); using them drops to unencrypted transport.
 - **Recommendation:** Use https:// references or relative URLs.
 
-### 19. [INFO] Document references many third-party domains (`HTML11`)
+### 20. [INFO] Document references many third-party domains (`HTML11`)
 
 - **CWE:** CWE-200
 - **Detail:** Root document of data.worldbank.org references 17 distinct third-party registrable domains (e.g. bancomundial.org, banquemondiale.org, albankaldawli.org, worldbank.org.cn, sdmx.org); each is a supply-chain/trust dependency of the page.
 - **Recommendation:** Review third-party integrations and pin critical ones (SRI/subresource policies).
+
+### 21. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on data.worldbank.org identify the edge as CloudFront; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
 ## Evidence (raw response observations)
 
@@ -251,7 +265,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
     "location": "https://data.worldbank.org/"
   },
   "redir_probes": [
-    "/redirect?url=https://evil-auditor.example/x -> 0",
+    "/redirect?url=https://evil-auditor.example/x -> 404",
     "/redirect?next=https://evil-auditor.example/x -> 404",
     "/go?url=https://evil-auditor.example/x -> 404",
     "/url?url=https://evil-auditor.example/x -> 404"
@@ -259,15 +273,15 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
   "paths": {
     "/robots.txt": 200,
     "/sitemap.xml": 200,
-    "/.well-known/security.txt": 0,
+    "/.well-known/security.txt": 404,
     "/security.txt": 404,
     "/.git/HEAD": 403,
     "/.git/config": 403,
     "/.env": 403,
     "/.htaccess": 403,
-    "/wp-login.php": 0,
+    "/wp-login.php": 404,
     "/phpmyadmin/index.php": 404,
-    "/server-status": 0,
+    "/server-status": 404,
     "/api/": 301
   },
   "subdomains": {
@@ -305,7 +319,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
   "x13": {
     "root_status": 200,
     "http_status": 301,
-    "p404_status": 502,
+    "p404_status": 404,
     "quic": {
       "ok": false,
       "version": "",
@@ -328,8 +342,14 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
     "cipher_ver": "TLSv1.3",
     "root_status": 200
   },
-  "elapsed_s": 127.7,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 200,
+    "cdn": [
+      "CloudFront"
+    ]
+  },
+  "elapsed_s": 42.3,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -342,4 +362,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

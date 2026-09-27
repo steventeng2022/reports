@@ -7,12 +7,12 @@
 | Target | https://paypal.com/ |
 | Bug bounty program | PayPal |
 | Listed scope domain | paypal.com |
-| Test date | 2026-09-27 00:28 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:29 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
+Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 17 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 18 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 19 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
 
 ## Detailed findings
 
@@ -133,7 +134,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: docker-verification=2deb3c1f-56d2-4fe4-8a09-d48b7bf8a918; workplace-domain-verification=F7ezsH9uapvYDGd2VtPARy1qq9ymN6; adobe-idp-site-verification=11600efbec96c0e73dd8820cd33ca906ec4302aea4487d208a42
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=Q8BdHlO6NYSN5njfC2rlbPQxksVfADlcxarxq4fesYJErtGKyl; adobe-idp-site-verification=11600efbec96c0e73dd8820cd33ca906ec4302aea4487d208a42; globalsign-domain-verification=KXa3jn_dNODlTVQ4eg1Wx3vA-RrHZ2K7iLQN0vdJBx
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -154,6 +155,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 - **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on paypal.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
 - **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
+### 19. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on paypal.com identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -161,9 +168,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   "domain": "paypal.com",
   "dns": {
     "a": [
-      "151.101.3.1",
       "151.101.195.1",
-      "162.159.141.96"
+      "162.159.141.96",
+      "151.101.3.1"
     ],
     "aaaa": [],
     "cname": null,
@@ -172,29 +179,29 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "mx1.paypalcorp.com (pref 10)"
     ],
     "ns": [
+      "ns2-pchnet.paypal.com.",
       "pdns100.ultradns.net.",
       "pdns100.ultradns.com.",
-      "ns2-pchnet.paypal.com.",
       "ns1-pchnet.paypal.com."
     ],
     "caa": [
-      "0 issue \"quovadisglobal.com\"",
       "0 issue \"digicert.com\"",
-      "0 issue \"visa.com\""
+      "0 issue \"visa.com\"",
+      "0 issue \"quovadisglobal.com\""
     ],
     "spf": [
-      "intersight=6d86ec09a7c6926c6f9b8eff8ef0ef06679d84aab4999756a0920a8d430ed8ae",
+      "atlassian-domain-verification=Q8BdHlO6NYSN5njfC2rlbPQxksVfADlcxarxq4fesYJErtGKylvfcfyfwrPD/wnv",
       "mgverify=e00c4bf7480ee22be851faa9acd20e41b8fd0f7b75b434bbe38aa257e5aae3a0",
-      "docker-verification=2deb3c1f-56d2-4fe4-8a09-d48b7bf8a918",
-      "workplace-domain-verification=F7ezsH9uapvYDGd2VtPARy1qq9ymN6",
+      "mgf84gx1cv1c759pmjqx0wnths9ss9f6",
       "adobe-idp-site-verification=11600efbec96c0e73dd8820cd33ca906ec4302aea4487d208a42a2b01806144c",
+      "MS=ms95960309",
       "globalsign-domain-verification=KXa3jn_dNODlTVQ4eg1Wx3vA-RrHZ2K7iLQN0vdJBx",
       "stripe-verification=549bef27619f14f935a84c6a23492e80f49ff57a341d9ddc74d8486881cd0d8c",
-      "mgf84gx1cv1c759pmjqx0wnths9ss9f6",
-      "atlassian-domain-verification=Q8BdHlO6NYSN5njfC2rlbPQxksVfADlcxarxq4fesYJErtGKylvfcfyfwrPD/wnv",
+      "intersight=6d86ec09a7c6926c6f9b8eff8ef0ef06679d84aab4999756a0920a8d430ed8ae",
       "v=spf1 include:pp._spf.paypal.com include:3ph1._spf.paypal.com include:3ph2._spf.paypal.com include:3ph3._spf.paypal.com include:3ph4._spf.paypal.com include:sendgrid.net include:aspmx.pardot.com ~all",
-      "Notion_verify_uVqjH2PpjVthR9xxfR5BZGsuYGtqb6Za4uDHPaA917v5Cg5J0rRwiATz84PWHZh8Px7vFK",
-      "MS=ms95960309"
+      "workplace-domain-verification=F7ezsH9uapvYDGd2VtPARy1qq9ymN6",
+      "docker-verification=2deb3c1f-56d2-4fe4-8a09-d48b7bf8a918",
+      "Notion_verify_uVqjH2PpjVthR9xxfR5BZGsuYGtqb6Za4uDHPaA917v5Cg5J0rRwiATz84PWHZh8Px7vFK"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:d@rua.agari.com,mailto:dmarc_agg@vali.email; ruf=mailto:d@ruf.agari.com,mailto:MTc4Mzcw@ruf.vali.email"
@@ -324,7 +331,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     }
   },
   "ports": {
-    "ip": "151.101.3.1",
+    "ip": "151.101.195.1",
     "open": []
   },
   "https": {
@@ -377,11 +384,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "docker-verification=2deb3c1f-56d2-4fe4-8a09-d48b7bf8a918",
-    "workplace-domain-verification=F7ezsH9uapvYDGd2VtPARy1qq9ymN6",
+    "atlassian-domain-verification=Q8BdHlO6NYSN5njfC2rlbPQxksVfADlcxarxq4fesYJErtGKyl",
     "adobe-idp-site-verification=11600efbec96c0e73dd8820cd33ca906ec4302aea4487d208a42",
     "globalsign-domain-verification=KXa3jn_dNODlTVQ4eg1Wx3vA-RrHZ2K7iLQN0vdJBx",
-    "stripe-verification=549bef27619f14f935a84c6a23492e80f49ff57a341d9ddc74d8486881cd"
+    "stripe-verification=549bef27619f14f935a84c6a23492e80f49ff57a341d9ddc74d8486881cd",
+    "workplace-domain-verification=F7ezsH9uapvYDGd2VtPARy1qq9ymN6"
   ],
   "tls2": {
     "alpn": "",
@@ -460,8 +467,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 21.8,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301,
+    "cdn": [
+      "Fastly"
+    ]
+  },
+  "elapsed_s": 22.1,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -474,4 +487,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

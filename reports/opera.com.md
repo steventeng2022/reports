@@ -7,8 +7,8 @@
 | Target | https://opera.com/ |
 | Bug bounty program | Opera Public Bug Bounty |
 | Listed scope domain | opera.com |
-| Test date | 2026-09-27 00:27 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:29 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -106,7 +106,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=M1WsVfJ0xUplsAdeDZ76BkHn9QL-IOWDyq9zziApgAI; openai-domain-verification=dv-kjAJTFRCoOY6YboxYHmIN5wi; facebook-domain-verification=up2ljn0zco95f4f16hjxe6we815q19
+- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-kjAJTFRCoOY6YboxYHmIN5wi; apple-domain-verification=SWfwiYtREsASOqwv; keybase-site-verification=uH1gfE9c0VONYIy9Hq-WuhCOx6JclPV3_M3j9fAPnXU
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -124,7 +124,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 185.26.182.104 carries PTR opera.com. for opera.com.
+- **Detail:** 185.26.182.103 carries PTR opera.com. for opera.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 15. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
@@ -152,48 +152,48 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "opera.com",
   "dns": {
     "a": [
-      "185.26.182.104",
-      "185.26.182.103"
+      "185.26.182.103",
+      "185.26.182.104"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "ASPMX.L.GOOGLE.com (pref 1)",
       "ALT1.ASPMX.L.GOOGLE.com (pref 5)",
-      "ALT2.ASPMX.L.GOOGLE.com (pref 5)",
+      "ASPMX.L.GOOGLE.com (pref 1)",
+      "ALT3.ASPMX.L.GOOGLE.com (pref 10)",
       "ALT4.ASPMX.L.GOOGLE.com (pref 10)",
-      "ALT3.ASPMX.L.GOOGLE.com (pref 10)"
+      "ALT2.ASPMX.L.GOOGLE.com (pref 5)"
     ],
     "ns": [
-      "nic1.opera.com.",
-      "nic4.opera.com.",
       "nic2.opera.com.",
-      "nic6.opera.com.",
-      "nic3.opera.com."
+      "nic1.opera.com.",
+      "nic3.opera.com.",
+      "nic4.opera.com.",
+      "nic6.opera.com."
     ],
     "caa": [
-      "0 issue \"globalsign.com\"",
-      "0 issue \"sectigo.com\"",
+      "0 issue \"trust-provider.com\"",
       "0 iodef \"mailto:hostmaster@opera.com\"",
+      "0 issue \"sectigo.com\"",
       "0 issue \"digicert.com\"",
-      "0 issue \"trust-provider.com\""
+      "0 issue \"globalsign.com\""
     ],
     "spf": [
-      "baaff065e3b7dbc102b34ce11a472f5c",
-      "google-site-verification=M1WsVfJ0xUplsAdeDZ76BkHn9QL-IOWDyq9zziApgAI",
       "openai-domain-verification=dv-kjAJTFRCoOY6YboxYHmIN5wi",
-      "facebook-domain-verification=up2ljn0zco95f4f16hjxe6we815q19",
-      "google-site-verification=mi7mVeHWYoxrnV4M85YytexDvFMwa23tvOOcg0f0w-E",
-      "google-site-verification=zsu8s2znTOAuZ0dkksfMdQE3HmkoNNyuijNib1xkiQo",
-      "07b121f99e9843a192c18b3cf340b8fb",
-      "BQ33d38Z4c0YY0OBRQuXcXsgWcVd9_w",
-      "teamtailor=baaff065e3b7dbc102b34ce11a472f5c",
-      "v=spf1 ip4:185.26.182.76 ip4:195.189.142.89 ip6:2001:4c28:4000:722:185:26:182:76 ip6:2001:4c28:4000:779:195:189:142:89 mx include:_spf.google.com ~all",
-      "_nt0mk4rbdlrkccjcxafujsak0umpiu7",
+      "apple-domain-verification=SWfwiYtREsASOqwv",
+      "FIO7ppPA1vjosCuWmpg32zcajEQgpx5RgsHG78x2T5oojZ2C6ujnN",
       "keybase-site-verification=uH1gfE9c0VONYIy9Hq-WuhCOx6JclPV3_M3j9fAPnXU",
       "adobe-idp-site-verification=61e18c604ee93df7fb52b11bab48531b3112c62f0db7249f99463fa327f9c69d",
-      "apple-domain-verification=SWfwiYtREsASOqwv",
-      "FIO7ppPA1vjosCuWmpg32zcajEQgpx5RgsHG78x2T5oojZ2C6ujnN"
+      "baaff065e3b7dbc102b34ce11a472f5c",
+      "google-site-verification=zsu8s2znTOAuZ0dkksfMdQE3HmkoNNyuijNib1xkiQo",
+      "07b121f99e9843a192c18b3cf340b8fb",
+      "facebook-domain-verification=up2ljn0zco95f4f16hjxe6we815q19",
+      "_nt0mk4rbdlrkccjcxafujsak0umpiu7",
+      "v=spf1 ip4:185.26.182.76 ip4:195.189.142.89 ip6:2001:4c28:4000:722:185:26:182:76 ip6:2001:4c28:4000:779:195:189:142:89 mx include:_spf.google.com ~all",
+      "teamtailor=baaff065e3b7dbc102b34ce11a472f5c",
+      "google-site-verification=M1WsVfJ0xUplsAdeDZ76BkHn9QL-IOWDyq9zziApgAI",
+      "BQ33d38Z4c0YY0OBRQuXcXsgWcVd9_w",
+      "google-site-verification=mi7mVeHWYoxrnV4M85YytexDvFMwa23tvOOcg0f0w-E"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; aspf=s; adkim=s; ri=86400; rua=mailto:c22187dc@in.mailhardener.com"
@@ -223,7 +223,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "185.26.182.104",
+    "ip": "185.26.182.103",
     "open": []
   },
   "https": {
@@ -276,10 +276,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=M1WsVfJ0xUplsAdeDZ76BkHn9QL-IOWDyq9zziApgAI",
     "openai-domain-verification=dv-kjAJTFRCoOY6YboxYHmIN5wi",
-    "facebook-domain-verification=up2ljn0zco95f4f16hjxe6we815q19",
-    "google-site-verification=mi7mVeHWYoxrnV4M85YytexDvFMwa23tvOOcg0f0w-E",
+    "apple-domain-verification=SWfwiYtREsASOqwv",
+    "keybase-site-verification=uH1gfE9c0VONYIy9Hq-WuhCOx6JclPV3_M3j9fAPnXU",
+    "adobe-idp-site-verification=61e18c604ee93df7fb52b11bab48531b3112c62f0db7249f9946",
     "google-site-verification=zsu8s2znTOAuZ0dkksfMdQE3HmkoNNyuijNib1xkiQo"
   ],
   "tls2": {
@@ -357,8 +357,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 38.7,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301
+  },
+  "elapsed_s": 41.3,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -371,4 +374,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

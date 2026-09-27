@@ -7,8 +7,8 @@
 | Target | https://asus.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | asus.com |
-| Test date | 2026-09-27 00:10 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:10 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -66,7 +66,7 @@ Total findings: **8** (High: 0, Medium: 1, Low: 1, Info: 6)
 ### 7. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=ZAxDQWYWbQka8_PwpGcJnv38NFkB1kp4ZeamtqNEjLw; wiz-domain-verification=6e11efe846bf3a2f81870077d571d06c8650aff084bd960c34cfc324; atlassian-domain-verification=2Z9J5op7FAXNJxHd0AExZaq7IBe8R8DFbq6Lh6Qx/fhUeEWmSe
+- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=382f5b6399951cb3de1a5d1dbd06bb8eb8d701f88c4ea5db38aa; google-site-verification=eUHxhIYbA4kM7heyt2W2onNhJHLTXuDgo4VE3snEBKw; wiz-domain-verification=6e11efe846bf3a2f81870077d571d06c8650aff084bd960c34cfc324
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 8. [INFO] 118 hostnames found via Certificate Transparency (certspotter) (`CT1`)
@@ -87,56 +87,56 @@ Total findings: **8** (High: 0, Medium: 1, Low: 1, Info: 6)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mg2.asus.com (pref 100)",
       "mg.asus.com (pref 10)",
+      "mg2.asus.com (pref 100)",
       "mg1.asus.com (pref 20)"
     ],
     "ns": [
-      "ns-1875.awsdns-42.co.uk.",
       "ns-544.awsdns-04.net.",
-      "ns-337.awsdns-42.com.",
-      "ns-1039.awsdns-01.org."
+      "ns-1875.awsdns-42.co.uk.",
+      "ns-1039.awsdns-01.org.",
+      "ns-337.awsdns-42.com."
     ],
     "caa": [
-      "0 issue \"awstrust.com\"",
-      "0 issue \"twca.com.tw\"",
       "0 issue \"digicert.com\"",
-      "0 issue \"amazon.com\"",
-      "0 issue \"sectigo.com\"",
-      "0 issue \"pki.goog\"",
-      "0 issue \"ssl.com\"",
-      "0 iodef \"mailto:dns_admin@asus.com\"",
+      "0 issue \"twca.com.tw\"",
       "0 issue \"globalsign.com\"",
+      "0 issue \"amazon.com\"",
+      "0 iodef \"mailto:dns_admin@asus.com\"",
       "0 issue \"amazonaws.com\"",
-      "0 issue \"amazontrust.com\""
+      "0 issue \"sectigo.com\"",
+      "0 issue \"awstrust.com\"",
+      "0 issue \"pki.goog\"",
+      "0 issue \"amazontrust.com\"",
+      "0 issue \"ssl.com\""
     ],
     "spf": [
-      "google-site-verification=ZAxDQWYWbQka8_PwpGcJnv38NFkB1kp4ZeamtqNEjLw",
-      "7894A73F0CFEDD51A6EA5C7E4CCD13A3965623132C7519E917382CF0131AA3F2",
-      "wiz-domain-verification=6e11efe846bf3a2f81870077d571d06c8650aff084bd960c34cfc32434dac695",
-      "atlassian-domain-verification=2Z9J5op7FAXNJxHd0AExZaq7IBe8R8DFbq6Lh6Qx/fhUeEWmSeGtuSYud7tFYjGn",
-      "google-site-verification=71RHI7e5zrzhwOgNIz8aT-pbh6LGw1zQ7VWTAnhlpF8",
-      "google-site-verification=44buYvNtZHvSRVcj2dOJGZMtmPAaLOa9zPSVMMVwbaY",
-      "trend-micro-v1-domain-verification.e5d263b0eb2014dbafc1625a7865e267=1ea4ccc7-05b5-476d-aff9-5272fc7c5d2e",
-      "zzldvfj08yfss0ydft85bbysmy1cj96x.",
-      "google-site-verification=Rs_zuu4Gqxki8VVX5xNs63-tIOcut0qvdvYvW2KLY38",
-      "google-site-verification=va5g5RuEWw-pwEJ7ssCrnyBAggf7yCLxugRggQY8Udc",
-      "5YA7LJMOVXX399OL065GX65G87UKJ20FFDBUVX2M",
-      "facebook-domain-verification=tkhj31qarb9901xcperg0w0yfcdazh",
+      "adobe-idp-site-verification=382f5b6399951cb3de1a5d1dbd06bb8eb8d701f88c4ea5db38aa69347dd9a13f",
       "mu56Kq__Cg9v_aczc5degR_4sMXtsDa2AeU3-oEsihw",
-      "hT5pYl5FKR/fwLMKrJ1KQPnZrNC8YzgJ7REPX6Wux1cRehEIzwrOuyB9ASXckqMz+rHto/UaM/44UfPgbQFjYg==",
+      "5YA7LJMOVXX399OL065GX65G87UKJ20FFDBUVX2M",
       "docusign=9c43421e-314b-49f7-82ae-fe698bce40bd",
-      "bv-domain-verification=e134f5546cb5c93ee5ffb1f47c8015873876076d9c43dda13d85dfc6341f65ca",
-      "MS=ms94547556",
-      "docusign=f0d1ec0b-94f3-4abf-bf6f-e5c894776e57",
-      "v=spf1 ip4:103.10.4.0/22 ip4:213.61.92.115 ip4:218.211.38.242 ip4:118.163.110.210 ip4:213.61.152.30 include:spf.protection.outlook.com -all",
-      "pardot922413=75629e802092cb0ac07329098a29b2cec1b3d86f4470d27f5643addd5bc78707",
-      "google-site-verification=iA3Ko0FQtp-yaka9tibkFlF98ZMkxrnu5ofKd9QQ-QE",
-      "apple-domain-verification=YVSgEqQtJRjmdVBu",
-      "atlassian-domain-verification=jxVtO6D77cvTtzPiqZUe8DiTmI1mqdbU0jqM66bYHskWVDfx5kiqtfOWcKBZMAVC",
-      "1dbc8bc7963d4b0e90bbb0e474e38e2e",
       "google-site-verification=eUHxhIYbA4kM7heyt2W2onNhJHLTXuDgo4VE3snEBKw",
-      "adobe-idp-site-verification=382f5b6399951cb3de1a5d1dbd06bb8eb8d701f88c4ea5db38aa69347dd9a13f"
+      "wiz-domain-verification=6e11efe846bf3a2f81870077d571d06c8650aff084bd960c34cfc32434dac695",
+      "v=spf1 ip4:103.10.4.0/22 ip4:213.61.92.115 ip4:218.211.38.242 ip4:118.163.110.210 ip4:213.61.152.30 include:spf.protection.outlook.com -all",
+      "MS=ms94547556",
+      "1dbc8bc7963d4b0e90bbb0e474e38e2e",
+      "apple-domain-verification=YVSgEqQtJRjmdVBu",
+      "google-site-verification=ZAxDQWYWbQka8_PwpGcJnv38NFkB1kp4ZeamtqNEjLw",
+      "zzldvfj08yfss0ydft85bbysmy1cj96x.",
+      "google-site-verification=iA3Ko0FQtp-yaka9tibkFlF98ZMkxrnu5ofKd9QQ-QE",
+      "facebook-domain-verification=tkhj31qarb9901xcperg0w0yfcdazh",
+      "google-site-verification=Rs_zuu4Gqxki8VVX5xNs63-tIOcut0qvdvYvW2KLY38",
+      "google-site-verification=44buYvNtZHvSRVcj2dOJGZMtmPAaLOa9zPSVMMVwbaY",
+      "hT5pYl5FKR/fwLMKrJ1KQPnZrNC8YzgJ7REPX6Wux1cRehEIzwrOuyB9ASXckqMz+rHto/UaM/44UfPgbQFjYg==",
+      "docusign=f0d1ec0b-94f3-4abf-bf6f-e5c894776e57",
+      "pardot922413=75629e802092cb0ac07329098a29b2cec1b3d86f4470d27f5643addd5bc78707",
+      "atlassian-domain-verification=2Z9J5op7FAXNJxHd0AExZaq7IBe8R8DFbq6Lh6Qx/fhUeEWmSeGtuSYud7tFYjGn",
+      "trend-micro-v1-domain-verification.e5d263b0eb2014dbafc1625a7865e267=1ea4ccc7-05b5-476d-aff9-5272fc7c5d2e",
+      "google-site-verification=71RHI7e5zrzhwOgNIz8aT-pbh6LGw1zQ7VWTAnhlpF8",
+      "bv-domain-verification=e134f5546cb5c93ee5ffb1f47c8015873876076d9c43dda13d85dfc6341f65ca",
+      "atlassian-domain-verification=jxVtO6D77cvTtzPiqZUe8DiTmI1mqdbU0jqM66bYHskWVDfx5kiqtfOWcKBZMAVC",
+      "7894A73F0CFEDD51A6EA5C7E4CCD13A3965623132C7519E917382CF0131AA3F2",
+      "google-site-verification=va5g5RuEWw-pwEJ7ssCrnyBAggf7yCLxugRggQY8Udc"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; sp=quarantine"
@@ -212,11 +212,11 @@ Total findings: **8** (High: 0, Medium: 1, Low: 1, Info: 6)
     ]
   },
   "apex_txt": [
-    "google-site-verification=ZAxDQWYWbQka8_PwpGcJnv38NFkB1kp4ZeamtqNEjLw",
+    "adobe-idp-site-verification=382f5b6399951cb3de1a5d1dbd06bb8eb8d701f88c4ea5db38aa",
+    "google-site-verification=eUHxhIYbA4kM7heyt2W2onNhJHLTXuDgo4VE3snEBKw",
     "wiz-domain-verification=6e11efe846bf3a2f81870077d571d06c8650aff084bd960c34cfc324",
-    "atlassian-domain-verification=2Z9J5op7FAXNJxHd0AExZaq7IBe8R8DFbq6Lh6Qx/fhUeEWmSe",
-    "google-site-verification=71RHI7e5zrzhwOgNIz8aT-pbh6LGw1zQ7VWTAnhlpF8",
-    "google-site-verification=44buYvNtZHvSRVcj2dOJGZMtmPAaLOa9zPSVMMVwbaY"
+    "apple-domain-verification=YVSgEqQtJRjmdVBu",
+    "google-site-verification=ZAxDQWYWbQka8_PwpGcJnv38NFkB1kp4ZeamtqNEjLw"
   ],
   "tls2": {
     "error": "ConnectionResetError(10054, '遠端主機已強制關閉一個現存的連線。', None, 10054, None)"
@@ -242,8 +242,11 @@ Total findings: **8** (High: 0, Medium: 1, Low: 1, Info: 6)
     "cipher_error": "ConnectionResetError(10054, '遠端主機已強制關閉一個現存的連線。', None, 10054, None)",
     "root_error": "ConnectionError(ProtocolError('Connection aborted.', ConnectionResetError(10054,"
   },
-  "elapsed_s": 86.6,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_error": "ConnectionError(ProtocolError('Connection aborted.', ConnectionResetError(10054,"
+  },
+  "elapsed_s": 98.4,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -256,4 +259,5 @@ Total findings: **8** (High: 0, Medium: 1, Low: 1, Info: 6)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

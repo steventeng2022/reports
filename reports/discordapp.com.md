@@ -7,12 +7,12 @@
 | Target | https://discordapp.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | discordapp.com |
-| Test date | 2026-09-27 00:16 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:16 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
+Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -39,6 +39,8 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 | 21 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 22 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
 | 23 | info | WK2 | OIDC discovery document published | CWE-200 |
+| 24 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 25 | info | HTML14 | Public root document marked noindex | CWE-200 |
 
 ## Detailed findings
 
@@ -51,13 +53,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 162.159.134.233:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 162.159.129.233:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 162.159.134.233:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 162.159.129.233:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -137,7 +139,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=954e966634e7f12b8a9a2876a989bf5e7f5050a5192c3f529b99; docker-verification=f765b7ff-5ce5-4f27-b00a-28091eddacce; autodesk-domain-verification=2sh4O6xiIc4ReP9Aee8h
+- **Detail:** Apex TXT records with verification/token content: logmein-verification-code=2d4b306a-e291-4dc9-a09f-2cc3277288cc; adobe-idp-site-verification=954e966634e7f12b8a9a2876a989bf5e7f5050a5192c3f529b99; stripe-verification=1d56fec5a0f745dabfbe48592806853324fe50a8d4448c10e524136d1fac
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -188,6 +190,18 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 - **Detail:** /.well-known/openid-configuration on discordapp.com is live (issuer: https://discord.com); the OIDC endpoint configuration (authorization/token/JWKS URLs) is publicly disclosed.
 - **Recommendation:** Confirm the published OIDC metadata matches the deployed identity architecture.
 
+### 24. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
+
+- **CWE:** CWE-200
+- **Detail:** The root response of discordapp.com carries alt-svc h3=":443"; ma=86400; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
+- **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
+
+### 25. [INFO] Public root document marked noindex (`HTML14`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of discordapp.com is marked noindex (meta robots or X-Robots-Tag); a public homepage that is not indexable is a posture anomaly worth reviewing.
+- **Recommendation:** Confirm the noindex directive is intentional.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -195,10 +209,10 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
   "domain": "discordapp.com",
   "dns": {
     "a": [
-      "162.159.134.233",
       "162.159.129.233",
-      "162.159.130.233",
+      "162.159.134.233",
       "162.159.133.233",
+      "162.159.130.233",
       "162.159.135.233"
     ],
     "aaaa": [],
@@ -206,46 +220,46 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
     "mx": [
       "aspmx.l.google.com (pref 1)",
       "aspmx2.googlemail.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx3.googlemail.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "aspmx3.googlemail.com (pref 10)"
     ],
     "ns": [
-      "sima.ns.cloudflare.com.",
-      "gabe.ns.cloudflare.com."
+      "gabe.ns.cloudflare.com.",
+      "sima.ns.cloudflare.com."
     ],
     "caa": [],
     "spf": [
-      "adobe-idp-site-verification=954e966634e7f12b8a9a2876a989bf5e7f5050a5192c3f529b9917cc4a7d1436",
-      "docker-verification=f765b7ff-5ce5-4f27-b00a-28091eddacce",
-      "HjRfQW6OV2YOkDOgNju3gYI0_cx9H1iF",
-      "autodesk-domain-verification=2sh4O6xiIc4ReP9Aee8h",
-      "dropbox-domain-verification=66jnk5y945ew",
-      "zapier-domain-verification-challenge=d87a2680-bf27-4b61-8174-5ceed32bb8c7",
-      "hubspot-domain-verification=YmIxMDNhZDEtMzI3Mi00ZWNjLTk4MTYtNmViZGU5NzYyZDM5",
-      "google-site-verification=DGERr7gTRtGPVmghE_qE_w3X2kyTXdqiDVR2pBDpndQ",
-      "jamf-site-verification=xf0BRLPJ0fkW9oZxiDbxaQ",
-      "stripe-verification=b449d3730bb78d03e0744aa61ae3fa2f35f80572bff9e48ad9a1927508291ea1",
-      "dust-domain-verification-kz9236=gJamMWiktWPTDezEQ9uvTDzyS",
-      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:sendgrid.net include:3885857.spf06.hubspotemail.net include:_spf.salesforce.com -all",
       "logmein-verification-code=2d4b306a-e291-4dc9-a09f-2cc3277288cc",
-      "jetbrains-domain-verification=b5av2j0mg51z6vn0dpigrxbxx",
-      "onetrust-domain-verification=3e11024ff11441678e3d59aa6b3a87bc",
-      "apple-domain-verification=xPWro2NHlvCQs7LI",
-      "google-site-verification=ihjYpERVTt6QLWL2IBBLsEZroHPjP3vVQHQG97oXZlI",
+      "adobe-idp-site-verification=954e966634e7f12b8a9a2876a989bf5e7f5050a5192c3f529b9917cc4a7d1436",
       "stripe-verification=1d56fec5a0f745dabfbe48592806853324fe50a8d4448c10e524136d1fac1cae",
-      "slack-domain-verification=wmXS8pleSDJ3LgREcHasvMfdkHmBbUvNI6nHNnJl",
-      "5508A8F48F",
+      "stripe-verification=b449d3730bb78d03e0744aa61ae3fa2f35f80572bff9e48ad9a1927508291ea1",
+      "zapier-domain-verification-challenge=d87a2680-bf27-4b61-8174-5ceed32bb8c7",
       "gc-ai-domain-verification-h4p9zv=mTSLyVQqkAlNuctKXdWWZ7MLC",
-      "loom-site-verification=3b8db7a74102494ba9569c862bbc5587",
+      "jamf-site-verification=xf0BRLPJ0fkW9oZxiDbxaQ",
+      "google-site-verification=ihjYpERVTt6QLWL2IBBLsEZroHPjP3vVQHQG97oXZlI",
       "notion_verify_A}38XvVG2tiA3b6w4kU89}p~hasV-%G^E8U0.Evvp?^a==pC1]12+eXq]BgW+%hmodpfn]",
-      "adobe-sign-verification=d19200aacd69c1b8e10cd1a5b47c91c3",
       "google-site-verification=PmQRNDYVKwgF3tM6HulK5Fmmna3DSKklkjl-epmhplA",
-      "MS=CD44642CAC1658ABE588B1F34173984181355D4E",
-      "atlassian-domain-verification=JNe2Ze7P8p623k8f7xRaHDyQWb6VzLxjFga1tu8M7lmVXC0bo1XgdnEsYuGIRFHv",
+      "5508A8F48F",
+      "google-site-verification=DGERr7gTRtGPVmghE_qE_w3X2kyTXdqiDVR2pBDpndQ",
+      "adobe-sign-verification=d19200aacd69c1b8e10cd1a5b47c91c3",
+      "dropbox-domain-verification=66jnk5y945ew",
       "google-site-verification=27NMadvvj0pSQl1hkMaX3X5bwpjdFmE_FvX-MAgdLBE",
-      "google-site-verification=jtVaxAcfspCN94ECrH12n9XJhdqO6Y2j2u3eh1XsApE",
-      "logmein-verification-code=e675be17-2988-4b0b-9e19-d6793fc28655"
+      "hubspot-domain-verification=YmIxMDNhZDEtMzI3Mi00ZWNjLTk4MTYtNmViZGU5NzYyZDM5",
+      "onetrust-domain-verification=3e11024ff11441678e3d59aa6b3a87bc",
+      "autodesk-domain-verification=2sh4O6xiIc4ReP9Aee8h",
+      "MS=CD44642CAC1658ABE588B1F34173984181355D4E",
+      "HjRfQW6OV2YOkDOgNju3gYI0_cx9H1iF",
+      "slack-domain-verification=wmXS8pleSDJ3LgREcHasvMfdkHmBbUvNI6nHNnJl",
+      "apple-domain-verification=xPWro2NHlvCQs7LI",
+      "atlassian-domain-verification=JNe2Ze7P8p623k8f7xRaHDyQWb6VzLxjFga1tu8M7lmVXC0bo1XgdnEsYuGIRFHv",
+      "docker-verification=f765b7ff-5ce5-4f27-b00a-28091eddacce",
+      "jetbrains-domain-verification=b5av2j0mg51z6vn0dpigrxbxx",
+      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:sendgrid.net include:3885857.spf06.hubspotemail.net include:_spf.salesforce.com -all",
+      "logmein-verification-code=e675be17-2988-4b0b-9e19-d6793fc28655",
+      "loom-site-verification=3b8db7a74102494ba9569c862bbc5587",
+      "dust-domain-verification-kz9236=gJamMWiktWPTDezEQ9uvTDzyS",
+      "google-site-verification=jtVaxAcfspCN94ECrH12n9XJhdqO6Y2j2u3eh1XsApE"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:eb13ef68c6894cf0bc517e8303852ee3@dmarc-reports.cloudflare.net;"
@@ -275,7 +289,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
     }
   },
   "ports": {
-    "ip": "162.159.134.233",
+    "ip": "162.159.129.233",
     "open": [
       8080,
       8443
@@ -337,10 +351,10 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "logmein-verification-code=2d4b306a-e291-4dc9-a09f-2cc3277288cc",
     "adobe-idp-site-verification=954e966634e7f12b8a9a2876a989bf5e7f5050a5192c3f529b99",
-    "docker-verification=f765b7ff-5ce5-4f27-b00a-28091eddacce",
-    "autodesk-domain-verification=2sh4O6xiIc4ReP9Aee8h",
-    "dropbox-domain-verification=66jnk5y945ew",
+    "stripe-verification=1d56fec5a0f745dabfbe48592806853324fe50a8d4448c10e524136d1fac",
+    "stripe-verification=b449d3730bb78d03e0744aa61ae3fa2f35f80572bff9e48ad9a192750829",
     "zapier-domain-verification-challenge=d87a2680-bf27-4b61-8174-5ceed32bb8c7"
   ],
   "tls2": {
@@ -417,8 +431,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
     "root_status": 301,
     "oidc": "https://discord.com"
   },
-  "elapsed_s": 5.1,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301,
+    "alt_svc": "h3=\":443\"; ma=86400",
+    "noindex": true
+  },
+  "elapsed_s": 6.5,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -431,4 +450,5 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,8 +7,8 @@
 | Target | https://firstdata.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | firstdata.com |
-| Test date | 2026-09-27 00:18 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:20 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -24,9 +24,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 | 6 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 7 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 8 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 9 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
-| 10 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 11 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 9 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 10 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 11 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
 | 12 | info | CT1 | 149 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 | 13 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
@@ -81,26 +81,26 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 ### 8. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: citrix-verification-code=b49394b7-fec3-45b1-9598-81f10a16746d; status-page-domain-verification=qhcz5lpgpkhm; atlassian-domain-verification=bwfGSdfnH94uNI9lzvKPvl6Xx6BGuAMdPRwDp6G9XAfFReRFHB
+- **Detail:** Apex TXT records with verification/token content: hcp-domain-verification=d7eeb26b7066067aabfb44e977a62f8629c2c4003e4b5ff27e8296a6; atlassian-domain-verification=UUQbbVvMvjF4/Haa4wZPYq9FxrYqfMLH3E6gI2ri2gGiM1YehJ; status-page-domain-verification=qhcz5lpgpkhm
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 9. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
-
-- **CWE:** CWE-603
-- **Detail:** OCSP check via http://ocsp.digicert.com -> http-200
-- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
-
-### 10. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 9. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but firstdata.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 11. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 10. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for firstdata.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 11. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on firstdata.com identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
 ### 12. [INFO] 149 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
@@ -121,66 +121,66 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
   "domain": "firstdata.com",
   "dns": {
     "a": [
-      "151.101.3.10",
-      "151.101.195.10",
+      "151.101.67.10",
       "151.101.131.10",
-      "151.101.67.10"
+      "151.101.195.10",
+      "151.101.3.10"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxa-00265f01.gslb.pphosted.com (pref 10)",
-      "mxb-00265f01.gslb.pphosted.com (pref 10)"
+      "mxb-00265f01.gslb.pphosted.com (pref 10)",
+      "mxa-00265f01.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns1.p201.dns.oraclecloud.net.",
       "dns2.p07.nsone.net.",
+      "ns1.p201.dns.oraclecloud.net.",
       "dns4.p07.nsone.net.",
       "ns2.p201.dns.oraclecloud.net."
     ],
     "caa": [],
     "spf": [
-      "VISA= 971F17AC7C2EA9F76D1B4399ACDD8AF8",
-      "docusign=5335d3f2-83aa-4ed0-91a8-716365eb0641",
-      "0PvnqG+rTIOOb7OBR8TRrF3sAejgz0OAbJ9ijKq3T7BQ9Cp0OTN+U7Lov+lrTt/L8Kv/xiMPuV9vZwuOFwT3GA==",
-      "citrix-verification-code=b49394b7-fec3-45b1-9598-81f10a16746d",
-      "_gtyampd6jk2kk0vasl1zp2t4zwtc66i",
-      "VISA=50A1277B5BDE5E4EFB009D04C1270052",
-      "_2ronacfit0dlj82vq1smryoviyg476a",
-      "status-page-domain-verification=qhcz5lpgpkhm",
-      "atlassian-domain-verification=bwfGSdfnH94uNI9lzvKPvl6Xx6BGuAMdPRwDp6G9XAfFReRFHBj398p8n4tJRp1u",
-      "VISA = E086293AA5EBACE091D6F079311621E3",
-      "VISA=32A1FA0269CCD3FEB9497B54209C50ED",
-      "VISA=BBA97F5F900D99EE7A70768DC4E6302B",
-      "00DA0000000Yhcv=1TBUJ0000000Fez",
-      "google-site-verification=26Qcgnci2XPHOXsfUzhn4urYuxuzAZoiD_V9JmsbwbA",
+      "VISA= QOHYOGX571VGUJW8RSJUP39HTRRTZITN",
       "MS=ABB1BE2F85FB33A30DEC1C7264489333E3C1200F",
-      "VISA= 2E83EF65759F5F147DBDFC1C423F1CF1",
-      "_tmhwbqqay6pmvj46jbz8ygq4v1qdnbd",
-      "VISA= 8B44CCB91191FE803D19007A17C3D271",
-      "VISA=B42E0A2235D43D9F1A30FCF136EFBBE1",
-      "flexera-domain-verification-fddzqvzijueazdba",
-      "_bqjvwc1revtk7b6umibs4dk66005gcc",
-      "hcp-domain-verification=d7eeb26b7066067aabfb44e977a62f8629c2c4003e4b5ff27e8296a60e74b8d2",
-      "citrix.mobile.ads.otp=5iepmqqj2gwg4fki3uxoh81",
-      "VISA=E8C6EF412551A5ED20EFB7D270035456",
       "MS=ms12481784",
+      "VISA=58B7F8092117EFC2B048E1D063C7381B",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
       "VISA= F09D890A2DAB504AAE78586229A231BB",
-      "VISA=6647EA50224BACA094BAB45F9A1DD003",
+      "hcp-domain-verification=d7eeb26b7066067aabfb44e977a62f8629c2c4003e4b5ff27e8296a60e74b8d2",
       "VISA=BB846B1356DBAEC50AABC2EAC27251C4",
       "VISA=875D6E9B71BCD2951AAAED28DEE8B317",
-      "00DRL00000GkGyg=1TBRL0000000YOH",
-      "VISA= 45376BBCD9B74696522F84B27AD772AA",
-      "_k7wm3b9cqot77wpu829xdomkm0s1gbz",
-      "VISA=58B7F8092117EFC2B048E1D063C7381B",
+      "VISA=B42E0A2235D43D9F1A30FCF136EFBBE1",
+      "_tmhwbqqay6pmvj46jbz8ygq4v1qdnbd",
+      "MS=ms52820778",
       "atlassian-domain-verification=UUQbbVvMvjF4/Haa4wZPYq9FxrYqfMLH3E6gI2ri2gGiM1YehJSYASzKT5Kfz2hn",
-      "VISA= QOHYOGX571VGUJW8RSJUP39HTRRTZITN",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
-      "google-site-verification=N6XdNnf_haEL8arPehDiAPoYLKH5SPbLr-_6-EGFvA8",
-      "VISA=2A880877BD3A4783B5D65152D0479BEA",
-      "VISA=0DF7ED8CA76B25E8E433992B7F0AEEA8",
+      "00DA0000000Yhcv=1TBUJ0000000Fez",
+      "VISA=E8C6EF412551A5ED20EFB7D270035456",
+      "status-page-domain-verification=qhcz5lpgpkhm",
       "VISA= 3AE81DAB19A78A9EF5F7BB7E5538ADA3",
-      "MS=ms52820778"
+      "VISA=2A880877BD3A4783B5D65152D0479BEA",
+      "0PvnqG+rTIOOb7OBR8TRrF3sAejgz0OAbJ9ijKq3T7BQ9Cp0OTN+U7Lov+lrTt/L8Kv/xiMPuV9vZwuOFwT3GA==",
+      "google-site-verification=26Qcgnci2XPHOXsfUzhn4urYuxuzAZoiD_V9JmsbwbA",
+      "docusign=5335d3f2-83aa-4ed0-91a8-716365eb0641",
+      "00DRL00000GkGyg=1TBRL0000000YOH",
+      "VISA=6647EA50224BACA094BAB45F9A1DD003",
+      "VISA= 971F17AC7C2EA9F76D1B4399ACDD8AF8",
+      "_2ronacfit0dlj82vq1smryoviyg476a",
+      "_k7wm3b9cqot77wpu829xdomkm0s1gbz",
+      "atlassian-domain-verification=bwfGSdfnH94uNI9lzvKPvl6Xx6BGuAMdPRwDp6G9XAfFReRFHBj398p8n4tJRp1u",
+      "VISA=BBA97F5F900D99EE7A70768DC4E6302B",
+      "VISA= 2E83EF65759F5F147DBDFC1C423F1CF1",
+      "flexera-domain-verification-fddzqvzijueazdba",
+      "google-site-verification=N6XdNnf_haEL8arPehDiAPoYLKH5SPbLr-_6-EGFvA8",
+      "VISA= 45376BBCD9B74696522F84B27AD772AA",
+      "VISA=50A1277B5BDE5E4EFB009D04C1270052",
+      "_bqjvwc1revtk7b6umibs4dk66005gcc",
+      "VISA = E086293AA5EBACE091D6F079311621E3",
+      "VISA=32A1FA0269CCD3FEB9497B54209C50ED",
+      "VISA=0DF7ED8CA76B25E8E433992B7F0AEEA8",
+      "citrix.mobile.ads.otp=5iepmqqj2gwg4fki3uxoh81",
+      "citrix-verification-code=b49394b7-fec3-45b1-9598-81f10a16746d",
+      "VISA= 8B44CCB91191FE803D19007A17C3D271",
+      "_gtyampd6jk2kk0vasl1zp2t4zwtc66i"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=0; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -229,7 +229,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     }
   },
   "ports": {
-    "ip": "151.101.3.10",
+    "ip": "151.101.67.10",
     "open": []
   },
   "https": {
@@ -327,11 +327,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     ]
   },
   "apex_txt": [
-    "citrix-verification-code=b49394b7-fec3-45b1-9598-81f10a16746d",
+    "hcp-domain-verification=d7eeb26b7066067aabfb44e977a62f8629c2c4003e4b5ff27e8296a6",
+    "atlassian-domain-verification=UUQbbVvMvjF4/Haa4wZPYq9FxrYqfMLH3E6gI2ri2gGiM1YehJ",
     "status-page-domain-verification=qhcz5lpgpkhm",
-    "atlassian-domain-verification=bwfGSdfnH94uNI9lzvKPvl6Xx6BGuAMdPRwDp6G9XAfFReRFHB",
     "google-site-verification=26Qcgnci2XPHOXsfUzhn4urYuxuzAZoiD_V9JmsbwbA",
-    "flexera-domain-verification-fddzqvzijueazdba"
+    "atlassian-domain-verification=bwfGSdfnH94uNI9lzvKPvl6Xx6BGuAMdPRwDp6G9XAfFReRFHB"
   ],
   "tls2": {
     "alpn": "",
@@ -356,7 +356,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
       "not_before": "20260114000000",
       "not_after": "20270120235959"
     },
-    "ocsp": "http-200"
+    "ocsp": "explicit-status"
   },
   "x12": {
     "status": 301
@@ -386,8 +386,14 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 39.0,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301,
+    "cdn": [
+      "Fastly"
+    ]
+  },
+  "elapsed_s": 40.2,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -400,4 +406,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

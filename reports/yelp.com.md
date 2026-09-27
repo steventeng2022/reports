@@ -7,12 +7,12 @@
 | Target | https://yelp.com/ |
 | Bug bounty program | Yelp |
 | Listed scope domain | yelp.com |
-| Test date | 2026-09-27 00:35 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:38 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
+Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,8 +32,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 | 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 15 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 17 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
-| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 18 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 19 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
 
 ## Detailed findings
 
@@ -133,26 +134,32 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 ### 15. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (860o1cxxni6x7u.yelp.com and 9as27nkjunu6y3.yelp.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (3lg4fr94l8sqwx.yelp.com and sxodulvjmgp080.yelp.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=PO95qR5HARP3zbvcQ1WFBVyLGBUvgjmgc16ENjCtmy; atlassian-domain-verification=45ozypIxFMV4A0xxbgkqTjhHaKzj8CrbxzUxbakhomBdkM6bzr; zoho-verification=zb51277094.zmverify.zoho.com
+- **Detail:** Apex TXT records with verification/token content: atlassian-sending-domain-verification=b8aeb8b2-f866-4573-9468-2b248ab4d392; facebook-domain-verification=mdu6515tt8odq7akwzr4a036q6w3cz; atlassian-domain-verification=45ozypIxFMV4A0xxbgkqTjhHaKzj8CrbxzUxbakhomBdkM6bzr
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 17. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
-
-- **CWE:** CWE-603
-- **Detail:** OCSP check via http://ocsp.digicert.com -> http-200
-- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
-
-### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for yelp.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 18. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
+
+- **CWE:** CWE-200
+- **Detail:** The root response of yelp.com carries alt-svc h3=":443";ma=86400,h3-29=":443";ma=86400,h3-27=":443";ma=86400; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
+- **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
+
+### 19. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on yelp.com identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
 ## Evidence (raw response observations)
 
@@ -166,66 +173,66 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "aspmx.l.google.com (pref 1)"
+      "aspmx.l.google.com (pref 1)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "dns1.p06.nsone.net.",
-      "dns2.p06.nsone.net.",
-      "ns01.midtowndoornailns.com.",
-      "dns3.p06.nsone.net.",
-      "ns03.midtowndoornailns.com.",
       "ns02.midtowndoornailns.com.",
+      "dns1.p06.nsone.net.",
+      "dns4.p06.nsone.net.",
+      "ns01.midtowndoornailns.com.",
+      "dns2.p06.nsone.net.",
+      "dns3.p06.nsone.net.",
       "ns04.midtowndoornailns.com.",
-      "dns4.p06.nsone.net."
+      "ns03.midtowndoornailns.com."
     ],
     "caa": [],
     "spf": [
-      "_globalsign-domain-verification=PO95qR5HARP3zbvcQ1WFBVyLGBUvgjmgc16ENjCtmy",
-      "atlassian-domain-verification=45ozypIxFMV4A0xxbgkqTjhHaKzj8CrbxzUxbakhomBdkM6bzr117OBkfPJJlbAX",
-      "zoho-verification=zb51277094.zmverify.zoho.com",
-      "notion-domain-verification=WDNH0Y6wClSmazu1ox2mB6gcdkjd6MA3er4OAerRCUt",
-      "wrike-verification=NDA1MDgyNTpiMDcyYWNmMjgyYmEzOWFhNDE3NzA1YTE1NGFmYmYzYmU0Y2IxNGQwNTA5YzNkMDIyNWVkYmNhZDMwZmQ5ZTM1",
-      "stripe-verification=6CB8483E931BB30A9798D497914DB00B6CD935BC954C67CB31EC582361636F3F",
-      "onetrust-domain-verification=53afac8ba50845c3b7c8ba137d2349c0",
-      "_globalsign-domain-verification=_64UG15h1zSn86m51pRb3vaFMDTtUCsP2RBUJ7DAAM",
-      "v=spf1 include:everbridge.net include:yelp.com._nspf.vali.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
-      "profound-domain-verification-98wkep=o4E7iCuctO9gpJqyfkrCLFqXp",
-      "google-site-verification=NOSls2JfXI55tW5qFU89NY93kA8LB6YTHGBzCFz3cy8",
-      "0jw2h0bjphcxmg3snr0fjg270ysc0wgk",
-      "google-site-verification=GRQLNPjWLxGr_Ka6phLFqBXooCAZt35ZZz2ZV5JNsDQ",
-      "apple-domain-verification=7xkVWehEYAdxIGR18-iBcC-263XTlJE3Xh4KZcgF_1o",
-      "status-page-domain-verification=f3txhd81xn94",
-      "have-i-been-pwned-verification=dweb_7pqrwg9nyaw5qzccmdpbh43e",
-      "google-site-verification=4OznISzbxHzmhzRM-NtpUcP1P6nIfsanNZdNI1G_EU8",
-      "mixpanel-domain-verify=277018fd-af0f-4112-bc98-ec0aa09c9e62",
-      "google-site-verification=-LX_luQh_Kq5PPMW-YLBGAr22sLmB9uXTZDZYwWdWcc",
-      "dtm-domain-verification=jLI9ztu7vQd32GYHfJfjNbjuGdSdJk7jzYeLmaZKEHs",
-      "status-page-domain-verification=kl0pq45qyb3d",
-      "status-page-domain-verification=z80f59yz1jkt",
-      "apple-domain-verification=qa3GTY5z2ELxESie",
-      "atlassian-domain-verification=k//LP2aSAEPqGqlbOWy3YhbF21wtfSXibOk0vz6Dx1BV3du/Ub/Fyiv3C55m2vkS",
-      "sending_domain1084122=a5612a391e2e2b3d3cc46238b2e038b211048e6e45cc04d0947989d5e4f8833c",
-      "adobe-idp-site-verification=9ac7165b0af2483ec7767a476cdba5d35ebf9581d5696dc420fb058f9a7372af",
-      "_46ivs5dmhmqu8fah0jyafidcgnb16m8",
-      "aline-domain-verification-d4fg3g=dSnUs4LT4OucL5MIUWA1pqjnF",
-      "gm36n17d8y8544hg7s3n5ptcjgzfb17f",
-      "openai-domain-verification=dv-fJLMFcavOatIU9F5VNTB4uzC",
-      "datadome-domain-verify=XwAuoddrKPKQX4hiaY3MmiM7bnaIFuJv",
-      "status-page-domain-verification=560td8k1wdsc",
-      "zapier-domain-verification-challenge=6da7ad16-5f37-4d23-a121-259dae5492de",
-      "cursor-domain-verification-bybp9b=u4Ql3DroYKAYNKZO7GMmm7CN6",
-      "google-site-verification=3lJN-zw-10jb4bLfmXsqFizDALMsnlhqZ-TPG-AjHWU",
       "atlassian-sending-domain-verification=b8aeb8b2-f866-4573-9468-2b248ab4d392",
-      "google-site-verification=-Y773kzVn1DQlVG-Ugprk7qDuZdki_5cqljezw1daiU",
       "facebook-domain-verification=mdu6515tt8odq7akwzr4a036q6w3cz",
-      "jamf-site-verification=LcGrLBerA2Rm4ZTuGWhAQw",
+      "atlassian-domain-verification=45ozypIxFMV4A0xxbgkqTjhHaKzj8CrbxzUxbakhomBdkM6bzr117OBkfPJJlbAX",
+      "adobe-idp-site-verification=9ac7165b0af2483ec7767a476cdba5d35ebf9581d5696dc420fb058f9a7372af",
+      "zoho-verification=zb51277094.zmverify.zoho.com",
       "citrix-verification-code=1dee59ff-c292-47a1-8faf-a0c7803c742a",
       "cloudflare_dashboard_sso=9d6accac4ddd9be2d5930b92acfdb0a5",
-      "pardot813133=a90e85640d4bb5a429d171325168640bb9463489071367d9615ebc73919f1bbb"
+      "apple-domain-verification=7xkVWehEYAdxIGR18-iBcC-263XTlJE3Xh4KZcgF_1o",
+      "notion-domain-verification=WDNH0Y6wClSmazu1ox2mB6gcdkjd6MA3er4OAerRCUt",
+      "jamf-site-verification=LcGrLBerA2Rm4ZTuGWhAQw",
+      "0jw2h0bjphcxmg3snr0fjg270ysc0wgk",
+      "google-site-verification=GRQLNPjWLxGr_Ka6phLFqBXooCAZt35ZZz2ZV5JNsDQ",
+      "atlassian-domain-verification=k//LP2aSAEPqGqlbOWy3YhbF21wtfSXibOk0vz6Dx1BV3du/Ub/Fyiv3C55m2vkS",
+      "status-page-domain-verification=f3txhd81xn94",
+      "pardot813133=a90e85640d4bb5a429d171325168640bb9463489071367d9615ebc73919f1bbb",
+      "openai-domain-verification=dv-fJLMFcavOatIU9F5VNTB4uzC",
+      "google-site-verification=-LX_luQh_Kq5PPMW-YLBGAr22sLmB9uXTZDZYwWdWcc",
+      "zapier-domain-verification-challenge=6da7ad16-5f37-4d23-a121-259dae5492de",
+      "datadome-domain-verify=XwAuoddrKPKQX4hiaY3MmiM7bnaIFuJv",
+      "status-page-domain-verification=560td8k1wdsc",
+      "google-site-verification=-Y773kzVn1DQlVG-Ugprk7qDuZdki_5cqljezw1daiU",
+      "mixpanel-domain-verify=277018fd-af0f-4112-bc98-ec0aa09c9e62",
+      "status-page-domain-verification=z80f59yz1jkt",
+      "dtm-domain-verification=jLI9ztu7vQd32GYHfJfjNbjuGdSdJk7jzYeLmaZKEHs",
+      "stripe-verification=6CB8483E931BB30A9798D497914DB00B6CD935BC954C67CB31EC582361636F3F",
+      "google-site-verification=NOSls2JfXI55tW5qFU89NY93kA8LB6YTHGBzCFz3cy8",
+      "onetrust-domain-verification=53afac8ba50845c3b7c8ba137d2349c0",
+      "gm36n17d8y8544hg7s3n5ptcjgzfb17f",
+      "_46ivs5dmhmqu8fah0jyafidcgnb16m8",
+      "apple-domain-verification=qa3GTY5z2ELxESie",
+      "have-i-been-pwned-verification=dweb_7pqrwg9nyaw5qzccmdpbh43e",
+      "v=spf1 include:everbridge.net include:yelp.com._nspf.vali.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email ~all",
+      "cursor-domain-verification-bybp9b=u4Ql3DroYKAYNKZO7GMmm7CN6",
+      "profound-domain-verification-98wkep=o4E7iCuctO9gpJqyfkrCLFqXp",
+      "google-site-verification=4OznISzbxHzmhzRM-NtpUcP1P6nIfsanNZdNI1G_EU8",
+      "_globalsign-domain-verification=_64UG15h1zSn86m51pRb3vaFMDTtUCsP2RBUJ7DAAM",
+      "status-page-domain-verification=kl0pq45qyb3d",
+      "_globalsign-domain-verification=PO95qR5HARP3zbvcQ1WFBVyLGBUvgjmgc16ENjCtmy",
+      "wrike-verification=NDA1MDgyNTpiMDcyYWNmMjgyYmEzOWFhNDE3NzA1YTE1NGFmYmYzYmU0Y2IxNGQwNTA5YzNkMDIyNWVkYmNhZDMwZmQ5ZTM1",
+      "sending_domain1084122=a5612a391e2e2b3d3cc46238b2e038b211048e6e45cc04d0947989d5e4f8833c",
+      "google-site-verification=3lJN-zw-10jb4bLfmXsqFizDALMsnlhqZ-TPG-AjHWU",
+      "aline-domain-verification-d4fg3g=dSnUs4LT4OucL5MIUWA1pqjnF"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@vali.email,mailto:dmarc@yelp.com; ruf=mailto:dmarc_fr@yelp.com; ri=14400"
@@ -313,11 +320,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "_globalsign-domain-verification=PO95qR5HARP3zbvcQ1WFBVyLGBUvgjmgc16ENjCtmy",
+    "atlassian-sending-domain-verification=b8aeb8b2-f866-4573-9468-2b248ab4d392",
+    "facebook-domain-verification=mdu6515tt8odq7akwzr4a036q6w3cz",
     "atlassian-domain-verification=45ozypIxFMV4A0xxbgkqTjhHaKzj8CrbxzUxbakhomBdkM6bzr",
-    "zoho-verification=zb51277094.zmverify.zoho.com",
-    "notion-domain-verification=WDNH0Y6wClSmazu1ox2mB6gcdkjd6MA3er4OAerRCUt",
-    "wrike-verification=NDA1MDgyNTpiMDcyYWNmMjgyYmEzOWFhNDE3NzA1YTE1NGFmYmYzYmU0Y2IxN"
+    "adobe-idp-site-verification=9ac7165b0af2483ec7767a476cdba5d35ebf9581d5696dc420fb",
+    "zoho-verification=zb51277094.zmverify.zoho.com"
   ],
   "tls2": {
     "alpn": "",
@@ -342,7 +349,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "not_before": "20251216000000",
       "not_after": "20261205235959"
     },
-    "ocsp": "http-200"
+    "ocsp": "explicit-status"
   },
   "x12": {
     "status": 403
@@ -370,8 +377,15 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     "cipher_ver": "TLSv1.3",
     "root_status": 403
   },
-  "elapsed_s": 9.3,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 403,
+    "alt_svc": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400",
+    "cdn": [
+      "Fastly"
+    ]
+  },
+  "elapsed_s": 22.2,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -384,4 +398,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://animoto.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | animoto.com |
-| Test date | 2026-09-27 00:10 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:10 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
+Total findings: **19** (High: 0, Medium: 0, Low: 1, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
 | 16 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 18 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 19 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
 
 ## Detailed findings
 
@@ -99,7 +100,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=vaogq87xo9coyc8w0sjrb5ryi28hbk; apple-domain-verification=P5h3aqkyoBSk68wv; ps-cd-verification=068149de-3572-4643-b829-b259af0fd02b
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=vaogq87xo9coyc8w0sjrb5ryi28hbk; apple-domain-verification=P5h3aqkyoBSk68wv; google-site-verification=nVDMjy8QEyp3Ou2X-N0N87xRmDuOj-Y-jrHItr8Aing
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -135,7 +136,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
 ### 16. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xk8nmxd1owkr5l.html -> 404; error page/headers match: CloudFront.
+- **Detail:** GET /xk94987wsv5yfr.html -> 404; error page/headers match: CloudFront.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -150,6 +151,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
 - **Detail:** /sitemap.xml on animoto.com lists 4 <loc> URL(s) across 5 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
+### 19. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on animoto.com identify the edge as CloudFront / Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -158,35 +165,35 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
   "dns": {
     "a": [
       "65.9.180.57",
-      "65.9.180.9",
       "65.9.180.15",
-      "65.9.180.63"
+      "65.9.180.63",
+      "65.9.180.9"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 50)",
       "aspmx2.googlemail.com (pref 40)",
       "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 30)"
+      "alt2.aspmx.l.google.com (pref 30)",
+      "aspmx3.googlemail.com (pref 50)",
+      "aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-257.awsdns-32.com.",
       "ns-1582.awsdns-05.co.uk.",
+      "ns-976.awsdns-58.net.",
       "ns-1412.awsdns-48.org.",
-      "ns-976.awsdns-58.net."
+      "ns-257.awsdns-32.com."
     ],
     "caa": [],
     "spf": [
       "facebook-domain-verification=vaogq87xo9coyc8w0sjrb5ryi28hbk",
+      "cloudflare_dashboard_sso=d2d32d5343cad69b0321aa4fdf630d46",
       "v=spf1 include:_spf.google.com include:authsmtp.com include:mail.zendesk.com -all",
       "MS=ms58433399",
       "apple-domain-verification=P5h3aqkyoBSk68wv",
-      "F678B3E8D0",
-      "ps-cd-verification=068149de-3572-4643-b829-b259af0fd02b",
       "google-site-verification=nVDMjy8QEyp3Ou2X-N0N87xRmDuOj-Y-jrHItr8Aing",
-      "cloudflare_dashboard_sso=d2d32d5343cad69b0321aa4fdf630d46"
+      "ps-cd-verification=068149de-3572-4643-b829-b259af0fd02b",
+      "F678B3E8D0"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc-reports@animoto.com; sp=none"
@@ -272,8 +279,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
   "apex_txt": [
     "facebook-domain-verification=vaogq87xo9coyc8w0sjrb5ryi28hbk",
     "apple-domain-verification=P5h3aqkyoBSk68wv",
-    "ps-cd-verification=068149de-3572-4643-b829-b259af0fd02b",
-    "google-site-verification=nVDMjy8QEyp3Ou2X-N0N87xRmDuOj-Y-jrHItr8Aing"
+    "google-site-verification=nVDMjy8QEyp3Ou2X-N0N87xRmDuOj-Y-jrHItr8Aing",
+    "ps-cd-verification=068149de-3572-4643-b829-b259af0fd02b"
   ],
   "tls2": {
     "alpn": "",
@@ -352,8 +359,15 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
     "cipher_ver": "TLSv1.3",
     "root_status": 200
   },
-  "elapsed_s": 19.2,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 200,
+    "cdn": [
+      "CloudFront",
+      "Fastly"
+    ]
+  },
+  "elapsed_s": 21.7,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -366,4 +380,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://imgur.com/ |
 | Bug bounty program | Imgur |
 | Listed scope domain | imgur.com |
-| Test date | 2026-09-27 00:22 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:24 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **26** (High: 0, Medium: 0, Low: 5, Info: 21)
+Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -42,6 +42,9 @@ Total findings: **26** (High: 0, Medium: 0, Low: 5, Info: 21)
 | 24 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
 | 25 | info | HTML11 | Document references many third-party domains | CWE-200 |
 | 26 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
+| 27 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
+| 28 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 29 | info | WK4 | RFC 8615 change-password endpoint live | CWE-200 |
 
 ## Detailed findings
 
@@ -135,13 +138,13 @@ Total findings: **26** (High: 0, Medium: 0, Low: 5, Info: 21)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (mteqr9rfwutik3.imgur.com and 89jm61ygmvlhr2.imgur.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (vys9amuvb120yy.imgur.com and ncpb1hnoweeqts.imgur.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=BzDTAgIuFjEqDFJFvpiwwNkX9LD8RuDq_8VrW1DFJQc; postman-domain-verification=45da7b179f25335b9e65a9b8d26d2fcd0739b9a1bf830b954c8a; google-site-verification=lkg-LO7WaYRV1KFiztrPou_kY0KNS_h7c2nuhfia-ko
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=BzDTAgIuFjEqDFJFvpiwwNkX9LD8RuDq_8VrW1DFJQc; 1password-site-verification=BSXZBGRLX5ETBE6LCXUXT3ZACE; google-site-verification=lkg-LO7WaYRV1KFiztrPou_kY0KNS_h7c2nuhfia-ko
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -210,6 +213,24 @@ Total findings: **26** (High: 0, Medium: 0, Low: 5, Info: 21)
 - **Detail:** Root document of imgur.com sends a CSP but contains 7 inline script(s) with no nonce- or hash-attribute, so the policy must rely on 'unsafe-inline'.
 - **Recommendation:** Use per-script nonces/hashes and drop 'unsafe-inline'.
 
+### 27. [INFO] TLS 1.2 ceiling: 1.3 not negotiated with a modern client (`TLS27`)
+
+- **CWE:** CWE-327
+- **Detail:** The quiet handshake to imgur.com negotiated TLSv1.2 even though the client offered TLS 1.3; the edge caps at 1.2 (legacy/compatibility configuration).
+- **Recommendation:** Enable TLS 1.3 at the edge.
+
+### 28. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on imgur.com identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
+### 29. [INFO] RFC 8615 change-password endpoint live (`WK4`)
+
+- **CWE:** CWE-200
+- **Detail:** /.well-known/change-password on imgur.com answers 200; a password-change service endpoint is advertised.
+- **Recommendation:** Confirm the endpoint is an intended user-facing service.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -223,35 +244,35 @@ Total findings: **26** (High: 0, Medium: 0, Low: 5, Info: 21)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx2.googlemail.com (pref 10)",
       "aspmx3.googlemail.com (pref 10)",
-      "aspmx.l.google.com (pref 1)"
+      "aspmx2.googlemail.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-1198.awsdns-21.org.",
       "ns-1677.awsdns-17.co.uk.",
       "ns-577.awsdns-08.net.",
-      "ns-457.awsdns-57.com."
+      "ns-457.awsdns-57.com.",
+      "ns-1198.awsdns-21.org."
     ],
     "caa": [],
     "spf": [
-      "google-site-verification=BzDTAgIuFjEqDFJFvpiwwNkX9LD8RuDq_8VrW1DFJQc",
-      "postman-domain-verification=45da7b179f25335b9e65a9b8d26d2fcd0739b9a1bf830b954c8abffd4acdb020707de3ddae662ed12ce411cce3357a6bd5a50c30c82bf4c481e40632f12d6ba6",
-      "ZOOM_verify_7qYn368TOF6Au0Hn7KWJ2P",
-      "google-site-verification=lkg-LO7WaYRV1KFiztrPou_kY0KNS_h7c2nuhfia-ko",
-      "mixpanel-domain-verify=877fb4f7-e334-4b13-9770-1bec2610bf63",
-      "1password-site-verification=BSXZBGRLX5ETBE6LCXUXT3ZACE",
-      "MS=ms20045453",
-      "BSI106497997089",
       "d2jm6zv3c45cb6.cloudfront.net",
-      "google-site-verification=jZetkGMTS63ZvRLFkjDNglMVkFkR-cZYwysKhIcg1S4",
-      "xf6t3vb8tjqqgypgpbw0bdmk98z49dk9",
+      "mixpanel-domain-verify=877fb4f7-e334-4b13-9770-1bec2610bf63",
+      "ZOOM_verify_7qYn368TOF6Au0Hn7KWJ2P",
+      "google-site-verification=BzDTAgIuFjEqDFJFvpiwwNkX9LD8RuDq_8VrW1DFJQc",
+      "1password-site-verification=BSXZBGRLX5ETBE6LCXUXT3ZACE",
+      "google-site-verification=lkg-LO7WaYRV1KFiztrPou_kY0KNS_h7c2nuhfia-ko",
+      "BSI106497997089",
+      "google-site-verification=Kh_iAw1AcwclD3rmGP7pOJp0zBgCwcW1V-L-mUXHMls",
+      "MS=ms20045453",
       "atlassian-domain-verification=zBnQjyxIXRiBvnX39OwQsQjQ0NHRTT8z7jLkSYoDwQI0LDJEbkHtP50JXc/nBUSm",
       "perplexity-ai-domain-verification-rcshp6=bIjE0TyYQyGqn2X0tjlqweDO0",
-      "google-site-verification=Kh_iAw1AcwclD3rmGP7pOJp0zBgCwcW1V-L-mUXHMls",
-      "v=spf1 ip4:54.198.157.21 include:mailgun.org include:amazonses.com include:_spf.google.com include:mail.zendesk.com -all"
+      "xf6t3vb8tjqqgypgpbw0bdmk98z49dk9",
+      "google-site-verification=jZetkGMTS63ZvRLFkjDNglMVkFkR-cZYwysKhIcg1S4",
+      "v=spf1 ip4:54.198.157.21 include:mailgun.org include:amazonses.com include:_spf.google.com include:mail.zendesk.com -all",
+      "postman-domain-verification=45da7b179f25335b9e65a9b8d26d2fcd0739b9a1bf830b954c8abffd4acdb020707de3ddae662ed12ce411cce3357a6bd5a50c30c82bf4c481e40632f12d6ba6"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc@imgur.com"
@@ -340,10 +361,10 @@ Total findings: **26** (High: 0, Medium: 0, Low: 5, Info: 21)
   "wildcard_dns": true,
   "apex_txt": [
     "google-site-verification=BzDTAgIuFjEqDFJFvpiwwNkX9LD8RuDq_8VrW1DFJQc",
-    "postman-domain-verification=45da7b179f25335b9e65a9b8d26d2fcd0739b9a1bf830b954c8a",
-    "google-site-verification=lkg-LO7WaYRV1KFiztrPou_kY0KNS_h7c2nuhfia-ko",
     "1password-site-verification=BSXZBGRLX5ETBE6LCXUXT3ZACE",
-    "google-site-verification=jZetkGMTS63ZvRLFkjDNglMVkFkR-cZYwysKhIcg1S4"
+    "google-site-verification=lkg-LO7WaYRV1KFiztrPou_kY0KNS_h7c2nuhfia-ko",
+    "google-site-verification=Kh_iAw1AcwclD3rmGP7pOJp0zBgCwcW1V-L-mUXHMls",
+    "atlassian-domain-verification=zBnQjyxIXRiBvnX39OwQsQjQ0NHRTT8z7jLkSYoDwQI0LDJEbk"
   ],
   "tls2": {
     "alpn": "",
@@ -407,8 +428,15 @@ Total findings: **26** (High: 0, Medium: 0, Low: 5, Info: 21)
     "cipher_ver": "TLSv1.2",
     "root_status": 200
   },
-  "elapsed_s": 35.9,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 200,
+    "cdn": [
+      "Fastly"
+    ],
+    "change_password": true
+  },
+  "elapsed_s": 37.7,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -421,4 +449,5 @@ Total findings: **26** (High: 0, Medium: 0, Low: 5, Info: 21)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

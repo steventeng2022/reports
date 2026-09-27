@@ -7,12 +7,12 @@
 | Target | https://lenovo.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | lenovo.com |
-| Test date | 2026-09-27 00:24 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:26 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
+Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,8 +33,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 18 | info | CT1 | 93 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 19 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 18 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 19 | info | CT1 | 93 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 20 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -135,7 +136,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=KT4YATm6NeQqaD0WLCJtFOjb0gYXhbzUekUM9Rm-fb8; airtable-verification=1d5415310fbcf1fdc72c0b175208089a; openai-domain-verification=dv-w6UANk0E74dbpJI3mTMHPfxP
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=vyPsFusgDLeWzvnapRyBbiva5dXJ1JIJjcNbGuO52-k; figma-domain-verification=77471062f3395d7cb96639684e519d0b3d276830c64ca7e17ea13b; Dynatrace-site-verification=9bffa29b-0dbd-4e8f-8c8c-b28fca3b1bdf__49s5b44hnes32j
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
@@ -150,13 +151,19 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 - **Detail:** No CAA record found for lenovo.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 18. [INFO] 93 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on lenovo.com identify the edge as Akamai; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
+### 19. [INFO] 93 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: cdn.naea1.uds.lenovo.com, cn.sso.lenovo.com, d.test.codata.lenovo.com, portal.ldo.lenovo.com, portal.ldo.uds-qa.lenovo.com, sso.lenovo.com, stage.dds.lenovo.com, test.ceodashboard.lenovo.com, test.codata.lenovo.com, us.sso.lenovo.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 19. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 20. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: d.test.codata.lenovo.com; content may still be served via virtual-host fallback.
@@ -177,56 +184,56 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "lenovo-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "a1-79.akam.net.",
-      "a24-65.akam.net.",
+      "a8-64.akam.net.",
       "a3-67.akam.net.",
+      "a24-65.akam.net.",
       "a28-66.akam.net.",
-      "a11-64.akam.net.",
-      "a8-64.akam.net."
+      "a1-79.akam.net.",
+      "a11-64.akam.net."
     ],
     "caa": [],
     "spf": [
-      "qh7hdmqm4lzs85p704d6wsybgrpsly0j",
-      "4b60110d90a0ba16827618f3165cf720c5458664c9392ea157363087784e0292",
-      "google-site-verification=KT4YATm6NeQqaD0WLCJtFOjb0gYXhbzUekUM9Rm-fb8",
-      "iEf8OeY/ebUNJkh8rH9jcDmdS7Uq9B5wNePdkhhqLVHgHP4eekupSYlmdsz+e3Y59/XTCbHY40h1BtI5cpfDJw==",
-      "63posrsg6o3q95dtuc80da228n",
-      "airtable-verification=1d5415310fbcf1fdc72c0b175208089a",
+      "google-site-verification=vyPsFusgDLeWzvnapRyBbiva5dXJ1JIJjcNbGuO52-k",
+      "fastly-domain-delegation-Gg2T0SlTwT-2021-03-09",
       "a82c74b37aa84e7c8580f0e32f4d795d",
-      "v=spf1 include:spf.lenovo.com include:vendorspf.lenovo.com ~all",
-      "openai-domain-verification=dv-w6UANk0E74dbpJI3mTMHPfxP",
+      "qh7hdmqm4lzs85p704d6wsybgrpsly0j",
+      "figma-domain-verification=77471062f3395d7cb96639684e519d0b3d276830c64ca7e17ea13b8f28203680-1772698461",
+      "Dynatrace-site-verification=9bffa29b-0dbd-4e8f-8c8c-b28fca3b1bdf__49s5b44hnes32j605089h3f60a",
+      "airtable-verification=1d5415310fbcf1fdc72c0b175208089a",
+      "google-site-verification=KT4YATm6NeQqaD0WLCJtFOjb0gYXhbzUekUM9Rm-fb8",
+      "duo_sso_verification=sKtyF9pQMvjVPX6vq4nzV00r7qKNkEVAkkb0Tlx1om1ZqroOG1eZEexVxJr0kfAY",
+      "smartsheet-site-validation=rRKFFSIrRIhcJ7s3nfiTgTC_jH46Dlu_",
+      "4b60110d90a0ba16827618f3165cf720c5458664c9392ea157363087784e0292",
+      "_globalsign-domain-verification=feXxUwi7bGccktj7bI7l7OYmFCm_x8ogmN1-U4Hu-T",
+      "iEf8OeY/ebUNJkh8rH9jcDmdS7Uq9B5wNePdkhhqLVHgHP4eekupSYlmdsz+e3Y59/XTCbHY40h1BtI5cpfDJw==",
+      "google-site-verification=sHIlSlj0U6UnCDkfHp1AolWgVEvDjWvc0TR4KaysD2c",
       "google-site-verification=hxNSoF46anzjUtyFgpRVpzshTkYClFBJ7OAT3Dz6440",
       "_0nv5veu70xwpobopaobpzyaqo6i9iv8",
-      "_dnsauth=4hlzyrmrk0hdkk4c96qw745ll5h58x35",
-      "pendo-domain-verification=KCqOPkCxJXwRvhV7udrsxm7aBQg",
-      "ece42d7743c84d6889abda7011fe6f53",
-      "fastly-domain-delegation-Gg2T0SlTwT-2021-03-09",
-      "atlassian-domain-verification=Vx1wgyd3FWPEj1cw8sYFv4k6przB3O0EzfmiVawbgV4nMmAqY0fcCo6BeaOrg24G",
-      "cursor-domain-verification-k5ed5k=vc6Qb8LpyNVHcyT7pkGQklhoh",
-      "facebook-domain-verification=1r2am7c2bhzrxpqyt0mda0djoquqsi",
-      "_globalsign-domain-verification=feXxUwi7bGccktj7bI7l7OYmFCm_x8ogmN1-U4Hu-T",
-      "google-site-verification=1dLAd9aAmT5IZx0wSSkxrD-Fk3izPYLC3Hw_nCQ56sw",
-      "qctqpsq058s3t12m0rjf2jxw8jnvn0zr",
-      "google-site-verification=IGQvpRBrmSETWSziSpzxK4YIjUVeTyNb5mTytcatDD8",
-      "duo_sso_verification=2eFmztpfk73LXpFC92aOkVdh4qWYBJ169vmf2WqC2omGJBXPVugwvp3gTFjX8cr2",
-      "_globalsign-domain-verification=4qaYYFkDr3zY8xFnX817RHQdbwKtr7S6GWVF9HLJ3P",
-      "figma-domain-verification=8b6b33942e392f3a6b635697b081e78986a6854d82587c11ae4b1b3bd257b6f1-1784306874",
-      "Dynatrace-site-verification=9bffa29b-0dbd-4e8f-8c8c-b28fca3b1bdf__49s5b44hnes32j605089h3f60a",
-      "Visit www.lenovo.com/think for information about Lenovo products and services",
-      "google-site-verification=sHIlSlj0U6UnCDkfHp1AolWgVEvDjWvc0TR4KaysD2c",
-      "smartsheet-site-validation=rRKFFSIrRIhcJ7s3nfiTgTC_jH46Dlu_",
-      "adobe-idp-site-verification=5540c96206f5fe2df921a6c596ea9fb3d7e418d3eddb598c29935cc03163805b",
-      "google-site-verification=nGgukcp60rC-gFxMOJw1NHH0B4VnSchRrlfWV-He_tE",
-      "google-gws-recovery-domain-verification=53030486",
       "google-site-verification=247PPmmalrNARHoE2rmOJ3YQygtMquQwLpM_LzVXsFg",
-      "MS=ms38130575",
-      "google-site-verification=HESboqU3DntBTT9PbwXRvCBnD3atK7HWgIcv3TJcllw",
-      "duo_sso_verification=sKtyF9pQMvjVPX6vq4nzV00r7qKNkEVAkkb0Tlx1om1ZqroOG1eZEexVxJr0kfAY",
-      "google-site-verification=vyPsFusgDLeWzvnapRyBbiva5dXJ1JIJjcNbGuO52-k",
-      "x1n4n7dfpt5hlqlv6vpbtg2czj5bk2y8",
-      "figma-domain-verification=77471062f3395d7cb96639684e519d0b3d276830c64ca7e17ea13b8f28203680-1772698461",
+      "_dnsauth=4hlzyrmrk0hdkk4c96qw745ll5h58x35",
       "atlassian-domain-verification=lBI3riiS/hlfifAaegKM2zDr7vf//HR7mVq7kfQbtMrynu8eQKK3NyDc7EVwWPRs",
-      "google-site-verification=VxW_e6r_Ka7A518qfX2MmIMHGnkpGbnACsjSxKFCBw0"
+      "openai-domain-verification=dv-w6UANk0E74dbpJI3mTMHPfxP",
+      "ece42d7743c84d6889abda7011fe6f53",
+      "qctqpsq058s3t12m0rjf2jxw8jnvn0zr",
+      "duo_sso_verification=2eFmztpfk73LXpFC92aOkVdh4qWYBJ169vmf2WqC2omGJBXPVugwvp3gTFjX8cr2",
+      "x1n4n7dfpt5hlqlv6vpbtg2czj5bk2y8",
+      "atlassian-domain-verification=Vx1wgyd3FWPEj1cw8sYFv4k6przB3O0EzfmiVawbgV4nMmAqY0fcCo6BeaOrg24G",
+      "figma-domain-verification=8b6b33942e392f3a6b635697b081e78986a6854d82587c11ae4b1b3bd257b6f1-1784306874",
+      "63posrsg6o3q95dtuc80da228n",
+      "google-gws-recovery-domain-verification=53030486",
+      "cursor-domain-verification-k5ed5k=vc6Qb8LpyNVHcyT7pkGQklhoh",
+      "google-site-verification=VxW_e6r_Ka7A518qfX2MmIMHGnkpGbnACsjSxKFCBw0",
+      "google-site-verification=IGQvpRBrmSETWSziSpzxK4YIjUVeTyNb5mTytcatDD8",
+      "google-site-verification=nGgukcp60rC-gFxMOJw1NHH0B4VnSchRrlfWV-He_tE",
+      "Visit www.lenovo.com/think for information about Lenovo products and services",
+      "google-site-verification=HESboqU3DntBTT9PbwXRvCBnD3atK7HWgIcv3TJcllw",
+      "facebook-domain-verification=1r2am7c2bhzrxpqyt0mda0djoquqsi",
+      "_globalsign-domain-verification=4qaYYFkDr3zY8xFnX817RHQdbwKtr7S6GWVF9HLJ3P",
+      "google-site-verification=1dLAd9aAmT5IZx0wSSkxrD-Fk3izPYLC3Hw_nCQ56sw",
+      "adobe-idp-site-verification=5540c96206f5fe2df921a6c596ea9fb3d7e418d3eddb598c29935cc03163805b",
+      "v=spf1 include:spf.lenovo.com include:vendorspf.lenovo.com ~all",
+      "MS=ms38130575",
+      "pendo-domain-verification=KCqOPkCxJXwRvhV7udrsxm7aBQg"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@lenovo.com,mailto:bzo4atck@ag.ap.dmarcian.com; ruf=mailto:dmarc_ruf@lenovo.com"
@@ -347,11 +354,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     ]
   },
   "apex_txt": [
-    "google-site-verification=KT4YATm6NeQqaD0WLCJtFOjb0gYXhbzUekUM9Rm-fb8",
+    "google-site-verification=vyPsFusgDLeWzvnapRyBbiva5dXJ1JIJjcNbGuO52-k",
+    "figma-domain-verification=77471062f3395d7cb96639684e519d0b3d276830c64ca7e17ea13b",
+    "Dynatrace-site-verification=9bffa29b-0dbd-4e8f-8c8c-b28fca3b1bdf__49s5b44hnes32j",
     "airtable-verification=1d5415310fbcf1fdc72c0b175208089a",
-    "openai-domain-verification=dv-w6UANk0E74dbpJI3mTMHPfxP",
-    "google-site-verification=hxNSoF46anzjUtyFgpRVpzshTkYClFBJ7OAT3Dz6440",
-    "pendo-domain-verification=KCqOPkCxJXwRvhV7udrsxm7aBQg"
+    "google-site-verification=KT4YATm6NeQqaD0WLCJtFOjb0gYXhbzUekUM9Rm-fb8"
   ],
   "tls2": {
     "alpn": "",
@@ -408,8 +415,14 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 8.3,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301,
+    "cdn": [
+      "Akamai"
+    ]
+  },
+  "elapsed_s": 7.9,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -422,4 +435,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

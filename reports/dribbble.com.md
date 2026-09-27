@@ -7,12 +7,12 @@
 | Target | https://dribbble.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | dribbble.com |
-| Test date | 2026-09-27 00:16 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
+Total findings: **24** (High: 0, Medium: 0, Low: 2, Info: 22)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -38,7 +38,8 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
 | 20 | info | SRV1 | Server header discloses a product version | CWE-200 |
 | 21 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
 | 22 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
-| 23 | info | CT1 | 16 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 23 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 24 | info | CT1 | 16 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -123,13 +124,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (krwr89vspgl94w.dribbble.com and j4padybg4p0f09.dribbble.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (rkhwca4bd2ltlf.dribbble.com and uyv8bucshf42sw.dribbble.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=FnXWfFjPqReOGiIH8ITAbUasqKxnix6ftvTUzPOKHF; google-site-verification=70pPwM6XlplaQ7lxSmW3PZa-U9VVMRcx6Q4ht8uv6nM; google-site-verification=nBBj8ycb88f7pry7MiUNDo7KdXDBxl-WOYEPHRCQw8E
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=nBBj8ycb88f7pry7MiUNDo7KdXDBxl-WOYEPHRCQw8E; google-site-verification=ybbtm3dCtyshdETl5YMLL3YdRh1D50P1uLkcav13IG8; google-site-verification=70pPwM6XlplaQ7lxSmW3PZa-U9VVMRcx6Q4ht8uv6nM
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -147,13 +148,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 18.155.192.81 carries PTR server-18-155-192-81.sfo53.r.cloudfront.net. for dribbble.com.
+- **Detail:** 54.192.100.42 carries PTR server-54-192-100-42.mci50.r.cloudfront.net. for dribbble.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 18. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkxx7iv691u77g.html -> 404; error page/headers match: Nginx, CloudFront.
+- **Detail:** GET /xk1dhmwnayz38j.html -> 404; error page/headers match: Nginx, CloudFront.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -180,7 +181,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
 - **Detail:** /sitemap.xml on dribbble.com lists 227 <loc> URL(s) across 228 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
-### 23. [INFO] 16 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 23. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on dribbble.com identify the edge as CloudFront / Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
+### 24. [INFO] 16 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: checkout.dribbble.com, okta.dribbble.com
@@ -193,43 +200,43 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
   "domain": "dribbble.com",
   "dns": {
     "a": [
-      "18.155.192.81",
-      "18.155.192.128",
-      "18.155.192.59",
-      "18.155.192.103"
+      "54.192.100.42",
+      "54.192.100.37",
+      "54.192.100.54",
+      "54.192.100.8"
     ],
     "aaaa": [
-      "2600:9000:24bb:fa00:18:db55:bf00:93a1",
-      "2600:9000:24bb:2800:18:db55:bf00:93a1",
-      "2600:9000:24bb:1e00:18:db55:bf00:93a1",
-      "2600:9000:24bb:a400:18:db55:bf00:93a1",
       "2600:9000:24bb:5800:18:db55:bf00:93a1",
-      "2600:9000:24bb:4000:18:db55:bf00:93a1",
+      "2600:9000:24bb:2800:18:db55:bf00:93a1",
+      "2600:9000:24bb:fa00:18:db55:bf00:93a1",
+      "2600:9000:24bb:a400:18:db55:bf00:93a1",
       "2600:9000:24bb:4800:18:db55:bf00:93a1",
-      "2600:9000:24bb:2400:18:db55:bf00:93a1"
+      "2600:9000:24bb:1e00:18:db55:bf00:93a1",
+      "2600:9000:24bb:2400:18:db55:bf00:93a1",
+      "2600:9000:24bb:4000:18:db55:bf00:93a1"
     ],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx2.googlemail.com (pref 10)"
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx3.googlemail.com (pref 10)",
+      "aspmx2.googlemail.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns2.dnsimple-edge.net.",
       "ns3.dnsimple-edge.io.",
+      "ns4.dnsimple-edge.org.",
       "ns1.dnsimple-edge.com.",
-      "ns4.dnsimple-edge.org."
+      "ns2.dnsimple-edge.net."
     ],
     "caa": [],
     "spf": [
-      "kbjtt2313vqsxb13wy2tzr8mwmbwnsjb",
-      "globalsign-domain-verification=FnXWfFjPqReOGiIH8ITAbUasqKxnix6ftvTUzPOKHF",
-      "google-site-verification=70pPwM6XlplaQ7lxSmW3PZa-U9VVMRcx6Q4ht8uv6nM",
       "google-site-verification=nBBj8ycb88f7pry7MiUNDo7KdXDBxl-WOYEPHRCQw8E",
-      "v=spf1 include:_spf.google.com -all",
       "google-site-verification=ybbtm3dCtyshdETl5YMLL3YdRh1D50P1uLkcav13IG8",
+      "v=spf1 include:_spf.google.com -all",
+      "kbjtt2313vqsxb13wy2tzr8mwmbwnsjb",
+      "google-site-verification=70pPwM6XlplaQ7lxSmW3PZa-U9VVMRcx6Q4ht8uv6nM",
+      "globalsign-domain-verification=FnXWfFjPqReOGiIH8ITAbUasqKxnix6ftvTUzPOKHF",
       "google-site-verification=6ehiKlbD2ElK4AJXLe8nDTBOw7FNfb8uj1LukQgJnqY"
     ],
     "dmarc": [
@@ -260,7 +267,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
     }
   },
   "ports": {
-    "ip": "18.155.192.81",
+    "ip": "54.192.100.42",
     "open": []
   },
   "https": {
@@ -337,10 +344,10 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "globalsign-domain-verification=FnXWfFjPqReOGiIH8ITAbUasqKxnix6ftvTUzPOKHF",
-    "google-site-verification=70pPwM6XlplaQ7lxSmW3PZa-U9VVMRcx6Q4ht8uv6nM",
     "google-site-verification=nBBj8ycb88f7pry7MiUNDo7KdXDBxl-WOYEPHRCQw8E",
     "google-site-verification=ybbtm3dCtyshdETl5YMLL3YdRh1D50P1uLkcav13IG8",
+    "google-site-verification=70pPwM6XlplaQ7lxSmW3PZa-U9VVMRcx6Q4ht8uv6nM",
+    "globalsign-domain-verification=FnXWfFjPqReOGiIH8ITAbUasqKxnix6ftvTUzPOKHF",
     "google-site-verification=6ehiKlbD2ElK4AJXLe8nDTBOw7FNfb8uj1LukQgJnqY"
   ],
   "tls2": {
@@ -390,7 +397,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
   "x12": {
     "status": 202,
     "ptr": [
-      "server-18-155-192-81.sfo53.r.cloudfront.net."
+      "server-54-192-100-42.mci50.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -422,8 +429,15 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
     "cipher_ver": "TLSv1.3",
     "root_status": 202
   },
-  "elapsed_s": 36.4,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 202,
+    "cdn": [
+      "CloudFront",
+      "Fastly"
+    ]
+  },
+  "elapsed_s": 24.5,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -436,4 +450,5 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

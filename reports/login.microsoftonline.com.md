@@ -7,12 +7,12 @@
 | Target | https://login.microsoftonline.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | login.microsoftonline.com |
-| Test date | 2026-09-27 00:25 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:26 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
+Total findings: **11** (High: 0, Medium: 0, Low: 3, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -23,11 +23,10 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 | 5 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 6 | info | RED2 | Soft redirect (302/303) for HTTP to HTTPS | CWE-319 |
 | 7 | info | P8 | Missing security.txt | CWE-1038 |
-| 8 | low | DNS4 | Deep CNAME chain (>4 hops) | CWE-345 |
-| 9 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 10 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
-| 11 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
-| 12 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 8 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 9 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
+| 10 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 11 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -79,31 +78,25 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 8. [LOW] Deep CNAME chain (>4 hops) (`DNS4`)
-
-- **CWE:** CWE-345
-- **Detail:** CNAME chain depth 5 for login.microsoftonline.com.
-- **Recommendation:** Shorten the CNAME chain.
-
-### 9. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 8. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but login.microsoftonline.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 10. [LOW] HTTPS root redirects to a different domain (`RD2`)
+### 9. [LOW] HTTPS root redirects to a different domain (`RD2`)
 
 - **CWE:** CWE-200
 - **Detail:** https://login.microsoftonline.com/ answered 302 with Location: https://www.office.com/login# (cross-domain handoff at the entry point).
 - **Recommendation:** Review the cross-domain redirect; it discloses the real entry point and can be abused in open-redirect-style flows.
 
-### 11. [INFO] App-association / digital-asset-links surface published (`WK1`)
+### 10. [INFO] App-association / digital-asset-links surface published (`WK1`)
 
 - **CWE:** CWE-200
 - **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on login.microsoftonline.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
 - **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
-### 12. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+### 11. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
 
 - **CWE:** CWE-298
 - **Detail:** The login.microsoftonline.com certificate lists an AIA OCSP responder (http://ocsp.digicert.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
@@ -116,24 +109,24 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
   "domain": "login.microsoftonline.com",
   "dns": {
     "a": [
-      "40.126.38.20",
-      "40.126.38.19",
-      "40.126.38.22",
-      "20.190.166.68",
-      "40.126.38.21",
-      "20.190.166.131",
-      "20.190.166.66",
-      "20.190.166.67"
+      "20.190.141.36",
+      "20.190.141.32",
+      "20.190.141.33",
+      "20.190.141.34",
+      "20.190.141.35",
+      "20.190.141.38",
+      "40.126.13.9",
+      "20.190.141.39"
     ],
     "aaaa": [
-      "2603:1047:1:150::3",
-      "2603:1046:2000:148::2",
-      "2603:1046:2000:158::3",
+      "2603:1046:2000:148::4",
       "2603:1046:2000:148::5",
-      "2603:1046:2000:158::4",
       "2603:1046:2000:148::3",
+      "2603:1047:1:150::3",
+      "2603:1046:2000:158::3",
+      "2603:1046:2000:158::5",
       "2603:1047:1:150::1",
-      "2603:1046:2000:158::5"
+      "2603:1047:1:150::2"
     ],
     "cname": "login.mso.msidentity.com.",
     "mx": [],
@@ -148,12 +141,11 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
     "chain": "trusted",
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
-    "subject": "countryName=US, stateOrProvinceName=Washington, localityName=Redmond, organizationName=Microsoft Corporation, commonName=stamp2.login.microsoftonline.com",
-    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
-    "notBefore": "Sep  8 00:00:00 2026 GMT",
-    "notAfter": "Dec 17 23:59:59 2026 GMT",
+    "subject": "countryName=US, stateOrProvinceName=WA, localityName=Redmond, organizationName=Microsoft Corporation, commonName=stamp2.login.microsoftonline.com",
+    "issuer": "countryName=US, organizationName=Microsoft Corporation, commonName=Microsoft TLS G2 RSA CA OCSP 04",
+    "notBefore": "Aug 13 01:37:12 2026 GMT",
+    "notAfter": "Nov 21 00:37:12 2026 GMT",
     "san": [
-      "stamp2.login.microsoftonline.com",
       "login.microsoftonline-int.com",
       "login.microsoftonline-p.com",
       "login.microsoftonline.com",
@@ -161,9 +153,10 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "login2.microsoftonline.com",
       "loginex.microsoftonline-int.com",
       "loginex.microsoftonline.com",
-      "stamp2.login.microsoftonline-int.com"
+      "stamp2.login.microsoftonline-int.com",
+      "stamp2.login.microsoftonline.com"
     ],
-    "days_left": 81,
+    "days_left": 54,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -173,7 +166,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
     }
   },
   "ports": {
-    "ip": "40.126.38.20",
+    "ip": "20.190.141.36",
     "open": []
   },
   "https": {
@@ -239,9 +232,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
   "cname_chain": [
     "login.mso.msidentity.com",
     "ak.privatelink.msidentity.com",
-    "www.tm.a.prd.aadg.akadns.net",
-    "www.current.a.prd.aadg.akadns.net",
-    "osa-lb.current.a.prd.aadg.akadns.net"
+    "www.tm.a.prd.aadg.trafficmanager.net"
   ],
   "tls2": {
     "alpn": "",
@@ -253,7 +244,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.digicert.com",
-      "serial": 3433031140311022422776825935875756214,
+      "serial": 13481541843778686755363863235756696838,
       "cert_version": 3,
       "bc_ca": null,
       "bc_pathlen": null,
@@ -263,8 +254,8 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
       ],
       "subject_dn": "310b3009060355040613025553311330110603550408130a57617368696e67746f6e3110300e060355040713075265646d6f6e64311e301c060355040a13154d6963726f736f667420436f72706f726174696f6e31293027060355040313207374616d70322e6c6f67696e2e6d6963726f736f66746f6e6c696e652e636f6d",
       "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
-      "not_before": "20260908000000",
-      "not_after": "20261217235959"
+      "not_before": "20260813000000",
+      "not_after": "20261121235959"
     },
     "ocsp": "explicit-status"
   },
@@ -300,8 +291,11 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
     "cipher_ver": "TLSv1.3",
     "root_status": 302
   },
-  "elapsed_s": 16.4,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 302
+  },
+  "elapsed_s": 18.3,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -314,4 +308,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 4, Info: 8)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

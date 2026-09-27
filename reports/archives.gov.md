@@ -7,28 +7,23 @@
 | Target | https://archives.gov/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | archives.gov |
-| Test date | 2026-09-27 00:10 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:10 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
+Total findings: **8** (High: 0, Medium: 0, Low: 1, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
-| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
-| 3 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 4 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
-| 5 | info | H6 | Server technology disclosure | CWE-200 |
-| 6 | info | P8 | Missing security.txt | CWE-1038 |
-| 7 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
-| 8 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
-| 9 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 10 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 11 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
-| 12 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 13 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 2 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 3 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 4 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 5 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 6 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 7 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 8 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 
 ## Detailed findings
 
@@ -38,77 +33,43 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 - **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
 - **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Technology fingerprint (`TECH1`)
-
-- **CWE:** CWE-200
-- **Detail:** Detected: Server: nginx
-- **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
-
-### 3. [INFO] Missing Permissions-Policy (`H7`)
-
-- **CWE:** CWE-200
-- **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
-- **Context:** https response, /
-- **Recommendation:** Add a Permissions-Policy restricting unused features.
-
-### 4. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
-
-- **CWE:** CWE-200
-- **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
-- **Context:** https response, /
-- **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
-
-### 5. [INFO] Server technology disclosure (`H6`)
-
-- **CWE:** CWE-200
-- **Detail:** Header reveals: nginx
-- **Context:** https response, /
-- **Recommendation:** Consider hiding or shortening the Server header.
-
-### 6. [INFO] Missing security.txt (`P8`)
-
-- **CWE:** CWE-1038
-- **Detail:** No .well-known/security.txt found (RFC 9116).
-- **Context:** https response, /
-- **Recommendation:** Publish .well-known/security.txt per RFC 9116.
-
-### 7. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+### 2. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
 
 - **CWE:** CWE-223
 - **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
 - **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
 
-### 8. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+### 3. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
 
 - **CWE:** CWE-223
 - **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
 - **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
 
-### 9. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+### 4. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
 - **Detail:** Apex TXT records with verification/token content: google-site-verification=vzFoKGZ49s-tl4Mw26kJfVRiYukV0lHmZlbG0iAYYMk
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 10. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 5. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 4 disallow path(s), e.g. /citizen-archivist/history-hub/hh-test, /developer/artificial-intelligence-and-machine-learning-datasets, /developer/1940-census, /developer/national-archives-catalog-dataset
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 11. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+### 6. [LOW] CSP present but still allows unsafe directives (`CSP1`)
 
 - **CWE:** CWE-1021
 - **Detail:** Content-Security-Policy of archives.gov permits unsafe-inline, unsafe-eval; inline script injection still executes.
 - **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
-### 12. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 7. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 52.44.89.206 carries PTR ec2-52-44-89-206.compute-1.amazonaws.com. for archives.gov.
+- **Detail:** 52.206.136.3 carries PTR ec2-52-206-136-3.compute-1.amazonaws.com. for archives.gov.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 13. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+### 8. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
 
 - **CWE:** CWE-200
 - **Detail:** /sitemap.xml on archives.gov lists 2 <loc> URL(s) across 3 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
@@ -121,8 +82,8 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
   "domain": "archives.gov",
   "dns": {
     "a": [
-      "52.44.89.206",
-      "52.206.136.3"
+      "52.206.136.3",
+      "52.44.89.206"
     ],
     "aaaa": [
       "2600:1f18:43e8:f301:9046:c05f:75e7:c481",
@@ -137,9 +98,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
       "ns1.fedmettel.net."
     ],
     "caa": [
+      "0 issue \"entrust.net\"",
       "0 issue \"awstrust.com\"",
-      "0 issue \"letsencrypt.org\"",
-      "0 issue \"entrust.net\""
+      "0 issue \"letsencrypt.org\""
     ],
     "spf": [
       "v=spf1 -all",
@@ -183,55 +144,24 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     }
   },
   "ports": {
-    "ip": "52.44.89.206",
+    "ip": "52.206.136.3",
     "open": []
   },
   "https": {
-    "status": 301,
+    "status": 0,
     "content_type": "",
-    "title": ""
+    "title": "",
+    "error": "https connect failed"
   },
   "mixed_content": [],
-  "tech": [
-    "Server: nginx"
-  ],
   "cookies": [],
-  "cors": [
-    {
-      "origin": "https://evil-auditor.example",
-      "acao": "",
-      "acac": ""
-    },
-    {
-      "origin": "https://sub.archives.gov",
-      "acao": "",
-      "acac": ""
-    }
-  ],
+  "cors": [],
   "http": {
-    "status": 301,
-    "location": "https://archives.gov/"
+    "status": 0,
+    "error": "http connect failed"
   },
-  "redir_probes": [
-    "/redirect?url=https://evil-auditor.example/x -> 301",
-    "/redirect?next=https://evil-auditor.example/x -> 301",
-    "/go?url=https://evil-auditor.example/x -> 301",
-    "/url?url=https://evil-auditor.example/x -> 301"
-  ],
-  "paths": {
-    "/robots.txt": 301,
-    "/sitemap.xml": 301,
-    "/.well-known/security.txt": 301,
-    "/security.txt": 301,
-    "/.git/HEAD": 301,
-    "/.git/config": 301,
-    "/.env": 301,
-    "/.htaccess": 301,
-    "/wp-login.php": 301,
-    "/phpmyadmin/index.php": 301,
-    "/server-status": 301,
-    "/api/": 301
-  },
+  "redir_probes": [],
+  "paths": {},
   "subdomains": {
     "status": "ct-pending"
   },
@@ -274,7 +204,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-52-44-89-206.compute-1.amazonaws.com."
+      "ec2-52-206-136-3.compute-1.amazonaws.com."
     ]
   },
   "x13": {
@@ -306,8 +236,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 45.8,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301
+  },
+  "elapsed_s": 39.2,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -320,4 +253,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

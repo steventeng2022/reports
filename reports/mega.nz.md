@@ -7,12 +7,12 @@
 | Target | https://mega.nz/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | mega.nz |
-| Test date | 2026-09-27 00:25 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:27 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
+Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,10 +31,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
-| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 17 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
-| 18 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
-| 19 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 16 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 17 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
+| 18 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 19 | info | WK4 | RFC 8615 change-password endpoint live | CWE-200 |
+| 20 | info | CT1 | 40 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -113,7 +114,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=eYzEf0tV_bQerKRYO3PwDptch5jNR_isXfhbxn7EM0A; google-site-verification=Y8iGjJFNwRhopP4rze9n5eDgRzisdJBBzxtbhvUV6es; anthropic-domain-verification-emwyv4=721oqr54fQkeUSj1O0qOdcOlh
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-emwyv4=721oqr54fQkeUSj1O0qOdcOlh; google-site-verification=3U54cgxJ3rwkYixvtZtI4DPTRrPWclp5Mb437k0-lOM; google-site-verification=Y8iGjJFNwRhopP4rze9n5eDgRzisdJBBzxtbhvUV6es
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -134,29 +135,35 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - **Detail:** Content-Security-Policy of mega.nz permits unsafe-inline, unsafe-eval; inline script injection still executes.
 - **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
-### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
-
-- **CWE:** CWE-200
-- **Detail:** 31.216.145.5 carries PTR 31-216-145-5.ip.dclux.com. for mega.nz.
-- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
-
-### 17. [INFO] App-association / digital-asset-links surface published (`WK1`)
+### 16. [INFO] App-association / digital-asset-links surface published (`WK1`)
 
 - **CWE:** CWE-200
 - **Detail:** Live JSON at /.well-known/assetlinks.json on mega.nz; a mobile app or web-bridge is tied to this domain and its association configuration is public.
 - **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
-### 18. [INFO] security.txt published with a contact address (`SEC1`)
+### 17. [INFO] security.txt published with a contact address (`SEC1`)
 
 - **CWE:** CWE-1038
 - **Detail:** /.well-known/security.txt on mega.nz is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
 - **Recommendation:** Confirm the published contact is current and monitored (RFC 9116).
 
-### 19. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+### 18. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
 
 - **CWE:** CWE-200
 - **Detail:** /sitemap.xml on mega.nz lists 30 <loc> URL(s); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
+### 19. [INFO] RFC 8615 change-password endpoint live (`WK4`)
+
+- **CWE:** CWE-200
+- **Detail:** /.well-known/change-password on mega.nz answers 200; a password-change service endpoint is advertised.
+- **Recommendation:** Confirm the endpoint is an intended user-facing service.
+
+### 20. [INFO] 40 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: beta.mega.nz, careers.mega.nz, grafana.systems.mega.nz, help.mega.nz, smoketest.static.mega.nz, stats.admin.mega.nz, vpn.mega.nz, www.careers.mega.nz, www.vpn.mega.nz
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
 ## Evidence (raw response observations)
 
@@ -165,35 +172,35 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "domain": "mega.nz",
   "dns": {
     "a": [
-      "31.216.145.5",
-      "66.203.127.18"
+      "66.203.127.18",
+      "31.216.145.5"
     ],
     "aaaa": [
-      "2a0b:e46:1:145::5",
-      "2a0b:e40:3::18"
+      "2a0b:e40:3::18",
+      "2a0b:e46:1:145::5"
     ],
     "cname": null,
     "mx": [
       "mail.mega.co.nz (pref 10)"
     ],
     "ns": [
-      "nsnl1.mega.nz.",
-      "nsnl2.mega.nz.",
+      "nslu2.mega.nz.",
       "nslu1.mega.nz.",
-      "nslu2.mega.nz."
+      "nsnl2.mega.nz.",
+      "nsnl1.mega.nz."
     ],
     "caa": [
       "0 issue \"letsencrypt.org\"",
       "0 issue \"sectigo.com\""
     ],
     "spf": [
-      "6b9a442bef678c91ce4aaf66dfb6c438",
-      "google-site-verification=eYzEf0tV_bQerKRYO3PwDptch5jNR_isXfhbxn7EM0A",
-      "google-site-verification=Y8iGjJFNwRhopP4rze9n5eDgRzisdJBBzxtbhvUV6es",
       "anthropic-domain-verification-emwyv4=721oqr54fQkeUSj1O0qOdcOlh",
+      "google-site-verification=3U54cgxJ3rwkYixvtZtI4DPTRrPWclp5Mb437k0-lOM",
+      "6b9a442bef678c91ce4aaf66dfb6c438",
+      "google-site-verification=Y8iGjJFNwRhopP4rze9n5eDgRzisdJBBzxtbhvUV6es",
       "v=spf1 ip4:122.56.56.210 ip4:31.216.147.132/30 ip4:31.216.147.136/31 ip4:31.216.147.231 ip4:122.56.56.222 ip4:66.203.125.8/29 ",
       "  ip4:66.203.125.16/30 ip4:66.203.124.0/28 ip4:66.203.124.38/28 ip6:2a0b:0e46:0001:0050::/121 include:43855380.spf10.hubspotemail.net -all",
-      "google-site-verification=3U54cgxJ3rwkYixvtZtI4DPTRrPWclp5Mb437k0-lOM"
+      "google-site-verification=eYzEf0tV_bQerKRYO3PwDptch5jNR_isXfhbxn7EM0A"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; adkim=s; aspf=s; ri=86400"
@@ -207,8 +214,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=mega.nz",
     "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YR2",
-    "notBefore": "Aug 13 21:02:59 2026 GMT",
-    "notAfter": "Nov 11 21:02:58 2026 GMT",
+    "notBefore": "Aug 13 21:43:56 2026 GMT",
+    "notAfter": "Nov 11 21:43:55 2026 GMT",
     "san": [
       "mega.nz",
       "www.mega.nz"
@@ -223,7 +230,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     }
   },
   "ports": {
-    "ip": "31.216.145.5",
+    "ip": "66.203.127.18",
     "open": []
   },
   "https": {
@@ -272,13 +279,47 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "/api/": 200
   },
   "subdomains": {
-    "status": "ct-pending"
+    "source": "certspotter",
+    "count": 40,
+    "notable": [
+      "beta.mega.nz",
+      "careers.mega.nz",
+      "grafana.systems.mega.nz",
+      "help.mega.nz",
+      "smoketest.static.mega.nz",
+      "stats.admin.mega.nz",
+      "vpn.mega.nz",
+      "www.careers.mega.nz",
+      "www.vpn.mega.nz"
+    ],
+    "sample": [
+      "ad.mega.nz",
+      "beta.mega.nz",
+      "bsmon.systems.mega.nz",
+      "btmon.systems.mega.nz",
+      "careers.mega.nz",
+      "cms2.mega.nz",
+      "giphy.mega.nz",
+      "grafana.systems.mega.nz",
+      "help.mega.nz",
+      "influxdb.systems.mega.nz",
+      "info.mega.nz",
+      "karere.mega.nz",
+      "maxmind.systems.mega.nz",
+      "mega.nz",
+      "netbox.systems.mega.nz",
+      "nsntpams1.systems.mega.nz",
+      "nsntpams2.systems.mega.nz",
+      "nsntplu1.systems.mega.nz",
+      "nsntplu2.systems.mega.nz",
+      "nsntpmtl1.systems.mega.nz"
+    ]
   },
   "apex_txt": [
-    "google-site-verification=eYzEf0tV_bQerKRYO3PwDptch5jNR_isXfhbxn7EM0A",
-    "google-site-verification=Y8iGjJFNwRhopP4rze9n5eDgRzisdJBBzxtbhvUV6es",
     "anthropic-domain-verification-emwyv4=721oqr54fQkeUSj1O0qOdcOlh",
-    "google-site-verification=3U54cgxJ3rwkYixvtZtI4DPTRrPWclp5Mb437k0-lOM"
+    "google-site-verification=3U54cgxJ3rwkYixvtZtI4DPTRrPWclp5Mb437k0-lOM",
+    "google-site-verification=Y8iGjJFNwRhopP4rze9n5eDgRzisdJBBzxtbhvUV6es",
+    "google-site-verification=eYzEf0tV_bQerKRYO3PwDptch5jNR_isXfhbxn7EM0A"
   ],
   "tls2": {
     "alpn": "",
@@ -290,17 +331,17 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": null,
-      "serial": 476360691673511916981322934047474605111105,
+      "serial": 440196873609022250980634498570752222532917,
       "cert_version": 3,
       "bc_ca": null,
       "bc_pathlen": null,
       "crl_urls": [
-        "http://yr2.c.lencr.org/66.crl"
+        "http://yr2.c.lencr.org/54.crl"
       ],
       "subject_dn": "3110300e060355040313076d6567612e6e7a",
       "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303595232",
-      "not_before": "20260813210259",
-      "not_after": "20261111210258"
+      "not_before": "20260813214356",
+      "not_after": "20261111214355"
     }
   },
   "http2": {
@@ -310,10 +351,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     ]
   },
   "x12": {
-    "status": 200,
-    "ptr": [
-      "31-216-145-5.ip.dclux.com."
-    ]
+    "status": 200
   },
   "x13": {
     "root_status": 200,
@@ -337,7 +375,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "indexes": 0
     },
     "crl": {
-      "url": "http://yr2.c.lencr.org/66.crl",
+      "url": "http://yr2.c.lencr.org/54.crl",
       "status": 200
     }
   },
@@ -346,8 +384,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "cipher_ver": "TLSv1.3",
     "root_status": 200
   },
-  "elapsed_s": 38.5,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 200,
+    "change_password": true
+  },
+  "elapsed_s": 40.8,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -360,4 +402,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

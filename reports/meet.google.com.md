@@ -7,12 +7,12 @@
 | Target | https://meet.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | meet.google.com |
-| Test date | 2026-09-27 00:25 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:27 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
+Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 | 11 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 | 12 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 13 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 14 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
 
 ## Detailed findings
 
@@ -113,6 +114,12 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 - **Detail:** Strict-Transport-Security on meet.google.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of meet.google.com.
 - **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
 
+### 14. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
+
+- **CWE:** CWE-200
+- **Detail:** The root response of meet.google.com carries alt-svc h3=":443"; ma=2592000,h3-29=":443"; ma=2592000; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
+- **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -120,24 +127,24 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
   "domain": "meet.google.com",
   "dns": {
     "a": [
-      "142.251.150.5",
-      "142.251.154.5",
-      "142.251.157.5",
-      "142.251.155.5",
       "142.251.152.5",
-      "142.251.153.5",
+      "142.251.155.5",
+      "142.251.156.5",
+      "142.251.154.5",
       "142.251.151.5",
-      "142.251.156.5"
+      "142.251.153.5",
+      "142.251.157.5",
+      "142.251.150.5"
     ],
     "aaaa": [
-      "2001:4860:4829:500::",
+      "2001:4860:482c:500::",
+      "2001:4860:482a:500::",
       "2001:4860:482d:500::",
       "2001:4860:4826:500::",
-      "2001:4860:482c:500::",
-      "2001:4860:482b:500::",
-      "2001:4860:4828:500::",
       "2001:4860:4827:500::",
-      "2001:4860:482a:500::"
+      "2001:4860:4829:500::",
+      "2001:4860:482b:500::",
+      "2001:4860:4828:500::"
     ],
     "cname": null,
     "mx": [],
@@ -153,9 +160,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=*.google.com",
-    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
-    "notBefore": "Sep 10 19:21:53 2026 GMT",
-    "notAfter": "Dec  3 19:21:52 2026 GMT",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
+    "notBefore": "Sep 10 19:22:01 2026 GMT",
+    "notAfter": "Dec  3 19:22:00 2026 GMT",
     "san": [
       "*.google.com",
       "*.appengine.google.com",
@@ -233,7 +240,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
     }
   },
   "ports": {
-    "ip": "142.251.150.5",
+    "ip": "142.251.152.5",
     "open": []
   },
   "https": {
@@ -295,22 +302,22 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
     "tls_ver": "TLSv1.3",
     "subject": "None",
     "cert": {
-      "sig_oid": "1.2.840.113549.1.1.11",
+      "sig_oid": "1.2.840.10045.4.3.2",
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
-      "serial": 91374321421071198902268481174050507237,
+      "serial": 19812463921426658549740554563674554743,
       "cert_version": 3,
       "bc_ca": null,
       "bc_pathlen": null,
       "crl_urls": [
-        "http://c.pki.goog/wr2/oQ6nyr8F0m0.crl"
+        "http://c.pki.goog/we2/64OUIVzpZV4.crl"
       ],
       "subject_dn": "3115301306035504030c0c2a2e676f6f676c652e636f6d",
-      "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303575232",
-      "not_before": "20260910192153",
-      "not_after": "20261203192152"
+      "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574532",
+      "not_before": "20260910192201",
+      "not_after": "20261203192200"
     }
   },
   "http2": {
@@ -341,7 +348,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
     "root_status": 302,
     "hsts": "max-age=31536000",
     "crl": {
-      "url": "http://c.pki.goog/wr2/oQ6nyr8F0m0.crl",
+      "url": "http://c.pki.goog/we2/64OUIVzpZV4.crl",
       "status": 200
     }
   },
@@ -350,8 +357,12 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
     "cipher_ver": "TLSv1.3",
     "root_status": 302
   },
-  "elapsed_s": 5.9,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 302,
+    "alt_svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+  },
+  "elapsed_s": 6.2,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -364,4 +375,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 2, Info: 11)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

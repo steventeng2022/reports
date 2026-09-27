@@ -7,12 +7,12 @@
 | Target | https://addons.mozilla.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | addons.mozilla.org |
-| Test date | 2026-09-27 00:08 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:08 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
+Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,12 +27,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 | 9 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 13 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
-| 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
-| 15 | low | H21 | HSTS does not cover subdomains | CWE-319 |
-| 16 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
-| 17 | info | CT1 | 7 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 12 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 13 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 14 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 15 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 16 | info | CT1 | 7 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -106,37 +105,31 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - **Detail:** Strict-Transport-Security is served but addons.mozilla.org is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt lists 260 disallow path(s), e.g. /firefox/downloads/, /android/downloads/, /cs/firefox/collections/4757633/$, /cs/firefox/collections/mozilla/$, /cs/firefox/search/
-- **Recommendation:** Review disallowed paths; robots is not access control.
-
-### 13. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+### 12. [INFO] CSP reporting endpoint disclosed (`CSP2`)
 
 - **CWE:** CWE-200
 - **Detail:** CSP of addons.mozilla.org includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
 - **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
 
-### 14. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+### 13. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
 
 - **CWE:** CWE-922
 - **Detail:** Response for https://addons.mozilla.org/ carries Cache-Control: max-age=31536000; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
-### 15. [LOW] HSTS does not cover subdomains (`H21`)
+### 14. [LOW] HSTS does not cover subdomains (`H21`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security on addons.mozilla.org has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of addons.mozilla.org.
 - **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
 
-### 16. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+### 15. [INFO] Edge/CDN layer identified from response headers (`H26`)
 
 - **CWE:** CWE-200
-- **Detail:** /sitemap.xml on addons.mozilla.org lists 3488 <loc> URL(s) across 3489 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
-- **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+- **Detail:** Response headers on addons.mozilla.org identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
-### 17. [INFO] 7 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] 7 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -149,26 +142,26 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
   "domain": "addons.mozilla.org",
   "dns": {
     "a": [
+      "151.101.1.91",
       "151.101.129.91",
       "151.101.193.91",
-      "151.101.65.91",
-      "151.101.1.91"
+      "151.101.65.91"
     ],
     "aaaa": [
+      "2a04:4e42:400::347",
       "2a04:4e42:600::347",
       "2a04:4e42::347",
-      "2a04:4e42:200::347",
-      "2a04:4e42:400::347"
+      "2a04:4e42:200::347"
     ],
     "cname": null,
     "mx": [
       "mx.socketlabs.com (pref 10)"
     ],
     "ns": [
+      "ns-967.awsdns-56.net.",
       "ns-144.awsdns-18.com.",
-      "ns-1140.awsdns-14.org.",
       "ns-1696.awsdns-20.co.uk.",
-      "ns-967.awsdns-56.net."
+      "ns-1140.awsdns-14.org."
     ],
     "caa": [],
     "spf": [],
@@ -198,7 +191,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     }
   },
   "ports": {
-    "ip": "151.101.129.91",
+    "ip": "151.101.1.91",
     "open": []
   },
   "https": {
@@ -231,8 +224,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     "/url?url=https://evil-auditor.example/x -> 302"
   ],
   "paths": {
-    "/robots.txt": 200,
-    "/sitemap.xml": 200,
+    "/robots.txt": 429,
+    "/sitemap.xml": 429,
     "/.well-known/security.txt": 302,
     "/security.txt": 302,
     "/.git/HEAD": 302,
@@ -281,25 +274,6 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "not_after": "20261225150808"
     }
   },
-  "http2": {
-    "robots_disallow": [
-      "/firefox/downloads/",
-      "/android/downloads/",
-      "/cs/firefox/collections/4757633/$",
-      "/cs/firefox/collections/mozilla/$",
-      "/cs/firefox/search/",
-      "/cs/firefox/collections/",
-      "/cs/android/search/",
-      "/cs/android/collections/",
-      "/de/firefox/collections/4757633/$",
-      "/de/firefox/collections/mozilla/$",
-      "/de/firefox/search/",
-      "/de/firefox/collections/",
-      "/de/android/search/",
-      "/de/android/collections/",
-      "/dsb/firefox/collections/4757633/$"
-    ]
-  },
   "x12": {
     "status": 301
   },
@@ -307,7 +281,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     "root_status": 301,
     "root_location": "/en-US/firefox/",
     "http_status": 301,
-    "p404_status": 302,
+    "p404_status": 429,
     "quic": {
       "ok": false,
       "version": "",
@@ -317,10 +291,6 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
   "x14": {
     "root_status": 301,
     "hsts": "max-age=31536000",
-    "sitemap": {
-      "urls": 3488,
-      "indexes": 3489
-    },
     "crl": {
       "url": "http://yr2.c.lencr.org/47.crl",
       "status": 200
@@ -331,8 +301,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 16.7,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301,
+    "cdn": [
+      "Fastly"
+    ]
+  },
+  "elapsed_s": 18.2,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -345,4 +321,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

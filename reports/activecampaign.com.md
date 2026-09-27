@@ -7,12 +7,12 @@
 | Target | https://activecampaign.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | activecampaign.com |
-| Test date | 2026-09-27 00:08 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:08 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
+Total findings: **26** (High: 0, Medium: 0, Low: 6, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -40,7 +40,8 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
 | 22 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
 | 23 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 24 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
-| 25 | info | CT1 | 31 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 25 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 26 | info | CT1 | 31 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -59,13 +60,13 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.20.0.15:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.20.1.15:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.20.0.15:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.20.1.15:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -163,7 +164,7 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
 ### 19. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: ahrefs-site-verification_13f6592c6dbc2e2fd5a07a7ba689ee0acaf5285f7dbf7a1c3eed5fc; google-site-verification=hLQ1bCw_QcM04p9JX8V-EF2yFMN1phpFf4F1XAYSkXg; status-page-domain-verification=8wyn9807n4gs
+- **Detail:** Apex TXT records with verification/token content: ps-cd-verification=445a8aa6-f462-4ac5-89b9-cf62b8f9ea91; google-site-verification=bsPOFNz4WrydBvfNkWbSIfsIlkRev4iGBxCHnB3wsA4; google-site-verification=5ecE6QK-uN7epMvq2briZD_vYB2nC_5Y3BukiSILBUI
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 20. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -196,7 +197,13 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
 - **Detail:** /sitemap.xml on activecampaign.com lists 21 <loc> URL(s) across 22 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
-### 25. [INFO] 31 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 25. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
+
+- **CWE:** CWE-200
+- **Detail:** The root response of activecampaign.com carries alt-svc h3=":443"; ma=86400; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
+- **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
+
+### 26. [INFO] 31 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: apps.activecampaign.com, assets.activecampaign.com, help.activecampaign.com, status.activecampaign.com, vpn.ad.activecampaign.com
@@ -209,12 +216,12 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
   "domain": "activecampaign.com",
   "dns": {
     "a": [
-      "104.20.0.15",
-      "104.20.1.15"
+      "104.20.1.15",
+      "104.20.0.15"
     ],
     "aaaa": [
-      "2606:4700:10::6814:f",
-      "2606:4700:10::6814:10f"
+      "2606:4700:10::6814:10f",
+      "2606:4700:10::6814:f"
     ],
     "cname": null,
     "mx": [
@@ -227,39 +234,39 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
     ],
     "caa": [],
     "spf": [
-      "ahrefs-site-verification_13f6592c6dbc2e2fd5a07a7ba689ee0acaf5285f7dbf7a1c3eed5fcc8799689a",
-      "docusign=b6411fd9-d54c-42ec-9a1e-9c718099b208",
-      "asv=2a7893285fd0ab817b0ac10ee4afcded",
-      "google-site-verification=hLQ1bCw_QcM04p9JX8V-EF2yFMN1phpFf4F1XAYSkXg",
-      "intacct-esk=4FED1A5177F8769BE0538C06A8C0589E",
-      "status-page-domain-verification=8wyn9807n4gs",
+      "ps-cd-verification=445a8aa6-f462-4ac5-89b9-cf62b8f9ea91",
+      "google-site-verification=bsPOFNz4WrydBvfNkWbSIfsIlkRev4iGBxCHnB3wsA4",
       "google-site-verification=5ecE6QK-uN7epMvq2briZD_vYB2nC_5Y3BukiSILBUI",
-      "google-site-verification=z4cu4ksSlD1F4VwsV7aeuI3agrK4xT2HzLJwvNqXh-I",
-      "facebook-domain-verification=vj4bbc79ppnrt612769n33gxnqezjt",
-      "cloudflare_dashboard_sso=68e80b6640cd17c492819fa073f4c765",
-      "canva-site-verification=jr7ubLUf4AdQz7NWkCAPnQ",
+      "cursor-domain-verification-mggxet=yI5H5w8prfWJQbesZn4JgSFiX",
       "MS=ms78211706",
-      "ZOOM_verify_X_DkuppUTyaf0Col_X_dWQ",
-      "v=DMARC1; p=none; rua=mailto:dmarc@activecampaign.com",
-      "google-site-verification=aZc8XNJa2DPnRqQMK58izlsKurjRm-hwdl-U4nsIBjY",
-      "google-site-verification=yZpqL2DYnFgeE1CANvNSvCaY6vchX6cUsOnKIswM9nY",
-      "google-site-verification=pns8v6xoUCNjHvUFVWiTCI4LJj7LHyz5CPghUG4ZYvc",
       "google-site-verification=ZO9kf3bTT021P8qlB2BQ5rmk1e4bS8rsoYTnSpo9Nqg",
+      "atlassian-domain-verification=0wCIZBGn1K/9SerwAoj1UyInzqjUZyJTODZJ1UPpBu+swTTfNBZxL2WhQZGvkfo/",
+      "apple-domain-verification=VblInNeuuVuHySfU",
+      "canva-site-verification=jr7ubLUf4AdQz7NWkCAPnQ",
+      "facebook-domain-verification=vj4bbc79ppnrt612769n33gxnqezjt",
+      "asv=2a7893285fd0ab817b0ac10ee4afcded",
+      "cloudflare_dashboard_sso=68e80b6640cd17c492819fa073f4c765",
+      "docusign=b6411fd9-d54c-42ec-9a1e-9c718099b208",
+      "pendo-domain-verification=JK5zYujOmKqXb5aS1pRudbgHp2s",
+      "ahrefs-site-verification_13f6592c6dbc2e2fd5a07a7ba689ee0acaf5285f7dbf7a1c3eed5fcc8799689a",
+      "google-site-verification=pns8v6xoUCNjHvUFVWiTCI4LJj7LHyz5CPghUG4ZYvc",
+      "vnr8cy64z7nvm6vq9xycm1t9t3wx625z",
+      "stripe-verification=B8A6127A871981E95923CC0E59815D7C397AD696A04B0E5B60CBE58F81D54B65",
+      "google-site-verification=aZc8XNJa2DPnRqQMK58izlsKurjRm-hwdl-U4nsIBjY",
+      "docker-verification=88049882-e3b0-454f-bfc6-99f5945ec081",
+      "ZOOM_verify_X_DkuppUTyaf0Col_X_dWQ",
+      "openai-domain-verification=dv-hGDc7dQuUtX9y1AaOh3g5zLk",
+      "google-site-verification=yZpqL2DYnFgeE1CANvNSvCaY6vchX6cUsOnKIswM9nY",
+      "v=DMARC1; p=none; rua=mailto:dmarc@activecampaign.com",
+      "google-site-verification=oZuy90wJc1WtJL-OqSxrqLKcqE_xWlBcRncm88kc6xo",
+      "status-page-domain-verification=8wyn9807n4gs",
+      "google-site-verification=z4cu4ksSlD1F4VwsV7aeuI3agrK4xT2HzLJwvNqXh-I",
+      "google-site-verification=hLQ1bCw_QcM04p9JX8V-EF2yFMN1phpFf4F1XAYSkXg",
       "v=spf1 ip4:173.236.20.0/24 ip4:192.92.97.0/24 ip4:52.128.40.0/21 ip4:217.8.118.0/24 ip4:103.229.233.0/24 include:usb._netblocks.mimecast.com include:_spf.google.com include:mail.zendesk.com include:stspg-customer.com include:sent-via.netsuite.com include:",
       "_spf-",
       "lrn.activecampaign.com ~all",
-      "atlassian-domain-verification=0wCIZBGn1K/9SerwAoj1UyInzqjUZyJTODZJ1UPpBu+swTTfNBZxL2WhQZGvkfo/",
-      "google-site-verification=bsPOFNz4WrydBvfNkWbSIfsIlkRev4iGBxCHnB3wsA4",
-      "vnr8cy64z7nvm6vq9xycm1t9t3wx625z",
-      "docker-verification=88049882-e3b0-454f-bfc6-99f5945ec081",
-      "apple-domain-verification=VblInNeuuVuHySfU",
-      "ps-cd-verification=445a8aa6-f462-4ac5-89b9-cf62b8f9ea91",
-      "google-site-verification=oZuy90wJc1WtJL-OqSxrqLKcqE_xWlBcRncm88kc6xo",
-      "openai-domain-verification=dv-hGDc7dQuUtX9y1AaOh3g5zLk",
-      "cursor-domain-verification-mggxet=yI5H5w8prfWJQbesZn4JgSFiX",
-      "pendo-domain-verification=JK5zYujOmKqXb5aS1pRudbgHp2s",
       "anthropic-domain-verification-2wy46r=746EyPf5UdzlAhUQfRnbJGFAi",
-      "stripe-verification=B8A6127A871981E95923CC0E59815D7C397AD696A04B0E5B60CBE58F81D54B65"
+      "intacct-esk=4FED1A5177F8769BE0538C06A8C0589E"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:re+eab9f0889f10@inbound.dmarcdigests.com; fo=1;"
@@ -289,7 +296,7 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
     }
   },
   "ports": {
-    "ip": "104.20.0.15",
+    "ip": "104.20.1.15",
     "open": [
       8080,
       8443
@@ -381,11 +388,11 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
     ]
   },
   "apex_txt": [
-    "ahrefs-site-verification_13f6592c6dbc2e2fd5a07a7ba689ee0acaf5285f7dbf7a1c3eed5fc",
-    "google-site-verification=hLQ1bCw_QcM04p9JX8V-EF2yFMN1phpFf4F1XAYSkXg",
-    "status-page-domain-verification=8wyn9807n4gs",
+    "ps-cd-verification=445a8aa6-f462-4ac5-89b9-cf62b8f9ea91",
+    "google-site-verification=bsPOFNz4WrydBvfNkWbSIfsIlkRev4iGBxCHnB3wsA4",
     "google-site-verification=5ecE6QK-uN7epMvq2briZD_vYB2nC_5Y3BukiSILBUI",
-    "google-site-verification=z4cu4ksSlD1F4VwsV7aeuI3agrK4xT2HzLJwvNqXh-I"
+    "cursor-domain-verification-mggxet=yI5H5w8prfWJQbesZn4JgSFiX",
+    "google-site-verification=ZO9kf3bTT021P8qlB2BQ5rmk1e4bS8rsoYTnSpo9Nqg"
   ],
   "tls2": {
     "alpn": "",
@@ -463,8 +470,12 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 9.9,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301,
+    "alt_svc": "h3=\":443\"; ma=86400"
+  },
+  "elapsed_s": 9.2,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -477,4 +488,5 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

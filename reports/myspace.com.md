@@ -7,12 +7,12 @@
 | Target | https://myspace.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | myspace.com |
-| Test date | 2026-09-27 00:26 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:27 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **27** (High: 0, Medium: 0, Low: 9, Info: 18)
+Total findings: **33** (High: 0, Medium: 0, Low: 11, Info: 22)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -43,6 +43,12 @@ Total findings: **27** (High: 0, Medium: 0, Low: 9, Info: 18)
 | 25 | low | H21 | HSTS does not cover subdomains | CWE-319 |
 | 26 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
 | 27 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 28 | low | HTML5 | State-changing HTML form without an anti-CSRF token | CWE-352 |
+| 29 | info | HTML11 | Document references many third-party domains | CWE-200 |
+| 30 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
+| 31 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 32 | info | CT1 | 7 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 33 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -55,7 +61,7 @@ Total findings: **27** (High: 0, Medium: 0, Low: 9, Info: 18)
 ### 2. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
 - **CWE:** CWE-200
-- **Detail:** Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000
 - **Recommendation:** Verify the advertised protocol endpoints are configured.
 
 ### 3. [LOW] Missing X-Content-Type-Options (`H3`)
@@ -164,7 +170,7 @@ Total findings: **27** (High: 0, Medium: 0, Low: 9, Info: 18)
 ### 18. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (38ar2oqqcuvi4v.myspace.com and awfb50jo8idudn.myspace.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (r5hfssilcou0x9.myspace.com and q3sqo9h623uln8.myspace.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 19. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
@@ -221,6 +227,42 @@ Total findings: **27** (High: 0, Medium: 0, Low: 9, Info: 18)
 - **Detail:** /sitemap.xml on myspace.com lists 13 <loc> URL(s); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
+### 28. [LOW] State-changing HTML form without an anti-CSRF token (`HTML5`)
+
+- **CWE:** CWE-352
+- **Detail:** Root document of myspace.com contains 5 state-changing form(s) (POST/PUT/PATCH/DELETE) with no recognizable anti-CSRF token input.
+- **Recommendation:** Add a per-session anti-CSRF token to state-changing forms.
+
+### 29. [INFO] Document references many third-party domains (`HTML11`)
+
+- **CWE:** CWE-200
+- **Detail:** Root document of myspace.com references 6 distinct third-party registrable domains (e.g. myspacecdn.com, w3.org, cookielaw.org, fouanalytics.com, zendesk.com); each is a supply-chain/trust dependency of the page.
+- **Recommendation:** Review third-party integrations and pin critical ones (SRI/subresource policies).
+
+### 30. [INFO] Inline scripts without nonce/hash under a CSP (`HTML8`)
+
+- **CWE:** CWE-1021
+- **Detail:** Root document of myspace.com sends a CSP but contains 4 inline script(s) with no nonce- or hash-attribute, so the policy must rely on 'unsafe-inline'.
+- **Recommendation:** Use per-script nonces/hashes and drop 'unsafe-inline'.
+
+### 31. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
+
+- **CWE:** CWE-200
+- **Detail:** The root response of myspace.com carries alt-svc h3=":443"; ma=2592000,h3-29=":443"; ma=2592000; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
+- **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
+
+### 32. [INFO] 7 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: help.myspace.com, www.help.myspace.com
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
+### 33. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+
+- **CWE:** CWE-200
+- **Detail:** Historical subdomains no longer have A/AAAA records: www.help.myspace.com; content may still be served via virtual-host fallback.
+- **Recommendation:** Reclaim or delete dangling subdomains to reduce virtual-hosting attack surface.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -233,29 +275,29 @@ Total findings: **27** (High: 0, Medium: 0, Low: 9, Info: 18)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxb-00ac0e01.gslb.pphosted.com (pref 10)",
-      "mxa-00ac0e01.gslb.pphosted.com (pref 10)"
+      "mxa-00ac0e01.gslb.pphosted.com (pref 10)",
+      "mxb-00ac0e01.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns-cloud-a4.googledomains.com.",
-      "ns-cloud-a1.googledomains.com.",
       "ns-cloud-a3.googledomains.com.",
-      "ns-cloud-a2.googledomains.com."
+      "ns-cloud-a2.googledomains.com.",
+      "ns-cloud-a4.googledomains.com.",
+      "ns-cloud-a1.googledomains.com."
     ],
     "caa": [],
     "spf": [
       "google-site-verification=q0iWqpcfOBclAJaCeWh83v62QQ4uCgbWObQ08p37qgU",
+      "cr40m536tje9on1slld9bi81bg",
+      "al4upe6q5cl13sg4srvfivflvg",
       "qpdYoeakhlmAxsnmxgAVFmJgUSibqb/y+Eu6GGn8pdmLf+mFGIB3jhRAxIC5KObsPMES9MW2c+oOrpOo/lCQVw==",
-      "google-site-verification=eu-3gW1JePvsGRRCaEvH17YUOTFJNofm4lnz2Pk0LTc",
-      "cj65vjpq0s1v9u7vfo020c6rel",
       "v=spf1 mx ip4:159.183.178.108 ip4:168.245.30.211 ip4:63.208.226.34 ip4:204.16.32.0/22 ip4:67.134.143.0/24 ip4:216.205.243.0/24 ip4:34.85.156.5/32 ip4:35.245.108.108/32 ip4:34.86.129.193/32 ip4:34.86.134.94/32 ",
       "ip4:34.85.222.234/32 ip4:34.86.176.234/32 ip4:34.86.125.212/32 ip4:34.85.224.60/32 ip4:34.86.160.49/32 ip4:35.245.64.166/32 ip4:35.188.226.11/32 ",
       "ip4:34.86.208.228/32 ip4:34.85.216.144/32 ip4:35.221.22.153/32 ip4:34.86.137.108/32 ip4:34.86.51.35/32 ip4:34.150.221.40/32 ip4:34.85.216.70/32 ip4:34.86.37.191/32 ip4:34.85.214.215/32 ",
       "ip4:35.236.234.82/32 ip4:34.86.161.241/32 ip4:216.32.181.16 ip4:216.178.32.0/20 ip4:168.235.224.0/24 include:_netblocks.mimecast.com -all",
-      "oZ19a+EOIwWVDPJ7POj14UAGBfzk9xcJMmsTUAMUy7H82sDuVCxvw9rZqdg3znFrdTH04+49zd1djhEAt0ooiA==",
+      "cj65vjpq0s1v9u7vfo020c6rel",
       "MS=ms89904786",
-      "al4upe6q5cl13sg4srvfivflvg",
-      "cr40m536tje9on1slld9bi81bg"
+      "google-site-verification=eu-3gW1JePvsGRRCaEvH17YUOTFJNofm4lnz2Pk0LTc",
+      "oZ19a+EOIwWVDPJ7POj14UAGBfzk9xcJMmsTUAMUy7H82sDuVCxvw9rZqdg3znFrdTH04+49zd1djhEAt0ooiA=="
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:postmaster@myspace.com"
@@ -333,19 +375,36 @@ Total findings: **27** (High: 0, Medium: 0, Low: 9, Info: 18)
   "paths": {
     "/robots.txt": 200,
     "/sitemap.xml": 200,
-    "/.well-known/security.txt": 404,
+    "/.well-known/security.txt": 0,
     "/security.txt": 404,
     "/.git/HEAD": 404,
-    "/.git/config": 0,
+    "/.git/config": 404,
     "/.env": 404,
     "/.htaccess": 404,
     "/wp-login.php": 404,
-    "/phpmyadmin/index.php": 0,
+    "/phpmyadmin/index.php": 404,
     "/server-status": 200,
     "/api/": 200
   },
   "subdomains": {
-    "status": "ct-pending"
+    "source": "certspotter",
+    "count": 7,
+    "notable": [
+      "help.myspace.com",
+      "www.help.myspace.com"
+    ],
+    "sample": [
+      "ccpa.myspace.com",
+      "help.myspace.com",
+      "imagedfs.myspace.com",
+      "msai-api.myspace.com",
+      "msai.myspace.com",
+      "myspace.com",
+      "www.help.myspace.com"
+    ],
+    "dangling": [
+      "www.help.myspace.com"
+    ]
   },
   "wildcard_dns": true,
   "apex_txt": [
@@ -425,10 +484,14 @@ Total findings: **27** (High: 0, Medium: 0, Low: 9, Info: 18)
   "x15": {
     "cipher": "TLS_AES_256_GCM_SHA384",
     "cipher_ver": "TLSv1.3",
-    "root_error": "ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='myspace.com', port=443):"
+    "root_status": 200
   },
-  "elapsed_s": 65.6,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 200,
+    "alt_svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+  },
+  "elapsed_s": 41.1,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -441,4 +504,5 @@ Total findings: **27** (High: 0, Medium: 0, Low: 9, Info: 18)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.
