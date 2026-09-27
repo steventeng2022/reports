@@ -7,12 +7,12 @@
 | Target | https://github.com/ |
 | Bug bounty program | GitHub |
 | Listed scope domain | github.com |
-| Test date | 2026-09-26 23:28 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:20 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
+Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 | 15 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 16 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
 | 17 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
+| 18 | info | HTML11 | Document references many third-party domains | CWE-200 |
+| 19 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
 
 ## Detailed findings
 
@@ -96,7 +98,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: loom-site-verification=f3787154f1154b7880e720a511ea664d; calendly-site-verification=at0DQARi7IZvJtXQAWhMqpmIzpvoBNF7aam5VKKxP; anthropic-domain-verification-4az7qn=if8YWuRRqwLycGJDooumzHtxm
+- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-3nh33eQwdkotMIAzLrIDVZo1; loom-site-verification=f3787154f1154b7880e720a511ea664d; miro-verification=d2e174fdb00c71e0bcf58f8e58c3da2dd80dcfa9
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -141,6 +143,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - **Detail:** /.well-known/security.txt on github.com is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
 - **Recommendation:** Confirm the published contact is current and monitored (RFC 9116).
 
+### 18. [INFO] Document references many third-party domains (`HTML11`)
+
+- **CWE:** CWE-200
+- **Detail:** Root document of github.com references 6 distinct third-party registrable domains (e.g. githubassets.com, githubusercontent.com, ctfassets.net, github.blog, amazonaws.com); each is a supply-chain/trust dependency of the page.
+- **Recommendation:** Review third-party integrations and pin critical ones (SRI/subresource policies).
+
+### 19. [INFO] Inline scripts without nonce/hash under a CSP (`HTML8`)
+
+- **CWE:** CWE-1021
+- **Detail:** Root document of github.com sends a CSP but contains 6 inline script(s) with no nonce- or hash-attribute, so the policy must rely on 'unsafe-inline'.
+- **Recommendation:** Use per-script nonces/hashes and drop 'unsafe-inline'.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -156,50 +170,50 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "github-com.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "ns-1707.awsdns-21.co.uk.",
-      "dns4.p08.nsone.net.",
       "ns-421.awsdns-52.com.",
+      "dns4.p08.nsone.net.",
       "ns-1283.awsdns-32.org.",
-      "dns1.p08.nsone.net.",
       "dns2.p08.nsone.net.",
+      "dns3.p08.nsone.net.",
       "ns-520.awsdns-01.net.",
-      "dns3.p08.nsone.net."
+      "ns-1707.awsdns-21.co.uk.",
+      "dns1.p08.nsone.net."
     ],
     "caa": [
+      "0 issue \"sectigo.com\"",
       "0 issuewild \"letsencrypt.org\"",
-      "0 issue \"digicert.com\"",
       "0 issue \"letsencrypt.org\"",
-      "0 issuewild \"sectigo.com\"",
+      "0 issue \"digicert.com\"",
       "0 issuewild \"digicert.com\"",
       "0 issue \"globalsign.com\"",
-      "0 issue \"sectigo.com\""
+      "0 issuewild \"sectigo.com\""
     ],
     "spf": [
-      "loom-site-verification=f3787154f1154b7880e720a511ea664d",
-      "calendly-site-verification=at0DQARi7IZvJtXQAWhMqpmIzpvoBNF7aam5VKKxP",
-      "anthropic-domain-verification-4az7qn=if8YWuRRqwLycGJDooumzHtxm",
       "openai-domain-verification=dv-3nh33eQwdkotMIAzLrIDVZo1",
-      "stripe-verification=f88ef17321660a01bab1660454192e014defa29ba7b8de9633c69d6b4912217f",
-      "MS=6BF03E6AF5CB689E315FB6199603BABF2C88D805",
-      "docusign=087098e3-3d46-47b7-9b4e-8a23028154cd",
-      "MS=ms44452932",
-      "00Dd0000000hHE0=1TBKg000000TN2r",
-      "miro-verification=d2e174fdb00c71e0bcf58f8e58c3da2dd80dcfa9",
-      "shopify-verification-code=t1YPwcmvnxZyBycaCpk1MPyWoFs72o",
-      "jamf-site-verification=XtaPNIYghF_e_xRDI8CjgQ",
-      "krisp-domain-verification=ZlyiK7XLhnaoUQb2hpak1PLY7dFkl1WE",
-      "serval-domain-verification-ydryhj=qbkiEakpwEpTvHh5fIiCqtaue",
-      "TAILSCALE-xOzoDvFUzZr5YYVCQFuD",
-      "google-site-verification=82Le34Flgtd15ojYhHlGF_6g72muSjamlMVThBOJpks",
-      "atlassian-domain-verification=jjgw98AKv2aeoYFxiL/VFaoyPkn3undEssTRuMg6C/3Fp/iqhkV4HVV7WjYlVeF8",
       "MS=ms58704441",
+      "loom-site-verification=f3787154f1154b7880e720a511ea664d",
+      "miro-verification=d2e174fdb00c71e0bcf58f8e58c3da2dd80dcfa9",
+      "serval-domain-verification-ydryhj=qbkiEakpwEpTvHh5fIiCqtaue",
+      "shopify-verification-code=t1YPwcmvnxZyBycaCpk1MPyWoFs72o",
+      "apple-domain-verification=RyQhdzTl6Z6x8ZP4",
+      "adobe-idp-site-verification=b92c9e999aef825edc36e0a3d847d2dbad5b2fc0e05c79ddd7a16139b48ecf4b",
+      "krisp-domain-verification=ZlyiK7XLhnaoUQb2hpak1PLY7dFkl1WE",
+      "atlassian-domain-verification=jjgw98AKv2aeoYFxiL/VFaoyPkn3undEssTRuMg6C/3Fp/iqhkV4HVV7WjYlVeF8",
+      "MS=6BF03E6AF5CB689E315FB6199603BABF2C88D805",
+      "TAILSCALE-xOzoDvFUzZr5YYVCQFuD",
+      "stripe-verification=f88ef17321660a01bab1660454192e014defa29ba7b8de9633c69d6b4912217f",
+      "MS=ms44452932",
+      "jamf-site-verification=XtaPNIYghF_e_xRDI8CjgQ",
+      "google-site-verification=82Le34Flgtd15ojYhHlGF_6g72muSjamlMVThBOJpks",
+      "docusign=087098e3-3d46-47b7-9b4e-8a23028154cd",
+      "calendly-site-verification=at0DQARi7IZvJtXQAWhMqpmIzpvoBNF7aam5VKKxP",
+      "google-site-verification=UTM-3akMgubp6tQtgEuAkYNYLyYAvpTnnSrDMWoDR3o",
       "v=spf1 ip4:192.30.252.0/22 include:spf.protection.outlook.com include:_netblocks.google.com include:_netblocks2.google.com include:mail.zendesk.com include:_spf.salesforce.com include:servers.mcsv.net include:mktomail.com include:sendgrid.net ip4:62.253.2",
       "27.114 ip4:166.78.69.169 ip4:166.78.69.170 ip4:166.78.71.131 ~all",
-      "apple-domain-verification=RyQhdzTl6Z6x8ZP4",
-      "cursor-domain-verification-gtfwmt=1rfLOtiTngX5QSxD5HvNKTvm3",
-      "google-site-verification=UTM-3akMgubp6tQtgEuAkYNYLyYAvpTnnSrDMWoDR3o",
-      "adobe-idp-site-verification=b92c9e999aef825edc36e0a3d847d2dbad5b2fc0e05c79ddd7a16139b48ecf4b",
-      "facebook-domain-verification=39xu4jzl7roi7x0n93ldkxjiaarx50"
+      "facebook-domain-verification=39xu4jzl7roi7x0n93ldkxjiaarx50",
+      "anthropic-domain-verification-4az7qn=if8YWuRRqwLycGJDooumzHtxm",
+      "00Dd0000000hHE0=1TBKg000000TN2r",
+      "cursor-domain-verification-gtfwmt=1rfLOtiTngX5QSxD5HvNKTvm3"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=reject; pct=100; rua=mailto:dmarc@github.com; ruf=mailto:dmarc@github.com; fo=1"
@@ -219,7 +233,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "github.com",
       "www.github.com"
     ],
-    "days_left": 64,
+    "days_left": 63,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -296,11 +310,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "loom-site-verification=f3787154f1154b7880e720a511ea664d",
-    "calendly-site-verification=at0DQARi7IZvJtXQAWhMqpmIzpvoBNF7aam5VKKxP",
-    "anthropic-domain-verification-4az7qn=if8YWuRRqwLycGJDooumzHtxm",
     "openai-domain-verification=dv-3nh33eQwdkotMIAzLrIDVZo1",
-    "stripe-verification=f88ef17321660a01bab1660454192e014defa29ba7b8de9633c69d6b4912"
+    "loom-site-verification=f3787154f1154b7880e720a511ea664d",
+    "miro-verification=d2e174fdb00c71e0bcf58f8e58c3da2dd80dcfa9",
+    "serval-domain-verification-ydryhj=qbkiEakpwEpTvHh5fIiCqtaue",
+    "shopify-verification-code=t1YPwcmvnxZyBycaCpk1MPyWoFs72o"
   ],
   "tls2": {
     "alpn": "",
@@ -366,8 +380,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     "hsts": "max-age=31536000; includeSubdomains; preload",
     "security_txt": "/.well-known/security.txt"
   },
-  "elapsed_s": 18.4,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 200
+  },
+  "elapsed_s": 18.9,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -379,4 +398,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

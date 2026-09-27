@@ -7,8 +7,8 @@
 | Target | https://zeit.de/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | zeit.de |
-| Test date | 2026-09-26 23:42 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:35 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -115,7 +115,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=1ImdxQwjaBPB5dXgPBYl2HIs9t45uAqjWHxPe2aKn2aKCTUXGu; klaviyo-site-verification=VfVpZ3; adobe-idp-site-verification=23219eabc0a82ab7eca544a45515b433090e77f559461941395b
+- **Detail:** Apex TXT records with verification/token content: google-gws-recovery-domain-verification=59065683; klaviyo-site-verification=VfVpZ3; figma-domain-verification=5e6d24ca5cac9fbcdad302605f2185d9a7fef03e17170672f424d3
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -181,45 +181,45 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "zeit-de.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "dns1.p01.nsone.net.",
+      "dns2.p01.nsone.net.",
       "dns4.p01.nsone.net.",
       "dns3.p01.nsone.net.",
-      "dns2.p01.nsone.net."
+      "dns1.p01.nsone.net."
     ],
     "caa": [],
     "spf": [
-      "atlassian-domain-verification=1ImdxQwjaBPB5dXgPBYl2HIs9t45uAqjWHxPe2aKn2aKCTUXGuf3HXbG5vYm2959",
-      "3j98x7j4yjf2xvtw6gt4rt8yjn117l3x",
-      "v=spf1 mx include:spf1.zeit.de include:spf.mailjet.com include:sendgrid.net include:spf.mandrillapp.com include:spfa.myconvento.com include:spf.protection.outlook.com ~all",
-      "pardot1088002=2b9a0e203820f4740ccc144cc3a5c523f49f60334cd030c6b87aac23cf9ef02e",
-      "klaviyo-site-verification=VfVpZ3",
-      "adobe-idp-site-verification=23219eabc0a82ab7eca544a45515b433090e77f559461941395be62189f6d8f0",
-      "1password-site-verification=76KQ3OKJ3FH35OMHXYMAINGJ5Q",
-      "asv=128b0bc0702196cf36653421800e6808",
-      "a8e28041862668f7d799dcf2cdff2f75",
-      "atlassian-domain-verification=0KXQ/HyHlWaW2LeS2kKh/QYjoZkk7smirpVo/Q1IPHetkLFv/eN7OwNE/FKNVMh7",
-      "jamf-site-verification=qlf_TOpLdeS2DNRMndJxIA",
-      "smeazeit.sbc2.getdirectrouting.de",
       "google-gws-recovery-domain-verification=59065683",
-      "miro-verification=00f74b9596272eaafb51a7d481892788837e487b",
-      "5F0-8UN-VT6",
-      "mgverify=fa8deab5e1cdad1afca895f77cb4460493457c695b1b6b0bccc40a8732f882da",
-      "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A",
-      "MS=ms15247335",
-      "google-site-verification=tLw22x4l0DHcYxy-T7rQxtbQp2bh3_GJ6vAeRXJQEAw",
-      "MS=ms37100824",
+      "klaviyo-site-verification=VfVpZ3",
       "figma-domain-verification=5e6d24ca5cac9fbcdad302605f2185d9a7fef03e17170672f424d334b70a949b-1768473624",
-      "anthropic-domain-verification-djwjvt=JzQ9OZDYsDipeKOp8ddQCSBkh",
-      "teamviewer-sso-verification=0da1e5ee3dc04351aa206dff020cda50",
-      "canva-site-verification=HGiDOMp4J0OMWIO_vX2irg",
-      "P2A_58148_200",
-      "tollbit-domain-verification=0acc441095133f12278c9179168937ecd19b3f5c9b36b930acac5d3a96353c14",
-      "elevenlabs=AkVMNw8U-sHd65pGypKEoqiMEsmMhUooL9FJ4TyUgaQ",
+      "MS=ms15247335",
       "apple-domain-verification=TYlrXCrrWPMzHzAY",
-      "mxI8RUm6rfKEWT0c",
+      "google-site-verification=tLw22x4l0DHcYxy-T7rQxtbQp2bh3_GJ6vAeRXJQEAw",
+      "v=spf1 mx include:spf1.zeit.de include:spf.mailjet.com include:sendgrid.net include:spf.mandrillapp.com include:spfa.myconvento.com include:spf.protection.outlook.com ~all",
+      "atlassian-domain-verification=0KXQ/HyHlWaW2LeS2kKh/QYjoZkk7smirpVo/Q1IPHetkLFv/eN7OwNE/FKNVMh7",
+      "elevenlabs=AkVMNw8U-sHd65pGypKEoqiMEsmMhUooL9FJ4TyUgaQ",
+      "5F0-8UN-VT6",
+      "miro-verification=00f74b9596272eaafb51a7d481892788837e487b",
+      "adobe-idp-site-verification=23219eabc0a82ab7eca544a45515b433090e77f559461941395be62189f6d8f0",
+      "3j98x7j4yjf2xvtw6gt4rt8yjn117l3x",
+      "tollbit-domain-verification=0acc441095133f12278c9179168937ecd19b3f5c9b36b930acac5d3a96353c14",
+      "atlassian-domain-verification=1ImdxQwjaBPB5dXgPBYl2HIs9t45uAqjWHxPe2aKn2aKCTUXGuf3HXbG5vYm2959",
+      "P2A_58148_200",
+      "mgverify=fa8deab5e1cdad1afca895f77cb4460493457c695b1b6b0bccc40a8732f882da",
+      "MS=ms37100824",
+      "smeazeit.sbc2.getdirectrouting.de",
+      "jamf-site-verification=qlf_TOpLdeS2DNRMndJxIA",
+      "pardot1088002=2b9a0e203820f4740ccc144cc3a5c523f49f60334cd030c6b87aac23cf9ef02e",
       "smeazeit.sbc1.getdirectrouting.de",
       "adobe-idp-site-verification=9204c69a-b8c5-4286-a6d5-6c3259f8cf1d",
-      "gxg1t2ljzzj4n05h57kh5bvsxjr1ctcp"
+      "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A",
+      "canva-site-verification=HGiDOMp4J0OMWIO_vX2irg",
+      "gxg1t2ljzzj4n05h57kh5bvsxjr1ctcp",
+      "a8e28041862668f7d799dcf2cdff2f75",
+      "mxI8RUm6rfKEWT0c",
+      "1password-site-verification=76KQ3OKJ3FH35OMHXYMAINGJ5Q",
+      "anthropic-domain-verification-djwjvt=JzQ9OZDYsDipeKOp8ddQCSBkh",
+      "teamviewer-sso-verification=0da1e5ee3dc04351aa206dff020cda50",
+      "asv=128b0bc0702196cf36653421800e6808"
     ],
     "dmarc": [
       "v=DMARC1; p=none;"
@@ -298,11 +298,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "atlassian-domain-verification=1ImdxQwjaBPB5dXgPBYl2HIs9t45uAqjWHxPe2aKn2aKCTUXGu",
+    "google-gws-recovery-domain-verification=59065683",
     "klaviyo-site-verification=VfVpZ3",
-    "adobe-idp-site-verification=23219eabc0a82ab7eca544a45515b433090e77f559461941395b",
-    "1password-site-verification=76KQ3OKJ3FH35OMHXYMAINGJ5Q",
-    "atlassian-domain-verification=0KXQ/HyHlWaW2LeS2kKh/QYjoZkk7smirpVo/Q1IPHetkLFv/e"
+    "figma-domain-verification=5e6d24ca5cac9fbcdad302605f2185d9a7fef03e17170672f424d3",
+    "apple-domain-verification=TYlrXCrrWPMzHzAY",
+    "google-site-verification=tLw22x4l0DHcYxy-T7rQxtbQp2bh3_GJ6vAeRXJQEAw"
   ],
   "tls2": {
     "alpn": "",
@@ -378,8 +378,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "status": 200
     }
   },
-  "elapsed_s": 36.6,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 37.8,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -391,4 +396,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

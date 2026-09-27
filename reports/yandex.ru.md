@@ -7,8 +7,8 @@
 | Target | https://yandex.ru/ |
 | Bug bounty program | Yandex |
 | Listed scope domain | yandex.ru |
-| Test date | 2026-09-26 23:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:35 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -115,13 +115,13 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 ### 12. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (ehqurg46ingzzg.yandex.ru and 5410ekpgknwu0k.yandex.ru) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (2t5e798moaehe1.yandex.ru and a0joyvra9h2h2a.yandex.ru) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=bDiyjBjCnMbct5cB1XZXOj5gQ0YcatJqTZUxFBo55nE; mailru-verification: 530c425b1458283e; facebook-domain-verification=e750ewnqm68u4f83wvp6qp7iiphkj0
+- **Detail:** Apex TXT records with verification/token content: mailru-verification: 530c425b1458283e; have-i-been-pwned-verification=13c7b50cd0b12f85dabe796e6178fb74; facebook-domain-verification=e750ewnqm68u4f83wvp6qp7iiphkj0
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -180,8 +180,8 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
   "dns": {
     "a": [
       "77.88.55.88",
-      "5.255.255.77",
-      "77.88.44.55"
+      "77.88.44.55",
+      "5.255.255.77"
     ],
     "aaaa": [
       "2a02:6b8:a::a"
@@ -191,17 +191,17 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
       "mx.yandex.ru (pref 10)"
     ],
     "ns": [
-      "ns1.yandex.ru.",
-      "ns2.yandex.ru."
+      "ns2.yandex.ru.",
+      "ns1.yandex.ru."
     ],
     "caa": [],
     "spf": [
-      "google-site-verification=bDiyjBjCnMbct5cB1XZXOj5gQ0YcatJqTZUxFBo55nE",
-      "MS=ms75457885",
-      "v=spf1 redirect=_spf.yandex.ru",
       "mailru-verification: 530c425b1458283e",
-      "facebook-domain-verification=e750ewnqm68u4f83wvp6qp7iiphkj0",
+      "MS=ms75457885",
       "have-i-been-pwned-verification=13c7b50cd0b12f85dabe796e6178fb74",
+      "v=spf1 redirect=_spf.yandex.ru",
+      "facebook-domain-verification=e750ewnqm68u4f83wvp6qp7iiphkj0",
+      "google-site-verification=bDiyjBjCnMbct5cB1XZXOj5gQ0YcatJqTZUxFBo55nE",
       "google-site-verification=Xj1hw8lKZK7dkCP6SCfNi98SvjacNHoNCVrFbJCZfio"
     ],
     "dmarc": [
@@ -366,10 +366,10 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=bDiyjBjCnMbct5cB1XZXOj5gQ0YcatJqTZUxFBo55nE",
     "mailru-verification: 530c425b1458283e",
-    "facebook-domain-verification=e750ewnqm68u4f83wvp6qp7iiphkj0",
     "have-i-been-pwned-verification=13c7b50cd0b12f85dabe796e6178fb74",
+    "facebook-domain-verification=e750ewnqm68u4f83wvp6qp7iiphkj0",
+    "google-site-verification=bDiyjBjCnMbct5cB1XZXOj5gQ0YcatJqTZUxFBo55nE",
     "google-site-verification=Xj1hw8lKZK7dkCP6SCfNi98SvjacNHoNCVrFbJCZfio"
   ],
   "tls2": {
@@ -445,8 +445,13 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
       "status": 200
     }
   },
-  "elapsed_s": 51.4,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 302
+  },
+  "elapsed_s": 47.2,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -458,4 +463,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

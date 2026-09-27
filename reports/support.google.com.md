@@ -7,12 +7,12 @@
 | Target | https://support.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | support.google.com |
-| Test date | 2026-09-26 23:39 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:32 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
+Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 | 16 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 18 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
+| 19 | info | HTML11 | Document references many third-party domains | CWE-200 |
 
 ## Detailed findings
 
@@ -142,7 +143,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 142.250.198.78 carries PTR lctsaa-ab-in-f14.1e100.net. for support.google.com.
+- **Detail:** 142.250.204.46 carries PTR hkg07s38-in-f14.1e100.net., lctsaa-ac-in-f14.1e100.net. for support.google.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 18. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
@@ -151,6 +152,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 - **Detail:** Root document of support.google.com loads 2 cross-origin script(s) without an integrity attribute, e.g. https://www.google-analytics.com/analytics.js, https://www.googletagmanager.com/gtag/js?id=G-H30R9PNQFN; a compromise of any such third-party host can inject code.
 - **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
 
+### 19. [INFO] Document references many third-party domains (`HTML11`)
+
+- **CWE:** CWE-200
+- **Detail:** Root document of support.google.com references 6 distinct third-party registrable domains (e.g. gstatic.com, googleapis.com, google-analytics.com, googletagmanager.com, googleusercontent.com); each is a supply-chain/trust dependency of the page.
+- **Recommendation:** Review third-party integrations and pin critical ones (SRI/subresource policies).
+
 ## Evidence (raw response observations)
 
 ```json
@@ -158,10 +165,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
   "domain": "support.google.com",
   "dns": {
     "a": [
-      "142.250.198.78"
+      "142.250.204.46"
     ],
     "aaaa": [
-      "2404:6800:4012:8::200e"
+      "2404:6800:4012:9::200e"
     ],
     "cname": null,
     "mx": [],
@@ -259,7 +266,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
     }
   },
   "ports": {
-    "ip": "142.250.198.78",
+    "ip": "142.250.204.46",
     "open": []
   },
   "https": {
@@ -362,7 +369,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
   "x12": {
     "status": 200,
     "ptr": [
-      "lctsaa-ab-in-f14.1e100.net."
+      "hkg07s38-in-f14.1e100.net.",
+      "lctsaa-ac-in-f14.1e100.net."
     ]
   },
   "x13": {
@@ -383,8 +391,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
       "status": 200
     }
   },
-  "elapsed_s": 38.2,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 200
+  },
+  "elapsed_s": 41.0,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -396,4 +409,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

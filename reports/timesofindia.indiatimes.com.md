@@ -7,12 +7,12 @@
 | Target | https://timesofindia.indiatimes.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | timesofindia.indiatimes.com |
-| Test date | 2026-09-26 23:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:33 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
+Total findings: **14** (High: 0, Medium: 0, Low: 3, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -23,11 +23,13 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 | 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
 | 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
 | 7 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
-| 8 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 9 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 10 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 11 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 12 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
+| 8 | info | CORS4 | CORS: wildcard Access-Control-Allow-Origin | CWE-942 |
+| 9 | info | CORS2 | CORS: subdomain origin origin accepted (no credentials) | CWE-942 |
+| 10 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
+| 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 12 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 13 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 14 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
 
 ## Detailed findings
 
@@ -77,31 +79,45 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 - **Context:** https response, /
 - **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 8. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
+### 8. [INFO] CORS: wildcard Access-Control-Allow-Origin (`CORS4`)
+
+- **CWE:** CWE-942
+- **Detail:** Access-Control-Allow-Origin: * is set for cross-origin requests.
+- **Context:** https response, /
+- **Recommendation:** Restrict the allowed origins if sensitive data is exposed via the API.
+
+### 9. [INFO] CORS: subdomain origin origin accepted (no credentials) (`CORS2`)
+
+- **CWE:** CWE-942
+- **Detail:** Origin https://sub.timesofindia.indiatimes.com was echoed in Access-Control-Allow-Origin.
+- **Context:** https response, /
+- **Recommendation:** Confirm whether arbitrary origin echoing is intended.
+
+### 10. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
 
 - **CWE:** CWE-603
 - **Detail:** Certificate of timesofindia.indiatimes.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 9. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but timesofindia.indiatimes.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 10. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 12. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 104.116.243.83 carries PTR a104-116-243-83.deploy.static.akamaitechnologies.com. for timesofindia.indiatimes.com.
+- **Detail:** 104.116.243.96 carries PTR a104-116-243-96.deploy.static.akamaitechnologies.com. for timesofindia.indiatimes.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 11. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 13. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for timesofindia.indiatimes.com; apex indiatimes.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 12. [INFO] security.txt published with a contact address (`SEC1`)
+### 14. [INFO] security.txt published with a contact address (`SEC1`)
 
 - **CWE:** CWE-1038
 - **Detail:** /security.txt on timesofindia.indiatimes.com is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
@@ -114,8 +130,8 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
   "domain": "timesofindia.indiatimes.com",
   "dns": {
     "a": [
-      "104.116.243.83",
-      "104.116.243.96"
+      "104.116.243.96",
+      "104.116.243.83"
     ],
     "aaaa": [
       "2600:1417:76::6874:f353",
@@ -249,7 +265,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
     }
   },
   "ports": {
-    "ip": "104.116.243.83",
+    "ip": "104.116.243.96",
     "open": []
   },
   "https": {
@@ -262,12 +278,12 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
   "cors": [
     {
       "origin": "https://evil-auditor.example",
-      "acao": "",
+      "acao": "*",
       "acac": "false"
     },
     {
       "origin": "https://sub.timesofindia.indiatimes.com",
-      "acao": "",
+      "acao": "*",
       "acac": "false"
     }
   ],
@@ -328,7 +344,7 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
   "x12": {
     "status": 200,
     "ptr": [
-      "a104-116-243-83.deploy.static.akamaitechnologies.com."
+      "a104-116-243-96.deploy.static.akamaitechnologies.com."
     ]
   },
   "x13": {
@@ -350,8 +366,13 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
       "status": 200
     }
   },
-  "elapsed_s": 21.2,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 200
+  },
+  "elapsed_s": 20.8,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -363,4 +384,5 @@ Total findings: **12** (High: 0, Medium: 0, Low: 3, Info: 9)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

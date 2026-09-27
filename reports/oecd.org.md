@@ -7,8 +7,8 @@
 | Target | https://oecd.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | oecd.org |
-| Test date | 2026-09-26 23:34 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:27 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -108,7 +108,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=Z7TTmRtTMuoxrVa2; hpe-greenlake-domain-verification=4677486a4449536d6173586553475a59354f6761314d47; adobe-idp-site-verification=fe3732a56cceead6122113a39f9385a693c3367314cdad48789e
+- **Detail:** Apex TXT records with verification/token content: cisco-ci-domain-verification=295dc971d1c6be2b5403477737c89eac7ec07601440a1e0855e; hpe-greenlake-domain-verification=4677486a4449536d6173586553475a59354f6761314d47; adobe-idp-site-verification=fe3732a56cceead6122113a39f9385a693c3367314cdad48789e
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -166,10 +166,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   "domain": "oecd.org",
   "dns": {
     "a": [
-      "151.101.131.10",
       "151.101.195.10",
       "151.101.3.10",
-      "151.101.67.10"
+      "151.101.67.10",
+      "151.101.131.10"
     ],
     "aaaa": [],
     "cname": null,
@@ -178,28 +178,28 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     ],
     "ns": [
       "ns3-03.azure-dns.org.",
-      "ns2-03.azure-dns.net.",
       "ns4-03.azure-dns.info.",
+      "ns2-03.azure-dns.net.",
       "ns1-03.azure-dns.com."
     ],
     "caa": [],
     "spf": [
-      "_c4vs31pucag8knkqzie5i90hhnstnug",
-      "apple-domain-verification=Z7TTmRtTMuoxrVa2",
-      "v/l2fKfgQ+sfAM7ZccgEU41dgW0s412pftzTh7XJzyim4AUo1Wi2WVai364FALz09lut6gJWcS8YLtAjbkatrA==",
-      "3f6aa5c46d2a4da482b5cb56af96dec1",
-      "hpe-greenlake-domain-verification=4677486a4449536d6173586553475a59354f6761314d47683048313635694334",
-      "MS=ms12713444",
-      "adobe-idp-site-verification=fe3732a56cceead6122113a39f9385a693c3367314cdad48789e5cfbf77d5977",
-      "google-site-verification=SDEWojQdWXNif-TLtOo9erhxfQLpv29GSU6XhHK1r68",
-      "v=spf1 ip4:78.41.128.0/22 include:spf.protection.outlook.com -all",
-      "google-site-verification=ywMTwu2FAsfR60NR80rZ3jMdv8Ku-rr1NVnMGvor75k",
-      "d122tnk0lmcb7fw4lzdcvqmw9jdf4qqb",
       "cisco-ci-domain-verification=295dc971d1c6be2b5403477737c89eac7ec07601440a1e0855e475c20aa08f68",
+      "hpe-greenlake-domain-verification=4677486a4449536d6173586553475a59354f6761314d47683048313635694334",
+      "docusign=26a8c1aa-ac33-45f2-9a60-8d2cd96d4b3d",
+      "d122tnk0lmcb7fw4lzdcvqmw9jdf4qqb",
+      "_c4vs31pucag8knkqzie5i90hhnstnug",
+      "adobe-idp-site-verification=fe3732a56cceead6122113a39f9385a693c3367314cdad48789e5cfbf77d5977",
+      "MS=ms12713444",
+      "3f6aa5c46d2a4da482b5cb56af96dec1",
+      "v=spf1 ip4:78.41.128.0/22 include:spf.protection.outlook.com -all",
+      "v/l2fKfgQ+sfAM7ZccgEU41dgW0s412pftzTh7XJzyim4AUo1Wi2WVai364FALz09lut6gJWcS8YLtAjbkatrA==",
+      "2b065714-2fc1-4d13-b11f-08fbc02c7626",
+      "google-site-verification=ywMTwu2FAsfR60NR80rZ3jMdv8Ku-rr1NVnMGvor75k",
       "docusign=4a7be657-e630-44fc-87ba-b68287ac2a3d",
       "openai-domain-verification=dv-TmLkx83mPP4k3cYF7dEcKasX",
-      "docusign=26a8c1aa-ac33-45f2-9a60-8d2cd96d4b3d",
-      "2b065714-2fc1-4d13-b11f-08fbc02c7626"
+      "google-site-verification=SDEWojQdWXNif-TLtOo9erhxfQLpv29GSU6XhHK1r68",
+      "apple-domain-verification=Z7TTmRtTMuoxrVa2"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:mailincidentreport@oecd.org; ruf=mailto:mailincidentreport@oecd.org; fo=1;"
@@ -219,7 +219,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "*.oecd.org",
       "oecd.org"
     ],
-    "days_left": 51,
+    "days_left": 50,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -229,7 +229,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     }
   },
   "ports": {
-    "ip": "151.101.131.10",
+    "ip": "151.101.195.10",
     "open": []
   },
   "https": {
@@ -314,11 +314,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     ]
   },
   "apex_txt": [
-    "apple-domain-verification=Z7TTmRtTMuoxrVa2",
+    "cisco-ci-domain-verification=295dc971d1c6be2b5403477737c89eac7ec07601440a1e0855e",
     "hpe-greenlake-domain-verification=4677486a4449536d6173586553475a59354f6761314d47",
     "adobe-idp-site-verification=fe3732a56cceead6122113a39f9385a693c3367314cdad48789e",
-    "google-site-verification=SDEWojQdWXNif-TLtOo9erhxfQLpv29GSU6XhHK1r68",
-    "google-site-verification=ywMTwu2FAsfR60NR80rZ3jMdv8Ku-rr1NVnMGvor75k"
+    "google-site-verification=ywMTwu2FAsfR60NR80rZ3jMdv8Ku-rr1NVnMGvor75k",
+    "openai-domain-verification=dv-TmLkx83mPP4k3cYF7dEcKasX"
   ],
   "tls2": {
     "alpn": "",
@@ -374,8 +374,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "status": 200
     }
   },
-  "elapsed_s": 32.6,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 49.1,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -387,4 +392,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

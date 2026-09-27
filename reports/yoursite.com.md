@@ -7,12 +7,12 @@
 | Target | https://yoursite.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | yoursite.com |
-| Test date | 2026-09-26 23:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:35 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
+Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -30,13 +30,8 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 | 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 14 | low | DNS3 | Wildcard DNS detected | CWE-345 |
-| 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 19 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
-| 20 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
-| 21 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 15 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 16 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -129,46 +124,16 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (oakqdibujh2csh.yoursite.com and mxxmq7r0poyi4k.yoursite.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (ieiqyr42vjsdf0.yoursite.com and y9v6g5pijta85w.yoursite.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
-### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
-
-- **CWE:** CWE-603
-- **Detail:** Certificate of yoursite.com has no Authority Information Access OCSP entry.
-- **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
-
-### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt lists 5 disallow path(s), e.g. /cpx.php, /medios1.php, /toolbar.php, /check_image.php, /check_popunder.php
-- **Recommendation:** Review disallowed paths; robots is not access control.
-
-### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
-
-- **CWE:** CWE-200
-- **Detail:** 103.224.182.238 carries PTR lb-182-238.above.com. for yoursite.com.
-- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
-
-### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 15. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for yoursite.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 19. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
-
-- **CWE:** CWE-345
-- **Detail:** Root document of yoursite.com loads 1 cross-origin script(s) without an integrity attribute, e.g. https://assets.abovedomains.com/javascript/forsale.min.js?d=yoursite.com; a compromise of any such third-party host can inject code.
-- **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
-
-### 20. [INFO] security.txt published with a contact address (`SEC1`)
-
-- **CWE:** CWE-1038
-- **Detail:** /.well-known/security.txt on yoursite.com is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
-- **Recommendation:** Confirm the published contact is current and monitored (RFC 9116).
-
-### 21. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] 2 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -353,7 +318,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
     "/.env": 200,
     "/.htaccess": 200,
     "/wp-login.php": 403,
-    "/phpmyadmin/index.php": 200,
+    "/phpmyadmin/index.php": 302,
     "/server-status": 200,
     "/api/": 200
   },
@@ -368,47 +333,16 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
   },
   "wildcard_dns": true,
   "tls2": {
-    "alpn": "",
-    "tls_ver": "TLSv1.3",
-    "subject": "None",
-    "cert": {
-      "sig_oid": "1.2.840.10045.4.3.3",
-      "key_alg": "1.2.840.10045.2.1",
-      "key_bits": 256,
-      "curve": "1.2.840.10045.3.1.7",
-      "aia_ocsp": null,
-      "serial": 548341196706743913996332962829219710755629,
-      "cert_version": 3,
-      "bc_ca": null,
-      "bc_pathlen": null,
-      "crl_urls": [
-        "http://ye2.c.lencr.org/46.crl"
-      ],
-      "subject_dn": "311530130603550403130c796f7572736974652e636f6d",
-      "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303594532",
-      "not_before": "20260909182837",
-      "not_after": "20261208182836"
-    }
+    "error": "TimeoutError('timed out')"
   },
   "http2": {
-    "robots_disallow": [
-      "/cpx.php",
-      "/medios1.php",
-      "/toolbar.php",
-      "/check_image.php",
-      "/check_popunder.php"
-    ]
+    "error": "root GET failed"
   },
   "x12": {
-    "status": 200,
-    "ptr": [
-      "lb-182-238.above.com."
-    ]
+    "error": "ConnectTimeout(MaxRetryError(\"HTTPSConnectionPool(host='yoursite.com', port=443)"
   },
   "x13": {
-    "root_status": 200,
-    "http_status": 200,
-    "p404_status": 302,
+    "root_error": "ConnectTimeout(MaxRetryError(\"HTTPSConnectionPool(host='yoursite.com', port=443)",
     "quic": {
       "ok": false,
       "version": "",
@@ -416,15 +350,14 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
     }
   },
   "x14": {
-    "root_status": 200,
-    "security_txt": "/.well-known/security.txt",
-    "crl": {
-      "url": "http://ye2.c.lencr.org/46.crl",
-      "status": 200
-    }
+    "root_error": "ConnectTimeout(MaxRetryError(\"HTTPSConnectionPool(host='yoursite.com', port=443)"
   },
-  "elapsed_s": 33.8,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher_error": "TimeoutError('timed out')",
+    "root_error": "ConnectTimeout(MaxRetryError(\"HTTPSConnectionPool(host='yoursite.com', port=443)"
+  },
+  "elapsed_s": 232.5,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -436,4 +369,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

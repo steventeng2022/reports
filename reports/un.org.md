@@ -7,12 +7,12 @@
 | Target | https://un.org/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | un.org |
-| Test date | 2026-09-26 23:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:33 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
+Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,8 +29,10 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 | 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 14 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 15 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 17 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 
 ## Detailed findings
 
@@ -111,7 +113,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=1rY0mwP3xqUqI0Z6SVEdrrPHJ4hquQL28GrmRTVZ6/IZMKDmPs; cisco-ci-domain-verification=3be0a328c387dcfe19bfab64b24e33f04b04e2065771adbc404; atlassian-sending-domain-verification=030cf619-e1ff-4c61-b2ff-0b8bf31422e8
+- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=upE8q9Q9163O4I3STTC5-_7JD5phBQpi2CMFWRCqom; webexdomainverification.4C675B882DC2B136E053AB06FC0A3F65=6652b0a5-c301-4a9f-8629; apple-domain-verification=yaMAnI0GjK2mwjBL
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -120,13 +122,25 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 - **Detail:** Strict-Transport-Security is served but un.org is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 14. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 37 disallow path(s), e.g. /includes/, /misc/, /modules/, /profiles/, /scripts/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+
+- **CWE:** CWE-200
+- **Detail:** 157.150.185.49 carries PTR www.un.org. for un.org.
+- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
+
+### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for un.org, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 15. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+### 17. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
 
 - **CWE:** CWE-298
 - **Detail:** The un.org certificate lists an AIA OCSP responder (http://ocsp.globalsign.com/gsgccr46ovtlsca2025) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
@@ -139,8 +153,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
   "domain": "un.org",
   "dns": {
     "a": [
-      "157.150.185.92",
-      "157.150.185.49"
+      "157.150.185.49",
+      "157.150.185.92"
     ],
     "aaaa": [],
     "cname": null,
@@ -148,47 +162,47 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
       "un-org.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "ns1.un.org.",
       "ns2.un.org.",
-      "ns3.un.org."
+      "ns3.un.org.",
+      "ns1.un.org."
     ],
     "caa": [],
     "spf": [
-      "atlassian-domain-verification=1rY0mwP3xqUqI0Z6SVEdrrPHJ4hquQL28GrmRTVZ6/IZMKDmPspPa9jE7fXrIYMj",
+      "_globalsign-domain-verification=upE8q9Q9163O4I3STTC5-_7JD5phBQpi2CMFWRCqom",
+      "webexdomainverification.4C675B882DC2B136E053AB06FC0A3F65=6652b0a5-c301-4a9f-8629-d7e156da37b8",
+      "apple-domain-verification=yaMAnI0GjK2mwjBL",
+      "atlassian-domain-verification=4qBZ2F7TUigBgD7l6Ate/ExncM2HVQU855IzHmcHurVkPVGUU6H2ATvyZFEnnk9N",
+      "brevo-code:4258a8aaff2c4cc4d4f46631ee3f416d",
       "cisco-ci-domain-verification=3be0a328c387dcfe19bfab64b24e33f04b04e2065771adbc4043b754f65d8392",
-      "atlassian-sending-domain-verification=030cf619-e1ff-4c61-b2ff-0b8bf31422e8",
-      "MS=ms26002463",
-      "teamviewer-sso-verification=fde5c90fdb764da199caa79160aef58b",
+      "google-site-verification=dFG8i5QSNlXCckN62lWWTmmj7TEVkVh_G82rHzMPeaE",
+      "mandrill_verify.J6D4EK4DxGiLqR1nMTfHSA",
+      "00D2E000000pRe2=1TBVK00000000o1",
+      "ms-domain-verification=a90c74aa-0e09-44e5-aff2-9e0d51862a8a",
+      "atlassian-sending-domain-verification=b818d67b-c504-4b82-a2ac-fb1ffa5dd99e",
       "_globalsign-domain-verification=InsBxD8bdOtSqNib2b8QE1vAWRL07fy1C1VP9BHZO1",
       "iContact1651565",
-      "adobe-idp-site-verification=44b9613bd417076c4622079494211a8fb11053a66a37a841db2e2dceccae8485",
-      "apple-domain-verification=yaMAnI0GjK2mwjBL",
-      "ms-domain-verification=a90c74aa-0e09-44e5-aff2-9e0d51862a8a",
-      "google-site-verification=dFG8i5QSNlXCckN62lWWTmmj7TEVkVh_G82rHzMPeaE",
-      "00D2E000000pRe2=1TBVK00000000o1",
-      "brevo-code:0502b29d26710cfe3a7f5a6713f7b141",
-      "brevo-code:8016bd7e8b58b2c44d2253f7a674b1f9",
-      "mandrill_verify.J6D4EK4DxGiLqR1nMTfHSA",
-      "atlassian-sending-domain-verification=b818d67b-c504-4b82-a2ac-fb1ffa5dd99e",
-      "brevo-code:4258a8aaff2c4cc4d4f46631ee3f416d",
-      "webexdomainverification.4C675B882DC2B136E053AB06FC0A3F65=6652b0a5-c301-4a9f-8629-d7e156da37b8",
-      "sendinblue-code:c80931e2ffea8fadc62c1bfb5141f449",
-      "fastly-domain-delegation-xss3y9gtai43byf7o4ey-00458132-2025-07-09",
-      "j9lgbXbR0aOn/a3/tHAIQ1aK4uhUriBVu4/6I88jmBK0NyrCV36RIyrHwXouU3F0uQSEK0EPj6eBZ/Tc1odW4w==",
       "cisco-ci-domain-verification=71023db9cebccd164d6c6916b649179c4109a8bf4a53206db808dc9c778dd271",
-      "amazonses:cq717whOBbl30dhYr9HtG5aBpZfmtVwZ8/8TyeUrXh8=",
-      "brevo-code:2b3f7ca5e298561aaac08baef2898ff7",
-      "_globalsign-domain-verification=upE8q9Q9163O4I3STTC5-_7JD5phBQpi2CMFWRCqom",
-      "atlassian-sending-domain-verification=1d232bde-ddc5-4e81-84a4-5fc29c17acdf",
-      "atlassian-sending-domain-verification=685ec4a1-3cfc-4ffa-8d51-9f6bb6f07baa",
-      "atlassian-domain-verification=FTWfMaOalWt6nDxqxSGymL9Ey/KoIooB7a1zLsjL5bvuQbXb/CPo6bsrqR2yTU0G",
-      "v=spf1 include:spf.protection.outlook.com include:_netblocks.un.org include:_netblocks2.un.org include:_spf.google.com -all",
-      "56a37f487f3361c43f8c285de2f7f60839ac3a7f1bd37b37353ecd343c995fa2",
-      "atlassian-domain-verification=4qBZ2F7TUigBgD7l6Ate/ExncM2HVQU855IzHmcHurVkPVGUU6H2ATvyZFEnnk9N",
+      "sendinblue-code:c80931e2ffea8fadc62c1bfb5141f449",
       "rij4mb6stfqk9nqp6db054r4se",
+      "atlassian-sending-domain-verification=685ec4a1-3cfc-4ffa-8d51-9f6bb6f07baa",
+      "amazonses:cq717whOBbl30dhYr9HtG5aBpZfmtVwZ8/8TyeUrXh8=",
+      "xrqyoOBvFUFgFNdafNF3eo+zN4SEGAc+1gcHkfcbobjGa/UFAkMc/rCWUxywPjgWU1yMIYtuFAnHfLXdgFbRLQ==",
+      "brevo-code:0502b29d26710cfe3a7f5a6713f7b141",
+      "v=spf1 include:spf.protection.outlook.com include:_netblocks.un.org include:_netblocks2.un.org include:_spf.google.com -all",
+      "j9lgbXbR0aOn/a3/tHAIQ1aK4uhUriBVu4/6I88jmBK0NyrCV36RIyrHwXouU3F0uQSEK0EPj6eBZ/Tc1odW4w==",
+      "brevo-code:8016bd7e8b58b2c44d2253f7a674b1f9",
+      "atlassian-domain-verification=FTWfMaOalWt6nDxqxSGymL9Ey/KoIooB7a1zLsjL5bvuQbXb/CPo6bsrqR2yTU0G",
+      "adobe-idp-site-verification=44b9613bd417076c4622079494211a8fb11053a66a37a841db2e2dceccae8485",
+      "atlassian-sending-domain-verification=1d232bde-ddc5-4e81-84a4-5fc29c17acdf",
       "FOhfWhsJtJ/FZcqQdLjqBNwOqynP/KX4ozWsJFw+k50mDbWjv05zbvEonHMzMIKP9XSZ77kWWuilSHT/t7BQ8w==",
+      "atlassian-sending-domain-verification=030cf619-e1ff-4c61-b2ff-0b8bf31422e8",
+      "fastly-domain-delegation-xss3y9gtai43byf7o4ey-00458132-2025-07-09",
       "d365mktkey=GU4x93TE2dUlhH2NSdB6v7gbxcKnvDje0eF8WD0rNnUx",
-      "xrqyoOBvFUFgFNdafNF3eo+zN4SEGAc+1gcHkfcbobjGa/UFAkMc/rCWUxywPjgWU1yMIYtuFAnHfLXdgFbRLQ=="
+      "teamviewer-sso-verification=fde5c90fdb764da199caa79160aef58b",
+      "atlassian-domain-verification=1rY0mwP3xqUqI0Z6SVEdrrPHJ4hquQL28GrmRTVZ6/IZMKDmPspPa9jE7fXrIYMj",
+      "MS=ms26002463",
+      "brevo-code:2b3f7ca5e298561aaac08baef2898ff7",
+      "56a37f487f3361c43f8c285de2f7f60839ac3a7f1bd37b37353ecd343c995fa2"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc@un.org; ruf=mailto:dmarc@un.org; fo=0:1:d:s; adkim=r; aspf=r"
@@ -218,7 +232,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     }
   },
   "ports": {
-    "ip": "157.150.185.92",
+    "ip": "157.150.185.49",
     "open": []
   },
   "https": {
@@ -268,11 +282,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "atlassian-domain-verification=1rY0mwP3xqUqI0Z6SVEdrrPHJ4hquQL28GrmRTVZ6/IZMKDmPs",
-    "cisco-ci-domain-verification=3be0a328c387dcfe19bfab64b24e33f04b04e2065771adbc404",
-    "atlassian-sending-domain-verification=030cf619-e1ff-4c61-b2ff-0b8bf31422e8",
-    "teamviewer-sso-verification=fde5c90fdb764da199caa79160aef58b",
-    "_globalsign-domain-verification=InsBxD8bdOtSqNib2b8QE1vAWRL07fy1C1VP9BHZO1"
+    "_globalsign-domain-verification=upE8q9Q9163O4I3STTC5-_7JD5phBQpi2CMFWRCqom",
+    "webexdomainverification.4C675B882DC2B136E053AB06FC0A3F65=6652b0a5-c301-4a9f-8629",
+    "apple-domain-verification=yaMAnI0GjK2mwjBL",
+    "atlassian-domain-verification=4qBZ2F7TUigBgD7l6Ate/ExncM2HVQU855IzHmcHurVkPVGUU6",
+    "cisco-ci-domain-verification=3be0a328c387dcfe19bfab64b24e33f04b04e2065771adbc404"
   ],
   "tls2": {
     "alpn": "",
@@ -296,8 +310,30 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     },
     "ocsp": "explicit-status"
   },
+  "http2": {
+    "robots_disallow": [
+      "/includes/",
+      "/misc/",
+      "/modules/",
+      "/profiles/",
+      "/scripts/",
+      "/themes/",
+      "/en/internaljustice/files/",
+      "/CHANGELOG.txt",
+      "/cron.php",
+      "/INSTALL.mysql.txt",
+      "/INSTALL.pgsql.txt",
+      "/INSTALL.sqlite.txt",
+      "/install.php",
+      "/INSTALL.txt",
+      "/LICENSE.txt"
+    ]
+  },
   "x12": {
-    "status": 302
+    "status": 302,
+    "ptr": [
+      "www.un.org."
+    ]
   },
   "x13": {
     "root_status": 302,
@@ -315,8 +351,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
     "root_status": 302,
     "hsts": "max-age=31536000; includeSubDomains"
   },
-  "elapsed_s": 54.4,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "ECDHE-RSA-AES256-SHA384",
+    "cipher_ver": "TLSv1.2",
+    "root_status": 302
+  },
+  "elapsed_s": 55.4,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -328,4 +369,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 3, Info: 12)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

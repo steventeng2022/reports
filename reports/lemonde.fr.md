@@ -7,8 +7,8 @@
 | Target | https://lemonde.fr/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | lemonde.fr |
-| Test date | 2026-09-26 23:31 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:24 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -128,7 +128,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=712IVumgXvK3v6WCyCJVLS6O96hThcw39o84JSN9m_k; openai-domain-verification=dv-nQ1ldfkkoDfrWmjKfXdqLG2h; _globalsign-domain-verification=yRdIt507tQIZyVRXF6VBvVbEIWhqpzJaxh8r1qdSUr
+- **Detail:** Apex TXT records with verification/token content: jamf-site-verification=zUEgWKIxDl9-X3pb0bIY7A; google-site-verification=712IVumgXvK3v6WCyCJVLS6O96hThcw39o84JSN9m_k; openai-domain-verification=dv-nQ1ldfkkoDfrWmjKfXdqLG2h
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -173,33 +173,33 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)"
+      "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-cloud-b3.googledomains.com.",
-      "ns-cloud-b2.googledomains.com.",
       "ns-cloud-b4.googledomains.com.",
-      "ns-cloud-b1.googledomains.com."
+      "ns-cloud-b2.googledomains.com.",
+      "ns-cloud-b1.googledomains.com.",
+      "ns-cloud-b3.googledomains.com."
     ],
     "caa": [],
     "spf": [
-      "00DAP00000MRjsP=1TBAP0000000CHJ",
-      "d7o5vwenp6",
-      "google-site-verification=712IVumgXvK3v6WCyCJVLS6O96hThcw39o84JSN9m_k",
-      "v=spf1 include:spf1.lemonde.fr include:spf2.lemonde.fr include:_spf.salesforce.com ip4:79.99.32.203 ip4:79.99.32.185 ip4:79.99.32.186 ip4:217.74.103.211 ip4:195.154.80.82 ip4:163.172.55.8 ip4:35.181.34.138 ip4:35.181.85.71 ip4:52.143.135.92 -all",
-      "00DAU00000LLlRQ=1TBAU0000000GJJ",
-      "openai-domain-verification=dv-nQ1ldfkkoDfrWmjKfXdqLG2h",
-      "mandrill_verify.2xFVS2iRdBArj1vR6iXqDw",
-      "sendinblue-code:bfdbbdc264502c94bb90794d2a902e50",
       "00DWx000008KcED=1TBSb0000000Ak9",
-      "recyclagerecylum=1fd014598415abe7ca04160fccf87442",
       "fastly-domain-delegation-x2kl6p87n3g5b6FDG-79324-2018-04-10",
+      "v=spf1 include:spf1.lemonde.fr include:spf2.lemonde.fr include:_spf.salesforce.com ip4:79.99.32.203 ip4:79.99.32.185 ip4:79.99.32.186 ip4:217.74.103.211 ip4:195.154.80.82 ip4:163.172.55.8 ip4:35.181.34.138 ip4:35.181.85.71 ip4:52.143.135.92 -all",
+      "00DAP00000MRjsP=1TBAP0000000CHJ",
+      "jamf-site-verification=zUEgWKIxDl9-X3pb0bIY7A",
+      "d7o5vwenp6",
+      "sendinblue-code:bfdbbdc264502c94bb90794d2a902e50",
+      "google-site-verification=712IVumgXvK3v6WCyCJVLS6O96hThcw39o84JSN9m_k",
+      "mandrill_verify.2xFVS2iRdBArj1vR6iXqDw",
+      "recyclagerecylum=1fd014598415abe7ca04160fccf87442",
+      "openai-domain-verification=dv-nQ1ldfkkoDfrWmjKfXdqLG2h",
       "_globalsign-domain-verification=yRdIt507tQIZyVRXF6VBvVbEIWhqpzJaxh8r1qdSUr",
-      "jamf-site-verification=zUEgWKIxDl9-X3pb0bIY7A"
+      "00DAU00000LLlRQ=1TBAU0000000GJJ"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=quarantine; adkim=r; aspf=r; pct=100; rua=mailto:dmarc.report@lemonde.fr"
@@ -321,10 +321,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     ]
   },
   "apex_txt": [
+    "jamf-site-verification=zUEgWKIxDl9-X3pb0bIY7A",
     "google-site-verification=712IVumgXvK3v6WCyCJVLS6O96hThcw39o84JSN9m_k",
     "openai-domain-verification=dv-nQ1ldfkkoDfrWmjKfXdqLG2h",
-    "_globalsign-domain-verification=yRdIt507tQIZyVRXF6VBvVbEIWhqpzJaxh8r1qdSUr",
-    "jamf-site-verification=zUEgWKIxDl9-X3pb0bIY7A"
+    "_globalsign-domain-verification=yRdIt507tQIZyVRXF6VBvVbEIWhqpzJaxh8r1qdSUr"
   ],
   "tls2": {
     "alpn": "",
@@ -389,8 +389,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "status": 200
     }
   },
-  "elapsed_s": 36.5,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 38.2,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -402,4 +407,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

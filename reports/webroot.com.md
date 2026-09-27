@@ -7,12 +7,12 @@
 | Target | https://webroot.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | webroot.com |
-| Test date | 2026-09-26 23:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:34 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **47** (High: 0, Medium: 6, Low: 12, Info: 29)
+Total findings: **46** (High: 0, Medium: 6, Low: 12, Info: 28)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -61,8 +61,7 @@ Total findings: **47** (High: 0, Medium: 6, Low: 12, Info: 29)
 | 43 | low | CK8 | Session-like cookie with >=30-day lifetime | CWE-613 |
 | 44 | low | CK8 | Session-like cookie with >=30-day lifetime | CWE-613 |
 | 45 | low | H21 | HSTS does not cover subdomains | CWE-319 |
-| 46 | info | CK11 | Session-like cookie value has low entropy | CWE-340 |
-| 47 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 46 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 
 ## Detailed findings
 
@@ -81,7 +80,7 @@ Total findings: **47** (High: 0, Medium: 6, Low: 12, Info: 29)
 ### 3. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires in 16 days (notAfter Oct 12 23:59:59 2026 GMT).
+- **Detail:** Certificate expires in 15 days (notAfter Oct 12 23:59:59 2026 GMT).
 - **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
 ### 4. [MEDIUM] FTP service (cleartext) reachable (`PRT21`)
@@ -264,14 +263,14 @@ Total findings: **47** (High: 0, Medium: 6, Low: 12, Info: 29)
 ### 32. [LOW] Cookie set without Secure flag over HTTPS (`CK1`)
 
 - **CWE:** CWE-614
-- **Detail:** Cookie 'incap_ses_176_3211517' has no Secure attribute on an HTTPS response.
+- **Detail:** Cookie 'incap_ses_675_3211517' has no Secure attribute on an HTTPS response.
 - **Context:** https response, /
 - **Recommendation:** Set Secure on all cookies over HTTPS.
 
 ### 33. [INFO] Cookie without SameSite attribute (`CK3`)
 
 - **CWE:** CWE-1275
-- **Detail:** Cookie 'incap_ses_176_3211517' has no SameSite attribute.
+- **Detail:** Cookie 'incap_ses_675_3211517' has no SameSite attribute.
 - **Context:** https response, /
 - **Recommendation:** Set SameSite=Lax (or Strict) to reduce CSRF surface.
 
@@ -348,13 +347,7 @@ Total findings: **47** (High: 0, Medium: 6, Low: 12, Info: 29)
 - **Detail:** Strict-Transport-Security on webroot.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of webroot.com.
 - **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
 
-### 46. [INFO] Session-like cookie value has low entropy (`CK11`)
-
-- **CWE:** CWE-340
-- **Detail:** Cookie 'SSID' on webroot.com is 54 chars with ~3.48 bits/char of entropy; low-entropy tokens are easier to guess.
-- **Recommendation:** Generate session identifiers from a CSPRNG with sufficient entropy.
-
-### 47. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+### 46. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
 
 - **CWE:** CWE-200
 - **Detail:** /sitemap.xml on webroot.com lists 192 <loc> URL(s); the public URL inventory helps passive reconnaissance.
@@ -382,32 +375,32 @@ Total findings: **47** (High: 0, Medium: 6, Low: 12, Info: 29)
       "dns3.safenames.org."
     ],
     "caa": [
-      "0 issue \"letsencrypt.org\"",
+      "0 issuewild \"digicert.com\"",
       "0 issuewild \"sectigo.com\"",
-      "0 issuewild \"awstrust.com\"",
+      "0 issue \"amazontrust.com\"",
+      "0 issuewild \"amazontrust.com\"",
       "0 issue \"sectigo.com\"",
+      "0 issue \"awstrust.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issuewild \"amazon.com\"",
+      "0 issue \"amazonaws.com\"",
+      "0 issuewild \"awstrust.com\"",
       "0 issuewild \"letsencrypt.org\"",
       "0 issuewild \"amazonaws.com\"",
-      "0 issuewild \"digicert.com\"",
       "0 issue \"digicert.com\"",
-      "0 issuewild \"amazon.com\"",
-      "0 issue \"awstrust.com\"",
-      "0 issue \"amazontrust.com\"",
-      "0 issue \"amazonaws.com\"",
-      "0 issuewild \"amazontrust.com\"",
-      "0 issue \"amazon.com\""
+      "0 issue \"letsencrypt.org\""
     ],
     "spf": [
       "status-page-domain-verification=2tbgnrpnfp6b",
-      "F5Bkf8aYNUTZwrEkaw2ss/rMNTWy9wTOKyKrIeQdD5YoMTFkYg9rjW275X1dSx5AWusuVqkf+caFIRtd63kGgw==",
-      "MS=ms92726142",
-      "v=spf1 ip4:66.35.53.240 ip4:66.35.53.180 ip4:208.87.139.150 ip4:66.35.53.248 ip4:208.74.204.0/22 ip4:46.19.168.0/23 ip4:208.87.139.64 ip4:208.87.139.66 include:spf.protection.outlook.com include:spf.messagelabs.com include:mktomail.com include:stspg-custo",
-      "mer.com ip4:52.38.191.241 -all",
       "635557aa461593e8536643d878d7c78d698bcbb535e185853f5cfd526cafddfe",
-      "hj-ownership=kbD4%B6@fEzJ",
+      "amazonses:DUPTZ+5PC5cywK2wrfzQHVsalso6GCYZmw9b2wSAgMo=",
       "status-page-domain-verification=ry2yxtvp8dt4",
       "google-site-verification=W342u9ABN8CsWzHJEUTnnprvsso64lGHcBzHIjXtP4A",
-      "amazonses:DUPTZ+5PC5cywK2wrfzQHVsalso6GCYZmw9b2wSAgMo="
+      "F5Bkf8aYNUTZwrEkaw2ss/rMNTWy9wTOKyKrIeQdD5YoMTFkYg9rjW275X1dSx5AWusuVqkf+caFIRtd63kGgw==",
+      "hj-ownership=kbD4%B6@fEzJ",
+      "MS=ms92726142",
+      "v=spf1 ip4:66.35.53.240 ip4:66.35.53.180 ip4:208.87.139.150 ip4:66.35.53.248 ip4:208.74.204.0/22 ip4:46.19.168.0/23 ip4:208.87.139.64 ip4:208.87.139.66 include:spf.protection.outlook.com include:spf.messagelabs.com include:mktomail.com include:stspg-custo",
+      "mer.com ip4:52.38.191.241 -all"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com;fo=1"
@@ -427,7 +420,7 @@ Total findings: **47** (High: 0, Medium: 6, Low: 12, Info: 29)
       "*.webroot.com",
       "webroot.com"
     ],
-    "days_left": 16,
+    "days_left": 15,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -599,8 +592,13 @@ Total findings: **47** (High: 0, Medium: 6, Low: 12, Info: 29)
       "status": 200
     }
   },
-  "elapsed_s": 47.4,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 307
+  },
+  "elapsed_s": 36.3,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -612,4 +610,5 @@ Total findings: **47** (High: 0, Medium: 6, Low: 12, Info: 29)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

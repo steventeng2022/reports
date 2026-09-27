@@ -7,12 +7,12 @@
 | Target | https://amazon.com.au/ |
 | Bug bounty program | Amazon |
 | Listed scope domain | amazon.com.au |
-| Test date | 2026-09-26 23:18 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:09 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
+Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 17 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 20 | info | CT1 | 89 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -128,7 +129,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: kahoot-domain-verification=df3b0967f037c4069fa43fdceb1379e66f1cb3c8cedb1c43ef516; liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo; facebook-domain-verification=ombfl5vbrfyo80gfz4bmw5drem3sav
+- **Detail:** Apex TXT records with verification/token content: autodesk-domain-verification=xE0E3DApePbOXs4s_drg; facebook-domain-verification=ombfl5vbrfyo80gfz4bmw5drem3sav; liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -140,7 +141,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 18.246.97.211 carries PTR ec2-18-246-97-211.us-west-2.compute.amazonaws.com. for amazon.com.au.
+- **Detail:** 18.246.102.0 carries PTR ec2-18-246-102-0.us-west-2.compute.amazonaws.com. for amazon.com.au.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 17. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -161,6 +162,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - **Detail:** The amazon.com.au certificate lists an AIA OCSP responder (http://status.geotrust.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
+### 20. [INFO] 89 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: api.amazon.com.au
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -168,8 +175,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "domain": "amazon.com.au",
   "dns": {
     "a": [
-      "18.246.97.211",
       "18.246.102.0",
+      "18.246.97.211",
       "18.246.101.26"
     ],
     "aaaa": [],
@@ -178,40 +185,40 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "amazon-smtp.amazon.com (pref 10)"
     ],
     "ns": [
-      "ns2.amzndns.com.",
-      "ns1.amzndns.org.",
-      "ns2.amzndns.org.",
       "ns2.amzndns.co.uk.",
-      "ns1.amzndns.com.",
-      "ns2.amzndns.net.",
+      "ns1.amzndns.co.uk.",
+      "ns1.amzndns.org.",
       "ns1.amzndns.net.",
-      "ns1.amzndns.co.uk."
+      "ns2.amzndns.org.",
+      "ns2.amzndns.net.",
+      "ns2.amzndns.com.",
+      "ns1.amzndns.com."
     ],
     "caa": [],
     "spf": [
-      "kahoot-domain-verification=df3b0967f037c4069fa43fdceb1379e66f1cb3c8cedb1c43ef5161725c22c721",
-      "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
-      "facebook-domain-verification=ombfl5vbrfyo80gfz4bmw5drem3sav",
-      "sending_domain1003771=8a01320175f69ac365904579a7dc3de1d55f044afd4367fbb5b003b4e9db8861",
-      "bluebeam-verification=bnne3s2t1ynv515ug95rocbw7gb0tb",
-      "MS=ms74130121",
-      "ZOOM_verify_QSHzSsY1990HQOIwdcc6an",
-      "sending_domain229492=f2c63538e12c59c4408ab1dd75c743d70392e079087b71e367aedd2958ee9b48",
       "autodesk-domain-verification=xE0E3DApePbOXs4s_drg",
-      "sending_domain608861=d308320d80293ea27debf99bfb65df61a5a5533dc905757adfaab309beacc85d",
-      "google-site-verification=JRIRRJp9kRJ3sxP5dqUEHyr8MWvoiiyXdi9vL8vmiAc",
-      "sending_domain1003771=1a5b0afe286d365da0519f2761cad76ffac27bb3ddc3f6d7b982fe2e3aaacc5f",
-      "MS=ms73620188",
-      "canva-site-verification=Bxf88Q8PXuF2I343L5w2zQ",
-      "sending_domain229492=7d4d64d0b55c5ca37c7ab337de1def400c69c7f69d6206d0010ec41e6db08383",
-      "sending_domain608861=02111684abe75590f1d69e5e553d7161304877e3997a46bd986dd250bf789903",
-      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
       "91v2nbygcpmc0y5pkbd6mmz4knhhchfm",
-      "spf2.0/pra include:amazon.com -all",
+      "facebook-domain-verification=ombfl5vbrfyo80gfz4bmw5drem3sav",
+      "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
+      "kahoot-domain-verification=df3b0967f037c4069fa43fdceb1379e66f1cb3c8cedb1c43ef5161725c22c721",
       "v=spf1 include:amazon.com -all",
       "google-site-verification=mDEghGAOUAiiSIo5ba_EJd1ZYRzZSZ5rQQ60A98QDj8",
+      "google-site-verification=JRIRRJp9kRJ3sxP5dqUEHyr8MWvoiiyXdi9vL8vmiAc",
       "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814",
+      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
+      "spf2.0/pra include:amazon.com -all",
+      "bluebeam-verification=bnne3s2t1ynv515ug95rocbw7gb0tb",
+      "sending_domain229492=7d4d64d0b55c5ca37c7ab337de1def400c69c7f69d6206d0010ec41e6db08383",
       "google-site-verification=34wOR4ff2wUmhJYNBtvXYwo0WsSt5dKuQCO1AOldRJM",
+      "sending_domain229492=f2c63538e12c59c4408ab1dd75c743d70392e079087b71e367aedd2958ee9b48",
+      "MS=ms74130121",
+      "ZOOM_verify_QSHzSsY1990HQOIwdcc6an",
+      "sending_domain608861=d308320d80293ea27debf99bfb65df61a5a5533dc905757adfaab309beacc85d",
+      "sending_domain1003771=8a01320175f69ac365904579a7dc3de1d55f044afd4367fbb5b003b4e9db8861",
+      "sending_domain608861=02111684abe75590f1d69e5e553d7161304877e3997a46bd986dd250bf789903",
+      "canva-site-verification=Bxf88Q8PXuF2I343L5w2zQ",
+      "MS=ms73620188",
+      "sending_domain1003771=1a5b0afe286d365da0519f2761cad76ffac27bb3ddc3f6d7b982fe2e3aaacc5f",
       "docker-verification=c50aa452-dfa4-41cb-8219-5a7fea9156f1"
     ],
     "dmarc": [
@@ -281,7 +288,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "edgeflow-dp.aero.abe2c2f23-frontier.amazon.de",
       "shop.business.amazon.com"
     ],
-    "days_left": 191,
+    "days_left": 190,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -291,7 +298,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     }
   },
   "ports": {
-    "ip": "18.246.97.211",
+    "ip": "18.246.102.0",
     "open": []
   },
   "https": {
@@ -341,14 +348,40 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "/api/": 301
   },
   "subdomains": {
-    "status": "ct-pending"
+    "source": "certspotter",
+    "count": 89,
+    "notable": [
+      "api.amazon.com.au"
+    ],
+    "sample": [
+      "a9g-api.amazon.com.au",
+      "aax-fe.amazon.com.au",
+      "account-status.amazon.com.au",
+      "account.kep.amazon.com.au",
+      "advertising.amazon.com.au",
+      "alexa-skills-beta-eu.amazon.com.au",
+      "alexa-skills-na.amazon.com.au",
+      "alexa.amazon.com.au",
+      "amazon.com.au",
+      "api-amazondevices.amazon.com.au",
+      "api-key.amazon.com.au",
+      "api.amazon.com.au",
+      "apx-security.amazon.com.au",
+      "arcus-www.amazon.com.au",
+      "atv-ps-fe.amazon.com.au",
+      "auxilium-extern-preprod.amazon.com.au",
+      "avs-idrs.amazon.com.au",
+      "billing-kep.amazon.com.au",
+      "billing-p2k.amazon.com.au",
+      "blueprints.amazon.com.au"
+    ]
   },
   "apex_txt": [
-    "kahoot-domain-verification=df3b0967f037c4069fa43fdceb1379e66f1cb3c8cedb1c43ef516",
-    "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
+    "autodesk-domain-verification=xE0E3DApePbOXs4s_drg",
     "facebook-domain-verification=ombfl5vbrfyo80gfz4bmw5drem3sav",
-    "bluebeam-verification=bnne3s2t1ynv515ug95rocbw7gb0tb",
-    "autodesk-domain-verification=xE0E3DApePbOXs4s_drg"
+    "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
+    "kahoot-domain-verification=df3b0967f037c4069fa43fdceb1379e66f1cb3c8cedb1c43ef516",
+    "google-site-verification=mDEghGAOUAiiSIo5ba_EJd1ZYRzZSZ5rQQ60A98QDj8"
   ],
   "tls2": {
     "alpn": "",
@@ -396,7 +429,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-18-246-97-211.us-west-2.compute.amazonaws.com."
+      "ec2-18-246-102-0.us-west-2.compute.amazonaws.com."
     ]
   },
   "x13": {
@@ -421,8 +454,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "status": 200
     }
   },
-  "elapsed_s": 30.0,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 32.8,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -434,4 +472,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

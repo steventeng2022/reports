@@ -7,8 +7,8 @@
 | Target | https://meetup.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | meetup.com |
-| Test date | 2026-09-26 23:32 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:25 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -92,13 +92,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 ### 9. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (j3vqxkjcxsafz1.meetup.com and jos9v5lbrgs96m.meetup.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (cvztvnxem8w3f6.meetup.com and 60faa7623lb3ub.meetup.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=rgyjx6tabxhbz0vs8jznk3h7kw9igq; google-site-verification=892t2MaS4SZsb48SSg1A3ABMz3RTC_BD0aedsHeQcPs; google-site-verification=LzTshnYHTmh-qKj8qWTYVNo408Av35GqfZQxSopIWEo
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=rgyjx6tabxhbz0vs8jznk3h7kw9igq; google-site-verification=d7aAADk1yxzIsb2QOmZY6COjV2y0iPhwwSmmNpJgEfM; google-site-verification=892t2MaS4SZsb48SSg1A3ABMz3RTC_BD0aedsHeQcPs
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -150,9 +150,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
   "domain": "meetup.com",
   "dns": {
     "a": [
+      "151.101.130.217",
       "151.101.2.217",
       "151.101.66.217",
-      "151.101.130.217",
       "151.101.194.217"
     ],
     "aaaa": [],
@@ -161,44 +161,44 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "smtp.google.com (pref 1)"
     ],
     "ns": [
-      "ns-1782.awsdns-30.co.uk.",
       "ns-919.awsdns-50.net.",
       "ns-1378.awsdns-44.org.",
+      "ns-1782.awsdns-30.co.uk.",
       "ns-40.awsdns-05.com."
     ],
     "caa": [
-      "0 issue \"amazon.com\"",
-      "0 issue \"amazonaws.com\"",
-      "0 issue \"amazontrust.com\"",
       "0 issue \"certainly.com\"",
-      "0 issuewild \"letsencrypt.org\"",
-      "0 issuewild \"globalsign.com\"",
-      "0 issuewild \"amazon.com\"",
-      "0 issuewild \"awstrust.com\"",
       "0 issuewild \"certainly.com\"",
+      "0 issuewild \"amazonaws.com\"",
+      "0 issue \"globalsign.com\"",
       "0 issuewild \"amazontrust.com\"",
       "0 issuewild \"pki.goog\"",
+      "0 issue \"amazontrust.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issuewild \"globalsign.com\"",
       "0 issue \"awstrust.com\"",
-      "0 issue \"globalsign.com\"",
-      "0 issuewild \"amazonaws.com\"",
-      "0 issue \"letsencrypt.org\"",
-      "0 issue \"pki.goog\""
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issue \"pki.goog\"",
+      "0 issue \"amazonaws.com\"",
+      "0 issuewild \"awstrust.com\"",
+      "0 issuewild \"amazon.com\"",
+      "0 issue \"letsencrypt.org\""
     ],
     "spf": [
-      "_gh-bending-spoons-e=da6293536f",
       "facebook-domain-verification=rgyjx6tabxhbz0vs8jznk3h7kw9igq",
+      "v=spf1 include:mail.zendesk.com include:_spf.google.com include:_spf.sparkpostmail.com ~all",
+      "_gh-bending-spoons-e=da6293536f",
+      "google-site-verification=d7aAADk1yxzIsb2QOmZY6COjV2y0iPhwwSmmNpJgEfM",
       "google-site-verification=892t2MaS4SZsb48SSg1A3ABMz3RTC_BD0aedsHeQcPs",
       "google-site-verification=LzTshnYHTmh-qKj8qWTYVNo408Av35GqfZQxSopIWEo",
-      "google-site-verification=UHCBNwoUShRSmjmm8U3HWmmtbqIV7dsuHyMrhUDOCtQ",
-      "google-site-verification=d7aAADk1yxzIsb2QOmZY6COjV2y0iPhwwSmmNpJgEfM",
-      "google-site-verification=sc2QcwRmidYh2YB2ghH7c9-GgAZQu0QMtcFrUURtSJQ",
+      "google-site-verification=JU1AoGj_pC_wB0Jxu62NnaIktGqrX8wTvBo9i8XRwHw",
       "_globalsign-domain-verification=hnJMGmZ5nxkDzoVy5--BmuTT2DIF9hm5OQ87d_jorS",
-      "v=spf1 include:mail.zendesk.com include:_spf.google.com include:_spf.sparkpostmail.com ~all",
+      "google-site-verification=UHCBNwoUShRSmjmm8U3HWmmtbqIV7dsuHyMrhUDOCtQ",
+      "docusign=0a856615-3cca-4967-af2e-aa849ca42de2",
       "rippling-domain-verification=217697edd61756fc",
       "google-site-verification=-YC-JRzsddf4MU6k9PhCUBV78tg9R3zqO8WWK7i1SHA",
       "_gvhn8tc5d0bjvpfjwr6izofm3rw1rzm",
-      "google-site-verification=JU1AoGj_pC_wB0Jxu62NnaIktGqrX8wTvBo9i8XRwHw",
-      "docusign=0a856615-3cca-4967-af2e-aa849ca42de2"
+      "google-site-verification=sc2QcwRmidYh2YB2ghH7c9-GgAZQu0QMtcFrUURtSJQ"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:reports@dmarc.bendingspoons.com; sp=reject;"
@@ -227,7 +227,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     }
   },
   "ports": {
-    "ip": "151.101.2.217",
+    "ip": "151.101.130.217",
     "open": []
   },
   "https": {
@@ -314,10 +314,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
   "wildcard_dns": true,
   "apex_txt": [
     "facebook-domain-verification=rgyjx6tabxhbz0vs8jznk3h7kw9igq",
+    "google-site-verification=d7aAADk1yxzIsb2QOmZY6COjV2y0iPhwwSmmNpJgEfM",
     "google-site-verification=892t2MaS4SZsb48SSg1A3ABMz3RTC_BD0aedsHeQcPs",
     "google-site-verification=LzTshnYHTmh-qKj8qWTYVNo408Av35GqfZQxSopIWEo",
-    "google-site-verification=UHCBNwoUShRSmjmm8U3HWmmtbqIV7dsuHyMrhUDOCtQ",
-    "google-site-verification=d7aAADk1yxzIsb2QOmZY6COjV2y0iPhwwSmmNpJgEfM"
+    "google-site-verification=JU1AoGj_pC_wB0Jxu62NnaIktGqrX8wTvBo9i8XRwHw"
   ],
   "tls2": {
     "alpn": "",
@@ -389,8 +389,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "status": 200
     }
   },
-  "elapsed_s": 44.3,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "ECDHE-RSA-AES128-GCM-SHA256",
+    "cipher_ver": "TLSv1.2",
+    "root_status": 308
+  },
+  "elapsed_s": 42.0,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -402,4 +407,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

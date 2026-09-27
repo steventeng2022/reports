@@ -7,8 +7,8 @@
 | Target | https://redhat.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | redhat.com |
-| Test date | 2026-09-26 23:37 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:30 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -127,7 +127,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: wework-site-verification=EABEURRXyO1yBZcn; docker-verification=b3c48bbc-05f6-40b8-8391-b5ad3366c6ec; cursor-domain-verification-xts7mh=BCrLupJRjleUhfxmNA4CUlgaE
+- **Detail:** Apex TXT records with verification/token content: slack-domain-verification=dPrnI9sLvqvAbQUwzvFsPXSPEU1PLODdgGxLhEUr; status-page-domain-verification=hyls0f05cd87; miro-verification=0bc02d4257d450b9f9034363a58f88b4b904dc22
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -173,52 +173,52 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "us-smtp-inbound-1.mimecast.com (pref 10)",
-      "us-smtp-inbound-2.mimecast.com (pref 10)"
+      "us-smtp-inbound-2.mimecast.com (pref 10)",
+      "us-smtp-inbound-1.mimecast.com (pref 10)"
     ],
     "ns": [
-      "dns2.p01.nsone.net.",
-      "dns3.p01.nsone.net.",
-      "dns4.p01.nsone.net.",
+      "dns1.p01.nsone.net.",
       "dns2.p02.nsone.net.",
+      "dns3.p01.nsone.net.",
       "dns1.p02.nsone.net.",
-      "dns1.p01.nsone.net."
+      "dns2.p01.nsone.net.",
+      "dns4.p01.nsone.net."
     ],
     "caa": [
-      "0 issue \"letsencrypt.org\"",
       "0 iodef \"mailto:it-cert-admin@redhat.com\"",
-      "0 issue \"digicert.com\"",
-      "0 issue \"amazontrust.com\""
+      "0 issue \"amazontrust.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"digicert.com\""
     ],
     "spf": [
+      "slack-domain-verification=dPrnI9sLvqvAbQUwzvFsPXSPEU1PLODdgGxLhEUr",
+      "status-page-domain-verification=hyls0f05cd87",
+      "miro-verification=0bc02d4257d450b9f9034363a58f88b4b904dc22",
+      "docusign=cfd355fc-11f9-4eaf-8ecf-64433ef46173",
+      "segment-site-verification=Kk3pC9UBfhioQzibTvTIhT4TFVwP4niP",
+      "amazonses:ablaZDaC37yeQUcZAZjbfqRELxucC+8pBdvhFEpTSlY=",
+      "adobe-idp-site-verification=10154eb7d4abe67e9e45621e46476febbec28a97a4610d7c043c42c667aa18d4",
+      "pendo-domain-verification=01424ad4-8f69-4456-90ff-5f544ada6cec",
       "_v9l10fwei3im7iirj8c5fy92e798j78",
       "wework-site-verification=EABEURRXyO1yBZcn",
-      "docker-verification=b3c48bbc-05f6-40b8-8391-b5ad3366c6ec",
-      "cursor-domain-verification-xts7mh=BCrLupJRjleUhfxmNA4CUlgaE",
-      "jetbrains-domain-verification=c52sdl8fpvtdvcunhy64u3149",
-      "slack-domain-verification=dPrnI9sLvqvAbQUwzvFsPXSPEU1PLODdgGxLhEUr",
-      "status-page-domain-verification=dfx5rbys1ts5",
-      "google-site-verification=TaSjV4JOe2XfmL_vHFKJHkPk8sjgoLkuuTTWezDO0Pw",
-      "v=spf1 redirect=73t7ezjz._spf._d.mim.ec",
-      "status-page-domain-verification=hyls0f05cd87",
-      "amazonses:ablaZDaC37yeQUcZAZjbfqRELxucC+8pBdvhFEpTSlY=",
-      "google-site-verification=rl_wq5rq_W7A7OSyK08d8Ta_Hf6AKP5tqtdlo4iGTvs",
-      "atlassian-sending-domain-verification=6624a6de-2779-4cc5-9e0e-d739598be73d",
       "google-site-verification=fkn6chapCdYNWIcpsgH0K6mkR0yo7ldeIRC7EH23yoo",
-      "MS=ms44845140",
-      "anthropic-domain-verification-75gwks=eCqmQbyCwqL2ocuciTDIydVPj",
-      "segment-site-verification=Kk3pC9UBfhioQzibTvTIhT4TFVwP4niP",
-      "atlassian-domain-verification=fHiTv781WbOHgzl6U1McyXa9JUSSO5B0ECvgSZzJ9+b4q8wv0Tf4iI75xdcyoC00",
-      "pendo-domain-verification=01424ad4-8f69-4456-90ff-5f544ada6cec",
-      "miro-verification=0bc02d4257d450b9f9034363a58f88b4b904dc22",
-      "Dynatrace-site-verification=6d28213f-f653-42df-8f09-a7ae69f50e6a__dk5hkah3juetfgj11au5isjmig",
-      "adobe-idp-site-verification=10154eb7d4abe67e9e45621e46476febbec28a97a4610d7c043c42c667aa18d4",
-      "docusign=c6aa79da-fde1-4b7e-8874-28eeb223ca63",
       "MS=ms88428189",
-      "docusign=cfd355fc-11f9-4eaf-8ecf-64433ef46173",
-      "apple-domain-verification=xaB3GAa9xxzrpoS4",
+      "status-page-domain-verification=dfx5rbys1ts5",
+      "MS=ms44845140",
+      "jetbrains-domain-verification=c52sdl8fpvtdvcunhy64u3149",
       "Dynatrace-site-verification=1782cd51-ac66-4966-acdc-061c80f794f5__t1aa4l3qdsf475891sv2711t80",
-      "openai-domain-verification=dv-ZBmiG45XpzQoJlIf2HBlWHWf"
+      "google-site-verification=TaSjV4JOe2XfmL_vHFKJHkPk8sjgoLkuuTTWezDO0Pw",
+      "docusign=c6aa79da-fde1-4b7e-8874-28eeb223ca63",
+      "openai-domain-verification=dv-ZBmiG45XpzQoJlIf2HBlWHWf",
+      "docker-verification=b3c48bbc-05f6-40b8-8391-b5ad3366c6ec",
+      "atlassian-sending-domain-verification=6624a6de-2779-4cc5-9e0e-d739598be73d",
+      "Dynatrace-site-verification=6d28213f-f653-42df-8f09-a7ae69f50e6a__dk5hkah3juetfgj11au5isjmig",
+      "atlassian-domain-verification=fHiTv781WbOHgzl6U1McyXa9JUSSO5B0ECvgSZzJ9+b4q8wv0Tf4iI75xdcyoC00",
+      "apple-domain-verification=xaB3GAa9xxzrpoS4",
+      "anthropic-domain-verification-75gwks=eCqmQbyCwqL2ocuciTDIydVPj",
+      "v=spf1 redirect=73t7ezjz._spf._d.mim.ec",
+      "cursor-domain-verification-xts7mh=BCrLupJRjleUhfxmNA4CUlgaE",
+      "google-site-verification=rl_wq5rq_W7A7OSyK08d8Ta_Hf6AKP5tqtdlo4iGTvs"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:5f1992045035946@rep.dmarcanalyzer.com; ruf=mailto:5f1992045035946@for.dmarcanalyzer.com; fo=1;"
@@ -237,7 +237,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "san": [
       "redhat.com"
     ],
-    "days_left": 161,
+    "days_left": 160,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -300,11 +300,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "wework-site-verification=EABEURRXyO1yBZcn",
-    "docker-verification=b3c48bbc-05f6-40b8-8391-b5ad3366c6ec",
-    "cursor-domain-verification-xts7mh=BCrLupJRjleUhfxmNA4CUlgaE",
-    "jetbrains-domain-verification=c52sdl8fpvtdvcunhy64u3149",
-    "slack-domain-verification=dPrnI9sLvqvAbQUwzvFsPXSPEU1PLODdgGxLhEUr"
+    "slack-domain-verification=dPrnI9sLvqvAbQUwzvFsPXSPEU1PLODdgGxLhEUr",
+    "status-page-domain-verification=hyls0f05cd87",
+    "miro-verification=0bc02d4257d450b9f9034363a58f88b4b904dc22",
+    "segment-site-verification=Kk3pC9UBfhioQzibTvTIhT4TFVwP4niP",
+    "adobe-idp-site-verification=10154eb7d4abe67e9e45621e46476febbec28a97a4610d7c043c"
   ],
   "tls2": {
     "alpn": "",
@@ -380,8 +380,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "status": 200
     }
   },
-  "elapsed_s": 36.2,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 38.0,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -393,4 +398,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

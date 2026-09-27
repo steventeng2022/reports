@@ -7,8 +7,8 @@
 | Target | https://bild.de/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | bild.de |
-| Test date | 2026-09-26 23:19 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:11 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -133,7 +133,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=0uD0nmX-Cw8fSCHOlf_TfTZRyXjOPNih1lRM3L1jC0Q; figma-domain-verification=0a2753e7829cecbb7be239a2021677e64fb8c3603b24e4bb473e7c; adobe-idp-site-verification=62bcde131337d67652c5065053b7b1bf966f7bb65d0b3b51fdbe
+- **Detail:** Apex TXT records with verification/token content: tollbit-domain-verification=ef1aafa3100448786098f1b0fd1cf9c371f06a3d95599485935c; figma-domain-verification=0a2753e7829cecbb7be239a2021677e64fb8c3603b24e4bb473e7c; adobe-idp-site-verification=62bcde131337d67652c5065053b7b1bf966f7bb65d0b3b51fdbe
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -145,7 +145,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 23.210.215.203 carries PTR a23-210-215-203.deploy.static.akamaitechnologies.com. for bild.de.
+- **Detail:** 23.210.215.218 carries PTR a23-210-215-218.deploy.static.akamaitechnologies.com. for bild.de.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -161,8 +161,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   "domain": "bild.de",
   "dns": {
     "a": [
-      "23.210.215.203",
-      "23.210.215.218"
+      "23.210.215.218",
+      "23.210.215.203"
     ],
     "aaaa": [],
     "cname": null,
@@ -170,28 +170,28 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "bild-de.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "a16-65.akam.net.",
       "a6-66.akam.net.",
-      "a11-67.akam.net.",
       "a14-64.akam.net.",
+      "a11-67.akam.net.",
+      "a16-65.akam.net.",
       "a7-67.akam.net.",
       "a1-130.akam.net."
     ],
     "caa": [],
     "spf": [
-      "MS=ms99535522",
-      "google-site-verification=0uD0nmX-Cw8fSCHOlf_TfTZRyXjOPNih1lRM3L1jC0Q",
-      "figma-domain-verification=0a2753e7829cecbb7be239a2021677e64fb8c3603b24e4bb473e7cf21d9a351b-1787909594",
-      "pulvcolf3k6tosp096g2c9q9jo",
-      "adobe-idp-site-verification=62bcde131337d67652c5065053b7b1bf966f7bb65d0b3b51fdbe1ca653239533",
       "tollbit-domain-verification=ef1aafa3100448786098f1b0fd1cf9c371f06a3d95599485935c0f8014c36dc7",
-      "v=spf1 include:spf.asv.de include:spf.protection.outlook.com include:em6919.bild.de a:static.85-10-194-80.clients.your-server.de ?all",
       "_7zhs4nhu5pu1abphvwem9ivimuxjuth",
-      "google-site-verification=GIwP8nvMGCphDvQq77TEZC32YbjuCGwW4sSunpEYSlk",
+      "figma-domain-verification=0a2753e7829cecbb7be239a2021677e64fb8c3603b24e4bb473e7cf21d9a351b-1787909594",
+      "adobe-idp-site-verification=62bcde131337d67652c5065053b7b1bf966f7bb65d0b3b51fdbe1ca653239533",
+      "v=spf1 include:spf.asv.de include:spf.protection.outlook.com include:em6919.bild.de a:static.85-10-194-80.clients.your-server.de ?all",
       "QFpSE9bKoWuwVmDnsk9WcN2uDM+gd4XFp4U+KOUCJ/dZ6a2PymbU3qNhP8lsAMC0k2ClaLcBIjPCEDASk8XO6A==",
+      "google-site-verification=GIwP8nvMGCphDvQq77TEZC32YbjuCGwW4sSunpEYSlk",
+      "openai-domain-verification=dv-QcSSDilElWZgs6xle7DozExl",
+      "MS=ms99535522",
       "eqtr0qnhkpp5vj7krpo4ai3g3n",
-      "google-site-verification=wSGR6qpcbZeGKdQUKg6ipsQj_7AeNxrPHVEcIiWgpRE",
-      "openai-domain-verification=dv-QcSSDilElWZgs6xle7DozExl"
+      "google-site-verification=0uD0nmX-Cw8fSCHOlf_TfTZRyXjOPNih1lRM3L1jC0Q",
+      "pulvcolf3k6tosp096g2c9q9jo",
+      "google-site-verification=wSGR6qpcbZeGKdQUKg6ipsQj_7AeNxrPHVEcIiWgpRE"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=none; rua=mailto:dmarc-rua@dkim10888.de; ruf=mailto:dmarc-ruf@dkim10888.de"
@@ -230,7 +230,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "*.bild.leancms.de",
       "*.bild.de"
     ],
-    "days_left": 120,
+    "days_left": 119,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -240,7 +240,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     }
   },
   "ports": {
-    "ip": "23.210.215.203",
+    "ip": "23.210.215.218",
     "open": []
   },
   "https": {
@@ -293,11 +293,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=0uD0nmX-Cw8fSCHOlf_TfTZRyXjOPNih1lRM3L1jC0Q",
+    "tollbit-domain-verification=ef1aafa3100448786098f1b0fd1cf9c371f06a3d95599485935c",
     "figma-domain-verification=0a2753e7829cecbb7be239a2021677e64fb8c3603b24e4bb473e7c",
     "adobe-idp-site-verification=62bcde131337d67652c5065053b7b1bf966f7bb65d0b3b51fdbe",
-    "tollbit-domain-verification=ef1aafa3100448786098f1b0fd1cf9c371f06a3d95599485935c",
-    "google-site-verification=GIwP8nvMGCphDvQq77TEZC32YbjuCGwW4sSunpEYSlk"
+    "google-site-verification=GIwP8nvMGCphDvQq77TEZC32YbjuCGwW4sSunpEYSlk",
+    "openai-domain-verification=dv-QcSSDilElWZgs6xle7DozExl"
   ],
   "tls2": {
     "alpn": "",
@@ -345,7 +345,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   "x12": {
     "status": 301,
     "ptr": [
-      "a23-210-215-203.deploy.static.akamaitechnologies.com."
+      "a23-210-215-218.deploy.static.akamaitechnologies.com."
     ]
   },
   "x13": {
@@ -367,8 +367,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "status": 200
     }
   },
-  "elapsed_s": 11.2,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 10.9,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -380,4 +385,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

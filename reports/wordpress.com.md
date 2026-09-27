@@ -7,8 +7,8 @@
 | Target | https://wordpress.com/ |
 | Bug bounty program | WordPress |
 | Listed scope domain | wordpress.com |
-| Test date | 2026-09-26 23:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:34 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -144,13 +144,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 7, Info: 15)
 ### 16. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (vf622cdnxc0i0h.wordpress.com and iqd45dsdtk5qx8.wordpress.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (zd8s40bk1bqr5h.wordpress.com and tw58arh1tnsngx.wordpress.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=CW2JYOoHSXW8x6QyQO_a0edu0gNOKsLIHcO49QquLdU; openai-domain-verification=dv-AKnzAsfVXHG2wucO1Bcx2JC7; yahoo-verification-key=GqtxTvPQ+tFgwrCg9xNl6srlPSpDkTIj6q9YzADxxdE=
+- **Detail:** Apex TXT records with verification/token content: yahoo-verification-key=GqtxTvPQ+tFgwrCg9xNl6srlPSpDkTIj6q9YzADxxdE=; openai-domain-verification=dv-AKnzAsfVXHG2wucO1Bcx2JC7; google-site-verification=CW2JYOoHSXW8x6QyQO_a0edu0gNOKsLIHcO49QquLdU
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -162,7 +162,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 7, Info: 15)
 ### 19. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkuenkdf9xxvrn.html -> 403; error page/headers match: Nginx.
+- **Detail:** GET /xkq6raaa03nsyn.html -> 403; error page/headers match: Nginx.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 20. [LOW] HSTS does not cover subdomains (`H21`)
@@ -196,25 +196,25 @@ Total findings: **22** (High: 0, Medium: 0, Low: 7, Info: 15)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mx-ams.automattic.com (pref 10)",
-      "mx-dfw.automattic.com (pref 10)"
+      "mx-dfw.automattic.com (pref 10)",
+      "mx-ams.automattic.com (pref 10)"
     ],
     "ns": [
+      "ns3.wordpress.com.",
       "ns2.wordpress.com.",
-      "ns1.wordpress.com.",
       "ns4.wordpress.com.",
-      "ns3.wordpress.com."
+      "ns1.wordpress.com."
     ],
     "caa": [
-      "0 issuewild \"letsencrypt.org;validationmethods=dns-01;accounturi=https://acme-v02.api.letsencrypt.org/acme/acct/36334489\"",
       "0 issue \"letsencrypt.org;validationmethods=dns-01;accounturi=https://acme-v02.api.letsencrypt.org/acme/acct/36334489\"",
-      "0 iodef \"mailto:caa@automattic.com\""
+      "0 iodef \"mailto:caa@automattic.com\"",
+      "0 issuewild \"letsencrypt.org;validationmethods=dns-01;accounturi=https://acme-v02.api.letsencrypt.org/acme/acct/36334489\""
     ],
     "spf": [
-      "google-site-verification=CW2JYOoHSXW8x6QyQO_a0edu0gNOKsLIHcO49QquLdU",
-      "openai-domain-verification=dv-AKnzAsfVXHG2wucO1Bcx2JC7",
+      "v=spf1 include:_spf.automattic.com include:servers.mcsv.net include:_spf-wwd.automattic.com include:mail.zendesk.com include:sendgrid.net include:145630858.spf04.hubspotemail.net include:amazonses.com -all",
       "yahoo-verification-key=GqtxTvPQ+tFgwrCg9xNl6srlPSpDkTIj6q9YzADxxdE=",
-      "v=spf1 include:_spf.automattic.com include:servers.mcsv.net include:_spf-wwd.automattic.com include:mail.zendesk.com include:sendgrid.net include:145630858.spf04.hubspotemail.net include:amazonses.com -all"
+      "openai-domain-verification=dv-AKnzAsfVXHG2wucO1Bcx2JC7",
+      "google-site-verification=CW2JYOoHSXW8x6QyQO_a0edu0gNOKsLIHcO49QquLdU"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:0bqp2jnw@ag.dmarcian.com; ruf=mailto:0bqp2jnw@fr.dmarcian.com;"
@@ -336,9 +336,9 @@ Total findings: **22** (High: 0, Medium: 0, Low: 7, Info: 15)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=CW2JYOoHSXW8x6QyQO_a0edu0gNOKsLIHcO49QquLdU",
+    "yahoo-verification-key=GqtxTvPQ+tFgwrCg9xNl6srlPSpDkTIj6q9YzADxxdE=",
     "openai-domain-verification=dv-AKnzAsfVXHG2wucO1Bcx2JC7",
-    "yahoo-verification-key=GqtxTvPQ+tFgwrCg9xNl6srlPSpDkTIj6q9YzADxxdE="
+    "google-site-verification=CW2JYOoHSXW8x6QyQO_a0edu0gNOKsLIHcO49QquLdU"
   ],
   "tls2": {
     "alpn": "",
@@ -387,8 +387,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 7, Info: 15)
       "status": 200
     }
   },
-  "elapsed_s": 10.9,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 403
+  },
+  "elapsed_s": 16.5,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -400,4 +405,5 @@ Total findings: **22** (High: 0, Medium: 0, Low: 7, Info: 15)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

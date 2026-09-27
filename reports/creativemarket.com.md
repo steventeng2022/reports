@@ -7,12 +7,12 @@
 | Target | https://creativemarket.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | creativemarket.com |
-| Test date | 2026-09-26 23:22 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:14 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
+Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 | 15 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 17 | info | HTML1 | Security policy set via <meta http-equiv> | CWE-1021 |
+| 18 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
 
 ## Detailed findings
 
@@ -95,13 +96,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 ### 10. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (3xwbmlaqdgzzo7.creativemarket.com and ff0ew7ma7ne6rz.creativemarket.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (n6s1ob48sh86c5.creativemarket.com and a86vfkg1i70xok.creativemarket.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=iHAGg1uBsC_VIeBWwe0cums1YMQFij3M1qnjGTQ0csY; bugcrowd-verification=ace6499849f3a071d3cd5f48ae25fb76; google-site-verification=RLtqARphmXRxEa0MJdvehSqA1EXfFlBGE_Ncr09ATgo
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=KnP0Q8kZF8AklumyR98JDQhcGVuSPPhYz71Eu5BxtyQ; google-site-verification=RLtqARphmXRxEa0MJdvehSqA1EXfFlBGE_Ncr09ATgo; google-site-verification=qKCBZfUAtlffU_5exbyfUIPFvaQNgalXKVKHdZ_yq0I
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -125,7 +126,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 ### 15. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkk0djskc3wwkc.html -> 403; error page/headers match: Cloudflare.
+- **Detail:** GET /xkg3bkxtles2wd.html -> 403; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -139,6 +140,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - **CWE:** CWE-1021
 - **Detail:** HTML root of creativemarket.com declares via meta tags: content-security-policy; meta-set policies have limited browser support and are easier to override than response headers.
 - **Recommendation:** Prefer response headers and keep any meta declarations consistent with them.
+
+### 18. [INFO] Inline scripts without nonce/hash under a CSP (`HTML8`)
+
+- **CWE:** CWE-1021
+- **Detail:** Root document of creativemarket.com sends a CSP but contains 1 inline script(s) with no nonce- or hash-attribute, so the policy must rely on 'unsafe-inline'.
+- **Recommendation:** Use per-script nonces/hashes and drop 'unsafe-inline'.
 
 ## Evidence (raw response observations)
 
@@ -156,32 +163,32 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     ],
     "cname": null,
     "mx": [
-      "alt4.aspmx.l.google.com (pref 10)",
-      "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "aspmx.l.google.com (pref 1)",
+      "alt4.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ram.ns.cloudflare.com.",
-      "simone.ns.cloudflare.com."
+      "simone.ns.cloudflare.com.",
+      "ram.ns.cloudflare.com."
     ],
     "caa": [],
     "spf": [
-      "google-site-verification=iHAGg1uBsC_VIeBWwe0cums1YMQFij3M1qnjGTQ0csY",
-      "bugcrowd-verification=ace6499849f3a071d3cd5f48ae25fb76",
-      "v=spf1 include:_spf.google.com include:sendgrid.net include:mail.zendesk.com include:_spf.mailgun.org  ~all",
+      "google-site-verification=KnP0Q8kZF8AklumyR98JDQhcGVuSPPhYz71Eu5BxtyQ",
       "google-site-verification=RLtqARphmXRxEa0MJdvehSqA1EXfFlBGE_Ncr09ATgo",
+      "google-site-verification=qKCBZfUAtlffU_5exbyfUIPFvaQNgalXKVKHdZ_yq0I",
+      "MS=ms49014779",
       "rbn304r0t27nflr0664jwrk74hwrpklw",
+      "google-site-verification=o06UtMir6spz9U81R1jgVspJe-h2SQL3l25JWXHO-No",
+      "v=spf1 include:_spf.google.com include:sendgrid.net include:mail.zendesk.com include:_spf.mailgun.org  ~all",
+      "google-site-verification=iHAGg1uBsC_VIeBWwe0cums1YMQFij3M1qnjGTQ0csY",
+      "google-site-verification=pER8ejDjXLNeEa94-RN4EKj96DuOS0uCCyUabuslNTA",
+      "bugcrowd-verification=ace6499849f3a071d3cd5f48ae25fb76",
       "google-site-verification=_1Bh-ba5uJAVphxjDQOE5JrTSGn7qPy-scJOuB8Fn2c",
       "google-site-verification=Jga1T34soq0dMRGYnFvV8h1KgT-L2ZBqc6jpmBUqtV8",
-      "google-site-verification=KnP0Q8kZF8AklumyR98JDQhcGVuSPPhYz71Eu5BxtyQ",
       "google-site-verification=xLmsaIL8UceIPgixV8uVXfNRP_O0D15_IRAU-jihhSE",
-      "google-site-verification=qKCBZfUAtlffU_5exbyfUIPFvaQNgalXKVKHdZ_yq0I",
-      "google-site-verification=9dM4OOkYQ1jgIlhAh9QwY1smcki10zvmPcAilwsn984",
-      "google-site-verification=o06UtMir6spz9U81R1jgVspJe-h2SQL3l25JWXHO-No",
-      "google-site-verification=pER8ejDjXLNeEa94-RN4EKj96DuOS0uCCyUabuslNTA",
-      "MS=ms49014779"
+      "google-site-verification=9dM4OOkYQ1jgIlhAh9QwY1smcki10zvmPcAilwsn984"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:4aa2925f86404c12b8ba2f332f32fa59@dmarc-reports.cloudflare.net,mailto:re+fyn3azxnxei@dmarc.postmarkapp.com; ruf=mailto:dmarc-ruf@creativemarket.com; sp=quarantine; aspf=r;"
@@ -274,11 +281,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=iHAGg1uBsC_VIeBWwe0cums1YMQFij3M1qnjGTQ0csY",
-    "bugcrowd-verification=ace6499849f3a071d3cd5f48ae25fb76",
+    "google-site-verification=KnP0Q8kZF8AklumyR98JDQhcGVuSPPhYz71Eu5BxtyQ",
     "google-site-verification=RLtqARphmXRxEa0MJdvehSqA1EXfFlBGE_Ncr09ATgo",
-    "google-site-verification=_1Bh-ba5uJAVphxjDQOE5JrTSGn7qPy-scJOuB8Fn2c",
-    "google-site-verification=Jga1T34soq0dMRGYnFvV8h1KgT-L2ZBqc6jpmBUqtV8"
+    "google-site-verification=qKCBZfUAtlffU_5exbyfUIPFvaQNgalXKVKHdZ_yq0I",
+    "google-site-verification=o06UtMir6spz9U81R1jgVspJe-h2SQL3l25JWXHO-No",
+    "google-site-verification=iHAGg1uBsC_VIeBWwe0cums1YMQFij3M1qnjGTQ0csY"
   ],
   "tls2": {
     "alpn": "",
@@ -327,8 +334,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "status": 200
     }
   },
-  "elapsed_s": 5.6,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 403
+  },
+  "elapsed_s": 5.5,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -340,4 +352,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

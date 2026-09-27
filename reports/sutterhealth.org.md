@@ -7,8 +7,8 @@
 | Target | https://sutterhealth.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | sutterhealth.org |
-| Test date | 2026-09-26 23:39 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:32 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -43,7 +43,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 ### 2. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires in 11 days (notAfter Oct  7 23:59:59 2026 GMT).
+- **Detail:** Certificate expires in 10 days (notAfter Oct  7 23:59:59 2026 GMT).
 - **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
 ### 3. [INFO] Technology fingerprint (`TECH1`)
@@ -130,7 +130,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=k/4cB6WdjX8dp8sJrsQpUCv13/jkgZuZB472VFPxuN9TbANMRr; openai-domain-verification=dv-sgDNw1gS2lSTsyf6bdj2f3fh; twilio-domain-verification=f9445f3342fc1d16bc787547acc675e3
+- **Detail:** Apex TXT records with verification/token content: vmware-cloud-verification-03a26331-13b3-4a4f-8123-a34d1b5466e6; flexera-domain-verification-dcafjcaqzcrdbucx; jamf-site-verification=YEnMiAdegNX2xNXsyl81MA
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ## Evidence (raw response observations)
@@ -148,44 +148,44 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "sutterhealth-org.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns2-05.azure-dns.net.",
-      "ns3-05.azure-dns.org.",
+      "ns4-05.azure-dns.info.",
       "ns1-05.azure-dns.com.",
-      "ns4-05.azure-dns.info."
+      "ns3-05.azure-dns.org.",
+      "ns2-05.azure-dns.net."
     ],
     "caa": [
-      "0 issue \"amazonaws.com\"",
       "0 issue \"digicert.com\"",
-      "0 issue \"sectigo.com\"",
-      "0 issue \"letsencrypt.org\""
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"amazonaws.com\"",
+      "0 issue \"sectigo.com\""
     ],
     "spf": [
-      "v=spf1 ip4:198.217.64.0/24 ip4:198.217.112.0/24 ip4:199.79.205.16/29 ip4:199.79.205.32/29 include:_spf1.sutterhealth.org include:_spf2.sutterhealth.org include:_spf3.sutterhealth.org include:_spf4.sutterhealth.org include:spf.protection.outlook.com -all",
+      "vmware-cloud-verification-03a26331-13b3-4a4f-8123-a34d1b5466e6",
       "MS=ms47734453",
+      "flexera-domain-verification-dcafjcaqzcrdbucx",
+      "427263CA40526231DA0DD17A9899B7423D812E7AA717665DBE16B613DB02B34C",
+      "jamf-site-verification=YEnMiAdegNX2xNXsyl81MA",
+      "njH6RDHlABsQmJvITIaqix1L+/Y3ZLr1u/H0Lj/PqqvvNPv8oMwuwaxiZFRNkYdtifBqMGV7Rf7i9r9i/P7uzA==",
+      "openai-domain-verification=dv-sgDNw1gS2lSTsyf6bdj2f3fh",
+      "pardot266982=11b4fde586ddd3585348b584a83b7b24379df66ceea079251091c947935bb3a2",
+      "smartsheet-site-validation=KG4FnJLPbY4nNo-dVmeX_sNqnmYA11I-",
+      "tqsshcrdlqd6jz66rb59x85p3mp6xt5j",
+      "google-site-verification=5suSPLWcnGo4WMF8P2HtDOX0AnzrBIfGv2JpJ89kM_o",
+      "_5jyz87it742obj4hxmhnp46i4byr8vw",
+      "intersight=2f9f41d547c44be2b28284231fe1c0d3387c68d963a53d504f18cfec349315cd",
+      "sprout-social-260c110f-d385-4d75-9e75-7d32e5c9e17e",
+      "airtable-verification=480dc28b5f136aeeb9c72e1ffecd2d94",
       "A2A2AED6DE5DB1951512FE7F27A0FF20849F36FE5A2086EA578A8F8D618514D0",
       "atlassian-domain-verification=k/4cB6WdjX8dp8sJrsQpUCv13/jkgZuZB472VFPxuN9TbANMRruC8a5QSriOWHHe",
-      "tqsshcrdlqd6jz66rb59x85p3mp6xt5j",
-      "sprout-social-260c110f-d385-4d75-9e75-7d32e5c9e17e",
-      "smartsheet-site-validation=KG4FnJLPbY4nNo-dVmeX_sNqnmYA11I-",
-      "_5jyz87it742obj4hxmhnp46i4byr8vw",
-      "427263CA40526231DA0DD17A9899B7423D812E7AA717665DBE16B613DB02B34C",
-      "_shsq80a8ay3rc5vqi8figqyjpg9xo2h",
-      "openai-domain-verification=dv-sgDNw1gS2lSTsyf6bdj2f3fh",
-      "28DD0C4B37308B587E99CBDEE640AB744470C72767F36FB82E374F3E94D67B32",
-      "twilio-domain-verification=f9445f3342fc1d16bc787547acc675e3",
       "_etnz4zr5xfdan0i6arxavk1gj5fzzpo",
-      "intersight=2f9f41d547c44be2b28284231fe1c0d3387c68d963a53d504f18cfec349315cd",
-      "vmware-cloud-verification-03a26331-13b3-4a4f-8123-a34d1b5466e6",
-      "flexera-domain-verification-dcafjcaqzcrdbucx",
-      "dtm-domain-verification=A5i70Rs02iuV7ZM7VBHmm1NXbUDdVVLR7G7sz9q5zR8",
       "amazonses:+ouqWoubNLvOffFrO8GNnPJsJqC3k9zvq4fGmF+/JFc=",
-      "jamf-site-verification=YEnMiAdegNX2xNXsyl81MA",
-      "google-site-verification=5suSPLWcnGo4WMF8P2HtDOX0AnzrBIfGv2JpJ89kM_o",
+      "28DD0C4B37308B587E99CBDEE640AB744470C72767F36FB82E374F3E94D67B32",
+      "_shsq80a8ay3rc5vqi8figqyjpg9xo2h",
+      "twilio-domain-verification=f9445f3342fc1d16bc787547acc675e3",
+      "dtm-domain-verification=A5i70Rs02iuV7ZM7VBHmm1NXbUDdVVLR7G7sz9q5zR8",
+      "v=spf1 ip4:198.217.64.0/24 ip4:198.217.112.0/24 ip4:199.79.205.16/29 ip4:199.79.205.32/29 include:_spf1.sutterhealth.org include:_spf2.sutterhealth.org include:_spf3.sutterhealth.org include:_spf4.sutterhealth.org include:spf.protection.outlook.com -all",
       "apple-domain-verification=6EmugeAdzqtGatZ7",
-      "njH6RDHlABsQmJvITIaqix1L+/Y3ZLr1u/H0Lj/PqqvvNPv8oMwuwaxiZFRNkYdtifBqMGV7Rf7i9r9i/P7uzA==",
-      "airtable-verification=480dc28b5f136aeeb9c72e1ffecd2d94",
-      "google-site-verification=1ut73vMWSdD7vAGFYE6rwNwgZp6sTlzHM4KE_iMO-Wg",
-      "pardot266982=11b4fde586ddd3585348b584a83b7b24379df66ceea079251091c947935bb3a2"
+      "google-site-verification=1ut73vMWSdD7vAGFYE6rwNwgZp6sTlzHM4KE_iMO-Wg"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; rua=mailto:es8rh9mx@ag.dmarcian.com;"
@@ -205,7 +205,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "sutterhealth.org",
       "www.sutterhealth.org"
     ],
-    "days_left": 11,
+    "days_left": 10,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -268,11 +268,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "atlassian-domain-verification=k/4cB6WdjX8dp8sJrsQpUCv13/jkgZuZB472VFPxuN9TbANMRr",
-    "openai-domain-verification=dv-sgDNw1gS2lSTsyf6bdj2f3fh",
-    "twilio-domain-verification=f9445f3342fc1d16bc787547acc675e3",
     "vmware-cloud-verification-03a26331-13b3-4a4f-8123-a34d1b5466e6",
-    "flexera-domain-verification-dcafjcaqzcrdbucx"
+    "flexera-domain-verification-dcafjcaqzcrdbucx",
+    "jamf-site-verification=YEnMiAdegNX2xNXsyl81MA",
+    "openai-domain-verification=dv-sgDNw1gS2lSTsyf6bdj2f3fh",
+    "google-site-verification=5suSPLWcnGo4WMF8P2HtDOX0AnzrBIfGv2JpJ89kM_o"
   ],
   "tls2": {
     "alpn": "",
@@ -319,8 +319,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "status": 200
     }
   },
-  "elapsed_s": 7.0,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 429
+  },
+  "elapsed_s": 6.9,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -332,4 +337,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

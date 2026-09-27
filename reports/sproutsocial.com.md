@@ -7,12 +7,12 @@
 | Target | https://sproutsocial.com/ |
 | Bug bounty program | Sprout Social |
 | Listed scope domain | sproutsocial.com |
-| Test date | 2026-09-26 23:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:32 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
+Total findings: **20** (High: 0, Medium: 0, Low: 1, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
 | 16 | low | H21 | HSTS does not cover subdomains | CWE-319 |
 | 17 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
 | 18 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 19 | info | HTML11 | Document references many third-party domains | CWE-200 |
+| 20 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
 
 ## Detailed findings
 
@@ -99,7 +101,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: bugcrowd-verification=f0154a310f16c24b2f611860fa95ee0a; facebook-domain-verification=2sqha4fft688a7u7q3figd59ep0w4b; apple-domain-verification=fUR5lrIb8ZXAgRZh
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=kqO9m7kdcbY5YskqQd2zJq54BQSHCF9uNP_E2s4yoAM; google-site-verification=ij4vG3FdwygeRWH5NW4N4caykX25Kd0e0WB4Mthyq20; atlassian-domain-verification=RxqzNQU9S390W85VwH10vVpz3Di558ORKIVSKmVAQT4+y7Ql0s
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -123,13 +125,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
 ### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 65.9.180.129 carries PTR server-65-9-180-129.tpe53.r.cloudfront.net. for sproutsocial.com.
+- **Detail:** 65.9.180.100 carries PTR server-65-9-180-100.tpe53.r.cloudfront.net. for sproutsocial.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 15. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkix193ox2p4j7.html -> 404; error page/headers match: AmazonS3, CloudFront.
+- **Detail:** GET /xkxug3ls6z8o8s.html -> 404; error page/headers match: AmazonS3, CloudFront.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 16. [LOW] HSTS does not cover subdomains (`H21`)
@@ -150,6 +152,18 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
 - **Detail:** /sitemap.xml on sproutsocial.com lists 1 <loc> URL(s) across 2 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
+### 19. [INFO] Document references many third-party domains (`HTML11`)
+
+- **CWE:** CWE-200
+- **Detail:** Root document of sproutsocial.com references 17 distinct third-party registrable domains (e.g. bfldr.com, w3.org, schema.org, facebook.com, instagram.com); each is a supply-chain/trust dependency of the page.
+- **Recommendation:** Review third-party integrations and pin critical ones (SRI/subresource policies).
+
+### 20. [INFO] Inline scripts without nonce/hash under a CSP (`HTML8`)
+
+- **CWE:** CWE-1021
+- **Detail:** Root document of sproutsocial.com sends a CSP but contains 3 inline script(s) with no nonce- or hash-attribute, so the policy must rely on 'unsafe-inline'.
+- **Recommendation:** Use per-script nonces/hashes and drop 'unsafe-inline'.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -157,73 +171,73 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
   "domain": "sproutsocial.com",
   "dns": {
     "a": [
+      "65.9.180.100",
       "65.9.180.129",
-      "65.9.180.114",
       "65.9.180.87",
-      "65.9.180.100"
+      "65.9.180.114"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "alt3.aspmx.l.google.com (pref 10)"
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
       "ns-1475.awsdns-56.org.",
-      "ns-851.awsdns-42.net.",
+      "ns-1770.awsdns-29.co.uk.",
       "ns-109.awsdns-13.com.",
-      "ns-1770.awsdns-29.co.uk."
+      "ns-851.awsdns-42.net."
     ],
     "caa": [
+      "0 issue \"amazon.com\"",
+      "0 issue \"digicert.com\"",
       "0 issue \"letsencrypt.org\"",
-      "0 issue \"pki.goog\"",
       "0 issue \"comodoca.com\"",
       "0 iodef \"mailto:security-alerts@sproutsocial.com\"",
-      "0 issue \"amazon.com\"",
-      "0 issue \"digicert.com\""
+      "0 issue \"pki.goog\""
     ],
     "spf": [
-      "bugcrowd-verification=f0154a310f16c24b2f611860fa95ee0a",
-      "docusign=eedc187f-e4c6-4ac9-8e13-c6ccd40314b7",
+      "google-site-verification=kqO9m7kdcbY5YskqQd2zJq54BQSHCF9uNP_E2s4yoAM",
+      "google-site-verification=ij4vG3FdwygeRWH5NW4N4caykX25Kd0e0WB4Mthyq20",
+      "atlassian-domain-verification=RxqzNQU9S390W85VwH10vVpz3Di558ORKIVSKmVAQT4+y7Ql0sQs5izaEFJ3sqHt",
       "facebook-domain-verification=2sqha4fft688a7u7q3figd59ep0w4b",
-      "apple-domain-verification=fUR5lrIb8ZXAgRZh",
-      "MS=ms12400529",
-      "openai-domain-verification=dv-qdwcM7SqQQz9Vh7yfHW8W55g",
+      "miro-verification=391fdb38d34cadae4ef10844ee78b9621782d343",
+      "ZOOM_verify_SCYUdVERQLutYg2MMk5n1g",
+      "fastly-domain-delegation-789693-Kj90J2mV3G9-2024-07-19",
       "docker-verification=43fcdc1c-c507-4b42-a59f-bbe4ec0bb157",
       "anthropic-domain-verification-4bvzj1=5CSEl4SRsXptHHAsnE12kwPWq",
-      "dropbox-domain-verification=r5b6zg48jbmp",
-      "detectify-verification=12d573890acb6ade469e03765116c9e2",
-      "mixpanel-domain-verify=163fe517-5be9-4a94-9755-d4f557dd500c",
-      "reachdesk-verification=DUxgtvZRe02HbR5zQceu542WuioEOiKst7RqNUFgWSKm21dUpY3Qfq9LCrrlJItn",
-      "uber-domain-verification=f857c206-5a02-4eb4-9bd0-2b7316f02c03",
-      "google-site-verification=kqO9m7kdcbY5YskqQd2zJq54BQSHCF9uNP_E2s4yoAM",
-      "google-site-verification=H8kk7gZcBYmngKs49pHpvunadVcRo05xHvYFm8OIE-I",
-      "ZOOM_verify_SCYUdVERQLutYg2MMk5n1g",
-      "drift-domain-verification=24480bfa6b88081e403b5a627581c72e596dc1c3ed5645fe6efcd60dd55b867d",
-      "google-site-verification=BqcVSfrFZjfdxdEO8uatlQkqe60OY_oN1l0lJZfmZ9k",
-      "loom-site-verification=c0a47021adc14be19b38292b33d1d30f",
-      "ca3-8a1e55e3fcee4fa491e23cbded2bc67e",
-      "e2e721fe-abe5-42a4-927b-912cc5c69b36",
-      "google-site-verification=cXlmyZR0poIpagrHUTLcClMxgOT4IkJT0j7_1-e0tsU",
-      "google-site-verification=ij4vG3FdwygeRWH5NW4N4caykX25Kd0e0WB4Mthyq20",
       "BVZ71B+mKCBqRr1w3VIASfVh3pQZB03sHrBNBFpHX1o=",
-      "canva-site-verification=_JpZfL3nf2ijBh990p20Qg",
+      "loom-site-verification=c0a47021adc14be19b38292b33d1d30f",
+      "detectify-verification=12d573890acb6ade469e03765116c9e2",
+      "ca3-8a1e55e3fcee4fa491e23cbded2bc67e",
+      "drift-domain-verification=24480bfa6b88081e403b5a627581c72e596dc1c3ed5645fe6efcd60dd55b867d",
+      "slack-domain-verification=I615FeKXlfrAPDJmDACA9SyJDK5G1ZGhti5m0hp1",
       "ca3-7d04cacf69a549d4addeff17e6909a24",
       "google-site-verification=Mhehxk91tmdl972lIt1tUudqxk-UZ-dess1iBOOynkk",
-      "pardot638801=5d51367473c46ae4c72b898ec13660f709def997e4a94c499727a407afb942ee",
-      "google-site-verification=yq35AOMklIFyD7HelrWMtlretcRBQAt1AY7qTtwvdhg",
-      "atlassian-domain-verification=RxqzNQU9S390W85VwH10vVpz3Di558ORKIVSKmVAQT4+y7Ql0sQs5izaEFJ3sqHt",
-      "_clickhouse-challenge=50106aaaf400edbcefac28bda83bc112729a303de14fb02fb2aacc7b3325eb8e",
-      "fastly-domain-delegation-789693-Kj90J2mV3G9-2024-07-19",
-      "slack-domain-verification=I615FeKXlfrAPDJmDACA9SyJDK5G1ZGhti5m0hp1",
-      "adobe-idp-site-verification=0a066b06b8045615fcdf23249b39f3d914314bdfb3ee967c2e1ffb54d91d8abc",
-      "status-page-domain-verification=mtln2tk244cb",
-      "miro-verification=391fdb38d34cadae4ef10844ee78b9621782d343",
+      "openai-domain-verification=dv-qdwcM7SqQQz9Vh7yfHW8W55g",
+      "google-site-verification=cXlmyZR0poIpagrHUTLcClMxgOT4IkJT0j7_1-e0tsU",
       "v=spf1 include:mail.zendesk.com include:6cb9ee.workshop-spf.net include:_spf.salesforce.com include:_spf.google.com ip4:167.89.16.0/24 ip4:13.111.63.123 ip4:216.74.162.13 ip4:216.74.162.14 include:stspg-customer.com -all",
-      "jamf-site-verification=iQrilIoGuZCr_m8AjCBWZA"
+      "pardot638801=5d51367473c46ae4c72b898ec13660f709def997e4a94c499727a407afb942ee",
+      "_clickhouse-challenge=50106aaaf400edbcefac28bda83bc112729a303de14fb02fb2aacc7b3325eb8e",
+      "mixpanel-domain-verify=163fe517-5be9-4a94-9755-d4f557dd500c",
+      "apple-domain-verification=fUR5lrIb8ZXAgRZh",
+      "bugcrowd-verification=f0154a310f16c24b2f611860fa95ee0a",
+      "status-page-domain-verification=mtln2tk244cb",
+      "google-site-verification=BqcVSfrFZjfdxdEO8uatlQkqe60OY_oN1l0lJZfmZ9k",
+      "adobe-idp-site-verification=0a066b06b8045615fcdf23249b39f3d914314bdfb3ee967c2e1ffb54d91d8abc",
+      "docusign=eedc187f-e4c6-4ac9-8e13-c6ccd40314b7",
+      "jamf-site-verification=iQrilIoGuZCr_m8AjCBWZA",
+      "google-site-verification=yq35AOMklIFyD7HelrWMtlretcRBQAt1AY7qTtwvdhg",
+      "e2e721fe-abe5-42a4-927b-912cc5c69b36",
+      "dropbox-domain-verification=r5b6zg48jbmp",
+      "google-site-verification=H8kk7gZcBYmngKs49pHpvunadVcRo05xHvYFm8OIE-I",
+      "uber-domain-verification=f857c206-5a02-4eb4-9bd0-2b7316f02c03",
+      "canva-site-verification=_JpZfL3nf2ijBh990p20Qg",
+      "MS=ms12400529",
+      "reachdesk-verification=DUxgtvZRe02HbR5zQceu542WuioEOiKst7RqNUFgWSKm21dUpY3Qfq9LCrrlJItn"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; rua=mailto:6bd0bfcf@mxtoolbox.dmarc-report.com; ruf=mailto:6bd0bfcf@forensics.dmarc-report.com; aspf=r;"
@@ -244,7 +258,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
       "cdn.sproutsocial.com",
       "www.sproutsocial.com"
     ],
-    "days_left": 158,
+    "days_left": 157,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -254,7 +268,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
     }
   },
   "ports": {
-    "ip": "65.9.180.129",
+    "ip": "65.9.180.100",
     "open": []
   },
   "https": {
@@ -307,11 +321,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "bugcrowd-verification=f0154a310f16c24b2f611860fa95ee0a",
+    "google-site-verification=kqO9m7kdcbY5YskqQd2zJq54BQSHCF9uNP_E2s4yoAM",
+    "google-site-verification=ij4vG3FdwygeRWH5NW4N4caykX25Kd0e0WB4Mthyq20",
+    "atlassian-domain-verification=RxqzNQU9S390W85VwH10vVpz3Di558ORKIVSKmVAQT4+y7Ql0s",
     "facebook-domain-verification=2sqha4fft688a7u7q3figd59ep0w4b",
-    "apple-domain-verification=fUR5lrIb8ZXAgRZh",
-    "openai-domain-verification=dv-qdwcM7SqQQz9Vh7yfHW8W55g",
-    "docker-verification=43fcdc1c-c507-4b42-a59f-bbe4ec0bb157"
+    "miro-verification=391fdb38d34cadae4ef10844ee78b9621782d343"
   ],
   "tls2": {
     "alpn": "",
@@ -340,7 +354,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
   "x12": {
     "status": 200,
     "ptr": [
-      "server-65-9-180-129.tpe53.r.cloudfront.net."
+      "server-65-9-180-100.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -366,8 +380,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
       "status": 200
     }
   },
-  "elapsed_s": 22.0,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 200
+  },
+  "elapsed_s": 11.6,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -379,4 +398,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 1, Info: 17)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,8 +7,8 @@
 | Target | https://espn.com/ |
 | Bug bounty program | The Walt Disney Company |
 | Listed scope domain | espn.com |
-| Test date | 2026-09-26 23:25 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:17 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -151,7 +151,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: ciscocidomainverification=2c2658d02e94ce88b29494db432d2c911fc43abd373e5e485b5856; cisco-ci-domain-verification=48652156c723cc0989fbc1c14af4f05c20b2c7b50fa948e499c; google-site-verification=d5RkNYJAq7RNqkZUNx-NjrdsUxYH77Qs7zl2ZqRj2Sc
+- **Detail:** Apex TXT records with verification/token content: cisco-ci-domain-verification=48652156c723cc0989fbc1c14af4f05c20b2c7b50fa948e499c; atlassian-domain-verification=5lqJwtfJPMHqC/aGvT/7s2BR53IHCs9P6vFjCQYA5nkQ4mvoHK; google-site-verification=DM1CrNK7K2cq6YvNdmMPeIZBNQxxqw0a6ENutWnHoJQ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -163,7 +163,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
 ### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 54.192.248.80 carries PTR server-54-192-248-80.tpe53.r.cloudfront.net. for espn.com.
+- **Detail:** 54.192.248.40 carries PTR server-54-192-248-40.tpe53.r.cloudfront.net. for espn.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -191,54 +191,54 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
   "domain": "espn.com",
   "dns": {
     "a": [
-      "54.192.248.80",
-      "54.192.248.14",
+      "54.192.248.40",
       "54.192.248.106",
-      "54.192.248.40"
+      "54.192.248.80",
+      "54.192.248.14"
     ],
     "aaaa": [
-      "2600:9000:202f:e200:d:ac18:e2c0:93a1",
-      "2600:9000:202f:bc00:d:ac18:e2c0:93a1",
-      "2600:9000:202f:ec00:d:ac18:e2c0:93a1",
-      "2600:9000:202f:ee00:d:ac18:e2c0:93a1",
-      "2600:9000:202f:9400:d:ac18:e2c0:93a1",
-      "2600:9000:202f:0:d:ac18:e2c0:93a1",
-      "2600:9000:202f:6c00:d:ac18:e2c0:93a1",
-      "2600:9000:202f:5200:d:ac18:e2c0:93a1"
+      "2600:9000:202f:3400:d:ac18:e2c0:93a1",
+      "2600:9000:202f:d200:d:ac18:e2c0:93a1",
+      "2600:9000:202f:2800:d:ac18:e2c0:93a1",
+      "2600:9000:202f:4200:d:ac18:e2c0:93a1",
+      "2600:9000:202f:200:d:ac18:e2c0:93a1",
+      "2600:9000:202f:e800:d:ac18:e2c0:93a1",
+      "2600:9000:202f:9a00:d:ac18:e2c0:93a1",
+      "2600:9000:202f:1000:d:ac18:e2c0:93a1"
     ],
     "cname": null,
     "mx": [
       "espn-com.mail.protection.outlook.com (pref 5)"
     ],
     "ns": [
-      "ns-846.awsdns-41.net.",
       "ns-1936.awsdns-50.co.uk.",
-      "ns-122.awsdns-15.com.",
-      "ns-1045.awsdns-02.org."
+      "ns-1045.awsdns-02.org.",
+      "ns-846.awsdns-41.net.",
+      "ns-122.awsdns-15.com."
     ],
     "caa": [],
     "spf": [
-      "ciscocidomainverification=2c2658d02e94ce88b29494db432d2c911fc43abd373e5e485b58562f8dd78c80",
       "cisco-ci-domain-verification=48652156c723cc0989fbc1c14af4f05c20b2c7b50fa948e499ca824f79f41b69",
-      "google-site-verification=d5RkNYJAq7RNqkZUNx-NjrdsUxYH77Qs7zl2ZqRj2Sc",
-      "D074-DF5F-73F8-42A6-65B8-DCED-DDCF-F835",
+      "MS=ms54940749",
+      "docusign=e95b2d67-24b3-4e1e-9402-902d0b5e0c63",
       "atlassian-domain-verification=5lqJwtfJPMHqC/aGvT/7s2BR53IHCs9P6vFjCQYA5nkQ4mvoHKTqNTW7gucscGW7",
-      "adobe-idp-site-verification=bb3da93fff816c4b9c75b5b87e7afbf88dff2c0dce3c5d8f6357552992c65903",
-      "dropbox-domain-verification=f8opl8j5mr5e",
       "google-site-verification=DM1CrNK7K2cq6YvNdmMPeIZBNQxxqw0a6ENutWnHoJQ",
       "extensis-domain-verification=17bb048b-06af-47a8-b8e5-d4a1155683c7",
-      "facebook-domain-verification=0y89pokpwmy3a9yqhuqx0wg8r23l9p",
-      "docusign=0f5ff8fc-4420-4d52-9877-33f1485d191f",
-      "v=spf1 include:servers.mcsv.net mx ip4:74.123.203.125 ip4:74.123.200.120 ip4:74.123.200.35 ip4:74.123.200.36 ip4:74.123.203.98 ip4:74.123.200.222 ip4:192.234.2.39 include:_spf.emailcampaigns.net include:userinclude.dme3ds1.com include:spf.disney.com ~all",
-      "smartsheet-site-validation=vnu8x72WuY2SpP5LfwpJ3QEgKvaywdIx",
-      "pzhuVdOHPcxbY0BufDtyUHwrXoU8KikclnWWDgxOWNCyyCXtpK1Ws+A4mpps+Rtq0GARiBCA+IVLiCYcDhlSLw==",
-      "adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e02bd5d0dc3916",
-      "q1sjrk62qcsk7u2g2q8f46lhp",
-      "google-gws-recovery-domain-verification=41057864",
-      "docusign=e95b2d67-24b3-4e1e-9402-902d0b5e0c63",
-      "canva-site-verification=WmByBdRldeLifoeVTzfTgA",
+      "dropbox-domain-verification=f8opl8j5mr5e",
       "asv=1cfe02e3a81e8e65022ac143e0107fdd",
-      "MS=ms54940749"
+      "adobe-idp-site-verification=bb3da93fff816c4b9c75b5b87e7afbf88dff2c0dce3c5d8f6357552992c65903",
+      "smartsheet-site-validation=vnu8x72WuY2SpP5LfwpJ3QEgKvaywdIx",
+      "v=spf1 include:servers.mcsv.net mx ip4:74.123.203.125 ip4:74.123.200.120 ip4:74.123.200.35 ip4:74.123.200.36 ip4:74.123.203.98 ip4:74.123.200.222 ip4:192.234.2.39 include:_spf.emailcampaigns.net include:userinclude.dme3ds1.com include:spf.disney.com ~all",
+      "pzhuVdOHPcxbY0BufDtyUHwrXoU8KikclnWWDgxOWNCyyCXtpK1Ws+A4mpps+Rtq0GARiBCA+IVLiCYcDhlSLw==",
+      "D074-DF5F-73F8-42A6-65B8-DCED-DDCF-F835",
+      "ciscocidomainverification=2c2658d02e94ce88b29494db432d2c911fc43abd373e5e485b58562f8dd78c80",
+      "google-site-verification=d5RkNYJAq7RNqkZUNx-NjrdsUxYH77Qs7zl2ZqRj2Sc",
+      "docusign=0f5ff8fc-4420-4d52-9877-33f1485d191f",
+      "q1sjrk62qcsk7u2g2q8f46lhp",
+      "canva-site-verification=WmByBdRldeLifoeVTzfTgA",
+      "adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e02bd5d0dc3916",
+      "google-gws-recovery-domain-verification=41057864",
+      "facebook-domain-verification=0y89pokpwmy3a9yqhuqx0wg8r23l9p"
     ],
     "dmarc": [
       "v=DMARC1;p=none;fo=1;rua=mailto:Corp.Dmarc_RUA@disney.com;ruf=mailto:Corp.Dmarc_RUF@disney.com"
@@ -354,7 +354,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
       "fan.core.api.espn.nl",
       "fan.core.api.espn.ph"
     ],
-    "days_left": 45,
+    "days_left": 44,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -364,7 +364,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
     }
   },
   "ports": {
-    "ip": "54.192.248.80",
+    "ip": "54.192.248.40",
     "open": []
   },
   "https": {
@@ -460,11 +460,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
     ]
   },
   "apex_txt": [
-    "ciscocidomainverification=2c2658d02e94ce88b29494db432d2c911fc43abd373e5e485b5856",
     "cisco-ci-domain-verification=48652156c723cc0989fbc1c14af4f05c20b2c7b50fa948e499c",
-    "google-site-verification=d5RkNYJAq7RNqkZUNx-NjrdsUxYH77Qs7zl2ZqRj2Sc",
     "atlassian-domain-verification=5lqJwtfJPMHqC/aGvT/7s2BR53IHCs9P6vFjCQYA5nkQ4mvoHK",
-    "adobe-idp-site-verification=bb3da93fff816c4b9c75b5b87e7afbf88dff2c0dce3c5d8f6357"
+    "google-site-verification=DM1CrNK7K2cq6YvNdmMPeIZBNQxxqw0a6ENutWnHoJQ",
+    "extensis-domain-verification=17bb048b-06af-47a8-b8e5-d4a1155683c7",
+    "dropbox-domain-verification=f8opl8j5mr5e"
   ],
   "tls2": {
     "alpn": "",
@@ -512,7 +512,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
   "x12": {
     "status": 202,
     "ptr": [
-      "server-54-192-248-80.tpe53.r.cloudfront.net."
+      "server-54-192-248-40.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -533,8 +533,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
       "status": 200
     }
   },
-  "elapsed_s": 5.0,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 202
+  },
+  "elapsed_s": 4.7,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -546,4 +551,5 @@ Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

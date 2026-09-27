@@ -7,12 +7,12 @@
 | Target | https://ibm.com/ |
 | Bug bounty program | IBM |
 | Listed scope domain | ibm.com |
-| Test date | 2026-09-26 23:30 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:22 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
+Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,11 +31,12 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 | 13 | low | MAIL12 | MTA-STS TXT published but policy file unreachable | CWE-285 |
 | 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
-| 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 16 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
+| 17 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 19 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 20 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 21 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -48,7 +49,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 ### 2. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires in 21 days (notAfter Oct 17 23:59:59 2026 GMT).
+- **Detail:** Certificate expires in 20 days (notAfter Oct 17 23:59:59 2026 GMT).
 - **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
 ### 3. [INFO] Technology fingerprint (`TECH1`)
@@ -135,34 +136,40 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-ym2t7s=RPDdVAMpzgbooX0kxhqstuM2D; ms-domain-verification=1adbc779-89ce-47cf-8167-c4e4a3b4a6aa; google-site-verification=I-empodMpM7n5Px1doUgIaOKHKeIMXXf6k8Ea5ENyO4
+- **Detail:** Apex TXT records with verification/token content: docker-verification=7c4d4e40-e7ee-4183-94c2-db97d0873269; atlassian-domain-verification=WAjTH82C5Zx475WLKAA2nrdlsoA/kN0ej9igrLrED4h15KMHPO; docker-verification=846278f4-7e2c-4586-ae26-e1a9f0f0aecd
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 16. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
+
+- **CWE:** CWE-603
+- **Detail:** OCSP check via http://ocsp.digicert.com -> http-200
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
+
+### 17. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but ibm.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 17. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 154 disallow path(s), e.g. /account/registration, /account/mypro, /account/myint, /Admin, /cgi-
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 18. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+### 19. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
 
 - **CWE:** CWE-922
 - **Detail:** Response for https://ibm.com/ carries Cache-Control: max-age=0; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
-### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 20. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 184.84.207.120 carries PTR a184-84-207-120.deploy.static.akamaitechnologies.com. for ibm.com.
+- **Detail:** 184.26.218.55 carries PTR a184-26-218-55.deploy.static.akamaitechnologies.com. for ibm.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 21. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for ibm.com, so any public CA can issue a certificate for the zone.
@@ -175,11 +182,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
   "domain": "ibm.com",
   "dns": {
     "a": [
-      "184.84.207.120"
+      "184.26.218.55"
     ],
     "aaaa": [
-      "2600:1417:8400:1782::3831",
-      "2600:1417:8400:17b9::3831"
+      "2600:140b:1c00:1b8d::3831",
+      "2600:140b:1c00:1b83::3831"
     ],
     "cname": null,
     "mx": [
@@ -188,60 +195,60 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
     ],
     "ns": [
       "dns2.p05.nsone.net.",
-      "dns3.p05.nsone.net.",
       "dns1.p05.nsone.net.",
+      "dns3.p05.nsone.net.",
       "dns4.p05.nsone.net."
     ],
     "caa": [],
     "spf": [
-      "_analyst_ng_validation=f6702989-83f3-42b8-be39-19cf8f1c33f5",
-      "00D10000000biEb=1TBQ80000000b2n",
-      "anthropic-domain-verification-ym2t7s=RPDdVAMpzgbooX0kxhqstuM2D",
-      "ms-domain-verification=1adbc779-89ce-47cf-8167-c4e4a3b4a6aa",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
-      "google-site-verification=I-empodMpM7n5Px1doUgIaOKHKeIMXXf6k8Ea5ENyO4",
-      "google-gws-recovery-domain-verification=42135076",
-      "jamf-site-verification=CN4bHigc1ZnD6ZQX_2c6XQ",
-      "atlassian-domain-verification=WAjTH82C5Zx475WLKAA2nrdlsoA/kN0ej9igrLrED4h15KMHPOm+A5H3GndKAxDC",
-      "00df40000004784eaa",
-      "amazonses:79ShwQazteb+WkCt8e297sAC2mwZVRditsrzaoxiHjU=",
-      "onetrust-domain-verification=e7e09cedfb9b4ff386f1274e4c214d55",
-      "facebook-domain-verification=7w4exj2revwpv5u708s6bji5j6tswy",
-      "smartsheet-site-validation=TaCpXPZ-qFfOgfHXuMrfF8_d6GZjICNl",
-      "adobe-idp-site-verification=5f8adca7-512f-44e1-a5b2-b62c5e3763f2",
-      "mongodb-site-verification=gEevYaKFpagtLmrYxomtpE2QmYwnd29i",
-      "yandex-verification: 5f458b477256c50c",
-      "intersight=cfe6f48b59e7428442b9aab04765ca0953e01c480a685ca5cf6939ef9e505532",
-      "smartsheet-site-validation=I-lI3gCPdvKbKQ6KTki96Ream6Yjs1gU",
-      "wework-site-verification=hhWLSbG4qiaKhsXU",
-      "_github-challenge-ibm.ibm.com=2613e984bc",
-      "h1-domain-verification=m9jGKLYa5hDdU5AHUfK9jrBmWVhx3h9t9ztfDFMaxZfgChvk",
-      "Dynatrace-site-verification=76b6b299-fe43-4f31-889b-a8a467193478__8q74sg9dg5udjppn95utrb8bct",
-      "google-site-verification=tzdngH5fWH-k8uQoDVovOFJQZTwaGtDOP6S2cQlOvCs",
-      "intersight=1439768961d2f6d736c38b947d235947681cd817abea13eab3daee9ecbdc6c3d",
-      "apple-domain-verification=M3o953J0rN1B0P2a",
-      "mongodb-site-verification=Gcqpap80hVonXfV2VnYC6AlEr2Z9vvf3",
-      "google-site-verification=Jck8mLbYYfCnrmi_nRy4MG2fbUN3UGhC29KdspGLd9Y",
-      "docker-verification=846278f4-7e2c-4586-ae26-e1a9f0f0aecd",
-      "40a21f5affe343c6b37e0a5af80dcd93",
-      "atlassian-sending-domain-verification=79afa9af-6e0f-47e6-b636-2786f8772f66",
-      "asv=e8bb80eeac60e62a4dd07f03d1d36829",
-      "atlassian-domain-verification=a32Aj0uoXQRh6QseDFFrlufYlkbeSdok7az3sY0DQNVXpW1Iqj8zlsuXFZgHMojH",
-      "ms-domain-verification=bedcd06e-7e1c-4906-9b6a-b4a1095fa4ed",
-      "00d00000000hedieay",
-      "atlassian-domain-verification=79ZnqmRPyDwm6b99GAF3ymzBmjtRZU9oCfgMwVMAUGlrPPenDc6esgO62jafAXUI",
-      "figma-domain-verification=6db9259c4472f3e5ba44c7ae284b4f4b8aa0268c0797659a5e1a28ccfe912ddf-1741206863",
-      "coursera-domain-verification=To0Ej5CrewXrC0FcCjVxXG1lTcLLJQjvrW2gdUt8rCxFxTGMdA0vA54nUlgLfbyO",
-      "google-site-verification=ewe2QcP5aMj3DKuSfxscZME5wip4EpoTxCXPNvr0-J0",
-      "DomainVerification=CYICZMSWT62KDTQWZ1YCKKU763NN36BQJ4TD5BV606K3FLDUR3UOJE58E30FTIVL",
-      "google-site-verification=aH5jG_abrxRKeKZKOrX9CuXlXdFSCQxVkmAVoYwzNcc",
-      "00D3h000004YkeYEAS",
-      "MS=ms61389031",
-      "figma-domain-verification=b8b3862b529816383e0e7ec9ad2757f8f7b4a0f4da290136796f1aa36d558841-1785230801",
-      "00d50000000c9mweay",
       "docker-verification=7c4d4e40-e7ee-4183-94c2-db97d0873269",
+      "40a21f5affe343c6b37e0a5af80dcd93",
+      "atlassian-domain-verification=WAjTH82C5Zx475WLKAA2nrdlsoA/kN0ej9igrLrED4h15KMHPOm+A5H3GndKAxDC",
+      "amazonses:79ShwQazteb+WkCt8e297sAC2mwZVRditsrzaoxiHjU=",
+      "docker-verification=846278f4-7e2c-4586-ae26-e1a9f0f0aecd",
+      "figma-domain-verification=6db9259c4472f3e5ba44c7ae284b4f4b8aa0268c0797659a5e1a28ccfe912ddf-1741206863",
+      "mongodb-site-verification=3d0wR0KvanH3yTbll0sXEJ0QGBQffOkv",
+      "DomainVerification=CYICZMSWT62KDTQWZ1YCKKU763NN36BQJ4TD5BV606K3FLDUR3UOJE58E30FTIVL",
+      "smartsheet-site-validation=TaCpXPZ-qFfOgfHXuMrfF8_d6GZjICNl",
+      "yandex-verification: 5f458b477256c50c",
+      "atlassian-domain-verification=79ZnqmRPyDwm6b99GAF3ymzBmjtRZU9oCfgMwVMAUGlrPPenDc6esgO62jafAXUI",
+      "00D10000000biEb=1TBQ80000000b2n",
+      "google-site-verification=ewe2QcP5aMj3DKuSfxscZME5wip4EpoTxCXPNvr0-J0",
+      "h1-domain-verification=m9jGKLYa5hDdU5AHUfK9jrBmWVhx3h9t9ztfDFMaxZfgChvk",
+      "00d00000000hedieay",
+      "figma-domain-verification=b8b3862b529816383e0e7ec9ad2757f8f7b4a0f4da290136796f1aa36d558841-1785230801",
+      "anthropic-domain-verification-ym2t7s=RPDdVAMpzgbooX0kxhqstuM2D",
+      "Dynatrace-site-verification=76b6b299-fe43-4f31-889b-a8a467193478__8q74sg9dg5udjppn95utrb8bct",
+      "google-gws-recovery-domain-verification=42135076",
+      "google-site-verification=I-empodMpM7n5Px1doUgIaOKHKeIMXXf6k8Ea5ENyO4",
+      "google-site-verification=tzdngH5fWH-k8uQoDVovOFJQZTwaGtDOP6S2cQlOvCs",
       "google-gws-recovery-domain-verification=48225137",
-      "mongodb-site-verification=3d0wR0KvanH3yTbll0sXEJ0QGBQffOkv"
+      "atlassian-sending-domain-verification=79afa9af-6e0f-47e6-b636-2786f8772f66",
+      "google-site-verification=Jck8mLbYYfCnrmi_nRy4MG2fbUN3UGhC29KdspGLd9Y",
+      "ms-domain-verification=1adbc779-89ce-47cf-8167-c4e4a3b4a6aa",
+      "smartsheet-site-validation=I-lI3gCPdvKbKQ6KTki96Ream6Yjs1gU",
+      "atlassian-domain-verification=a32Aj0uoXQRh6QseDFFrlufYlkbeSdok7az3sY0DQNVXpW1Iqj8zlsuXFZgHMojH",
+      "intersight=cfe6f48b59e7428442b9aab04765ca0953e01c480a685ca5cf6939ef9e505532",
+      "mongodb-site-verification=gEevYaKFpagtLmrYxomtpE2QmYwnd29i",
+      "asv=e8bb80eeac60e62a4dd07f03d1d36829",
+      "facebook-domain-verification=7w4exj2revwpv5u708s6bji5j6tswy",
+      "google-site-verification=aH5jG_abrxRKeKZKOrX9CuXlXdFSCQxVkmAVoYwzNcc",
+      "apple-domain-verification=M3o953J0rN1B0P2a",
+      "wework-site-verification=hhWLSbG4qiaKhsXU",
+      "mongodb-site-verification=Gcqpap80hVonXfV2VnYC6AlEr2Z9vvf3",
+      "onetrust-domain-verification=e7e09cedfb9b4ff386f1274e4c214d55",
+      "adobe-idp-site-verification=5f8adca7-512f-44e1-a5b2-b62c5e3763f2",
+      "00D3h000004YkeYEAS",
+      "jamf-site-verification=CN4bHigc1ZnD6ZQX_2c6XQ",
+      "ms-domain-verification=bedcd06e-7e1c-4906-9b6a-b4a1095fa4ed",
+      "MS=ms61389031",
+      "00df40000004784eaa",
+      "intersight=1439768961d2f6d736c38b947d235947681cd817abea13eab3daee9ecbdc6c3d",
+      "_analyst_ng_validation=f6702989-83f3-42b8-be39-19cf8f1c33f5",
+      "00d50000000c9mweay",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
+      "_github-challenge-ibm.ibm.com=2613e984bc",
+      "coursera-domain-verification=To0Ej5CrewXrC0FcCjVxXG1lTcLLJQjvrW2gdUt8rCxFxTGMdA0vA54nUlgLfbyO"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=none; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -283,7 +290,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "www.sevone.com",
       "www.turbonomic.com"
     ],
-    "days_left": 21,
+    "days_left": 20,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -293,7 +300,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
     }
   },
   "ports": {
-    "ip": "184.84.207.120",
+    "ip": "184.26.218.55",
     "open": []
   },
   "https": {
@@ -346,11 +353,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "anthropic-domain-verification-ym2t7s=RPDdVAMpzgbooX0kxhqstuM2D",
-    "ms-domain-verification=1adbc779-89ce-47cf-8167-c4e4a3b4a6aa",
-    "google-site-verification=I-empodMpM7n5Px1doUgIaOKHKeIMXXf6k8Ea5ENyO4",
-    "google-gws-recovery-domain-verification=42135076",
-    "jamf-site-verification=CN4bHigc1ZnD6ZQX_2c6XQ"
+    "docker-verification=7c4d4e40-e7ee-4183-94c2-db97d0873269",
+    "atlassian-domain-verification=WAjTH82C5Zx475WLKAA2nrdlsoA/kN0ej9igrLrED4h15KMHPO",
+    "docker-verification=846278f4-7e2c-4586-ae26-e1a9f0f0aecd",
+    "figma-domain-verification=6db9259c4472f3e5ba44c7ae284b4f4b8aa0268c0797659a5e1a28",
+    "mongodb-site-verification=3d0wR0KvanH3yTbll0sXEJ0QGBQffOkv"
   ],
   "tls2": {
     "alpn": "",
@@ -375,7 +382,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "not_before": "20251017000000",
       "not_after": "20261017235959"
     },
-    "ocsp": "explicit-status"
+    "ocsp": "http-200"
   },
   "http2": {
     "robots_disallow": [
@@ -399,7 +406,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
   "x12": {
     "status": 301,
     "ptr": [
-      "a184-84-207-120.deploy.static.akamaitechnologies.com."
+      "a184-26-218-55.deploy.static.akamaitechnologies.com."
     ]
   },
   "x13": {
@@ -422,8 +429,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
       "status": 200
     }
   },
-  "elapsed_s": 10.1,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 11.2,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -435,4 +447,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

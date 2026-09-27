@@ -7,12 +7,12 @@
 | Target | https://m.facebook.com/ |
 | Bug bounty program | Facebook |
 | Listed scope domain | m.facebook.com |
-| Test date | 2026-09-26 23:32 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:25 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
+Total findings: **15** (High: 0, Medium: 0, Low: 6, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,11 +27,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 | 9 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 10 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 11 | info | P8 | Missing security.txt | CWE-1038 |
-| 12 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
-| 13 | info | CK5 | Cookie scoped to parent domain (.facebook.com) | CWE-200 |
-| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 16 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
+| 12 | info | CK5 | Cookie scoped to parent domain (.facebook.com) | CWE-200 |
+| 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 15 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
 
 ## Detailed findings
 
@@ -44,7 +43,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 ### 2. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires in 8 days (notAfter Oct  4 23:59:59 2026 GMT).
+- **Detail:** Certificate expires in 7 days (notAfter Oct  4 23:59:59 2026 GMT).
 - **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
 ### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
@@ -109,31 +108,25 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 12. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
-
-- **CWE:** CWE-603
-- **Detail:** OCSP check via http://ocsp.digicert.com -> http-200
-- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
-
-### 13. [INFO] Cookie scoped to parent domain (.facebook.com) (`CK5`)
+### 12. [INFO] Cookie scoped to parent domain (.facebook.com) (`CK5`)
 
 - **CWE:** CWE-200
 - **Detail:** Set-Cookie Domain attribute is broader than the request host m.facebook.com.
 - **Recommendation:** Confirm the wider cookie scope is intended.
 
-### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 13. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 1160 disallow path(s), e.g. /, /, /, /, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 57.144.92.1 carries PTR edge-star-mini-shv-01-tpe5.facebook.com. for m.facebook.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 16. [LOW] HTTPS root redirects to a different domain (`RD2`)
+### 15. [LOW] HTTPS root redirects to a different domain (`RD2`)
 
 - **CWE:** CWE-200
 - **Detail:** https://m.facebook.com/ answered 301 with Location: https://www.facebook.com/?_rdr (cross-domain handoff at the entry point).
@@ -183,7 +176,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
       "facebook.com",
       "messenger.com"
     ],
-    "days_left": 8,
+    "days_left": 7,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -273,7 +266,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
       "not_before": "20260706000000",
       "not_after": "20261004235959"
     },
-    "ocsp": "http-200"
+    "ocsp": "explicit-status"
   },
   "http2": {
     "hsts_preloaded": true,
@@ -321,8 +314,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
       "status": 200
     }
   },
-  "elapsed_s": 9.9,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_CHACHA20_POLY1305_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 9.6,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -334,4 +332,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

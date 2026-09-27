@@ -7,12 +7,12 @@
 | Target | https://in.linkedin.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | in.linkedin.com |
-| Test date | 2026-09-26 23:30 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:22 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 3, Info: 20)
+Total findings: **25** (High: 0, Medium: 0, Low: 3, Info: 22)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -25,20 +25,22 @@ Total findings: **23** (High: 0, Medium: 0, Low: 3, Info: 20)
 | 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
 | 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 9 | info | H6 | Server technology disclosure | CWE-200 |
-| 10 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 11 | low | CK4 | Session-like cookie without HttpOnly | CWE-1004 |
-| 12 | info | CK5 | Cookie scoped to parent domain (linkedin.com) | CWE-200 |
-| 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 14 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
-| 15 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
-| 16 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
-| 17 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
-| 18 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
-| 19 | low | H21 | HSTS does not cover subdomains | CWE-319 |
-| 20 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
-| 21 | info | CK11 | Session-like cookie value has low entropy | CWE-340 |
-| 22 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
-| 23 | info | CT1 | 1 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 10 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
+| 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 12 | low | CK4 | Session-like cookie without HttpOnly | CWE-1004 |
+| 13 | info | CK5 | Cookie scoped to parent domain (linkedin.com) | CWE-200 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 16 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 17 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
+| 18 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 19 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 20 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 21 | info | HTML1 | Security policy set via <meta http-equiv> | CWE-1021 |
+| 22 | info | CK11 | Session-like cookie value has low entropy | CWE-340 |
+| 23 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
+| 24 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
+| 25 | info | CT1 | 1 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
 
 ## Detailed findings
 
@@ -100,85 +102,97 @@ Total findings: **23** (High: 0, Medium: 0, Low: 3, Info: 20)
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
-### 10. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 10. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
+
+- **CWE:** CWE-603
+- **Detail:** OCSP check via http://ocsp.digicert.com -> http-200
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
+
+### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but in.linkedin.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 11. [LOW] Session-like cookie without HttpOnly (`CK4`)
+### 12. [LOW] Session-like cookie without HttpOnly (`CK4`)
 
 - **CWE:** CWE-1004
 - **Detail:** Cookie 'JSESSIONID' looks session-related and has no HttpOnly attribute.
 - **Recommendation:** Set HttpOnly on session cookies.
 
-### 12. [INFO] Cookie scoped to parent domain (linkedin.com) (`CK5`)
+### 13. [INFO] Cookie scoped to parent domain (linkedin.com) (`CK5`)
 
 - **CWE:** CWE-200
 - **Detail:** Set-Cookie Domain attribute is broader than the request host in.linkedin.com.
 - **Recommendation:** Confirm the wider cookie scope is intended.
 
-### 13. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 4398 disallow path(s), e.g. /addContacts*, /addressBookExport*, /ambry, /analytics/, /answers*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 14. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+### 15. [LOW] CSP present but still allows unsafe directives (`CSP1`)
 
 - **CWE:** CWE-1021
 - **Detail:** Content-Security-Policy of in.linkedin.com permits unsafe-inline; inline script injection still executes.
 - **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
-### 15. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+### 16. [INFO] CSP reporting endpoint disclosed (`CSP2`)
 
 - **CWE:** CWE-200
 - **Detail:** CSP of in.linkedin.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
 - **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
 
-### 16. [INFO] Framework/stack inferred from cookie name (`CK9`)
+### 17. [INFO] Framework/stack inferred from cookie name (`CK9`)
 
 - **CWE:** CWE-200
 - **Detail:** Cookie '__cf_bm' set on in.linkedin.com indicates Cloudflare bot-management cookie.
 - **Recommendation:** Keep the disclosed stack current; confirm the cookie is still needed.
 
-### 17. [INFO] Error-page technology fingerprint (`ERR1`)
+### 18. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkdhwlk0vrkp6s.html -> 404; error page/headers match: Cloudflare.
+- **Detail:** GET /xk1c4fl42j750t.html -> 404; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
-### 18. [INFO] App-association / digital-asset-links surface published (`WK1`)
+### 19. [INFO] App-association / digital-asset-links surface published (`WK1`)
 
 - **CWE:** CWE-200
 - **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on in.linkedin.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
 - **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
-### 19. [LOW] HSTS does not cover subdomains (`H21`)
+### 20. [LOW] HSTS does not cover subdomains (`H21`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security on in.linkedin.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of in.linkedin.com.
 - **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
 
-### 20. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+### 21. [INFO] Security policy set via <meta http-equiv> (`HTML1`)
 
-- **CWE:** CWE-345
-- **Detail:** Root document of in.linkedin.com loads 2 cross-origin script(s) without an integrity attribute, e.g. https://static.licdn.com/aero-v1/sc/h/azyj0u7xl6tpxe5fn3t3djk7p, https://static.licdn.com/aero-v1/sc/h/26g24klhu4k9p8zgtz6fs4k01; a compromise of any such third-party host can inject code.
-- **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
+- **CWE:** CWE-1021
+- **Detail:** HTML root of in.linkedin.com declares via meta tags: content-security-policy; meta-set policies have limited browser support and are easier to override than response headers.
+- **Recommendation:** Prefer response headers and keep any meta declarations consistent with them.
 
-### 21. [INFO] Session-like cookie value has low entropy (`CK11`)
+### 22. [INFO] Session-like cookie value has low entropy (`CK11`)
 
 - **CWE:** CWE-340
-- **Detail:** Cookie 'JSESSIONID' on in.linkedin.com is 24 chars with ~3.49 bits/char of entropy; low-entropy tokens are easier to guess.
+- **Detail:** Cookie 'JSESSIONID' on in.linkedin.com is 24 chars with ~3.39 bits/char of entropy; low-entropy tokens are easier to guess.
 - **Recommendation:** Generate session identifiers from a CSPRNG with sufficient entropy.
 
-### 22. [INFO] security.txt published with a contact address (`SEC1`)
+### 23. [INFO] security.txt published with a contact address (`SEC1`)
 
 - **CWE:** CWE-1038
 - **Detail:** /.well-known/security.txt on in.linkedin.com is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
 - **Recommendation:** Confirm the published contact is current and monitored (RFC 9116).
 
-### 23. [INFO] 1 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 24. [INFO] Inline scripts without nonce/hash under a CSP (`HTML8`)
+
+- **CWE:** CWE-1021
+- **Detail:** Root document of in.linkedin.com sends a CSP but contains 1 inline script(s) with no nonce- or hash-attribute, so the policy must rely on 'unsafe-inline'.
+- **Recommendation:** Use per-script nonces/hashes and drop 'unsafe-inline'.
+
+### 25. [INFO] 1 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -294,7 +308,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 3, Info: 20)
       "lf.linkedin.com",
       "li.linkedin.com"
     ],
-    "days_left": 158,
+    "days_left": 157,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -419,7 +433,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 3, Info: 20)
       "not_before": "20260903000000",
       "not_after": "20270303235959"
     },
-    "ocsp": "explicit-status"
+    "ocsp": "http-200"
   },
   "http2": {
     "robots_disallow": [
@@ -467,8 +481,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 3, Info: 20)
       "status": 200
     }
   },
-  "elapsed_s": 15.6,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 200
+  },
+  "elapsed_s": 17.3,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -480,4 +499,5 @@ Total findings: **23** (High: 0, Medium: 0, Low: 3, Info: 20)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

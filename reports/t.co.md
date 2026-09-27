@@ -7,12 +7,12 @@
 | Target | https://t.co/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | t.co |
-| Test date | 2026-09-26 23:39 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:32 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
+Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,6 +36,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 | 18 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
 | 19 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 21 | info | HTML7 | Insecure http:// references inside an HTTPS document | CWE-319 |
 
 ## Detailed findings
 
@@ -159,7 +160,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 19. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xk0zy192a3t8yd.html -> 404; error page/headers match: Cloudflare.
+- **Detail:** GET /xkqf6m644kdxne.html -> 404; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -167,6 +168,12 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for t.co, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 21. [INFO] Insecure http:// references inside an HTTPS document (`HTML7`)
+
+- **CWE:** CWE-319
+- **Detail:** Root document of t.co references 3 distinct http:// URL(s) (e.g. http://status.x.com/, http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd, http://x.com); using them drops to unencrypted transport.
+- **Recommendation:** Use https:// references or relative URLs.
 
 ## Evidence (raw response observations)
 
@@ -181,21 +188,21 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     "cname": null,
     "mx": [],
     "ns": [
-      "c.u06.twtrdns.net.",
       "a.r06.twtrdns.net.",
-      "d.u06.twtrdns.net.",
-      "a.u06.twtrdns.net.",
-      "d.r06.twtrdns.net.",
       "b.u06.twtrdns.net.",
+      "d.u06.twtrdns.net.",
+      "c.u06.twtrdns.net.",
       "b.r06.twtrdns.net.",
-      "c.r06.twtrdns.net."
+      "c.r06.twtrdns.net.",
+      "a.u06.twtrdns.net.",
+      "d.r06.twtrdns.net."
     ],
     "caa": [],
     "spf": [
       "v=spf1 -all",
       "1z8q6j6wymwb6bh0t3q28tp7vsbgnh6d",
-      "48qgbs8f2v055y997kpf4cx2302fzfs2",
-      "1nfb08f5jkpy0flhn6lwml2vk7x34hrd"
+      "1nfb08f5jkpy0flhn6lwml2vk7x34hrd",
+      "48qgbs8f2v055y997kpf4cx2302fzfs2"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; adkim=s; aspf=s; rua=mailto:d@rua.agari.com; ruf=mailto:d@ruf.agari.com; fo=1"
@@ -338,8 +345,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "status": 200
     }
   },
-  "elapsed_s": 14.6,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 200
+  },
+  "elapsed_s": 15.3,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -351,4 +363,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

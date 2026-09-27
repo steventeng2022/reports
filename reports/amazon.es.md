@@ -7,8 +7,8 @@
 | Target | https://amazon.es/ |
 | Bug bounty program | Amazon |
 | Listed scope domain | amazon.es |
-| Test date | 2026-09-26 23:18 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:09 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -129,7 +129,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: kahoot-domain-verification=80878754b939ac26c7ec90dd86251f0d6a477d7b7eda9d1adda90; atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbD; autodesk-domain-verification=DpHxeICG_MduAndXVeb8
+- **Detail:** Apex TXT records with verification/token content: kahoot-domain-verification=80878754b939ac26c7ec90dd86251f0d6a477d7b7eda9d1adda90; google-site-verification=a3r-mlTjHUVRE2712GFvtcHHoCgXwqI_8MWY1DFbtmY; google-gws-recovery-domain-verification=70440507
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -147,7 +147,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 3.253.182.49 carries PTR ec2-3-253-182-49.eu-west-1.compute.amazonaws.com. for amazon.es.
+- **Detail:** 3.253.168.8 carries PTR ec2-3-253-168-8.eu-west-1.compute.amazonaws.com. for amazon.es.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 18. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -175,9 +175,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   "domain": "amazon.es",
   "dns": {
     "a": [
-      "3.253.182.49",
+      "3.253.168.8",
       "3.254.238.145",
-      "3.253.168.8"
+      "3.253.182.49"
     ],
     "aaaa": [],
     "cname": null,
@@ -185,45 +185,45 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "amazon-smtp.amazon.com (pref 10)"
     ],
     "ns": [
-      "ns1.amzndns.net.",
       "ns1.amzndns.com.",
-      "ns1.amzndns.org.",
-      "ns2.amzndns.org.",
-      "ns2.amzndns.net.",
       "ns2.amzndns.co.uk.",
+      "ns1.amzndns.net.",
+      "ns2.amzndns.com.",
+      "ns2.amzndns.net.",
       "ns1.amzndns.co.uk.",
-      "ns2.amzndns.com."
+      "ns1.amzndns.org.",
+      "ns2.amzndns.org."
     ],
     "caa": [],
     "spf": [
       "kahoot-domain-verification=80878754b939ac26c7ec90dd86251f0d6a477d7b7eda9d1adda907572cc75e8d",
-      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
-      "TS1760027",
-      "v=spf1 include:amazon.com -all",
-      "autodesk-domain-verification=DpHxeICG_MduAndXVeb8",
-      "cisco-ci-domain-verification=62e62968f975ff54a47bdcc4a9de00ea67e9bd8287922baa42fb5c66d15a3124",
-      "cisco-ci-domain-verification=7b42ea16e70f90dd1d35f1aed713e13f5945131c402198eeadb9b6075ee2b3e4",
       "google-site-verification=a3r-mlTjHUVRE2712GFvtcHHoCgXwqI_8MWY1DFbtmY",
-      "box-domain-verification=ffea95cd0e0d61c302198367155b07e74fd534fa1d867662dc9bf9969b6f535d",
-      "sending_domain608861=32f0b9b0f7cd1a533f2564eceb1b96428940a6e003287c1d09fe70d0b92a89f4",
-      "sending_domain608861=f77de0fdda1425c57781454bddb9342f7377c19d8a49a03f17183435660bf5eb",
-      "google-site-verification=YMAfjgfgkzIINyWubxb8MSEjzD7hq4Eet5R5t6uPuLs",
-      "canva-site-verification=SsmajveJ2yhT-JibqBbk6A",
-      "bluebeam-verification=gqrddudtng5xwjh4zd9wtx8a3m51or",
-      "MS=ms34237165",
-      "google-site-verification=hXdp6u6Ea978P7m8xjhPg8cNUix2-l-GloHICzelyQ8",
-      "sending_domain1003771=a40bb77e2438c6639b1d2f078f8489067b7e975cc8f0a96495fd010611250180",
-      "facebook-domain-verification=ar49zn2kc5dktr4xcum0wwpy9abdoq",
-      "sending_domain229492=63325686e4cd99bdb65545f58c7454650c6283ed1c561677ff2e5bdf03c96a44",
-      "MS=ms12730066",
-      "sending_domain229492=236b587bfcc126d9624af08947c62ef404f684b38397c40de8905c56c2aedfd5",
       "google-gws-recovery-domain-verification=70440507",
-      "google-gws-recovery-domain-verification=68063360",
-      "sending_domain1003771=179232522a19a554e509600d3bc16a732d5e0e3c309f0fb788e2366037a4d763",
-      "docker-verification=53562ee7-90ff-4854-b952-1d508197b2c2",
+      "TS1760027",
+      "autodesk-domain-verification=DpHxeICG_MduAndXVeb8",
+      "box-domain-verification=ffea95cd0e0d61c302198367155b07e74fd534fa1d867662dc9bf9969b6f535d",
+      "facebook-domain-verification=ar49zn2kc5dktr4xcum0wwpy9abdoq",
       "spf2.0/pra include:amazon.com -all",
+      "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814",
+      "cisco-ci-domain-verification=7b42ea16e70f90dd1d35f1aed713e13f5945131c402198eeadb9b6075ee2b3e4",
+      "sending_domain1003771=a40bb77e2438c6639b1d2f078f8489067b7e975cc8f0a96495fd010611250180",
+      "MS=ms12730066",
+      "sending_domain608861=f77de0fdda1425c57781454bddb9342f7377c19d8a49a03f17183435660bf5eb",
+      "sending_domain1003771=179232522a19a554e509600d3bc16a732d5e0e3c309f0fb788e2366037a4d763",
+      "v=spf1 include:amazon.com -all",
+      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
       "liveramp-site-verification=jZJKgMEQ_1mdjMhKj02iqNACZ-NJHRWhCEQdQ_OuCMo",
-      "adobe-idp-site-verification=b6bcd3e5aaffc63607c8bf75744d9a0d1febc50dd7f389428e2ae476c9ba8814"
+      "MS=ms34237165",
+      "google-gws-recovery-domain-verification=68063360",
+      "bluebeam-verification=gqrddudtng5xwjh4zd9wtx8a3m51or",
+      "docker-verification=53562ee7-90ff-4854-b952-1d508197b2c2",
+      "sending_domain608861=32f0b9b0f7cd1a533f2564eceb1b96428940a6e003287c1d09fe70d0b92a89f4",
+      "google-site-verification=YMAfjgfgkzIINyWubxb8MSEjzD7hq4Eet5R5t6uPuLs",
+      "sending_domain229492=236b587bfcc126d9624af08947c62ef404f684b38397c40de8905c56c2aedfd5",
+      "sending_domain229492=63325686e4cd99bdb65545f58c7454650c6283ed1c561677ff2e5bdf03c96a44",
+      "canva-site-verification=SsmajveJ2yhT-JibqBbk6A",
+      "cisco-ci-domain-verification=62e62968f975ff54a47bdcc4a9de00ea67e9bd8287922baa42fb5c66d15a3124",
+      "google-site-verification=hXdp6u6Ea978P7m8xjhPg8cNUix2-l-GloHICzelyQ8"
     ],
     "dmarc": [
       "v=DMARC1;",
@@ -254,7 +254,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "p-nt-www-amazon-es-kalias.amazon.es",
       "origin-www.amazon.es"
     ],
-    "days_left": 163,
+    "days_left": 162,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -264,7 +264,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     }
   },
   "ports": {
-    "ip": "3.253.182.49",
+    "ip": "3.253.168.8",
     "open": []
   },
   "https": {
@@ -318,10 +318,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   },
   "apex_txt": [
     "kahoot-domain-verification=80878754b939ac26c7ec90dd86251f0d6a477d7b7eda9d1adda90",
-    "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbD",
+    "google-site-verification=a3r-mlTjHUVRE2712GFvtcHHoCgXwqI_8MWY1DFbtmY",
+    "google-gws-recovery-domain-verification=70440507",
     "autodesk-domain-verification=DpHxeICG_MduAndXVeb8",
-    "cisco-ci-domain-verification=62e62968f975ff54a47bdcc4a9de00ea67e9bd8287922baa42f",
-    "cisco-ci-domain-verification=7b42ea16e70f90dd1d35f1aed713e13f5945131c402198eeadb"
+    "box-domain-verification=ffea95cd0e0d61c302198367155b07e74fd534fa1d867662dc9bf996"
   ],
   "tls2": {
     "alpn": "",
@@ -369,7 +369,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-3-253-182-49.eu-west-1.compute.amazonaws.com."
+      "ec2-3-253-168-8.eu-west-1.compute.amazonaws.com."
     ]
   },
   "x13": {
@@ -394,8 +394,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "status": 200
     }
   },
-  "elapsed_s": 37.4,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 39.3,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -407,4 +412,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

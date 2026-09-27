@@ -7,12 +7,12 @@
 | Target | https://irs.gov/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | irs.gov |
-| Test date | 2026-09-26 23:31 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:23 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 17 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 18 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 19 | info | H22 | Server answers with HTTP/1.0 | CWE-319 |
 
 ## Detailed findings
 
@@ -153,6 +154,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **Detail:** Strict-Transport-Security on irs.gov has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of irs.gov.
 - **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
 
+### 19. [INFO] Server answers with HTTP/1.0 (`H22`)
+
+- **CWE:** CWE-319
+- **Detail:** The root response of irs.gov uses HTTP/1.0, the oldest version still in use; modern sites should serve HTTP/1.1 or 2.
+- **Recommendation:** Serve HTTP/1.1 or HTTP/2 from the edge.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -164,14 +171,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "152.216.11.110"
     ],
     "aaaa": [
-      "2610:30:4000:402::110",
-      "2610:30:2000:402::110"
+      "2610:30:2000:402::110",
+      "2610:30:4000:402::110"
     ],
     "cname": null,
     "mx": [
-      "emgw.irs.gov (pref 20)",
       "emge.irs.gov (pref 10)",
-      "emgc.irs.gov (pref 10)"
+      "emgc.irs.gov (pref 10)",
+      "emgw.irs.gov (pref 20)"
     ],
     "ns": [
       "ns0022.secondary.cloudflare.com.",
@@ -201,7 +208,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "irs.gov",
       "www.irs.gov"
     ],
-    "days_left": 153,
+    "days_left": 152,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -248,8 +255,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   ],
   "paths": {
     "/robots.txt": 301,
-    "/sitemap.xml": 301,
-    "/.well-known/security.txt": 301,
+    "/sitemap.xml": 0,
+    "/.well-known/security.txt": 0,
     "/security.txt": 301,
     "/.git/HEAD": 301,
     "/.git/config": 301,
@@ -317,8 +324,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "status": 200
     }
   },
-  "elapsed_s": 46.5,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher_error": "TimeoutError('_ssl.c:993: The handshake operation timed out')",
+    "root_status": 301
+  },
+  "elapsed_s": 166.1,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -330,4 +341,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

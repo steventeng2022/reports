@@ -7,8 +7,8 @@
 | Target | https://bbc.com/ |
 | Bug bounty program | BBC |
 | Listed scope domain | bbc.com |
-| Test date | 2026-09-26 23:19 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:10 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -127,7 +127,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: airtable-verification=b1a394c872dd6721d39a1d91cc96080d; adobe-idp-site-verification=c3a16fcb00ac5365e4ea125d5e59d4be11936f768b3020c4d81b; Validity-Domain-Verification=TYXJnAeGHNF4DGlOgE4vdoDT3a0=
+- **Detail:** Apex TXT records with verification/token content: docker-verification=f89691bb-7bdd-4bc1-9673-57454d6d9c42; adobe-idp-site-verification=c3a16fcb00ac5365e4ea125d5e59d4be11936f768b3020c4d81b; atlassian-sending-domain-verification=da3721b6-1d2c-4c32-bf01-b792667aeb4d
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -167,55 +167,55 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "domain": "bbc.com",
   "dns": {
     "a": [
-      "151.101.128.81",
-      "151.101.0.81",
       "151.101.192.81",
-      "151.101.64.81"
+      "151.101.64.81",
+      "151.101.0.81",
+      "151.101.128.81"
     ],
     "aaaa": [
-      "2a04:4e42::81",
-      "2a04:4e42:400::81",
+      "2a04:4e42:600::81",
       "2a04:4e42:200::81",
-      "2a04:4e42:600::81"
+      "2a04:4e42::81",
+      "2a04:4e42:400::81"
     ],
     "cname": null,
     "mx": [
-      "cluster8a.eu.messagelabs.com (pref 20)",
-      "cluster8.eu.messagelabs.com (pref 10)"
+      "cluster8.eu.messagelabs.com (pref 10)",
+      "cluster8a.eu.messagelabs.com (pref 20)"
     ],
     "ns": [
-      "dns0.bbc.com.",
       "dns1.bbc.co.uk.",
-      "dns1.bbc.com.",
+      "ddns1.bbc.co.uk.",
       "dns0.bbc.co.uk.",
       "ddns0.bbc.com.",
-      "ddns1.bbc.com.",
-      "ddns1.bbc.co.uk.",
-      "ddns0.bbc.co.uk."
+      "ddns0.bbc.co.uk.",
+      "dns0.bbc.com.",
+      "dns1.bbc.com.",
+      "ddns1.bbc.com."
     ],
     "caa": [
       "0 issue \"digicert.com\"",
-      "0 issuewild \"globalsign.com\"",
       "0 issue \"globalsign.com\"",
+      "0 iodef \"mailto:security@bbc.co.uk\"",
       "0 issue \"amazon.com\"",
-      "0 iodef \"mailto:security@bbc.co.uk\""
+      "0 issuewild \"globalsign.com\""
     ],
     "spf": [
-      "airtable-verification=b1a394c872dd6721d39a1d91cc96080d",
-      "adobe-idp-site-verification=c3a16fcb00ac5365e4ea125d5e59d4be11936f768b3020c4d81b4232019604a2",
-      "Validity-Domain-Verification=TYXJnAeGHNF4DGlOgE4vdoDT3a0=",
-      "slack-domain-verification=hza4gfkmctQ7A7BpMhGNVOZVZcKTFC8OC5ewDFVA",
-      "jamf-site-verification=28Mn3O6rTBSXkL5w6c911A",
-      "docusign=75217687-3ba0-49bb-bb3b-482d888493af",
-      "v=spf1 ip4:212.58.224.0/19 ip4:132.185.0.0/16 +include:spf.messagelabs.com ~all",
+      "docusign=57499c1f-9099-463b-a5bd-cb7583816d78",
+      "xoCARoExwkNhLPdKaaxv",
       "docker-verification=f89691bb-7bdd-4bc1-9673-57454d6d9c42",
+      "adobe-idp-site-verification=c3a16fcb00ac5365e4ea125d5e59d4be11936f768b3020c4d81b4232019604a2",
       "atlassian-sending-domain-verification=da3721b6-1d2c-4c32-bf01-b792667aeb4d",
+      "Validity-Domain-Verification=TYXJnAeGHNF4DGlOgE4vdoDT3a0=",
+      "docusign=75217687-3ba0-49bb-bb3b-482d888493af",
+      "atlassian-domain-verification=SQsgJ5h/FqwMTXuSG/G4Nd1Gx6uX2keREOsZSa22D5XT46EsEuyaic8Aej4cR4Tr",
+      "v=spf1 ip4:212.58.224.0/19 ip4:132.185.0.0/16 +include:spf.messagelabs.com ~all",
+      "jamf-site-verification=28Mn3O6rTBSXkL5w6c911A",
+      "_globalsign-domain-verification=PpIYEptb1-AaatNRPoS2XiWRmxR7zAT1MR52dvDNzx",
       "dropbox-domain-verification=mtgv0f2pudoz",
       "google-site-verification=mTy-FoNnG0yetpI3-0e9AXctAkUCcWGc_K3BcMfioFI",
-      "xoCARoExwkNhLPdKaaxv",
-      "docusign=57499c1f-9099-463b-a5bd-cb7583816d78",
-      "atlassian-domain-verification=SQsgJ5h/FqwMTXuSG/G4Nd1Gx6uX2keREOsZSa22D5XT46EsEuyaic8Aej4cR4Tr",
-      "_globalsign-domain-verification=PpIYEptb1-AaatNRPoS2XiWRmxR7zAT1MR52dvDNzx"
+      "slack-domain-verification=hza4gfkmctQ7A7BpMhGNVOZVZcKTFC8OC5ewDFVA",
+      "airtable-verification=b1a394c872dd6721d39a1d91cc96080d"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;aspf=s;adkim=s;pct=100;fo=0;ri=86400; rua=mailto:dmarc_agg@vali.email;"
@@ -265,7 +265,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     }
   },
   "ports": {
-    "ip": "151.101.128.81",
+    "ip": "151.101.192.81",
     "open": []
   },
   "https": {
@@ -358,11 +358,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     ]
   },
   "apex_txt": [
-    "airtable-verification=b1a394c872dd6721d39a1d91cc96080d",
+    "docker-verification=f89691bb-7bdd-4bc1-9673-57454d6d9c42",
     "adobe-idp-site-verification=c3a16fcb00ac5365e4ea125d5e59d4be11936f768b3020c4d81b",
+    "atlassian-sending-domain-verification=da3721b6-1d2c-4c32-bf01-b792667aeb4d",
     "Validity-Domain-Verification=TYXJnAeGHNF4DGlOgE4vdoDT3a0=",
-    "slack-domain-verification=hza4gfkmctQ7A7BpMhGNVOZVZcKTFC8OC5ewDFVA",
-    "jamf-site-verification=28Mn3O6rTBSXkL5w6c911A"
+    "atlassian-domain-verification=SQsgJ5h/FqwMTXuSG/G4Nd1Gx6uX2keREOsZSa22D5XT46EsEu"
   ],
   "tls2": {
     "alpn": "",
@@ -435,8 +435,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "status": 200
     }
   },
-  "elapsed_s": 19.6,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 19.3,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -448,4 +453,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.
