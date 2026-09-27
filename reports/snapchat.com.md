@@ -7,12 +7,12 @@
 | Target | https://snapchat.com/ |
 | Bug bounty program | Snapchat |
 | Listed scope domain | snapchat.com |
-| Test date | 2026-09-27 01:34 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
+Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,6 +37,8 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 | 19 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
 | 20 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 | 21 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 22 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 23 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 
 ## Detailed findings
 
@@ -122,7 +124,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: hubspot-developer-verification=Zjk1NTNlNmYtODAxNi00YzNhLTgzNGEtY2JlNWQyNGRhZmFk; atlassian-domain-verification=TH6BFQJRvZM36e0pNbXcEI/RpTrqBb2JDxzoBsBLa3RajLrpmc; openai-domain-verification=dv-qRVXfFNUY6fVpEXy5skTuRnd
+- **Detail:** Apex TXT records with verification/token content: yahoo-verification-key=xUKCyvTR9ya3lyjYFuWPLGfSFLC/5C0y2txg4crwEbw=; onetrust-domain-verification=32eb1654587e494fbd3b4f8a54a6b57f; anthropic-domain-verification-kg6835=FrP90V31rmTTa7Cu3plqLLMEx
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -173,6 +175,18 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 - **Detail:** The root response of snapchat.com carries alt-svc h3=":443"; ma=2592000; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
 - **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
 
+### 22. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of snapchat.com contains wildcard SAN entry(ies) *.snap.com, *.snapchat.com, *.ats.snapchat.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 23. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of snapchat.com is http://ocsp.digicert.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -185,62 +199,62 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 30)",
+      "aspmx2.googlemail.com (pref 40)",
+      "aspmx.l.google.com (pref 10)",
       "aspmx3.googlemail.com (pref 50)",
       "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx2.googlemail.com (pref 40)",
-      "aspmx.l.google.com (pref 10)"
+      "alt2.aspmx.l.google.com (pref 30)"
     ],
     "ns": [
-      "ns-1892.awsdns-44.co.uk.",
-      "ns-1468.awsdns-55.org.",
       "ns-530.awsdns-02.net.",
-      "ns-220.awsdns-27.com."
+      "ns-1892.awsdns-44.co.uk.",
+      "ns-220.awsdns-27.com.",
+      "ns-1468.awsdns-55.org."
     ],
     "caa": [],
     "spf": [
-      "hubspot-developer-verification=Zjk1NTNlNmYtODAxNi00YzNhLTgzNGEtY2JlNWQyNGRhZmFk",
-      "atlassian-domain-verification=TH6BFQJRvZM36e0pNbXcEI/RpTrqBb2JDxzoBsBLa3RajLrpmc6pK6Quau40P7oa",
-      "openai-domain-verification=dv-qRVXfFNUY6fVpEXy5skTuRnd",
+      "yahoo-verification-key=xUKCyvTR9ya3lyjYFuWPLGfSFLC/5C0y2txg4crwEbw=",
+      "onetrust-domain-verification=32eb1654587e494fbd3b4f8a54a6b57f",
       "anthropic-domain-verification-kg6835=FrP90V31rmTTa7Cu3plqLLMEx",
-      "segment-site-verification=e6U89hyQcmGvDFTApWYKvbj7NFSMu8zj",
-      "adobe-idp-site-verification=1b7089e1333b1302c4f425ff60baae967ac377d76fb6aa7bb61c9f0282fd664d",
+      "smartsheet-site-validation=dw0MifosV2eGg1JG9ZTtiGpSGNuiqybJ",
+      "autodesk-domain-verification=S6bhF0FKFgY957I6SLKW",
+      "hubspot-developer-verification=Zjk1NTNlNmYtODAxNi00YzNhLTgzNGEtY2JlNWQyNGRhZmFk",
+      "yahoo-verification-key=hbsSgAjgGym9aXgBQSAX5APr5RKaTlmtGlqFTCMIEXo=",
+      "google-site-verification=tHsCd67KywyjuYvvr7V9I4PFTXXznN48z-jvPm20yBE",
+      "atlassian-domain-verification=t2mP/OxdJvz/S28h3o/5egOc105U1aKneVRngll9cfhI4Un8gQxYaQjIPVaKpKpT",
+      "docker-verification=2351a4bf-bc17-42ff-8fca-521e86376280",
+      "miro-verification=b341b9dfb098865b7517b6c662e94e5538603be4",
+      "linear-domain-verification=v82bwvzkpw5w",
+      "censys-domain-verification=9U1U43sYXK5eDeoXbt8WB090FMa8IystN7iMx0waR50S",
       "_hh9zpxhf35itout7v7mwibqktr44s3s",
       "google-site-verification=bgzZGVgOr4py5YcPQHFZYJFJbarBD_shCxIvjQS1grI",
-      "parallels-domain-verification=58886ce349db42dfbfb94599884a65ead28c9543a5c947df8fc596694c81eba6",
-      "censys-domain-verification=9U1U43sYXK5eDeoXbt8WB090FMa8IystN7iMx0waR50S",
-      "logmein-verification-code=fd76bf0c-ec62-4587-bb84-4511579e41f4",
-      "yahoo-verification-key=hbsSgAjgGym9aXgBQSAX5APr5RKaTlmtGlqFTCMIEXo=",
-      "arcules-domain-verification=kEVxs7LUGURYpDYCelXSgp02wBuL6A82zKQMMw8lGzR",
-      "3ae8f0a14f7a4c98a9023fe8947467bd",
-      "miro-verification=b341b9dfb098865b7517b6c662e94e5538603be4",
-      "onetrust-domain-verification=32eb1654587e494fbd3b4f8a54a6b57f",
-      "google-site-verification=Eo-pwhENGkrh6E74BafjjhjK4dGk0B1Tv12bUn5UPSY",
-      "nyy2gbb26yz2kntxp7ynycsvql0swn71",
-      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:aspmx.pardot.com -all",
       "google-site-verification=eye-nbnjs2nv4ll-8vo9ijpgkdvyrs8h2j_1bzkp-t0",
-      "MS=255BA8D56417782169DA12894F5A53521A65F7F2",
-      "apple-domain-verification=hAi0YbrGnN5ny4wm",
-      "docker-verification=2351a4bf-bc17-42ff-8fca-521e86376280",
-      "autodesk-domain-verification=S6bhF0FKFgY957I6SLKW",
-      "yahoo-verification-key=T1Hbkkgw9crF2nr93/q/Zb+IzUPXWSZEmqh1G5VCds0=",
-      "krea-verification=b6d6daff3226c8bdfa48187fc11d00d721aa8ed08878659c1ee40b73104da392",
-      "https://issues.sonatype.org/browse/OSSRH-54682",
-      "onetrust-domain-verification=faca66624bfe477db467f97c7583b7ba",
       "jamf-site-verification=_Y2-z-8UweEkmdMZsNbTJg",
-      "dropbox-domain-verification=oypu2eeh56yg",
-      "pardot_346841_*=de35b68dd0e766cfba41cc068f8b424a6ce7ac92052cb30fe9a4a55ac88a0583",
-      "atlassian-domain-verification=t2mP/OxdJvz/S28h3o/5egOc105U1aKneVRngll9cfhI4Un8gQxYaQjIPVaKpKpT",
-      "snapchat-domain-verification-zx5hhx=Q7zL5FmxwFKyQWOuKc4blSh7k",
-      "yahoo-verification-key=xUKCyvTR9ya3lyjYFuWPLGfSFLC/5C0y2txg4crwEbw=",
-      "google-site-verification=tHsCd67KywyjuYvvr7V9I4PFTXXznN48z-jvPm20yBE",
-      "shopify-verification-code=6AbSmjYHNX0fOCzG0oBfncSsCVJfgT",
-      "smartsheet-site-validation=dw0MifosV2eGg1JG9ZTtiGpSGNuiqybJ",
-      "TAILSCALE-bAU9TfNGoz4iD4hioxcp",
-      "atlassian-domain-verification=P7v4/0SuI03V2xsQfPTYYZLbRwBN1QkqBg4E/zqmJVvyWKraMaJRbamwkK2vWrx0",
       "google-site-verification=Ro2UVvcjx7U_bRc-_HAUELMOxwk4Y6n5FX9FQt8BDsQ",
-      "linear-domain-verification=v82bwvzkpw5w",
-      "canva-site-verification=blQT_XTqOBtV9rXZPJYTvg"
+      "https://issues.sonatype.org/browse/OSSRH-54682",
+      "v=spf1 include:_spf.google.com include:mail.zendesk.com include:aspmx.pardot.com -all",
+      "parallels-domain-verification=58886ce349db42dfbfb94599884a65ead28c9543a5c947df8fc596694c81eba6",
+      "shopify-verification-code=6AbSmjYHNX0fOCzG0oBfncSsCVJfgT",
+      "MS=255BA8D56417782169DA12894F5A53521A65F7F2",
+      "yahoo-verification-key=T1Hbkkgw9crF2nr93/q/Zb+IzUPXWSZEmqh1G5VCds0=",
+      "canva-site-verification=blQT_XTqOBtV9rXZPJYTvg",
+      "atlassian-domain-verification=P7v4/0SuI03V2xsQfPTYYZLbRwBN1QkqBg4E/zqmJVvyWKraMaJRbamwkK2vWrx0",
+      "nyy2gbb26yz2kntxp7ynycsvql0swn71",
+      "onetrust-domain-verification=faca66624bfe477db467f97c7583b7ba",
+      "TAILSCALE-bAU9TfNGoz4iD4hioxcp",
+      "google-site-verification=Eo-pwhENGkrh6E74BafjjhjK4dGk0B1Tv12bUn5UPSY",
+      "krea-verification=b6d6daff3226c8bdfa48187fc11d00d721aa8ed08878659c1ee40b73104da392",
+      "snapchat-domain-verification-zx5hhx=Q7zL5FmxwFKyQWOuKc4blSh7k",
+      "adobe-idp-site-verification=1b7089e1333b1302c4f425ff60baae967ac377d76fb6aa7bb61c9f0282fd664d",
+      "3ae8f0a14f7a4c98a9023fe8947467bd",
+      "openai-domain-verification=dv-qRVXfFNUY6fVpEXy5skTuRnd",
+      "segment-site-verification=e6U89hyQcmGvDFTApWYKvbj7NFSMu8zj",
+      "logmein-verification-code=fd76bf0c-ec62-4587-bb84-4511579e41f4",
+      "apple-domain-verification=hAi0YbrGnN5ny4wm",
+      "pardot_346841_*=de35b68dd0e766cfba41cc068f8b424a6ce7ac92052cb30fe9a4a55ac88a0583",
+      "arcules-domain-verification=kEVxs7LUGURYpDYCelXSgp02wBuL6A82zKQMMw8lGzR",
+      "atlassian-domain-verification=TH6BFQJRvZM36e0pNbXcEI/RpTrqBb2JDxzoBsBLa3RajLrpmc6pK6Quau40P7oa",
+      "dropbox-domain-verification=oypu2eeh56yg"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-report@snapchat.com; rf=afrf; pct=100; ri=86400"
@@ -355,11 +369,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "hubspot-developer-verification=Zjk1NTNlNmYtODAxNi00YzNhLTgzNGEtY2JlNWQyNGRhZmFk",
-    "atlassian-domain-verification=TH6BFQJRvZM36e0pNbXcEI/RpTrqBb2JDxzoBsBLa3RajLrpmc",
-    "openai-domain-verification=dv-qRVXfFNUY6fVpEXy5skTuRnd",
+    "yahoo-verification-key=xUKCyvTR9ya3lyjYFuWPLGfSFLC/5C0y2txg4crwEbw=",
+    "onetrust-domain-verification=32eb1654587e494fbd3b4f8a54a6b57f",
     "anthropic-domain-verification-kg6835=FrP90V31rmTTa7Cu3plqLLMEx",
-    "segment-site-verification=e6U89hyQcmGvDFTApWYKvbj7NFSMu8zj"
+    "autodesk-domain-verification=S6bhF0FKFgY957I6SLKW",
+    "hubspot-developer-verification=Zjk1NTNlNmYtODAxNi00YzNhLTgzNGEtY2JlNWQyNGRhZmFk"
   ],
   "tls2": {
     "alpn": "",
@@ -378,6 +392,28 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
       "crl_urls": [
         "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
         "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
+      ],
+      "san": [
+        "*.snap.com",
+        "*.snapchat.com",
+        "*.ats.snapchat.com",
+        "*.snapads.com",
+        "*.snap-dev.net",
+        "*.snappcm.com",
+        "*.snappcm-dev.com",
+        "*.snapar.com",
+        "*.snapkit.com",
+        "*.arcadiacreativestudio.com",
+        "*.bitmoji.com",
+        "*.lensstudio.com",
+        "*.pixy.com",
+        "*.spectacles.com",
+        "*.api.snapchat.com",
+        "*.sc-gw-dev.snapchat.com",
+        "*.saturn.live",
+        "*.specs.com",
+        "*.api.specs.com",
+        "snap.com"
       ],
       "subject_dn": "310b3009060355040613025553311330110603550408130a43616c69666f726e6961311530130603550407130c53616e7461204d6f6e69636131123010060355040a1309536e617020496e632e3113301106035504030c0a2a2e736e61702e636f6d",
       "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
@@ -448,8 +484,18 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
     "root_status": 301,
     "alt_svc": "h3=\":443\"; ma=2592000"
   },
-  "elapsed_s": 14.9,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.snap.com",
+      "*.snapchat.com",
+      "*.ats.snapchat.com",
+      "*.snapads.com",
+      "*.snap-dev.net"
+    ],
+    "ocsp_http": "http://ocsp.digicert.com"
+  },
+  "elapsed_s": 12.7,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -463,4 +509,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://skype.com/ |
 | Bug bounty program | Microsoft Online Services |
 | Listed scope domain | skype.com |
-| Test date | 2026-09-27 01:33 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 16 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 17 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 18 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 19 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 
 ## Detailed findings
 
@@ -119,7 +121,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=R9lBFA5SoH0CKpHuBMa4akNqb8E8YF8fim8qpGF22mg; facebook-domain-verification=87pranlm54pxjnpg1lp1nc3bcanv3f
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=87pranlm54pxjnpg1lp1nc3bcanv3f; google-site-verification=R9lBFA5SoH0CKpHuBMa4akNqb8E8YF8fim8qpGF22mg
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -146,6 +148,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** Strict-Transport-Security on skype.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of skype.com.
 - **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
 
+### 18. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of skype.com contains wildcard SAN entry(ies) *.microsoft.ch; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 19. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of skype.com is http://oneocsp.microsoft.com/ocsp; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -153,40 +167,40 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "skype.com",
   "dns": {
     "a": [
-      "20.231.239.246",
-      "20.112.250.133",
       "20.70.246.20",
+      "20.231.239.246",
+      "20.76.201.171",
       "20.236.44.162",
-      "20.76.201.171"
+      "20.112.250.133"
     ],
     "aaaa": [
-      "2603:1010:3:3::5b",
+      "2603:1030:b:3::152",
       "2603:1030:20e:3::23c",
-      "2603:1020:201:10::10f",
       "2603:1030:c02:8::14",
-      "2603:1030:b:3::152"
+      "2603:1020:201:10::10f",
+      "2603:1010:3:3::5b"
     ],
     "cname": null,
     "mx": [
       "skype-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns4-205.azure-dns.info.",
-      "ns2-205.azure-dns.net.",
+      "ns3-205.azure-dns.org.",
       "ns1-205.azure-dns.com.",
-      "ns3-205.azure-dns.org."
+      "ns4-205.azure-dns.info.",
+      "ns2-205.azure-dns.net."
     ],
     "caa": [
-      "0 issue \"digicert.com\"",
-      "0 issue \"globalsign.com\"",
       "0 issue \"microsoft.com\"",
-      "0 contactemail \"caarecordaware@microsoft.com\""
+      "0 issue \"globalsign.com\"",
+      "0 contactemail \"caarecordaware@microsoft.com\"",
+      "0 issue \"digicert.com\""
     ],
     "spf": [
-      "v=spf1 include:_spf-ssg-a.microsoft.com ip4:91.190.218.48 ip4:91.190.216.100 -all",
-      "v=msv1 t=6097A7EA-53F7-4028-BA76-6869CB284C54",
+      "facebook-domain-verification=87pranlm54pxjnpg1lp1nc3bcanv3f",
       "google-site-verification=R9lBFA5SoH0CKpHuBMa4akNqb8E8YF8fim8qpGF22mg",
-      "facebook-domain-verification=87pranlm54pxjnpg1lp1nc3bcanv3f"
+      "v=msv1 t=6097A7EA-53F7-4028-BA76-6869CB284C54",
+      "v=spf1 include:_spf-ssg-a.microsoft.com ip4:91.190.218.48 ip4:91.190.216.100 -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:rua@dmarc.microsoft,mailto:skype@rua.netcraft.com; fo=1; ruf=mailto:rua@dmarc.microsoft,mailto:skype@ruf.netcraft.com;"
@@ -386,7 +400,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "20.231.239.246",
+    "ip": "20.70.246.20",
     "open": []
   },
   "https": {
@@ -439,8 +453,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=R9lBFA5SoH0CKpHuBMa4akNqb8E8YF8fim8qpGF22mg",
-    "facebook-domain-verification=87pranlm54pxjnpg1lp1nc3bcanv3f"
+    "facebook-domain-verification=87pranlm54pxjnpg1lp1nc3bcanv3f",
+    "google-site-verification=R9lBFA5SoH0CKpHuBMa4akNqb8E8YF8fim8qpGF22mg"
   ],
   "tls2": {
     "alpn": "",
@@ -459,6 +473,28 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "crl_urls": [
         "http://www.microsoft.com/pkiops/crl/partition/Microsoft%20TLS%20G2%20RSA%20CA%20OCSP%2010_Partition00085.crl",
         "http://crl2.microsoft.com/pkiops/crl/partition/Microsoft%20TLS%20G2%20RSA%20CA%20OCSP%2010_Partition00085.crl"
+      ],
+      "san": [
+        "videobreakdown.com",
+        "edge.ms",
+        "msphu.net",
+        "skype.com",
+        "skype.net",
+        "dynamics.cz",
+        "dynamics.eu",
+        "cosmosdb.com",
+        "indexnow.org",
+        "powerapps.io",
+        "dynamics.asia",
+        "fsinsider.com",
+        "gpu.azure.com",
+        "microsoft.org",
+        "play.gears.gg",
+        "powerapps.com",
+        "*.microsoft.ch",
+        "bingplaces.com",
+        "docs.azure.com",
+        "dynamics365.ae"
       ],
       "subject_dn": "310b3009060355040613025553310b30090603550408130257413110300e060355040713075265646d6f6e64311e301c060355040a13154d6963726f736f667420436f72706f726174696f6e311b301906035504031312766964656f627265616b646f776e2e636f6d",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a13154d6963726f736f667420436f72706f726174696f6e312830260603550403131f4d6963726f736f667420544c5320473220525341204341204f435350203130",
@@ -498,8 +534,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 32.0,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.microsoft.ch"
+    ],
+    "ocsp_http": "http://oneocsp.microsoft.com/ocsp"
+  },
+  "elapsed_s": 31.1,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -513,4 +555,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

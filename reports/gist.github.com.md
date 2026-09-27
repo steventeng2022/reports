@@ -7,12 +7,12 @@
 | Target | https://gist.github.com/ |
 | Bug bounty program | GitHub |
 | Listed scope domain | gist.github.com |
-| Test date | 2026-09-27 01:21 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:31 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
+Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 | 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 | 16 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 17 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 18 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 
 ## Detailed findings
 
@@ -108,7 +110,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=jjgw98AKv2aeoYFxiL/VFaoyPkn3undEssTRuMg6C/3Fp/iqhk; adobe-idp-site-verification=b92c9e999aef825edc36e0a3d847d2dbad5b2fc0e05c79ddd7a1; jamf-site-verification=XtaPNIYghF_e_xRDI8CjgQ
+- **Detail:** Apex TXT records with verification/token content: loom-site-verification=f3787154f1154b7880e720a511ea664d; google-site-verification=82Le34Flgtd15ojYhHlGF_6g72muSjamlMVThBOJpks; miro-verification=d2e174fdb00c71e0bcf58f8e58c3da2dd80dcfa9
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] Cookie scoped to parent domain (.github.com) (`CK5`)
@@ -135,6 +137,18 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - **Detail:** The gist.github.com certificate lists an AIA OCSP responder (http://ocsp.sectigo.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
+### 17. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of gist.github.com contains wildcard SAN entry(ies) *.github.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 18. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of gist.github.com is http://ocsp.sectigo.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -150,50 +164,50 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "github-com.mail.protection.outlook.com (pref 0)"
     ],
     "ns": [
-      "dns1.p08.nsone.net.",
-      "ns-1707.awsdns-21.co.uk.",
       "ns-520.awsdns-01.net.",
       "dns2.p08.nsone.net.",
-      "ns-1283.awsdns-32.org.",
-      "dns3.p08.nsone.net.",
+      "dns4.p08.nsone.net.",
+      "dns1.p08.nsone.net.",
+      "ns-1707.awsdns-21.co.uk.",
       "ns-421.awsdns-52.com.",
-      "dns4.p08.nsone.net."
+      "dns3.p08.nsone.net.",
+      "ns-1283.awsdns-32.org."
     ],
     "caa": [
-      "0 issue \"letsencrypt.org\"",
       "0 issue \"sectigo.com\"",
-      "0 issue \"globalsign.com\"",
-      "0 issue \"digicert.com\"",
-      "0 issuewild \"digicert.com\"",
+      "0 issue \"letsencrypt.org\"",
       "0 issuewild \"sectigo.com\"",
-      "0 issuewild \"letsencrypt.org\""
+      "0 issuewild \"digicert.com\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issue \"digicert.com\"",
+      "0 issue \"globalsign.com\""
     ],
     "spf": [
-      "atlassian-domain-verification=jjgw98AKv2aeoYFxiL/VFaoyPkn3undEssTRuMg6C/3Fp/iqhkV4HVV7WjYlVeF8",
-      "adobe-idp-site-verification=b92c9e999aef825edc36e0a3d847d2dbad5b2fc0e05c79ddd7a16139b48ecf4b",
-      "jamf-site-verification=XtaPNIYghF_e_xRDI8CjgQ",
-      "anthropic-domain-verification-4az7qn=if8YWuRRqwLycGJDooumzHtxm",
-      "loom-site-verification=f3787154f1154b7880e720a511ea664d",
-      "MS=ms44452932",
-      "calendly-site-verification=at0DQARi7IZvJtXQAWhMqpmIzpvoBNF7aam5VKKxP",
-      "openai-domain-verification=dv-3nh33eQwdkotMIAzLrIDVZo1",
       "v=spf1 ip4:192.30.252.0/22 include:spf.protection.outlook.com include:_netblocks.google.com include:_netblocks2.google.com include:mail.zendesk.com include:_spf.salesforce.com include:servers.mcsv.net include:mktomail.com include:sendgrid.net ip4:62.253.2",
       "27.114 ip4:166.78.69.169 ip4:166.78.69.170 ip4:166.78.71.131 ~all",
-      "facebook-domain-verification=39xu4jzl7roi7x0n93ldkxjiaarx50",
+      "loom-site-verification=f3787154f1154b7880e720a511ea664d",
       "00Dd0000000hHE0=1TBKg000000TN2r",
-      "MS=6BF03E6AF5CB689E315FB6199603BABF2C88D805",
-      "krisp-domain-verification=ZlyiK7XLhnaoUQb2hpak1PLY7dFkl1WE",
-      "google-site-verification=UTM-3akMgubp6tQtgEuAkYNYLyYAvpTnnSrDMWoDR3o",
       "google-site-verification=82Le34Flgtd15ojYhHlGF_6g72muSjamlMVThBOJpks",
-      "stripe-verification=f88ef17321660a01bab1660454192e014defa29ba7b8de9633c69d6b4912217f",
-      "docusign=087098e3-3d46-47b7-9b4e-8a23028154cd",
-      "shopify-verification-code=t1YPwcmvnxZyBycaCpk1MPyWoFs72o",
-      "apple-domain-verification=RyQhdzTl6Z6x8ZP4",
-      "cursor-domain-verification-gtfwmt=1rfLOtiTngX5QSxD5HvNKTvm3",
-      "MS=ms58704441",
-      "TAILSCALE-xOzoDvFUzZr5YYVCQFuD",
+      "miro-verification=d2e174fdb00c71e0bcf58f8e58c3da2dd80dcfa9",
+      "jamf-site-verification=XtaPNIYghF_e_xRDI8CjgQ",
       "serval-domain-verification-ydryhj=qbkiEakpwEpTvHh5fIiCqtaue",
-      "miro-verification=d2e174fdb00c71e0bcf58f8e58c3da2dd80dcfa9"
+      "cursor-domain-verification-gtfwmt=1rfLOtiTngX5QSxD5HvNKTvm3",
+      "apple-domain-verification=RyQhdzTl6Z6x8ZP4",
+      "atlassian-domain-verification=jjgw98AKv2aeoYFxiL/VFaoyPkn3undEssTRuMg6C/3Fp/iqhkV4HVV7WjYlVeF8",
+      "docusign=087098e3-3d46-47b7-9b4e-8a23028154cd",
+      "stripe-verification=f88ef17321660a01bab1660454192e014defa29ba7b8de9633c69d6b4912217f",
+      "MS=6BF03E6AF5CB689E315FB6199603BABF2C88D805",
+      "openai-domain-verification=dv-3nh33eQwdkotMIAzLrIDVZo1",
+      "krisp-domain-verification=ZlyiK7XLhnaoUQb2hpak1PLY7dFkl1WE",
+      "adobe-idp-site-verification=b92c9e999aef825edc36e0a3d847d2dbad5b2fc0e05c79ddd7a16139b48ecf4b",
+      "TAILSCALE-xOzoDvFUzZr5YYVCQFuD",
+      "calendly-site-verification=at0DQARi7IZvJtXQAWhMqpmIzpvoBNF7aam5VKKxP",
+      "anthropic-domain-verification-4az7qn=if8YWuRRqwLycGJDooumzHtxm",
+      "facebook-domain-verification=39xu4jzl7roi7x0n93ldkxjiaarx50",
+      "MS=ms44452932",
+      "MS=ms58704441",
+      "google-site-verification=UTM-3akMgubp6tQtgEuAkYNYLyYAvpTnnSrDMWoDR3o",
+      "shopify-verification-code=t1YPwcmvnxZyBycaCpk1MPyWoFs72o"
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -291,11 +305,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
     "github.com"
   ],
   "apex_txt": [
-    "atlassian-domain-verification=jjgw98AKv2aeoYFxiL/VFaoyPkn3undEssTRuMg6C/3Fp/iqhk",
-    "adobe-idp-site-verification=b92c9e999aef825edc36e0a3d847d2dbad5b2fc0e05c79ddd7a1",
+    "loom-site-verification=f3787154f1154b7880e720a511ea664d",
+    "google-site-verification=82Le34Flgtd15ojYhHlGF_6g72muSjamlMVThBOJpks",
+    "miro-verification=d2e174fdb00c71e0bcf58f8e58c3da2dd80dcfa9",
     "jamf-site-verification=XtaPNIYghF_e_xRDI8CjgQ",
-    "anthropic-domain-verification-4az7qn=if8YWuRRqwLycGJDooumzHtxm",
-    "loom-site-verification=f3787154f1154b7880e720a511ea664d"
+    "serval-domain-verification-ydryhj=qbkiEakpwEpTvHh5fIiCqtaue"
   ],
   "tls2": {
     "alpn": "",
@@ -312,6 +326,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
       "bc_ca": null,
       "bc_pathlen": null,
       "crl_urls": null,
+      "san": [
+        "*.github.com",
+        "github.com"
+      ],
       "subject_dn": "3115301306035504030c0c2a2e6769746875622e636f6d",
       "issuer_dn": "310b300906035504061302474231183016060355040a130f5365637469676f204c696d69746564313730350603550403132e5365637469676f205075626c6963205365727665722041757468656e7469636174696f6e20434120445620453336",
       "not_before": "20260830000000",
@@ -366,8 +384,14 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
   "x16": {
     "root_status": 302
   },
-  "elapsed_s": 21.3,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.github.com"
+    ],
+    "ocsp_http": "http://ocsp.sectigo.com"
+  },
+  "elapsed_s": 21.7,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -381,4 +405,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 3, Info: 13)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

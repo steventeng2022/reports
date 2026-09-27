@@ -7,12 +7,12 @@
 | Target | https://fb.com/ |
 | Bug bounty program | Facebook |
 | Listed scope domain | fb.com |
-| Test date | 2026-09-27 01:19 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:29 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,13 +27,17 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 9 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 10 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 11 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 13 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
-| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 15 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 16 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
-| 17 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
-| 18 | info | HTML14 | Public root document marked noindex | CWE-200 |
+| 12 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
+| 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 14 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 17 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
+| 18 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 19 | info | HTML14 | Public root document marked noindex | CWE-200 |
+| 20 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 21 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 22 | info | H13 | Cross-origin isolation only partially configured | CWE-693 |
 
 ## Detailed findings
 
@@ -104,50 +108,74 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: parkable-domain-verification=N89SxXel0S4pUXDFVpckFmXIO9MUvN4Or0bO_Lcb8Os=; atlassian-domain-verification=I7HLjLnlhJiDT58wzrru2Pd/2cRWa3AKlgCjDPOO43GMP7H0Qu; google-site-verification=Dsycvk_Ky3uQjdvuPrI_Z6A98lWghNTntdS4LuATOj8
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=Dsycvk_Ky3uQjdvuPrI_Z6A98lWghNTntdS4LuATOj8; parkable-domain-verification=N89SxXel0S4pUXDFVpckFmXIO9MUvN4Or0bO_Lcb8Os=; slack-domain-verification=98evShJrgCmABvEiYjXPwVbRybZlSnQPoWY0n7WO
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 12. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 12. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
+
+- **CWE:** CWE-603
+- **Detail:** OCSP check via http://ocsp.digicert.com -> http-200
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
+
+### 13. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but fb.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 13. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+### 14. [LOW] CSP present but still allows unsafe directives (`CSP1`)
 
 - **CWE:** CWE-1021
 - **Detail:** Content-Security-Policy of fb.com permits unsafe-inline; inline script injection still executes.
 - **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
-### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 57.144.92.1 carries PTR edge-star-mini-shv-01-tpe5.facebook.com. for fb.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 15. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for fb.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 16. [INFO] Inline scripts without nonce/hash under a CSP (`HTML8`)
+### 17. [INFO] Inline scripts without nonce/hash under a CSP (`HTML8`)
 
 - **CWE:** CWE-1021
 - **Detail:** Root document of fb.com sends a CSP but contains 1 inline script(s) with no nonce- or hash-attribute, so the policy must rely on 'unsafe-inline'.
 - **Recommendation:** Use per-script nonces/hashes and drop 'unsafe-inline'.
 
-### 17. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
+### 18. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
 
 - **CWE:** CWE-200
 - **Detail:** The root response of fb.com carries alt-svc h3=":443"; ma=86400; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
 - **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
 
-### 18. [INFO] Public root document marked noindex (`HTML14`)
+### 19. [INFO] Public root document marked noindex (`HTML14`)
 
 - **CWE:** CWE-200
 - **Detail:** The root document of fb.com is marked noindex (meta robots or X-Robots-Tag); a public homepage that is not indexable is a posture anomaly worth reviewing.
 - **Recommendation:** Confirm the noindex directive is intentional.
+
+### 20. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of fb.com contains wildcard SAN entry(ies) *.fb.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 21. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of fb.com is http://ocsp.digicert.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 22. [INFO] Cross-origin isolation only partially configured (`H13`)
+
+- **CWE:** CWE-693
+- **Detail:** The root of fb.com sends COOP without COEP (same-origin-allow-popups); effective cross-origin isolation requires both COOP and COEP.
+- **Recommendation:** Add the missing header (or remove the partial configuration).
 
 ## Evidence (raw response observations)
 
@@ -163,33 +191,33 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     ],
     "cname": null,
     "mx": [
-      "mx0a-00082601.pphosted.com (pref 20)",
-      "mxa-00082601.gslb.pphosted.com (pref 10)",
       "mx0b-00082601.pphosted.com (pref 20)",
-      "mxb-00082601.gslb.pphosted.com (pref 10)"
+      "mx0a-00082601.pphosted.com (pref 20)",
+      "mxb-00082601.gslb.pphosted.com (pref 10)",
+      "mxa-00082601.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "d.ns.facebook.com.",
-      "c.ns.facebook.com.",
       "a.ns.facebook.com.",
-      "b.ns.facebook.com."
+      "b.ns.facebook.com.",
+      "d.ns.facebook.com.",
+      "c.ns.facebook.com."
     ],
     "caa": [],
     "spf": [
-      "parkable-domain-verification=N89SxXel0S4pUXDFVpckFmXIO9MUvN4Or0bO_Lcb8Os=",
-      "MS=ms56927146",
-      "atlassian-domain-verification=I7HLjLnlhJiDT58wzrru2Pd/2cRWa3AKlgCjDPOO43GMP7H0QuafH6eBts3D1GaP",
-      "docusign=ad7f789d-eff1-4283-9d90-fdc9484527e1",
-      "v=spf1 redirect=_spf.fb.com",
-      "smartsheet-site-validation=r-TtxwzdAh2KN_Zi6mTLGu02fz-9vQU4",
-      "G3X1k1XGYGra1nUpTv7Rdk2wAEFHfkKIr9/4/6+Nu67Ks9cR8xaiqAZPPhis9lGD6mb/+9vygIr4QKXIpxIc7w==",
-      "586957ce-d11e-4efa-9fe5-a887498bf838",
-      "smartsheet-site-validation=sB5xgx-1nsnQCgORYUhnyDG3Jr739OxJ",
-      "mentimeter-16bdc82d-93be-47de-a6d4-fd6adb17c403",
-      "google-site-verification=Dsycvk_Ky3uQjdvuPrI_Z6A98lWghNTntdS4LuATOj8",
       "I2B7AuxY6G1G_NeiaHF-9A0zn-3NDBnlOBi4zItNCU8",
       "mentimeter-8599dcd1-e0da-4326-882e-7570e7c942fb",
-      "slack-domain-verification=98evShJrgCmABvEiYjXPwVbRybZlSnQPoWY0n7WO"
+      "google-site-verification=Dsycvk_Ky3uQjdvuPrI_Z6A98lWghNTntdS4LuATOj8",
+      "v=spf1 redirect=_spf.fb.com",
+      "smartsheet-site-validation=r-TtxwzdAh2KN_Zi6mTLGu02fz-9vQU4",
+      "mentimeter-16bdc82d-93be-47de-a6d4-fd6adb17c403",
+      "G3X1k1XGYGra1nUpTv7Rdk2wAEFHfkKIr9/4/6+Nu67Ks9cR8xaiqAZPPhis9lGD6mb/+9vygIr4QKXIpxIc7w==",
+      "586957ce-d11e-4efa-9fe5-a887498bf838",
+      "MS=ms56927146",
+      "docusign=ad7f789d-eff1-4283-9d90-fdc9484527e1",
+      "parkable-domain-verification=N89SxXel0S4pUXDFVpckFmXIO9MUvN4Or0bO_Lcb8Os=",
+      "slack-domain-verification=98evShJrgCmABvEiYjXPwVbRybZlSnQPoWY0n7WO",
+      "smartsheet-site-validation=sB5xgx-1nsnQCgORYUhnyDG3Jr739OxJ",
+      "atlassian-domain-verification=I7HLjLnlhJiDT58wzrru2Pd/2cRWa3AKlgCjDPOO43GMP7H0QuafH6eBts3D1GaP"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:a@dmarc.facebookmail.com"
@@ -269,10 +297,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "parkable-domain-verification=N89SxXel0S4pUXDFVpckFmXIO9MUvN4Or0bO_Lcb8Os=",
-    "atlassian-domain-verification=I7HLjLnlhJiDT58wzrru2Pd/2cRWa3AKlgCjDPOO43GMP7H0Qu",
     "google-site-verification=Dsycvk_Ky3uQjdvuPrI_Z6A98lWghNTntdS4LuATOj8",
-    "slack-domain-verification=98evShJrgCmABvEiYjXPwVbRybZlSnQPoWY0n7WO"
+    "parkable-domain-verification=N89SxXel0S4pUXDFVpckFmXIO9MUvN4Or0bO_Lcb8Os=",
+    "slack-domain-verification=98evShJrgCmABvEiYjXPwVbRybZlSnQPoWY0n7WO",
+    "atlassian-domain-verification=I7HLjLnlhJiDT58wzrru2Pd/2cRWa3AKlgCjDPOO43GMP7H0Qu"
   ],
   "tls2": {
     "alpn": "",
@@ -292,12 +320,16 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
         "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
         "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
       ],
+      "san": [
+        "*.fb.com",
+        "fb.com"
+      ],
       "subject_dn": "310b3009060355040613025553311330110603550408130a43616c69666f726e6961311330110603550407130a4d656e6c6f205061726b311d301b060355040a13144d65746120506c6174666f726d732c20496e632e3111300f06035504030c082a2e66622e636f6d",
       "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
       "not_before": "20260706000000",
       "not_after": "20261004235959"
     },
-    "ocsp": "explicit-status"
+    "ocsp": "http-200"
   },
   "x12": {
     "status": 400,
@@ -334,8 +366,15 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "alt_svc": "h3=\":443\"; ma=86400",
     "noindex": true
   },
-  "elapsed_s": 9.8,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.fb.com"
+    ],
+    "ocsp_http": "http://ocsp.digicert.com",
+    "isolation_partial": "COOP without COEP"
+  },
+  "elapsed_s": 11.1,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -349,4 +388,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

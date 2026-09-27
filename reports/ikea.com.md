@@ -7,12 +7,12 @@
 | Target | https://ikea.com/ |
 | Bug bounty program | IKEA |
 | Listed scope domain | ikea.com |
-| Test date | 2026-09-27 01:24 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:34 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
+Total findings: **20** (High: 0, Medium: 0, Low: 6, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,8 +33,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 18 | info | CT1 | 93 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 19 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 18 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
+| 19 | info | CT1 | 93 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 20 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -47,13 +48,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.12.173:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.13.173:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.12.173:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.13.173:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -134,7 +135,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: ecostruxure-it-verification=aed1c019-11ed-4ef4-985a-9d57e6880300; openai-domain-verification=dv-NuhNTz6e8ZuA6QC8JPuNWQVI; apple-domain-verification=z2IPRZRTU1JvIXzc
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=lcR3r6mOMUXCfIBeISYyewJZUPc9Z7njjsCWH3wMJTU; airtable-verification=1a7ed489e90d747183dc48f953dc38e2; adobe-sign-verification=cedca323afb86422862e301984996075
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -149,13 +150,19 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 - **Detail:** robots.txt lists 93 disallow path(s), e.g. /, */search/?q=*, */search/products/?q=*, */search/content/?q=*, */search/?category=*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 18. [INFO] 93 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of ikea.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
+### 19. [INFO] 93 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.food.inter.ikea.com, api.inter.ikea.com, cloud.ap-northeast-2.api.homesmart.ikea.com, cloud.ap-southeast-2.api.homesmart.ikea.com, cloud.api.homesmart.ikea.com, cloud.eu-central-1.api.homesmart.ikea.com, cloud.eu-west-1.api.homesmart.ikea.com, cloud.us-east-1.api.homesmart.ikea.com, history.api.homesmart.ikea.com, hub01.api.ikea.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 19. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 20. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: api.inter.ikea.com; content may still be served via virtual-host fallback.
@@ -168,8 +175,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
   "domain": "ikea.com",
   "dns": {
     "a": [
-      "104.18.12.173",
-      "104.18.13.173"
+      "104.18.13.173",
+      "104.18.12.173"
     ],
     "aaaa": [
       "2606:4700::6812:dad",
@@ -180,61 +187,61 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "ikea-com.i-v1.mx.microsoft (pref 0)"
     ],
     "ns": [
-      "udns2.cscdns.uk.",
-      "udns1.cscdns.net."
+      "udns1.cscdns.net.",
+      "udns2.cscdns.uk."
     ],
     "caa": [
-      "0 issuewild \"digicert.com\"",
-      "0 issue \"awstrust.com\"",
-      "0 issue \"amazon.com\"",
-      "0 issuewild \"letsencrypt.org\"",
-      "0 issue \"amazontrust.com\"",
-      "0 issuewild \"amazon.com\"",
-      "0 issuewild \"globalsign.com\"",
-      "0 issuewild \"sectigo.com\"",
-      "0 issuewild \"amazontrust.com\"",
-      "0 issuewild \"awstrust.com\"",
       "0 iodef \"mailto:caa@inter.IKEA.com\"",
-      "0 issue \"digicert.com\"",
-      "0 issuewild \"pki.goog\"",
-      "0 issue \"globalsign.com\"",
-      "0 issue \"amazonaws.com\"",
       "0 issue \"sectigo.com\"",
       "0 issuewild \"amazonaws.com\"",
+      "0 issue \"digicert.com\"",
+      "0 issue \"globalsign.com\"",
+      "0 issuewild \"digicert.com\"",
+      "0 issuewild \"amazon.com\"",
+      "0 issuewild \"pki.goog\"",
       "0 issue \"letsencrypt.org\"",
-      "0 issue \"pki.goog\""
+      "0 issue \"pki.goog\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issuewild \"amazontrust.com\"",
+      "0 issue \"amazonaws.com\"",
+      "0 issuewild \"globalsign.com\"",
+      "0 issuewild \"sectigo.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issue \"awstrust.com\"",
+      "0 issue \"amazontrust.com\"",
+      "0 issuewild \"awstrust.com\""
     ],
     "spf": [
-      "1gsbjx5k4dg72szsrycjtvbjdxnz7f9w",
-      "ecostruxure-it-verification=aed1c019-11ed-4ef4-985a-9d57e6880300",
-      "openai-domain-verification=dv-NuhNTz6e8ZuA6QC8JPuNWQVI",
-      "apple-domain-verification=z2IPRZRTU1JvIXzc",
-      "yf27ml09h67l135bgfj8r7k8l06ct0b0",
-      "ipimblog.azurewebsites.net",
-      "v=spf1 include:_spf.ikea.com include:spf.protection.outlook.com -all",
-      "openai-domain-verification=dv-ruk8aBZomN7tKPUudFE6f4xB",
       "apple-domain-verification=lcR3r6mOMUXCfIBeISYyewJZUPc9Z7njjsCWH3wMJTU",
-      "r9l0gn0j4tfvikcnfsoabna4he",
-      "google-site-verification=eJkdNhxbvSwwMjpJCul26vIgWgojR_DQtUXD9CZMXZY",
-      "c1uaul3js4qk63pu2rlbbipukl",
-      "pendo-domain-verification=kNv_0V-tt2G-fFDGQQ35qbcUUIk",
-      "google-site-verification=5BcCWPMkzRJlhB6Kj1oxpQD-XIiBf1I4axz_YKZhPt8",
-      "ibmid= 402dfd6a-c923-4b4b-8b0b-d48321ad0c03",
-      "google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY",
-      "bc3r1bhgiiv5glji4a4e5q7feq",
-      "google-site-verification=6HRUbiMS72DqS9m1xZA7e2lERsd76qlRP3wjZdbrrr4",
-      "c7w8ywlzkqtsjrj37zwx3rls92xtg2v2",
-      "_0f5qdsfyf94runrfkk8kj91gwjunhv1",
-      "schrgk1ftng0xtbk5hzdm37z1qm50c5x",
-      "google-site-verification=E6gWPPnFbnlfZhWvziCK1jbFr7ovdO740_nfJIsM26g",
       "airtable-verification=1a7ed489e90d747183dc48f953dc38e2",
-      "_0ydey5x097gtj2z92fc6xf342jhw8bm",
-      "9gk35lcm87nrdcur8l5jc95ffg",
-      "pwr1x9yqrt58dp5q97xdqc2tjvbfdpfv",
+      "c7w8ywlzkqtsjrj37zwx3rls92xtg2v2",
       "adobe-sign-verification=cedca323afb86422862e301984996075",
-      "ad44n1huq06eqo04mlhp525gs8",
+      "schrgk1ftng0xtbk5hzdm37z1qm50c5x",
+      "pwr1x9yqrt58dp5q97xdqc2tjvbfdpfv",
+      "yf27ml09h67l135bgfj8r7k8l06ct0b0",
+      "openai-domain-verification=dv-ruk8aBZomN7tKPUudFE6f4xB",
+      "bc3r1bhgiiv5glji4a4e5q7feq",
+      "openai-domain-verification=dv-NuhNTz6e8ZuA6QC8JPuNWQVI",
+      "google-site-verification=E6gWPPnFbnlfZhWvziCK1jbFr7ovdO740_nfJIsM26g",
+      "google-site-verification=snjavwy-fZltgk9KvcOEe73VKX2FVg7YbdH1_GDU9iY",
+      "_0ydey5x097gtj2z92fc6xf342jhw8bm",
+      "ibmid= 402dfd6a-c923-4b4b-8b0b-d48321ad0c03",
+      "c1uaul3js4qk63pu2rlbbipukl",
+      "r9l0gn0j4tfvikcnfsoabna4he",
+      "pendo-domain-verification=kNv_0V-tt2G-fFDGQQ35qbcUUIk",
       "verification=4b7a9cf113659b548dd81c74867cc6e8cdb666dcdedd89006a4b6df841436db9",
-      "vuc9hf2qrdsa1rht6jbsvlmm63"
+      "1gsbjx5k4dg72szsrycjtvbjdxnz7f9w",
+      "9gk35lcm87nrdcur8l5jc95ffg",
+      "v=spf1 include:_spf.ikea.com include:spf.protection.outlook.com -all",
+      "vuc9hf2qrdsa1rht6jbsvlmm63",
+      "google-site-verification=6HRUbiMS72DqS9m1xZA7e2lERsd76qlRP3wjZdbrrr4",
+      "apple-domain-verification=z2IPRZRTU1JvIXzc",
+      "ipimblog.azurewebsites.net",
+      "ad44n1huq06eqo04mlhp525gs8",
+      "ecostruxure-it-verification=aed1c019-11ed-4ef4-985a-9d57e6880300",
+      "_0f5qdsfyf94runrfkk8kj91gwjunhv1",
+      "google-site-verification=5BcCWPMkzRJlhB6Kj1oxpQD-XIiBf1I4axz_YKZhPt8",
+      "google-site-verification=eJkdNhxbvSwwMjpJCul26vIgWgojR_DQtUXD9CZMXZY"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@ikea.com; ruf=mailto:dmarc_ruf@ikea.com"
@@ -253,7 +260,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     "san": [
       "ikea.com"
     ],
-    "days_left": 86,
+    "days_left": 85,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -263,7 +270,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     }
   },
   "ports": {
-    "ip": "104.18.12.173",
+    "ip": "104.18.13.173",
     "open": [
       8080,
       8443
@@ -363,11 +370,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
     ]
   },
   "apex_txt": [
-    "ecostruxure-it-verification=aed1c019-11ed-4ef4-985a-9d57e6880300",
-    "openai-domain-verification=dv-NuhNTz6e8ZuA6QC8JPuNWQVI",
-    "apple-domain-verification=z2IPRZRTU1JvIXzc",
+    "apple-domain-verification=lcR3r6mOMUXCfIBeISYyewJZUPc9Z7njjsCWH3wMJTU",
+    "airtable-verification=1a7ed489e90d747183dc48f953dc38e2",
+    "adobe-sign-verification=cedca323afb86422862e301984996075",
     "openai-domain-verification=dv-ruk8aBZomN7tKPUudFE6f4xB",
-    "apple-domain-verification=lcR3r6mOMUXCfIBeISYyewJZUPc9Z7njjsCWH3wMJTU"
+    "openai-domain-verification=dv-NuhNTz6e8ZuA6QC8JPuNWQVI"
   ],
   "tls2": {
     "alpn": "",
@@ -385,6 +392,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
       "bc_pathlen": null,
       "crl_urls": [
         "http://c.pki.goog/we1/uKC-4RekmUY.crl"
+      ],
+      "san": [
+        "ikea.com"
       ],
       "subject_dn": "3111300f06035504031308696b65612e636f6d",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
@@ -440,8 +450,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 7.1,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {},
+  "elapsed_s": 8.1,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -455,4 +466,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 6, Info: 13)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

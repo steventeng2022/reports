@@ -7,12 +7,12 @@
 | Target | https://telegram.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | telegram.org |
-| Test date | 2026-09-27 01:35 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
+Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 17 | info | TLS20 | Short certificate serial number (< 64 bits) | CWE-347 |
 | 18 | info | SRV1 | Server header discloses a product version | CWE-200 |
 | 19 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
+| 20 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 21 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 22 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
+| 23 | info | HTML16 | Inline event handlers in root document | CWE-79 |
 
 ## Detailed findings
 
@@ -108,13 +112,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 11. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (hsiueg1xaj0u5j.telegram.org and t9fbsexuu4oafc.telegram.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (7m3zuqwee8yyxf.telegram.org and yhlykiviaoh9ky.telegram.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=R-3XYX47JUVHva3pnhnyjx5D72PtSnjtLMLj_tymTAc; yahoo-verification-key=NRNCv6/IcZMkSv28KI97E4zgZVMkk4PejCwNSh8So2k=; google-site-verification=hAtj8VzR8lGDcv80yGd0ST-pMHU8WNU0lkswaau3v2w
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=R-3XYX47JUVHva3pnhnyjx5D72PtSnjtLMLj_tymTAc; google-site-verification=hAtj8VzR8lGDcv80yGd0ST-pMHU8WNU0lkswaau3v2w; yahoo-verification-key=NRNCv6/IcZMkSv28KI97E4zgZVMkk4PejCwNSh8So2k=
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -126,7 +130,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 14. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xk1uqtpicee139.html -> 404; error page/headers match: Nginx.
+- **Detail:** GET /xkuhi9bwngw4ac.html -> 404; error page/headers match: Nginx.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 15. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -159,6 +163,30 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - **Detail:** /security.txt on telegram.org is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
 - **Recommendation:** Confirm the published contact is current and monitored (RFC 9116).
 
+### 20. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of telegram.org contains wildcard SAN entry(ies) *.telegram.org; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 21. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of telegram.org is http://ocsp.godaddy.com/; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 22. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of telegram.org declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
+### 23. [INFO] Inline event handlers in root document (`HTML16`)
+
+- **CWE:** CWE-79
+- **Detail:** The root document of telegram.org contains 9 inline event handler attribute(s); each is a DOM-level execution point that SRI does not constrain.
+- **Recommendation:** Move handlers to external scripts where feasible and keep them covered by CSP.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -173,21 +201,21 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     ],
     "cname": null,
     "mx": [
-      "mx101.telegram.org (pref 10)",
-      "mx110.telegram.org (pref 15)"
+      "mx110.telegram.org (pref 15)",
+      "mx101.telegram.org (pref 10)"
     ],
     "ns": [
+      "ns-cloud-b3.googledomains.com.",
       "ns-cloud-b1.googledomains.com.",
       "ns-cloud-b4.googledomains.com.",
-      "ns-cloud-b3.googledomains.com.",
       "ns-cloud-b2.googledomains.com."
     ],
     "caa": [],
     "spf": [
       "google-site-verification=R-3XYX47JUVHva3pnhnyjx5D72PtSnjtLMLj_tymTAc",
-      "v=spf1 ip4:95.161.64.0/28 ip4:95.161.64.16/30 ip4:149.154.160.0/20 ip4:149.154.162.125/32 ip4:149.154.162.247/32 -all",
+      "google-site-verification=hAtj8VzR8lGDcv80yGd0ST-pMHU8WNU0lkswaau3v2w",
       "yahoo-verification-key=NRNCv6/IcZMkSv28KI97E4zgZVMkk4PejCwNSh8So2k=",
-      "google-site-verification=hAtj8VzR8lGDcv80yGd0ST-pMHU8WNU0lkswaau3v2w"
+      "v=spf1 ip4:95.161.64.0/28 ip4:95.161.64.16/30 ip4:149.154.160.0/20 ip4:149.154.162.125/32 ip4:149.154.162.247/32 -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; aspf=r; sp=reject; rua=mailto:dmarc@telegram.org"
@@ -276,8 +304,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "wildcard_dns": true,
   "apex_txt": [
     "google-site-verification=R-3XYX47JUVHva3pnhnyjx5D72PtSnjtLMLj_tymTAc",
-    "yahoo-verification-key=NRNCv6/IcZMkSv28KI97E4zgZVMkk4PejCwNSh8So2k=",
-    "google-site-verification=hAtj8VzR8lGDcv80yGd0ST-pMHU8WNU0lkswaau3v2w"
+    "google-site-verification=hAtj8VzR8lGDcv80yGd0ST-pMHU8WNU0lkswaau3v2w",
+    "yahoo-verification-key=NRNCv6/IcZMkSv28KI97E4zgZVMkk4PejCwNSh8So2k="
   ],
   "tls2": {
     "alpn": "",
@@ -295,6 +323,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.godaddy.com/gdr1v1dv_s1-13.crl"
+      ],
+      "san": [
+        "*.telegram.org",
+        "telegram.org"
       ],
       "subject_dn": "3117301506035504030c0e2a2e74656c656772616d2e6f7267",
       "issuer_dn": "310b300906035504061302555331143012060355040a130b476f44616464792e636f6d312e302c06035504031325476f446164647920544c5320496e7465726d656469617465204341204456202d2052317631",
@@ -342,8 +374,15 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "x16": {
     "root_status": 200
   },
-  "elapsed_s": 35.6,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.telegram.org"
+    ],
+    "ocsp_http": "http://ocsp.godaddy.com/",
+    "inline_handlers": 9
+  },
+  "elapsed_s": 38.6,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -357,4 +396,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

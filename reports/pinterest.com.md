@@ -7,12 +7,12 @@
 | Target | https://pinterest.com/ |
 | Bug bounty program | Pinterest |
 | Listed scope domain | pinterest.com |
-| Test date | 2026-09-27 01:30 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:41 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
+Total findings: **16** (High: 0, Medium: 0, Low: 4, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,6 +29,9 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 | 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 15 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 16 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -108,7 +111,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=ROV7s4DFtQ5T6mqp_PnThPrA3J8cLSSfIvmDJCcM-Rk; cursor-domain-verification-vyc8km=a5aBskJG8rDWOTCVrmI6gBHfb; google-site-verification=417aaeLwriDzNgFX-W8AC4BfpRxlO_h-XDkUL0vFflM
+- **Detail:** Apex TXT records with verification/token content: browserstack-domain-verification=b57d2484-2df5-41d4-9b7e-5e8fed11b781; postman-domain-verification=142fa709f30458c470545ae61a557bdc54690989c11d4bc4c1fa; facebook-domain-verification=2pkj9rox53bgoy96jten5vrid77mv7
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -116,6 +119,24 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 653 disallow path(s), e.g. /*/*/*/_tools/*, /*/*/*/more_ideas/, /*/*/_tools/*, /*/*/activity/*, /*/*/group/
 - **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 14. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of pinterest.com contains wildcard SAN entry(ies) *.pinterest.com, *.pinimg.com, *.pinterest.info; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 15. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of pinterest.com is http://ocsp.digicert.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 16. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of pinterest.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
 
 ## Evidence (raw response observations)
 
@@ -132,65 +153,65 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "alt4.aspmx.l.google.com (pref 10)"
+      "alt4.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns10.pinterest.com.",
-      "ns9.pinterest.com.",
       "ns6.pinterest.com.",
-      "ns5.pinterest.com."
+      "ns10.pinterest.com.",
+      "ns5.pinterest.com.",
+      "ns9.pinterest.com."
     ],
     "caa": [
       "0 issue \"digicert.com; cansignhttpexchanges=yes\""
     ],
     "spf": [
-      "google-site-verification=ROV7s4DFtQ5T6mqp_PnThPrA3J8cLSSfIvmDJCcM-Rk",
-      "cursor-domain-verification-vyc8km=a5aBskJG8rDWOTCVrmI6gBHfb",
-      "google-site-verification=417aaeLwriDzNgFX-W8AC4BfpRxlO_h-XDkUL0vFflM",
-      "CKO=cli_cyft6no6jdbuzmltnrp3egprzy",
-      "anthropic-domain-verification-c1b7dr=bBfPNbyIXzGWEhqJ24pOJ6W0u",
-      "facebook-domain-verification=2pkj9rox53bgoy96jten5vrid77mv7",
-      "yandex-verification: 9448cd71fe506a76",
-      "00DOt000015E6TZ=1TBOt0000000bfV",
-      "happeo-site-verification=38d7bd5177a34890878877d099afe22f",
-      "1password-site-verification=WCNWOT5Q6BDF3JCLBGSCDZO4AE",
-      "dcao2catgy34x.cloudfront.net",
-      "ZOOM_verify_noGVfZnQStK_Xkext4FibQ",
-      "00DOt00000pkQbd=1TBOt0000000PmP",
-      "v=spf1 redirect=_spf.pinterest.com",
-      "tiktok-developers-site-verification=b3h14NLD33KKuBsuEh2JssxoMIzGTYbw",
-      "sprout-social-668b8426-fc96-4bdb-b970-5e3ee11884c9",
-      "postman-domain-verification=142fa709f30458c470545ae61a557bdc54690989c11d4bc4c1fa0024f2633301472dede2e6f991eb8f711acc29e99803b459917344d52b9bd0c96cdd4e9b9609",
-      "paloaltonetworks-site-verification=87ccfc26e7b2486ad8e407c6ed99e788937e68856e3091665b3a942fb44f7646",
-      "work-accounts-domain-verification=xWymOmluA0vPNLJQaf4StWL68TsfRh",
-      "google-site-verification=NL3G6_2q9FrmNnriQD18LIAVfmthnoRMIatQzD_MhTI",
-      "loom-site-verification=5a36a427d0674ac5b53de45d12741f68",
-      "miro-verification=8739d427e9a419960e9fbb1f86941c3b74e47415",
-      "docker-verification=b02df65b-3c5d-4537-b019-4537f40d5d6e",
-      "gamma-domain-verification-x88yj9=4PkqRMwC3FhyTAYr0aoXhOCTH",
-      "openai-domain-verification=dv-FvRuqwrE1vLdGpJp5PlbPvQr",
-      "docusign=7247a7f7-68c2-4f62-bb95-06c52d85d646",
-      "twilio-domain-verification=b2a4a22e61255ba1b4a7ca8dd87f861e",
-      "TAILSCALE-p6rAjPzJIKMJiQCiFQ1p",
-      "freepik-domain-verification=c716162ae55dce0d8daa58814f14aa8f",
-      "c5ce3936-9dec-4ee6-b044-55cb8ea62f04",
-      "applause-verification:2d72e729-a6d6-47c8-82f9-8adc27830272",
-      "canva-site-verification=a6iVl7OoKkmq61eoJl2EXQ",
-      "arkose-domain-verify=2cnrb3du4uwyva8jqv9kun47z36982e6",
-      "apple-domain-verification=fR4SkeFsfvTQqwcL",
-      "docusign=181669b6-686c-408b-ac15-076711ffc372",
-      "CKO=cli_2yspwwmpzjpezmdjr5ivf4kbcu",
-      "MS=ms18016700",
       "mgverify=a37224d064fb37fa047c67fecac02932e7cdc68e4a12addcb9762e52efa7c1f1",
-      "00D1N000000GSLM=1TBPW00000002WT",
-      "liveramp-site-verification=vkCU0rzeleXDe3XcsQSxGrcPwe9HTOJ1Iz9ZXKTXAJg",
+      "dcao2catgy34x.cloudfront.net",
       "browserstack-domain-verification=b57d2484-2df5-41d4-9b7e-5e8fed11b781",
-      "atlassian-domain-verification=VvwbKGkKpnJiNIesXRcvnY12kzfIjT/wvmUb20l7mKjTN9IseYMUKstqdhwnSe59",
-      "loom-verification=9088334975"
+      "CKO=cli_2yspwwmpzjpezmdjr5ivf4kbcu",
+      "postman-domain-verification=142fa709f30458c470545ae61a557bdc54690989c11d4bc4c1fa0024f2633301472dede2e6f991eb8f711acc29e99803b459917344d52b9bd0c96cdd4e9b9609",
+      "facebook-domain-verification=2pkj9rox53bgoy96jten5vrid77mv7",
+      "work-accounts-domain-verification=xWymOmluA0vPNLJQaf4StWL68TsfRh",
+      "MS=ms18016700",
+      "arkose-domain-verify=2cnrb3du4uwyva8jqv9kun47z36982e6",
+      "loom-verification=9088334975",
+      "anthropic-domain-verification-c1b7dr=bBfPNbyIXzGWEhqJ24pOJ6W0u",
+      "apple-domain-verification=fR4SkeFsfvTQqwcL",
+      "tiktok-developers-site-verification=b3h14NLD33KKuBsuEh2JssxoMIzGTYbw",
+      "ZOOM_verify_noGVfZnQStK_Xkext4FibQ",
+      "canva-site-verification=a6iVl7OoKkmq61eoJl2EXQ",
+      "00D1N000000GSLM=1TBPW00000002WT",
+      "TAILSCALE-p6rAjPzJIKMJiQCiFQ1p",
+      "paloaltonetworks-site-verification=87ccfc26e7b2486ad8e407c6ed99e788937e68856e3091665b3a942fb44f7646",
+      "openai-domain-verification=dv-FvRuqwrE1vLdGpJp5PlbPvQr",
+      "yandex-verification: 9448cd71fe506a76",
+      "applause-verification:2d72e729-a6d6-47c8-82f9-8adc27830272",
+      "liveramp-site-verification=vkCU0rzeleXDe3XcsQSxGrcPwe9HTOJ1Iz9ZXKTXAJg",
+      "miro-verification=8739d427e9a419960e9fbb1f86941c3b74e47415",
+      "docusign=181669b6-686c-408b-ac15-076711ffc372",
+      "docker-verification=b02df65b-3c5d-4537-b019-4537f40d5d6e",
+      "c5ce3936-9dec-4ee6-b044-55cb8ea62f04",
+      "docusign=7247a7f7-68c2-4f62-bb95-06c52d85d646",
+      "1password-site-verification=WCNWOT5Q6BDF3JCLBGSCDZO4AE",
+      "CKO=cli_cyft6no6jdbuzmltnrp3egprzy",
+      "happeo-site-verification=38d7bd5177a34890878877d099afe22f",
+      "google-site-verification=NL3G6_2q9FrmNnriQD18LIAVfmthnoRMIatQzD_MhTI",
+      "sprout-social-668b8426-fc96-4bdb-b970-5e3ee11884c9",
+      "00DOt00000pkQbd=1TBOt0000000PmP",
+      "twilio-domain-verification=b2a4a22e61255ba1b4a7ca8dd87f861e",
+      "freepik-domain-verification=c716162ae55dce0d8daa58814f14aa8f",
+      "google-site-verification=ROV7s4DFtQ5T6mqp_PnThPrA3J8cLSSfIvmDJCcM-Rk",
+      "google-site-verification=417aaeLwriDzNgFX-W8AC4BfpRxlO_h-XDkUL0vFflM",
+      "v=spf1 redirect=_spf.pinterest.com",
+      "gamma-domain-verification-x88yj9=4PkqRMwC3FhyTAYr0aoXhOCTH",
+      "cursor-domain-verification-vyc8km=a5aBskJG8rDWOTCVrmI6gBHfb",
+      "00DOt000015E6TZ=1TBOt0000000bfV",
+      "loom-site-verification=5a36a427d0674ac5b53de45d12741f68",
+      "atlassian-domain-verification=VvwbKGkKpnJiNIesXRcvnY12kzfIjT/wvmUb20l7mKjTN9IseYMUKstqdhwnSe59"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; pct=100; rua=mailto:o4khm-8732@rua.dmarc.emailanalyst.com; ruf=mailto:o4khm-8732@ruf.dmarc.emailanalyst.com"
@@ -364,11 +385,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=ROV7s4DFtQ5T6mqp_PnThPrA3J8cLSSfIvmDJCcM-Rk",
-    "cursor-domain-verification-vyc8km=a5aBskJG8rDWOTCVrmI6gBHfb",
-    "google-site-verification=417aaeLwriDzNgFX-W8AC4BfpRxlO_h-XDkUL0vFflM",
-    "anthropic-domain-verification-c1b7dr=bBfPNbyIXzGWEhqJ24pOJ6W0u",
-    "facebook-domain-verification=2pkj9rox53bgoy96jten5vrid77mv7"
+    "browserstack-domain-verification=b57d2484-2df5-41d4-9b7e-5e8fed11b781",
+    "postman-domain-verification=142fa709f30458c470545ae61a557bdc54690989c11d4bc4c1fa",
+    "facebook-domain-verification=2pkj9rox53bgoy96jten5vrid77mv7",
+    "work-accounts-domain-verification=xWymOmluA0vPNLJQaf4StWL68TsfRh",
+    "loom-verification=9088334975"
   ],
   "tls2": {
     "alpn": "",
@@ -387,6 +408,28 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
       "crl_urls": [
         "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
         "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
+      ],
+      "san": [
+        "*.pinterest.com",
+        "*.pinimg.com",
+        "*.pinterest.info",
+        "*.pinterest.engineering",
+        "*.pinterestmail.com",
+        "*.pinterest.at",
+        "*.pinterest.ch",
+        "*.pinterest.de",
+        "*.pinterest.dk",
+        "*.pinterest.ie",
+        "*.pinterest.jp",
+        "*.pinterest.kr",
+        "*.pinterest.mx",
+        "*.pinterest.pt",
+        "*.pinterest.se",
+        "*.pinterest.co.at",
+        "*.pinterest.co.kr",
+        "*.pinterest.co.uk",
+        "*.pinterest.com.mx",
+        "pin.it"
       ],
       "subject_dn": "310b3009060355040613025553311330110603550408130a43616c69666f726e6961311630140603550407130d53616e204672616e636973636f31183016060355040a130f50696e7465726573742c20496e632e3118301606035504030c0f2a2e70696e7465726573742e636f6d",
       "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
@@ -446,8 +489,18 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
   "x16": {
     "root_status": 308
   },
-  "elapsed_s": 43.9,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.pinterest.com",
+      "*.pinimg.com",
+      "*.pinterest.info",
+      "*.pinterest.engineering",
+      "*.pinterestmail.com"
+    ],
+    "ocsp_http": "http://ocsp.digicert.com"
+  },
+  "elapsed_s": 17.3,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -461,4 +514,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 4, Info: 9)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://lmgtfy.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | lmgtfy.com |
-| Test date | 2026-09-27 01:26 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:36 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
+Total findings: **32** (High: 0, Medium: 0, Low: 5, Info: 27)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -44,7 +44,10 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
 | 26 | info | HTML7 | Insecure http:// references inside an HTTPS document | CWE-319 |
 | 27 | info | HTML11 | Document references many third-party domains | CWE-200 |
 | 28 | info | HTML10 | Plaintext email addresses in the document | CWE-200 |
-| 29 | info | CT1 | 6 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 29 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 30 | info | H12 | Proxy/edge hop chain disclosed via Via | CWE-200 |
+| 31 | info | HTML16 | Inline event handlers in root document | CWE-79 |
+| 32 | info | CT1 | 6 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -150,13 +153,13 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
 ### 16. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (7cr67d5wwqxex0.lmgtfy.com and w95zjjll4jv569.lmgtfy.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (ird7x1t3e2eiea.lmgtfy.com and mk4dhf7p7n9kh9.lmgtfy.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=9hYmfh01IK_jYdX0bmBW8neNpJaBHFwlyeWgTC6jenU; google-site-verification=3XLdZhUjpU6Y-BX4FPOeXDUP7W3WnpqtzWEJy2Yx5yE; google-site-verification=exfIwqRniT2rsPd2sDsMz5T19r0dqL7isibd--oVZLM
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=exfIwqRniT2rsPd2sDsMz5T19r0dqL7isibd--oVZLM; facebook-domain-verification=zcrcalu1jcrr2kzzo618qpli028r9l; google-site-verification=9hYmfh01IK_jYdX0bmBW8neNpJaBHFwlyeWgTC6jenU
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -180,13 +183,13 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
 ### 21. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 35.71.179.82 carries PTR a5a79225c76df2e39.awsglobalaccelerator.com. for lmgtfy.com.
+- **Detail:** 75.2.60.68 carries PTR a5a79225c76df2e39.awsglobalaccelerator.com. for lmgtfy.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 22. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkosdj3sqhsypg.html -> 404; error page/headers match: Heroku.
+- **Detail:** GET /xk62487fztkwi0.html -> 404; error page/headers match: Heroku.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 23. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -225,7 +228,25 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
 - **Detail:** Root document of lmgtfy.com contains 1 plaintext email address(es) (e.g. staff@lmgtfy.com); these are harvestable by bots.
 - **Recommendation:** Use a contact form or mailto obfuscation for non-critical addresses.
 
-### 29. [INFO] 6 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 29. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of lmgtfy.com contains wildcard SAN entry(ies) *.lmgtfy.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 30. [INFO] Proxy/edge hop chain disclosed via Via (`H12`)
+
+- **CWE:** CWE-200
+- **Detail:** The root of lmgtfy.com discloses a 1-hop fronting chain (1.1 heroku-router); the hop sequence inventories the intermediate edge/proxy layers in front of the origin.
+- **Recommendation:** Confirm each hop is an intended layer; trim chain disclosure if unnecessary.
+
+### 31. [INFO] Inline event handlers in root document (`HTML16`)
+
+- **CWE:** CWE-79
+- **Detail:** The root document of lmgtfy.com contains 40 inline event handler attribute(s); each is a DOM-level execution point that SRI does not constrain.
+- **Recommendation:** Move handlers to external scripts where feasible and keep them covered by CSP.
+
+### 32. [INFO] 6 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.lmgtfy.com, blog.lmgtfy.com, shop.lmgtfy.com
@@ -238,37 +259,37 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
   "domain": "lmgtfy.com",
   "dns": {
     "a": [
-      "35.71.179.82",
       "75.2.60.68",
-      "13.248.244.96",
-      "99.83.220.108"
+      "35.71.179.82",
+      "99.83.220.108",
+      "13.248.244.96"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "aspmx2.googlemail.com (pref 30)",
+      "aspmx.l.google.com (pref 10)",
       "aspmx5.googlemail.com (pref 30)",
-      "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx3.googlemail.com (pref 30)",
       "aspmx4.googlemail.com (pref 30)",
       "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx2.googlemail.com (pref 30)",
-      "aspmx3.googlemail.com (pref 30)",
-      "aspmx.l.google.com (pref 10)"
+      "alt2.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
-      "ns3.dnsimple.com.",
+      "ns1.dnsimple.com.",
       "ns2.dnsimple.com.",
       "ns4.dnsimple.com.",
-      "ns1.dnsimple.com."
+      "ns3.dnsimple.com."
     ],
     "caa": [],
     "spf": [
-      "google-site-verification=9hYmfh01IK_jYdX0bmBW8neNpJaBHFwlyeWgTC6jenU",
       "v=spf1 a mx include:_spf.google.com include:cmail1.com include:spf.mtasv.net ~all",
-      "google-site-verification=3XLdZhUjpU6Y-BX4FPOeXDUP7W3WnpqtzWEJy2Yx5yE",
       "google-site-verification=exfIwqRniT2rsPd2sDsMz5T19r0dqL7isibd--oVZLM",
-      "google-site-verification=k61zckJgSciuGexCcNESZhBUNhs_72dxkZJRB9Yd1Oc",
+      "SEARCH_SAFER_INC_OWNS_LMGTFY_COM",
       "facebook-domain-verification=zcrcalu1jcrr2kzzo618qpli028r9l",
-      "SEARCH_SAFER_INC_OWNS_LMGTFY_COM"
+      "google-site-verification=9hYmfh01IK_jYdX0bmBW8neNpJaBHFwlyeWgTC6jenU",
+      "google-site-verification=k61zckJgSciuGexCcNESZhBUNhs_72dxkZJRB9Yd1Oc",
+      "google-site-verification=3XLdZhUjpU6Y-BX4FPOeXDUP7W3WnpqtzWEJy2Yx5yE"
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -296,7 +317,7 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
     }
   },
   "ports": {
-    "ip": "35.71.179.82",
+    "ip": "75.2.60.68",
     "open": []
   },
   "https": {
@@ -377,11 +398,11 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=9hYmfh01IK_jYdX0bmBW8neNpJaBHFwlyeWgTC6jenU",
-    "google-site-verification=3XLdZhUjpU6Y-BX4FPOeXDUP7W3WnpqtzWEJy2Yx5yE",
     "google-site-verification=exfIwqRniT2rsPd2sDsMz5T19r0dqL7isibd--oVZLM",
+    "facebook-domain-verification=zcrcalu1jcrr2kzzo618qpli028r9l",
+    "google-site-verification=9hYmfh01IK_jYdX0bmBW8neNpJaBHFwlyeWgTC6jenU",
     "google-site-verification=k61zckJgSciuGexCcNESZhBUNhs_72dxkZJRB9Yd1Oc",
-    "facebook-domain-verification=zcrcalu1jcrr2kzzo618qpli028r9l"
+    "google-site-verification=3XLdZhUjpU6Y-BX4FPOeXDUP7W3WnpqtzWEJy2Yx5yE"
   ],
   "tls2": {
     "alpn": "",
@@ -399,6 +420,10 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
       "bc_pathlen": null,
       "crl_urls": [
         "http://ye2.c.lencr.org/87.crl"
+      ],
+      "san": [
+        "*.lmgtfy.com",
+        "lmgtfy.com"
       ],
       "subject_dn": "3115301306035504030c0c2a2e6c6d677466792e636f6d",
       "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303594532",
@@ -448,8 +473,15 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
   "x16": {
     "root_status": 200
   },
-  "elapsed_s": 36.8,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.lmgtfy.com"
+    ],
+    "via": "1.1 heroku-router",
+    "inline_handlers": 40
+  },
+  "elapsed_s": 38.6,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -463,4 +495,5 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

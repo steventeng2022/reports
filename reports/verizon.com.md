@@ -7,12 +7,12 @@
 | Target | https://verizon.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | verizon.com |
-| Test date | 2026-09-27 01:36 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
+Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 | 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 14 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 15 | info | HTML10 | Plaintext email addresses in the document | CWE-200 |
+| 16 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 17 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -111,13 +113,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=aj1ES5iXBorxgboMWU4jPaWG8ufdkUqPAZ98L4Z4FxPtlETrOS; Dynatrace-site-verification=6219e2d6-0d4c-42b0-aa3f-bf137c76e0ef__lc47bag6133ot2; quickbase-site-verification-922ae18c23918d07de301f714e7747cabad0e6ce
+- **Detail:** Apex TXT records with verification/token content: quickbase-site-verification-922ae18c23918d07de301f714e7747cabad0e6ce; mongodb-site-verification=6vBJxn6M8ujjAATlYkC5bRNXjD4sUiRf; airtable-verification=c7ec519ab4f7b83da45d01617d013506
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 23.40.244.108 carries PTR a23-40-244-108.deploy.static.akamaitechnologies.com. for verizon.com.
+- **Detail:** 23.206.62.107 carries PTR a23-206-62-107.deploy.static.akamaitechnologies.com. for verizon.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 14. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
@@ -132,6 +134,18 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - **Detail:** Root document of verizon.com contains 1 plaintext email address(es) (e.g. vzgtsasapmonitoring@verizonwireless.com); these are harvestable by bots.
 - **Recommendation:** Use a contact form or mailto obfuscation for non-critical addresses.
 
+### 16. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of verizon.com is http://ocsp.digicert.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 17. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of verizon.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -139,16 +153,16 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
   "domain": "verizon.com",
   "dns": {
     "a": [
-      "23.40.244.108",
       "23.206.62.107",
       "23.53.5.117",
-      "23.206.59.110",
-      "23.206.57.108",
+      "23.206.61.108",
+      "23.40.244.108",
       "23.206.60.108",
-      "23.206.63.107",
       "23.206.58.110",
       "23.206.56.116",
-      "23.206.61.108"
+      "23.206.59.110",
+      "23.206.63.107",
+      "23.206.57.108"
     ],
     "aaaa": [],
     "cname": null,
@@ -157,68 +171,68 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "mxa-0024a201.gslb.pphosted.com (pref 15)"
     ],
     "ns": [
-      "a9-67.akam.net.",
-      "a24-66.akam.net.",
-      "a26-67.akam.net.",
-      "a13-67.akam.net.",
       "a12-65.akam.net.",
-      "a1-18.akam.net."
+      "a24-66.akam.net.",
+      "a9-67.akam.net.",
+      "a26-67.akam.net.",
+      "a1-18.akam.net.",
+      "a13-67.akam.net."
     ],
     "caa": [
-      "0 issue \"digicert.com\"",
       "0 issue \"letsencrypt.org\"",
-      "0 issue \"amazon.com\""
+      "0 issue \"amazon.com\"",
+      "0 issue \"digicert.com\""
     ],
     "spf": [
-      "q5c6fp9dz62p3yxbgjrfsmr9d0wm705p",
-      "0gydk8ylzblmdk89rrh71z6vq8csbd4j",
-      "EFrYNbG8uzynGvptGZk9HtN4Lm3prlj/zxlKEuFuGuCT614NJoj7M8m3YoFYzfpafIrQATFeKoHKqZOCDzKt/w==",
-      "atlassian-domain-verification=aj1ES5iXBorxgboMWU4jPaWG8ufdkUqPAZ98L4Z4FxPtlETrOSCwWPopYp326Boi",
-      "Dynatrace-site-verification=6219e2d6-0d4c-42b0-aa3f-bf137c76e0ef__lc47bag6133ot2qms6uqkhqmkg",
-      "zv5q0hfc968n8pzr19b9vzqk5w75dcr2",
       "quickbase-site-verification-922ae18c23918d07de301f714e7747cabad0e6ce",
-      "miro-verification=cb4542e8a7b94284a46cef7263ff93a0a8981ccc",
-      "v=spf1 include:verizonwireless.com ~all",
-      "zfk8y8l5fh15lrg8dsk27ks1j51869tw",
-      "google-site-verification=Y3Q2T99tU_-XF206jqXW_UugVEHCvpzvPnIk5hYL2Bk",
-      "_87362fr0avm39qsoglpth1t9iocx3h0",
-      "_w6n6znye04ehtb3ugsmxtzhvkvu4h66",
-      "docker-verification=f22a41ee-7281-4719-a023-ff82e56fd556",
-      "ct55qq4v9hkbzvr613bg3nj4zqs82410",
-      "_60467rwxiajhlol2lvhpvkdp6849tto",
-      "flexera-domain-verification-ffgblppxwzuqqveo",
-      "_q8n9oay9918jw5gr4o497lxper8vgf9",
-      "flexera-domain-verification-bpuabamsmujihlzs",
-      "Dynatrace-site-verification=9b5e8c85-ffc6-4ee3-80a4-01c14607d287__pdi80imbksqp54emrr20d3gph8",
-      "anthropic-domain-verification-dh9nvq=MZi3jVJdupvG2ZzJKBbuDIzF8",
-      "VaI7HAA7sB1/Nj9AfhmIpdfZyiwqm7N7pf9UApsrhO0=",
-      "dwpv611b3xgfp7ymnj2yd18kvdfc93lm",
-      "adobe-sign-verification=5c72a7e0c328f6774716059ec6fb7da6049813116d899e3483577d0896e7544c",
+      "2emAY6c1D+CgmANq0s7xHidy8qnyE6WStN33LPNuG/hd0aBm9xBLt6ZeIl7bfQR1VIMPYtYt3FlRkIcNWId/+A==",
+      "mongodb-site-verification=6vBJxn6M8ujjAATlYkC5bRNXjD4sUiRf",
       "airtable-verification=c7ec519ab4f7b83da45d01617d013506",
-      "Precisely-domain-verification",
-      "_v5t56ssq25ktk2khlhxdq84ct19wha1",
+      "docusign=4a19cd69-5db5-4663-b70e-6600f177dae2",
+      "g0s1gq156v9thvrtvmg4smn6fhgcxqnl",
+      "adobe-sign-verification=5c72a7e0c328f6774716059ec6fb7da6049813116d899e3483577d0896e7544c",
+      "zv5q0hfc968n8pzr19b9vzqk5w75dcr2",
+      "google-site-verification=tZDve57pSHTO7eOO90j3R3wUIdpqq9pCrPCCauMcfbc",
+      "00Dfn00000BO1uH=1TBaJ00000008Yf",
+      "docker-verification=f22a41ee-7281-4719-a023-ff82e56fd556",
+      "_q8n9oay9918jw5gr4o497lxper8vgf9",
+      "google-site-verification=KC5CJC5e0rzcxlINJHJcTM5U4b5Pr211cGU8diogsKI",
+      "ct55qq4v9hkbzvr613bg3nj4zqs82410",
+      "flexera-domain-verification-kqnfpwapzjwcdtjl",
+      "Dynatrace-site-verification=6219e2d6-0d4c-42b0-aa3f-bf137c76e0ef__lc47bag6133ot2qms6uqkhqmkg",
+      "VaI7HAA7sB1/Nj9AfhmIpdfZyiwqm7N7pf9UApsrhO0=",
+      "docusign=9f9bf7a4-31a7-42bd-989d-b177ae520342",
+      "zfk8y8l5fh15lrg8dsk27ks1j51869tw",
+      "q5c6fp9dz62p3yxbgjrfsmr9d0wm705p",
+      "_lva6pf2y06r966zjnmczto8aoqtyhsj",
+      "00DWH000005xk2L=1TBWH0000000M3l",
+      "smartsheet-gov-site-validation=wO9Aq-yUnfO-HMmw3WBsMSiP212HgHB4",
+      "5bldj12kt4tpxl03yr7wcq4999ldkl6c",
+      "miro-verification=cb4542e8a7b94284a46cef7263ff93a0a8981ccc",
+      "dwpv611b3xgfp7ymnj2yd18kvdfc93lm",
+      "airtable-verification=72cbbd275f6f706ba31aaca8586b013f",
+      "00DWH000005k5zV=1TBWH0000000M29",
+      "_87362fr0avm39qsoglpth1t9iocx3h0",
+      "EFrYNbG8uzynGvptGZk9HtN4Lm3prlj/zxlKEuFuGuCT614NJoj7M8m3YoFYzfpafIrQATFeKoHKqZOCDzKt/w==",
+      "b8fwzdt99dt8btdysj12gnnjpkz146y3",
+      "0gydk8ylzblmdk89rrh71z6vq8csbd4j",
+      "v=spf1 include:verizonwireless.com ~all",
       "hpe-greenlake-domain-verification=3571596b4878766d77676479514571517876467a537974492d50464663743858",
       "MS=ms87778762",
-      "b8fwzdt99dt8btdysj12gnnjpkz146y3",
-      "smartsheet-gov-site-validation=wO9Aq-yUnfO-HMmw3WBsMSiP212HgHB4",
-      "70nhs2k6yktgpq4blv65k8416dwfwtds",
-      "google-site-verification=KC5CJC5e0rzcxlINJHJcTM5U4b5Pr211cGU8diogsKI",
-      "airtable-verification=72cbbd275f6f706ba31aaca8586b013f",
-      "flexera-domain-verification-kqnfpwapzjwcdtjl",
+      "_v5t56ssq25ktk2khlhxdq84ct19wha1",
+      "flexera-domain-verification-bpuabamsmujihlzs",
       "_xbcq1ksf5g26csqvs958k3ig1ovtwtt",
-      "00DWH000005xk2L=1TBWH0000000M3l",
-      "_lva6pf2y06r966zjnmczto8aoqtyhsj",
-      "google-site-verification=tZDve57pSHTO7eOO90j3R3wUIdpqq9pCrPCCauMcfbc",
-      "5bldj12kt4tpxl03yr7wcq4999ldkl6c",
-      "docusign=9f9bf7a4-31a7-42bd-989d-b177ae520342",
-      "2emAY6c1D+CgmANq0s7xHidy8qnyE6WStN33LPNuG/hd0aBm9xBLt6ZeIl7bfQR1VIMPYtYt3FlRkIcNWId/+A==",
-      "facebook-domain-verification=jzt3ysrggr1qi89a0c46h6hnmtu0l4",
-      "docusign=4a19cd69-5db5-4663-b70e-6600f177dae2",
-      "mongodb-site-verification=6vBJxn6M8ujjAATlYkC5bRNXjD4sUiRf",
-      "00DWH000005k5zV=1TBWH0000000M29",
-      "00Dfn00000BO1uH=1TBaJ00000008Yf",
+      "_w6n6znye04ehtb3ugsmxtzhvkvu4h66",
+      "70nhs2k6yktgpq4blv65k8416dwfwtds",
+      "Dynatrace-site-verification=9b5e8c85-ffc6-4ee3-80a4-01c14607d287__pdi80imbksqp54emrr20d3gph8",
+      "_60467rwxiajhlol2lvhpvkdp6849tto",
+      "flexera-domain-verification-ffgblppxwzuqqveo",
       "docker-verification=e63249f1-5c89-419c-8b2a-928c81b87800",
-      "g0s1gq156v9thvrtvmg4smn6fhgcxqnl"
+      "anthropic-domain-verification-dh9nvq=MZi3jVJdupvG2ZzJKBbuDIzF8",
+      "Precisely-domain-verification",
+      "google-site-verification=Y3Q2T99tU_-XF206jqXW_UugVEHCvpzvPnIk5hYL2Bk",
+      "atlassian-domain-verification=aj1ES5iXBorxgboMWU4jPaWG8ufdkUqPAZ98L4Z4FxPtlETrOSCwWPopYp326Boi",
+      "facebook-domain-verification=jzt3ysrggr1qi89a0c46h6hnmtu0l4"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=quarantine; rua=mailto:dmarc_agg@auth.returnpath.net; ruf=mailto:dmarc_afrf@auth.returnpath.net; rf=afrf; pct=100"
@@ -252,7 +266,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     }
   },
   "ports": {
-    "ip": "23.40.244.108",
+    "ip": "23.206.62.107",
     "open": []
   },
   "https": {
@@ -301,11 +315,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "atlassian-domain-verification=aj1ES5iXBorxgboMWU4jPaWG8ufdkUqPAZ98L4Z4FxPtlETrOS",
-    "Dynatrace-site-verification=6219e2d6-0d4c-42b0-aa3f-bf137c76e0ef__lc47bag6133ot2",
     "quickbase-site-verification-922ae18c23918d07de301f714e7747cabad0e6ce",
-    "miro-verification=cb4542e8a7b94284a46cef7263ff93a0a8981ccc",
-    "google-site-verification=Y3Q2T99tU_-XF206jqXW_UugVEHCvpzvPnIk5hYL2Bk"
+    "mongodb-site-verification=6vBJxn6M8ujjAATlYkC5bRNXjD4sUiRf",
+    "airtable-verification=c7ec519ab4f7b83da45d01617d013506",
+    "adobe-sign-verification=5c72a7e0c328f6774716059ec6fb7da6049813116d899e3483577d08",
+    "google-site-verification=tZDve57pSHTO7eOO90j3R3wUIdpqq9pCrPCCauMcfbc"
   ],
   "tls2": {
     "alpn": "",
@@ -325,6 +339,14 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
         "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
         "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
       ],
+      "san": [
+        "verizon.com",
+        "ws01.static-verizon.com",
+        "ws02.static-verizon.com",
+        "ws03.static-verizon.com",
+        "ws04.static-verizon.com",
+        "www.verizon.com"
+      ],
       "subject_dn": "310b30090603550406130255533110300e06035504081307466c6f72696461311730150603550407130e54656d706c65205465727261636531223020060355040a1319566572697a6f6e2044617461205365727669636573204c4c43311430120603550403130b766572697a6f6e2e636f6d",
       "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
       "not_before": "20251209000000",
@@ -335,7 +357,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
   "x12": {
     "status": 403,
     "ptr": [
-      "a23-40-244-108.deploy.static.akamaitechnologies.com."
+      "a23-206-62-107.deploy.static.akamaitechnologies.com."
     ]
   },
   "x13": {
@@ -364,8 +386,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
   "x16": {
     "root_status": 403
   },
-  "elapsed_s": 38.5,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.digicert.com"
+  },
+  "elapsed_s": 50.1,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -379,4 +404,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

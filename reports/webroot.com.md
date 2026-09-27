@@ -7,12 +7,12 @@
 | Target | https://webroot.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | webroot.com |
-| Test date | 2026-09-27 01:37 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **46** (High: 0, Medium: 6, Low: 12, Info: 28)
+Total findings: **49** (High: 0, Medium: 6, Low: 12, Info: 31)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -61,7 +61,10 @@ Total findings: **46** (High: 0, Medium: 6, Low: 12, Info: 28)
 | 43 | low | CK8 | Session-like cookie with >=30-day lifetime | CWE-613 |
 | 44 | low | CK8 | Session-like cookie with >=30-day lifetime | CWE-613 |
 | 45 | low | H21 | HSTS does not cover subdomains | CWE-319 |
-| 46 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 46 | info | CK11 | Session-like cookie value has low entropy | CWE-340 |
+| 47 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 48 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 49 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 
 ## Detailed findings
 
@@ -347,11 +350,29 @@ Total findings: **46** (High: 0, Medium: 6, Low: 12, Info: 28)
 - **Detail:** Strict-Transport-Security on webroot.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of webroot.com.
 - **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
 
-### 46. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+### 46. [INFO] Session-like cookie value has low entropy (`CK11`)
+
+- **CWE:** CWE-340
+- **Detail:** Cookie 'SSID' on webroot.com is 54 chars with ~3.48 bits/char of entropy; low-entropy tokens are easier to guess.
+- **Recommendation:** Generate session identifiers from a CSPRNG with sufficient entropy.
+
+### 47. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
 
 - **CWE:** CWE-200
 - **Detail:** /sitemap.xml on webroot.com lists 192 <loc> URL(s); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
+### 48. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of webroot.com contains wildcard SAN entry(ies) *.webroot.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 49. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of webroot.com is http://ocsp.sectigo.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
 
 ## Evidence (raw response observations)
 
@@ -370,37 +391,37 @@ Total findings: **46** (High: 0, Medium: 6, Low: 12, Info: 28)
       "mxb-00102601.gslb.pphosted.com (pref 1)"
     ],
     "ns": [
+      "dns2.safenames.net.",
       "dns1.safenames.com.",
-      "dns3.safenames.org.",
-      "dns2.safenames.net."
+      "dns3.safenames.org."
     ],
     "caa": [
+      "0 issue \"sectigo.com\"",
+      "0 issue \"awstrust.com\"",
+      "0 issuewild \"digicert.com\"",
+      "0 issue \"digicert.com\"",
+      "0 issuewild \"amazon.com\"",
       "0 issue \"letsencrypt.org\"",
-      "0 issue \"amazon.com\"",
       "0 issuewild \"amazontrust.com\"",
+      "0 issuewild \"amazonaws.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issue \"amazonaws.com\"",
       "0 issuewild \"awstrust.com\"",
       "0 issuewild \"sectigo.com\"",
-      "0 issuewild \"letsencrypt.org\"",
-      "0 issue \"awstrust.com\"",
-      "0 issue \"sectigo.com\"",
-      "0 issuewild \"digicert.com\"",
-      "0 issuewild \"amazon.com\"",
-      "0 issue \"digicert.com\"",
-      "0 issue \"amazontrust.com\"",
-      "0 issuewild \"amazonaws.com\"",
-      "0 issue \"amazonaws.com\""
+      "0 issue \"amazontrust.com\""
     ],
     "spf": [
+      "amazonses:DUPTZ+5PC5cywK2wrfzQHVsalso6GCYZmw9b2wSAgMo=",
+      "hj-ownership=kbD4%B6@fEzJ",
       "google-site-verification=W342u9ABN8CsWzHJEUTnnprvsso64lGHcBzHIjXtP4A",
       "status-page-domain-verification=2tbgnrpnfp6b",
-      "status-page-domain-verification=ry2yxtvp8dt4",
-      "v=spf1 ip4:66.35.53.240 ip4:66.35.53.180 ip4:208.87.139.150 ip4:66.35.53.248 ip4:208.74.204.0/22 ip4:46.19.168.0/23 ip4:208.87.139.64 ip4:208.87.139.66 include:spf.protection.outlook.com include:spf.messagelabs.com include:mktomail.com include:stspg-custo",
-      "mer.com ip4:52.38.191.241 -all",
+      "635557aa461593e8536643d878d7c78d698bcbb535e185853f5cfd526cafddfe",
       "F5Bkf8aYNUTZwrEkaw2ss/rMNTWy9wTOKyKrIeQdD5YoMTFkYg9rjW275X1dSx5AWusuVqkf+caFIRtd63kGgw==",
-      "hj-ownership=kbD4%B6@fEzJ",
-      "amazonses:DUPTZ+5PC5cywK2wrfzQHVsalso6GCYZmw9b2wSAgMo=",
+      "status-page-domain-verification=ry2yxtvp8dt4",
       "MS=ms92726142",
-      "635557aa461593e8536643d878d7c78d698bcbb535e185853f5cfd526cafddfe"
+      "v=spf1 ip4:66.35.53.240 ip4:66.35.53.180 ip4:208.87.139.150 ip4:66.35.53.248 ip4:208.74.204.0/22 ip4:46.19.168.0/23 ip4:208.87.139.64 ip4:208.87.139.66 include:spf.protection.outlook.com include:spf.messagelabs.com include:mktomail.com include:stspg-custo",
+      "mer.com ip4:52.38.191.241 -all"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com;fo=1"
@@ -539,6 +560,10 @@ Total findings: **46** (High: 0, Medium: 6, Low: 12, Info: 28)
       "crl_urls": [
         "http://crl.sectigo.com/SectigoPublicServerAuthenticationCAOVR36.crl"
       ],
+      "san": [
+        "*.webroot.com",
+        "webroot.com"
+      ],
       "subject_dn": "310b30090603550406130243413110300e060355040813074f6e746172696f311e301c060355040a13154f70656e205465787420436f72706f726174696f6e3116301406035504030c0d2a2e776562726f6f742e636f6d",
       "issuer_dn": "310b300906035504061302474231183016060355040a130f5365637469676f204c696d69746564313730350603550403132e5365637469676f205075626c6963205365727665722041757468656e7469636174696f6e204341204f5620523336",
       "not_before": "20250911000000",
@@ -600,8 +625,14 @@ Total findings: **46** (High: 0, Medium: 6, Low: 12, Info: 28)
   "x16": {
     "root_status": 307
   },
-  "elapsed_s": 59.1,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.webroot.com"
+    ],
+    "ocsp_http": "http://ocsp.sectigo.com"
+  },
+  "elapsed_s": 54.7,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -615,4 +646,5 @@ Total findings: **46** (High: 0, Medium: 6, Low: 12, Info: 28)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

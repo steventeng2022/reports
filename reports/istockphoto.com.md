@@ -7,12 +7,12 @@
 | Target | https://istockphoto.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | istockphoto.com |
-| Test date | 2026-09-27 01:25 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:35 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 17 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 18 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 19 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 20 | info | H12 | Proxy/edge hop chain disclosed via Via | CWE-200 |
+| 21 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -139,13 +142,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 54.192.248.56 carries PTR server-54-192-248-56.tpe53.r.cloudfront.net. for istockphoto.com.
+- **Detail:** 54.192.248.52 carries PTR server-54-192-248-52.tpe53.r.cloudfront.net. for istockphoto.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 17. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkbcv9ae62w3tz.html -> 403; error page/headers match: CloudFront.
+- **Detail:** GET /xkn4757t57dex6.html -> 403; error page/headers match: CloudFront.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 18. [INFO] Edge/CDN layer identified from response headers (`H26`)
@@ -154,6 +157,24 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **Detail:** Response headers on istockphoto.com identify the edge as CloudFront / Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
+### 19. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of istockphoto.com is http://ocsp.r2m01.amazontrust.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 20. [INFO] Proxy/edge hop chain disclosed via Via (`H12`)
+
+- **CWE:** CWE-200
+- **Detail:** The root of istockphoto.com discloses a 1-hop fronting chain (1.1 1c9c880c72de7d2096bae6cd8a53fa12.cloudfront.net (CloudFront)); the hop sequence inventories the intermediate edge/proxy layers in front of the origin.
+- **Recommendation:** Confirm each hop is an intended layer; trim chain disclosure if unnecessary.
+
+### 21. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of istockphoto.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -161,53 +182,53 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "istockphoto.com",
   "dns": {
     "a": [
+      "54.192.248.52",
       "54.192.248.56",
       "54.192.248.113",
-      "54.192.248.52",
       "54.192.248.91"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "us-smtp-inbound-1.mimecast.com (pref 10)",
-      "us-smtp-inbound-2.mimecast.com (pref 10)"
+      "us-smtp-inbound-2.mimecast.com (pref 10)",
+      "us-smtp-inbound-1.mimecast.com (pref 10)"
     ],
     "ns": [
       "ns-1600.awsdns-08.co.uk.",
       "ns-1269.awsdns-30.org.",
-      "ns-194.awsdns-24.com.",
-      "ns-692.awsdns-22.net."
+      "ns-692.awsdns-22.net.",
+      "ns-194.awsdns-24.com."
     ],
     "caa": [
-      "0 issue \"globalsign.com\"",
-      "0 issue \"letsencrypt.org\"",
       "0 issue \"digicert.com\"",
-      "0 issue \"amazon.com\"",
-      "0 issuewild \"godaddy.com\"",
-      "0 issue \"pki.goog\"",
-      "0 issuewild \"amazon.com\"",
-      "0 issue \"sectigo.com\"",
       "0 issue \"godaddy.com\"",
-      "0 iodef \"mailto:dnsadmins@gettyimages.com\"",
+      "0 issuewild \"digicert.com\"",
+      "0 issue \"sectigo.com\"",
+      "0 issuewild \"godaddy.com\"",
+      "0 issuewild \"amazon.com\"",
       "0 issuewild \"globalsign.com\"",
-      "0 issuewild \"digicert.com\""
+      "0 issue \"globalsign.com\"",
+      "0 iodef \"mailto:dnsadmins@gettyimages.com\"",
+      "0 issue \"pki.goog\"",
+      "0 issue \"amazon.com\"",
+      "0 issue \"letsencrypt.org\""
     ],
     "spf": [
-      "gcrarlo4jnuv6jucvsu25us37t",
-      "mApBQbj",
-      "v=spf1 include:_spf1.gettyimages.com include:_spf2.gettyimages.com include:_spf3.gettyimages.com ~all",
-      "rZ82I61",
-      "facebook-domain-verification=4cqoes9ia3bfzqzq69xntb7iar6mkr",
       "v=msv1 t=56E21521-0012-4C74-BAF5-371A005951A8",
-      "google-site-verification=Kxr9iK44cHpakxQbI3si0Gt0rTaKT-P-ldoGPvB8u8c",
+      "facebook-domain-verification=4cqoes9ia3bfzqzq69xntb7iar6mkr",
+      "rZ82I61",
       "iblvsbv3q12clku4odkv5q2kns",
-      "0OX00lOBevmMwBKqx+i4VEYt3Hh4BSEqvj5eywR4LcmQZA7wJO2GOeAy63AfjOZCwJ13Jk8zSgWKEqa4B3xXsw==",
-      "imtrdblip7oaja1eqnsm5vv1da",
+      "70aheif64ef26ttmml0v1s8u44",
       "nqSz5i7",
+      "mApBQbj",
+      "0OX00lOBevmMwBKqx+i4VEYt3Hh4BSEqvj5eywR4LcmQZA7wJO2GOeAy63AfjOZCwJ13Jk8zSgWKEqa4B3xXsw==",
+      "google-site-verification=Kxr9iK44cHpakxQbI3si0Gt0rTaKT-P-ldoGPvB8u8c",
+      "imtrdblip7oaja1eqnsm5vv1da",
       "ozECEJCtCPL1buHkf0i1XhVu9bUhJxFEZX3QRAZp41iUI+YlumJIhPc9Uhxj/m7yJspJ0sy3Is3V1stL5vDijw==",
       "6gndatn3ep6iuuuj60pnavq47b",
-      "70aheif64ef26ttmml0v1s8u44",
-      "CVimwsmxpGLA8Zz848NLFIp4MJqMzgn0K2DiVr0Rv7TrsCMNn9xjh2L71nEXuXKriJGVfu67jJpAzqQxns8TOg=="
+      "CVimwsmxpGLA8Zz848NLFIp4MJqMzgn0K2DiVr0Rv7TrsCMNn9xjh2L71nEXuXKriJGVfu67jJpAzqQxns8TOg==",
+      "gcrarlo4jnuv6jucvsu25us37t",
+      "v=spf1 include:_spf1.gettyimages.com include:_spf2.gettyimages.com include:_spf3.gettyimages.com ~all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:46b8708e09fb858@rep.dmarcanalyzer.com; ruf=mailto:46b8708e09fb858@for.dmarcanalyzer.com; fo=1"
@@ -251,7 +272,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "54.192.248.56",
+    "ip": "54.192.248.52",
     "open": []
   },
   "https": {
@@ -324,6 +345,24 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "crl_urls": [
         "http://crl.r2m01.amazontrust.com/r2m01.crl"
       ],
+      "san": [
+        "www.istockphoto.com",
+        "italiano.istockphoto.com",
+        "istock.com",
+        "refer.istockphoto.com",
+        "www.istock.com",
+        "jezykpolski.istockphoto.com",
+        "hangul.istockphoto.com",
+        "workwithus.istockphoto.com",
+        "francais.istockphoto.com",
+        "russki.istockphoto.com",
+        "espanol.istockphoto.com",
+        "istockphoto.com",
+        "nihongo.istockphoto.com",
+        "deutsch.istockphoto.com",
+        "portugues.istockphoto.com",
+        "portuguesbrasileiro.istockphoto.com"
+      ],
       "subject_dn": "311c301a060355040313137777772e6973746f636b70686f746f2e636f6d",
       "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3031",
       "not_before": "20260617000000",
@@ -334,7 +373,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "x12": {
     "status": 403,
     "ptr": [
-      "server-54-192-248-56.tpe53.r.cloudfront.net."
+      "server-54-192-248-52.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -367,8 +406,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "Fastly"
     ]
   },
-  "elapsed_s": 4.5,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.r2m01.amazontrust.com",
+    "via": "1.1 1c9c880c72de7d2096bae6cd8a53fa12.cloudfront.net (CloudFront)"
+  },
+  "elapsed_s": 5.3,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -382,4 +425,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

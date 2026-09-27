@@ -7,12 +7,12 @@
 | Target | https://reuters.com/ |
 | Bug bounty program | Reuters |
 | Listed scope domain | reuters.com |
-| Test date | 2026-09-27 01:32 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:43 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
+Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,8 +37,10 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 | 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 20 | info | H22 | Server answers with HTTP/1.0 | CWE-319 |
 | 21 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
-| 22 | info | CT1 | 138 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 23 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 22 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 23 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 24 | info | CT1 | 138 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 25 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -132,7 +134,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: yahoo-verification-key=5bF6siWgzdkfub3ZLp8cnSL2ps44ipYuy28vgoM7qDA=; google-site-verification=LMfrSuyToK_ofO0MSu-lf5QJhLYITHNDX09ofoF7_FY; google-site-verification=O1A9GoZ5a23atyZjR2IBMnmdG-jz3mrsQ900uMn0sbY
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=FZwUpO_E2LIEPLqcxfWRpQipxi2faQ4Qt4wyYJpJr1g; google-site-verification=7UwjlMmBYuyFWx01Pu6NEVEWRPD9W25PnwffZejseEg; apple-domain-verification=voAz1fDhqIN4vRxG52m4VSOgLipH0OMyfJIprobVB1U
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [LOW] Host header reflected into redirect Location (`RED10`)
@@ -150,7 +152,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 155.46.172.255 carries PTR laleynextonline.com.ar., thomson.com., monitorsuite.com., westlawbusinesscurrents.com., westlawprecision.com.au., legalbusinessonline.com., newwestlaw.com., consumerbankruptcynews.net., wbm-digital.com., thomsonreuters.com.au., serengetilaw.com., checkpointau.com.au., thomsonreuters.es., reuters.de., litigationmonitor.com., gettaxnetpro.com., onesourcetax.com., reuters.com., thomsonreuters.cn., westlaw.co.nz., reuters.co.uk., ctracknotification.com., securrents.com., westlawhub.com., oconnors.com., consumerbankruptcynews.com., courtexpress.com., thomsonreuters.co.kr., westlawpro.com., checkpointmexico.com., gsionline.com., thomsonreuters.in., es.thomson.com., westlaw.com.tw., incomesdata.co.uk., iblj.com., reuters.it., pubemplaw.net., reutersconnect.com., westlawuk.com., reuters.com.cn., editionsyvonblais.com., corepublishingsolutions.com., es-insurer.com., westlaw.com.au., thomsonreuters.com.br., arbsearch.com., thomsonreuters.com.hk., cvmailasia.com., reuters.es., cfslaw.com., thomsonreuters.com.sg., ultratax.com., carswell.com., roundhall.ie., legalcurrent.com., westlawchile.cl., cs.thomson.com., odentrack.com., westlawtoday.com., westlawnextcanada.com., hk-lawyer.org., rtonline.com.br., legalexecutiveinstitute.com., go.thomson.com., checkpoint.com.pe., westfindandprint.com., odenpt.com., westfindprint.com., checkpointnz.co.nz., sureprep.com., westlaw.com., informacionlegal.com.ar., reuters.fr., caselines.com., onesourcelogin.com.au., thomsonreutersmexico.com., checkpointespana.es., findprint.com., revistadostribunais.com.br., westlawrewards.com., parametric-insurer.com., quickview.com., personnet.com., westlawcourtexpress.com., laley.com.ar., myroyalty.com., thomsonreuters.co.nz., netlinksolutionqa.com., breakingviews.com., ctracknotification.ca., seccurrents.com., pagerohbs.com., mypay.thomson.com., westlawsolo.com., impotexpert.ca., thomsonreuters.com., westlawjapan.com., livenotecentral.com., informacionlegalonline.com.uy., cyberrisk-insurer.com., thomsonreuters.com.pe., thomsonreuters.ca., onesourcelogin.eu., pubemplaw.com., fastsalestax.com., ufile.ca., triform.com., netlinksolution.com., sweetandmaxwell.co.uk., findandprint.com., checkpointworld.com., informacionlegal.com.uy., safeguard.co.nz., archbolde-update.co.uk., checkpoint.cl., theinsurertv.com., westlawinternational.com., westdoc.com., thomsonreuters.com.my., thomsonreuters.co.jp., westmonitor.com., lawtel.com., trymateria.ai., taxnetproplus.com., westlawasia.com., wl-w.com., theinsurer.com., tr.com., westcheck.com., program-manager.com., westlawclassic.com., sustainable-insurer.com. for reuters.com.
+- **Detail:** 155.46.172.255 carries PTR thomsonreuters.co.nz., gettaxnetpro.com., thomsonreuters.co.kr., wl-w.com., westlaw.com.tw., newwestlaw.com., gsionline.com., theinsurer.com., courtexpress.com., cs.thomson.com., carswell.com., westlawchile.cl., thomsonreutersmexico.com., westdoc.com., archbolde-update.co.uk., cvmailasia.com., program-manager.com., tr.com., consumerbankruptcynews.net., reuters.com.cn., westlawjapan.com., taxnetproplus.com., ctracknotification.com., serengetilaw.com., ultratax.com., westlawtoday.com., es-insurer.com., safeguard.co.nz., laley.com.ar., thomsonreuters.com.pe., checkpointau.com.au., odenpt.com., netlinksolutionqa.com., informacionlegal.com.ar., westlawasia.com., corepublishingsolutions.com., westfindprint.com., thomsonreuters.in., westlaw.com., westlawinternational.com., westlawbusinesscurrents.com., onesourcetax.com., breakingviews.com., lawtel.com., reuters.de., onesourcelogin.eu., findprint.com., westlawuk.com., westlawclassic.com., thomsonreuters.com.sg., personnet.com., hk-lawyer.org., monitorsuite.com., thomsonreuters.cn., westlawhub.com., ufile.ca., thomsonreuters.com., consumerbankruptcynews.com., pubemplaw.net., netlinksolution.com., findandprint.com., thomsonreuters.es., pagerohbs.com., onesourcelogin.com.au., thomsonreuters.co.jp., editionsyvonblais.com., trymateria.ai., informacionlegalonline.com.uy., revistadostribunais.com.br., westlawsolo.com., checkpoint.cl., checkpointnz.co.nz., westlawnextcanada.com., pubemplaw.com., legalbusinessonline.com., checkpoint.com.pe., thomson.com., westlawprecision.com.au., checkpointworld.com., westlawpro.com., westlawrewards.com., westlawcourtexpress.com., incomesdata.co.uk., westlaw.com.au., myroyalty.com., quickview.com., rtonline.com.br., westmonitor.com., oconnors.com., odentrack.com., parametric-insurer.com., legalcurrent.com., cfslaw.com., reuters.fr., sustainable-insurer.com., westcheck.com., arbsearch.com., cyberrisk-insurer.com., thomsonreuters.com.br., westfindandprint.com., checkpointespana.es., sureprep.com., es.thomson.com., securrents.com., thomsonreuters.com.hk., go.thomson.com., mypay.thomson.com., caselines.com., ctracknotification.ca., westlaw.co.nz., thomsonreuters.com.my., legalexecutiveinstitute.com., reuters.com., reutersconnect.com., informacionlegal.com.uy., theinsurertv.com., impotexpert.ca., wbm-digital.com., sweetandmaxwell.co.uk., fastsalestax.com., triform.com., livenotecentral.com., roundhall.ie., thomsonreuters.ca., reuters.es., seccurrents.com., laleynextonline.com.ar., reuters.co.uk., iblj.com., thomsonreuters.com.au., checkpointmexico.com., litigationmonitor.com., reuters.it. for reuters.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -177,13 +179,25 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 - **Detail:** The quiet handshake to reuters.com negotiated TLSv1.2 even though the client offered TLS 1.3; the edge caps at 1.2 (legacy/compatibility configuration).
 - **Recommendation:** Enable TLS 1.3 at the edge.
 
-### 22. [INFO] 138 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 22. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of reuters.com contains wildcard SAN entry(ies) *.thomson.com, *.tr.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 23. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of reuters.com is http://ocsp.sectigo.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 24. [INFO] 138 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: apps.data.reuters.com, aws.contentdownloader.reuters.com, aws.dev.contentdownloader.reuters.com, aws.qa.contentdownloader.reuters.com, dev.ace.reuters.com, dev.commsmonitor.wne.reuters.com, dev.contentdownloader.reuters.com, dev.gpdb.media.reuters.com, dev.gpdbservices.media.reuters.com, dev.graphics.reuters.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 23. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 25. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: aws.dev.contentdownloader.reuters.com, dev.ace.reuters.com; content may still be served via virtual-host fallback.
@@ -205,24 +219,24 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
       "mxa-00160c04.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns-aws-4.thomsonreuters.co.uk.",
       "ns-aws-3.thomsonreuters.org.",
+      "ns-aws-4.thomsonreuters.co.uk.",
       "ns-aws-2.thomsonreuters.net.",
       "ns-aws-1.thomsonreuters.com."
     ],
     "caa": [],
     "spf": [
-      "yahoo-verification-key=5bF6siWgzdkfub3ZLp8cnSL2ps44ipYuy28vgoM7qDA=",
-      "google-site-verification=LMfrSuyToK_ofO0MSu-lf5QJhLYITHNDX09ofoF7_FY",
-      "google-site-verification=O1A9GoZ5a23atyZjR2IBMnmdG-jz3mrsQ900uMn0sbY",
-      "openai-domain-verification=dv-3vP8oxOY9pDhfiwzHjba8jmZ",
       "google-site-verification=FZwUpO_E2LIEPLqcxfWRpQipxi2faQ4Qt4wyYJpJr1g",
-      "apple-domain-verification=cKpm3aVB5VEf9fQ0oxIIumulcv3CvTjrOGvqF8nUDO8",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
       "google-site-verification=7UwjlMmBYuyFWx01Pu6NEVEWRPD9W25PnwffZejseEg",
       "apple-domain-verification=voAz1fDhqIN4vRxG52m4VSOgLipH0OMyfJIprobVB1U",
-      "facebook-domain-verification=ra7bjxso3pnjy2p63mdc0002chquca",
-      "MS=ms24417066"
+      "MS=ms24417066",
+      "apple-domain-verification=cKpm3aVB5VEf9fQ0oxIIumulcv3CvTjrOGvqF8nUDO8",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
+      "openai-domain-verification=dv-3vP8oxOY9pDhfiwzHjba8jmZ",
+      "yahoo-verification-key=5bF6siWgzdkfub3ZLp8cnSL2ps44ipYuy28vgoM7qDA=",
+      "google-site-verification=O1A9GoZ5a23atyZjR2IBMnmdG-jz3mrsQ900uMn0sbY",
+      "google-site-verification=LMfrSuyToK_ofO0MSu-lf5QJhLYITHNDX09ofoF7_FY",
+      "facebook-domain-verification=ra7bjxso3pnjy2p63mdc0002chquca"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -518,11 +532,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
     ]
   },
   "apex_txt": [
-    "yahoo-verification-key=5bF6siWgzdkfub3ZLp8cnSL2ps44ipYuy28vgoM7qDA=",
-    "google-site-verification=LMfrSuyToK_ofO0MSu-lf5QJhLYITHNDX09ofoF7_FY",
-    "google-site-verification=O1A9GoZ5a23atyZjR2IBMnmdG-jz3mrsQ900uMn0sbY",
-    "openai-domain-verification=dv-3vP8oxOY9pDhfiwzHjba8jmZ",
-    "google-site-verification=FZwUpO_E2LIEPLqcxfWRpQipxi2faQ4Qt4wyYJpJr1g"
+    "google-site-verification=FZwUpO_E2LIEPLqcxfWRpQipxi2faQ4Qt4wyYJpJr1g",
+    "google-site-verification=7UwjlMmBYuyFWx01Pu6NEVEWRPD9W25PnwffZejseEg",
+    "apple-domain-verification=voAz1fDhqIN4vRxG52m4VSOgLipH0OMyfJIprobVB1U",
+    "apple-domain-verification=cKpm3aVB5VEf9fQ0oxIIumulcv3CvTjrOGvqF8nUDO8",
+    "openai-domain-verification=dv-3vP8oxOY9pDhfiwzHjba8jmZ"
   ],
   "tls2": {
     "alpn": "",
@@ -540,6 +554,28 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.sectigo.com/SectigoPublicServerAuthenticationCAOVR40.crl"
+      ],
+      "san": [
+        "thomsonreuters.com",
+        "*.thomson.com",
+        "*.tr.com",
+        "arbsearch.com",
+        "archbolde-update.co.uk",
+        "blog.corepublishingsolutions.com",
+        "breakingviews.com",
+        "carswell.com",
+        "caselines.com",
+        "cfslaw.com",
+        "checkpoint.cl",
+        "checkpoint.com.pe",
+        "checkpointau.com.au",
+        "checkpointespana.es",
+        "checkpointmexico.com",
+        "checkpointnz.co.nz",
+        "checkpointworld.com",
+        "consumerbankruptcynews.com",
+        "consumerbankruptcynews.net",
+        "corepublishingsolutions.com"
       ],
       "subject_dn": "310b30090603550406130243413110300e060355040813074f6e746172696f31243022060355040a131b54686f6d736f6e205265757465727320436f72706f726174696f6e311b30190603550403131274686f6d736f6e726575746572732e636f6d",
       "issuer_dn": "310b300906035504061302474231183016060355040a130f5365637469676f204c696d69746564313730350603550403132e5365637469676f205075626c6963205365727665722041757468656e7469636174696f6e204341204f5620523430",
@@ -570,139 +606,139 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
   "x12": {
     "status": 301,
     "ptr": [
-      "laleynextonline.com.ar.",
-      "thomson.com.",
-      "monitorsuite.com.",
-      "westlawbusinesscurrents.com.",
-      "westlawprecision.com.au.",
-      "legalbusinessonline.com.",
-      "newwestlaw.com.",
-      "consumerbankruptcynews.net.",
-      "wbm-digital.com.",
-      "thomsonreuters.com.au.",
-      "serengetilaw.com.",
-      "checkpointau.com.au.",
-      "thomsonreuters.es.",
-      "reuters.de.",
-      "litigationmonitor.com.",
-      "gettaxnetpro.com.",
-      "onesourcetax.com.",
-      "reuters.com.",
-      "thomsonreuters.cn.",
-      "westlaw.co.nz.",
-      "reuters.co.uk.",
-      "ctracknotification.com.",
-      "securrents.com.",
-      "westlawhub.com.",
-      "oconnors.com.",
-      "consumerbankruptcynews.com.",
-      "courtexpress.com.",
-      "thomsonreuters.co.kr.",
-      "westlawpro.com.",
-      "checkpointmexico.com.",
-      "gsionline.com.",
-      "thomsonreuters.in.",
-      "es.thomson.com.",
-      "westlaw.com.tw.",
-      "incomesdata.co.uk.",
-      "iblj.com.",
-      "reuters.it.",
-      "pubemplaw.net.",
-      "reutersconnect.com.",
-      "westlawuk.com.",
-      "reuters.com.cn.",
-      "editionsyvonblais.com.",
-      "corepublishingsolutions.com.",
-      "es-insurer.com.",
-      "westlaw.com.au.",
-      "thomsonreuters.com.br.",
-      "arbsearch.com.",
-      "thomsonreuters.com.hk.",
-      "cvmailasia.com.",
-      "reuters.es.",
-      "cfslaw.com.",
-      "thomsonreuters.com.sg.",
-      "ultratax.com.",
-      "carswell.com.",
-      "roundhall.ie.",
-      "legalcurrent.com.",
-      "westlawchile.cl.",
-      "cs.thomson.com.",
-      "odentrack.com.",
-      "westlawtoday.com.",
-      "westlawnextcanada.com.",
-      "hk-lawyer.org.",
-      "rtonline.com.br.",
-      "legalexecutiveinstitute.com.",
-      "go.thomson.com.",
-      "checkpoint.com.pe.",
-      "westfindandprint.com.",
-      "odenpt.com.",
-      "westfindprint.com.",
-      "checkpointnz.co.nz.",
-      "sureprep.com.",
-      "westlaw.com.",
-      "informacionlegal.com.ar.",
-      "reuters.fr.",
-      "caselines.com.",
-      "onesourcelogin.com.au.",
-      "thomsonreutersmexico.com.",
-      "checkpointespana.es.",
-      "findprint.com.",
-      "revistadostribunais.com.br.",
-      "westlawrewards.com.",
-      "parametric-insurer.com.",
-      "quickview.com.",
-      "personnet.com.",
-      "westlawcourtexpress.com.",
-      "laley.com.ar.",
-      "myroyalty.com.",
       "thomsonreuters.co.nz.",
-      "netlinksolutionqa.com.",
-      "breakingviews.com.",
-      "ctracknotification.ca.",
-      "seccurrents.com.",
-      "pagerohbs.com.",
-      "mypay.thomson.com.",
-      "westlawsolo.com.",
-      "impotexpert.ca.",
-      "thomsonreuters.com.",
-      "westlawjapan.com.",
-      "livenotecentral.com.",
-      "informacionlegalonline.com.uy.",
-      "cyberrisk-insurer.com.",
-      "thomsonreuters.com.pe.",
-      "thomsonreuters.ca.",
-      "onesourcelogin.eu.",
-      "pubemplaw.com.",
-      "fastsalestax.com.",
-      "ufile.ca.",
-      "triform.com.",
-      "netlinksolution.com.",
-      "sweetandmaxwell.co.uk.",
-      "findandprint.com.",
-      "checkpointworld.com.",
-      "informacionlegal.com.uy.",
-      "safeguard.co.nz.",
-      "archbolde-update.co.uk.",
-      "checkpoint.cl.",
-      "theinsurertv.com.",
-      "westlawinternational.com.",
-      "westdoc.com.",
-      "thomsonreuters.com.my.",
-      "thomsonreuters.co.jp.",
-      "westmonitor.com.",
-      "lawtel.com.",
-      "trymateria.ai.",
-      "taxnetproplus.com.",
-      "westlawasia.com.",
+      "gettaxnetpro.com.",
+      "thomsonreuters.co.kr.",
       "wl-w.com.",
+      "westlaw.com.tw.",
+      "newwestlaw.com.",
+      "gsionline.com.",
       "theinsurer.com.",
-      "tr.com.",
-      "westcheck.com.",
+      "courtexpress.com.",
+      "cs.thomson.com.",
+      "carswell.com.",
+      "westlawchile.cl.",
+      "thomsonreutersmexico.com.",
+      "westdoc.com.",
+      "archbolde-update.co.uk.",
+      "cvmailasia.com.",
       "program-manager.com.",
+      "tr.com.",
+      "consumerbankruptcynews.net.",
+      "reuters.com.cn.",
+      "westlawjapan.com.",
+      "taxnetproplus.com.",
+      "ctracknotification.com.",
+      "serengetilaw.com.",
+      "ultratax.com.",
+      "westlawtoday.com.",
+      "es-insurer.com.",
+      "safeguard.co.nz.",
+      "laley.com.ar.",
+      "thomsonreuters.com.pe.",
+      "checkpointau.com.au.",
+      "odenpt.com.",
+      "netlinksolutionqa.com.",
+      "informacionlegal.com.ar.",
+      "westlawasia.com.",
+      "corepublishingsolutions.com.",
+      "westfindprint.com.",
+      "thomsonreuters.in.",
+      "westlaw.com.",
+      "westlawinternational.com.",
+      "westlawbusinesscurrents.com.",
+      "onesourcetax.com.",
+      "breakingviews.com.",
+      "lawtel.com.",
+      "reuters.de.",
+      "onesourcelogin.eu.",
+      "findprint.com.",
+      "westlawuk.com.",
       "westlawclassic.com.",
-      "sustainable-insurer.com."
+      "thomsonreuters.com.sg.",
+      "personnet.com.",
+      "hk-lawyer.org.",
+      "monitorsuite.com.",
+      "thomsonreuters.cn.",
+      "westlawhub.com.",
+      "ufile.ca.",
+      "thomsonreuters.com.",
+      "consumerbankruptcynews.com.",
+      "pubemplaw.net.",
+      "netlinksolution.com.",
+      "findandprint.com.",
+      "thomsonreuters.es.",
+      "pagerohbs.com.",
+      "onesourcelogin.com.au.",
+      "thomsonreuters.co.jp.",
+      "editionsyvonblais.com.",
+      "trymateria.ai.",
+      "informacionlegalonline.com.uy.",
+      "revistadostribunais.com.br.",
+      "westlawsolo.com.",
+      "checkpoint.cl.",
+      "checkpointnz.co.nz.",
+      "westlawnextcanada.com.",
+      "pubemplaw.com.",
+      "legalbusinessonline.com.",
+      "checkpoint.com.pe.",
+      "thomson.com.",
+      "westlawprecision.com.au.",
+      "checkpointworld.com.",
+      "westlawpro.com.",
+      "westlawrewards.com.",
+      "westlawcourtexpress.com.",
+      "incomesdata.co.uk.",
+      "westlaw.com.au.",
+      "myroyalty.com.",
+      "quickview.com.",
+      "rtonline.com.br.",
+      "westmonitor.com.",
+      "oconnors.com.",
+      "odentrack.com.",
+      "parametric-insurer.com.",
+      "legalcurrent.com.",
+      "cfslaw.com.",
+      "reuters.fr.",
+      "sustainable-insurer.com.",
+      "westcheck.com.",
+      "arbsearch.com.",
+      "cyberrisk-insurer.com.",
+      "thomsonreuters.com.br.",
+      "westfindandprint.com.",
+      "checkpointespana.es.",
+      "sureprep.com.",
+      "es.thomson.com.",
+      "securrents.com.",
+      "thomsonreuters.com.hk.",
+      "go.thomson.com.",
+      "mypay.thomson.com.",
+      "caselines.com.",
+      "ctracknotification.ca.",
+      "westlaw.co.nz.",
+      "thomsonreuters.com.my.",
+      "legalexecutiveinstitute.com.",
+      "reuters.com.",
+      "reutersconnect.com.",
+      "informacionlegal.com.uy.",
+      "theinsurertv.com.",
+      "impotexpert.ca.",
+      "wbm-digital.com.",
+      "sweetandmaxwell.co.uk.",
+      "fastsalestax.com.",
+      "triform.com.",
+      "livenotecentral.com.",
+      "roundhall.ie.",
+      "thomsonreuters.ca.",
+      "reuters.es.",
+      "seccurrents.com.",
+      "laleynextonline.com.ar.",
+      "reuters.co.uk.",
+      "iblj.com.",
+      "thomsonreuters.com.au.",
+      "checkpointmexico.com.",
+      "litigationmonitor.com.",
+      "reuters.it."
     ]
   },
   "x13": {
@@ -732,8 +768,15 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 47.2,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.thomson.com",
+      "*.tr.com"
+    ],
+    "ocsp_http": "http://ocsp.sectigo.com"
+  },
+  "elapsed_s": 52.0,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -747,4 +790,5 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

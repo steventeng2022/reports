@@ -7,12 +7,12 @@
 | Target | https://infusionsoft.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | infusionsoft.com |
-| Test date | 2026-09-27 01:24 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:34 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
+Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,6 +37,8 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 | 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 20 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
 | 21 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 22 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 23 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -148,7 +150,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=WftUye_dldiVZJVLg52xTBYm5DxirQYS22c_QTjHxFE; google-site-verification=DertqkC0npNIXrj_ag69XBc2Fu_9_qTB0y0uQp1-D7k; cisco-ci-domain-verification=75c979906e7b5e9bbf5b674256c43265e545aa031bb6682c754
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=8PGA7REJ-oOUYtQ1kt1K-Qb_Zf1y0m2b6LcQgkmENcs; google-site-verification=Z8uiYpXNoz6cu19xv6_rJ7GPC0S0ES41FuwA-H4dth4; google-site-verification=ecBOxw10e0n8-B8D35IhyVwkRNhRKrx4wSg36211ySw
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -175,6 +177,18 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 - **Detail:** No CAA record found for infusionsoft.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
+### 22. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of infusionsoft.com contains wildcard SAN entry(ies) *.infusionsoft.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 23. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of infusionsoft.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -186,49 +200,49 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
       "104.18.6.143"
     ],
     "aaaa": [
-      "2606:4700::6812:68f",
-      "2606:4700::6812:78f"
+      "2606:4700::6812:78f",
+      "2606:4700::6812:68f"
     ],
     "cname": null,
     "mx": [
-      "esa2.hc5632-20.iphmx.com (pref 10)",
-      "esa1.hc5632-20.iphmx.com (pref 0)"
+      "esa1.hc5632-20.iphmx.com (pref 0)",
+      "esa2.hc5632-20.iphmx.com (pref 10)"
     ],
     "ns": [
-      "dina.ns.cloudflare.com.",
-      "alan.ns.cloudflare.com."
+      "alan.ns.cloudflare.com.",
+      "dina.ns.cloudflare.com."
     ],
     "caa": [],
     "spf": [
-      "google-site-verification=WftUye_dldiVZJVLg52xTBYm5DxirQYS22c_QTjHxFE",
-      "google-site-verification=DertqkC0npNIXrj_ag69XBc2Fu_9_qTB0y0uQp1-D7k",
-      "kiqose9doghqntt26sntbtq0rb",
-      "cisco-ci-domain-verification=75c979906e7b5e9bbf5b674256c43265e545aa031bb6682c75414e290689d078",
       "google-site-verification=8PGA7REJ-oOUYtQ1kt1K-Qb_Zf1y0m2b6LcQgkmENcs",
-      "lgu1e2j4g4a4j6lhd9h0g6c07o",
-      "457585744-6110905",
-      "google-site-verification=nkj81hcbyLz-I-SSFuGa2SjEOK50Ad6OEzr7vIUS0kI",
-      "MS=ms27114486",
-      "atlassian-domain-verification=x4AH7fTPG/rMtCvfeaTpcXEW1xxb7P7EU6OgtJogxYDpxaCU8G8y/uTfFrcnND/F",
-      "google-site-verification=Y9y0pmN9qgudD_i6qiD7EfKVyHr2M_ID4OZHaeCYI8g",
-      "google-site-verification=fTsSyDSrHoZk7j9c7SjtCrD9Z1X0E9euuiDd8XomOp4",
-      "slack-domain-verification=yqhK2KmKgxxjIp4PfZUH1nyIouasR8pVx7w5NIJO",
-      "apple-domain-verification=b0zfyw1tbvYfts6I",
-      "MS=ms82281616",
+      "google-site-verification=Z8uiYpXNoz6cu19xv6_rJ7GPC0S0ES41FuwA-H4dth4",
+      "google-site-verification=ecBOxw10e0n8-B8D35IhyVwkRNhRKrx4wSg36211ySw",
+      "_globalsign-domain-verification=Zv6aPQO0CFgBxwOk23uUOkmdLjhc9qmcz-UnQcgXkA",
+      "google-site-verification=DertqkC0npNIXrj_ag69XBc2Fu_9_qTB0y0uQp1-D7k",
+      "google-site-verification=s-1DswNLnBGEVvlFB5WFaF5MJx0lmUV1C0rK722XUS4",
+      "cisco-ci-domain-verification=75c979906e7b5e9bbf5b674256c43265e545aa031bb6682c75414e290689d078",
       "google-site-verification=XVUWj8ew581HogPA2mtBUF86np4dAEi5byYIxaG_7iI",
+      "atlassian-domain-verification=x4AH7fTPG/rMtCvfeaTpcXEW1xxb7P7EU6OgtJogxYDpxaCU8G8y/uTfFrcnND/F",
+      "MS=ms27114486",
+      "MS=ms82281616",
+      "if1d65ukc54m5s6i74bqfe025f",
+      "google-site-verification=Y9y0pmN9qgudD_i6qiD7EfKVyHr2M_ID4OZHaeCYI8g",
       "google-site-verification=FcoWnWR2MEyLrhy3x0Zkdq_kDaSuLKCkwGYqtOHwOKU",
+      "kiqose9doghqntt26sntbtq0rb",
       "v=spf1 ip4:70.166.203.170/31 ip4:70.166.203.172/31 ip4:208.76.24.0/22 ip4:70.166.189.64/29 ip4:167.216.128.0/22 ip4:64.89.44.0/23 ip4:207.211.31.0/25 ip4:208.46.212.0/23 ip4:52.38.191.241",
       " ip4:35.227.130.3 ip4:35.227.130.4/31 include:mktomail.com include:mg-spf.greenhouse.io -all",
-      "google-site-verification=qJt8cbk9zo_KURgheieYf9dmNvIsH4EobNqLCTg6RmQ",
-      "google-site-verification=f4fZ5SCboZNZoBmJCqcx9r2XLOo3ZGRuS-AhTXsxQdo",
-      "google-site-verification=bEBY3Ylxn8q-_fRzVYwAR9JXNm40sKgOzGs_9TGLzoY",
+      "google-site-verification=fTsSyDSrHoZk7j9c7SjtCrD9Z1X0E9euuiDd8XomOp4",
       "google-site-verification=aQaRJ7JbSTnc_uFnrueKHNHnkYCYWC4VR5NQmc4nb6o",
-      "_globalsign-domain-verification=Zv6aPQO0CFgBxwOk23uUOkmdLjhc9qmcz-UnQcgXkA",
+      "google-site-verification=qJt8cbk9zo_KURgheieYf9dmNvIsH4EobNqLCTg6RmQ",
+      "google-site-verification=nkj81hcbyLz-I-SSFuGa2SjEOK50Ad6OEzr7vIUS0kI",
+      "apple-domain-verification=b0zfyw1tbvYfts6I",
+      "457585744-6110905",
+      "google-site-verification=WftUye_dldiVZJVLg52xTBYm5DxirQYS22c_QTjHxFE",
+      "lgu1e2j4g4a4j6lhd9h0g6c07o",
+      "slack-domain-verification=yqhK2KmKgxxjIp4PfZUH1nyIouasR8pVx7w5NIJO",
+      "google-site-verification=bEBY3Ylxn8q-_fRzVYwAR9JXNm40sKgOzGs_9TGLzoY",
       "ajde87b8tq24b4lj2l6q3u6dk4",
-      "if1d65ukc54m5s6i74bqfe025f",
-      "google-site-verification=Z8uiYpXNoz6cu19xv6_rJ7GPC0S0ES41FuwA-H4dth4",
-      "google-site-verification=s-1DswNLnBGEVvlFB5WFaF5MJx0lmUV1C0rK722XUS4",
-      "google-site-verification=ecBOxw10e0n8-B8D35IhyVwkRNhRKrx4wSg36211ySw"
+      "google-site-verification=f4fZ5SCboZNZoBmJCqcx9r2XLOo3ZGRuS-AhTXsxQdo"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; rua=mailto:dmarcreports@infusionsoft.com,mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarcreports-fr@infusionsoft.com,mailto:dmarc_ruf@emaildefense.proofpoint.com; pct=100; fo=1"
@@ -320,11 +334,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=WftUye_dldiVZJVLg52xTBYm5DxirQYS22c_QTjHxFE",
-    "google-site-verification=DertqkC0npNIXrj_ag69XBc2Fu_9_qTB0y0uQp1-D7k",
-    "cisco-ci-domain-verification=75c979906e7b5e9bbf5b674256c43265e545aa031bb6682c754",
     "google-site-verification=8PGA7REJ-oOUYtQ1kt1K-Qb_Zf1y0m2b6LcQgkmENcs",
-    "google-site-verification=nkj81hcbyLz-I-SSFuGa2SjEOK50Ad6OEzr7vIUS0kI"
+    "google-site-verification=Z8uiYpXNoz6cu19xv6_rJ7GPC0S0ES41FuwA-H4dth4",
+    "google-site-verification=ecBOxw10e0n8-B8D35IhyVwkRNhRKrx4wSg36211ySw",
+    "_globalsign-domain-verification=Zv6aPQO0CFgBxwOk23uUOkmdLjhc9qmcz-UnQcgXkA",
+    "google-site-verification=DertqkC0npNIXrj_ag69XBc2Fu_9_qTB0y0uQp1-D7k"
   ],
   "tls2": {
     "alpn": "",
@@ -342,6 +356,10 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
       "bc_pathlen": null,
       "crl_urls": [
         "http://c.pki.goog/we1/gxIBv6B2hYw.crl"
+      ],
+      "san": [
+        "infusionsoft.com",
+        "*.infusionsoft.com"
       ],
       "subject_dn": "3119301706035504031310696e667573696f6e736f66742e636f6d",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
@@ -390,8 +408,13 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
   "x16": {
     "root_status": 301
   },
+  "x17": {
+    "wildcard_san": [
+      "*.infusionsoft.com"
+    ]
+  },
   "elapsed_s": 10.9,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -405,4 +428,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

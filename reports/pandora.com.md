@@ -7,12 +7,12 @@
 | Target | https://pandora.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | pandora.com |
-| Test date | 2026-09-27 01:29 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:40 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
+Total findings: **28** (High: 0, Medium: 0, Low: 5, Info: 23)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -39,8 +39,11 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
 | 21 | low | H21 | HSTS does not cover subdomains | CWE-319 |
 | 22 | info | WK2 | OIDC discovery document published | CWE-200 |
 | 23 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
-| 24 | info | CT1 | 45 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 25 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 24 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 25 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 26 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
+| 27 | info | CT1 | 45 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 28 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -127,7 +130,7 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: drift-domain-verification=7dcb7704b70c0f98d5f1188a55e7fe4c1a0d0a5c8474f0b5d7feaf; shopify-verification-code=QZZP4RdLtXmhnyVfqGJxOtDrTJwdHv; zapier-domain-verification-challenge=0c6f32b8-f62f-4918-aa85-11e2476e37ec
+- **Detail:** Apex TXT records with verification/token content: stripe-verification=6151a13c2e26e26166de3da9cbc43b4b418109e806e0fef941a34da28edc; stripe-verification=9afcd9b96859582b2edf39640758f0a7ca9bbbc04fc0acd4eda69d964978; airtable-verification=92001d7da07339e0b17a973f2faaa71b
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -151,7 +154,7 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
 ### 17. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkpomdcab1smn7.html -> 404; error page/headers match: Apache.
+- **Detail:** GET /xkt9jtadgadipg.html -> 404; error page/headers match: Apache.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 18. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -190,13 +193,31 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
 - **Detail:** The quiet handshake to pandora.com negotiated TLSv1.2 even though the client offered TLS 1.3; the edge caps at 1.2 (legacy/compatibility configuration).
 - **Recommendation:** Enable TLS 1.3 at the edge.
 
-### 24. [INFO] 45 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 24. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of pandora.com contains wildcard SAN entry(ies) *.pandora.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 25. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of pandora.com is http://status.thawte.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 26. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of pandora.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
+### 27. [INFO] 45 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: blog.pandora.com, help.pandora.com, www.help.pandora.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 25. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 28. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: www.help.pandora.com; content may still be served via virtual-host fallback.
@@ -220,47 +241,47 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
       "mx0a-0051e301.pphosted.com (pref 3)"
     ],
     "ns": [
-      "dns2.p05.nsone.net.",
-      "dns1.p05.nsone.net.",
       "ns2.pandora.com.",
-      "ns4.pandora.com."
+      "dns2.p05.nsone.net.",
+      "ns4.pandora.com.",
+      "dns1.p05.nsone.net."
     ],
     "caa": [],
     "spf": [
-      "drift-domain-verification=7dcb7704b70c0f98d5f1188a55e7fe4c1a0d0a5c8474f0b5d7feaf2a17ddaf8b",
-      "shopify-verification-code=QZZP4RdLtXmhnyVfqGJxOtDrTJwdHv",
-      "zapier-domain-verification-challenge=0c6f32b8-f62f-4918-aa85-11e2476e37ec",
-      "stripe-verification=46db797e734d25037c8a1966048d4d0a26f34600f23375c9ab8f1b327dc5b023",
-      "webexdomainverification.4C675B8AC948B136E053AB06FC0A3F65=c8670c99-cf44-4da5-a347-0e378903bd08",
-      "airtable-verification=92001d7da07339e0b17a973f2faaa71b",
+      "stripe-verification=6151a13c2e26e26166de3da9cbc43b4b418109e806e0fef941a34da28edc06ca",
       "stripe-verification=9afcd9b96859582b2edf39640758f0a7ca9bbbc04fc0acd4eda69d964978923b",
-      "anthropic-domain-verification-cehw0s=Q6GJ2C5R4orf8oDA6ntjc8jiI",
-      "onetrust-domain-verification=52ed295d1cc747c8b4a923ee0d52bb89",
-      "stripe-verification=9ac87819ed1e8c4c43fb4806e46ee7ac5135b3ac5eb80fc1ceca8ec0bf1fd7c0",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
-      "bugcrowd-verification=9224a322abc2e3e36bf6aef0cf1d2977",
-      "_9ax3ucie5r4ihbdbsi4tuuy6jex2x7y",
-      "jetbrains-domain-verification=1erv1ckkr599h7o8n4nnatntx",
       "/4SPMALLPHvERsW46Wt5HeyzV7tWXyqSCVio3D+e46JOIQ1Lx4ayzLacYa2Nani5VZLIsG6QzSbAxqQorgT8Pw==",
-      "atlassian-domain-verification=suALAhcWjB6Eq0SuX424kLGZ8kMs8yfsj4LDWz6QHyorTk7BzUFfbXXgI4pyznZy",
+      "airtable-verification=92001d7da07339e0b17a973f2faaa71b",
+      "stripe-verification=46db797e734d25037c8a1966048d4d0a26f34600f23375c9ab8f1b327dc5b023",
+      "onetrust-domain-verification=52ed295d1cc747c8b4a923ee0d52bb89",
+      "drift-domain-verification=7dcb7704b70c0f98d5f1188a55e7fe4c1a0d0a5c8474f0b5d7feaf2a17ddaf8b",
+      "google-site-verification=ZmhaVAHHT8AaKg7hP9Mmd3mrk8AMaSh90uPg77P-Gyo",
+      "monday-com-verification=Y7tba9sDRtLGwJrmA-A2bxVKMIOuhp5g9YnzcMJifOo",
+      "zapier-domain-verification-challenge=0c6f32b8-f62f-4918-aa85-11e2476e37ec",
+      "apple-domain-verification=GVC0xaZwt2Sv9Ivm",
+      "bugcrowd-verification=9224a322abc2e3e36bf6aef0cf1d2977",
+      "stripe-verification=9ac87819ed1e8c4c43fb4806e46ee7ac5135b3ac5eb80fc1ceca8ec0bf1fd7c0",
+      "anthropic-domain-verification-cehw0s=Q6GJ2C5R4orf8oDA6ntjc8jiI",
+      "_9ax3ucie5r4ihbdbsi4tuuy6jex2x7y",
+      "stripe-verification=a2efa4b173f85f9b16a2fe262a5d7fa95a0b18f0ba884723050e917033a5af28",
+      "shopify-verification-code=QZZP4RdLtXmhnyVfqGJxOtDrTJwdHv",
+      "stripe-verification=eef61a09f3c1c4f6890acce9bff70c102c0c389cc77e9970a3b2a17e582f3b27",
+      "Pandora",
+      "webexdomainverification.4C675B8AC948B136E053AB06FC0A3F65=c8670c99-cf44-4da5-a347-0e378903bd08",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
+      "stripe-verification=b7edf88636d477ae4501df1dbebcda1b9f3eb5f895d94a5dcaa35715fd8525a7",
+      "stripe-verification=eb9cdfa80af377c6421610f8153fd4151acb46fe9414e78a4ce90c2d0d82f93a",
+      "jetbrains-domain-verification=1erv1ckkr599h7o8n4nnatntx",
+      "liveramp-site-verification=3auN45Pf2H9Obu6SoSX-izAUSRjBnVPQbEnXgyJK8MQ",
       "stripe-verification=7700e585bc13984d32505fc0743dd1742a7b00ab8f89fd43edbb64b7e86eb3df",
       "docker-verification=09663cec-b2f4-4ce1-92a8-9bdc828efd88",
-      "google-site-verification=ZmhaVAHHT8AaKg7hP9Mmd3mrk8AMaSh90uPg77P-Gyo",
-      "liveramp-site-verification=3auN45Pf2H9Obu6SoSX-izAUSRjBnVPQbEnXgyJK8MQ",
-      "stripe-verification=a2efa4b173f85f9b16a2fe262a5d7fa95a0b18f0ba884723050e917033a5af28",
-      "google-site-verification=7rxKTJwaOBuE3vNSi4Yl0fG04rCK2xr4rYvsy2yMPgs",
-      "stripe-verification=eb9cdfa80af377c6421610f8153fd4151acb46fe9414e78a4ce90c2d0d82f93a",
-      "openai-domain-verification=dv-MtwM2KzO6fmabwatU3A5suMJ",
-      "stripe-verification=47c5a8c489eea6dc578dfd12d08d3b7accf87c7729c8958144a35f50361cc92a",
-      "make-domain-verification=0d44a7b3-d8f7-4bc0-bf24-53609a1f2fe7",
       "facebook-domain-verification=nn42grx580r7pjlyzjzxv3mrnn5lpx",
-      "MS=ms48003601",
-      "stripe-verification=b7edf88636d477ae4501df1dbebcda1b9f3eb5f895d94a5dcaa35715fd8525a7",
-      "stripe-verification=eef61a09f3c1c4f6890acce9bff70c102c0c389cc77e9970a3b2a17e582f3b27",
-      "apple-domain-verification=GVC0xaZwt2Sv9Ivm",
-      "stripe-verification=6151a13c2e26e26166de3da9cbc43b4b418109e806e0fef941a34da28edc06ca",
-      "Pandora",
-      "monday-com-verification=Y7tba9sDRtLGwJrmA-A2bxVKMIOuhp5g9YnzcMJifOo"
+      "atlassian-domain-verification=suALAhcWjB6Eq0SuX424kLGZ8kMs8yfsj4LDWz6QHyorTk7BzUFfbXXgI4pyznZy",
+      "google-site-verification=7rxKTJwaOBuE3vNSi4Yl0fG04rCK2xr4rYvsy2yMPgs",
+      "make-domain-verification=0d44a7b3-d8f7-4bc0-bf24-53609a1f2fe7",
+      "stripe-verification=47c5a8c489eea6dc578dfd12d08d3b7accf87c7729c8958144a35f50361cc92a",
+      "openai-domain-verification=dv-MtwM2KzO6fmabwatU3A5suMJ",
+      "MS=ms48003601"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com;"
@@ -374,11 +395,11 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
     ]
   },
   "apex_txt": [
-    "drift-domain-verification=7dcb7704b70c0f98d5f1188a55e7fe4c1a0d0a5c8474f0b5d7feaf",
-    "shopify-verification-code=QZZP4RdLtXmhnyVfqGJxOtDrTJwdHv",
-    "zapier-domain-verification-challenge=0c6f32b8-f62f-4918-aa85-11e2476e37ec",
+    "stripe-verification=6151a13c2e26e26166de3da9cbc43b4b418109e806e0fef941a34da28edc",
+    "stripe-verification=9afcd9b96859582b2edf39640758f0a7ca9bbbc04fc0acd4eda69d964978",
+    "airtable-verification=92001d7da07339e0b17a973f2faaa71b",
     "stripe-verification=46db797e734d25037c8a1966048d4d0a26f34600f23375c9ab8f1b327dc5",
-    "webexdomainverification.4C675B8AC948B136E053AB06FC0A3F65=c8670c99-cf44-4da5-a347"
+    "onetrust-domain-verification=52ed295d1cc747c8b4a923ee0d52bb89"
   ],
   "tls2": {
     "alpn": "",
@@ -396,6 +417,10 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
       "bc_pathlen": null,
       "crl_urls": [
         "http://cdp.thawte.com/ThawteTLSRSACAG1.crl"
+      ],
+      "san": [
+        "*.pandora.com",
+        "pandora.com"
       ],
       "subject_dn": "310b3009060355040613025553311330110603550408130a43616c69666f726e69613110300e060355040713074f616b6c616e64311a3018060355040a131150616e646f7261204d65646961204c4c433116301406035504030c0d2a2e70616e646f72612e636f6d",
       "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e6331193017060355040b13107777772e64696769636572742e636f6d311d301b0603550403131454686177746520544c5320525341204341204731",
@@ -459,8 +484,14 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 50.5,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.pandora.com"
+    ],
+    "ocsp_http": "http://status.thawte.com"
+  },
+  "elapsed_s": 56.6,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -474,4 +505,5 @@ Total findings: **25** (High: 0, Medium: 0, Low: 5, Info: 20)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

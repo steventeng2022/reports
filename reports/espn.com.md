@@ -7,12 +7,12 @@
 | Target | https://espn.com/ |
 | Bug bounty program | The Walt Disney Company |
 | Listed scope domain | espn.com |
-| Test date | 2026-09-27 01:18 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:27 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
+Total findings: **26** (High: 0, Medium: 0, Low: 5, Info: 21)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,8 +37,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 | 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 21 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
-| 22 | info | CT1 | 118 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 23 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 22 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 23 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 24 | info | H12 | Proxy/edge hop chain disclosed via Via | CWE-200 |
+| 25 | info | CT1 | 118 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 26 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -152,7 +155,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=d5RkNYJAq7RNqkZUNx-NjrdsUxYH77Qs7zl2ZqRj2Sc; google-gws-recovery-domain-verification=41057864; canva-site-verification=WmByBdRldeLifoeVTzfTgA
+- **Detail:** Apex TXT records with verification/token content: extensis-domain-verification=17bb048b-06af-47a8-b8e5-d4a1155683c7; facebook-domain-verification=0y89pokpwmy3a9yqhuqx0wg8r23l9p; google-site-verification=DM1CrNK7K2cq6YvNdmMPeIZBNQxxqw0a6ENutWnHoJQ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -164,7 +167,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 ### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 54.192.248.106 carries PTR server-54-192-248-106.tpe53.r.cloudfront.net. for espn.com.
+- **Detail:** 54.192.248.40 carries PTR server-54-192-248-40.tpe53.r.cloudfront.net. for espn.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -179,13 +182,31 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 - **Detail:** Response headers on espn.com identify the edge as CloudFront / Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
-### 22. [INFO] 118 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 22. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of espn.com contains wildcard SAN entry(ies) *.api.espn.cl, *.api.espn.co.cr, *.api.espn.co.uk; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 23. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of espn.com is http://ocsp.sectigo.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 24. [INFO] Proxy/edge hop chain disclosed via Via (`H12`)
+
+- **CWE:** CWE-200
+- **Detail:** The root of espn.com discloses a 1-hop fronting chain (1.1 b971fb66f084bd7b4f212f76bba6cfa2.cloudfront.net (CloudFront)); the hop sequence inventories the intermediate edge/proxy layers in front of the origin.
+- **Recommendation:** Confirm each hop is an intended layer; trim chain disclosure if unnecessary.
+
+### 25. [INFO] 118 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: affiliate.api.qa.espn.com, artwork.api.qa.espn.com, assets.espn.com, cdp-nifi-eks-prod.aws.dp.hosted.espn.com, dcs7deportes-preview.us-west-2.aws.internal.espn.com, dcs7deportes.us-west-2.aws.internal.espn.com, dcs7domestic-preview.us-west-2.aws.internal.espn.com, dcs7domestic.us-west-2.aws.internal.espn.com, dcs7espn3.us-west-2.aws.internal.espn.com, dcs7soccernet-preview.us-west-2.aws.internal.espn.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 23. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 26. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: affiliate.api.qa.espn.com, cdp-nifi-eks-prod.aws.dp.hosted.espn.com; content may still be served via virtual-host fallback.
@@ -198,54 +219,54 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
   "domain": "espn.com",
   "dns": {
     "a": [
-      "54.192.248.106",
-      "54.192.248.80",
       "54.192.248.40",
-      "54.192.248.14"
+      "54.192.248.106",
+      "54.192.248.14",
+      "54.192.248.80"
     ],
     "aaaa": [
-      "2600:9000:202f:3600:d:ac18:e2c0:93a1",
-      "2600:9000:202f:a600:d:ac18:e2c0:93a1",
-      "2600:9000:202f:f000:d:ac18:e2c0:93a1",
-      "2600:9000:202f:b000:d:ac18:e2c0:93a1",
-      "2600:9000:202f:ca00:d:ac18:e2c0:93a1",
-      "2600:9000:202f:800:d:ac18:e2c0:93a1",
+      "2600:9000:202f:2c00:d:ac18:e2c0:93a1",
+      "2600:9000:202f:e00:d:ac18:e2c0:93a1",
+      "2600:9000:202f:d000:d:ac18:e2c0:93a1",
+      "2600:9000:202f:3000:d:ac18:e2c0:93a1",
+      "2600:9000:202f:f400:d:ac18:e2c0:93a1",
       "2600:9000:202f:8800:d:ac18:e2c0:93a1",
-      "2600:9000:202f:5800:d:ac18:e2c0:93a1"
+      "2600:9000:202f:c400:d:ac18:e2c0:93a1",
+      "2600:9000:202f:d600:d:ac18:e2c0:93a1"
     ],
     "cname": null,
     "mx": [
       "espn-com.mail.protection.outlook.com (pref 5)"
     ],
     "ns": [
-      "ns-846.awsdns-41.net.",
       "ns-122.awsdns-15.com.",
+      "ns-1045.awsdns-02.org.",
       "ns-1936.awsdns-50.co.uk.",
-      "ns-1045.awsdns-02.org."
+      "ns-846.awsdns-41.net."
     ],
     "caa": [],
     "spf": [
-      "smartsheet-site-validation=vnu8x72WuY2SpP5LfwpJ3QEgKvaywdIx",
-      "google-site-verification=d5RkNYJAq7RNqkZUNx-NjrdsUxYH77Qs7zl2ZqRj2Sc",
-      "MS=ms54940749",
-      "google-gws-recovery-domain-verification=41057864",
-      "pzhuVdOHPcxbY0BufDtyUHwrXoU8KikclnWWDgxOWNCyyCXtpK1Ws+A4mpps+Rtq0GARiBCA+IVLiCYcDhlSLw==",
-      "v=spf1 include:servers.mcsv.net mx ip4:74.123.203.125 ip4:74.123.200.120 ip4:74.123.200.35 ip4:74.123.200.36 ip4:74.123.203.98 ip4:74.123.200.222 ip4:192.234.2.39 include:_spf.emailcampaigns.net include:userinclude.dme3ds1.com include:spf.disney.com ~all",
-      "q1sjrk62qcsk7u2g2q8f46lhp",
-      "canva-site-verification=WmByBdRldeLifoeVTzfTgA",
-      "cisco-ci-domain-verification=48652156c723cc0989fbc1c14af4f05c20b2c7b50fa948e499ca824f79f41b69",
       "docusign=0f5ff8fc-4420-4d52-9877-33f1485d191f",
-      "adobe-idp-site-verification=bb3da93fff816c4b9c75b5b87e7afbf88dff2c0dce3c5d8f6357552992c65903",
-      "facebook-domain-verification=0y89pokpwmy3a9yqhuqx0wg8r23l9p",
-      "D074-DF5F-73F8-42A6-65B8-DCED-DDCF-F835",
-      "ciscocidomainverification=2c2658d02e94ce88b29494db432d2c911fc43abd373e5e485b58562f8dd78c80",
-      "dropbox-domain-verification=f8opl8j5mr5e",
       "extensis-domain-verification=17bb048b-06af-47a8-b8e5-d4a1155683c7",
+      "facebook-domain-verification=0y89pokpwmy3a9yqhuqx0wg8r23l9p",
+      "google-site-verification=DM1CrNK7K2cq6YvNdmMPeIZBNQxxqw0a6ENutWnHoJQ",
+      "MS=ms54940749",
+      "atlassian-domain-verification=5lqJwtfJPMHqC/aGvT/7s2BR53IHCs9P6vFjCQYA5nkQ4mvoHKTqNTW7gucscGW7",
+      "canva-site-verification=WmByBdRldeLifoeVTzfTgA",
+      "q1sjrk62qcsk7u2g2q8f46lhp",
       "asv=1cfe02e3a81e8e65022ac143e0107fdd",
       "adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e02bd5d0dc3916",
+      "smartsheet-site-validation=vnu8x72WuY2SpP5LfwpJ3QEgKvaywdIx",
+      "D074-DF5F-73F8-42A6-65B8-DCED-DDCF-F835",
+      "v=spf1 include:servers.mcsv.net mx ip4:74.123.203.125 ip4:74.123.200.120 ip4:74.123.200.35 ip4:74.123.200.36 ip4:74.123.203.98 ip4:74.123.200.222 ip4:192.234.2.39 include:_spf.emailcampaigns.net include:userinclude.dme3ds1.com include:spf.disney.com ~all",
+      "adobe-idp-site-verification=bb3da93fff816c4b9c75b5b87e7afbf88dff2c0dce3c5d8f6357552992c65903",
+      "google-gws-recovery-domain-verification=41057864",
+      "cisco-ci-domain-verification=48652156c723cc0989fbc1c14af4f05c20b2c7b50fa948e499ca824f79f41b69",
+      "google-site-verification=d5RkNYJAq7RNqkZUNx-NjrdsUxYH77Qs7zl2ZqRj2Sc",
       "docusign=e95b2d67-24b3-4e1e-9402-902d0b5e0c63",
-      "google-site-verification=DM1CrNK7K2cq6YvNdmMPeIZBNQxxqw0a6ENutWnHoJQ",
-      "atlassian-domain-verification=5lqJwtfJPMHqC/aGvT/7s2BR53IHCs9P6vFjCQYA5nkQ4mvoHKTqNTW7gucscGW7"
+      "ciscocidomainverification=2c2658d02e94ce88b29494db432d2c911fc43abd373e5e485b58562f8dd78c80",
+      "dropbox-domain-verification=f8opl8j5mr5e",
+      "pzhuVdOHPcxbY0BufDtyUHwrXoU8KikclnWWDgxOWNCyyCXtpK1Ws+A4mpps+Rtq0GARiBCA+IVLiCYcDhlSLw=="
     ],
     "dmarc": [
       "v=DMARC1;p=none;fo=1;rua=mailto:Corp.Dmarc_RUA@disney.com;ruf=mailto:Corp.Dmarc_RUF@disney.com"
@@ -371,7 +392,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
     }
   },
   "ports": {
-    "ip": "54.192.248.106",
+    "ip": "54.192.248.40",
     "open": []
   },
   "https": {
@@ -467,11 +488,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
     ]
   },
   "apex_txt": [
-    "google-site-verification=d5RkNYJAq7RNqkZUNx-NjrdsUxYH77Qs7zl2ZqRj2Sc",
-    "google-gws-recovery-domain-verification=41057864",
-    "canva-site-verification=WmByBdRldeLifoeVTzfTgA",
-    "cisco-ci-domain-verification=48652156c723cc0989fbc1c14af4f05c20b2c7b50fa948e499c",
-    "adobe-idp-site-verification=bb3da93fff816c4b9c75b5b87e7afbf88dff2c0dce3c5d8f6357"
+    "extensis-domain-verification=17bb048b-06af-47a8-b8e5-d4a1155683c7",
+    "facebook-domain-verification=0y89pokpwmy3a9yqhuqx0wg8r23l9p",
+    "google-site-verification=DM1CrNK7K2cq6YvNdmMPeIZBNQxxqw0a6ENutWnHoJQ",
+    "atlassian-domain-verification=5lqJwtfJPMHqC/aGvT/7s2BR53IHCs9P6vFjCQYA5nkQ4mvoHK",
+    "canva-site-verification=WmByBdRldeLifoeVTzfTgA"
   ],
   "tls2": {
     "alpn": "",
@@ -489,6 +510,28 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.sectigo.com/SectigoPublicServerAuthenticationCAOVR36.crl"
+      ],
+      "san": [
+        "editions.espn.com",
+        "*.api.espn.cl",
+        "*.api.espn.co.cr",
+        "*.api.espn.co.uk",
+        "*.api.espn.com.ar",
+        "*.api.espn.com.au",
+        "*.api.espn.com.br",
+        "*.api.espn.com.co",
+        "*.api.espn.com.do",
+        "*.api.espn.com.ec",
+        "*.api.espn.com.gt",
+        "*.api.espn.com.mx",
+        "*.api.espn.com.pa",
+        "*.api.espn.com.pe",
+        "*.api.espn.com.sg",
+        "*.api.espn.com.uy",
+        "*.api.espn.com.ve",
+        "*.api.espn.es",
+        "*.api.espn.in",
+        "*.api.espn.nl"
       ],
       "subject_dn": "310b3009060355040613025553311330110603550408130a43616c69666f726e69613120301e060355040a13175468652057616c74204469736e657920436f6d70616e79311a30180603550403131165646974696f6e732e6573706e2e636f6d",
       "issuer_dn": "310b300906035504061302474231183016060355040a130f5365637469676f204c696d69746564313730350603550403132e5365637469676f205075626c6963205365727665722041757468656e7469636174696f6e204341204f5620523336",
@@ -519,7 +562,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
   "x12": {
     "status": 202,
     "ptr": [
-      "server-54-192-248-106.tpe53.r.cloudfront.net."
+      "server-54-192-248-40.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -552,8 +595,19 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
       "Fastly"
     ]
   },
-  "elapsed_s": 5.0,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.api.espn.cl",
+      "*.api.espn.co.cr",
+      "*.api.espn.co.uk",
+      "*.api.espn.com.ar",
+      "*.api.espn.com.au"
+    ],
+    "ocsp_http": "http://ocsp.sectigo.com",
+    "via": "1.1 b971fb66f084bd7b4f212f76bba6cfa2.cloudfront.net (CloudFront)"
+  },
+  "elapsed_s": 5.3,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -567,4 +621,5 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

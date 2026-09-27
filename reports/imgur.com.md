@@ -7,12 +7,12 @@
 | Target | https://imgur.com/ |
 | Bug bounty program | Imgur |
 | Listed scope domain | imgur.com |
-| Test date | 2026-09-27 01:24 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:34 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
+Total findings: **33** (High: 0, Medium: 0, Low: 5, Info: 28)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -45,6 +45,10 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
 | 27 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
 | 28 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
 | 29 | info | WK4 | RFC 8615 change-password endpoint live | CWE-200 |
+| 30 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 31 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 32 | info | WK5 | RFC 9449 DPoP JWKS published | CWE-200 |
+| 33 | info | WK6 | W3C Origin RSA Keys published | CWE-200 |
 
 ## Detailed findings
 
@@ -138,13 +142,13 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (vys9amuvb120yy.imgur.com and ncpb1hnoweeqts.imgur.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (dmhhwjmmm0e5yc.imgur.com and ksaf0d63lm5dj8.imgur.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=BzDTAgIuFjEqDFJFvpiwwNkX9LD8RuDq_8VrW1DFJQc; 1password-site-verification=BSXZBGRLX5ETBE6LCXUXT3ZACE; google-site-verification=lkg-LO7WaYRV1KFiztrPou_kY0KNS_h7c2nuhfia-ko
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=zBnQjyxIXRiBvnX39OwQsQjQ0NHRTT8z7jLkSYoDwQI0LDJEbk; perplexity-ai-domain-verification-rcshp6=bIjE0TyYQyGqn2X0tjlqweDO0; 1password-site-verification=BSXZBGRLX5ETBE6LCXUXT3ZACE
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -231,6 +235,30 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
 - **Detail:** /.well-known/change-password on imgur.com answers 200; a password-change service endpoint is advertised.
 - **Recommendation:** Confirm the endpoint is an intended user-facing service.
 
+### 30. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of imgur.com contains wildcard SAN entry(ies) *.imgur.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 31. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of imgur.com is http://ocsp.sectigo.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 32. [INFO] RFC 9449 DPoP JWKS published (`WK5`)
+
+- **CWE:** CWE-200
+- **Detail:** /.well-known/dpop-jwks.json on imgur.com answers 200; the DPoP proof-verification key set is publicly disclosed.
+- **Recommendation:** Confirm the publication is intended and kept current.
+
+### 33. [INFO] W3C Origin RSA Keys published (`WK6`)
+
+- **CWE:** CWE-200
+- **Detail:** /.well-known/origin-rsa-keys.json on imgur.com answers 200; W3C Origin RSA Keys (origin-binding key publication) are disclosed.
+- **Recommendation:** Confirm the publication is intended and kept current.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -245,34 +273,34 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
     "cname": null,
     "mx": [
       "aspmx3.googlemail.com (pref 10)",
-      "aspmx2.googlemail.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "aspmx2.googlemail.com (pref 10)"
     ],
     "ns": [
-      "ns-1677.awsdns-17.co.uk.",
       "ns-577.awsdns-08.net.",
-      "ns-457.awsdns-57.com.",
-      "ns-1198.awsdns-21.org."
+      "ns-1198.awsdns-21.org.",
+      "ns-1677.awsdns-17.co.uk.",
+      "ns-457.awsdns-57.com."
     ],
     "caa": [],
     "spf": [
-      "d2jm6zv3c45cb6.cloudfront.net",
-      "mixpanel-domain-verify=877fb4f7-e334-4b13-9770-1bec2610bf63",
-      "ZOOM_verify_7qYn368TOF6Au0Hn7KWJ2P",
-      "google-site-verification=BzDTAgIuFjEqDFJFvpiwwNkX9LD8RuDq_8VrW1DFJQc",
-      "1password-site-verification=BSXZBGRLX5ETBE6LCXUXT3ZACE",
-      "google-site-verification=lkg-LO7WaYRV1KFiztrPou_kY0KNS_h7c2nuhfia-ko",
-      "BSI106497997089",
-      "google-site-verification=Kh_iAw1AcwclD3rmGP7pOJp0zBgCwcW1V-L-mUXHMls",
-      "MS=ms20045453",
       "atlassian-domain-verification=zBnQjyxIXRiBvnX39OwQsQjQ0NHRTT8z7jLkSYoDwQI0LDJEbkHtP50JXc/nBUSm",
-      "perplexity-ai-domain-verification-rcshp6=bIjE0TyYQyGqn2X0tjlqweDO0",
-      "xf6t3vb8tjqqgypgpbw0bdmk98z49dk9",
-      "google-site-verification=jZetkGMTS63ZvRLFkjDNglMVkFkR-cZYwysKhIcg1S4",
       "v=spf1 ip4:54.198.157.21 include:mailgun.org include:amazonses.com include:_spf.google.com include:mail.zendesk.com -all",
-      "postman-domain-verification=45da7b179f25335b9e65a9b8d26d2fcd0739b9a1bf830b954c8abffd4acdb020707de3ddae662ed12ce411cce3357a6bd5a50c30c82bf4c481e40632f12d6ba6"
+      "perplexity-ai-domain-verification-rcshp6=bIjE0TyYQyGqn2X0tjlqweDO0",
+      "1password-site-verification=BSXZBGRLX5ETBE6LCXUXT3ZACE",
+      "mixpanel-domain-verify=877fb4f7-e334-4b13-9770-1bec2610bf63",
+      "google-site-verification=BzDTAgIuFjEqDFJFvpiwwNkX9LD8RuDq_8VrW1DFJQc",
+      "google-site-verification=lkg-LO7WaYRV1KFiztrPou_kY0KNS_h7c2nuhfia-ko",
+      "d2jm6zv3c45cb6.cloudfront.net",
+      "postman-domain-verification=45da7b179f25335b9e65a9b8d26d2fcd0739b9a1bf830b954c8abffd4acdb020707de3ddae662ed12ce411cce3357a6bd5a50c30c82bf4c481e40632f12d6ba6",
+      "google-site-verification=jZetkGMTS63ZvRLFkjDNglMVkFkR-cZYwysKhIcg1S4",
+      "MS=ms20045453",
+      "ZOOM_verify_7qYn368TOF6Au0Hn7KWJ2P",
+      "google-site-verification=Kh_iAw1AcwclD3rmGP7pOJp0zBgCwcW1V-L-mUXHMls",
+      "xf6t3vb8tjqqgypgpbw0bdmk98z49dk9",
+      "BSI106497997089"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc@imgur.com"
@@ -360,11 +388,11 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=BzDTAgIuFjEqDFJFvpiwwNkX9LD8RuDq_8VrW1DFJQc",
+    "atlassian-domain-verification=zBnQjyxIXRiBvnX39OwQsQjQ0NHRTT8z7jLkSYoDwQI0LDJEbk",
+    "perplexity-ai-domain-verification-rcshp6=bIjE0TyYQyGqn2X0tjlqweDO0",
     "1password-site-verification=BSXZBGRLX5ETBE6LCXUXT3ZACE",
-    "google-site-verification=lkg-LO7WaYRV1KFiztrPou_kY0KNS_h7c2nuhfia-ko",
-    "google-site-verification=Kh_iAw1AcwclD3rmGP7pOJp0zBgCwcW1V-L-mUXHMls",
-    "atlassian-domain-verification=zBnQjyxIXRiBvnX39OwQsQjQ0NHRTT8z7jLkSYoDwQI0LDJEbk"
+    "google-site-verification=BzDTAgIuFjEqDFJFvpiwwNkX9LD8RuDq_8VrW1DFJQc",
+    "google-site-verification=lkg-LO7WaYRV1KFiztrPou_kY0KNS_h7c2nuhfia-ko"
   ],
   "tls2": {
     "alpn": "",
@@ -381,6 +409,10 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
       "bc_ca": null,
       "bc_pathlen": null,
       "crl_urls": null,
+      "san": [
+        "*.imgur.com",
+        "imgur.com"
+      ],
       "subject_dn": "3114301206035504030c0b2a2e696d6775722e636f6d",
       "issuer_dn": "310b300906035504061302474231183016060355040a130f5365637469676f204c696d69746564313730350603550403132e5365637469676f205075626c6963205365727665722041757468656e7469636174696f6e20434120445620523336",
       "not_before": "20260213000000",
@@ -435,8 +467,16 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
     ],
     "change_password": true
   },
-  "elapsed_s": 37.7,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.imgur.com"
+    ],
+    "ocsp_http": "http://ocsp.sectigo.com",
+    "wk5": true,
+    "wk6": true
+  },
+  "elapsed_s": 40.1,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -450,4 +490,5 @@ Total findings: **29** (High: 0, Medium: 0, Low: 5, Info: 24)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

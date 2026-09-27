@@ -7,12 +7,12 @@
 | Target | https://nypost.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | nypost.com |
-| Test date | 2026-09-27 01:28 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:39 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **25** (High: 0, Medium: 0, Low: 2, Info: 23)
+Total findings: **27** (High: 0, Medium: 0, Low: 2, Info: 25)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -40,7 +40,9 @@ Total findings: **25** (High: 0, Medium: 0, Low: 2, Info: 23)
 | 22 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
 | 23 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
 | 24 | info | HTML12 | preconnect/dns-prefetch declares third-party destinations | CWE-200 |
-| 25 | info | CT1 | 48 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 25 | info | HTML16 | Inline event handlers in root document | CWE-79 |
+| 26 | info | HTML19 | data: URIs present in root document | CWE-200 |
+| 27 | info | CT1 | 48 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -104,7 +106,7 @@ Total findings: **25** (High: 0, Medium: 0, Low: 2, Info: 23)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=14BE65E00D7267440AC2843EDFF82780; gc-ai-domain-verification-pqnv2r=6l7d3qRIy8sKfMz0EsSBxqr80; yahoo-verification-key=ZGc2aNHEalcpUmqoYUCKock6uR7n971BQPyq+avH5js=
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=uNoIhBXurxzVlQa0FvK2t9Yld5byfvXbFRQaMToGvrieKjBdyl; google-site-verification=pkTc123LIT1uBNNTg9WvGeJjxI0rCnCzmcVYSeFyLFU; apple-domain-verification=37Qe0gDvvRCGgED6VegwSRnviuX7KRbEhaVgN8IGXpQ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -134,7 +136,7 @@ Total findings: **25** (High: 0, Medium: 0, Low: 2, Info: 23)
 ### 15. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xk2xw4s8qrchxo.html -> 404; error page/headers match: Nginx, WordPress.
+- **Detail:** GET /xk7fa4pb8gnr2m.html -> 404; error page/headers match: Nginx, WordPress.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 16. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -191,7 +193,19 @@ Total findings: **25** (High: 0, Medium: 0, Low: 2, Info: 23)
 - **Detail:** Root document of nypost.com declares preconnect/dns-prefetch/modulepreload for 10 third-party registrable domain(s) (e.g. cookielaw.org, doubleclick.net, google.com); declared (not yet loaded) destinations widen the expected network topology of the page.
 - **Recommendation:** Review declared third-party destinations as part of the supply-chain inventory.
 
-### 25. [INFO] 48 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 25. [INFO] Inline event handlers in root document (`HTML16`)
+
+- **CWE:** CWE-79
+- **Detail:** The root document of nypost.com contains 28 inline event handler attribute(s); each is a DOM-level execution point that SRI does not constrain.
+- **Recommendation:** Move handlers to external scripts where feasible and keep them covered by CSP.
+
+### 26. [INFO] data: URIs present in root document (`HTML19`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of nypost.com references 1 data: URI payload(s); inline data resources bypass the normal fetch/CORS path and should be inventoried.
+- **Recommendation:** Review inline data payloads (especially scripts/iframes) as part of the asset inventory.
+
+### 27. [INFO] 48 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: careers.nypost.com, my.nypost.com, shop.nypost.com, store.nypost.com
@@ -213,47 +227,47 @@ Total findings: **25** (High: 0, Medium: 0, Low: 2, Info: 23)
       "mxb-00596a01.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns-112.awsdns-14.com.",
-      "ns-1696.awsdns-20.co.uk.",
       "ns-670.awsdns-19.net.",
-      "ns-1469.awsdns-55.org."
+      "ns-1469.awsdns-55.org.",
+      "ns-1696.awsdns-20.co.uk.",
+      "ns-112.awsdns-14.com."
     ],
     "caa": [],
     "spf": [
-      "globalsign-domain-verification=14BE65E00D7267440AC2843EDFF82780",
-      "gc-ai-domain-verification-pqnv2r=6l7d3qRIy8sKfMz0EsSBxqr80",
-      "amazonses:C+fSBo78zXZisXWUUbHRXRXY19xolN+ug+xevTtXL+k=",
-      "yahoo-verification-key=ZGc2aNHEalcpUmqoYUCKock6uR7n971BQPyq+avH5js=",
-      "google-site-verification=S57vRF8jMqWVb1wbslt1vZqTKLBQPRLeihUQGU4LQL4",
+      "atlassian-domain-verification=uNoIhBXurxzVlQa0FvK2t9Yld5byfvXbFRQaMToGvrieKjBdylMs8jcSXRKQKqao",
+      "google-site-verification=pkTc123LIT1uBNNTg9WvGeJjxI0rCnCzmcVYSeFyLFU",
+      "apple-domain-verification=37Qe0gDvvRCGgED6VegwSRnviuX7KRbEhaVgN8IGXpQ",
+      "knowbe4-site-verification=0694ce74005828dc4bb8b7299bfb6f61",
+      "64392d9425e042418ac52d053c1ecb2f",
       "onetrust-domain-verification=e7aaac6a2eba4af5831f665fd4355b18",
       "globalsign-domain-verification=E1A5DBF2B0DE3B53A5674C61CAB23AD2",
-      "google-site-verification=PN2Qi9bdkJ4SDeGCzwK6mosjk_cdEPkd-epRWHrqs7M",
+      "ZOOM_verify_59WiJX6USMK92Hbu6-iuEg",
+      "google-site-verification=S57vRF8jMqWVb1wbslt1vZqTKLBQPRLeihUQGU4LQL4",
+      "gc-ai-domain-verification-pqnv2r=6l7d3qRIy8sKfMz0EsSBxqr80",
       "google-site-verification=43S5hR4E09EYHuJ0EddR08WUtCjmPb3zJDOY1qaqieg",
+      "globalsign-domain-verification=015A85DB506CC703E147E2E1A8234FFA",
+      "google-site-verification=rqQNsAZmdVyYCBkD6XaUsf_6Aq8knJPcJ_AJm_15mSM",
+      "openai-domain-verification=dv-zTDjYaeUtH0Z7a6WRNHJHPNH",
+      "facebook-domain-verification=a5ak341y6mn6scu375wpuvy5h38u0",
+      "profound-domain-verification-f8v9td=J1enbUIBGr8ls69bKh4sLheZC",
       "google-site-verification=Ut_6-La1_H3SIW8cw3Jxn5gBHjCOb1mEm5wEciI90j8",
       "pinterest-site-verification=8ee9ddd73c0b33e9c9606a95d1763cc7",
-      "globalsign-domain-verification=015A85DB506CC703E147E2E1A8234FFA",
-      "openai-domain-verification=dv-zTDjYaeUtH0Z7a6WRNHJHPNH",
+      "google-site-verification=PN2Qi9bdkJ4SDeGCzwK6mosjk_cdEPkd-epRWHrqs7M",
       "figma-domain-verification=b411f1d2852c2c7e057a2d6d70fb22896f37ccc1412d1e1bb4f9da14e2b78ad9-1769000244",
-      "google-site-verification=TfuBznU2bqij21_J2S6N2IDNQta9zajEFCIxJuh033J",
-      "google-site-verification=pkTc123LIT1uBNNTg9WvGeJjxI0rCnCzmcVYSeFyLFU",
-      "knowbe4-site-verification=0694ce74005828dc4bb8b7299bfb6f61",
-      "facebook-domain-verification=a5ak341y6mn6scu375wpuvy5h38u0",
-      "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDiTxvTgpRaUPa3Zsawin7pRP+CPIij6s1io0EsxRAfrCox6uw/QdKyEiozMHKz14AWPx6gLqb09Om7xmN9Snb5tcnWQdD46XFld1rm+DVwP1UezK/VagJDp6aMhabY1T1hBpK4R/YBnQ70R1AivL6Km7TfNgRU6UMSx2TtQnkFawIDAQAB",
-      "tollbit-domain-verification=80476469dd961d48a2f36d45785f7b4bf6823867c0b612c475a6b073c762576c",
-      "amazonses:nZi4yMmejKgD3iT0h5S+LGrgaQGq6NVUPnD4v+R9htc=",
-      "64392d9425e042418ac52d053c1ecb2f",
-      "atlassian-domain-verification=uNoIhBXurxzVlQa0FvK2t9Yld5byfvXbFRQaMToGvrieKjBdylMs8jcSXRKQKqao",
-      "apple-domain-verification=37Qe0gDvvRCGgED6VegwSRnviuX7KRbEhaVgN8IGXpQ",
-      "ZOOM_verify_59WiJX6USMK92Hbu6-iuEg",
-      "profound-domain-verification-f8v9td=J1enbUIBGr8ls69bKh4sLheZC",
-      "adobe-idp-site-verification=7ef638bb68822798685f96e436bfc87a6f79319dd86369e447b84bb8ea9c6f68",
+      "globalsign-domain-verification=14BE65E00D7267440AC2843EDFF82780",
+      "ValidationTokenValue=be3a705a-0d8d-4c88-91dc-0ebe1d8e2f6d",
       "globalsign-domain-verification=DC5FAF3AEB5DC469953A669244E3DABD",
       "apple-domain-verification=lPyM98oF1jmNh7Ts",
+      "tollbit-domain-verification=80476469dd961d48a2f36d45785f7b4bf6823867c0b612c475a6b073c762576c",
+      "yahoo-verification-key=ZGc2aNHEalcpUmqoYUCKock6uR7n971BQPyq+avH5js=",
+      "adobe-idp-site-verification=7ef638bb68822798685f96e436bfc87a6f79319dd86369e447b84bb8ea9c6f68",
+      "ZOOM_verify_GgmxWj_4QZCCMGFMQbCp5Q",
+      "google-site-verification=TfuBznU2bqij21_J2S6N2IDNQta9zajEFCIxJuh033J",
+      "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDiTxvTgpRaUPa3Zsawin7pRP+CPIij6s1io0EsxRAfrCox6uw/QdKyEiozMHKz14AWPx6gLqb09Om7xmN9Snb5tcnWQdD46XFld1rm+DVwP1UezK/VagJDp6aMhabY1T1hBpK4R/YBnQ70R1AivL6Km7TfNgRU6UMSx2TtQnkFawIDAQAB",
+      "amazonses:C+fSBo78zXZisXWUUbHRXRXY19xolN+ug+xevTtXL+k=",
+      "amazonses:nZi4yMmejKgD3iT0h5S+LGrgaQGq6NVUPnD4v+R9htc=",
       "google-site-verification=5uYHzCPszHHLF2QyFiup1p177WJxzsWoUNaUCs_fhkQ",
-      "v=spf1 ip4:205.203.130.22 ip4:205.203.130.101 ip4:205.203.130.102 ip4:205.203.136.101 ip4:205.203.136.102 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
-      "ValidationTokenValue=be3a705a-0d8d-4c88-91dc-0ebe1d8e2f6d",
-      "google-site-verification=rqQNsAZmdVyYCBkD6XaUsf_6Aq8knJPcJ_AJm_15mSM",
-      "ZOOM_verify_GgmxWj_4QZCCMGFMQbCp5Q"
+      "v=spf1 ip4:205.203.130.22 ip4:205.203.130.101 ip4:205.203.130.102 ip4:205.203.136.101 ip4:205.203.136.102 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=quarantine; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -368,10 +382,10 @@ Total findings: **25** (High: 0, Medium: 0, Low: 2, Info: 23)
     ]
   },
   "apex_txt": [
-    "globalsign-domain-verification=14BE65E00D7267440AC2843EDFF82780",
-    "gc-ai-domain-verification-pqnv2r=6l7d3qRIy8sKfMz0EsSBxqr80",
-    "yahoo-verification-key=ZGc2aNHEalcpUmqoYUCKock6uR7n971BQPyq+avH5js=",
-    "google-site-verification=S57vRF8jMqWVb1wbslt1vZqTKLBQPRLeihUQGU4LQL4",
+    "atlassian-domain-verification=uNoIhBXurxzVlQa0FvK2t9Yld5byfvXbFRQaMToGvrieKjBdyl",
+    "google-site-verification=pkTc123LIT1uBNNTg9WvGeJjxI0rCnCzmcVYSeFyLFU",
+    "apple-domain-verification=37Qe0gDvvRCGgED6VegwSRnviuX7KRbEhaVgN8IGXpQ",
+    "knowbe4-site-verification=0694ce74005828dc4bb8b7299bfb6f61",
     "onetrust-domain-verification=e7aaac6a2eba4af5831f665fd4355b18"
   ],
   "tls2": {
@@ -390,6 +404,10 @@ Total findings: **25** (High: 0, Medium: 0, Low: 2, Info: 23)
       "bc_pathlen": null,
       "crl_urls": [
         "http://ye2.c.lencr.org/16.crl"
+      ],
+      "san": [
+        "nypost.com",
+        "www.nypost.com"
       ],
       "subject_dn": "311330110603550403130a6e79706f73742e636f6d",
       "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303594532",
@@ -464,8 +482,12 @@ Total findings: **25** (High: 0, Medium: 0, Low: 2, Info: 23)
       "wp.com"
     ]
   },
-  "elapsed_s": 34.4,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "inline_handlers": 28,
+    "data_uris": 1
+  },
+  "elapsed_s": 34.3,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -479,4 +501,5 @@ Total findings: **25** (High: 0, Medium: 0, Low: 2, Info: 23)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

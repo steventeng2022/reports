@@ -7,12 +7,12 @@
 | Target | https://dailymotion.com/ |
 | Bug bounty program | Dailymotion |
 | Listed scope domain | dailymotion.com |
-| Test date | 2026-09-27 01:15 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:24 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
+Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,6 +36,8 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 | 18 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 19 | info | SRV1 | Server header discloses a product version | CWE-200 |
 | 20 | info | H25 | server-timing response header exposed | CWE-200 |
+| 21 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 22 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 
 ## Detailed findings
 
@@ -128,7 +130,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: figma-domain-verification=cbb3b2f479e5448b33c1db6b92c0a5c13113593739aa38b3ab18f4; anthropic-domain-verification-c1804p=NXPXkMxpSDDbn8bTInhn5Ajb7; facebook-domain-verification=12wxrtyxlslijcmfpit8f0fwtlywlz
+- **Detail:** Apex TXT records with verification/token content: notion-domain-verification=uvbWKKeyZnS8S7Wbx92ycOmg6ciLlUt4DXUbFAGGx9K; atlassian-domain-verification=1fQPUuD1xWMMiqUh4TDo7tO4mPlbE/ptj393wMdMtIRv5UXlZm; figma-domain-verification=cbb3b2f479e5448b33c1db6b92c0a5c13113593739aa38b3ab18f4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -167,6 +169,18 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - **Detail:** The root response of dailymotion.com sends server-timing (total;dur=0, dc;desc="ix7"); server/edge processing metrics are disclosed to any client.
 - **Recommendation:** Restrict server-timing to authenticated/debug contexts if the internals are sensitive.
 
+### 21. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of dailymotion.com contains wildcard SAN entry(ies) *.dailymotion.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 22. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of dailymotion.com is http://ocsp.sectigo.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -188,23 +202,23 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     ],
     "caa": [],
     "spf": [
+      "docusign=c8b32be7-de71-4c64-a061-78cd9ef299ee",
+      "notion-domain-verification=uvbWKKeyZnS8S7Wbx92ycOmg6ciLlUt4DXUbFAGGx9K",
+      "v=spf1 include:spf.protection.outlook.com include:_spf.salesforce.com include:_spf.google.com include:spfa.dailymotion.com include:spfb.dailymotion.com include:spfc.dailymotion.com ~all",
+      "atlassian-domain-verification=1fQPUuD1xWMMiqUh4TDo7tO4mPlbE/ptj393wMdMtIRv5UXlZmKDb2cfLlApGCBs",
       "figma-domain-verification=cbb3b2f479e5448b33c1db6b92c0a5c13113593739aa38b3ab18f4e7dfcad023-1777467509",
       "OSSRH-69635",
-      "docusign=c8b32be7-de71-4c64-a061-78cd9ef299ee",
-      "anthropic-domain-verification-c1804p=NXPXkMxpSDDbn8bTInhn5Ajb7",
       "facebook-domain-verification=12wxrtyxlslijcmfpit8f0fwtlywlz",
-      "MS=ms31612776",
-      "v=spf1 include:spf.protection.outlook.com include:_spf.salesforce.com include:_spf.google.com include:spfa.dailymotion.com include:spfb.dailymotion.com include:spfc.dailymotion.com ~all",
-      "notion-domain-verification=uvbWKKeyZnS8S7Wbx92ycOmg6ciLlUt4DXUbFAGGx9K",
-      "google-site-verification=jb-qAE0Qy-NAyOuv1frZT1A1UE6gNE955_I3lhjZP_0",
-      "atlassian-domain-verification=1fQPUuD1xWMMiqUh4TDo7tO4mPlbE/ptj393wMdMtIRv5UXlZmKDb2cfLlApGCBs",
-      "google-site-verification=CmwXiGhZe_wN9v_ACMLi26gPNF8jMSiO7IIm3uJDflU",
       "wiz-domain-verification=22e8ef3cd472ce86a7a48ea0bf2d3113fa543c2d41f969132187ce1c7142466e",
+      "apple-domain-verification=Xc0pXSUjiGdd6fzI",
       "jamf-site-verification=tyNylgsFuzDaZKhtv2ws8A",
       "miro-verification=a02c054603f34e1def7bec67636b72d31e230cf4",
+      "anthropic-domain-verification-c1804p=NXPXkMxpSDDbn8bTInhn5Ajb7",
+      "MS=ms31612776",
+      "google-site-verification=CmwXiGhZe_wN9v_ACMLi26gPNF8jMSiO7IIm3uJDflU",
       "canva-site-verification=M-ynsH9PuwqgXIvdn1n6XA",
-      "432125346-6247381",
-      "apple-domain-verification=Xc0pXSUjiGdd6fzI"
+      "google-site-verification=jb-qAE0Qy-NAyOuv1frZT1A1UE6gNE955_I3lhjZP_0",
+      "432125346-6247381"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-reports@dailymotion.com"
@@ -287,11 +301,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "figma-domain-verification=cbb3b2f479e5448b33c1db6b92c0a5c13113593739aa38b3ab18f4",
-    "anthropic-domain-verification-c1804p=NXPXkMxpSDDbn8bTInhn5Ajb7",
-    "facebook-domain-verification=12wxrtyxlslijcmfpit8f0fwtlywlz",
     "notion-domain-verification=uvbWKKeyZnS8S7Wbx92ycOmg6ciLlUt4DXUbFAGGx9K",
-    "google-site-verification=jb-qAE0Qy-NAyOuv1frZT1A1UE6gNE955_I3lhjZP_0"
+    "atlassian-domain-verification=1fQPUuD1xWMMiqUh4TDo7tO4mPlbE/ptj393wMdMtIRv5UXlZm",
+    "figma-domain-verification=cbb3b2f479e5448b33c1db6b92c0a5c13113593739aa38b3ab18f4",
+    "facebook-domain-verification=12wxrtyxlslijcmfpit8f0fwtlywlz",
+    "wiz-domain-verification=22e8ef3cd472ce86a7a48ea0bf2d3113fa543c2d41f969132187ce1c"
   ],
   "tls2": {
     "alpn": "",
@@ -308,6 +322,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "bc_ca": null,
       "bc_pathlen": null,
       "crl_urls": null,
+      "san": [
+        "*.dailymotion.com",
+        "dailymotion.com"
+      ],
       "subject_dn": "311a301806035504030c112a2e6461696c796d6f74696f6e2e636f6d",
       "issuer_dn": "310b300906035504061302415431153013060355040a130c5a65726f53534c20476d62483120301e060355040313175a65726f53534c205253412044562053534c2043412032",
       "not_before": "20260727000000",
@@ -366,8 +384,14 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     "root_status": 301,
     "server_timing": "total;dur=0, dc;desc=\"ix7\""
   },
-  "elapsed_s": 58.0,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.dailymotion.com"
+    ],
+    "ocsp_http": "http://ocsp.sectigo.com"
+  },
+  "elapsed_s": 60.8,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -381,4 +405,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

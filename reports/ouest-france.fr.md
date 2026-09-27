@@ -7,8 +7,8 @@
 | Target | https://ouest-france.fr/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ouest-france.fr |
-| Test date | 2026-09-27 01:31 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:42 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -59,7 +59,7 @@ Total findings: **7** (High: 0, Medium: 0, Low: 3, Info: 4)
 ### 6. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=g8siYJiIA2VPb1HQv9w22kXR7lde-h3Zc1T5PTEsVbw; google-site-verification=w3cKdY5AfvQolHsBRmw_uBipk52BdHZtzT_5Ne4Z2mU; atlassian-domain-verification=VGUBsXBygKvUaItgMF6tj3ENtDha3doy8Ma1ahxB2zTsGYRAGL
+- **Detail:** Apex TXT records with verification/token content: atlassian-sending-domain-verification=f7647c05-c955-4694-a5c7-ed34a2311490; google-site-verification=jyMzKhQ4FGuEcxRk-2MYjSYJEu5EedJp8C-_Wnlt1j4; wiz-domain-verification=f8adbe81a92b281861d6444a25cf6a256b36400e44f1a93b61b29831
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 7. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -80,57 +80,57 @@ Total findings: **7** (High: 0, Medium: 0, Low: 3, Info: 4)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "de-smtp-inbound-2.mimecast.com (pref 10)",
-      "de-smtp-inbound-1.mimecast.com (pref 10)"
+      "de-smtp-inbound-1.mimecast.com (pref 10)",
+      "de-smtp-inbound-2.mimecast.com (pref 10)"
     ],
     "ns": [
+      "ns-39-a.gandi.net.",
       "ns-164-c.gandi.net.",
-      "ns-120-b.gandi.net.",
-      "ns-39-a.gandi.net."
+      "ns-120-b.gandi.net."
     ],
     "caa": [],
     "spf": [
+      "iOS-enroll=https://gwclp.ouest-france.fr/rtc/vm-tuva4.domaine.local/MDM/api/v1/enroll/IosEnroll",
+      "ca3-d335ade3309a4b039fe7c1144d7941b5",
       "GqiFaZKPKNEmhm4ZOxOvS+W4jNPQO5IJWkmCCTiz5ZPbyHrKfQjmIgmRJDe0BB9xLfN9g2B/9bni9KdvDpl+Lg==",
-      "wip.runners=51bc4aa7edf5a4e4f291b27d70c8efb7",
-      "0ed1fe018acfc94390c49e4ce3bf01f215c2a59ff0",
-      "mgverify=05d569c79ed45260178c0cd5457a415a03bb3cc922f547c90cc61a534d6cd555",
-      "google-site-verification=g8siYJiIA2VPb1HQv9w22kXR7lde-h3Zc1T5PTEsVbw",
-      "brevo-code:dd56c2c0cef8cfcd4aac7723df6350b8",
-      "google-site-verification=w3cKdY5AfvQolHsBRmw_uBipk52BdHZtzT_5Ne4Z2mU",
-      "brevo-code:33bd9a6dfe6151cc84461f3f65010a76",
-      "fastly-domain-delegation-uucxyfkhqkvvq3fchaea-00419161-2025-06-05",
-      "OSIAGENTREGURL=https://mobile.ouest-france.fr/MobileEnrollment/ld-iosEnroll.aspx",
-      "brevo-code:170df14ad903a66270d2c9f0323b350f",
-      "atlassian-domain-verification=VGUBsXBygKvUaItgMF6tj3ENtDha3doy8Ma1ahxB2zTsGYRAGLiZhKIGd5sHrRFP",
-      "google-site-verification=TJBQcdRNba_AAfrYkPBhBKYI-yXP2eovwwitqJ5nzxU",
-      "brevo-code:06a75a3dc110e18f5f98049ffda07408",
-      "K28NOxnN=f8afadfe6a0207a74cd55996abbbe1c5",
-      "google-site-verification=e59tMQ11DGFt6aL7ih4hePR9tHupyiC_4CTcCnH5rE4",
-      "Sendinblue-code:b56bb0021980d6773d8bc7c2b3d3af17",
-      "pardot933693=ed9b61516d69036f47b7cbfe849206c4c014c75cc7e4223017dd418fd272fd02",
+      "atlassian-sending-domain-verification=f7647c05-c955-4694-a5c7-ed34a2311490",
+      "LDLAUNCHPAD=https://mobile.ouest-france.fr/launchpad.cloud",
+      "google-site-verification=jyMzKhQ4FGuEcxRk-2MYjSYJEu5EedJp8C-_Wnlt1j4",
+      "wiz-domain-verification=f8adbe81a92b281861d6444a25cf6a256b36400e44f1a93b61b2983161e9c0da",
+      "brevo-code:341ec5d7807d7688ec140d0ea717ab5d",
       "yahoo-verification-key=XmMi04u79I4RgfvfYTrACYnP6+60fyt/S5XxV/HOKII=",
+      "android-enroll=https://gwclp.ouest-france.fr/rtc/vm-tuva4.domaine.local/MDM/api/v1/enroll/AndroidEnroll",
+      "anthropic-domain-verification-5vv5rc=kZQQdusyWXhrS4wAEVxK3lKs9",
+      "google-site-verification=g8siYJiIA2VPb1HQv9w22kXR7lde-h3Zc1T5PTEsVbw",
+      "brevo-code:170df14ad903a66270d2c9f0323b350f",
+      "google-site-verification=eAg6DrPLrk1BZ6nKEYWa_ll2aiQPu2gX2i6Kz1iYvEU",
+      "google-site-verification=t9ZUqxMIqTxQ8XxMdfW0PwDUQwGkcSOz_ms8ScKDjPo",
+      "google-site-verification=TJBQcdRNba_AAfrYkPBhBKYI-yXP2eovwwitqJ5nzxU",
       "google-site-verification=xoAPL4EODmFkvsSgWpp1N_G1QVArdzGYptCMRkEgP7Q",
+      "brevo-code:dd56c2c0cef8cfcd4aac7723df6350b8",
+      "abuseipdb-verification=i1e6IPtc",
+      "atlassian-domain-verification=qfBCLKrblhZ5lJVxYyobgX6alxrxe7Sj0B6q7q09bGe5rH9uDaxpfyiJutA1LJOn",
+      "K28NOxnN=f8afadfe6a0207a74cd55996abbbe1c5",
+      "FBKvDjqQTagp7RvBFclHHIqQ28r5tIqi3cI1cR1U9c3/wMRtxMYDkNLEf7E8xPbqLyXCA9/0vatdcij9iymmDQ==",
+      "apple-domain-verification=UM2QXuPiPZ4rNX0q",
+      "atlassian-domain-verification=VGUBsXBygKvUaItgMF6tj3ENtDha3doy8Ma1ahxB2zTsGYRAGLiZhKIGd5sHrRFP",
+      "wip.runners=51bc4aa7edf5a4e4f291b27d70c8efb7",
+      "QiUyHY5CXVZVDZnEXdbXt6OPUWvvMd/K+Yn503PzP+33jGCYgxN4YtW/9yasc9dX6mfACJsGe/C/I9biKDLJzQ==",
+      "0ed1fe018acfc94390c49e4ce3bf01f215c2a59ff0",
+      "runners=bc4527faff45d383b007795d503cdf0f",
+      "OSIAGENTREGURL=https://mobile.ouest-france.fr/MobileEnrollment/ld-iosEnroll.aspx",
+      "google-site-verification=e59tMQ11DGFt6aL7ih4hePR9tHupyiC_4CTcCnH5rE4",
+      "google-site-verification=w3cKdY5AfvQolHsBRmw_uBipk52BdHZtzT_5Ne4Z2mU",
+      "mgverify=05d569c79ed45260178c0cd5457a415a03bb3cc922f547c90cc61a534d6cd555",
+      "Sendinblue-code:b56bb0021980d6773d8bc7c2b3d3af17",
+      "google-site-verification=ZUoTvo4Vw2HgB_mHnyGiEcIq2mu5DHJ2Ac2Q9vwGs0s",
+      "pardot933693=ed9b61516d69036f47b7cbfe849206c4c014c75cc7e4223017dd418fd272fd02",
       "v=spf1 include:de._netblocks.mimecast.com include:spf.protection.outlook.com include:sendgrid.net include:spf.mailjet.com include:spf.sendinblue.com ",
       " include:aspmx.pardot.com include:_spf.atlassian.net redirect=%{i}.spf-sipaof.fr",
-      "FBKvDjqQTagp7RvBFclHHIqQ28r5tIqi3cI1cR1U9c3/wMRtxMYDkNLEf7E8xPbqLyXCA9/0vatdcij9iymmDQ==",
-      "android-enroll=https://gwclp.ouest-france.fr/rtc/vm-tuva4.domaine.local/MDM/api/v1/enroll/AndroidEnroll",
+      "brevo-code:33bd9a6dfe6151cc84461f3f65010a76",
+      "brevo-code:06a75a3dc110e18f5f98049ffda07408",
       "google-site-verification=HgMmSeaM0OJ5Gz-q5j-3_CP6WDBcX88-NPkUIbiiyWU",
-      "QiUyHY5CXVZVDZnEXdbXt6OPUWvvMd/K+Yn503PzP+33jGCYgxN4YtW/9yasc9dX6mfACJsGe/C/I9biKDLJzQ==",
-      "iOS-enroll=https://gwclp.ouest-france.fr/rtc/vm-tuva4.domaine.local/MDM/api/v1/enroll/IosEnroll",
-      "google-site-verification=t9ZUqxMIqTxQ8XxMdfW0PwDUQwGkcSOz_ms8ScKDjPo",
-      "wiz-domain-verification=f8adbe81a92b281861d6444a25cf6a256b36400e44f1a93b61b2983161e9c0da",
-      "atlassian-sending-domain-verification=f7647c05-c955-4694-a5c7-ed34a2311490",
-      "brevo-code:341ec5d7807d7688ec140d0ea717ab5d",
-      "runners=bc4527faff45d383b007795d503cdf0f",
-      "google-site-verification=eAg6DrPLrk1BZ6nKEYWa_ll2aiQPu2gX2i6Kz1iYvEU",
-      "google-site-verification=jyMzKhQ4FGuEcxRk-2MYjSYJEu5EedJp8C-_Wnlt1j4",
-      "atlassian-domain-verification=qfBCLKrblhZ5lJVxYyobgX6alxrxe7Sj0B6q7q09bGe5rH9uDaxpfyiJutA1LJOn",
-      "anthropic-domain-verification-5vv5rc=kZQQdusyWXhrS4wAEVxK3lKs9",
-      "LDLAUNCHPAD=https://mobile.ouest-france.fr/launchpad.cloud",
-      "apple-domain-verification=UM2QXuPiPZ4rNX0q",
-      "abuseipdb-verification=i1e6IPtc",
-      "ca3-d335ade3309a4b039fe7c1144d7941b5",
-      "google-site-verification=ZUoTvo4Vw2HgB_mHnyGiEcIq2mu5DHJ2Ac2Q9vwGs0s"
+      "fastly-domain-delegation-uucxyfkhqkvvq3fchaea-00419161-2025-06-05"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; rua=mailto:dmarc@ouest-france.fr"
@@ -139,11 +139,11 @@ Total findings: **7** (High: 0, Medium: 0, Low: 3, Info: 4)
   },
   "error": "ConnectionRefusedError(10061, '無法連線，因為目標電腦拒絕連線。', None, 10061, None)",
   "apex_txt": [
-    "google-site-verification=g8siYJiIA2VPb1HQv9w22kXR7lde-h3Zc1T5PTEsVbw",
-    "google-site-verification=w3cKdY5AfvQolHsBRmw_uBipk52BdHZtzT_5Ne4Z2mU",
-    "atlassian-domain-verification=VGUBsXBygKvUaItgMF6tj3ENtDha3doy8Ma1ahxB2zTsGYRAGL",
-    "google-site-verification=TJBQcdRNba_AAfrYkPBhBKYI-yXP2eovwwitqJ5nzxU",
-    "google-site-verification=e59tMQ11DGFt6aL7ih4hePR9tHupyiC_4CTcCnH5rE4"
+    "atlassian-sending-domain-verification=f7647c05-c955-4694-a5c7-ed34a2311490",
+    "google-site-verification=jyMzKhQ4FGuEcxRk-2MYjSYJEu5EedJp8C-_Wnlt1j4",
+    "wiz-domain-verification=f8adbe81a92b281861d6444a25cf6a256b36400e44f1a93b61b29831",
+    "yahoo-verification-key=XmMi04u79I4RgfvfYTrACYnP6+60fyt/S5XxV/HOKII=",
+    "anthropic-domain-verification-5vv5rc=kZQQdusyWXhrS4wAEVxK3lKs9"
   ],
   "tls2": {
     "error": "ConnectionRefusedError(10061, '無法連線，因為目標電腦拒絕連線。', None, 10061, None)"
@@ -173,8 +173,11 @@ Total findings: **7** (High: 0, Medium: 0, Low: 3, Info: 4)
   "x16": {
     "root_error": "ConnectionError(MaxRetryError('HTTPSConnectionPool(host=\\'ouest-france.fr\\', por"
   },
-  "elapsed_s": 58.4,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "root_error": "ConnectionError(MaxRetryError('HTTPSConnectionPool(host=\\'ouest-france.fr\\', por"
+  },
+  "elapsed_s": 70.6,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -188,4 +191,5 @@ Total findings: **7** (High: 0, Medium: 0, Low: 3, Info: 4)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

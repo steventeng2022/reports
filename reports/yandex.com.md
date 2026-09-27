@@ -7,12 +7,12 @@
 | Target | https://yandex.com/ |
 | Bug bounty program | Yandex |
 | Listed scope domain | yandex.com |
-| Test date | 2026-09-27 01:37 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
+Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,6 +36,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 | 18 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
 | 19 | info | HTML11 | Document references many third-party domains | CWE-200 |
 | 20 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
+| 21 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 22 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 23 | info | HTML19 | data: URIs present in root document | CWE-200 |
 
 ## Detailed findings
 
@@ -94,13 +97,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 ### 9. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (jq16reogd2bha7.yandex.com and fufvbj7sljd8o7.yandex.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (z2qxfbzverjcc1.yandex.com and udmxbb44b1kcks.yandex.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=gy3xj2e9mxu0vtcdgqcznoaxoaiv63; facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a; _globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l
+- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l; google-site-verification=FVk3gum7zZLdkqi96ypScROFMew0wMetq1Gpu4rkzPI; facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -130,7 +133,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 ### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 77.88.44.55 carries PTR yandex.ru. for yandex.com.
+- **Detail:** 77.88.55.88 carries PTR yandex.ru. for yandex.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 16. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -163,6 +166,24 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 - **Detail:** Root document of yandex.com sends a CSP but contains 5 inline script(s) with no nonce- or hash-attribute, so the policy must rely on 'unsafe-inline'.
 - **Recommendation:** Use per-script nonces/hashes and drop 'unsafe-inline'.
 
+### 21. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of yandex.com contains wildcard SAN entry(ies) *.yandex.tr, *.xn--d1acpjx3f.xn--p1ai, *.yandex.aero; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 22. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of yandex.com is http://ocsp.globalsign.com/gseccovsslca2018; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 23. [INFO] data: URIs present in root document (`HTML19`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of yandex.com references 9 data: URI payload(s); inline data resources bypass the normal fetch/CORS path and should be inventoried.
+- **Recommendation:** Review inline data payloads (especially scripts/iframes) as part of the asset inventory.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -170,9 +191,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   "domain": "yandex.com",
   "dns": {
     "a": [
+      "77.88.55.88",
       "77.88.44.55",
-      "5.255.255.77",
-      "77.88.55.88"
+      "5.255.255.77"
     ],
     "aaaa": [
       "2a02:6b8:a::a"
@@ -186,16 +207,16 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "ns2.yandex.net."
     ],
     "caa": [
-      "0 issue \"globalsign.com\"",
-      "0 issuewild \"globalsign.com\""
+      "0 issuewild \"globalsign.com\"",
+      "0 issue \"globalsign.com\""
     ],
     "spf": [
-      "facebook-domain-verification=gy3xj2e9mxu0vtcdgqcznoaxoaiv63",
-      "5849d1f0fc8a9e73d82dfed9f2c33931",
-      "facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a",
-      "v=spf1 redirect=_spf.yandex.ru",
       "_globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l",
-      "google-site-verification=FVk3gum7zZLdkqi96ypScROFMew0wMetq1Gpu4rkzPI"
+      "google-site-verification=FVk3gum7zZLdkqi96ypScROFMew0wMetq1Gpu4rkzPI",
+      "facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a",
+      "facebook-domain-verification=gy3xj2e9mxu0vtcdgqcznoaxoaiv63",
+      "v=spf1 redirect=_spf.yandex.ru",
+      "5849d1f0fc8a9e73d82dfed9f2c33931"
     ],
     "dmarc": [
       "v=DMARC1; p=none; fo=1; rua=mailto:dmarc_agg@auth.returnpath.net,mailto:dmarc-rua@yandex.ru; ruf=mailto:dmarc_afrf@auth.returnpath.net"
@@ -275,7 +296,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     }
   },
   "ports": {
-    "ip": "77.88.44.55",
+    "ip": "77.88.55.88",
     "open": []
   },
   "https": {
@@ -371,10 +392,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "facebook-domain-verification=gy3xj2e9mxu0vtcdgqcznoaxoaiv63",
-    "facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a",
     "_globalsign-domain-verification=LUbMcUb0Zdviv4wd-A5JeHEzy5xZYZSWQQ0cxuo80l",
-    "google-site-verification=FVk3gum7zZLdkqi96ypScROFMew0wMetq1Gpu4rkzPI"
+    "google-site-verification=FVk3gum7zZLdkqi96ypScROFMew0wMetq1Gpu4rkzPI",
+    "facebook-domain-verification=625igbkehyfptcek6nh1hz7q4s3h4a",
+    "facebook-domain-verification=gy3xj2e9mxu0vtcdgqcznoaxoaiv63"
   ],
   "tls2": {
     "alpn": "",
@@ -392,6 +413,28 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.globalsign.com/gseccovsslca2018.crl"
+      ],
+      "san": [
+        "*.yandex.tr",
+        "xn--d1acpjx3f.xn--p1ai",
+        "*.xn--d1acpjx3f.xn--p1ai",
+        "yandex.aero",
+        "*.yandex.aero",
+        "yandex.jobs",
+        "*.yandex.jobs",
+        "yandex.net",
+        "*.yandex.net",
+        "yandex.org",
+        "*.yandex.org",
+        "yandex.de",
+        "*.yandex.de",
+        "ya.ru",
+        "*.ya.ru",
+        "yandex.it",
+        "*.yandex.it",
+        "yandex.uz",
+        "*.yandex.uz",
+        "yandex.tm"
       ],
       "subject_dn": "310b3009060355040613025255310f300d060355040813064d6f73636f77310f300d060355040713064d6f73636f7731133011060355040a130a59414e444558204c4c433114301206035504030c0b2a2e79616e6465782e7472",
       "issuer_dn": "310b300906035504061302424531193017060355040a1310476c6f62616c5369676e206e762d7361312630240603550403131d476c6f62616c5369676e20454343204f562053534c2043412032303138",
@@ -457,8 +500,19 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   "x16": {
     "root_status": 200
   },
-  "elapsed_s": 59.6,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.yandex.tr",
+      "*.xn--d1acpjx3f.xn--p1ai",
+      "*.yandex.aero",
+      "*.yandex.jobs",
+      "*.yandex.net"
+    ],
+    "ocsp_http": "http://ocsp.globalsign.com/gseccovsslca2018",
+    "data_uris": 9
+  },
+  "elapsed_s": 62.9,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -472,4 +526,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

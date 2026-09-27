@@ -7,18 +7,18 @@
 | Target | https://paypal.com/ |
 | Bug bounty program | PayPal |
 | Listed scope domain | paypal.com |
-| Test date | 2026-09-27 01:29 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:40 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
 | 2 | info | TECH1 | Technology fingerprint | CWE-200 |
-| 3 | low | H1b | Weak HSTS (max-age < 1 year) | CWE-319 |
+| 3 | low | H1 | Missing HSTS header | CWE-319 |
 | 4 | low | H2 | Missing CSP header | CWE-1021 |
 | 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
 | 6 | low | H4 | No clickjacking protection | CWE-1023 |
@@ -32,9 +32,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 | 14 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 15 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
-| 18 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
-| 19 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 17 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 18 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -47,15 +46,15 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
-- **Detail:** Detected: Server: Varnish
+- **Detail:** Detected: Server: cloudflare; Cloudflare CDN/WAF
 - **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 3. [LOW] Weak HSTS (max-age < 1 year) (`H1b`)
+### 3. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
-- **Detail:** HSTS present but max-age=300 (< 31536000).
+- **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
 - **Context:** https response, /
-- **Recommendation:** Increase max-age to at least 31536000; add includeSubDomains/preload.
+- **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
 ### 4. [LOW] Missing CSP header (`H2`)
 
@@ -102,7 +101,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 10. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
-- **Detail:** Header reveals: Varnish
+- **Detail:** Header reveals: cloudflare
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
@@ -134,7 +133,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=Q8BdHlO6NYSN5njfC2rlbPQxksVfADlcxarxq4fesYJErtGKyl; adobe-idp-site-verification=11600efbec96c0e73dd8820cd33ca906ec4302aea4487d208a42; globalsign-domain-verification=KXa3jn_dNODlTVQ4eg1Wx3vA-RrHZ2K7iLQN0vdJBx
+- **Detail:** Apex TXT records with verification/token content: globalsign-domain-verification=KXa3jn_dNODlTVQ4eg1Wx3vA-RrHZ2K7iLQN0vdJBx; stripe-verification=549bef27619f14f935a84c6a23492e80f49ff57a341d9ddc74d8486881cd; atlassian-domain-verification=Q8BdHlO6NYSN5njfC2rlbPQxksVfADlcxarxq4fesYJErtGKyl
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -143,23 +142,17 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - **Detail:** robots.txt lists 92 disallow path(s), e.g. /cgibin/, /il/cart/, /*?cmd=_pce*, /row/, /xclick-auction*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 17. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+### 17. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
 
-- **CWE:** CWE-922
-- **Detail:** Response for https://paypal.com/ carries Cache-Control: max-age=86400; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
-- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of paypal.com is http://ocsp.digicert.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
 
-### 18. [INFO] App-association / digital-asset-links surface published (`WK1`)
-
-- **CWE:** CWE-200
-- **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on paypal.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
-- **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
-
-### 19. [INFO] Edge/CDN layer identified from response headers (`H26`)
+### 18. [INFO] Root document has no <html lang> declaration (`HTML15`)
 
 - **CWE:** CWE-200
-- **Detail:** Response headers on paypal.com identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
-- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+- **Detail:** The root document of paypal.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
 
 ## Evidence (raw response observations)
 
@@ -169,39 +162,39 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   "dns": {
     "a": [
       "151.101.195.1",
-      "162.159.141.96",
-      "151.101.3.1"
+      "151.101.3.1",
+      "162.159.141.96"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mx2.paypalcorp.com (pref 10)",
-      "mx1.paypalcorp.com (pref 10)"
+      "mx1.paypalcorp.com (pref 10)",
+      "mx2.paypalcorp.com (pref 10)"
     ],
     "ns": [
+      "ns1-pchnet.paypal.com.",
       "ns2-pchnet.paypal.com.",
-      "pdns100.ultradns.net.",
       "pdns100.ultradns.com.",
-      "ns1-pchnet.paypal.com."
+      "pdns100.ultradns.net."
     ],
     "caa": [
-      "0 issue \"digicert.com\"",
+      "0 issue \"quovadisglobal.com\"",
       "0 issue \"visa.com\"",
-      "0 issue \"quovadisglobal.com\""
+      "0 issue \"digicert.com\""
     ],
     "spf": [
-      "atlassian-domain-verification=Q8BdHlO6NYSN5njfC2rlbPQxksVfADlcxarxq4fesYJErtGKylvfcfyfwrPD/wnv",
-      "mgverify=e00c4bf7480ee22be851faa9acd20e41b8fd0f7b75b434bbe38aa257e5aae3a0",
-      "mgf84gx1cv1c759pmjqx0wnths9ss9f6",
-      "adobe-idp-site-verification=11600efbec96c0e73dd8820cd33ca906ec4302aea4487d208a42a2b01806144c",
-      "MS=ms95960309",
       "globalsign-domain-verification=KXa3jn_dNODlTVQ4eg1Wx3vA-RrHZ2K7iLQN0vdJBx",
-      "stripe-verification=549bef27619f14f935a84c6a23492e80f49ff57a341d9ddc74d8486881cd0d8c",
       "intersight=6d86ec09a7c6926c6f9b8eff8ef0ef06679d84aab4999756a0920a8d430ed8ae",
+      "stripe-verification=549bef27619f14f935a84c6a23492e80f49ff57a341d9ddc74d8486881cd0d8c",
       "v=spf1 include:pp._spf.paypal.com include:3ph1._spf.paypal.com include:3ph2._spf.paypal.com include:3ph3._spf.paypal.com include:3ph4._spf.paypal.com include:sendgrid.net include:aspmx.pardot.com ~all",
+      "mgf84gx1cv1c759pmjqx0wnths9ss9f6",
+      "Notion_verify_uVqjH2PpjVthR9xxfR5BZGsuYGtqb6Za4uDHPaA917v5Cg5J0rRwiATz84PWHZh8Px7vFK",
+      "atlassian-domain-verification=Q8BdHlO6NYSN5njfC2rlbPQxksVfADlcxarxq4fesYJErtGKylvfcfyfwrPD/wnv",
+      "MS=ms95960309",
+      "mgverify=e00c4bf7480ee22be851faa9acd20e41b8fd0f7b75b434bbe38aa257e5aae3a0",
       "workplace-domain-verification=F7ezsH9uapvYDGd2VtPARy1qq9ymN6",
       "docker-verification=2deb3c1f-56d2-4fe4-8a09-d48b7bf8a918",
-      "Notion_verify_uVqjH2PpjVthR9xxfR5BZGsuYGtqb6Za4uDHPaA917v5Cg5J0rRwiATz84PWHZh8Px7vFK"
+      "adobe-idp-site-verification=11600efbec96c0e73dd8820cd33ca906ec4302aea4487d208a42a2b01806144c"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:d@rua.agari.com,mailto:dmarc_agg@vali.email; ruf=mailto:d@ruf.agari.com,mailto:MTc4Mzcw@ruf.vali.email"
@@ -341,7 +334,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   },
   "mixed_content": [],
   "tech": [
-    "Server: Varnish"
+    "Server: cloudflare",
+    "Cloudflare CDN/WAF"
   ],
   "cookies": [],
   "cors": [
@@ -358,7 +352,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   ],
   "http": {
     "status": 301,
-    "location": "https://paypal.com/"
+    "location": "https://www.paypal.com/"
   },
   "redir_probes": [
     "/redirect?url=https://evil-auditor.example/x -> 301",
@@ -384,11 +378,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "atlassian-domain-verification=Q8BdHlO6NYSN5njfC2rlbPQxksVfADlcxarxq4fesYJErtGKyl",
-    "adobe-idp-site-verification=11600efbec96c0e73dd8820cd33ca906ec4302aea4487d208a42",
     "globalsign-domain-verification=KXa3jn_dNODlTVQ4eg1Wx3vA-RrHZ2K7iLQN0vdJBx",
     "stripe-verification=549bef27619f14f935a84c6a23492e80f49ff57a341d9ddc74d8486881cd",
-    "workplace-domain-verification=F7ezsH9uapvYDGd2VtPARy1qq9ymN6"
+    "atlassian-domain-verification=Q8BdHlO6NYSN5njfC2rlbPQxksVfADlcxarxq4fesYJErtGKyl",
+    "workplace-domain-verification=F7ezsH9uapvYDGd2VtPARy1qq9ymN6",
+    "docker-verification=2deb3c1f-56d2-4fe4-8a09-d48b7bf8a918"
   ],
   "tls2": {
     "alpn": "",
@@ -408,6 +402,28 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
         "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
         "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
       ],
+      "san": [
+        "paypal.com",
+        "braintreepayments.com",
+        "buyindiaonline.com",
+        "cash2india.com",
+        "curv.cc",
+        "curv.co",
+        "fastlane.paypal.com",
+        "paypal-australia.com.au",
+        "paypal-business.co.uk",
+        "paypal-business.com.au",
+        "paypal-businesscenter.com",
+        "paypal-communications.com",
+        "paypal-corp.com",
+        "paypal-danmark.dk",
+        "PAYPAL-DEUTSCHLAND.DE",
+        "paypal-donations.co.uk",
+        "paypal-donations.com",
+        "paypal-experience.com",
+        "paypal-gifts.com",
+        "paypal-globalshops.com"
+      ],
       "subject_dn": "310b3009060355040613025553311330110603550408130a43616c69666f726e69613111300f0603550407130853616e204a6f736531153013060355040a130c50617950616c2c20496e632e311330110603550403130a70617970616c2e636f6d",
       "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
       "not_before": "20260511000000",
@@ -416,7 +432,6 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "ocsp": "explicit-status"
   },
   "http2": {
-    "hsts_preloaded": true,
     "robots_disallow": [
       "/cgibin/",
       "/il/cart/",
@@ -443,10 +458,6 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "root_location": "https://www.paypal.com/",
     "http_status": 301,
     "p404_status": 301,
-    "wellknown": [
-      "/.well-known/apple-app-site-association",
-      "/.well-known/assetlinks.json"
-    ],
     "stapling": "inconclusive",
     "quic": {
       "ok": false,
@@ -456,7 +467,6 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   },
   "x14": {
     "root_status": 301,
-    "hsts": "max-age=300",
     "crl": {
       "url": "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
       "status": 200
@@ -468,13 +478,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "root_status": 301
   },
   "x16": {
-    "root_status": 301,
-    "cdn": [
-      "Fastly"
-    ]
+    "root_status": 301
   },
-  "elapsed_s": 22.1,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.digicert.com"
+  },
+  "elapsed_s": 13.1,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -488,4 +498,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

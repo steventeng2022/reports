@@ -7,12 +7,12 @@
 | Target | https://cancerresearchuk.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | cancerresearchuk.org |
-| Test date | 2026-09-27 01:12 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:21 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
+Total findings: **26** (High: 0, Medium: 0, Low: 5, Info: 21)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,8 +37,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 | 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 20 | info | SRV1 | Server header discloses a product version | CWE-200 |
 | 21 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
-| 22 | info | CT1 | 328 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 23 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 22 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 23 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 24 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
+| 25 | info | CT1 | 328 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 26 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -132,7 +135,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=c1Vsqct8unmvZEnNTtoZZ_dDsq-qejygwotuVnfoupY; apple-domain-verification=IGJmYB4ReQOvnh8C421oNRDVuu5D-eZofJf6Y97qPBU; facebook-domain-verification=61rl1f9boyjhytks0jdex0hncnayfr
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=IGJmYB4ReQOvnh8C421oNRDVuu5D-eZofJf6Y97qPBU; google-site-verification=c1Vsqct8unmvZEnNTtoZZ_dDsq-qejygwotuVnfoupY; apple-domain-verification=ZIfJE9Gth65P2EaS
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -150,7 +153,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 18.132.167.245 carries PTR ec2-18-132-167-245.eu-west-2.compute.amazonaws.com. for cancerresearchuk.org.
+- **Detail:** 18.133.42.18 carries PTR ec2-18-133-42-18.eu-west-2.compute.amazonaws.com. for cancerresearchuk.org.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -177,13 +180,31 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 - **Detail:** /sitemap.xml on cancerresearchuk.org lists 2 <loc> URL(s) across 3 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
-### 22. [INFO] 328 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 22. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of cancerresearchuk.org contains wildcard SAN entry(ies) *.cancerresearchuk.org, *.raceforlife.cancerresearchuk.org; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 23. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of cancerresearchuk.org is http://ocsp.r2m04.amazontrust.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 24. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of cancerresearchuk.org declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
+### 25. [INFO] 328 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: admin.events.cancerresearchuk.org, admin.fundraise.cancerresearchuk.org, api.activities.cancerresearchuk.org, api.activity.cancerresearchuk.org, api.discounts.cancerresearchuk.org, api.events.cancerresearchuk.org, api.fundraise.cancerresearchuk.org, assets.cancerchat.cancerresearchuk.org, assets.fundraise.cancerresearchuk.org, auth.activities.cancerresearchuk.org
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 23. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 26. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: api.activity.cancerresearchuk.org; content may still be served via virtual-host fallback.
@@ -196,8 +217,8 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
   "domain": "cancerresearchuk.org",
   "dns": {
     "a": [
-      "18.132.167.245",
       "18.133.42.18",
+      "18.132.167.245",
       "18.171.47.200"
     ],
     "aaaa": [],
@@ -206,81 +227,81 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
       "cancerresearchuk-org.mail.protection.outlook.com (pref 5)"
     ],
     "ns": [
-      "ns-1410.awsdns-48.org.",
-      "ns-1773.awsdns-29.co.uk.",
+      "ns-33.awsdns-04.com.",
       "ns-885.awsdns-46.net.",
-      "ns-33.awsdns-04.com."
+      "ns-1773.awsdns-29.co.uk.",
+      "ns-1410.awsdns-48.org."
     ],
     "caa": [],
     "spf": [
-      "g07kykmlvhp2d8vfzjxm1shy9n35w7nv",
-      "khdfh0nr2q0wr7563tcm7b5pfq068q5y",
-      "zdcmc5v22rdy0s5tc80j5xwl1ygcbf6g",
-      "26m8th96q9myjm4zz46h7r7cvbwbwjh4",
-      "_e8bqk4zyvefuarzhyy6hu9bizyu1ny7",
-      "google-site-verification=c1Vsqct8unmvZEnNTtoZZ_dDsq-qejygwotuVnfoupY",
-      "7msqnpj5xr4y5syw9g44m95dfl44hjgx",
-      "_exbcbqu4yx5x3py9lyawkwfuxanm7sj",
-      "g1fh5zpwprcz6cn2rq5gblvsb7lwx2t7",
-      "_lvx2syhktdeoxcx6mo6b51u3h1usqwx",
-      "40z41kzn43jd310vq6v9k622x3v9fxkx",
-      "cglw6w22gnjt39h39kgr4wf62r05rt02",
-      "0v1c9bt4vwkdmptx84wzz413s3xsc990",
-      "mzm32j62qpf6tkkydk6p0ph763nnjhsp",
-      "hgyx98b9cc79ztr03qm7h7qlsgl7wlyr",
-      "apple-domain-verification=IGJmYB4ReQOvnh8C421oNRDVuu5D-eZofJf6Y97qPBU",
-      "_i6zwxvcptwz9qmphgqpvbhyog72fmuo",
-      "ww43j1bp5rmj9lgjwr0x73qbpl0mj8yf",
       "y9ncngdcvrvk16m4gljshc7gvhhxh8lc",
-      "_6vt5j2zihy4gglxz8kvsmr9pq7h2a4c",
-      "bv1by0fvhbpznqy9xqmzr6z10lghjjgg",
-      "_w8opp2p377zo21qi6gh2zwgfe2bmmpa",
-      "facebook-domain-verification=61rl1f9boyjhytks0jdex0hncnayfr",
-      "np13rn98h5lpgjbndhr5gn31363b8xy0",
-      "apple-domain-verification=ZIfJE9Gth65P2EaS",
+      "fn1b7vvmlhfpmf35rchfpz383tm1bndy",
+      "apple-domain-verification=IGJmYB4ReQOvnh8C421oNRDVuu5D-eZofJf6Y97qPBU",
+      "v=spf1 include:em9792.cancerresearchuk.org include:spf.protection.outlook.com include:amazonses.com -all",
       "5cfht3mshcf3trp03bh7jrkqcv6ddg69",
-      "facebook-domain-verification=4hzy2r2nmzkhsj084cd7fki46jeaa3",
-      "vxqr9nqtmryh46zfq0jqwjx316764nsk",
-      "_ly5k70e1l8gd1shizgsvpgha4v9m2ut",
+      "45qbtsvh8vd17n794pf4cpj7z8zwk0tj",
+      "ww43j1bp5rmj9lgjwr0x73qbpl0mj8yf",
+      "vnm8g3svr0c67s4xmgld8q209cc68364S",
+      "40z41kzn43jd310vq6v9k622x3v9fxkx",
+      "rm_verify=b5ea71cdcf",
+      "google-site-verification=c1Vsqct8unmvZEnNTtoZZ_dDsq-qejygwotuVnfoupY",
+      "dr0t5jj72k4t61lk8ffs081fj6rghv6n",
+      "26m8th96q9myjm4zz46h7r7cvbwbwjh4",
+      "bnslp7wjbc8v3n5wkdr8hxl5l8fxr2hl",
+      "apple-domain-verification=ZIfJE9Gth65P2EaS",
       "zzhv3bsz0x6y1hglhy4wxp3pvz2rw432",
+      "1tn2p2x86m2jvp6wjvh9n8kf197vtmmd",
+      "_gu3tif2ur9nnozx0ckdgutzqdo8p38j",
+      "3rl4ld7tjl4sbpy967j2cr7y48vbxcxn",
+      "6sqc01vxxxwzn49y5jd2p6wxdq5f7z3q",
+      "x54b24q04j1j22dz1mvbjqzv9r9pk876",
+      "wf7338jyn6pqbdzrjwlwtb841r6dh0hd",
+      "bd66lyr72y3lq95qw2314t8vcy16lwps",
+      "ss0bz7586fsg4xxdmsyjqt8jcgyg8zrx",
+      "nnp90zxqqzmkn93bwvhdl46dwvfp0v3y",
+      "_6vt5j2zihy4gglxz8kvsmr9pq7h2a4c",
+      "np13rn98h5lpgjbndhr5gn31363b8xy0",
+      "vc6k1223ptdlchvpy3s18lq144xv1slj",
+      "g1fh5zpwprcz6cn2rq5gblvsb7lwx2t7",
+      "bv1by0fvhbpznqy9xqmzr6z10lghjjgg",
+      "zdcmc5v22rdy0s5tc80j5xwl1ygcbf6g",
+      "_qydnb71cn3lqycnc1mtenmuxez97jlp",
+      "_wlakz6emublsj5fvgjt8dl2i84ycrmq",
+      "facebook-domain-verification=61rl1f9boyjhytks0jdex0hncnayfr",
+      "facebook-domain-verification=4hzy2r2nmzkhsj084cd7fki46jeaa3",
+      "7d705306nddqnj1fppb3btq58hrlrjtx",
+      "m1rh31jnyk8f4zy25vlb01nmv62x0l9p",
+      "d4tgqmcxcgtg2plddnyjvcqtpdyypf12",
+      "y468410l6rk4ybc5dnyrqnr1ycsmr58j",
+      "_ly5k70e1l8gd1shizgsvpgha4v9m2ut",
+      "wpv0g4gkpbw0kqrlm6jlrb2bxw3zd0v0",
+      "7g4q3fqrptyjf17dzs4js241j4v67c6t",
+      "cglw6w22gnjt39h39kgr4wf62r05rt02",
+      "_e8bqk4zyvefuarzhyy6hu9bizyu1ny7",
+      "_exbcbqu4yx5x3py9lyawkwfuxanm7sj",
       "v1n0kqhknmzc5fsg2zf7tsn4780hmj1m",
-      "24zprsdb1b3ync7ywmsypc3vvn70cb95",
-      "s4bfybvmkvmrjl1lnmbtl3khph6h0vvb",
+      "_w8opp2p377zo21qi6gh2zwgfe2bmmpa",
       "m1gfkdpv7rscd8mr64mw9wcxtsrxh0ds",
       "s50n3srkhkz08lqgjwt4zj6zrjsxnbn4",
-      "x54b24q04j1j22dz1mvbjqzv9r9pk876",
-      "f9w7nn10vpy421nnf3pqmfsgth5pq3hq",
-      "_gu3tif2ur9nnozx0ckdgutzqdo8p38j",
-      "dr0t5jj72k4t61lk8ffs081fj6rghv6n",
-      "MS=ms18612172",
-      "rm_verify=b5ea71cdcf",
-      "m1rh31jnyk8f4zy25vlb01nmv62x0l9p",
-      "ss0bz7586fsg4xxdmsyjqt8jcgyg8zrx",
-      "vnm8g3svr0c67s4xmgld8q209cc68364S",
-      "45qbtsvh8vd17n794pf4cpj7z8zwk0tj",
-      "7d705306nddqnj1fppb3btq58hrlrjtx",
-      "wf7338jyn6pqbdzrjwlwtb841r6dh0hd",
-      "d4tgqmcxcgtg2plddnyjvcqtpdyypf12",
-      "bnslp7wjbc8v3n5wkdr8hxl5l8fxr2hl",
-      "bd66lyr72y3lq95qw2314t8vcy16lwps",
-      "vc6k1223ptdlchvpy3s18lq144xv1slj",
-      "1ly9mvl98241ksqyw929gldgyy46f27c",
-      "y468410l6rk4ybc5dnyrqnr1ycsmr58j",
-      "google-site-verification=PHwtSX75UKqvpzyPHmk4bGBzczkPu71eNXBD-GyiKbw",
+      "s4bfybvmkvmrjl1lnmbtl3khph6h0vvb",
+      "_i6zwxvcptwz9qmphgqpvbhyog72fmuo",
+      "khdfh0nr2q0wr7563tcm7b5pfq068q5y",
+      "vxqr9nqtmryh46zfq0jqwjx316764nsk",
+      "7msqnpj5xr4y5syw9g44m95dfl44hjgx",
       "hpc5sj1r9xplb20nd3q43m1bzdhpb85j",
-      "fn1b7vvmlhfpmf35rchfpz383tm1bndy",
-      "3rl4ld7tjl4sbpy967j2cr7y48vbxcxn",
-      "7g4q3fqrptyjf17dzs4js241j4v67c6t",
-      "v=spf1 include:em9792.cancerresearchuk.org include:spf.protection.outlook.com include:amazonses.com -all",
-      "nnp90zxqqzmkn93bwvhdl46dwvfp0v3y",
-      "6q77047g56cblw7j2h9j1bgxdfth47fl",
-      "_wlakz6emublsj5fvgjt8dl2i84ycrmq",
-      "wpv0g4gkpbw0kqrlm6jlrb2bxw3zd0v0",
-      "6sqc01vxxxwzn49y5jd2p6wxdq5f7z3q",
-      "1tn2p2x86m2jvp6wjvh9n8kf197vtmmd",
+      "0v1c9bt4vwkdmptx84wzz413s3xsc990",
+      "hgyx98b9cc79ztr03qm7h7qlsgl7wlyr",
+      "mzm32j62qpf6tkkydk6p0ph763nnjhsp",
+      "g07kykmlvhp2d8vfzjxm1shy9n35w7nv",
+      "f9w7nn10vpy421nnf3pqmfsgth5pq3hq",
+      "6b7bv6ky1d5gbp66fgqkqhcdj7n4z04l",
+      "1ly9mvl98241ksqyw929gldgyy46f27c",
       "x1whvwl6r9qqx6y8z1dnvk64lkbbzfqx",
-      "_qydnb71cn3lqycnc1mtenmuxez97jlp",
-      "6b7bv6ky1d5gbp66fgqkqhcdj7n4z04l"
+      "google-site-verification=PHwtSX75UKqvpzyPHmk4bGBzczkPu71eNXBD-GyiKbw",
+      "MS=ms18612172",
+      "6q77047g56cblw7j2h9j1bgxdfth47fl",
+      "24zprsdb1b3ync7ywmsypc3vvn70cb95",
+      "_lvx2syhktdeoxcx6mo6b51u3h1usqwx"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:65fc433b5864b@ag.dmarcly.com; fo=1"
@@ -312,7 +333,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
     }
   },
   "ports": {
-    "ip": "18.132.167.245",
+    "ip": "18.133.42.18",
     "open": []
   },
   "https": {
@@ -408,10 +429,10 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
     ]
   },
   "apex_txt": [
-    "google-site-verification=c1Vsqct8unmvZEnNTtoZZ_dDsq-qejygwotuVnfoupY",
     "apple-domain-verification=IGJmYB4ReQOvnh8C421oNRDVuu5D-eZofJf6Y97qPBU",
-    "facebook-domain-verification=61rl1f9boyjhytks0jdex0hncnayfr",
+    "google-site-verification=c1Vsqct8unmvZEnNTtoZZ_dDsq-qejygwotuVnfoupY",
     "apple-domain-verification=ZIfJE9Gth65P2EaS",
+    "facebook-domain-verification=61rl1f9boyjhytks0jdex0hncnayfr",
     "facebook-domain-verification=4hzy2r2nmzkhsj084cd7fki46jeaa3"
   ],
   "tls2": {
@@ -430,6 +451,12 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.r2m04.amazontrust.com/r2m04.crl"
+      ],
+      "san": [
+        "www.cancerresearchuk.org",
+        "*.cancerresearchuk.org",
+        "*.raceforlife.cancerresearchuk.org",
+        "cancerresearchuk.org"
       ],
       "subject_dn": "3121301f060355040313187777772e63616e6365727265736561726368756b2e6f7267",
       "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3034",
@@ -460,7 +487,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-18-132-167-245.eu-west-2.compute.amazonaws.com."
+      "ec2-18-133-42-18.eu-west-2.compute.amazonaws.com."
     ]
   },
   "x13": {
@@ -494,8 +521,15 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 39.9,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.cancerresearchuk.org",
+      "*.raceforlife.cancerresearchuk.org"
+    ],
+    "ocsp_http": "http://ocsp.r2m04.amazontrust.com"
+  },
+  "elapsed_s": 41.8,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -509,4 +543,5 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

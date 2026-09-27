@@ -7,12 +7,12 @@
 | Target | https://shopify.com/ |
 | Bug bounty program | Shopify |
 | Listed scope domain | shopify.com |
-| Test date | 2026-09-27 01:33 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
+Total findings: **26** (High: 0, Medium: 0, Low: 5, Info: 21)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -39,6 +39,9 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 | 21 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 22 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 | 23 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 24 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 25 | info | H11 | Legacy Flash cross-domain-policy exposure header | CWE-327 |
+| 26 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -137,13 +140,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 ### 15. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (vwovl3nv5h6kw4.shopify.com and 2ccxyr2opu8fld.shopify.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (fbku4xn8jk1cks.shopify.com and 124u9pjyzuswur.shopify.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=0nU18bxQue6doDAWZDptfd66kTIqHqW00fDhfJSd9es; protonmail-verification=c7bd7e61072d9855cfcab2f08804404f639439f9; _globalsign-domain-verification=_PJNYsq_1XyZleC1yx45rb_EUgbgkaJU36yk3CK0tk
+- **Detail:** Apex TXT records with verification/token content: yahoo-verification-key=9t6XYs7YEajKycpYmHz742ZV/lm84njkfUfGUldOtZM=; google-site-verification=knwYi_vDES4v7XUl8OOtP4gu4qhwAzIBbeB2ou2jx8Y; openai-domain-verification=dv-2etxemuOx7cXQDQ5EjEWGZ9A
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -188,6 +191,24 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 - **Detail:** The root response of shopify.com carries alt-svc h3=":443"; ma=86400; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
 - **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
 
+### 24. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of shopify.com contains wildcard SAN entry(ies) *.shopify.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 25. [INFO] Legacy Flash cross-domain-policy exposure header (`H11`)
+
+- **CWE:** CWE-327
+- **Detail:** The root of shopify.com sends X-Permitted-Cross-Domain-Policies (none); the referenced cross-domain policy files remain fetchable by any origin.
+- **Recommendation:** Review the referenced policy files; remove the header if Flash is gone.
+
+### 26. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of shopify.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -202,70 +223,70 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
     "mx": [
       "alt4.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
-      "alt3.aspmx.l.google.com (pref 10)"
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "gold.foundationdns.org.",
       "gold.foundationdns.com.",
+      "gold.foundationdns.org.",
       "gold.foundationdns.net."
     ],
     "caa": [],
     "spf": [
-      "google-site-verification=0nU18bxQue6doDAWZDptfd66kTIqHqW00fDhfJSd9es",
-      "protonmail-verification=c7bd7e61072d9855cfcab2f08804404f639439f9",
-      "_globalsign-domain-verification=_PJNYsq_1XyZleC1yx45rb_EUgbgkaJU36yk3CK0tk",
-      "klaviyo-site-verification=VbLhyy",
-      "twilio-domain-verification=ebc01f01cee0f1aea3f4c069b8865de9",
-      "rzp-site-verification=0c152e27933f70c5c7df025be3319f65",
-      "globalsign-domain-verification=Cpw4zOAIT5WSnINjnI4gafPgxsCJlEF4Ac_70Xm93I",
-      "globalsign-domain-verification=lfM-pzwumuFWKV-wNEGq7a3KtsmRLJKsDxZzQaMjkw",
-      "mongodb-site-verification=vBP464dSOK9bgg6FWBthUMqVjYfqnjuY",
-      "google-site-verification=knwYi_vDES4v7XUl8OOtP4gu4qhwAzIBbeB2ou2jx8Y",
-      "klaviyo-site-verification=YA4hNy",
-      "klaviyo-site-verification=UfTdFX",
-      "rfs0f736s88q7ml97jw9qhg1yy2wmdy5",
-      "klaviyo-site-verification=SuEeFy",
-      "klaviyo-site-verification=Y2Hvrx",
-      "ca3-fc9272b0aba34ba6991c0a62bc1998a0",
-      "openai-domain-verification=dv-3UNPEg4DuUI5Ace0uw1hzLq3",
-      "openai-domain-verification=dv-SSeJm7iAiW11oexpj9ZCqdil",
-      "stripe-verification=61e8fb112f5e7ac2708127ea93fd0369d6a4f768bd498fd0d928c206a6240bd7",
-      "klaviyo-site-verification=RcWeYn",
-      "zapier-domain-verification-challenge=506c545d-443f-4439-8d84-64648211b1f1",
-      "linear-domain-verification=3xuktyudsdny",
-      "0lc931fl5ld2dpl15vx2flfkdwyvrrzx",
-      "google-site-verification=96L28-MtSBLeQmyYR04q9iKI_Ib5qZd0YzVL8s1_gD0",
-      "00078847",
-      "teamviewer-sso-verification=85d99b4ff4b64f03a469d0c42c1eee61",
-      "bitrise-verification=990e159e8448fcb6-hCIxnrabFeH9",
-      "klaviyo-site-verification=VrspSg",
-      "facebook-domain-verification=u17rffysxyek688vqh4s02307suaza",
-      "klaviyo-site-verification=UBeZ6P",
-      "liveramp-site-verification=N48gDNFN3IB2NKIf75Fl46_sUzjxAbY3c1mfWs5pIKM",
-      "apple-domain-verification=eMDCoIZdcJThX3yQ",
-      "dtm-domain-verification=LhGwRr1DLWJoF6bVodh035n_BRj4Xu8PaEZ6bvvgd2Y",
-      "docusign=de9614db-a0fa-4060-a1fa-2c444429ed9a",
-      "autodesk-domain-verification=e9Nbi4FUDsS7clWU8iNj",
-      "lucidlink-verification=7VB3ACRNY28GWP54ZC3YXN7QWR",
-      "drift-domain-verification=9b23e1f43b57171c988b4510e75a686bda241639096f7eaabe8ff3d72ac63476",
-      "openai-domain-verification=dv-2etxemuOx7cXQDQ5EjEWGZ9A",
-      "yahoo-verification-key=9t6XYs7YEajKycpYmHz742ZV/lm84njkfUfGUldOtZM=",
-      "google-site-verification=vEpSvWK6hOKDBrCrJ4uUeCliFPV0nyP9m_UCOEjJv1Q",
-      "atlassian-domain-verification=aakXh8UjEwy75X6ck4l8jTIJDWHQ9CIunnUsE00mRgxM8IUzaJGlIt8zIINLFALR",
-      "qqmail-site-verification=bc0dd9aa889c6a66d9a58b31e496873cc7ae214ca8f",
-      "mailru-verification: a6784d11ca5a5f7b",
-      "ca3-86f15a314f3342baac2abe7a8849163c",
-      "amazonses:CxAO0EM1odef6TrFP0hDQh/2R7RoZYy8YlHYktk2Frk=",
-      "klaviyo-site-verification=XxDdwy",
-      "google-site-verification=a4GkGdS7vBnkI284VSCo4bfYDNg-8OcEyjz8PR8ZhDM",
       "v=spf1 include:_spf.google.com include:mail.zendesk.com include:sendgrid.net ~all",
-      "adobe-idp-site-verification=45576d365ff5492a15bc403c11382aad83403810324300fd62c5f196ce9e9063",
-      "_globalsign-domain-verification=1x11a1Wg3i08rScgK7aAMUJm_fdzKxH4whkWxr1bbg",
-      "MS=ms27001972",
+      "yahoo-verification-key=9t6XYs7YEajKycpYmHz742ZV/lm84njkfUfGUldOtZM=",
+      "google-site-verification=knwYi_vDES4v7XUl8OOtP4gu4qhwAzIBbeB2ou2jx8Y",
+      "openai-domain-verification=dv-2etxemuOx7cXQDQ5EjEWGZ9A",
+      "00078847",
+      "docusign=de9614db-a0fa-4060-a1fa-2c444429ed9a",
+      "google-site-verification=96L28-MtSBLeQmyYR04q9iKI_Ib5qZd0YzVL8s1_gD0",
+      "lucidlink-verification=7VB3ACRNY28GWP54ZC3YXN7QWR",
       "google-site-verification=Vm4475oXq82Dl_WCtZcmlaW3xrpB-6fyQXboHBjzzPY",
-      "klaviyo-site-verification=SA72ug"
+      "rzp-site-verification=0c152e27933f70c5c7df025be3319f65",
+      "zapier-domain-verification-challenge=506c545d-443f-4439-8d84-64648211b1f1",
+      "drift-domain-verification=9b23e1f43b57171c988b4510e75a686bda241639096f7eaabe8ff3d72ac63476",
+      "rfs0f736s88q7ml97jw9qhg1yy2wmdy5",
+      "mongodb-site-verification=vBP464dSOK9bgg6FWBthUMqVjYfqnjuY",
+      "klaviyo-site-verification=SA72ug",
+      "bitrise-verification=990e159e8448fcb6-hCIxnrabFeH9",
+      "facebook-domain-verification=u17rffysxyek688vqh4s02307suaza",
+      "mailru-verification: a6784d11ca5a5f7b",
+      "stripe-verification=61e8fb112f5e7ac2708127ea93fd0369d6a4f768bd498fd0d928c206a6240bd7",
+      "openai-domain-verification=dv-3UNPEg4DuUI5Ace0uw1hzLq3",
+      "_globalsign-domain-verification=_PJNYsq_1XyZleC1yx45rb_EUgbgkaJU36yk3CK0tk",
+      "twilio-domain-verification=ebc01f01cee0f1aea3f4c069b8865de9",
+      "ca3-86f15a314f3342baac2abe7a8849163c",
+      "klaviyo-site-verification=XxDdwy",
+      "globalsign-domain-verification=lfM-pzwumuFWKV-wNEGq7a3KtsmRLJKsDxZzQaMjkw",
+      "globalsign-domain-verification=Cpw4zOAIT5WSnINjnI4gafPgxsCJlEF4Ac_70Xm93I",
+      "google-site-verification=0nU18bxQue6doDAWZDptfd66kTIqHqW00fDhfJSd9es",
+      "teamviewer-sso-verification=85d99b4ff4b64f03a469d0c42c1eee61",
+      "klaviyo-site-verification=Y2Hvrx",
+      "apple-domain-verification=eMDCoIZdcJThX3yQ",
+      "klaviyo-site-verification=VbLhyy",
+      "liveramp-site-verification=N48gDNFN3IB2NKIf75Fl46_sUzjxAbY3c1mfWs5pIKM",
+      "_globalsign-domain-verification=1x11a1Wg3i08rScgK7aAMUJm_fdzKxH4whkWxr1bbg",
+      "protonmail-verification=c7bd7e61072d9855cfcab2f08804404f639439f9",
+      "openai-domain-verification=dv-SSeJm7iAiW11oexpj9ZCqdil",
+      "klaviyo-site-verification=RcWeYn",
+      "MS=ms27001972",
+      "ca3-fc9272b0aba34ba6991c0a62bc1998a0",
+      "0lc931fl5ld2dpl15vx2flfkdwyvrrzx",
+      "klaviyo-site-verification=UBeZ6P",
+      "google-site-verification=vEpSvWK6hOKDBrCrJ4uUeCliFPV0nyP9m_UCOEjJv1Q",
+      "google-site-verification=a4GkGdS7vBnkI284VSCo4bfYDNg-8OcEyjz8PR8ZhDM",
+      "linear-domain-verification=3xuktyudsdny",
+      "adobe-idp-site-verification=45576d365ff5492a15bc403c11382aad83403810324300fd62c5f196ce9e9063",
+      "atlassian-domain-verification=aakXh8UjEwy75X6ck4l8jTIJDWHQ9CIunnUsE00mRgxM8IUzaJGlIt8zIINLFALR",
+      "amazonses:CxAO0EM1odef6TrFP0hDQh/2R7RoZYy8YlHYktk2Frk=",
+      "klaviyo-site-verification=UfTdFX",
+      "autodesk-domain-verification=e9Nbi4FUDsS7clWU8iNj",
+      "klaviyo-site-verification=VrspSg",
+      "dtm-domain-verification=LhGwRr1DLWJoF6bVodh035n_BRj4Xu8PaEZ6bvvgd2Y",
+      "klaviyo-site-verification=SuEeFy",
+      "qqmail-site-verification=bc0dd9aa889c6a66d9a58b31e496873cc7ae214ca8f",
+      "klaviyo-site-verification=YA4hNy"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; fo=1; rua=mailto:dmarc-aggregate@shopify.com;ruf=mailto:dmarc-reports@shopify.com"
@@ -353,11 +374,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=0nU18bxQue6doDAWZDptfd66kTIqHqW00fDhfJSd9es",
-    "protonmail-verification=c7bd7e61072d9855cfcab2f08804404f639439f9",
-    "_globalsign-domain-verification=_PJNYsq_1XyZleC1yx45rb_EUgbgkaJU36yk3CK0tk",
-    "klaviyo-site-verification=VbLhyy",
-    "twilio-domain-verification=ebc01f01cee0f1aea3f4c069b8865de9"
+    "yahoo-verification-key=9t6XYs7YEajKycpYmHz742ZV/lm84njkfUfGUldOtZM=",
+    "google-site-verification=knwYi_vDES4v7XUl8OOtP4gu4qhwAzIBbeB2ou2jx8Y",
+    "openai-domain-verification=dv-2etxemuOx7cXQDQ5EjEWGZ9A",
+    "google-site-verification=96L28-MtSBLeQmyYR04q9iKI_Ib5qZd0YzVL8s1_gD0",
+    "lucidlink-verification=7VB3ACRNY28GWP54ZC3YXN7QWR"
   ],
   "tls2": {
     "alpn": "",
@@ -375,6 +396,10 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
       "bc_pathlen": null,
       "crl_urls": [
         "http://c.pki.goog/we1/TQRRitNQZa8.crl"
+      ],
+      "san": [
+        "shopify.com",
+        "*.shopify.com"
       ],
       "subject_dn": "311430120603550403130b73686f706966792e636f6d",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
@@ -429,8 +454,14 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
     "root_status": 301,
     "alt_svc": "h3=\":443\"; ma=86400"
   },
-  "elapsed_s": 5.6,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.shopify.com"
+    ],
+    "xcpd": "none"
+  },
+  "elapsed_s": 5.9,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -444,4 +475,5 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

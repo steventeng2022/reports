@@ -7,12 +7,12 @@
 | Target | https://nejm.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | nejm.org |
-| Test date | 2026-09-27 01:28 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:38 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
+Total findings: **26** (High: 0, Medium: 0, Low: 7, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -39,7 +39,9 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
 | 21 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 22 | info | SRV1 | Server header discloses a product version | CWE-200 |
 | 23 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
-| 24 | info | CT1 | 73 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 24 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 25 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
+| 26 | info | CT1 | 73 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -146,7 +148,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=NNeumMyMPkAxVMrj7qq1zrhVVGl/5usz/MXkCgRheK8j05h3hD; adobe-idp-site-verification=55cac8ffb5b23b50c94d629752efc925f61ea92c1254d16d8bd6; anthropic-domain-verification-wxcd0c=BgSYxLEu4oZNGb1STL7CkvTPg
+- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=55cac8ffb5b23b50c94d629752efc925f61ea92c1254d16d8bd6; anthropic-domain-verification-wxcd0c=BgSYxLEu4oZNGb1STL7CkvTPg; onetrust-domain-verification=aea188f6772b4e0a9e7464f3a5d39d88
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -164,7 +166,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
 ### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 100.56.81.175 carries PTR ec2-100-56-81-175.compute-1.amazonaws.com. for nejm.org.
+- **Detail:** 34.194.248.53 carries PTR ec2-34-194-248-53.compute-1.amazonaws.com. for nejm.org.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -191,7 +193,19 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
 - **Detail:** The quiet handshake to nejm.org negotiated TLSv1.2 even though the client offered TLS 1.3; the edge caps at 1.2 (legacy/compatibility configuration).
 - **Recommendation:** Enable TLS 1.3 at the edge.
 
-### 24. [INFO] 73 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 24. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of nejm.org is http://ocsp.r2m04.amazontrust.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 25. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of nejm.org declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
+### 26. [INFO] 73 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: staging.ad.nejm.org, staging.catalyst-drsite.nejm.org, staging.prod.nejm.org, staging.qa.nejm.org, staging.voices.nejm.org, store.nejm.org
@@ -204,9 +218,9 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
   "domain": "nejm.org",
   "dns": {
     "a": [
-      "100.56.81.175",
+      "34.194.248.53",
       "3.81.128.132",
-      "34.194.248.53"
+      "100.56.81.175"
     ],
     "aaaa": [],
     "cname": null,
@@ -215,27 +229,27 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
       "us-smtp-inbound-2.mimecast.com (pref 10)"
     ],
     "ns": [
-      "ns-1559.awsdns-02.co.uk.",
       "ns-1284.awsdns-32.org.",
       "ns-165.awsdns-20.com.",
-      "ns-928.awsdns-52.net."
+      "ns-928.awsdns-52.net.",
+      "ns-1559.awsdns-02.co.uk."
     ],
     "caa": [],
     "spf": [
-      "atlassian-domain-verification=NNeumMyMPkAxVMrj7qq1zrhVVGl/5usz/MXkCgRheK8j05h3hDbEs6zZdYhHhGt8",
-      "0ed1fe018af5796b96adc34642aa2a42756ef1a82e",
       "MS=ms51433796",
       "docusign=52095567-2918-44fb-ba89-2af8aa120c2b",
-      "4k87v34q679nnktm7msw176n2mjjt2f2",
+      "v=spf1 ip4:54.240.121.128/27 ip4:52.6.112.187 include:us._netblocks.mimecast.com include:spf.abila.info include:mail.zendesk.com ip4:74.220.145.8 ip4:74.203.48.0/23 ip4:74.203.57.0/24 ip4:174.46.206.0/23",
+      " ip4:174.46.10.129/32 ip4:143.220.15.0/24 ip4:143.220.17.0/24 ip4:143.220.32.0/24 ip4:216.71.144.176 ip4:207.54.86.45 include:_spf.qualtrics.com include:amazonses.com ~all",
       "adobe-idp-site-verification=55cac8ffb5b23b50c94d629752efc925f61ea92c1254d16d8bd6f0affe96e97e",
       "anthropic-domain-verification-wxcd0c=BgSYxLEu4oZNGb1STL7CkvTPg",
-      "xVXYh2htSzJmE6VkToy/aGAmNs8cxK2vV+6I70GL/zlQHSbfrd6n2vPKyYeokIK4okHucqCOzxF9J/FLb7VQZA==",
-      "tz7y9ps639fshlhk6fmljls36vsgmsh2",
-      "6hszhhybwmrbh92rpj7m8rm8rclry7gs",
       "onetrust-domain-verification=aea188f6772b4e0a9e7464f3a5d39d88",
+      "xVXYh2htSzJmE6VkToy/aGAmNs8cxK2vV+6I70GL/zlQHSbfrd6n2vPKyYeokIK4okHucqCOzxF9J/FLb7VQZA==",
+      "atlassian-domain-verification=NNeumMyMPkAxVMrj7qq1zrhVVGl/5usz/MXkCgRheK8j05h3hDbEs6zZdYhHhGt8",
+      "4k87v34q679nnktm7msw176n2mjjt2f2",
       "openai-domain-verification=dv-8uyHnjMDd4ZJ1w1CapYvN7jZ",
-      "v=spf1 ip4:54.240.121.128/27 ip4:52.6.112.187 include:us._netblocks.mimecast.com include:spf.abila.info include:mail.zendesk.com ip4:74.220.145.8 ip4:74.203.48.0/23 ip4:74.203.57.0/24 ip4:174.46.206.0/23",
-      " ip4:174.46.10.129/32 ip4:143.220.15.0/24 ip4:143.220.17.0/24 ip4:143.220.32.0/24 ip4:216.71.144.176 ip4:207.54.86.45 include:_spf.qualtrics.com include:amazonses.com ~all"
+      "tz7y9ps639fshlhk6fmljls36vsgmsh2",
+      "0ed1fe018af5796b96adc34642aa2a42756ef1a82e",
+      "6hszhhybwmrbh92rpj7m8rm8rclry7gs"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=25; rua=mailto:dmarc_agg@vali.email,mailto:dmarc@mms-org.uriports.com; ruf=mailto:dmarc@mms-org.uriports.com; fo=1:d:s"
@@ -264,7 +278,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
     }
   },
   "ports": {
-    "ip": "100.56.81.175",
+    "ip": "34.194.248.53",
     "open": []
   },
   "https": {
@@ -348,10 +362,10 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
     ]
   },
   "apex_txt": [
-    "atlassian-domain-verification=NNeumMyMPkAxVMrj7qq1zrhVVGl/5usz/MXkCgRheK8j05h3hD",
     "adobe-idp-site-verification=55cac8ffb5b23b50c94d629752efc925f61ea92c1254d16d8bd6",
     "anthropic-domain-verification-wxcd0c=BgSYxLEu4oZNGb1STL7CkvTPg",
     "onetrust-domain-verification=aea188f6772b4e0a9e7464f3a5d39d88",
+    "atlassian-domain-verification=NNeumMyMPkAxVMrj7qq1zrhVVGl/5usz/MXkCgRheK8j05h3hD",
     "openai-domain-verification=dv-8uyHnjMDd4ZJ1w1CapYvN7jZ"
   ],
   "tls2": {
@@ -370,6 +384,9 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.r2m04.amazontrust.com/r2m04.crl"
+      ],
+      "san": [
+        "nejm.org"
       ],
       "subject_dn": "3111300f060355040313086e656a6d2e6f7267",
       "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3034",
@@ -400,7 +417,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-100-56-81-175.compute-1.amazonaws.com."
+      "ec2-34-194-248-53.compute-1.amazonaws.com."
     ]
   },
   "x13": {
@@ -430,8 +447,11 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 50.2,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.r2m04.amazontrust.com"
+  },
+  "elapsed_s": 54.0,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -445,4 +465,5 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

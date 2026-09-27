@@ -7,12 +7,12 @@
 | Target | https://vk.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | vk.com |
-| Test date | 2026-09-27 01:36 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
+Total findings: **27** (High: 0, Medium: 0, Low: 6, Info: 21)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -41,6 +41,8 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
 | 23 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
 | 24 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
 | 25 | info | H25 | server-timing response header exposed | CWE-200 |
+| 26 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 27 | info | HTML16 | Inline event handlers in root document | CWE-79 |
 
 ## Detailed findings
 
@@ -132,13 +134,13 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (2suy0vkdkrn0cb.vk.com and rgyd2f3g030etw.vk.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (sb5n02sesjllb8.vk.com and rpc8gffh9z94vg.vk.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=yIHjfPiraw7292KzmmdOaN_HbhuOagFIXRGHf_3WH4; _globalsign-domain-verification=aXxk884iIZmgR5ON_CbluBYfK4GyZLo08hLo293AHC; google-site-verification=bQE4SQUYC7KTvk4XCaMdwF0e_tj-O-6ZXMfXW2a8mHY
+- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=aXxk884iIZmgR5ON_CbluBYfK4GyZLo08hLo293AHC; _globalsign-domain-verification=3qRKI9FWh1UX5CIN5FXwL6SJnSKkJzaDkVqSPaxdfC; _globalsign-domain-verification=yIHjfPiraw7292KzmmdOaN_HbhuOagFIXRGHf_3WH4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -198,8 +200,20 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
 ### 25. [INFO] server-timing response header exposed (`H25`)
 
 - **CWE:** CWE-200
-- **Detail:** The root response of vk.com sends server-timing (tid;desc="lU_nMmnR7iUgYD1uQRkbfkT4m3R-ng",front;dur=391.304); server/edge processing metrics are disclosed to any client.
+- **Detail:** The root response of vk.com sends server-timing (tid;desc="5WIxQw6mSvPW5tfVrsJHFj8NlQ8hTw",front;dur=456.831); server/edge processing metrics are disclosed to any client.
 - **Recommendation:** Restrict server-timing to authenticated/debug contexts if the internals are sensitive.
+
+### 26. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of vk.com contains wildcard SAN entry(ies) *.vk.com, *.vk.ru, *.vk.cc; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 27. [INFO] Inline event handlers in root document (`HTML16`)
+
+- **CWE:** CWE-79
+- **Detail:** The root document of vk.com contains 20 inline event handler attribute(s); each is a DOM-level execution point that SRI does not constrain.
+- **Recommendation:** Move handlers to external scripts where feasible and keep them covered by CSP.
 
 ## Evidence (raw response observations)
 
@@ -209,10 +223,10 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
   "dns": {
     "a": [
       "93.186.225.194",
+      "87.240.132.72",
       "87.240.132.67",
       "87.240.132.78",
       "87.240.129.133",
-      "87.240.132.72",
       "87.240.137.164"
     ],
     "aaaa": [],
@@ -221,28 +235,28 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
       "mxs.mail.ru (pref 0)"
     ],
     "ns": [
-      "ns1.vk.com.",
-      "ns4.vk.com.",
+      "ns3.vk.com.",
       "ns2.vk.com.",
-      "ns3.vk.com."
+      "ns1.vk.com.",
+      "ns4.vk.com."
     ],
     "caa": [],
     "spf": [
-      "_globalsign-domain-verification=yIHjfPiraw7292KzmmdOaN_HbhuOagFIXRGHf_3WH4",
-      "_globalsign-domain-verification=aXxk884iIZmgR5ON_CbluBYfK4GyZLo08hLo293AHC",
-      "google-site-verification=bQE4SQUYC7KTvk4XCaMdwF0e_tj-O-6ZXMfXW2a8mHY",
-      "wmail-verification: 646ff42e916a2be1aa86be6d3c742949",
       "HARICA-qudxcvYVXjYWrJvbUoX",
+      "HARICA-A1PCCe7rY17J2K2Ifov",
+      "HARICA-fLc9OEonBmci43ogW3C",
+      "_globalsign-domain-verification=aXxk884iIZmgR5ON_CbluBYfK4GyZLo08hLo293AHC",
       "_globalsign-domain-verification=3qRKI9FWh1UX5CIN5FXwL6SJnSKkJzaDkVqSPaxdfC",
-      "v=spf1 ip4:93.186.224.0/20 ip4:87.240.128.0/18 i",
-      "p4:95.142.192.0/21 mx include:_spf.google.com in",
-      "clude:_spf.mail.ru ~all",
+      "_globalsign-domain-verification=yIHjfPiraw7292KzmmdOaN_HbhuOagFIXRGHf_3WH4",
+      "_globalsign-domain-verification=YM9xQ7VIOTNzoxGpxAE1kwy28slNTGWXflmZgt73D9",
+      "wmail-verification: 646ff42e916a2be1aa86be6d3c742949",
+      "google-site-verification=bQE4SQUYC7KTvk4XCaMdwF0e_tj-O-6ZXMfXW2a8mHY",
+      "yandex-verification: 0bb3aeafaf40a3fa",
       "LD6VaYCKete4UB5FIx7snCoJ8bt1nGdeCWe4my5HH5psRaTl",
       "zAmvc",
-      "HARICA-fLc9OEonBmci43ogW3C",
-      "yandex-verification: 0bb3aeafaf40a3fa",
-      "_globalsign-domain-verification=YM9xQ7VIOTNzoxGpxAE1kwy28slNTGWXflmZgt73D9",
-      "HARICA-A1PCCe7rY17J2K2Ifov"
+      "v=spf1 ip4:93.186.224.0/20 ip4:87.240.128.0/18 i",
+      "p4:95.142.192.0/21 mx include:_spf.google.com in",
+      "clude:_spf.mail.ru ~all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; pct=100; rua=",
@@ -388,11 +402,11 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "_globalsign-domain-verification=yIHjfPiraw7292KzmmdOaN_HbhuOagFIXRGHf_3WH4",
     "_globalsign-domain-verification=aXxk884iIZmgR5ON_CbluBYfK4GyZLo08hLo293AHC",
-    "google-site-verification=bQE4SQUYC7KTvk4XCaMdwF0e_tj-O-6ZXMfXW2a8mHY",
-    "wmail-verification: 646ff42e916a2be1aa86be6d3c742949",
-    "_globalsign-domain-verification=3qRKI9FWh1UX5CIN5FXwL6SJnSKkJzaDkVqSPaxdfC"
+    "_globalsign-domain-verification=3qRKI9FWh1UX5CIN5FXwL6SJnSKkJzaDkVqSPaxdfC",
+    "_globalsign-domain-verification=yIHjfPiraw7292KzmmdOaN_HbhuOagFIXRGHf_3WH4",
+    "_globalsign-domain-verification=YM9xQ7VIOTNzoxGpxAE1kwy28slNTGWXflmZgt73D9",
+    "wmail-verification: 646ff42e916a2be1aa86be6d3c742949"
   ],
   "tls2": {
     "alpn": "",
@@ -410,6 +424,28 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
       "bc_pathlen": null,
       "crl_urls": [
         "http://c.pki.goog/wr1/ehmxk4X0Mqk.crl"
+      ],
+      "san": [
+        "*.vk.com",
+        "vk.ru",
+        "vk.cc",
+        "vk.me",
+        "vkontakte.com",
+        "vkontakte.ru",
+        "vk.link",
+        "vk.design",
+        "stats.vk-portal.net",
+        "m.vk.ru",
+        "vkvideo.ru",
+        "api.vk.ru",
+        "*.vk.ru",
+        "*.vk.cc",
+        "*.vk.me",
+        "*.vkontakte.com",
+        "*.vkontakte.ru",
+        "*.vk.link",
+        "*.vk.design",
+        "*.vk-portal.ru"
       ],
       "subject_dn": "3111300f06035504030c082a2e766b2e636f6d",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303575231",
@@ -467,10 +503,20 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
   },
   "x16": {
     "root_status": 200,
-    "server_timing": "tid;desc=\"lU_nMmnR7iUgYD1uQRkbfkT4m3R-ng\",front;dur=391.304"
+    "server_timing": "tid;desc=\"5WIxQw6mSvPW5tfVrsJHFj8NlQ8hTw\",front;dur=456.831"
   },
-  "elapsed_s": 48.9,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.vk.com",
+      "*.vk.ru",
+      "*.vk.cc",
+      "*.vk.me",
+      "*.vkontakte.com"
+    ],
+    "inline_handlers": 20
+  },
+  "elapsed_s": 54.0,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -484,4 +530,5 @@ Total findings: **25** (High: 0, Medium: 0, Low: 6, Info: 19)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

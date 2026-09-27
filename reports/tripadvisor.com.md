@@ -7,12 +7,12 @@
 | Target | https://tripadvisor.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | tripadvisor.com |
-| Test date | 2026-09-27 01:36 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
+Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,8 +33,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 17 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
-| 18 | info | CT1 | 125 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 19 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 18 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 19 | info | H12 | Proxy/edge hop chain disclosed via Via | CWE-200 |
+| 20 | info | CT1 | 125 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 21 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -108,7 +110,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: protonmail-verification=5e35a64e327cebe41439dc21e8657f78970c051a; facebook-domain-verification=rld5ayte5pgnngj4ljg2ovn3kaeo4q; segment-site-verification=Lv56Wm7ECxH2FrJtoG9FmQ77Co6nf93L
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=w2N0fg0r/RRZCQ7UgNfpKKFXJH1kvCtLacvj/HzML7VZYyhEDT; openai-domain-verification=dv-5I8xhFhqZatLn3rbDbmtgpc2; bitrise-verification=b03d9c7c59423f9c-nSSshb2Ef1iv
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -132,7 +134,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 65.9.180.34 carries PTR server-65-9-180-34.tpe53.r.cloudfront.net. for tripadvisor.com.
+- **Detail:** 65.9.180.28 carries PTR server-65-9-180-28.tpe53.r.cloudfront.net. for tripadvisor.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -147,13 +149,25 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - **Detail:** Response headers on tripadvisor.com identify the edge as CloudFront / Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
-### 18. [INFO] 125 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 18. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of tripadvisor.com is http://ocsp.r2m04.amazontrust.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 19. [INFO] Proxy/edge hop chain disclosed via Via (`H12`)
+
+- **CWE:** CWE-200
+- **Detail:** The root of tripadvisor.com discloses a 1-hop fronting chain (1.1 749a187268a37768d2b3eeb64110668c.cloudfront.net (CloudFront)); the hop sequence inventories the intermediate edge/proxy layers in front of the origin.
+- **Recommendation:** Confirm each hop is an intended layer; trim chain disclosure if unnecessary.
+
+### 20. [INFO] 125 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.a.tripadvisor.com, api.b.tripadvisor.com, api.content.tripadvisor.com, api.tripadvisor.com, api.w.tripadvisor.com, cdn.tripadvisor.com, certificate-requestor.ops.tripadvisor.com, docs.terra.tripadvisor.com, els-cerebro-ashburn.ops.tripadvisor.com, els-kibana1-ashburn.ops.tripadvisor.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 19. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 21. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: api.a.tripadvisor.com; content may still be served via virtual-host fallback.
@@ -166,10 +180,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "domain": "tripadvisor.com",
   "dns": {
     "a": [
-      "65.9.180.34",
-      "65.9.180.51",
       "65.9.180.28",
-      "65.9.180.77"
+      "65.9.180.51",
+      "65.9.180.77",
+      "65.9.180.34"
     ],
     "aaaa": [],
     "cname": null,
@@ -177,54 +191,54 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "smtp.google.com (pref 10)"
     ],
     "ns": [
-      "ns-584.awsdns-09.net.",
-      "ns-1702.awsdns-20.co.uk.",
       "ns-218.awsdns-27.com.",
+      "ns-1702.awsdns-20.co.uk.",
+      "ns-584.awsdns-09.net.",
       "ns-1455.awsdns-53.org."
     ],
     "caa": [],
     "spf": [
-      "_18y5y646xcsfq732og6fu2xmgabh125",
-      "protonmail-verification=5e35a64e327cebe41439dc21e8657f78970c051a",
-      "docusign=f4d14366-23f0-482a-bc08-98b15bd25db6",
-      "facebook-domain-verification=rld5ayte5pgnngj4ljg2ovn3kaeo4q",
-      "segment-site-verification=Lv56Wm7ECxH2FrJtoG9FmQ77Co6nf93L",
-      "sprout-social-85a564fb-ff50-11ef-b8c4-0e418c465417",
-      "pardot_211512_*=005e7416cb39efdf4ede9f02352c05fe01bf0e6c5435039550bdab7d707cae58",
-      "spf2.0/pra",
-      "duo_sso_verification=N763Lu3Yt0ygaRnHrvqziKZ7YVtOU95w7GXyHhCljSOT7d1KVi7z2TSRd5BR4a3Q",
-      "v=spf1 include:_spf.tripadvisor.com include:mail.zendesk.com ~all",
+      "atlassian-domain-verification=w2N0fg0r/RRZCQ7UgNfpKKFXJH1kvCtLacvj/HzML7VZYyhEDT7N1skt744NCyxJ",
       "openai-domain-verification=dv-5I8xhFhqZatLn3rbDbmtgpc2",
+      "MS=E0371C101EE1151078A9F24A7375E7021319CF9E",
+      "bitrise-verification=b03d9c7c59423f9c-nSSshb2Ef1iv",
+      "pendo-domain-verification=M8PpCcCrkPq-ll2Fr1arfZA1YvI",
+      "google-site-verification=u10Ue1BCmah8YviQ9Ju9IqSP-xZtlgEnBloxhP5Lhn8",
+      "apple-domain-verification=jtPwxHyUkw7GVjBd",
+      "pardot_211512_*=005e7416cb39efdf4ede9f02352c05fe01bf0e6c5435039550bdab7d707cae58",
+      "protonmail-verification=5e35a64e327cebe41439dc21e8657f78970c051a",
+      "jetbrains-domain-verification=5zlraawspitiqhi2hp4wizy31",
+      "duo_sso_verification=N763Lu3Yt0ygaRnHrvqziKZ7YVtOU95w7GXyHhCljSOT7d1KVi7z2TSRd5BR4a3Q",
+      "anthropic-domain-verification-pc5mq6=ebxPo8aNNofNaqlqU65hyJHjA",
+      "cursor-domain-verification-bwta0g=rGWNgTQrx8pQ3A5XE0S1XxKzM",
+      "sprout-social-85a564fb-ff50-11ef-b8c4-0e418c465417",
+      "bnyGlxykTsBZSdNWWe3jXJ5tVU2U7gsTx6UjsZyIpHk=",
+      "bugcrowd-verification=4889742e219d4b280f2d3673d147a6a9",
+      "miro-verification=6ff1de40e337f458d05086183318e55305c99fe1",
+      "google-site-verification=XMWC5EUo1s-TCtWPBEwzBDLUHqlmf-UcS-t7E8YRlmw",
+      "astro-domain-verification=cmhtl2g8213y801lqzjo38fe8",
+      "b4jddSWKFAZrS-Y8QD1o7T2nzdk",
       "docker-verification=a6e2315b-2f86-428a-84d7-52270aea1853",
       "MS=ms43904515",
-      "_globalsign-domain-verification=GaLfs98jrznUbwIzD2n4S8pINM0PU-EyBVWkTTQvp9",
-      "bitrise-verification=b03d9c7c59423f9c-nSSshb2Ef1iv",
-      "google-site-verification=u10Ue1BCmah8YviQ9Ju9IqSP-xZtlgEnBloxhP5Lhn8",
-      "cursor-domain-verification-bwta0g=rGWNgTQrx8pQ3A5XE0S1XxKzM",
-      "google-site-verification=XMWC5EUo1s-TCtWPBEwzBDLUHqlmf-UcS-t7E8YRlmw",
       "cisco-ci-domain-verification=6de74e9c24339dc358b099e999ca47c34dd162c04f635f9810372e2000ad9f57",
-      "jetbrains-domain-verification=5zlraawspitiqhi2hp4wizy31",
-      "perplexity-ai-domain-verification-2hn78f=hnjr1IgErK6Rjhxpscmyv9Ztq",
-      "_2erojipq9p68ygptyqgypy83ah2dnzz",
-      "asv=d902c0e169042b928445d5bc9a610e24",
-      "onetrust-domain-verification=9214adc265ab47e992a332150c6a315b",
+      "spf2.0/pra",
+      "segment-site-verification=Lv56Wm7ECxH2FrJtoG9FmQ77Co6nf93L",
       "datadome-domain-verify=LtwSY8f9UsuWkflYriVEN5xJW7jb1OGB",
-      "astro-domain-verification=cmhtl2g8213y801lqzjo38fe8",
-      "zapier-domain-verification-challenge=e7c8b772-89e7-420e-b76b-3a084b0bbf83",
-      "b4jddSWKFAZrS-Y8QD1o7T2nzdk",
-      "jamf-site-verification=Ac2uXdbieW6reJXv2o4UQw",
-      "anthropic-domain-verification-pc5mq6=ebxPo8aNNofNaqlqU65hyJHjA",
-      "atlassian-domain-verification=w2N0fg0r/RRZCQ7UgNfpKKFXJH1kvCtLacvj/HzML7VZYyhEDT7N1skt744NCyxJ",
+      "asv=d902c0e169042b928445d5bc9a610e24",
+      "v=spf1 include:_spf.tripadvisor.com include:mail.zendesk.com ~all",
       "teamviewer-sso-verification=b42c480c302645eb8ed8f32688556be4",
-      "apple-domain-verification=jtPwxHyUkw7GVjBd",
-      "pendo-domain-verification=M8PpCcCrkPq-ll2Fr1arfZA1YvI",
-      "miro-verification=6ff1de40e337f458d05086183318e55305c99fe1",
-      "bugcrowd-verification=4889742e219d4b280f2d3673d147a6a9",
       "stripe-verification=A71BECF4CEF430F171A6A2382BEECE6A64B9633FC460020EB8A205A95669B679",
-      "bnyGlxykTsBZSdNWWe3jXJ5tVU2U7gsTx6UjsZyIpHk=",
+      "docusign=f4d14366-23f0-482a-bc08-98b15bd25db6",
+      "jamf-site-verification=Ac2uXdbieW6reJXv2o4UQw",
       "docusign=4c82afdc-4187-4e03-9e78-8dbdc5ed7d0d",
-      "MS=E0371C101EE1151078A9F24A7375E7021319CF9E",
-      "twilio-domain-verification=57fba14b7bba9c1c99652540a081cc79"
+      "perplexity-ai-domain-verification-2hn78f=hnjr1IgErK6Rjhxpscmyv9Ztq",
+      "facebook-domain-verification=rld5ayte5pgnngj4ljg2ovn3kaeo4q",
+      "_2erojipq9p68ygptyqgypy83ah2dnzz",
+      "twilio-domain-verification=57fba14b7bba9c1c99652540a081cc79",
+      "onetrust-domain-verification=9214adc265ab47e992a332150c6a315b",
+      "_18y5y646xcsfq732og6fu2xmgabh125",
+      "zapier-domain-verification-challenge=e7c8b772-89e7-420e-b76b-3a084b0bbf83",
+      "_globalsign-domain-verification=GaLfs98jrznUbwIzD2n4S8pINM0PU-EyBVWkTTQvp9"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-rua@tripadvisor.com; ruf=mailto:dmarc-ruf@tripadvisor.com"
@@ -296,7 +310,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     }
   },
   "ports": {
-    "ip": "65.9.180.34",
+    "ip": "65.9.180.28",
     "open": []
   },
   "https": {
@@ -389,11 +403,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     ]
   },
   "apex_txt": [
-    "protonmail-verification=5e35a64e327cebe41439dc21e8657f78970c051a",
-    "facebook-domain-verification=rld5ayte5pgnngj4ljg2ovn3kaeo4q",
-    "segment-site-verification=Lv56Wm7ECxH2FrJtoG9FmQ77Co6nf93L",
-    "duo_sso_verification=N763Lu3Yt0ygaRnHrvqziKZ7YVtOU95w7GXyHhCljSOT7d1KVi7z2TSRd5B",
-    "openai-domain-verification=dv-5I8xhFhqZatLn3rbDbmtgpc2"
+    "atlassian-domain-verification=w2N0fg0r/RRZCQ7UgNfpKKFXJH1kvCtLacvj/HzML7VZYyhEDT",
+    "openai-domain-verification=dv-5I8xhFhqZatLn3rbDbmtgpc2",
+    "bitrise-verification=b03d9c7c59423f9c-nSSshb2Ef1iv",
+    "pendo-domain-verification=M8PpCcCrkPq-ll2Fr1arfZA1YvI",
+    "google-site-verification=u10Ue1BCmah8YviQ9Ju9IqSP-xZtlgEnBloxhP5Lhn8"
   ],
   "tls2": {
     "alpn": "",
@@ -411,6 +425,28 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.r2m04.amazontrust.com/r2m04.crl"
+      ],
+      "san": [
+        "tripadvisor.com",
+        "tripadvisor.jp",
+        "tripadvisor.dk",
+        "tripadvisor.com.eg",
+        "tripadvisor.fr",
+        "tripadvisor.ua",
+        "tripadvisor.co.nz",
+        "tripadvisor.nl",
+        "tripadvisor.com.my",
+        "tripadvisor.com.mx",
+        "tripadvisor.rs",
+        "tripadvisor.com.gr",
+        "tripadvisor.de",
+        "tripadvisor.pt",
+        "tripadvisor.fi",
+        "tripadvisor.co.hu",
+        "tripadvisor.be",
+        "tripadvisor.com.au",
+        "tripadvisor.cz",
+        "tripadvisor.com.pe"
       ],
       "subject_dn": "311830160603550403130f7472697061647669736f722e636f6d",
       "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3034",
@@ -441,7 +477,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "x12": {
     "status": 301,
     "ptr": [
-      "server-65-9-180-34.tpe53.r.cloudfront.net."
+      "server-65-9-180-28.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -476,8 +512,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "Fastly"
     ]
   },
-  "elapsed_s": 13.8,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.r2m04.amazontrust.com",
+    "via": "1.1 749a187268a37768d2b3eeb64110668c.cloudfront.net (CloudFront)"
+  },
+  "elapsed_s": 13.6,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -491,4 +531,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

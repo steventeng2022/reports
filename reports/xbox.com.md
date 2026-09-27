@@ -7,12 +7,12 @@
 | Target | https://xbox.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | xbox.com |
-| Test date | 2026-09-27 01:37 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
+Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,8 +35,9 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 | 17 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 18 | low | H21 | HSTS does not cover subdomains | CWE-319 |
 | 19 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
-| 20 | info | CT1 | 450 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 21 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 20 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 21 | info | CT1 | 450 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 22 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -123,7 +124,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=xvoaqRfxSg3PnlVnR4xCSOlKyw1Aln0MMxRiKXnwWroFG7vI76; google-site-verification=jRoICv0mMREqo5IthM1McDzE_8rRtEYtSVtHmOTUoJA; adobe-idp-site-verification=8aa35c528af5d72beb19b1bd3ed9b86d87ea7f24b2ba3c99ffcd
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=yvcz1zil7qv3biswf68ikkxkh1nsoh; google-site-verification=jRoICv0mMREqo5IthM1McDzE_8rRtEYtSVtHmOTUoJA; adobe-idp-site-verification=8aa35c528af5d72beb19b1bd3ed9b86d87ea7f24b2ba3c99ffcd
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -162,13 +163,19 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 - **Detail:** /sitemap.xml on xbox.com lists 932 <loc> URL(s) across 933 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
-### 20. [INFO] 450 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 20. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of xbox.com is http://oneocsp.microsoft.com/ocsp; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 21. [INFO] 450 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: americas.test.play.xbox.com, assets.play.xbox.com, auth.cert.xbox.com, auth.int2.xbox.com, auth.part.xbox.com, auth.xbox.com, beta.support-preview.ci.xbox.com, beta.support-preview.nightly.xbox.com, beta.support-preview.staging.xbox.com, beta.support-preview.xbox.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 21. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 22. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: auth.cert.xbox.com, auth.part.xbox.com; content may still be served via virtual-host fallback.
@@ -181,16 +188,16 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
   "domain": "xbox.com",
   "dns": {
     "a": [
-      "20.70.246.20",
-      "20.236.44.162",
       "20.231.239.246",
       "20.76.201.171",
-      "20.112.250.133"
+      "20.112.250.133",
+      "20.70.246.20",
+      "20.236.44.162"
     ],
     "aaaa": [
       "2603:1030:20e:3::23c",
-      "2603:1010:3:3::5b",
       "2603:1030:c02:8::14",
+      "2603:1010:3:3::5b",
       "2603:1030:b:3::152",
       "2603:1020:201:10::10f"
     ],
@@ -199,25 +206,25 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
       "xbox-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
+      "ns1-205.azure-dns.com.",
       "ns2-205.azure-dns.net.",
-      "ns4-205.azure-dns.info.",
       "ns3-205.azure-dns.org.",
-      "ns1-205.azure-dns.com."
+      "ns4-205.azure-dns.info."
     ],
     "caa": [
       "0 contactemail \"caarecordaware@microsoft.com\""
     ],
     "spf": [
-      "docusign=c2837ae3-ac1e-446d-b257-c2328dce901a",
-      "atlassian-domain-verification=xvoaqRfxSg3PnlVnR4xCSOlKyw1Aln0MMxRiKXnwWroFG7vI76TUC8xYb03MwMXv",
+      "v=spf1 ip4:65.55.42.0/24 ip4:65.55.76.0/24 mx:xbox.com include:_spf-ssg-a.microsoft.com include:spf.protection.outlook.com -all",
+      "AFDVALIDATION=Xbox",
+      "facebook-domain-verification=yvcz1zil7qv3biswf68ikkxkh1nsoh",
       "google-site-verification=jRoICv0mMREqo5IthM1McDzE_8rRtEYtSVtHmOTUoJA",
       "adobe-idp-site-verification=8aa35c528af5d72beb19b1bd3ed9b86d87ea7f24b2ba3c99ffcd00c27e9d809c",
+      "docusign=c2837ae3-ac1e-446d-b257-c2328dce901a",
       "facebook-domain-verification=n2md3enk4k9r4s6kylpqmekhxyyrq7",
-      "v=spf1 ip4:65.55.42.0/24 ip4:65.55.76.0/24 mx:xbox.com include:_spf-ssg-a.microsoft.com include:spf.protection.outlook.com -all",
-      "facebook-domain-verification=yvcz1zil7qv3biswf68ikkxkh1nsoh",
-      "b1939PPDAGDjXs+54riWGyuzfCM+s+PE66uPOHEQ+9z264YnfenE2CVrUxq+5UGTDqiOU8JqZ5AKRvfcUVpfXQ==",
-      "AFDVALIDATION=Xbox",
-      "google-site-verification=e70dJcpsqnXzda_PC9I_VO_bpU9hlMlqhtvsxegHEQc"
+      "google-site-verification=e70dJcpsqnXzda_PC9I_VO_bpU9hlMlqhtvsxegHEQc",
+      "atlassian-domain-verification=xvoaqRfxSg3PnlVnR4xCSOlKyw1Aln0MMxRiKXnwWroFG7vI76TUC8xYb03MwMXv",
+      "b1939PPDAGDjXs+54riWGyuzfCM+s+PE66uPOHEQ+9z264YnfenE2CVrUxq+5UGTDqiOU8JqZ5AKRvfcUVpfXQ=="
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:rua@dmarc.microsoft; ruf=mailto:ruf@dmarc.microsoft; fo=1:s:d"
@@ -438,7 +445,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
     }
   },
   "ports": {
-    "ip": "20.70.246.20",
+    "ip": "20.231.239.246",
     "open": []
   },
   "https": {
@@ -535,11 +542,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
     ]
   },
   "apex_txt": [
-    "atlassian-domain-verification=xvoaqRfxSg3PnlVnR4xCSOlKyw1Aln0MMxRiKXnwWroFG7vI76",
+    "facebook-domain-verification=yvcz1zil7qv3biswf68ikkxkh1nsoh",
     "google-site-verification=jRoICv0mMREqo5IthM1McDzE_8rRtEYtSVtHmOTUoJA",
     "adobe-idp-site-verification=8aa35c528af5d72beb19b1bd3ed9b86d87ea7f24b2ba3c99ffcd",
     "facebook-domain-verification=n2md3enk4k9r4s6kylpqmekhxyyrq7",
-    "facebook-domain-verification=yvcz1zil7qv3biswf68ikkxkh1nsoh"
+    "google-site-verification=e70dJcpsqnXzda_PC9I_VO_bpU9hlMlqhtvsxegHEQc"
   ],
   "tls2": {
     "alpn": "",
@@ -558,6 +565,28 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
       "crl_urls": [
         "http://www.microsoft.com/pkiops/crl/partition/Microsoft%20TLS%20G2%20RSA%20CA%20OCSP%2002_Partition00037.crl",
         "http://crl2.microsoft.com/pkiops/crl/partition/Microsoft%20TLS%20G2%20RSA%20CA%20OCSP%2002_Partition00037.crl"
+      ],
+      "san": [
+        "myservice.surface.com",
+        "xbox.com",
+        "myservice.xbox.com",
+        "microsoft.cz",
+        "www.microsoft.cz",
+        "www.winhec.net",
+        "www.winhec.com",
+        "winhec.net",
+        "winhec.com",
+        "microsoft.eu",
+        "www.microsoft.eu",
+        "windows.com",
+        "www.gigjam.com",
+        "gigjam.com",
+        "microsoft.az",
+        "microsoft.be",
+        "microsoft.by",
+        "microsoft.ca",
+        "microsoft.ch",
+        "microsoft.cl"
       ],
       "subject_dn": "310b3009060355040613025553310b30090603550408130257413110300e060355040713075265646d6f6e64311e301c060355040a13154d6963726f736f667420436f72706f726174696f6e311430120603550403130b737572666163652e636f6d",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a13154d6963726f736f667420436f72706f726174696f6e312830260603550403131f4d6963726f736f667420544c5320473220525341204341204f435350203032",
@@ -614,8 +643,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 39.6,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://oneocsp.microsoft.com/ocsp"
+  },
+  "elapsed_s": 46.7,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -629,4 +661,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

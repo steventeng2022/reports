@@ -7,12 +7,12 @@
 | Target | https://etsy.com/ |
 | Bug bounty program | Etsy |
 | Listed scope domain | etsy.com |
-| Test date | 2026-09-27 01:18 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:27 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
+Total findings: **25** (High: 0, Medium: 0, Low: 8, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -38,6 +38,9 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
 | 20 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 21 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
 | 22 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 23 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 24 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 25 | info | H12 | Proxy/edge hop chain disclosed via Via | CWE-200 |
 
 ## Detailed findings
 
@@ -137,13 +140,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
 ### 15. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (712hyv60zft3e9.etsy.com and qop3jtzs5il3el.etsy.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (hq2sx0dryrk85o.etsy.com and d89frf4ezq4mqi.etsy.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0; segment-site-verification=qK8Hs2slX9yMAAiKpgMoNP6bJCKq0cqQ; adobe-idp-site-verification=1858581c5ab657f77e067d14de03dd297c85f0b6b2916dbe0ade
+- **Detail:** Apex TXT records with verification/token content: bugcrowd-verification=460ceee75155fa4965c62123bc9cd182; pinterest-site-verification=b92965d84ebb1103548fbd23e39baf66; stripe-verification=5e8773ee85575b784fc2a6868da2b17b165e2e59f62d067f77bfd40c0ad5
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -182,6 +185,24 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
 - **Detail:** Response headers on etsy.com identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
+### 23. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of etsy.com contains wildcard SAN entry(ies) *.etsystatic.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 24. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of etsy.com is http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2025q4; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 25. [INFO] Proxy/edge hop chain disclosed via Via (`H12`)
+
+- **CWE:** CWE-200
+- **Detail:** The root of etsy.com discloses a 1-hop fronting chain (1.1 varnish); the hop sequence inventories the intermediate edge/proxy layers in front of the origin.
+- **Recommendation:** Confirm each hop is an intended layer; trim chain disclosure if unnecessary.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -189,57 +210,57 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
   "domain": "etsy.com",
   "dns": {
     "a": [
-      "151.101.1.224",
-      "151.101.129.224",
       "151.101.193.224",
-      "151.101.65.224"
+      "151.101.129.224",
+      "151.101.65.224",
+      "151.101.1.224"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 30)",
-      "aspmx2.googlemail.com (pref 40)",
-      "aspmx3.googlemail.com (pref 50)",
       "aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 30)",
+      "aspmx3.googlemail.com (pref 50)",
+      "aspmx2.googlemail.com (pref 40)",
       "alt1.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
-      "ns-162.awsdns-20.com.",
+      "dns3.p03.nsone.net.",
       "ns-1264.awsdns-30.org.",
       "dns1.p03.nsone.net.",
-      "dns3.p03.nsone.net."
+      "ns-162.awsdns-20.com."
     ],
     "caa": [],
     "spf": [
-      "_globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0",
+      "MS=61C0D53B132406B96613AF941D1FFB83A6CFCD73",
+      "bugcrowd-verification=460ceee75155fa4965c62123bc9cd182",
+      "pinterest-site-verification=b92965d84ebb1103548fbd23e39baf66",
+      "stripe-verification=5e8773ee85575b784fc2a6868da2b17b165e2e59f62d067f77bfd40c0ad5cdc5",
+      "cursor-domain-verification-vyqnwm=JyRGj2Bcnbk8QqNAclaAE8mHY",
+      "apple-domain-verification=qgAwoHpdlhEv-3QiQ3G11S5xHj60JbTSzecxszntlvo",
+      "atlassian-domain-verification=cMcfcaBm3JNaxKiO2fok5oOn20qbqxLmjQdFrsLV25SQj8l5hTkX/pb21NqLPLP0",
       "MS=ms91667443",
-      "segment-site-verification=qK8Hs2slX9yMAAiKpgMoNP6bJCKq0cqQ",
-      "adobe-idp-site-verification=1858581c5ab657f77e067d14de03dd297c85f0b6b2916dbe0adeca4fac539e6b",
-      "wrike-verification=NDMwNDc4NDo3YzVlMGVmM2RhZGU0NjRkZTIxZTBjYmU5Mjc2NGZmODRmNzVhMDc2NjRmMTI0NThhYzlhZTdhMzhkNzkyY2Uw",
+      "google-site-verification=mpVLpWjH_tjbc5eK6pmVTZjq4xmHhzoE3crE0rKFULs",
       "lucidlink-verification=HYZGQ2NMESYDAVG1GR5EJX21Z0",
+      "openai-domain-verification=dv-kBkaf6OFwgohxPZc4YIjOD6t",
+      "segment-site-verification=qK8Hs2slX9yMAAiKpgMoNP6bJCKq0cqQ",
       "miro-verification=31250d3fe2c000cf1f892588d27dcf9eeb6afdd8",
-      "stripe-verification=fe491048e654bcc35d8f194964540604a3a4108e3191ffd27a9ea4c232d5bcf1",
+      "stripe-verification=660c4cdde58756c254bc46c26b92b6232ebc140156e6d2ba74cbb988b283b5ae",
       "facebook-domain-verification=j81l6m6391dika9nlbuh2c8ji9nhye",
+      "onetrust-domain-verification=9f4716cb45f046429764b34174392ce2",
       "anthropic-domain-verification-nehbw6=4taelnzAjM6NVkhm1rylyYZ8r",
-      "monday-com-verification=bG-_DMl97UjUXdEr36_aoOlymHnNMGiZ9z_UM8h7t20",
-      "datadome-domain-verify=BNtk7vonAvB8fhBLjp0E2orOzns71WB1",
+      "fastly-domain-delegation-svi5ebiqbg4tbn-20251029",
       "v=spf1 ip4:66.3.159.0/24 ip4:192.147.0.0/24 ip4:173.46.67.72/29 ip4:192.147.1.0/24 ip4:38.106.64.0/24 ip4:38.76.1.0/24 ip4:38.76.2.0/24 ip4:162.220.28.32/27 ip4:162.220.28.64/28 ip4:208.74.204.0/22 ip4:46.19.168.0/23 include:servers.mcsv.net include:mail.",
       "zendesk.com include:amazonses.com include:_netblocks.google.com include:_netblocks2.google.com include:_netblocks3.google.com a:web.q4press.com include:cvent-planner.com include:mail.clinchtalent.com include:spf.redpoints.com -all",
-      "docker-verification=40052c18-7a84-4d01-a294-9fed0866066e",
-      "docusign=9866d46c-c0b0-47c6-a98e-c6381eb4ccc6",
-      "apple-domain-verification=qgAwoHpdlhEv-3QiQ3G11S5xHj60JbTSzecxszntlvo",
-      "stripe-verification=5e8773ee85575b784fc2a6868da2b17b165e2e59f62d067f77bfd40c0ad5cdc5",
-      "fastly-domain-delegation-svi5ebiqbg4tbn-20251029",
-      "openai-domain-verification=dv-kBkaf6OFwgohxPZc4YIjOD6t",
-      "stripe-verification=660c4cdde58756c254bc46c26b92b6232ebc140156e6d2ba74cbb988b283b5ae",
+      "monday-com-verification=bG-_DMl97UjUXdEr36_aoOlymHnNMGiZ9z_UM8h7t20",
       "jamf-site-verification=lUaUDNLb-GDzmbIbaCg_lg",
-      "cursor-domain-verification-vyqnwm=JyRGj2Bcnbk8QqNAclaAE8mHY",
-      "pinterest-site-verification=b92965d84ebb1103548fbd23e39baf66",
-      "bugcrowd-verification=460ceee75155fa4965c62123bc9cd182",
-      "MS=61C0D53B132406B96613AF941D1FFB83A6CFCD73",
-      "onetrust-domain-verification=9f4716cb45f046429764b34174392ce2",
-      "google-site-verification=mpVLpWjH_tjbc5eK6pmVTZjq4xmHhzoE3crE0rKFULs",
-      "atlassian-domain-verification=cMcfcaBm3JNaxKiO2fok5oOn20qbqxLmjQdFrsLV25SQj8l5hTkX/pb21NqLPLP0"
+      "docker-verification=40052c18-7a84-4d01-a294-9fed0866066e",
+      "wrike-verification=NDMwNDc4NDo3YzVlMGVmM2RhZGU0NjRkZTIxZTBjYmU5Mjc2NGZmODRmNzVhMDc2NjRmMTI0NThhYzlhZTdhMzhkNzkyY2Uw",
+      "stripe-verification=fe491048e654bcc35d8f194964540604a3a4108e3191ffd27a9ea4c232d5bcf1",
+      "adobe-idp-site-verification=1858581c5ab657f77e067d14de03dd297c85f0b6b2916dbe0adeca4fac539e6b",
+      "_globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0",
+      "datadome-domain-verify=BNtk7vonAvB8fhBLjp0E2orOzns71WB1",
+      "docusign=9866d46c-c0b0-47c6-a98e-c6381eb4ccc6"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc@etsy.com; ruf=mailto:dmarc@etsy.com"
@@ -275,7 +296,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
     }
   },
   "ports": {
-    "ip": "151.101.1.224",
+    "ip": "151.101.193.224",
     "open": []
   },
   "https": {
@@ -329,11 +350,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "_globalsign-domain-verification=xfkrv3yRwA5GGm0E4l5RlcNKTqVD8KAYsYdCYTBMF0",
-    "segment-site-verification=qK8Hs2slX9yMAAiKpgMoNP6bJCKq0cqQ",
-    "adobe-idp-site-verification=1858581c5ab657f77e067d14de03dd297c85f0b6b2916dbe0ade",
-    "wrike-verification=NDMwNDc4NDo3YzVlMGVmM2RhZGU0NjRkZTIxZTBjYmU5Mjc2NGZmODRmNzVhM",
-    "lucidlink-verification=HYZGQ2NMESYDAVG1GR5EJX21Z0"
+    "bugcrowd-verification=460ceee75155fa4965c62123bc9cd182",
+    "pinterest-site-verification=b92965d84ebb1103548fbd23e39baf66",
+    "stripe-verification=5e8773ee85575b784fc2a6868da2b17b165e2e59f62d067f77bfd40c0ad5",
+    "cursor-domain-verification-vyqnwm=JyRGj2Bcnbk8QqNAclaAE8mHY",
+    "apple-domain-verification=qgAwoHpdlhEv-3QiQ3G11S5xHj60JbTSzecxszntlvo"
   ],
   "tls2": {
     "alpn": "",
@@ -351,6 +372,16 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.globalsign.com/ca/gsatlasr3dvtlsca2025q4.crl"
+      ],
+      "san": [
+        "*.etsystatic.com",
+        "api-origin.etsy.com",
+        "api.etsy.com",
+        "m.etsy.com",
+        "openapi.etsy.com",
+        "www.etsy.com",
+        "etsy.com",
+        "openapi-staging.etsy.com"
       ],
       "subject_dn": "3119301706035504030c102a2e657473797374617469632e636f6d",
       "issuer_dn": "310b300906035504061302424531193017060355040a1310476c6f62616c5369676e206e762d7361312e302c06035504031325476c6f62616c5369676e2041746c617320523320445620544c532043412032303235205134",
@@ -411,8 +442,15 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
       "Fastly"
     ]
   },
-  "elapsed_s": 28.6,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.etsystatic.com"
+    ],
+    "ocsp_http": "http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2025q4",
+    "via": "1.1 varnish"
+  },
+  "elapsed_s": 30.1,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -426,4 +464,5 @@ Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

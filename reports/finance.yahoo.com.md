@@ -7,12 +7,12 @@
 | Target | https://finance.yahoo.com/ |
 | Bug bounty program | Yahoo! |
 | Listed scope domain | finance.yahoo.com |
-| Test date | 2026-09-27 01:20 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:29 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
+Total findings: **23** (High: 0, Medium: 0, Low: 3, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -21,19 +21,24 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 | 3 | info | TECH1 | Technology fingerprint | CWE-200 |
 | 4 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
 | 5 | info | H6 | Server technology disclosure | CWE-200 |
-| 6 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 7 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 8 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
-| 9 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
-| 10 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
-| 11 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 12 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
-| 13 | low | H21 | HSTS does not cover subdomains | CWE-319 |
-| 14 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
-| 15 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
-| 16 | info | HTML11 | Document references many third-party domains | CWE-200 |
-| 17 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
-| 18 | info | HTML12 | preconnect/dns-prefetch declares third-party destinations | CWE-200 |
+| 6 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
+| 7 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 8 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 9 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
+| 10 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
+| 11 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 12 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 13 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 14 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 15 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
+| 16 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
+| 17 | info | HTML11 | Document references many third-party domains | CWE-200 |
+| 18 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
+| 19 | info | HTML12 | preconnect/dns-prefetch declares third-party destinations | CWE-200 |
+| 20 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 21 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 22 | info | H11 | Legacy Flash cross-domain-policy exposure header | CWE-327 |
+| 23 | info | HTML16 | Inline event handlers in root document | CWE-79 |
 
 ## Detailed findings
 
@@ -69,83 +74,113 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
-### 6. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 6. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
+
+- **CWE:** CWE-603
+- **Detail:** OCSP check via http://ocsp.digicert.com -> http-200
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
+
+### 7. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but finance.yahoo.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 7. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 8. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 56 disallow path(s), e.g. /screener/insider/, /caas/, /fin_ms/, /r/, /_finance_doubledown/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 8. [LOW] CSP present but still allows unsafe directives (`CSP1`)
+### 9. [LOW] CSP present but still allows unsafe directives (`CSP1`)
 
 - **CWE:** CWE-1021
 - **Detail:** Content-Security-Policy of finance.yahoo.com permits unsafe-inline, unsafe-eval; inline script injection still executes.
 - **Recommendation:** Replace unsafe-inline/unsafe-eval with nonces, hashes, or trusted types.
 
-### 9. [INFO] CSP reporting endpoint disclosed (`CSP2`)
+### 10. [INFO] CSP reporting endpoint disclosed (`CSP2`)
 
 - **CWE:** CWE-200
 - **Detail:** CSP of finance.yahoo.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
 - **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
 
-### 10. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+### 11. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
 
 - **CWE:** CWE-922
 - **Detail:** Response for https://finance.yahoo.com/ carries Cache-Control: private, no-cache, max-age=0 (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
-### 11. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 12. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 180.222.109.251 carries PTR e1-bmr.ycpi.vip.twd.yahoo.com. for finance.yahoo.com.
+- **Detail:** 180.222.109.252 carries PTR e2-bmr.ycpi.vip.twd.yahoo.com. for finance.yahoo.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 12. [INFO] App-association / digital-asset-links surface published (`WK1`)
+### 13. [INFO] App-association / digital-asset-links surface published (`WK1`)
 
 - **CWE:** CWE-200
 - **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on finance.yahoo.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
 - **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
-### 13. [LOW] HSTS does not cover subdomains (`H21`)
+### 14. [LOW] HSTS does not cover subdomains (`H21`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security on finance.yahoo.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of finance.yahoo.com.
 - **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
 
-### 14. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+### 15. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
 
 - **CWE:** CWE-345
 - **Detail:** Root document of finance.yahoo.com loads 7 cross-origin script(s) without an integrity attribute, e.g. https://s.yimg.com/aaq/f10d509c/d3lm64ch1c76ug.js, https://s.yimg.com/du/benji/benji-2.3.411.js, https://consent.cmp.oath.com/version/7.0.2/cmp.js; a compromise of any such third-party host can inject code.
 - **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
 
-### 15. [INFO] security.txt published with a contact address (`SEC1`)
+### 16. [INFO] security.txt published with a contact address (`SEC1`)
 
 - **CWE:** CWE-1038
 - **Detail:** /.well-known/security.txt on finance.yahoo.com is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
 - **Recommendation:** Confirm the published contact is current and monitored (RFC 9116).
 
-### 16. [INFO] Document references many third-party domains (`HTML11`)
+### 17. [INFO] Document references many third-party domains (`HTML11`)
 
 - **CWE:** CWE-200
 - **Detail:** Root document of finance.yahoo.com references 6 distinct third-party registrable domains (e.g. yimg.com, w3.org, coinmarketcap.com, oath.com, onelink.me); each is a supply-chain/trust dependency of the page.
 - **Recommendation:** Review third-party integrations and pin critical ones (SRI/subresource policies).
 
-### 17. [INFO] Inline scripts without nonce/hash under a CSP (`HTML8`)
+### 18. [INFO] Inline scripts without nonce/hash under a CSP (`HTML8`)
 
 - **CWE:** CWE-1021
 - **Detail:** Root document of finance.yahoo.com sends a CSP but contains 14 inline script(s) with no nonce- or hash-attribute, so the policy must rely on 'unsafe-inline'.
 - **Recommendation:** Use per-script nonces/hashes and drop 'unsafe-inline'.
 
-### 18. [INFO] preconnect/dns-prefetch declares third-party destinations (`HTML12`)
+### 19. [INFO] preconnect/dns-prefetch declares third-party destinations (`HTML12`)
 
 - **CWE:** CWE-200
 - **Detail:** Root document of finance.yahoo.com declares preconnect/dns-prefetch/modulepreload for 3 third-party registrable domain(s) (e.g. jsdelivr.net, oath.com, yimg.com); declared (not yet loaded) destinations widen the expected network topology of the page.
 - **Recommendation:** Review declared third-party destinations as part of the supply-chain inventory.
+
+### 20. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of finance.yahoo.com contains wildcard SAN entry(ies) *.www.yahoo.com, *.yahoo.com, *.fantasysports.yahoo.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 21. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of finance.yahoo.com is http://ocsp.digicert.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 22. [INFO] Legacy Flash cross-domain-policy exposure header (`H11`)
+
+- **CWE:** CWE-327
+- **Detail:** The root of finance.yahoo.com sends X-Permitted-Cross-Domain-Policies (none); the referenced cross-domain policy files remain fetchable by any origin.
+- **Recommendation:** Review the referenced policy files; remove the header if Flash is gone.
+
+### 23. [INFO] Inline event handlers in root document (`HTML16`)
+
+- **CWE:** CWE-79
+- **Detail:** The root document of finance.yahoo.com contains 3 inline event handler attribute(s); each is a DOM-level execution point that SRI does not constrain.
+- **Recommendation:** Move handlers to external scripts where feasible and keep them covered by CSP.
 
 ## Evidence (raw response observations)
 
@@ -154,12 +189,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "domain": "finance.yahoo.com",
   "dns": {
     "a": [
-      "180.222.109.251",
-      "180.222.109.252"
+      "180.222.109.252",
+      "180.222.109.251"
     ],
     "aaaa": [
-      "2406:2000:a0:807::1",
-      "2406:2000:a0:807::2"
+      "2406:2000:a0:807::2",
+      "2406:2000:a0:807::1"
     ],
     "cname": "fo-finance-ycpi-cf.gycpi.b.yahoodns.net.",
     "mx": [],
@@ -274,7 +309,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
     }
   },
   "ports": {
-    "ip": "180.222.109.251",
+    "ip": "180.222.109.252",
     "open": []
   },
   "https": {
@@ -347,12 +382,34 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
         "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
         "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
       ],
+      "san": [
+        "*.www.yahoo.com",
+        "*.yahoo.com",
+        "ymail.com",
+        "s.yimg.com",
+        "*.fantasysports.yahoo.com",
+        "*.calendar.yahoo.com",
+        "*.groups.yahoo.com",
+        "*.mail.yahoo.com",
+        "*.msg.yahoo.com",
+        "*.ymail.com",
+        "*.finance.yahoo.com",
+        "*.news.yahoo.com",
+        "de.nachrichten.yahoo.com",
+        "*.video.yahoo.com",
+        "*.m.yahoo.com",
+        "*.my.yahoo.com",
+        "*.search.yahoo.com",
+        "*.secure.yahoo.com",
+        "*.yahooapis.com",
+        "*.mg.mail.yahoo.com"
+      ],
       "subject_dn": "310b30090603550406130255533111300f060355040813084e657720596f726b3111300f060355040713084e657720596f726b311c301a060355040a13135961686f6f20486f6c64696e677320496e632e3118301606035504030c0f2a2e7777772e7961686f6f2e636f6d",
       "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
       "not_before": "20260817000000",
       "not_after": "20261007235959"
     },
-    "ocsp": "explicit-status"
+    "ocsp": "http-200"
   },
   "http2": {
     "robots_disallow": [
@@ -376,7 +433,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
   "x12": {
     "status": 200,
     "ptr": [
-      "e1-bmr.ycpi.vip.twd.yahoo.com."
+      "e2-bmr.ycpi.vip.twd.yahoo.com."
     ]
   },
   "x13": {
@@ -416,8 +473,20 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
       "yimg.com"
     ]
   },
-  "elapsed_s": 18.1,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.www.yahoo.com",
+      "*.yahoo.com",
+      "*.fantasysports.yahoo.com",
+      "*.calendar.yahoo.com",
+      "*.groups.yahoo.com"
+    ],
+    "ocsp_http": "http://ocsp.digicert.com",
+    "xcpd": "none",
+    "inline_handlers": 3
+  },
+  "elapsed_s": 21.4,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -431,4 +500,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 3, Info: 15)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

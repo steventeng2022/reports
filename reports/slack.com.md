@@ -7,12 +7,12 @@
 | Target | https://slack.com/ |
 | Bug bounty program | Slack |
 | Listed scope domain | slack.com |
-| Test date | 2026-09-27 01:33 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
+Total findings: **27** (High: 0, Medium: 0, Low: 4, Info: 23)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -27,17 +27,22 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 | 9 | low | DNS3 | Wildcard DNS detected | CWE-345 |
 | 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 11 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 14 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
-| 15 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
-| 16 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
-| 17 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
-| 18 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
-| 19 | info | HTML11 | Document references many third-party domains | CWE-200 |
-| 20 | info | WK2 | OIDC discovery document published | CWE-200 |
-| 21 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
-| 22 | info | HTML14 | Public root document marked noindex | CWE-200 |
+| 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 15 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 16 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 17 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
+| 18 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
+| 19 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 20 | info | HTML11 | Document references many third-party domains | CWE-200 |
+| 21 | info | WK2 | OIDC discovery document published | CWE-200 |
+| 22 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 23 | info | HTML12 | preconnect/dns-prefetch declares third-party destinations | CWE-200 |
+| 24 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 25 | info | H12 | Proxy/edge hop chain disclosed via Via | CWE-200 |
+| 26 | info | H13 | Cross-origin isolation only partially configured | CWE-693 |
+| 27 | info | HTML16 | Inline event handlers in root document | CWE-79 |
 
 ## Detailed findings
 
@@ -96,13 +101,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 ### 9. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (2uvywa2uvrtkhw.slack.com and 4avxmdnu1zv1um.slack.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (pao277a3kp8vi2.slack.com and 3g10834e9t7q62.slack.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: hubspot-developer-verification=OTE4NzYxYTgtMDUwZi00MzgzLTk2YTUtZDAwNjBlODg1MWM0; google-site-verification=o2grd1TLmZZ8GrqbhVIFtzO2MRLTtSUpBBIBYfhQVCQ; google-site-verification=KqX3Ngw0XEjz_0GVx_xwFFlCoO-bskhqU_lxv0Q77mk
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=QvelFPjIOe3Vavw0q-aAVYaAPKmWCRjmmVVEAjgfjQc; google-site-verification=o2grd1TLmZZ8GrqbhVIFtzO2MRLTtSUpBBIBYfhQVCQ; hubspot-developer-verification=OTE4NzYxYTgtMDUwZi00MzgzLTk2YTUtZDAwNjBlODg1MWM0
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -111,71 +116,101 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 - **Detail:** Certificate of slack.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 12. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+
+- **CWE:** CWE-319
+- **Detail:** Strict-Transport-Security is served but slack.com is not listed in the HSTS preload list.
+- **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
+
+### 13. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 15 disallow path(s), e.g. /messages, /quickstart, /go/, /unsub/, /answers/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 52.192.46.121 carries PTR ec2-52-192-46-121.ap-northeast-1.compute.amazonaws.com. for slack.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 14. [INFO] Error-page technology fingerprint (`ERR1`)
+### 15. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkzn0lubs300ne.html -> 404; error page/headers match: Apache.
+- **Detail:** GET /xk2c6tw4uel71l.html -> 404; error page/headers match: Apache.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
-### 15. [INFO] App-association / digital-asset-links surface published (`WK1`)
+### 16. [INFO] App-association / digital-asset-links surface published (`WK1`)
 
 - **CWE:** CWE-200
 - **Detail:** Live JSON at /.well-known/apple-app-site-association and /.well-known/assetlinks.json on slack.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
 - **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
-### 16. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
+### 17. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
 
 - **CWE:** CWE-345
 - **Detail:** Root document of slack.com loads 3 cross-origin script(s) without an integrity attribute, e.g. https://a.slack-edge.com/bv1-13/manifest.39f4356643961c77.marketing.min.js, https://cdn.cookielaw.org/scripttemplates/otSDKStub.js, https://reveal.clearbit.com/v1/companies/reveal?variable=reveal&amp;authorization=pk_7144fadb90a8fdd9c89e1395ff4171a3; a compromise of any such third-party host can inject code.
 - **Recommendation:** Add SRI integrity attributes or self-host critical scripts.
 
-### 17. [INFO] security.txt published with a contact address (`SEC1`)
+### 18. [INFO] security.txt published with a contact address (`SEC1`)
 
 - **CWE:** CWE-1038
 - **Detail:** /.well-known/security.txt on slack.com is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
 - **Recommendation:** Confirm the published contact is current and monitored (RFC 9116).
 
-### 18. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+### 19. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
 
 - **CWE:** CWE-200
 - **Detail:** /sitemap.xml on slack.com lists 13 <loc> URL(s) across 14 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
-### 19. [INFO] Document references many third-party domains (`HTML11`)
+### 20. [INFO] Document references many third-party domains (`HTML11`)
 
 - **CWE:** CWE-200
 - **Detail:** Root document of slack.com references 9 distinct third-party registrable domains (e.g. slack-edge.com, cloudfront.net, w3.org, youtube.com, slackdemo.com); each is a supply-chain/trust dependency of the page.
 - **Recommendation:** Review third-party integrations and pin critical ones (SRI/subresource policies).
 
-### 20. [INFO] OIDC discovery document published (`WK2`)
+### 21. [INFO] OIDC discovery document published (`WK2`)
 
 - **CWE:** CWE-200
 - **Detail:** /.well-known/openid-configuration on slack.com is live (issuer: https://slack.com); the OIDC endpoint configuration (authorization/token/JWKS URLs) is publicly disclosed.
 - **Recommendation:** Confirm the published OIDC metadata matches the deployed identity architecture.
 
-### 21. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
+### 22. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
 
 - **CWE:** CWE-200
 - **Detail:** The root response of slack.com carries alt-svc h3=":443"; ma=2592000, h3-29=":443"; ma=2592000, quic=":443"; ma=2592000; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
 - **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
 
-### 22. [INFO] Public root document marked noindex (`HTML14`)
+### 23. [INFO] preconnect/dns-prefetch declares third-party destinations (`HTML12`)
 
 - **CWE:** CWE-200
-- **Detail:** The root document of slack.com is marked noindex (meta robots or X-Robots-Tag); a public homepage that is not indexable is a posture anomaly worth reviewing.
-- **Recommendation:** Confirm the noindex directive is intentional.
+- **Detail:** Root document of slack.com declares preconnect/dns-prefetch/modulepreload for 1 third-party registrable domain(s) (e.g. cloudfront.net); declared (not yet loaded) destinations widen the expected network topology of the page.
+- **Recommendation:** Review declared third-party destinations as part of the supply-chain inventory.
+
+### 24. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of slack.com contains wildcard SAN entry(ies) *.slack.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 25. [INFO] Proxy/edge hop chain disclosed via Via (`H12`)
+
+- **CWE:** CWE-200
+- **Detail:** The root of slack.com discloses a 3-hop fronting chain (1.1 slack-prod.tinyspeck.com, ingress-www-iad-external-prod-073b093c4de6d5a2d,in); the hop sequence inventories the intermediate edge/proxy layers in front of the origin.
+- **Recommendation:** Confirm each hop is an intended layer; trim chain disclosure if unnecessary.
+
+### 26. [INFO] Cross-origin isolation only partially configured (`H13`)
+
+- **CWE:** CWE-693
+- **Detail:** The root of slack.com sends COOP without COEP (same-origin-allow-popups); effective cross-origin isolation requires both COOP and COEP.
+- **Recommendation:** Add the missing header (or remove the partial configuration).
+
+### 27. [INFO] Inline event handlers in root document (`HTML16`)
+
+- **CWE:** CWE-79
+- **Detail:** The root document of slack.com contains 17 inline event handler attribute(s); each is a DOM-level execution point that SRI does not constrain.
+- **Recommendation:** Move handlers to external scripts where feasible and keep them covered by CSP.
 
 ## Evidence (raw response observations)
 
@@ -192,36 +227,36 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
       "aspmx3.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx2.googlemail.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx2.googlemail.com (pref 10)"
+      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-1901.awsdns-45.co.uk.",
       "ns-166.awsdns-20.com.",
+      "ns-606.awsdns-11.net.",
       "ns-1493.awsdns-58.org.",
-      "ns-606.awsdns-11.net."
+      "ns-1901.awsdns-45.co.uk."
     ],
     "caa": [
-      "0 issue \"digicert.com; account=455b15ed272bed097725c6ea50e89921fc57379c5338a29305c05771df65fff1\"",
+      "0 issue \"letsencrypt.org; accounturi=https://acme-v02.api.letsencrypt.org/acme/acct/1532134906\"",
       "0 iodef \"mailto:hostmaster@slack-corp.com\"",
-      "0 issue \"letsencrypt.org; accounturi=https://acme-v02.api.letsencrypt.org/acme/acct/1532134906\""
+      "0 issue \"digicert.com; account=455b15ed272bed097725c6ea50e89921fc57379c5338a29305c05771df65fff1\""
     ],
     "spf": [
-      "hubspot-developer-verification=OTE4NzYxYTgtMDUwZi00MzgzLTk2YTUtZDAwNjBlODg1MWM0",
-      "google-site-verification=o2grd1TLmZZ8GrqbhVIFtzO2MRLTtSUpBBIBYfhQVCQ",
-      "google-site-verification=KqX3Ngw0XEjz_0GVx_xwFFlCoO-bskhqU_lxv0Q77mk",
-      "spycloud-domain-verification=02e4c0be-cf43-44e4-beaf-4f99702ca632",
-      "v=spf1 include:_spf.qualtrics.com include:mail.zendesk.com include:_spfextra.slack.com -all",
-      "_0vidyxobp6x350odqhb4fo7fdxhmtq3",
-      "google-site-verification=kB1KvgpSk9YkHsFmsj1VPI5YmDvfKctPxnplhGjyqtE",
       "google-site-verification=QvelFPjIOe3Vavw0q-aAVYaAPKmWCRjmmVVEAjgfjQc",
-      "google-site-verification=v-LLB__IhraaI7ZzuE3jvRFIm2vERPLzWoepAEZJtKQ",
+      "v=spf1 include:_spf.qualtrics.com include:mail.zendesk.com include:_spfextra.slack.com -all",
+      "google-site-verification=o2grd1TLmZZ8GrqbhVIFtzO2MRLTtSUpBBIBYfhQVCQ",
+      "hubspot-developer-verification=OTE4NzYxYTgtMDUwZi00MzgzLTk2YTUtZDAwNjBlODg1MWM0",
+      "google-site-verification=KqX3Ngw0XEjz_0GVx_xwFFlCoO-bskhqU_lxv0Q77mk",
       "google-site-verification=2PK67oVPNyEtS1avSlr3PhH5nSiFuticbQv_bT4pM2k",
+      "google-site-verification=v-LLB__IhraaI7ZzuE3jvRFIm2vERPLzWoepAEZJtKQ",
+      "_0vidyxobp6x350odqhb4fo7fdxhmtq3",
+      "OSSRH-54733",
+      "spycloud-domain-verification=02e4c0be-cf43-44e4-beaf-4f99702ca632",
       "google-site-verification=efuXt5-oMr2CdNmVi6A9IO29KMKifpseD1qokxjWwcE",
-      "OSSRH-54733"
+      "google-site-verification=kB1KvgpSk9YkHsFmsj1VPI5YmDvfKctPxnplhGjyqtE"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;fo=1:d:s;pct=100;rua=mailto:dmarc_agg@vali.email,mailto:0e5a5c34@inbox.ondmarc.com;ruf=mailto:0e5a5c34@inbox.ondmarc.com"
@@ -322,11 +357,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "hubspot-developer-verification=OTE4NzYxYTgtMDUwZi00MzgzLTk2YTUtZDAwNjBlODg1MWM0",
+    "google-site-verification=QvelFPjIOe3Vavw0q-aAVYaAPKmWCRjmmVVEAjgfjQc",
     "google-site-verification=o2grd1TLmZZ8GrqbhVIFtzO2MRLTtSUpBBIBYfhQVCQ",
+    "hubspot-developer-verification=OTE4NzYxYTgtMDUwZi00MzgzLTk2YTUtZDAwNjBlODg1MWM0",
     "google-site-verification=KqX3Ngw0XEjz_0GVx_xwFFlCoO-bskhqU_lxv0Q77mk",
-    "spycloud-domain-verification=02e4c0be-cf43-44e4-beaf-4f99702ca632",
-    "google-site-verification=kB1KvgpSk9YkHsFmsj1VPI5YmDvfKctPxnplhGjyqtE"
+    "google-site-verification=2PK67oVPNyEtS1avSlr3PhH5nSiFuticbQv_bT4pM2k"
   ],
   "tls2": {
     "alpn": "",
@@ -344,6 +379,10 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
       "bc_pathlen": null,
       "crl_urls": [
         "http://yr1.c.lencr.org/92.crl"
+      ],
+      "san": [
+        "*.slack.com",
+        "slack.com"
       ],
       "subject_dn": "3112301006035504031309736c61636b2e636f6d",
       "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303595231",
@@ -371,13 +410,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
     ]
   },
   "x12": {
-    "status": 404,
+    "status": 200,
     "ptr": [
       "ec2-52-192-46-121.ap-northeast-1.compute.amazonaws.com."
     ]
   },
   "x13": {
-    "root_status": 429,
+    "root_status": 200,
     "http_status": 301,
     "p404_status": 404,
     "wellknown": [
@@ -410,12 +449,22 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
     "oidc": "https://slack.com"
   },
   "x16": {
-    "root_status": 404,
+    "root_status": 200,
     "alt_svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, quic=\":443\"; ma=2592000",
-    "noindex": true
+    "preconnect": [
+      "cloudfront.net"
+    ]
   },
-  "elapsed_s": 30.6,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.slack.com"
+    ],
+    "via": "1.1 slack-prod.tinyspeck.com, ingress-www-iad-external-prod-073b093c4de6d5a2d,ingress-edge-nrt-prod-030bd557353da6dfa",
+    "isolation_partial": "COOP without COEP",
+    "inline_handlers": 17
+  },
+  "elapsed_s": 35.1,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -429,4 +478,5 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

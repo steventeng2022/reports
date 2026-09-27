@@ -7,12 +7,12 @@
 | Target | https://faa.gov/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | faa.gov |
-| Test date | 2026-09-27 01:19 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:28 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
+Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,10 +33,12 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 | 15 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 16 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 18 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
-| 20 | info | H22 | Server answers with HTTP/1.0 | CWE-319 |
-| 21 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
+| 18 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
+| 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 20 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 21 | info | H22 | Server answers with HTTP/1.0 | CWE-319 |
+| 22 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
+| 23 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 
 ## Detailed findings
 
@@ -151,32 +153,44 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: airtable-verification=980f49ddafd00c06f4e37be0a0e74d83; atlassian-domain-verification=wtYpZOBvqKwb5ZROaraY6fshROjgQ0TOYLAGTZnDsOuoqJCyjO; apple-domain-verification=qtgRthDvinDxfuZb
+- **Detail:** Apex TXT records with verification/token content: adobe-sign-verification=d9b517c45c4c2b0277445e0d9d7eac344dcb02519394a0ea08faee8c; google-gws-recovery-domain-verification=61134742; adobe-idp-site-verification=2d36c88877f2772ad0e628e64e865a3a225928ef49b2967f35ec
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 18. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
+
+- **CWE:** CWE-603
+- **Detail:** OCSP check via http://ocsp.digicert.com -> http-200
+- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
+
+### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 155.178.201.85 carries PTR faa.gov. for faa.gov.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 19. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+### 20. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
 
 - **CWE:** CWE-298
 - **Detail:** The faa.gov certificate lists an AIA OCSP responder (http://ocsp.digicert.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
-### 20. [INFO] Server answers with HTTP/1.0 (`H22`)
+### 21. [INFO] Server answers with HTTP/1.0 (`H22`)
 
 - **CWE:** CWE-319
 - **Detail:** The root response of faa.gov uses HTTP/1.0, the oldest version still in use; modern sites should serve HTTP/1.1 or 2.
 - **Recommendation:** Serve HTTP/1.1 or HTTP/2 from the edge.
 
-### 21. [INFO] TLS 1.2 ceiling: 1.3 not negotiated with a modern client (`TLS27`)
+### 22. [INFO] TLS 1.2 ceiling: 1.3 not negotiated with a modern client (`TLS27`)
 
 - **CWE:** CWE-327
 - **Detail:** The quiet handshake to faa.gov negotiated TLSv1.2 even though the client offered TLS 1.3; the edge caps at 1.2 (legacy/compatibility configuration).
 - **Recommendation:** Enable TLS 1.3 at the edge.
+
+### 23. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of faa.gov is http://ocsp.digicert.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
 
 ## Evidence (raw response observations)
 
@@ -192,49 +206,49 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
     ],
     "cname": null,
     "mx": [
-      "amcrelay2.faa.gov (pref 5)",
-      "relay3.faa.gov (pref 5)",
-      "relay4.faa.gov (pref 5)",
       "amcrelay1.faa.gov (pref 5)",
-      "amcrelay3.faa.gov (pref 5)",
-      "relay1.faa.gov (pref 5)",
       "amcrelay4.faa.gov (pref 5)",
-      "relay2.faa.gov (pref 5)"
+      "amcrelay3.faa.gov (pref 5)",
+      "relay3.faa.gov (pref 5)",
+      "amcrelay2.faa.gov (pref 5)",
+      "relay2.faa.gov (pref 5)",
+      "relay4.faa.gov (pref 5)",
+      "relay1.faa.gov (pref 5)"
     ],
     "ns": [
-      "a14-64.akam.net.",
-      "faa-mc-egm1.faa.gov.",
-      "a11-65.akam.net.",
-      "faa-ct-egm1.faa.gov.",
       "a24-64.akam.net.",
       "a1-97.akam.net.",
+      "faa-mc-egm1.faa.gov.",
+      "faa-ct-egm1.faa.gov.",
       "a12-64.akam.net.",
-      "a5-65.akam.net."
+      "a14-64.akam.net.",
+      "a5-65.akam.net.",
+      "a11-65.akam.net."
     ],
     "caa": [
-      "128 iodef \"mailto:9-ait-arin-abuse@faa.gov\"",
-      "0 issue \"globalsign.com\"",
       "128 issue \"amazon.com\"",
-      "128 issue \"digicert.com\""
+      "128 issue \"digicert.com\"",
+      "0 issue \"globalsign.com\"",
+      "128 iodef \"mailto:9-ait-arin-abuse@faa.gov\""
     ],
     "spf": [
-      "airtable-verification=980f49ddafd00c06f4e37be0a0e74d83",
-      "atlassian-domain-verification=wtYpZOBvqKwb5ZROaraY6fshROjgQ0TOYLAGTZnDsOuoqJCyjOey552col60ndzg",
-      "_m0b4vf6qhrh5scrrxosrx9nlq687irj",
-      "_j0jnoq89nb5odruj97i87etsntvpfoc",
-      "zy861l2r0qc6nqjqkwprs8w047f6m44n",
-      "apple-domain-verification=qtgRthDvinDxfuZb",
-      "google-gws-recovery-domain-verification=61134742",
-      "adobe-idp-site-verification=2d36c88877f2772ad0e628e64e865a3a225928ef49b2967f35ece163e84ae203",
-      "smartsheet-gov-site-validation=mIkWyNAOEJecACv9-NJtfYQNvPNPrAKB",
-      "box-domain-verification=6e6d49a46237d2f704840481289b15d3e7a02a41723fe3cdfd9341b6f52df150",
-      "adobe-sign-verification=d9b517c45c4c2b0277445e0d9d7eac344dcb02519394a0ea08faee8c40d85dc3",
-      "v=spf1 include:faa.gov._nspf.valigov.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.valigov.email ~all",
       "docusign=080db4e4-218c-443b-ad76-1963743f3157",
-      "docusign=36a52596-5d8b-4aa8-a3ea-fd823a641d7b",
+      "adobe-sign-verification=d9b517c45c4c2b0277445e0d9d7eac344dcb02519394a0ea08faee8c40d85dc3",
+      "_m0b4vf6qhrh5scrrxosrx9nlq687irj",
       "_dxoevfz55dgcr8btzsrr2zg588vrpy7",
+      "google-gws-recovery-domain-verification=61134742",
+      "docusign=36a52596-5d8b-4aa8-a3ea-fd823a641d7b",
+      "v=spf1 include:faa.gov._nspf.valigov.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.valigov.email ~all",
+      "zy861l2r0qc6nqjqkwprs8w047f6m44n",
+      "adobe-idp-site-verification=2d36c88877f2772ad0e628e64e865a3a225928ef49b2967f35ece163e84ae203",
+      "apple-domain-verification=qtgRthDvinDxfuZb",
+      "_j0jnoq89nb5odruj97i87etsntvpfoc",
+      "apple-domain-verification=u6VDYAQzYrOfivbe",
+      "box-domain-verification=6e6d49a46237d2f704840481289b15d3e7a02a41723fe3cdfd9341b6f52df150",
+      "smartsheet-gov-site-validation=mIkWyNAOEJecACv9-NJtfYQNvPNPrAKB",
+      "atlassian-domain-verification=wtYpZOBvqKwb5ZROaraY6fshROjgQ0TOYLAGTZnDsOuoqJCyjOey552col60ndzg",
       "_mhp0ohi7rqkhwe0s2sd2wz626zbzq50",
-      "apple-domain-verification=u6VDYAQzYrOfivbe"
+      "airtable-verification=980f49ddafd00c06f4e37be0a0e74d83"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@valigov.email,mailto:9-AIF-340-DMARC-REPORTS@faa.gov,mailto:reports@dmarc.cyber.dhs.gov; ruf=mailto:9-AIF-340-DMARC-REPORTS@faa.gov"
@@ -316,11 +330,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "airtable-verification=980f49ddafd00c06f4e37be0a0e74d83",
-    "atlassian-domain-verification=wtYpZOBvqKwb5ZROaraY6fshROjgQ0TOYLAGTZnDsOuoqJCyjO",
-    "apple-domain-verification=qtgRthDvinDxfuZb",
+    "adobe-sign-verification=d9b517c45c4c2b0277445e0d9d7eac344dcb02519394a0ea08faee8c",
     "google-gws-recovery-domain-verification=61134742",
-    "adobe-idp-site-verification=2d36c88877f2772ad0e628e64e865a3a225928ef49b2967f35ec"
+    "adobe-idp-site-verification=2d36c88877f2772ad0e628e64e865a3a225928ef49b2967f35ec",
+    "apple-domain-verification=qtgRthDvinDxfuZb",
+    "apple-domain-verification=u6VDYAQzYrOfivbe"
   ],
   "tls2": {
     "alpn": "",
@@ -340,12 +354,15 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
         "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
         "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
       ],
+      "san": [
+        "faa.gov"
+      ],
       "subject_dn": "310b3009060355040613025553311d301b060355040813144469737472696374206f6620436f6c756d626961311330110603550407130a57617368696e67746f6e31283026060355040a131f4665646572616c204176696174696f6e2041646d696e697374726174696f6e3110300e060355040313076661612e676f76",
       "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
       "not_before": "20260511000000",
       "not_after": "20261125235959"
     },
-    "ocsp": "explicit-status"
+    "ocsp": "http-200"
   },
   "x12": {
     "status": 302,
@@ -380,8 +397,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
   "x16": {
     "root_status": 302
   },
-  "elapsed_s": 54.1,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.digicert.com"
+  },
+  "elapsed_s": 59.5,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -395,4 +415,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

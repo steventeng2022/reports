@@ -7,12 +7,12 @@
 | Target | https://meetup.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | meetup.com |
-| Test date | 2026-09-27 01:27 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:37 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
+Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,7 +34,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 | 16 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 17 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
 | 18 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
-| 19 | info | CT1 | 55 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 19 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 20 | info | CT1 | 55 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
 
 ## Detailed findings
 
@@ -94,13 +95,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 ### 9. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (zjznsgum4y9okl.meetup.com and zz2j439p22x05k.meetup.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (4f89hsjllmeymd.meetup.com and h9kd1pbw0xbyrj.meetup.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=892t2MaS4SZsb48SSg1A3ABMz3RTC_BD0aedsHeQcPs; google-site-verification=UHCBNwoUShRSmjmm8U3HWmmtbqIV7dsuHyMrhUDOCtQ; google-site-verification=d7aAADk1yxzIsb2QOmZY6COjV2y0iPhwwSmmNpJgEfM
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=LzTshnYHTmh-qKj8qWTYVNo408Av35GqfZQxSopIWEo; google-site-verification=sc2QcwRmidYh2YB2ghH7c9-GgAZQu0QMtcFrUURtSJQ; google-site-verification=-YC-JRzsddf4MU6k9PhCUBV78tg9R3zqO8WWK7i1SHA
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -151,7 +152,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 - **Detail:** Response headers on meetup.com identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
-### 19. [INFO] 55 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 19. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of meetup.com is http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2025q4; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 20. [INFO] 55 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: admin.meetup.com, api.int.dev.meetup.com, api.int.meetup.com, api.meetup.com, auth.blt.meetup.com, dev.m2mpay.meetup.com, dev.memberpay.meetup.com, help.meetup.com, redash.cloud.dev.meetup.com, test.dev.meetup.com
@@ -164,10 +171,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
   "domain": "meetup.com",
   "dns": {
     "a": [
-      "151.101.66.217",
-      "151.101.130.217",
+      "151.101.2.217",
       "151.101.194.217",
-      "151.101.2.217"
+      "151.101.66.217",
+      "151.101.130.217"
     ],
     "aaaa": [],
     "cname": null,
@@ -175,44 +182,44 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
       "smtp.google.com (pref 1)"
     ],
     "ns": [
+      "ns-919.awsdns-50.net.",
       "ns-40.awsdns-05.com.",
       "ns-1378.awsdns-44.org.",
-      "ns-919.awsdns-50.net.",
       "ns-1782.awsdns-30.co.uk."
     ],
     "caa": [
-      "0 issue \"awstrust.com\"",
-      "0 issuewild \"globalsign.com\"",
-      "0 issuewild \"letsencrypt.org\"",
-      "0 issuewild \"certainly.com\"",
-      "0 issuewild \"amazon.com\"",
-      "0 issue \"amazontrust.com\"",
-      "0 issuewild \"amazontrust.com\"",
       "0 issuewild \"pki.goog\"",
-      "0 issuewild \"awstrust.com\"",
-      "0 issue \"amazonaws.com\"",
-      "0 issue \"certainly.com\"",
-      "0 issue \"amazon.com\"",
-      "0 issue \"globalsign.com\"",
+      "0 issuewild \"certainly.com\"",
+      "0 issue \"awstrust.com\"",
+      "0 issuewild \"amazon.com\"",
+      "0 issuewild \"amazonaws.com\"",
       "0 issue \"letsencrypt.org\"",
       "0 issue \"pki.goog\"",
-      "0 issuewild \"amazonaws.com\""
+      "0 issue \"certainly.com\"",
+      "0 issuewild \"awstrust.com\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issue \"amazon.com\"",
+      "0 issue \"amazonaws.com\"",
+      "0 issue \"globalsign.com\"",
+      "0 issue \"amazontrust.com\"",
+      "0 issuewild \"amazontrust.com\"",
+      "0 issuewild \"globalsign.com\""
     ],
     "spf": [
-      "google-site-verification=892t2MaS4SZsb48SSg1A3ABMz3RTC_BD0aedsHeQcPs",
-      "google-site-verification=UHCBNwoUShRSmjmm8U3HWmmtbqIV7dsuHyMrhUDOCtQ",
-      "google-site-verification=d7aAADk1yxzIsb2QOmZY6COjV2y0iPhwwSmmNpJgEfM",
       "_gh-bending-spoons-e=da6293536f",
       "google-site-verification=LzTshnYHTmh-qKj8qWTYVNo408Av35GqfZQxSopIWEo",
       "google-site-verification=sc2QcwRmidYh2YB2ghH7c9-GgAZQu0QMtcFrUURtSJQ",
-      "_gvhn8tc5d0bjvpfjwr6izofm3rw1rzm",
       "google-site-verification=-YC-JRzsddf4MU6k9PhCUBV78tg9R3zqO8WWK7i1SHA",
+      "_gvhn8tc5d0bjvpfjwr6izofm3rw1rzm",
+      "google-site-verification=892t2MaS4SZsb48SSg1A3ABMz3RTC_BD0aedsHeQcPs",
+      "docusign=0a856615-3cca-4967-af2e-aa849ca42de2",
+      "google-site-verification=JU1AoGj_pC_wB0Jxu62NnaIktGqrX8wTvBo9i8XRwHw",
+      "google-site-verification=UHCBNwoUShRSmjmm8U3HWmmtbqIV7dsuHyMrhUDOCtQ",
       "v=spf1 include:mail.zendesk.com include:_spf.google.com include:_spf.sparkpostmail.com ~all",
       "facebook-domain-verification=rgyjx6tabxhbz0vs8jznk3h7kw9igq",
-      "rippling-domain-verification=217697edd61756fc",
-      "google-site-verification=JU1AoGj_pC_wB0Jxu62NnaIktGqrX8wTvBo9i8XRwHw",
-      "docusign=0a856615-3cca-4967-af2e-aa849ca42de2",
-      "_globalsign-domain-verification=hnJMGmZ5nxkDzoVy5--BmuTT2DIF9hm5OQ87d_jorS"
+      "_globalsign-domain-verification=hnJMGmZ5nxkDzoVy5--BmuTT2DIF9hm5OQ87d_jorS",
+      "google-site-verification=d7aAADk1yxzIsb2QOmZY6COjV2y0iPhwwSmmNpJgEfM",
+      "rippling-domain-verification=217697edd61756fc"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:reports@dmarc.bendingspoons.com; sp=reject;"
@@ -241,7 +248,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
     }
   },
   "ports": {
-    "ip": "151.101.66.217",
+    "ip": "151.101.2.217",
     "open": []
   },
   "https": {
@@ -327,11 +334,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=892t2MaS4SZsb48SSg1A3ABMz3RTC_BD0aedsHeQcPs",
-    "google-site-verification=UHCBNwoUShRSmjmm8U3HWmmtbqIV7dsuHyMrhUDOCtQ",
-    "google-site-verification=d7aAADk1yxzIsb2QOmZY6COjV2y0iPhwwSmmNpJgEfM",
     "google-site-verification=LzTshnYHTmh-qKj8qWTYVNo408Av35GqfZQxSopIWEo",
-    "google-site-verification=sc2QcwRmidYh2YB2ghH7c9-GgAZQu0QMtcFrUURtSJQ"
+    "google-site-verification=sc2QcwRmidYh2YB2ghH7c9-GgAZQu0QMtcFrUURtSJQ",
+    "google-site-verification=-YC-JRzsddf4MU6k9PhCUBV78tg9R3zqO8WWK7i1SHA",
+    "google-site-verification=892t2MaS4SZsb48SSg1A3ABMz3RTC_BD0aedsHeQcPs",
+    "google-site-verification=JU1AoGj_pC_wB0Jxu62NnaIktGqrX8wTvBo9i8XRwHw"
   ],
   "tls2": {
     "alpn": "",
@@ -349,6 +356,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.globalsign.com/ca/gsatlasr3dvtlsca2025q4.crl"
+      ],
+      "san": [
+        "meetup.com"
       ],
       "subject_dn": "3113301106035504030c0a6d65657475702e636f6d",
       "issuer_dn": "310b300906035504061302424531193017060355040a1310476c6f62616c5369676e206e762d7361312e302c06035504031325476c6f62616c5369676e2041746c617320523320445620544c532043412032303235205134",
@@ -414,8 +424,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
       "Fastly"
     ]
   },
-  "elapsed_s": 44.5,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2025q4"
+  },
+  "elapsed_s": 47.0,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -429,4 +442,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

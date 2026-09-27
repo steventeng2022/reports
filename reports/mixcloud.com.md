@@ -7,12 +7,12 @@
 | Target | https://mixcloud.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | mixcloud.com |
-| Test date | 2026-09-27 01:27 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:38 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
+Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,7 +37,9 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 | 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 20 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 | 21 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
-| 22 | info | CT1 | 64 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 22 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 23 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
+| 24 | info | CT1 | 64 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -50,13 +52,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.20.4.36:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.20.5.36:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.20.4.36:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.20.5.36:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -176,7 +178,19 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 - **Detail:** The root response of mixcloud.com carries alt-svc h3=":443"; ma=86400; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
 - **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
 
-### 22. [INFO] 64 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 22. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of mixcloud.com contains wildcard SAN entry(ies) *.staging-chromecast.mixcloud.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 23. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of mixcloud.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
+### 24. [INFO] 64 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.mixcloud.com, app.mixcloud.com, beta.mixcloud.com, blog.mixcloud.com, help.mixcloud.com, old.mixcloud.com, support.mixcloud.com, upload.mixcloud.com, ws.mixcloud.com, www.old.mixcloud.com
@@ -189,8 +203,8 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
   "domain": "mixcloud.com",
   "dns": {
     "a": [
-      "104.20.4.36",
-      "104.20.5.36"
+      "104.20.5.36",
+      "104.20.4.36"
     ],
     "aaaa": [
       "2606:4700:10::6814:524",
@@ -198,39 +212,39 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
     ],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 5)",
-      "alt2.aspmx.l.google.com (pref 3)",
-      "aspmx.l.google.com (pref 1)",
-      "aspmx5.googlemail.com (pref 5)",
-      "aspmx4.googlemail.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 3)",
-      "aspmx2.googlemail.com (pref 5)"
+      "aspmx5.googlemail.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
+      "aspmx2.googlemail.com (pref 5)",
+      "aspmx3.googlemail.com (pref 5)",
+      "aspmx4.googlemail.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 3)"
     ],
     "ns": [
-      "tegan.ns.cloudflare.com.",
-      "miles.ns.cloudflare.com."
+      "miles.ns.cloudflare.com.",
+      "tegan.ns.cloudflare.com."
     ],
     "caa": [
-      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
-      "0 issue \"ssl.com\"",
-      "0 issuewild \"comodoca.com\"",
+      "0 issue \"comodoca.com\"",
+      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issue \"letsencrypt.org\"",
       "0 issuewild \"ssl.com\"",
       "0 issue \"sectigo.com\"",
-      "0 issuewild \"sectigo.com\"",
-      "0 issuewild \"letsencrypt.org\"",
-      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
-      "0 issue \"comodoca.com\"",
-      "0 issue \"letsencrypt.org\"",
+      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
       "0 issuewild \"pki.goog; cansignhttpexchanges=yes\"",
-      "0 issue \"digicert.com; cansignhttpexchanges=yes\""
+      "0 issue \"ssl.com\"",
+      "0 issuewild \"sectigo.com\"",
+      "0 issuewild \"comodoca.com\"",
+      "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issuewild \"letsencrypt.org\""
     ],
     "spf": [
       "apple-domain-verification=cBSzBF9wU7M8t86W",
       "google-site-verification=MIkL-g_FIR1v7JnMSJ-Ilfjqlqz6xAQtK7CP3AzlyNE",
       "google-site-verification=z00gWRhfVeQQGXNgzCg9xd2WUXMhFuWl4QbXx3mN5zU",
-      "v=spf1 include:_spf.google.com include:mail.zendesk.com ip4:153.56.154.0/24 -all",
+      "cloudflare_dashboard_sso=a2939222461cc73e72b3c1a180c1715e",
       "google-site-verification=CB4tWZGyP2d-9jp1_q7WPJOuIGz6UUHm8nnMeY9Tsj8",
-      "cloudflare_dashboard_sso=a2939222461cc73e72b3c1a180c1715e"
+      "v=spf1 include:_spf.google.com include:mail.zendesk.com ip4:153.56.154.0/24 -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; pct=100; rua=mailto:5f2e9c9009c34a7eab0b76c4cf89cb42@dmarc-reports.cloudflare.net,mailto:dmarc@mixcloud.com; adkim=s; aspf=s"
@@ -261,7 +275,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
     }
   },
   "ports": {
-    "ip": "104.20.4.36",
+    "ip": "104.20.5.36",
     "open": [
       8080,
       8443
@@ -375,6 +389,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
       "crl_urls": [
         "http://c.pki.goog/we1/uE34OLhsMQk.crl"
       ],
+      "san": [
+        "mixcloud.com",
+        "staging-chromecast.mixcloud.com",
+        "*.staging-chromecast.mixcloud.com"
+      ],
       "subject_dn": "311530130603550403130c6d6978636c6f75642e636f6d",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
       "not_before": "20260926144533",
@@ -422,8 +441,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
     "root_status": 301,
     "alt_svc": "h3=\":443\"; ma=86400"
   },
-  "elapsed_s": 8.0,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.staging-chromecast.mixcloud.com"
+    ]
+  },
+  "elapsed_s": 8.5,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -437,4 +461,5 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://abc.net.au/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | abc.net.au |
-| Test date | 2026-09-27 01:08 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:16 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
+Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,8 +33,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 | 15 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 17 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
-| 18 | info | CT1 | 338 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 19 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 18 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 19 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 20 | info | CT1 | 338 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 21 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -121,7 +123,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=Fe7MviHWN97I2rkSkD-uHqnXoRle0l60KrKG_qiu4EQ; google-site-verification=YODbrd1vAD6Bvvh0nVqJ90UhzAmn9PY1JbZiEFCNnFg; logmein-verification-code=2aafe7d0-e0e8-474e-b565-25f09e4b52ef
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-j2g448=j6ujaV7B2ctVhXdNRWCAbgWQB; google-site-verification=Fe7MviHWN97I2rkSkD-uHqnXoRle0l60KrKG_qiu4EQ; atlassian-domain-verification=VqcGTxT7+T2pb61t6YK69euiLYhHFIeqmEZhmZ1kn+Nw9MDeCx
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
@@ -133,7 +135,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 15. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkhgw8p6b2729k.html -> 403; error page/headers match: Akamai.
+- **Detail:** GET /xk2n5j9mi6j4q0.html -> 403; error page/headers match: Akamai.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -148,13 +150,25 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - **Detail:** Response headers on abc.net.au identify the edge as Akamai; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
-### 18. [INFO] 338 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 18. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of abc.net.au contains wildcard SAN entry(ies) *.abc-cdn.net.au, *.abc-host.net.au, *.abc-prod.net.au; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 19. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of abc.net.au is http://ocsp.digicert.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 20. [INFO] 338 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.abc.net.au, api.iview.abc.net.au, api.rex.abc.net.au, api.seesaw.abc.net.au, app.abc.net.au, apps.abc.net.au, auth.confluence.c2.abc.net.au, beta.abc.net.au, careers.abc.net.au, cdn.audience-mms-processor-nonp.c0.abc.net.au
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 19. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 21. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: app.abc.net.au; content may still be served via virtual-host fallback.
@@ -172,51 +186,51 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxb-0036d701.gslb.pphosted.com (pref 10)",
-      "mxa-0036d701.gslb.pphosted.com (pref 10)"
+      "mxa-0036d701.gslb.pphosted.com (pref 10)",
+      "mxb-0036d701.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
+      "ns1-129.akam.net.",
+      "usw5.akam.net.",
       "eur5.akam.net.",
       "usw1.akam.net.",
-      "ns1-31.akam.net.",
       "eur3.akam.net.",
-      "ns1-129.akam.net.",
+      "ns1-31.akam.net.",
       "asia1.akam.net.",
-      "usw5.akam.net.",
       "eur2.akam.net."
     ],
     "caa": [],
     "spf": [
-      "google-site-verification=Fe7MviHWN97I2rkSkD-uHqnXoRle0l60KrKG_qiu4EQ",
-      "wmwgwl7t2p9c0pyqjtxg21zv07sjkw0z",
-      "_ypyfvza3k9d012wozvcpqr2rl5hgwax",
-      "meltwater_sso_20220706_TRITON-9530",
-      "docusign=5193e34f-7907-4a09-8a2c-8e6059238790",
-      "security_policy=https://ab.co/security-guidelines",
-      "google-site-verification=YODbrd1vAD6Bvvh0nVqJ90UhzAmn9PY1JbZiEFCNnFg",
-      "logmein-verification-code=2aafe7d0-e0e8-474e-b565-25f09e4b52ef",
-      "atlassian-domain-verification=VqcGTxT7+T2pb61t6YK69euiLYhHFIeqmEZhmZ1kn+Nw9MDeCxVvnthHJaOyuh53",
-      "MS=ms97238178",
-      "anthropic-domain-verification-j2g448=j6ujaV7B2ctVhXdNRWCAbgWQB",
-      "_6zqpkv8jv9wixx2iahc3c9l73xzlcq3",
-      "hcte5z9aRQBXzsiYoLbb2H6OXB/39P1lZ9FAUWYSjzh/XVWNMZgKjjMw0Qo9CBFGWalVAFV/pTFQRwZXJQmlTw==",
-      "Ki*!8fZN^6$3kPjwdj4lGl%d^AJtICghTa$@cDmHSrGPv%JiQfK#bUJ2464UFJEds*RdmDAi%7poA57UwIJH#BI82Tsg@M!KE4I",
-      "google-site-verification=7054D-8q7ysCi8XYhwx8gZOjJJoYZpbcN5mSRYsKznA",
-      "MS=F3CCB183E28279EA6BFB729BB36F156C93E1E6FC",
-      "facebook-domain-verification=wetfyk60byzwzxc6af5ct4iidciiz8",
-      "hpe-greenlake-domain-verification=5a79544f6b576334325571625553586569355537544a69367939324271775968",
-      "openai-domain-verification=dv-3cs5FvAqthq1oIovgoLAvJpO",
-      "DS_GUID=1f556b4d-4242-48a2-98ec-8b5389b9768a",
-      "google-site-verification=hE1kILZtpqkyPs5Szz0KpVbNaTiprJyPVeCfNB1D5-g",
-      "adobe-idp-site-verification=7c3065b8-a1ac-4df8-8440-8ae4a2b371e1",
-      "docker-verification=2c63eedd-5a73-4165-b8a3-1581ddf10029",
       "_mpsr69of9h3phkpg1oo4pkg7z9o13u8",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
+      "anthropic-domain-verification-j2g448=j6ujaV7B2ctVhXdNRWCAbgWQB",
+      "docusign=5193e34f-7907-4a09-8a2c-8e6059238790",
+      "google-site-verification=Fe7MviHWN97I2rkSkD-uHqnXoRle0l60KrKG_qiu4EQ",
+      "atlassian-domain-verification=VqcGTxT7+T2pb61t6YK69euiLYhHFIeqmEZhmZ1kn+Nw9MDeCxVvnthHJaOyuh53",
+      "google-site-verification=YODbrd1vAD6Bvvh0nVqJ90UhzAmn9PY1JbZiEFCNnFg",
+      "google-site-verification=7054D-8q7ysCi8XYhwx8gZOjJJoYZpbcN5mSRYsKznA",
+      "jamf-site-verification=uatZyaF6YBPkZV-hoGjIDg",
+      "logmein-verification-code=2aafe7d0-e0e8-474e-b565-25f09e4b52ef",
+      "hpe-greenlake-domain-verification=5a79544f6b576334325571625553586569355537544a69367939324271775968",
+      "security_contact=https://ab.co/security-contact",
+      "facebook-domain-verification=wetfyk60byzwzxc6af5ct4iidciiz8",
       "successfactors-site-verification=ZWY4YWNhODM1YTI2Y2FlNzAyMmIzYTRjODcyMWY0MGJjM2ViMzU5OTA0NTdhZGY3MTRjMWM1MWQzMGU5ZmVjOA==",
       "segment-site-verification=CPDEMeOkLajeqEcfuKs0TMeSQM8S4K9u",
+      "docker-verification=2c63eedd-5a73-4165-b8a3-1581ddf10029",
+      "MS=ms97238178",
+      "meltwater_sso_20220706_TRITON-9530",
+      "hcte5z9aRQBXzsiYoLbb2H6OXB/39P1lZ9FAUWYSjzh/XVWNMZgKjjMw0Qo9CBFGWalVAFV/pTFQRwZXJQmlTw==",
+      "DS_GUID=1f556b4d-4242-48a2-98ec-8b5389b9768a",
+      "MS=F3CCB183E28279EA6BFB729BB36F156C93E1E6FC",
+      "adobe-idp-site-verification=7c3065b8-a1ac-4df8-8440-8ae4a2b371e1",
+      "openai-domain-verification=dv-3cs5FvAqthq1oIovgoLAvJpO",
+      "security_policy=https://ab.co/security-guidelines",
+      "_6zqpkv8jv9wixx2iahc3c9l73xzlcq3",
       "openai-domain-verification=dv-A6eDZvBKglVN8S81SVfxEWjh",
-      "jamf-site-verification=uatZyaF6YBPkZV-hoGjIDg",
-      "security_contact=https://ab.co/security-contact",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all"
+      "Ki*!8fZN^6$3kPjwdj4lGl%d^AJtICghTa$@cDmHSrGPv%JiQfK#bUJ2464UFJEds*RdmDAi%7poA57UwIJH#BI82Tsg@M!KE4I",
+      "google-site-verification=hE1kILZtpqkyPs5Szz0KpVbNaTiprJyPVeCfNB1D5-g",
+      "_ypyfvza3k9d012wozvcpqr2rl5hgwax",
+      "wmwgwl7t2p9c0pyqjtxg21zv07sjkw0z"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -390,11 +404,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     ]
   },
   "apex_txt": [
+    "anthropic-domain-verification-j2g448=j6ujaV7B2ctVhXdNRWCAbgWQB",
     "google-site-verification=Fe7MviHWN97I2rkSkD-uHqnXoRle0l60KrKG_qiu4EQ",
-    "google-site-verification=YODbrd1vAD6Bvvh0nVqJ90UhzAmn9PY1JbZiEFCNnFg",
-    "logmein-verification-code=2aafe7d0-e0e8-474e-b565-25f09e4b52ef",
     "atlassian-domain-verification=VqcGTxT7+T2pb61t6YK69euiLYhHFIeqmEZhmZ1kn+Nw9MDeCx",
-    "anthropic-domain-verification-j2g448=j6ujaV7B2ctVhXdNRWCAbgWQB"
+    "google-site-verification=YODbrd1vAD6Bvvh0nVqJ90UhzAmn9PY1JbZiEFCNnFg",
+    "google-site-verification=7054D-8q7ysCi8XYhwx8gZOjJJoYZpbcN5mSRYsKznA"
   ],
   "tls2": {
     "alpn": "",
@@ -413,6 +427,28 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "crl_urls": [
         "http://crl3.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl",
         "http://crl4.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl"
+      ],
+      "san": [
+        "abc.net.au",
+        "*.abc-cdn.net.au",
+        "*.abc-host.net.au",
+        "*.abc-prod.net.au",
+        "*.abc-stage.net.au",
+        "*.abc-test.net.au",
+        "*.abc-uat.net.au",
+        "*.abc.net.au",
+        "*.abcradio.net.au",
+        "*.c0.abc.net.au",
+        "*.c1.abc.net.au",
+        "*.c2.abc.net.au",
+        "*.iview.abc-prod.net.au",
+        "*.iview.abc-stage.net.au",
+        "*.iview.abc-test.net.au",
+        "*.iview.abc-uat.net.au",
+        "*.iview.abc.net.au",
+        "*.test.abc.net.au",
+        "*.wcms-np.abc-cdn.net.au",
+        "*.wcms.abc-cdn.net.au"
       ],
       "subject_dn": "310b3009060355040613024155311830160603550408130f4e657720536f7574682057616c6573310f300d06035504071306556c74696d6f312c302a060355040a13234175737472616c69616e2042726f616463617374696e6720436f72706f726174696f6e311330110603550403130a6162632e6e65742e6175",
       "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473320544c532045434320534841333834203230323020434131",
@@ -456,8 +492,18 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "Akamai"
     ]
   },
-  "elapsed_s": 10.8,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.abc-cdn.net.au",
+      "*.abc-host.net.au",
+      "*.abc-prod.net.au",
+      "*.abc-stage.net.au",
+      "*.abc-test.net.au"
+    ],
+    "ocsp_http": "http://ocsp.digicert.com"
+  },
+  "elapsed_s": 13.4,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -471,4 +517,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

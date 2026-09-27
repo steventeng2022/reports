@@ -7,12 +7,12 @@
 | Target | https://homedepot.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | homedepot.com |
-| Test date | 2026-09-27 01:23 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:33 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
+Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,6 +37,9 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 | 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 20 | info | SRV1 | Server header discloses a product version | CWE-200 |
 | 21 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 22 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 23 | info | H12 | Proxy/edge hop chain disclosed via Via | CWE-200 |
+| 24 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -142,7 +145,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: ciscocidomainverification=2a19d56e7ed441cd6cd10c84d904c0f8828fba1455df76c984284b; astro-domain-verification=cmqshn0vh1hv101nynj90s660; ms-domain-verification=3a3a542a-71c8-45ad-ab04-7152bfba2a64
+- **Detail:** Apex TXT records with verification/token content: bv-domain-verification=e51f90f4244f97973230f42f1a8485fc03995b331b6a856ee883e7262; onetrust-domain-verification=9be9c479e03f424d939ac18286224476; google-site-verification=dtvgbq00CxnP6nJC7dgLEOVtLcoKKXtdj90AImFCbuM
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
@@ -175,6 +178,24 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 - **Detail:** The root response of homedepot.com carries alt-svc h3=":443"; ma=2592000; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
 - **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
 
+### 22. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of homedepot.com is http://ocsp.digicert.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 23. [INFO] Proxy/edge hop chain disclosed via Via (`H12`)
+
+- **CWE:** CWE-200
+- **Detail:** The root of homedepot.com discloses a 1-hop fronting chain (1.1 google); the hop sequence inventories the intermediate edge/proxy layers in front of the origin.
+- **Recommendation:** Confirm each hop is an intended layer; trim chain disclosure if unnecessary.
+
+### 24. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of homedepot.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -187,46 +208,46 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mx0a-000e6608.pphosted.com (pref 20)",
+      "exchanger2.homedepot.com (pref 30)",
       "mxa-000e6608.gslb.pphosted.com (pref 10)",
-      "mx0b-000e6608.pphosted.com (pref 20)",
+      "mx0a-000e6608.pphosted.com (pref 20)",
       "exchanger1.homedepot.com (pref 30)",
-      "mxb-000e6608.gslb.pphosted.com (pref 10)",
-      "exchanger2.homedepot.com (pref 30)"
+      "mx0b-000e6608.pphosted.com (pref 20)",
+      "mxb-000e6608.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
+      "a18-67.akam.net.",
       "a3-64.akam.net.",
-      "a1-27.akam.net.",
       "a7-66.akam.net.",
+      "a1-27.akam.net.",
       "a16-66.akam.net.",
-      "a6-65.akam.net.",
-      "a18-67.akam.net."
+      "a6-65.akam.net."
     ],
     "caa": [],
     "spf": [
-      "smartsheet-site-validation=UQZXQ9whIKMhr-lD3a9QxQbUGhnacn2o",
-      "ciscocidomainverification=2a19d56e7ed441cd6cd10c84d904c0f8828fba1455df76c984284b5d85fa5c2e",
-      "pardot757373=218869be8ba439583983ba0ae0f7bfe67956ead606a3deb3f20bdfc1fd42b8cd",
-      "astro-domain-verification=cmqshn0vh1hv101nynj90s660",
-      "mk-org-sso-967a2df0-7b8d-405b-b414-4627a3d6311e",
-      "ms-domain-verification=3a3a542a-71c8-45ad-ab04-7152bfba2a64",
-      "18aa0eb980e5432c9ac85035050b628",
-      "OSIAGENTREGURL=https://mdm.homedepot.com/athena/enrollment/athenaiosenroll.aspx",
-      "hj-ownership=a4r4Ms7CqBFe1WU",
-      "atlassian-domain-verification=xqfqkDq+B7CyObHlKTiLqquR1QTlpKQeek64YJoRwFWeUm0Tihwqz8GA0enUIHSs",
-      "Dynatrace-site-verification=5218cc8f-b799-466b-81e2-151902ea9493__b7hius6gka10pcd61m5vcgio0c",
-      "vmware-cloud-verification-e1ffc876-3a8b-4242-94c1-9e8db12d03f1",
-      "google-site-verification=wpZpi9YRPHBYFY7AfQOaVZSOnXuiN_LYpOsuCJRiEyQ",
-      "pendo-domain-verification=6163daa5-67e0-4c5d-9607-d97d6a0c9ab4",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ip4:148.163.149.217 ip4:148.163.153.207 include:mail.zendesk.com ~all",
-      "google-site-verification=3NvwcCmI2tiaqvhxEx918MCg-AfY9OOwxB3NpSQwTjw.",
-      "google-site-verification=dtvgbq00CxnP6nJC7dgLEOVtLcoKKXtdj90AImFCbuM",
-      "b93b75bb-c0c7-445c-89eb-8560cef8dba9",
-      "ms-domain-verification=1851d99d-d9bb-4eb8-b800-8e86a71b0fcc",
-      "onetrust-domain-verification=9be9c479e03f424d939ac18286224476",
       "bv-domain-verification=e51f90f4244f97973230f42f1a8485fc03995b331b6a856ee883e72624c85d3d",
-      "liveramp-site-verification=C7ahcr0qXYCzwhdiK-pcYbtLNhwzEvcgbvbgjovyRy0",
+      "onetrust-domain-verification=9be9c479e03f424d939ac18286224476",
+      "google-site-verification=dtvgbq00CxnP6nJC7dgLEOVtLcoKKXtdj90AImFCbuM",
       "adobe-idp-site-verification=3fbd7a09e2fe24031aad0a4a8c68e8242e227010cef9e40aeebcf4bc7addb8a0",
+      "astro-domain-verification=cmqshn0vh1hv101nynj90s660",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ip4:148.163.149.217 ip4:148.163.153.207 include:mail.zendesk.com ~all",
+      "18aa0eb980e5432c9ac85035050b628",
+      "smartsheet-site-validation=UQZXQ9whIKMhr-lD3a9QxQbUGhnacn2o",
+      "b93b75bb-c0c7-445c-89eb-8560cef8dba9",
+      "ms-domain-verification=3a3a542a-71c8-45ad-ab04-7152bfba2a64",
+      "Dynatrace-site-verification=5218cc8f-b799-466b-81e2-151902ea9493__b7hius6gka10pcd61m5vcgio0c",
+      "hj-ownership=a4r4Ms7CqBFe1WU",
+      "pardot757373=218869be8ba439583983ba0ae0f7bfe67956ead606a3deb3f20bdfc1fd42b8cd",
+      "google-site-verification=3NvwcCmI2tiaqvhxEx918MCg-AfY9OOwxB3NpSQwTjw.",
+      "mk-org-sso-967a2df0-7b8d-405b-b414-4627a3d6311e",
+      "liveramp-site-verification=C7ahcr0qXYCzwhdiK-pcYbtLNhwzEvcgbvbgjovyRy0",
+      "atlassian-domain-verification=xqfqkDq+B7CyObHlKTiLqquR1QTlpKQeek64YJoRwFWeUm0Tihwqz8GA0enUIHSs",
+      "vmware-cloud-verification-e1ffc876-3a8b-4242-94c1-9e8db12d03f1",
+      "OSIAGENTREGURL=https://mdm.homedepot.com/athena/enrollment/athenaiosenroll.aspx",
+      "ms-domain-verification=1851d99d-d9bb-4eb8-b800-8e86a71b0fcc",
+      "pendo-domain-verification=6163daa5-67e0-4c5d-9607-d97d6a0c9ab4",
+      "google-site-verification=wpZpi9YRPHBYFY7AfQOaVZSOnXuiN_LYpOsuCJRiEyQ",
+      "ciscocidomainverification=2a19d56e7ed441cd6cd10c84d904c0f8828fba1455df76c984284b5d85fa5c2e",
       "google-site-verification=94tM-sDACvy_JNGSU6fp8GOaI6k5OuzXZN8PPYCtdRI"
     ],
     "dmarc": [
@@ -309,11 +330,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "ciscocidomainverification=2a19d56e7ed441cd6cd10c84d904c0f8828fba1455df76c984284b",
-    "astro-domain-verification=cmqshn0vh1hv101nynj90s660",
-    "ms-domain-verification=3a3a542a-71c8-45ad-ab04-7152bfba2a64",
-    "atlassian-domain-verification=xqfqkDq+B7CyObHlKTiLqquR1QTlpKQeek64YJoRwFWeUm0Tih",
-    "Dynatrace-site-verification=5218cc8f-b799-466b-81e2-151902ea9493__b7hius6gka10pc"
+    "bv-domain-verification=e51f90f4244f97973230f42f1a8485fc03995b331b6a856ee883e7262",
+    "onetrust-domain-verification=9be9c479e03f424d939ac18286224476",
+    "google-site-verification=dtvgbq00CxnP6nJC7dgLEOVtLcoKKXtdj90AImFCbuM",
+    "adobe-idp-site-verification=3fbd7a09e2fe24031aad0a4a8c68e8242e227010cef9e40aeebc",
+    "astro-domain-verification=cmqshn0vh1hv101nynj90s660"
   ],
   "tls2": {
     "alpn": "",
@@ -332,6 +353,9 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
       "crl_urls": [
         "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
         "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
+      ],
+      "san": [
+        "homedepot.com"
       ],
       "subject_dn": "310b30090603550406130255533110300e0603550408130747656f726769613110300e0603550407130741746c616e7461311d301b060355040a131454686520486f6d65204465706f742c20496e632e311630140603550403130d686f6d656465706f742e636f6d",
       "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
@@ -374,8 +398,12 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
     "root_status": 301,
     "alt_svc": "h3=\":443\"; ma=2592000"
   },
-  "elapsed_s": 18.2,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.digicert.com",
+    "via": "1.1 google"
+  },
+  "elapsed_s": 18.5,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -389,4 +417,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

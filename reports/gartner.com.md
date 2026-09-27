@@ -7,12 +7,12 @@
 | Target | https://gartner.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | gartner.com |
-| Test date | 2026-09-27 01:21 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:30 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
+Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,8 +36,10 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 | 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 20 | info | SRV1 | Server header discloses a product version | CWE-200 |
-| 21 | info | CT1 | 97 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 22 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 21 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 22 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
+| 23 | info | CT1 | 97 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 24 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -137,7 +139,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: paloaltonetworks-site-verification=89f74fa49f2affd44039a4cfce3efa8b83e2eee7d8f52; prowly-verification=0a18c790f75457f4100202545f5060298b4099a9f9ad953a6f2cd406187d; uber-domain-verification=db80ddee-dc1a-47b4-b0f9-5382e61b8cc7
+- **Detail:** Apex TXT records with verification/token content: onetrust-domain-verification=9615d0536ed947b2bde2aff220e66c8b; atlassian-domain-verification=8jqx2ryRUppyajabhJkDQFuiurOAJuQysDFi/wyqM11w4JVloZ; anthropic-domain-verification-ednxat=IQ65KbsWwqCgfrFDGjU3Dox5R
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -149,7 +151,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 99.83.168.174 carries PTR af33f8e0e3f6e442a.awsglobalaccelerator.com. for gartner.com.
+- **Detail:** 75.2.50.126 carries PTR af33f8e0e3f6e442a.awsglobalaccelerator.com. for gartner.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -170,13 +172,25 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 - **Detail:** Server header on gartner.com is 'awselb/2.0' and includes a version number, which narrows targeted vulnerability research.
 - **Recommendation:** Serve a generic Server value without the version.
 
-### 21. [INFO] 97 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 21. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of gartner.com is http://ocsp.r2m04.amazontrust.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 22. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of gartner.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
+### 23. [INFO] 97 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: aemintl.emt.aws.gartner.com, aemintl.emtdev.aws.gartner.com, aemintl.emtqa.aws.gartner.com, api.reviews.dm.aws.gartner.com, api.reviews.dmqa.aws.gartner.com, apps.gartner.com, apps.pdotools.aws.gartner.com, artifactorydr-edge.cloudservicesqa.aws.gartner.com, biodataapi.da.aws.gartner.com, capimgr-use1.cloudservicesdev.aws.gartner.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 22. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 24. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: aemintl.emt.aws.gartner.com, aemintl.emtdev.aws.gartner.com, aemintl.emtqa.aws.gartner.com, api.reviews.dm.aws.gartner.com, api.reviews.dmqa.aws.gartner.com; content may still be served via virtual-host fallback.
@@ -189,58 +203,58 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
   "domain": "gartner.com",
   "dns": {
     "a": [
-      "99.83.168.174",
-      "75.2.50.126"
+      "75.2.50.126",
+      "99.83.168.174"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mx0b-0016aa01.pphosted.com (pref 5)",
       "mx0a-0016aa01.pphosted.com (pref 5)",
-      "mxa-0016aa01.gslb.pphosted.com (pref 10)",
-      "mxb-0016aa01.gslb.pphosted.com (pref 10)"
+      "mx0b-0016aa01.pphosted.com (pref 5)",
+      "mxb-0016aa01.gslb.pphosted.com (pref 10)",
+      "mxa-0016aa01.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "a1-109.akam.net.",
-      "a4-64.akam.net.",
-      "a14-64.akam.net.",
-      "a3-65.akam.net.",
       "pdns77.ultradns.org.",
-      "a5-64.akam.net.",
       "pdns77.ultradns.com.",
-      "a28-65.akam.net."
+      "a14-64.akam.net.",
+      "a1-109.akam.net.",
+      "a28-65.akam.net.",
+      "a5-64.akam.net.",
+      "a4-64.akam.net.",
+      "a3-65.akam.net."
     ],
     "caa": [],
     "spf": [
-      "paloaltonetworks-site-verification=89f74fa49f2affd44039a4cfce3efa8b83e2eee7d8f52ac84ce59d7a6f41ebb4",
-      "ZOOM_verify_ccu8Ucbb3XjDVqaWJxKT5F",
-      "prowly-verification=0a18c790f75457f4100202545f5060298b4099a9f9ad953a6f2cd406187d096e",
-      "x98FvuwX6an-AAO7F0eMahTQny_-",
-      "uber-domain-verification=db80ddee-dc1a-47b4-b0f9-5382e61b8cc7",
-      "ciscocidomainverification=57f18449faaaa96630528f3cab6ca711051e21cb8aecdd166f57444d93b57c5",
-      "onetrust-domain-verification=5b726d00265b47399bae397d6aa108eb",
-      "apple-domain-verification=k0GE0BCT91wGwIyD74bKOw2pu76vgckNG8XTkpxj93w",
-      "hWbBxLhyKc36IrHY2zusOB2kDAgSqdhLvJAxHo7pCUBuRh8ZpBeGKBbQix2ic6FerMsaTaiZY4gzCVnjOpqaNw==",
-      "slido-domain-verification=ca6c3a71-8061-4091-8dac-a342e0bd8e4b",
-      "docusign=176ba6ee-d141-4b4f-951f-ed65844926a4",
       "onetrust-domain-verification=9615d0536ed947b2bde2aff220e66c8b",
-      "openai-domain-verification=dv-1CqASnTt5JNxuOGMkbJziedR",
-      "00DEm00000SNtEz=1TBEm0000000wjx",
-      "webexdomainverification.FZF7=b569771f-24c7-4cd9-b087-75b779846dde",
-      "00DD20000003MjH=1TBD20000004CBs;00DEa00000R3lsT=1TBEa0000000PWH;00DD40000009zec=1TBD4000000000v",
-      "google-site-verification=npR9iwOMNUbkau8Pwvd4kBqqPDMyXCUu8g5iP1PW_44",
       "atlassian-domain-verification=8jqx2ryRUppyajabhJkDQFuiurOAJuQysDFi/wyqM11w4JVloZs9oKlFWUg0RFcu",
-      "google-site-verification=aKIAxvYjZsxgy4fvr3ys8D_D4naYE21UpdGV3jKNbb0",
-      "docusign=fbd0b5e3-fd26-4058-a01e-f3231247d403",
-      "docker-verification=0894b02a-7530-4d69-a114-b173e16374f7",
-      "anthropic-domain-verification-ednxat=IQ65KbsWwqCgfrFDGjU3Dox5R",
-      "lucidlink-verification=8CP62E0W0ET4MRZQS36V2YH1P8",
-      "drift-domain-verification=84b976bbb9c08c9f8507ed99d05493997c0f91557421b746b4ef017d64d036b6",
+      "docusign=1b2f90f6-48c2-4394-8d1d-bf2ede024866",
+      "00DEm00000SNtEz=1TBEm0000000wjx",
       "v=spf1 include:evspf1.gartner.com include:evspf2.gartner.com include:_spf.salesforce.com include:spf.mandrillapp.com ip4:8.15.203.113 ip4:8.15.203.114 ip4:8.15.203.115 ip4:8.15.203.116 ip4:148.59.100.16/28 ",
       "ip4:216.221.170.72/29 ip4:216.221.170.250/31 ip4:216.221.171.8/29 -all",
-      "docusign=1b2f90f6-48c2-4394-8d1d-bf2ede024866",
+      "docusign=176ba6ee-d141-4b4f-951f-ed65844926a4",
+      "00DD20000003MjH=1TBD20000004CBs;00DEa00000R3lsT=1TBEa0000000PWH;00DD40000009zec=1TBD4000000000v",
+      "anthropic-domain-verification-ednxat=IQ65KbsWwqCgfrFDGjU3Dox5R",
+      "x98FvuwX6an-AAO7F0eMahTQny_-",
+      "slido-domain-verification=ca6c3a71-8061-4091-8dac-a342e0bd8e4b",
+      "apple-domain-verification=k0GE0BCT91wGwIyD74bKOw2pu76vgckNG8XTkpxj93w",
+      "webexdomainverification.FZF7=b569771f-24c7-4cd9-b087-75b779846dde",
+      "openai-domain-verification=dv-1CqASnTt5JNxuOGMkbJziedR",
+      "canva-site-verification=NiX71ocXK6Nit9EcqeZZ_A",
+      "docusign=fbd0b5e3-fd26-4058-a01e-f3231247d403",
+      "ZOOM_verify_ccu8Ucbb3XjDVqaWJxKT5F",
+      "ciscocidomainverification=57f18449faaaa96630528f3cab6ca711051e21cb8aecdd166f57444d93b57c5",
+      "paloaltonetworks-site-verification=89f74fa49f2affd44039a4cfce3efa8b83e2eee7d8f52ac84ce59d7a6f41ebb4",
+      "lucidlink-verification=8CP62E0W0ET4MRZQS36V2YH1P8",
+      "google-site-verification=aKIAxvYjZsxgy4fvr3ys8D_D4naYE21UpdGV3jKNbb0",
+      "docker-verification=0894b02a-7530-4d69-a114-b173e16374f7",
+      "hWbBxLhyKc36IrHY2zusOB2kDAgSqdhLvJAxHo7pCUBuRh8ZpBeGKBbQix2ic6FerMsaTaiZY4gzCVnjOpqaNw==",
       "00DRu00000RGlmb=1TBRu00000014kj",
-      "canva-site-verification=NiX71ocXK6Nit9EcqeZZ_A"
+      "uber-domain-verification=db80ddee-dc1a-47b4-b0f9-5382e61b8cc7",
+      "google-site-verification=npR9iwOMNUbkau8Pwvd4kBqqPDMyXCUu8g5iP1PW_44",
+      "prowly-verification=0a18c790f75457f4100202545f5060298b4099a9f9ad953a6f2cd406187d096e",
+      "onetrust-domain-verification=5b726d00265b47399bae397d6aa108eb",
+      "drift-domain-verification=84b976bbb9c08c9f8507ed99d05493997c0f91557421b746b4ef017d64d036b6"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com;"
@@ -270,7 +284,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
     }
   },
   "ports": {
-    "ip": "99.83.168.174",
+    "ip": "75.2.50.126",
     "open": []
   },
   "https": {
@@ -370,11 +384,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
     ]
   },
   "apex_txt": [
-    "paloaltonetworks-site-verification=89f74fa49f2affd44039a4cfce3efa8b83e2eee7d8f52",
-    "prowly-verification=0a18c790f75457f4100202545f5060298b4099a9f9ad953a6f2cd406187d",
-    "uber-domain-verification=db80ddee-dc1a-47b4-b0f9-5382e61b8cc7",
-    "ciscocidomainverification=57f18449faaaa96630528f3cab6ca711051e21cb8aecdd166f5744",
-    "onetrust-domain-verification=5b726d00265b47399bae397d6aa108eb"
+    "onetrust-domain-verification=9615d0536ed947b2bde2aff220e66c8b",
+    "atlassian-domain-verification=8jqx2ryRUppyajabhJkDQFuiurOAJuQysDFi/wyqM11w4JVloZ",
+    "anthropic-domain-verification-ednxat=IQ65KbsWwqCgfrFDGjU3Dox5R",
+    "slido-domain-verification=ca6c3a71-8061-4091-8dac-a342e0bd8e4b",
+    "apple-domain-verification=k0GE0BCT91wGwIyD74bKOw2pu76vgckNG8XTkpxj93w"
   ],
   "tls2": {
     "alpn": "",
@@ -392,6 +406,10 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.r2m04.amazontrust.com/r2m04.crl"
+      ],
+      "san": [
+        "gartner.com",
+        "www.gartner.com"
       ],
       "subject_dn": "311430120603550403130b676172746e65722e636f6d",
       "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3034",
@@ -433,8 +451,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 33.7,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.r2m04.amazontrust.com"
+  },
+  "elapsed_s": 34.5,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -448,4 +469,5 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.
